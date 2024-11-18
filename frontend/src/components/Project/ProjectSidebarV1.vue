@@ -16,6 +16,7 @@ import { useRouter } from "vue-router";
 import type { SidebarItem } from "@/components/CommonSidebar.vue";
 import CommonSidebar from "@/components/CommonSidebar.vue";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
+import { useRecentVisit } from "@/router/useRecentVisit";
 import { getProjectName } from "@/store/modules/v1/common";
 import { useProjectDatabaseActions } from "../KBar/useDatabaseActions";
 import { useCurrentProject } from "./useCurrentProject";
@@ -31,6 +32,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const router = useRouter();
+const { record } = useRecentVisit();
 
 const params = computed(() => {
   return {
@@ -65,6 +67,7 @@ const onSelect = (item: SidebarItem, e: MouseEvent | undefined) => {
       projectId: getProjectName(project.value.name),
     },
   });
+  record(route.fullPath);
 
   if (e?.ctrlKey || e?.metaKey) {
     window.open(route.fullPath, "_blank");
