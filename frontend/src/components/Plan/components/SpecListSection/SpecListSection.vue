@@ -24,15 +24,11 @@ import SpecCard from "./SpecCard.vue";
 
 const MAX_LIST_HEIGHT = 207;
 
-const { plan, selectedSpec } = usePlanContext();
+const { plan } = usePlanContext();
 const specBar = ref<HTMLDivElement>();
 const specBarScrollState = useVerticalScrollState(specBar, MAX_LIST_HEIGHT);
 
-const specList = computed(
-  () =>
-    plan.value.steps.find((step) => step.specs.includes(selectedSpec.value))
-      ?.specs || []
-);
+const specList = computed(() => plan.value.steps.flatMap((step) => step.specs));
 </script>
 
 <style scoped lang="postcss">
