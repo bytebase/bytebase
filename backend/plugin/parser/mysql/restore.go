@@ -28,7 +28,7 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 		return "", errors.Errorf("failed to extract single SQL: %v", err)
 	}
 
-	parseResult, err := ParseMySQL(statement)
+	parseResult, err := ParseMySQL(originalSQL)
 	if err != nil {
 		return "", err
 	}
@@ -58,7 +58,7 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get target database ID for %s", backupItem.TargetTable.Database)
 	}
-	generatedColumns, normalColumns, err := classifyColumns(ctx, rCtx.GetDatabaseMetadataFunc, rCtx.ListDatabaseNamesFunc, rCtx.IgnoreCaseSensitive, rCtx.InstanceID, &TableReference{
+	generatedColumns, normalColumns, normalColumnsExceptPrimary, err := classifyColumns(ctx, rCtx.GetDatabaseMetadataFunc, rCtx.ListDatabaseNamesFunc, rCtx.IgnoreCaseSensitive, rCtx.InstanceID, &TableReference{
 		Database: sourceDatabase,
 		Table:    backupItem.SourceTable.Table,
 	})
@@ -67,14 +67,15 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 	}
 
 	g := &generator{
-		ctx:              ctx,
-		rCtx:             rCtx,
-		backupDatabase:   targetDatabase,
-		backupTable:      backupItem.TargetTable.Table,
-		originalDatabase: sourceDatabase,
-		originalTable:    backupItem.SourceTable.Table,
-		generatedColumns: generatedColumns,
-		normalColumns:    normalColumns,
+		ctx:                        ctx,
+		rCtx:                       rCtx,
+		backupDatabase:             targetDatabase,
+		backupTable:                backupItem.TargetTable.Table,
+		originalDatabase:           sourceDatabase,
+		originalTable:              backupItem.SourceTable.Table,
+		generatedColumns:           generatedColumns,
+		normalColumns:              normalColumns,
+		normalColumnsExceptPrimary: normalColumnsExceptPrimary,
 	}
 	var buf strings.Builder
 	antlr.ParseTreeWalkerDefault.Walk(g, parseResult.Tree)
@@ -116,9 +117,38 @@ func extractSingleSQL(statement string, backupItem *storepb.PriorBackupDetail_It
 			end = i
 		}
 	}
+
+	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
+	}
+
 	var result []string
+	// We only need statements that contain the source table.
 	for i := start; i <= end; i++ {
-		result = append(result, list[i].Text)
+		parseResult, err := ParseMySQL(list[i].Text)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to parse sql")
+		}
+		containsSourceTable := false
+		for _, sql := range parseResult {
+			tables, err := ExtractTables(sourceDatabase, sql, i)
+			if err != nil {
+				return "", errors.Wrap(err, "failed to extract tables")
+			}
+			for _, table := range tables {
+				if table.Table.Database == sourceDatabase && table.Table.Table == backupItem.SourceTable.Table {
+					containsSourceTable = true
+					break
+				}
+			}
+			if containsSourceTable {
+				break
+			}
+		}
+		if containsSourceTable {
+			result = append(result, list[i].Text)
+		}
 	}
 	return strings.Join(result, ""), nil
 }
@@ -149,14 +179,15 @@ type generator struct {
 	ctx  context.Context
 	rCtx base.RestoreContext
 
-	backupDatabase   string
-	backupTable      string
-	originalDatabase string
-	originalTable    string
-	generatedColumns []string
-	normalColumns    []string
-	result           string
-	err              error
+	backupDatabase             string
+	backupTable                string
+	originalDatabase           string
+	originalTable              string
+	generatedColumns           []string
+	normalColumns              []string
+	normalColumnsExceptPrimary []string
+	result                     string
+	err                        error
 }
 
 func (g *generator) EnterDeleteStatement(ctx *parser.DeleteStatementContext) {
@@ -181,26 +212,18 @@ func (g *generator) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
 		return
 	}
 
+	if len(g.normalColumns) == len(g.normalColumnsExceptPrimary) {
+		// No primary key, we can't do ON DUPLICATE KEY UPDATE.
+		g.err = errors.Errorf("primary key not found for %s.%s", g.originalDatabase, g.originalTable)
+		return
+	}
+
 	singleTables := &singleTableListener{
 		databaseName: g.originalDatabase,
 		singleTables: make(map[string]*TableReference),
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(singleTables, ctx.TableReferenceList())
-
-	tableName := g.originalTable
-
-	for _, table := range singleTables.singleTables {
-		if table.Table == g.originalTable && table.Alias != "" {
-			tableName = table.Alias
-		}
-	}
-
-	setFields := &setFieldListener{
-		table: tableName,
-	}
-
-	antlr.ParseTreeWalkerDefault.Walk(setFields, ctx.UpdateList())
 
 	var buf strings.Builder
 	if len(g.generatedColumns) == 0 {
@@ -220,7 +243,7 @@ func (g *generator) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
 		}
 	}
 
-	for i, field := range setFields.result {
+	for i, field := range g.normalColumnsExceptPrimary {
 		if i > 0 {
 			if _, err := buf.WriteString(", "); err != nil {
 				g.err = err
@@ -238,18 +261,4 @@ func (g *generator) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
 		return
 	}
 	g.result = buf.String()
-}
-
-type setFieldListener struct {
-	*parser.BaseMySQLParserListener
-
-	table  string
-	result []string
-}
-
-func (l *setFieldListener) EnterUpdateElement(ctx *parser.UpdateElementContext) {
-	_, tableName, columnName := NormalizeMySQLColumnRef(ctx.ColumnRef())
-	if tableName == l.table || tableName == "" {
-		l.result = append(l.result, columnName)
-	}
 }

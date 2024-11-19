@@ -116,3 +116,103 @@ func (checker *tableDisallowDMLChecker) checkTableName(tableName string, line in
 		}
 	}
 }
+
+type table struct {
+	database string
+	table    string
+}
+
+func extractTableReference(ctx mysql.ITableReferenceContext) ([]table, error) {
+	if ctx.TableFactor() == nil {
+		return nil, nil
+	}
+	res, err := extractTableFactor(ctx.TableFactor())
+	if err != nil {
+		return nil, err
+	}
+	for _, joinedTableCtx := range ctx.AllJoinedTable() {
+		tables, err := extractJoinedTable(joinedTableCtx)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, tables...)
+	}
+
+	return res, nil
+}
+
+func extractTableRef(ctx mysql.ITableRefContext) ([]table, error) {
+	if ctx == nil {
+		return nil, nil
+	}
+	databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(ctx)
+	return []table{
+		{
+			database: databaseName,
+			table:    tableName,
+		},
+	}, nil
+}
+
+func extractTableReferenceList(ctx mysql.ITableReferenceListContext) ([]table, error) {
+	var res []table
+	for _, tableRefCtx := range ctx.AllTableReference() {
+		tables, err := extractTableReference(tableRefCtx)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, tables...)
+	}
+	return res, nil
+}
+
+func extractTableReferenceListParens(ctx mysql.ITableReferenceListParensContext) ([]table, error) {
+	if ctx.TableReferenceList() != nil {
+		return extractTableReferenceList(ctx.TableReferenceList())
+	}
+	if ctx.TableReferenceListParens() != nil {
+		return extractTableReferenceListParens(ctx.TableReferenceListParens())
+	}
+	return nil, nil
+}
+
+func extractTableFactor(ctx mysql.ITableFactorContext) ([]table, error) {
+	switch {
+	case ctx.SingleTable() != nil:
+		return extractSingleTable(ctx.SingleTable())
+	case ctx.SingleTableParens() != nil:
+		return extractSingleTableParens(ctx.SingleTableParens())
+	case ctx.DerivedTable() != nil:
+		return nil, nil
+	case ctx.TableReferenceListParens() != nil:
+		return extractTableReferenceListParens(ctx.TableReferenceListParens())
+	case ctx.TableFunction() != nil:
+		return nil, nil
+	default:
+		return nil, nil
+	}
+}
+
+func extractSingleTable(ctx mysql.ISingleTableContext) ([]table, error) {
+	return extractTableRef(ctx.TableRef())
+}
+
+func extractSingleTableParens(ctx mysql.ISingleTableParensContext) ([]table, error) {
+	if ctx.SingleTable() != nil {
+		return extractSingleTable(ctx.SingleTable())
+	}
+	if ctx.SingleTableParens() != nil {
+		return extractSingleTableParens(ctx.SingleTableParens())
+	}
+	return nil, nil
+}
+
+func extractJoinedTable(ctx mysql.IJoinedTableContext) ([]table, error) {
+	if ctx.TableFactor() != nil {
+		return extractTableFactor(ctx.TableFactor())
+	}
+	if ctx.TableReference() != nil {
+		return extractTableReference(ctx.TableReference())
+	}
+	return nil, nil
+}
