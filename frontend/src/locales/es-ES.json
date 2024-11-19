@@ -1325,9 +1325,11 @@
           "schema-dump": "Volcado de esquema",
           "task-run-status-update": "Actualización de estado",
           "transaction-control": "Control de transacciones",
-          "database-sync": "Sincronización de base de datos"
+          "database-sync": "Sincronización de base de datos",
+          "prior-backup": "Copia de seguridad previa"
         },
         "affected-rows-n": "Filas afectadas: {n}",
+        "prior-backup-tables": "Tablas de respaldo anteriores",
         "status-update": {
           "waiting": "Listo para ser ejecutado",
           "running": "Ser ejecutado"
