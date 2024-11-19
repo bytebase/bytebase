@@ -436,17 +436,6 @@ func getNextResultSetIdx(s []stmtType, beginIdx int) int {
 	return len(s)
 }
 
-// QueryConn queries a SQL statement in a given connection.
-// func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-// 	singleSQLs, err := tsqlparser.SplitSQL(statement)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	singleSQLs = base.FilterEmptySQL(singleSQLs)
-// 	if len(singleSQLs) == 0 {
-// 		return nil, nil
-// 	}
-
 // 	isExplain := queryContext.Explain
 // 	if isExplain {
 // 		if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_ALL ON;"); err != nil {
@@ -537,35 +526,4 @@ func NewBatch(statement string) *tsqlbatch.Batch {
 		return "", io.EOF
 	}
 	return tsqlbatch.NewBatch(scanner)
-}
-
-// getShowPlanAll returns on/off and ok for the statement.
-func getShowPlanAll(s string) (bool, bool) {
-	if len(s) > 30 {
-		return false, false
-	}
-	s = strings.ToLower(s)
-	if !strings.Contains(s, "showplan_all") {
-		return false, false
-	}
-	s = strings.TrimSpace(s)
-	s = strings.TrimRight(s, ";")
-	s = strings.TrimSpace(s)
-	tokens := strings.Fields(s)
-	if len(tokens) != 3 {
-		return false, false
-	}
-	if tokens[0] != "set" {
-		return false, false
-	}
-	if tokens[1] != "showplan_all" {
-		return false, false
-	}
-	switch tokens[2] {
-	case "on":
-		return true, true
-	case "off":
-		return false, true
-	}
-	return false, false
 }
