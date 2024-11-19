@@ -1,4 +1,35 @@
 - input: |-
+    UPDATE t_generated1111 SET a = 1 WHERE b = 1;
+    UPDATE t_generated SET a = 1 WHERE b = 1;
+    UPDATE t_generated SET a = 2 WHERE b = 2;
+    UPDATE t_generated SET a = 3 WHERE b = 3;
+    UPDATE t_generated1111 SET a = 4 WHERE b = 4;
+    UPDATE t_generated SET a = 4 WHERE b = 4;
+    UPDATE t_generated SET a = 5 WHERE b = 5;
+    UPDATE t_generated1111 SET a = 5 WHERE b = 5;
+    UPDATE t_generated SET a = 6 WHERE b = 6;
+    UPDATE t_generated SET a = 6 WHERE b = 6;
+    UPDATE t_generated111 SET a = 7 WHERE b = 7;
+    UPDATE t_generated SET a = 7 WHERE b = 7;
+  backupdatabase: bbarchive
+  backuptable: prefix_t_generated
+  originaldatabase: db
+  originaltable: t_generated
+  result: |-
+    /*
+    Original SQL:
+
+    UPDATE t_generated SET a = 1 WHERE b = 1;
+    UPDATE t_generated SET a = 2 WHERE b = 2;
+    UPDATE t_generated SET a = 3 WHERE b = 3;
+    UPDATE t_generated SET a = 4 WHERE b = 4;
+    UPDATE t_generated SET a = 5 WHERE b = 5;
+    UPDATE t_generated SET a = 6 WHERE b = 6;
+    UPDATE t_generated SET a = 6 WHERE b = 6;
+    UPDATE t_generated SET a = 7 WHERE b = 7;
+    */
+    INSERT INTO `db`.`t_generated` (`a`, `b`) SELECT `a`, `b` FROM `bbarchive`.`prefix_t_generated` ON DUPLICATE KEY UPDATE `a` = VALUES(`a`);
+- input: |-
     UPDATE t_generated SET a = 1 WHERE b = 1;
     UPDATE t_generated SET a = 2 WHERE b = 2;
     UPDATE t_generated SET a = 3 WHERE b = 3;
@@ -55,7 +86,7 @@
     DELETE test FROM test, test2 as t2 where test.id = t2.id;
     */
     INSERT INTO `db`.`test` SELECT * FROM `bbarchive`.`prefix_1_test`;
-- input: UPDATE test x SET x.c1 = 1 WHERE x.c1 = 1;
+- input: UPDATE test x SET x.c = 1 WHERE x.c = 1;
   backupdatabase: bbarchive
   backuptable: prefix_1_test
   originaldatabase: db
@@ -63,10 +94,10 @@
   result: |-
     /*
     Original SQL:
-    UPDATE test x SET x.c1 = 1 WHERE x.c1 = 1;
+    UPDATE test x SET x.c = 1 WHERE x.c = 1;
     */
-    INSERT INTO `db`.`test` SELECT * FROM `bbarchive`.`prefix_1_test` ON DUPLICATE KEY UPDATE `c1` = VALUES(`c1`);
-- input: UPDATE test SET c1 = 1 WHERE c1 = 1;
+    INSERT INTO `db`.`test` SELECT * FROM `bbarchive`.`prefix_1_test` ON DUPLICATE KEY UPDATE `a` = VALUES(`a`), `b` = VALUES(`b`);
+- input: UPDATE test SET a = 1 WHERE c = 1;
   backupdatabase: bbarchive
   backuptable: prefix_1_test
   originaldatabase: db
@@ -74,6 +105,6 @@
   result: |-
     /*
     Original SQL:
-    UPDATE test SET c1 = 1 WHERE c1 = 1;
+    UPDATE test SET a = 1 WHERE c = 1;
     */
-    INSERT INTO `db`.`test` SELECT * FROM `bbarchive`.`prefix_1_test` ON DUPLICATE KEY UPDATE `c1` = VALUES(`c1`);
+    INSERT INTO `db`.`test` SELECT * FROM `bbarchive`.`prefix_1_test` ON DUPLICATE KEY UPDATE `a` = VALUES(`a`), `b` = VALUES(`b`);
