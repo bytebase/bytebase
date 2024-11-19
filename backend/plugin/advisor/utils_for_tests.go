@@ -235,7 +235,8 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			PreUpdateBackupDetail: &storepb.PreUpdateBackupDetail{
 				Database: "instances/instanceName/databases/bbdataarchive",
 			},
-			NoAppendBuiltin: true,
+			NoAppendBuiltin:          true,
+			UsePostgresDatabaseOwner: true,
 		}
 
 		adviceList, err := SQLReviewCheck(sm, tc.Statement, ruleList, ctx)

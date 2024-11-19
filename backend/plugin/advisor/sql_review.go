@@ -511,6 +511,9 @@ type SQLReviewCheckContext struct {
 
 	// Used for test only.
 	NoAppendBuiltin bool
+
+	// UsePostgresDatabaseOwner is true if the advisor should use the database owner as default role.
+	UsePostgresDatabaseOwner bool
 }
 
 // SQLReviewCheck checks the statements with sql review rules.
@@ -569,19 +572,20 @@ func SQLReviewCheck(
 			checkContext.DbType,
 			advisorType,
 			Context{
-				Charset:               checkContext.Charset,
-				Collation:             checkContext.Collation,
-				DBSchema:              checkContext.DBSchema,
-				ChangeType:            checkContext.ChangeType,
-				PreUpdateBackupDetail: checkContext.PreUpdateBackupDetail,
-				AST:                   asts,
-				Statements:            statements,
-				Rule:                  rule,
-				Catalog:               finder,
-				Driver:                checkContext.Driver,
-				Context:               checkContext.Context,
-				CurrentDatabase:       checkContext.CurrentDatabase,
-				ClassificationConfig:  checkContext.ClassificationConfig,
+				Charset:                  checkContext.Charset,
+				Collation:                checkContext.Collation,
+				DBSchema:                 checkContext.DBSchema,
+				ChangeType:               checkContext.ChangeType,
+				PreUpdateBackupDetail:    checkContext.PreUpdateBackupDetail,
+				AST:                      asts,
+				Statements:               statements,
+				Rule:                     rule,
+				Catalog:                  finder,
+				Driver:                   checkContext.Driver,
+				Context:                  checkContext.Context,
+				CurrentDatabase:          checkContext.CurrentDatabase,
+				ClassificationConfig:     checkContext.ClassificationConfig,
+				UsePostgresDatabaseOwner: checkContext.UsePostgresDatabaseOwner,
 			},
 			statements,
 		)

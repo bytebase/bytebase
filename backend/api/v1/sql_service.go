@@ -1322,8 +1322,7 @@ func (s *SQLService) SQLReviewCheck(
 		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to create a catalog: %v", err)
 	}
 
-	// todo: do not use database owner for QUERY()
-	useDatabaseOwner, err := getUseDatabaseOwner(ctx, s.store, instance, database)
+	useDatabaseOwner, err := getUseDatabaseOwner(ctx, s.store, instance, database, changeType)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to get use database owner: %v", err)
 	}
@@ -1336,16 +1335,17 @@ func (s *SQLService) SQLReviewCheck(
 
 	classificationConfig := GetClassificationByProject(ctx, s.store, database.ProjectID)
 	context := advisor.SQLReviewCheckContext{
-		Charset:              dbMetadata.CharacterSet,
-		Collation:            dbMetadata.Collation,
-		ChangeType:           convertChangeType(changeType),
-		DBSchema:             dbMetadata,
-		DbType:               instance.Engine,
-		Catalog:              catalog,
-		Driver:               connection,
-		Context:              ctx,
-		CurrentDatabase:      database.DatabaseName,
-		ClassificationConfig: classificationConfig,
+		Charset:                  dbMetadata.CharacterSet,
+		Collation:                dbMetadata.Collation,
+		ChangeType:               convertChangeType(changeType),
+		DBSchema:                 dbMetadata,
+		DbType:                   instance.Engine,
+		Catalog:                  catalog,
+		Driver:                   connection,
+		Context:                  ctx,
+		CurrentDatabase:          database.DatabaseName,
+		ClassificationConfig:     classificationConfig,
+		UsePostgresDatabaseOwner: useDatabaseOwner,
 	}
 
 	reviewConfig, err := s.store.GetReviewConfigForDatabase(ctx, database)
@@ -1383,8 +1383,8 @@ func (s *SQLService) SQLReviewCheck(
 	return adviceLevel, advices, nil
 }
 
-func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage) (bool, error) {
-	if instance.Engine != storepb.Engine_POSTGRES {
+func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, changeType v1pb.CheckRequest_ChangeType) (bool, error) {
+	if instance.Engine != storepb.Engine_POSTGRES || changeType == v1pb.CheckRequest_SQL_EDITOR {
 		return false, nil
 	}
 

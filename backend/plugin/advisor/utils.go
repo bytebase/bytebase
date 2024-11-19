@@ -21,7 +21,8 @@ func NormalizeStatement(statement string) string {
 }
 
 type QueryContext struct {
-	PreExecutions []string
+	UsePostgresDatabaseOwner bool
+	PreExecutions            []string
 }
 
 // Query runs the EXPLAIN or SELECT statements for advisors.
@@ -32,7 +33,7 @@ func Query(ctx context.Context, qCtx QueryContext, connection *sql.DB, engine st
 	}
 	defer tx.Rollback()
 
-	if engine == storepb.Engine_POSTGRES {
+	if engine == storepb.Engine_POSTGRES && qCtx.UsePostgresDatabaseOwner {
 		const query = `
 		SELECT
 			u.rolname
