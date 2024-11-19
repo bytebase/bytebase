@@ -122,9 +122,7 @@ const doCreatePlan = async () => {
 
 // Create sheets for spec configs and update their resource names.
 const createSheets = async () => {
-  const flattenSpecList = plan.value.steps.flatMap((step) => {
-    return step.specs;
-  });
+  const flattenSpecList = plan.value.steps.flatMap((step) => step.specs);
   const configWithSheetList: Plan_ChangeDatabaseConfig[] = [];
   const pendingCreateSheetMap = new Map<string, Sheet>();
 

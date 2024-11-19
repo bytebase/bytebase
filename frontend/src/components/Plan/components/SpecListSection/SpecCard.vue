@@ -14,7 +14,7 @@
     >
       <template #trigger>
         <heroicons:exclamation-circle-solid
-          class="w-5 h-5 mr-1"
+          class="w-5 h-5 shrink-0"
           :class="[
             planCheckStatus === PlanCheckRun_Result_Status.ERROR
               ? 'text-error hover:text-error-hover'
@@ -28,7 +28,10 @@
         )
       }}</span>
     </NTooltip>
-    <div v-if="isDatabaseChangeSpec(spec)" class="flex items-center gap-2">
+    <div
+      v-if="isDatabaseChangeSpec(spec)"
+      class="flex items-center gap-2 truncate"
+    >
       <InstanceV1Name
         :instance="databaseForSpec(plan, spec).instanceResource"
         :link="false"
@@ -40,7 +43,7 @@
     </div>
     <div
       v-else-if="isGroupingChangeSpec(spec) && relatedDatabaseGroup"
-      class="flex items-center gap-2"
+      class="flex items-center gap-2 truncate"
     >
       <NTooltip>
         <template #trigger><DatabaseGroupIcon class="w-4 h-auto" /></template>
@@ -63,11 +66,11 @@ import DatabaseGroupIcon from "@/components/DatabaseGroupIcon.vue";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import { InstanceV1Name } from "@/components/v2";
 import { useDBGroupStore } from "@/store";
+import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
 import {
   PlanCheckRun_Result_Status,
   type Plan_Spec,
 } from "@/types/proto/v1/plan_service";
-import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
 import {
   databaseForSpec,
   isDatabaseChangeSpec,
