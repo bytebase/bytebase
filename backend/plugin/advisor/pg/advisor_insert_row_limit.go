@@ -44,11 +44,12 @@ func (*InsertRowLimitAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.A
 		return nil, err
 	}
 	checker := &insertRowLimitChecker{
-		level:  level,
-		title:  string(ctx.Rule.Type),
-		maxRow: payload.Number,
-		driver: ctx.Driver,
-		ctx:    ctx.Context,
+		level:                    level,
+		title:                    string(ctx.Rule.Type),
+		maxRow:                   payload.Number,
+		driver:                   ctx.Driver,
+		ctx:                      ctx.Context,
+		UsePostgresDatabaseOwner: ctx.UsePostgresDatabaseOwner,
 	}
 
 	if payload.Number > 0 {
@@ -66,16 +67,17 @@ func (*InsertRowLimitAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.A
 }
 
 type insertRowLimitChecker struct {
-	adviceList   []*storepb.Advice
-	level        storepb.Advice_Status
-	title        string
-	text         string
-	line         int
-	maxRow       int
-	driver       *sql.DB
-	ctx          context.Context
-	explainCount int
-	setRoles     []string
+	adviceList               []*storepb.Advice
+	level                    storepb.Advice_Status
+	title                    string
+	text                     string
+	line                     int
+	maxRow                   int
+	driver                   *sql.DB
+	ctx                      context.Context
+	explainCount             int
+	setRoles                 []string
+	UsePostgresDatabaseOwner bool
 }
 
 // Visit implements the ast.Visitor interface.
@@ -99,7 +101,8 @@ func (checker *insertRowLimitChecker) Visit(node ast.Node) ast.Visitor {
 			// For INSERT INTO ... SELECT statements, use EXPLAIN.
 			checker.explainCount++
 			res, err := advisor.Query(checker.ctx, advisor.QueryContext{
-				PreExecutions: checker.setRoles,
+				UsePostgresDatabaseOwner: checker.UsePostgresDatabaseOwner,
+				PreExecutions:            checker.setRoles,
 			}, checker.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", node.Text()))
 			if err != nil {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
