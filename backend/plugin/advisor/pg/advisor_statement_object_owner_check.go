@@ -1,10 +1,14 @@
 package pg
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
+	"log/slog"
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -42,6 +46,13 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 	dbMetadata := model.NewDatabaseMetadata(ctx.DBSchema)
 	currentRole := ctx.DBSchema.Owner
 	defaultSchema := "public"
+	if !ctx.UsePostgresDatabaseOwner {
+		currentRole, err = getCurrentUser(ctx.Context, ctx.Driver)
+		if err != nil {
+			slog.Debug("Failed to get current user", log.BBError(err))
+			currentRole = ctx.DBSchema.Owner
+		}
+	}
 
 	for _, stmt := range stmtList {
 		switch n := stmt.(type) {
@@ -628,4 +639,13 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 	}
 
 	return adviceList, nil
+}
+
+func getCurrentUser(ctx context.Context, driver *sql.DB) (string, error) {
+	var user string
+	err := driver.QueryRowContext(ctx, "SELECT CURRENT_USER").Scan(&user)
+	if err != nil {
+		return "", err
+	}
+	return user, nil
 }

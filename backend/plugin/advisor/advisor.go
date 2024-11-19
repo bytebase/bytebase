@@ -64,6 +64,8 @@ type Context struct {
 	// Statement is the original statement of AST, it is used for some PostgreSQL
 	// advisors which need to check the token stream.
 	Statements string
+	// UsePostgresDatabaseOwner is true if the advisor should use the database owner as default role.
+	UsePostgresDatabaseOwner bool
 }
 
 // Advisor is the interface for advisor.

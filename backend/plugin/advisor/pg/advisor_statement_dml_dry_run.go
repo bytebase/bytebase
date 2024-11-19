@@ -40,10 +40,11 @@ func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context, _ string) ([]*store
 		return nil, err
 	}
 	checker := &statementDmlDryRunChecker{
-		level:  level,
-		title:  string(ctx.Rule.Type),
-		driver: ctx.Driver,
-		ctx:    ctx.Context,
+		level:            level,
+		title:            string(ctx.Rule.Type),
+		driver:           ctx.Driver,
+		ctx:              ctx.Context,
+		useDatabaseOwner: ctx.UsePostgresDatabaseOwner,
 	}
 
 	if checker.driver != nil {
@@ -59,13 +60,14 @@ func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context, _ string) ([]*store
 }
 
 type statementDmlDryRunChecker struct {
-	adviceList   []*storepb.Advice
-	level        storepb.Advice_Status
-	title        string
-	driver       *sql.DB
-	ctx          context.Context
-	explainCount int
-	setRoles     []string
+	adviceList       []*storepb.Advice
+	level            storepb.Advice_Status
+	title            string
+	driver           *sql.DB
+	ctx              context.Context
+	explainCount     int
+	setRoles         []string
+	useDatabaseOwner bool
 }
 
 // Visit implements ast.Visitor interface.
@@ -78,7 +80,8 @@ func (checker *statementDmlDryRunChecker) Visit(in ast.Node) ast.Visitor {
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
 		checker.explainCount++
 		if _, err := advisor.Query(checker.ctx, advisor.QueryContext{
-			PreExecutions: checker.setRoles,
+			UsePostgresDatabaseOwner: checker.useDatabaseOwner,
+			PreExecutions:            checker.setRoles,
 		}, checker.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", node.Text())); err != nil {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
