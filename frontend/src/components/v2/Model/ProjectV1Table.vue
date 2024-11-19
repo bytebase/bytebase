@@ -80,7 +80,7 @@ const columnList = computed((): ProjectDataTableColumn[] => {
     [
       {
         key: "selection",
-        width: 50,
+        width: 32,
         hide: !props.currentProject,
         render: (project) => {
           return (
@@ -93,7 +93,7 @@ const columnList = computed((): ProjectDataTableColumn[] => {
       {
         key: "key",
         title: t("project.table.key"),
-        width: 200,
+        width: 112,
         render: (project) => {
           return (
             <span

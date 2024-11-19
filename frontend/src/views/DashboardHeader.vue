@@ -5,24 +5,7 @@
         class="block md:hidden"
         :redirect="WORKSPACE_ROUTE_MY_ISSUES"
       />
-
-      <NButton
-        class="hidden sm:inline"
-        size="small"
-        @click="state.showProjectModal = true"
-      >
-        <div class="min-w-[8rem] text-left">
-          <ProjectNameCell
-            v-if="isValidProjectName(project.name)"
-            mode="ALL_SHORT"
-            :project="project"
-          />
-          <span v-else class="text-control-placeholder text-sm">
-            {{ $t("project.select") }}
-          </span>
-        </div>
-        <ChevronDownIcon class="w-5 h-auto text-gray-400" />
-      </NButton>
+      <ProjectSwitchPopover />
     </div>
     <div class="flex-1 flex justify-end items-center space-x-3">
       <NButton class="hidden md:flex" size="small" @click="onClickSearchButton">
@@ -88,34 +71,22 @@
     :title="$t('common.want-help')"
     @close="state.showQRCodeModal = false"
   />
-
-  <ProjectSwitchModal
-    :show="state.showProjectModal"
-    :project="project"
-    @dismiss="state.showProjectModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
 import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useKBarHandler } from "@bytebase/vue-kbar";
 import { useLocalStorage } from "@vueuse/core";
-import {
-  CircleDotIcon,
-  ChevronDownIcon,
-  SearchIcon,
-  SquareTerminalIcon,
-} from "lucide-vue-next";
+import { CircleDotIcon, SearchIcon, SquareTerminalIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import ProjectSwitchModal from "@/components/Project/ProjectSwitchModal.vue";
+import ProjectSwitchPopover from "@/components/Project/ProjectSwitchPopover.vue";
 import { useCurrentProject } from "@/components/Project/useCurrentProject";
 import WeChatQRModal from "@/components/WeChatQRModal.vue";
-import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {
