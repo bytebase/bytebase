@@ -680,8 +680,6 @@
     - [Advice](#bytebase-v1-Advice)
     - [CheckRequest](#bytebase-v1-CheckRequest)
     - [CheckResponse](#bytebase-v1-CheckResponse)
-    - [ExecuteRequest](#bytebase-v1-ExecuteRequest)
-    - [ExecuteResponse](#bytebase-v1-ExecuteResponse)
     - [ExportRequest](#bytebase-v1-ExportRequest)
     - [ExportResponse](#bytebase-v1-ExportResponse)
     - [GenerateRestoreSQLRequest](#bytebase-v1-GenerateRestoreSQLRequest)
@@ -10912,41 +10910,6 @@ Type of the SheetPayload.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | advices | [Advice](#bytebase-v1-Advice) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ExecuteRequest"></a>
-
-### ExecuteRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance}/databases/{databaseName} |
-| statement | [string](#string) |  | The SQL statement to execute. |
-| limit | [int32](#int32) |  | The maximum number of rows to return. |
-| timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The timeout for the request. |
-| schema | [string](#string) | optional | The default schema to execute the statement. Equals to the current schema in Oracle and search path in Postgres. |
-
-
-
-
-
-
-<a name="bytebase-v1-ExecuteResponse"></a>
-
-### ExecuteResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| results | [QueryResult](#bytebase-v1-QueryResult) | repeated | The execute results. |
-| advices | [Advice](#bytebase-v1-Advice) | repeated | The execute advices. |
 
 
 

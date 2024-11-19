@@ -185,8 +185,6 @@ func getRequestResource(request any) string {
 	switch r := request.(type) {
 	case *v1pb.QueryRequest:
 		return r.Name
-	case *v1pb.ExecuteRequest:
-		return r.Name
 	case *v1pb.AdminExecuteRequest:
 		return r.Name
 	case *v1pb.ExportRequest:
