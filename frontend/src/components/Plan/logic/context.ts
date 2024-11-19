@@ -3,7 +3,7 @@ import type { useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import type { InjectionKey, Ref } from "vue";
 import { inject, provide } from "vue";
-import type { Plan_Spec, Plan_Step } from "@/types/proto/v1/plan_service";
+import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
 
 export type PlanEvents = Emittery<{
@@ -17,7 +17,6 @@ export type PlanContext = {
   ready: Ref<boolean>;
   plan: Ref<ComposedPlan>;
 
-  selectedStep: Ref<Plan_Step>;
   selectedSpec: Ref<Plan_Spec>;
   formatOnSave: Ref<boolean>;
 
