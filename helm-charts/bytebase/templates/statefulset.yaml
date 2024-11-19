@@ -217,6 +217,10 @@ spec:
         {{- if gt (len $extraVolumes) 0 }}
         {{- toYaml $extraVolumes | nindent 8 }}
         {{- end }}
+      affinity:
+        {{- if .Values.bytebase.affinity }}
+        {{ toYaml .Values.bytebase.affinity | nindent 8 }}
+        {{- end }}
 ---
 {{- if and $persistenceEnable (not $persistenceExistingClaim) }}
 apiVersion: v1

@@ -61,3 +61,16 @@ bytebase:
     #     nodePublishSecretRef:
     #       # Only required when using service principal mode, usually is the secret store the service principal's credentials
     #       name: secrets-store-creds
+
+  # Affinity for pod assignment (evaluated as template)
+  # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+  #
+  affinity: {}
+    # nodeAffinity:
+    #   requiredDuringSchedulingIgnoredDuringExecution:
+    #     nodeSelectorTerms:
+    #       - matchExpressions:
+    #           - key: key
+    #             operator: In
+    #             values:
+    #               - value
