@@ -1325,9 +1325,11 @@
           "schema-dump": "スキーマダンプ",
           "task-run-status-update": "ステータスアップデート",
           "transaction-control": "トランザクション制御",
-          "database-sync": "データベースの同期"
+          "database-sync": "データベースの同期",
+          "prior-backup": "事前のバックアップ"
         },
         "affected-rows-n": "影響を受ける行: {n}",
+        "prior-backup-tables": "以前のバックアップテーブル",
         "status-update": {
           "waiting": "実行の準備完了",
           "running": "処刑される"
