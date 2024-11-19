@@ -10,14 +10,14 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"time"
 
 	// Import MSSQL driver.
+	"github.com/golang-sql/sqlexp"
 	gomssqldb "github.com/microsoft/go-mssqldb"
+
 	// Kerberos Active Directory authentication outside Windows.
 	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -45,7 +45,6 @@ type Driver struct {
 	// certificate file path should be deleted if calling closed.
 	certFilePath         string
 	maximumSQLResultSize int64
-	isShowPlanAll        bool
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -243,10 +242,7 @@ func execute(ctx context.Context, tx *sql.Tx, statement string) (int64, error) {
 }
 
 func unpackGoMSSQLDBError(err gomssqldb.Error) error {
-	if len(err.All) == 0 {
-		return nil
-	}
-	if len(err.All) == 1 {
+	if len(err.All) == 0 || len(err.All) == 1 {
 		return errors.Errorf("%s", err.Message)
 	}
 	var msgs []string
@@ -260,9 +256,52 @@ func unpackGoMSSQLDBError(err gomssqldb.Error) error {
 	return errors.Errorf("%s", strings.Join(msgs, "\n"))
 }
 
-// QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := tsqlparser.SplitSQL(statement)
+	batch := NewBatch(statement)
+	var results []*v1pb.QueryResult
+	for {
+		command, err := batch.Next()
+		if err != nil {
+			if err == io.EOF {
+				v := batch.String()
+				if v != "" {
+					// Query the last batch.
+					qr, err := driver.queryBatch(ctx, conn, v, queryContext)
+					results = append(results, qr...)
+					if err != nil {
+						return results, err
+					}
+				}
+				batch.Reset(nil)
+				break
+			}
+			return results, errors.Wrapf(err, "failed to get next batch for statement: %s", batch.String())
+		}
+		if command == nil {
+			continue
+		}
+		switch v := command.(type) {
+		case *tsqlbatch.GoCommand:
+			stmt := batch.String()
+			// Query the batch.
+			qr, err := driver.queryBatch(ctx, conn, stmt, queryContext)
+			results = append(results, qr...)
+			if err != nil {
+				return results, err
+			}
+		default:
+			return results, errors.Errorf("unsupported command type: %T", v)
+		}
+		batch.Reset(nil)
+	}
+	return results, nil
+}
+
+// queryBatch queries a batch of SQL statements, for Result Set-Generating statements, it returns the results, for Row Count-Generating statements,
+// it returns the affected rows, for other statements, it returns the empty query result.
+// https://learn.microsoft.com/en-us/sql/odbc/reference/develop-app/result-generating-and-result-free-statements?view=sql-server-ver16
+func (driver *Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	singleSQLs, err := tsqlparser.SplitSQL(batch)
 	if err != nil {
 		return nil, err
 	}
@@ -270,84 +309,221 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	if len(singleSQLs) == 0 {
 		return nil, nil
 	}
-
-	isExplain := queryContext.Explain
-	if isExplain {
-		if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_ALL ON;"); err != nil {
+	var stmtTypes []stmtType
+	batchBuf := new(strings.Builder)
+	for _, singleSQL := range singleSQLs {
+		stmtType, err := getStmtType(singleSQL.Text)
+		if err != nil {
 			return nil, err
 		}
+		stmtTypes = append(stmtTypes, stmtType)
+		// Before sending the batch to server, we add the limit clause to the statement.
+		s := singleSQL.Text
+		if !queryContext.Explain && queryContext.Limit > 0 {
+			s = getStatementWithResultLimit(s, queryContext.Limit)
+		}
+		batchBuf.WriteString(s)
+		batchBuf.WriteString("\n")
 	}
 
-	var results []*v1pb.QueryResult
-	for _, singleSQL := range singleSQLs {
-		statement := singleSQL.Text
-		if !isExplain && queryContext.Limit > 0 {
-			statement = getStatementWithResultLimit(statement, queryContext.Limit)
-		}
-
-		var allQuery bool
-		if isExplain {
-			allQuery = true
-		} else {
-			_, q, err := base.ValidateSQLForEditor(storepb.Engine_MSSQL, statement)
+	refinedBatch := batchBuf.String()
+	retmsg := &sqlexp.ReturnMessage{}
+	rows, qe := conn.QueryContext(ctx, refinedBatch, retmsg)
+	if qe != nil {
+		return nil, qe
+	}
+	defer rows.Close()
+	nextResultSetIdx := getNextResultSetIdx(stmtTypes, 0)
+	nextAffectedRowsIdx := getNextAffectedRowsIdx(stmtTypes, 0)
+	skipRowsAffected := false
+	results := true
+	var ret []*v1pb.QueryResult
+	for results {
+		queryResult := new(v1pb.QueryResult)
+		msg := retmsg.Message(ctx)
+		// While meeting the RowsAffected and MsgNext, fill up the lap for the other statement types.
+		switch m := msg.(type) {
+		case sqlexp.MsgNotice:
+			if err := isExitError(err); err != nil {
+				return ret, err
+			}
+		case sqlexp.MsgError:
+			err := m.Error
+			var e gomssqldb.Error
+			if errors.As(err, &e) {
+				err = unpackGoMSSQLDBError(e)
+			}
+			queryResult.Error = err.Error()
+			ret = append(ret, queryResult)
+			return ret, err
+		case sqlexp.MsgRowsAffected:
+			// Assuming the rows affected appears after the MsgNext for SELECT statement, and ignore the MsgRowsAffected
+			// for SELECT statement for now.
+			if skipRowsAffected {
+				skipRowsAffected = false
+				continue
+			}
+			queryResult = util.BuildAffectedRowsResult(m.Count)
+			emptyResultSets := make([]*v1pb.QueryResult, nextAffectedRowsIdx-len(ret))
+			for i := 0; i < len(emptyResultSets); i++ {
+				emptyResultSets[i] = &v1pb.QueryResult{}
+			}
+			ret = append(ret, emptyResultSets...)
+			ret = append(ret, queryResult)
+			nextAffectedRowsIdx = getNextAffectedRowsIdx(stmtTypes, nextAffectedRowsIdx+1)
+		case sqlexp.MsgNextResultSet:
+			results = rows.NextResultSet()
+			if err = rows.Err(); err != nil {
+				return ret, err
+			}
+		case sqlexp.MsgNext:
+			r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, driver.maximumSQLResultSize)
 			if err != nil {
-				return nil, err
+				queryResult.Error = err.Error()
+				ret = append(ret, queryResult)
+				return ret, err
 			}
-			allQuery = q
-		}
-		if driver.isShowPlanAll {
-			allQuery = true
-		}
+			if err := rows.Err(); err != nil {
+				return ret, err
+			}
+			queryResult = r
+			// Fill up the lap for the other statement types.
+			emptyResultSets := make([]*v1pb.QueryResult, nextResultSetIdx-len(ret))
+			for i := 0; i < len(emptyResultSets); i++ {
+				emptyResultSets[i] = &v1pb.QueryResult{}
+			}
+			ret = append(ret, emptyResultSets...)
+			ret = append(ret, queryResult)
+			nextResultSetIdx = getNextResultSetIdx(stmtTypes, nextResultSetIdx+1)
+			skipRowsAffected = true
 
-		startTime := time.Now()
-		queryResult, err := func() (*v1pb.QueryResult, error) {
-			if allQuery {
-				rows, err := conn.QueryContext(ctx, statement)
-				if err != nil {
-					return nil, err
-				}
-				defer rows.Close()
-				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, driver.maximumSQLResultSize)
-				if err != nil {
-					return nil, err
-				}
-				if err := rows.Err(); err != nil {
-					return nil, err
-				}
-				return r, nil
-			}
-
-			sqlResult, err := conn.ExecContext(ctx, statement)
-			if err != nil {
-				return nil, err
-			}
-			affectedRows, err := sqlResult.RowsAffected()
-			if err != nil {
-				slog.Info("rowsAffected returns error", log.BBError(err))
-			}
-			return util.BuildAffectedRowsResult(affectedRows), nil
-		}()
-		stop := false
-		if err != nil {
-			queryResult = &v1pb.QueryResult{
-				Error: err.Error(),
-			}
-			stop = true
-		}
-		queryResult.Statement = statement
-		queryResult.Latency = durationpb.New(time.Since(startTime))
-		// Check SHOWPLAN_ALL.
-		if isOn, ok := getShowPlanAll(statement); ok {
-			driver.isShowPlanAll = isOn
-		}
-		results = append(results, queryResult)
-		if stop {
-			break
 		}
 	}
-
-	return results, nil
+	return ret, nil
 }
+
+func isExitError(err error) error {
+	if err == nil {
+		return nil
+	}
+	var errState uint8
+	switch sqlError := err.(type) {
+	case gomssqldb.Error:
+		errState = sqlError.State
+	}
+	// 127 is the magic exit code
+	if errState == 127 {
+		return errors.Errorf("meet exit error, state: %d", errState)
+	}
+	return nil
+}
+
+func getNextAffectedRowsIdx(s []stmtType, beginIdx int) int {
+	for i := beginIdx; i < len(s); i++ {
+		if s[i] == stmtTypeResultSetRowCountGenerating {
+			return i
+		}
+	}
+	return len(s)
+}
+
+func getNextResultSetIdx(s []stmtType, beginIdx int) int {
+	for i := beginIdx; i < len(s); i++ {
+		if s[i] == stmtTypeResultSetGenerating {
+			return i
+		}
+	}
+	return len(s)
+}
+
+// QueryConn queries a SQL statement in a given connection.
+// func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+// 	singleSQLs, err := tsqlparser.SplitSQL(statement)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	singleSQLs = base.FilterEmptySQL(singleSQLs)
+// 	if len(singleSQLs) == 0 {
+// 		return nil, nil
+// 	}
+
+// 	isExplain := queryContext.Explain
+// 	if isExplain {
+// 		if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_ALL ON;"); err != nil {
+// 			return nil, err
+// 		}
+// 	}
+
+// 	var results []*v1pb.QueryResult
+// 	for _, singleSQL := range singleSQLs {
+// 		statement := singleSQL.Text
+// 		if !isExplain && queryContext.Limit > 0 {
+// 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
+// 		}
+
+// 		var allQuery bool
+// 		if isExplain {
+// 			allQuery = true
+// 		} else {
+// 			_, q, err := base.ValidateSQLForEditor(storepb.Engine_MSSQL, statement)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 			allQuery = q
+// 		}
+// 		if driver.isShowPlanAll {
+// 			allQuery = true
+// 		}
+
+// 		startTime := time.Now()
+// 		queryResult, err := func() (*v1pb.QueryResult, error) {
+// 			if allQuery {
+// 				rows, err := conn.QueryContext(ctx, statement)
+// 				if err != nil {
+// 					return nil, err
+// 				}
+// 				defer rows.Close()
+// 				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, driver.maximumSQLResultSize)
+// 				if err != nil {
+// 					return nil, err
+// 				}
+// 				if err := rows.Err(); err != nil {
+// 					return nil, err
+// 				}
+// 				return r, nil
+// 			}
+
+// 			sqlResult, err := conn.ExecContext(ctx, statement)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 			affectedRows, err := sqlResult.RowsAffected()
+// 			if err != nil {
+// 				slog.Info("rowsAffected returns error", log.BBError(err))
+// 			}
+// 			return util.BuildAffectedRowsResult(affectedRows), nil
+// 		}()
+// 		stop := false
+// 		if err != nil {
+// 			queryResult = &v1pb.QueryResult{
+// 				Error: err.Error(),
+// 			}
+// 			stop = true
+// 		}
+// 		queryResult.Statement = statement
+// 		queryResult.Latency = durationpb.New(time.Since(startTime))
+// 		// Check SHOWPLAN_ALL.
+// 		if isOn, ok := getShowPlanAll(statement); ok {
+// 			driver.isShowPlanAll = isOn
+// 		}
+// 		results = append(results, queryResult)
+// 		if stop {
+// 			break
+// 		}
+// 	}
+
+// 	return results, nil
+// }
 
 func NewBatch(statement string) *tsqlbatch.Batch {
 	// Split to batches to support some client commands like GO.
