@@ -109,35 +109,6 @@ service SQLService {
   }
 }
 
-message ExecuteRequest {
-  // The name is the instance name to execute the query against.
-  // Format: instances/{instance}/databases/{databaseName}
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Database"}
-  ];
-
-  // The SQL statement to execute.
-  string statement = 2;
-
-  // The maximum number of rows to return.
-  int32 limit = 3;
-
-  // The timeout for the request.
-  google.protobuf.Duration timeout = 4;
-
-  // The default schema to execute the statement. Equals to the current schema in Oracle and search path in Postgres.
-  optional string schema = 5;
-}
-
-message ExecuteResponse {
-  // The execute results.
-  repeated QueryResult results = 1;
-
-  // The execute advices.
-  repeated Advice advices = 2;
-}
-
 message AdminExecuteRequest {
   reserved 2;
 

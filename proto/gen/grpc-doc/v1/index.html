@@ -2774,14 +2774,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ExecuteRequest"><span class="badge">M</span>ExecuteRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ExecuteResponse"><span class="badge">M</span>ExecuteResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.ExportRequest"><span class="badge">M</span>ExportRequest</a>
                 </li>
               
@@ -29952,90 +29944,6 @@ If not provided, the database metadata will be fetched from the database. </p></
                   <td><a href="#bytebase.v1.Advice">Advice</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ExecuteRequest">ExecuteRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name is the instance name to execute the query against.
-Format: instances/{instance}/databases/{databaseName} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>statement</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The SQL statement to execute. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>limit</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The maximum number of rows to return. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>timeout</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td></td>
-                  <td><p>The timeout for the request. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>The default schema to execute the statement. Equals to the current schema in Oracle and search path in Postgres. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ExecuteResponse">ExecuteResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>results</td>
-                  <td><a href="#bytebase.v1.QueryResult">QueryResult</a></td>
-                  <td>repeated</td>
-                  <td><p>The execute results. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>advices</td>
-                  <td><a href="#bytebase.v1.Advice">Advice</a></td>
-                  <td>repeated</td>
-                  <td><p>The execute advices. </p></td>
                 </tr>
               
             </tbody>
