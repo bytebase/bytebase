@@ -12,10 +12,12 @@
         class="header-track absolute z-0 left-0 top-0 right-0 h-[34px] border border-block-border bg-gray-50 dark:bg-gray-700"
       />
 
-      <div
-        ref="scrollerRef"
-        class="inner-wrapper max-h-full w-full overflow-auto border-y border-r border-block-border fix-scrollbar-z-index"
+      <NScrollbar
+        ref="scrollbarRef"
+        class="inner-wrapper !h-auto max-h-full w-full overflow-auto border-y border-r border-block-border fix-scrollbar-z-index"
         :class="rows.length === 0 && 'border-r-0 hide-scrollbar'"
+        :x-scrollable="true"
+        trigger="none"
       >
         <table
           ref="tableRef"
@@ -98,7 +100,7 @@
             </tr>
           </tbody>
         </table>
-      </div>
+      </NScrollbar>
 
       <div
         v-if="rows.length === 0"
@@ -122,7 +124,7 @@
 <script lang="ts" setup>
 import type { Table } from "@tanstack/vue-table";
 import { useElementSize } from "@vueuse/core";
-import { NEmpty } from "naive-ui";
+import { NEmpty, NScrollbar } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
 import {
   FeatureBadge,
@@ -152,10 +154,13 @@ const props = defineProps<{
 }>();
 
 const containerRef = ref<HTMLDivElement>();
-const scrollerRef = ref<HTMLDivElement>();
+const scrollbarRef = ref<InstanceType<typeof NScrollbar>>();
 const tableRef = ref<HTMLTableElement>();
 const subscriptionStore = useSubscriptionV1Store();
 const { height: containerHeight } = useElementSize(containerRef);
+const scrollerRef = computed(() => {
+  return scrollbarRef.value?.scrollbarInstRef?.containerRef;
+});
 usePreventBackAndForward(scrollerRef);
 
 const tableResize = useTableColumnWidthLogic({

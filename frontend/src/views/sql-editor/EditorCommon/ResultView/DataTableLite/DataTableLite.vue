@@ -30,6 +30,9 @@
       :min-row-height="ROW_HEIGHT"
       :height-for-row="() => ROW_HEIGHT"
       :scroll-x="tableResize.getTableScrollWidth()"
+      :scrollbar-props="{
+        trigger: 'none',
+      }"
       table-layout="fixed"
       size="small"
       class="relative z-[1] -mr-px"

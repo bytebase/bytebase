@@ -5,7 +5,7 @@ import { computed, onBeforeUnmount, reactive, watch } from "vue";
 
 export type TableResizeOptions = {
   tableRef: Ref<HTMLTableElement | undefined>;
-  scrollerRef: Ref<HTMLElement | undefined>;
+  scrollerRef: Ref<HTMLElement | null | undefined>;
   minWidth: number;
   maxWidth: number;
 };
@@ -220,7 +220,7 @@ const getElementWidth = (elem: HTMLElement) => {
   return rect.width;
 };
 
-const scrollMaxX = (elem: HTMLElement | undefined) => {
+const scrollMaxX = (elem: HTMLElement | null | undefined) => {
   if (!elem) return;
   const max = elem.scrollWidth;
   elem.scrollTo(max, elem.scrollTop);
