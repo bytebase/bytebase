@@ -1,9 +1,11 @@
 <template>
   <NPopover
+    v-model:show="state.showPopover"
+    class="max-h-[80vh] w-[24rem] max-w-full"
     placement="bottom-start"
+    scrollable
     trigger="click"
-    :show="state.showPopover"
-    @clickoutside="state.showPopover = false"
+    :show-arrow="false"
   >
     <template #trigger>
       <NButton
@@ -25,7 +27,7 @@
       </NButton>
     </template>
 
-    <div class="h-auto w-[24rem] max-w-full overflow-y-auto relative">
+    <div class="w-full">
       <div v-if="isValidProjectName(project.name)">
         <NButton size="small" text @click="gotoWorkspace">
           <template #icon>
