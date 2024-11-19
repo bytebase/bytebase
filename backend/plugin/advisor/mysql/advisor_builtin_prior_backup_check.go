@@ -73,6 +73,9 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 	}
 
 	tableReferences, err := prepareTransformation(databaseName, stmtList)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare transformation")
+	}
 	groupByTable := make(map[string][]*mysqlparser.TableReference)
 	for _, table := range tableReferences {
 		key := fmt.Sprintf("%s.%s", table.Database, table.Table)

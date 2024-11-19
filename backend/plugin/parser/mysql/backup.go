@@ -247,17 +247,6 @@ func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statem
 	}, nil
 }
 
-func equalTable(a, b *TableReference) bool {
-	if a == nil || b == nil {
-		return false
-	}
-
-	if a.Database != "" && b.Database != "" && a.Database != b.Database {
-		return false
-	}
-	return a.Table == b.Table
-}
-
 func extractCTE(ctx antlr.ParserRuleContext) string {
 	switch node := ctx.(type) {
 	case *parser.UpdateStatementContext:
