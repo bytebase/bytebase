@@ -51,22 +51,22 @@ type TableReference struct {
 	StatementType StatementType
 }
 
-type statementInfo struct {
-	offset        int
-	statement     string
-	tree          antlr.ParserRuleContext
-	table         *TableReference
-	startPosition *store.Position
-	endPosition   *store.Position
+type StatementInfo struct {
+	Offset        int
+	Statement     string
+	Tree          antlr.ParserRuleContext
+	Table         *TableReference
+	StartPosition *store.Position
+	EndPosition   *store.Position
 }
 
-func prepareTransformation(databaseName, statement string) ([]statementInfo, error) {
+func prepareTransformation(databaseName, statement string) ([]StatementInfo, error) {
 	list, err := SplitSQL(statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to split sql")
 	}
 
-	var result []statementInfo
+	var result []StatementInfo
 
 	for i, item := range list {
 		if len(item.Text) == 0 || item.Empty {
@@ -81,21 +81,21 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 			// After splitting the SQL, we should have only one statement in the list.
 			// The FOR loop is just for safety.
 			// So we can use the i as the offset.
-			tables, err := extractTables(databaseName, sql, i)
+			tables, err := ExtractTables(databaseName, sql, i)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to extract tables")
 			}
 			for _, table := range tables {
-				result = append(result, statementInfo{
-					offset:    i,
-					statement: table.statement,
-					table:     table.table,
-					tree:      table.tree,
-					startPosition: &store.Position{
+				result = append(result, StatementInfo{
+					Offset:    i,
+					Statement: table.Statement,
+					Table:     table.Table,
+					Tree:      table.Tree,
+					StartPosition: &store.Position{
 						Line:   int32(item.FirstStatementLine) + 1,
 						Column: int32(item.FirstStatementColumn),
 					},
-					endPosition: &store.Position{
+					EndPosition: &store.Position{
 						Line:   int32(item.LastLine) + 1,
 						Column: int32(item.LastColumn),
 					},
@@ -107,10 +107,10 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 	return result, nil
 }
 
-func generateSQL(ctx context.Context, tCtx base.TransformContext, statementInfoList []statementInfo, databaseName string, tablePrefix string) ([]base.BackupStatement, error) {
-	groupByTable := make(map[string][]statementInfo)
+func generateSQL(ctx context.Context, tCtx base.TransformContext, statementInfoList []StatementInfo, databaseName string, tablePrefix string) ([]base.BackupStatement, error) {
+	groupByTable := make(map[string][]StatementInfo)
 	for _, item := range statementInfoList {
-		key := fmt.Sprintf("%s.%s", item.table.Database, item.table.Table)
+		key := fmt.Sprintf("%s.%s", item.Table.Database, item.Table.Table)
 		groupByTable[key] = append(groupByTable[key], item)
 	}
 
@@ -119,9 +119,9 @@ func generateSQL(ctx context.Context, tCtx base.TransformContext, statementInfoL
 		stmtType := StatementTypeUnknown
 		for _, item := range list {
 			if stmtType == StatementTypeUnknown {
-				stmtType = item.table.StatementType
+				stmtType = item.Table.StatementType
 			}
-			if stmtType != item.table.StatementType {
+			if stmtType != item.Table.StatementType {
 				return nil, errors.Errorf("prior backup cannot handle mixed DML statements on the same table %s", key)
 			}
 		}
@@ -150,8 +150,8 @@ func generateSQL(ctx context.Context, tCtx base.TransformContext, statementInfoL
 	return result, nil
 }
 
-func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statementInfoList []statementInfo, databaseName string, tablePrefix string) (*base.BackupStatement, error) {
-	table := statementInfoList[0].table
+func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statementInfoList []StatementInfo, databaseName string, tablePrefix string) (*base.BackupStatement, error) {
+	table := statementInfoList[0].Table
 
 	generatedColumns, normalColumns, _, err := classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc, tCtx.IgnoreCaseSensitive, tCtx.InstanceID, table)
 	if err != nil {
@@ -194,14 +194,14 @@ func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statem
 				return nil, errors.Wrap(err, "failed to write union all statement")
 			}
 		}
-		tableNameOrAlias := item.table.Table
-		if len(item.table.Alias) > 0 {
-			tableNameOrAlias = item.table.Alias
+		tableNameOrAlias := item.Table.Table
+		if len(item.Table.Alias) > 0 {
+			tableNameOrAlias = item.Table.Alias
 		}
 		if _, err := buf.WriteString("  "); err != nil {
 			return nil, errors.Wrap(err, "failed to write space")
 		}
-		cteString := extractCTE(item.tree)
+		cteString := extractCTE(item.Tree)
 		if len(cteString) > 0 {
 			if _, err := buf.WriteString(fmt.Sprintf("%s ", cteString)); err != nil {
 				return nil, errors.Wrap(err, "failed to write cte")
@@ -229,7 +229,7 @@ func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statem
 				return nil, errors.Wrap(err, "failed to write from")
 			}
 		}
-		if err := extractSuffixSelectStatement(item.tree, &buf); err != nil {
+		if err := extractSuffixSelectStatement(item.Tree, &buf); err != nil {
 			return nil, errors.Wrap(err, "failed to extract suffix select statement")
 		}
 	}
@@ -242,8 +242,8 @@ func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statem
 		Statement:       buf.String(),
 		SourceTableName: table.Table,
 		TargetTableName: targetTable,
-		StartPosition:   statementInfoList[0].startPosition,
-		EndPosition:     statementInfoList[len(statementInfoList)-1].endPosition,
+		StartPosition:   statementInfoList[0].StartPosition,
+		EndPosition:     statementInfoList[len(statementInfoList)-1].EndPosition,
 	}, nil
 }
 
@@ -440,7 +440,7 @@ func (l *suffixSelectStatementListener) EnterUpdateStatement(ctx *parser.UpdateS
 	}
 }
 
-func extractTables(databaseName string, parseResult *ParseResult, offset int) ([]statementInfo, error) {
+func ExtractTables(databaseName string, parseResult *ParseResult, offset int) ([]StatementInfo, error) {
 	listener := &tableReferenceListener{
 		databaseName: databaseName,
 		offset:       offset,
@@ -456,7 +456,7 @@ type tableReferenceListener struct {
 
 	databaseName string
 	offset       int
-	tables       []statementInfo
+	tables       []StatementInfo
 	err          error
 }
 
@@ -505,11 +505,11 @@ func (l *tableReferenceListener) EnterDeleteStatement(ctx *parser.DeleteStatemen
 			database = l.databaseName
 		}
 
-		l.tables = append(l.tables, statementInfo{
-			offset:    l.offset,
-			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
-			tree:      ctx,
-			table: &TableReference{
+		l.tables = append(l.tables, StatementInfo{
+			Offset:    l.offset,
+			Statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
+			Tree:      ctx,
+			Table: &TableReference{
 				Database:      database,
 				Table:         table,
 				Alias:         alias,
@@ -546,11 +546,11 @@ func (l *tableReferenceListener) EnterDeleteStatement(ctx *parser.DeleteStatemen
 			}
 
 			singleTable.StatementType = StatementTypeDelete
-			l.tables = append(l.tables, statementInfo{
-				offset:    l.offset,
-				statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
-				tree:      ctx,
-				table:     singleTable,
+			l.tables = append(l.tables, StatementInfo{
+				Offset:    l.offset,
+				Statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
+				Tree:      ctx,
+				Table:     singleTable,
 			})
 		}
 	}
@@ -603,11 +603,11 @@ func (l *tableReferenceListener) EnterUpdateStatement(ctx *parser.UpdateStatemen
 		}
 
 		singleTable.StatementType = StatementTypeUpdate
-		l.tables = append(l.tables, statementInfo{
-			offset:    l.offset,
-			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
-			tree:      ctx,
-			table:     singleTable,
+		l.tables = append(l.tables, StatementInfo{
+			Offset:    l.offset,
+			Statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
+			Tree:      ctx,
+			Table:     singleTable,
 		})
 	}
 }

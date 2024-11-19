@@ -132,12 +132,12 @@ func extractSingleSQL(statement string, backupItem *storepb.PriorBackupDetail_It
 		}
 		containsSourceTable := false
 		for _, sql := range parseResult {
-			tables, err := extractTables(sourceDatabase, sql, i)
+			tables, err := ExtractTables(sourceDatabase, sql, i)
 			if err != nil {
 				return "", errors.Wrap(err, "failed to extract tables")
 			}
 			for _, table := range tables {
-				if table.table.Database == sourceDatabase && table.table.Table == backupItem.SourceTable.Table {
+				if table.Table.Database == sourceDatabase && table.Table.Table == backupItem.SourceTable.Table {
 					containsSourceTable = true
 					break
 				}
