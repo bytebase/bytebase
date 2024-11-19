@@ -175,7 +175,6 @@ const dbSchemaStore = useDBSchemaV1Store();
 const disableSchemaEditor = useAppFeature(
   "bb.feature.issue.disable-schema-editor"
 );
-const operations = useAppFeature("bb.feature.databases.operations");
 
 const selectedProjectNames = computed(() => {
   return new Set(props.databases.map((db) => db.project));
@@ -263,6 +262,18 @@ const allowSyncDatabases = computed(() => {
 
 const selectedDatabaseNameList = computed(() => {
   return props.databases.map((db) => db.name);
+});
+
+const operations = computed(() => {
+  return Array.from(
+    useAppFeature("bb.feature.databases.operations").value
+  ).filter((operation) => {
+    switch (operation) {
+      case "TRANSFER-IN":
+        return allowTransferInProject.value;
+    }
+    return true;
+  });
 });
 
 const generateMultiDb = async (
