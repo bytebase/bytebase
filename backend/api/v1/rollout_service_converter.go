@@ -592,6 +592,9 @@ func convertToTaskRunStatus(status api.TaskRunStatus) v1pb.TaskRun_Status {
 }
 
 func convertToTaskRunPriorBackupDetail(priorBackupDetail *storepb.PriorBackupDetail) *v1pb.TaskRun_PriorBackupDetail {
+	if priorBackupDetail == nil {
+		return nil
+	}
 	convertTable := func(table *storepb.PriorBackupDetail_Item_Table) *v1pb.TaskRun_PriorBackupDetail_Item_Table {
 		return &v1pb.TaskRun_PriorBackupDetail_Item_Table{
 			Database: table.Database,
