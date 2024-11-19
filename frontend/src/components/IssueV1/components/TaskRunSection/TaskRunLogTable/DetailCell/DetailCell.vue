@@ -8,6 +8,7 @@
       v-bind="props"
     />
     <DatabaseSyncCell v-if="view === 'DATABASE_SYNC'" v-bind="props" />
+    <PriorBackupCell v-if="view === 'PRIOR_BACKUP'" v-bind="props" />
     <span v-if="view === 'N/A'">-</span>
   </NEllipsis>
 </template>
@@ -21,6 +22,7 @@ import type { FlattenLogEntry } from "../common";
 import AffectedRowsCell from "./AffectedRowsCell.vue";
 import DatabaseSyncCell from "./DatabaseSyncCell.vue";
 import ErrorCell from "./ErrorCell.vue";
+import PriorBackupCell from "./PriorBackupCell.vue";
 import StatusUpdateCell from "./StatusUpdateCell.vue";
 import TransactionControlCell from "./TransactionControlCell.vue";
 
@@ -30,7 +32,8 @@ type View =
   | "AFFECTED_ROWS"
   | "STATUS_UPDATE"
   | "TRANSACTION_CONTROL"
-  | "DATABASE_SYNC";
+  | "DATABASE_SYNC"
+  | "PRIOR_BACKUP";
 
 const props = defineProps<{
   entry: FlattenLogEntry;
@@ -44,6 +47,7 @@ const view = computed((): View => {
     taskRunStatusUpdate,
     transactionControl,
     databaseSync,
+    priorBackup,
   } = props.entry;
   if (type === TaskRunLogEntry_Type.COMMAND_EXECUTE && commandExecute) {
     if (!commandExecute.raw.response) {
@@ -70,6 +74,12 @@ const view = computed((): View => {
   }
   if (type === TaskRunLogEntry_Type.DATABASE_SYNC && databaseSync) {
     return "DATABASE_SYNC";
+  }
+  if (type === TaskRunLogEntry_Type.PRIOR_BACKUP && priorBackup) {
+    if (priorBackup.error) {
+      return "ERROR";
+    }
+    return "PRIOR_BACKUP";
   }
   return "N/A";
 });
