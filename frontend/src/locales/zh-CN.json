@@ -1325,9 +1325,11 @@
           "schema-dump": "导出 schema",
           "task-run-status-update": "状态更新",
           "transaction-control": "事务控制",
-          "database-sync": "数据库同步"
+          "database-sync": "数据库同步",
+          "prior-backup": "数据预备份"
         },
         "affected-rows-n": "影响行数：{n}",
+        "prior-backup-tables": "数据预备份相关的表",
         "status-update": {
           "waiting": "准备就绪，等待执行",
           "running": "开始执行"

@@ -9,6 +9,7 @@ import {
   type TaskRunLogEntry_TransactionControl,
   type TaskRunLogEntry_DatabaseSync,
   TaskRunLogEntry,
+  TaskRunLogEntry_PriorBackup,
 } from "@/types/proto/v1/rollout_service";
 
 export type FlattenLogEntry = {
@@ -27,6 +28,7 @@ export type FlattenLogEntry = {
   taskRunStatusUpdate?: TaskRunLogEntry_TaskRunStatusUpdate;
   transactionControl?: TaskRunLogEntry_TransactionControl;
   databaseSync?: TaskRunLogEntry_DatabaseSync;
+  priorBackup?: TaskRunLogEntry_PriorBackup;
 };
 
 export const displayTaskRunLogEntryType = (type: TaskRunLogEntry_Type) => {
@@ -44,6 +46,9 @@ export const displayTaskRunLogEntryType = (type: TaskRunLogEntry_Type) => {
   }
   if (type === TaskRunLogEntry_Type.DATABASE_SYNC) {
     return t("issue.task-run.task-run-log.entry-type.database-sync");
+  }
+  if (type === TaskRunLogEntry_Type.PRIOR_BACKUP) {
+    return t("issue.task-run.task-run-log.entry-type.prior-backup");
   }
 
   console.warn(
@@ -64,6 +69,7 @@ export const convertTaskRunLogEntryToFlattenLogEntries = (
     transactionControl,
     databaseSync,
     deployId,
+    priorBackup,
   } = entry;
   const flattenLogEntries: FlattenLogEntry[] = [];
   if (
@@ -137,6 +143,17 @@ export const convertTaskRunLogEntryToFlattenLogEntries = (
           affectedRows,
         },
       });
+    });
+  }
+  if (type === TaskRunLogEntry_Type.PRIOR_BACKUP && priorBackup) {
+    flattenLogEntries.push({
+      batch,
+      deployId,
+      serial: 0,
+      type: TaskRunLogEntry_Type.PRIOR_BACKUP,
+      startTime: getDateForPbTimestamp(priorBackup.startTime),
+      endTime: getDateForPbTimestamp(priorBackup.endTime),
+      priorBackup: priorBackup,
     });
   }
   return flattenLogEntries;
