@@ -192,7 +192,7 @@
 
 <script setup lang="ts">
 import { useElementSize } from "@vueuse/core";
-import { cloneDeep, head, uniq } from "lodash-es";
+import { cloneDeep, head } from "lodash-es";
 import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
@@ -208,7 +208,6 @@ import {
   databaseEngineForSpec,
   databaseForSpec,
   isGroupingChangeSpec,
-  sheetNameForSpec,
 } from "@/components/Plan/logic";
 import { usePlanContext } from "@/components/Plan/logic";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
@@ -369,49 +368,18 @@ const cancelEdit = () => {
 };
 
 const chooseUpdateStatementTarget = () => {
-  type Target = "CANCELED" | "SPEC" | "STEP" | "ALL";
+  type Target = "CANCELED" | "SPEC" | "ALL";
   const d = defer<{ target: Target; specs: Plan_Spec[] }>();
 
   const targets: Record<Target, Plan_Spec[]> = {
     CANCELED: [],
     SPEC: [selectedSpec.value],
-    STEP:
-      plan.value.steps.find((step) => step.specs.includes(selectedSpec.value))
-        ?.specs || [],
     ALL: flattenSpecList(plan.value),
   };
 
-  if (targets.STEP.length === 1 && targets.ALL.length === 1) {
+  // If there is only one spec, we don't need to ask the user to choose.
+  if (targets.ALL.length === 1) {
     d.resolve({ target: "SPEC", specs: targets.SPEC });
-    return d.promise;
-  }
-
-  const distinctSheetIds = uniq(
-    targets.ALL.map((spec) => sheetNameForSpec(spec))
-  );
-  // For new multiple-database issues, one sheet is shared among multiple tasks
-  // So we should notice that the change will be applied to all tasks
-  if (distinctSheetIds.length === 1 && targets.ALL.length > 1) {
-    dialog.info({
-      title: t("issue.update-statement.self", { type: statementTitle.value }),
-      content: t(
-        "issue.update-statement.current-change-will-apply-to-all-tasks"
-      ),
-      type: "info",
-      autoFocus: false,
-      closable: false,
-      maskClosable: false,
-      closeOnEsc: false,
-      showIcon: false,
-      positiveText: t("common.confirm"),
-      negativeText: t("common.cancel"),
-      onPositiveClick: () => {
-        d.resolve({ target: "ALL", specs: targets.ALL });
-      },
-      onNegativeClick: () => {
-        d.resolve({ target: "CANCELED", specs: [] });
-      },
-    });
     return d.promise;
   }
 
@@ -437,47 +405,27 @@ const chooseUpdateStatementTarget = () => {
           default: () => t("common.cancel"),
         }
       );
+      const SPEC = h(
+        NButton,
+        { size: "small", onClick: () => finish("SPEC") },
+        {
+          default: () => t("issue.update-statement.target.selected-task"),
+        }
+      );
+      const ALL = h(
+        NButton,
+        { size: "small", onClick: () => finish("ALL") },
+        {
+          default: () => t("issue.update-statement.target.all-tasks"),
+        }
+      );
 
       const buttons = [CANCEL];
-      // For database group change spec, don't show the option to select the spec.
+      // For no grouping change spec, we can choose to update the current spec.
       if (!isGroupingChangeSpec(selectedSpec.value)) {
-        const SPEC = h(
-          NButton,
-          { size: "small", onClick: () => finish("SPEC") },
-          {
-            default: () => t("issue.update-statement.target.selected-task"),
-          }
-        );
         buttons.push(SPEC);
-
-        if (targets.STEP.length > 1) {
-          // More than one editable specs in step
-          // Add "Selected step" option
-          const STEP = h(
-            NButton,
-            { size: "small", onClick: () => finish("STEP") },
-            {
-              default: () => t("issue.update-statement.target.selected-stage"),
-            }
-          );
-          buttons.push(STEP);
-        }
       }
-      if (
-        isGroupingChangeSpec(selectedSpec.value) ||
-        targets.ALL.length > targets.STEP.length
-      ) {
-        // More editable specs in other steps
-        // Add "All specs" option
-        const ALL = h(
-          NButton,
-          { size: "small", onClick: () => finish("ALL") },
-          {
-            default: () => t("issue.update-statement.target.all-tasks"),
-          }
-        );
-        buttons.push(ALL);
-      }
+      buttons.push(ALL);
 
       return h(
         "div",
@@ -596,9 +544,7 @@ const updateStatement = async (statement: string) => {
   });
 
   Object.assign(plan.value, updatedPlan);
-
   events.emit("status-changed", { eager: true });
-
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
