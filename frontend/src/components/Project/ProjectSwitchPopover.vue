@@ -221,6 +221,7 @@ const gotoWorkspace = () => {
   router.push(route.fullPath);
 };
 
+// Close popover when current project changed.
 watch(
   () => project.value.name,
   () => {
