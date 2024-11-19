@@ -63,6 +63,9 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureSSO); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
+	if err := s.checkFeatureAvailable(ctx, request.IdentityProvider.Type); err != nil {
+		return nil, err
+	}
 
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
@@ -109,6 +112,9 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 	}
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+	}
+	if err := s.checkFeatureAvailable(ctx, request.IdentityProvider.Type); err != nil {
+		return nil, err
 	}
 
 	identityProvider, err := s.getIdentityProviderMessage(ctx, request.IdentityProvider.Name)
@@ -194,6 +200,9 @@ func (s *IdentityProviderService) UndeleteIdentityProvider(ctx context.Context, 
 	if !identityProvider.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "identity provider %q is active", request.Name)
 	}
+	if err := s.checkFeatureAvailable(ctx, v1pb.IdentityProviderType(identityProvider.Type)); err != nil {
+		return nil, err
+	}
 
 	patch := &store.UpdateIdentityProviderMessage{
 		ResourceID: identityProvider.ResourceID,
@@ -204,6 +213,20 @@ func (s *IdentityProviderService) UndeleteIdentityProvider(ctx context.Context, 
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return convertToIdentityProvider(identityProvider), nil
+}
+
+func (s *IdentityProviderService) checkFeatureAvailable(ctx context.Context, ssoType v1pb.IdentityProviderType) error {
+	plan := s.licenseService.GetEffectivePlan()
+	if plan == api.FREE {
+		return status.Error(codes.PermissionDenied, "feature is not available for free plan")
+	}
+	if plan == api.ENTERPRISE {
+		return nil
+	}
+	if ssoType == v1pb.IdentityProviderType_OAUTH2 {
+		return nil
+	}
+	return status.Error(codes.PermissionDenied, "only oauth is available")
 }
 
 // TestIdentityProvider tests an identity provider connection.

@@ -296,9 +296,9 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 // plan in [FREE, TEAM, Enterprise].
 var FeatureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
-	FeatureSSO:                    {false, false, true},
+	FeatureSSO:                    {false, true, true},
 	Feature2FA:                    {false, false, true},
-	FeatureDisallowSignup:         {false, false, true},
+	FeatureDisallowSignup:         {false, true, true},
 	FeatureDisallowPasswordSignin: {false, false, true},
 	FeatureSecureToken:            {false, false, true},
 	FeaturePasswordRestriction:    {false, false, true},
