@@ -1,22 +1,33 @@
 <template>
-  <BBModal
-    :close-on-esc="true"
-    :mask-closable="true"
-    :trap-focus="false"
-    :show="show"
-    :title="$t('project.select')"
-    class="w-[48rem] max-w-full h-auto max-h-full"
-    @close="$emit('dismiss')"
+  <NPopover
+    placement="bottom-start"
+    trigger="click"
+    :show="state.showPopover"
+    @clickoutside="state.showPopover = false"
   >
-    <div class="h-auto overflow-y-auto relative">
-      <div v-if="currentProject">
-        <NButton
-          v-if="currentProject"
-          size="small"
-          class="!font-bold"
-          text
-          @click="gotoWorkspace"
-        >
+    <template #trigger>
+      <NButton
+        class="hidden sm:inline"
+        size="small"
+        @click="state.showPopover = !state.showPopover"
+      >
+        <div class="min-w-[8rem] text-left">
+          <ProjectNameCell
+            v-if="isValidProjectName(project.name)"
+            mode="ALL_SHORT"
+            :project="project"
+          />
+          <span v-else class="text-control-placeholder text-sm">
+            {{ $t("project.select") }}
+          </span>
+        </div>
+        <ChevronDownIcon class="w-5 h-auto text-gray-400" />
+      </NButton>
+    </template>
+
+    <div class="h-auto w-[24rem] max-w-full overflow-y-auto relative">
+      <div v-if="isValidProjectName(project.name)">
+        <NButton size="small" text @click="gotoWorkspace">
           <template #icon>
             <ChevronLeftIcon class="w-4 opacity-80" />
           </template>
@@ -62,7 +73,9 @@
         >
           <ProjectV1Table
             :project-list="tab.list"
-            :current-project="currentProject"
+            :current-project="
+              isValidProjectName(project.name) ? project : undefined
+            "
             :pagination="false"
             :keyword="state.searchText"
             @row-click="onProjectSelect"
@@ -70,7 +83,8 @@
         </NTabPane>
       </NTabs>
     </div>
-  </BBModal>
+  </NPopover>
+
   <Drawer
     :auto-focus="true"
     :close-on-esc="true"
@@ -82,15 +96,15 @@
 </template>
 
 <script lang="ts" setup>
-import { ChevronLeftIcon, PlusIcon } from "lucide-vue-next";
-import { NButton, NTabPane, NTabs, NTooltip } from "naive-ui";
-import { computed, reactive, onMounted } from "vue";
+import { ChevronLeftIcon, PlusIcon, ChevronDownIcon } from "lucide-vue-next";
+import { NButton, NTabPane, NTabs, NTooltip, NPopover } from "naive-ui";
+import { computed, reactive, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBModal } from "@/bbkit";
 import { useRecentProjects } from "@/components/Project/useRecentProjects";
 import { SearchBox, ProjectV1Table } from "@/components/v2";
 import { Drawer } from "@/components/v2";
+import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
@@ -103,24 +117,18 @@ import {
   hasWorkspacePermissionV2,
 } from "@/utils";
 import ProjectCreatePanel from "./ProjectCreatePanel.vue";
+import { useCurrentProject } from "./useCurrentProject";
 
 interface LocalState {
+  showPopover: boolean;
   searchText: string;
   showCreateDrawer: boolean;
   selectedTab: "recent" | "all";
 }
 
-const props = defineProps<{
-  show: boolean;
-  project?: ComposedProject;
-}>();
-
-const emit = defineEmits<{
-  (event: "dismiss"): void;
-}>();
-
 const { t } = useI18n();
 const state = reactive<LocalState>({
+  showPopover: false,
   searchText: "",
   showCreateDrawer: false,
   selectedTab: "all",
@@ -129,6 +137,19 @@ const { projectList } = useProjectV1List();
 const { recentViewProjects } = useRecentProjects();
 const router = useRouter();
 const { record } = useRecentVisit();
+
+const params = computed(() => {
+  const route = router.currentRoute.value;
+  return {
+    projectId: route.params.projectId as string | undefined,
+    issueSlug: route.params.issueSlug as string | undefined,
+    instanceId: route.params.instanceId as string | undefined,
+    databaseName: route.params.databaseName as string | undefined,
+    changeHistoryId: route.params.changeHistoryId as string | undefined,
+  };
+});
+
+const { project } = useCurrentProject(params);
 
 onMounted(() => {
   state.selectedTab = recentViewProjects.value.length < 1 ? "all" : "recent";
@@ -178,16 +199,8 @@ const actualSelectedTab = computed((): LocalState["selectedTab"] => {
   return state.selectedTab;
 });
 
-const currentProject = computed(() => {
-  if (!isValidProjectName(props.project?.name)) {
-    return undefined;
-  }
-  return props.project;
-});
-
 const onCreate = () => {
   state.showCreateDrawer = false;
-  emit("dismiss");
 };
 
 const onProjectSelect = (project: ComposedProject) => {
@@ -198,7 +211,6 @@ const onProjectSelect = (project: ComposedProject) => {
     },
   });
   record(route.fullPath);
-  emit("dismiss");
 };
 
 const gotoWorkspace = () => {
@@ -207,6 +219,12 @@ const gotoWorkspace = () => {
   });
   record(route.fullPath);
   router.push(route.fullPath);
-  emit("dismiss");
 };
+
+watch(
+  () => project.value.name,
+  () => {
+    state.showPopover = false;
+  }
+);
 </script>
