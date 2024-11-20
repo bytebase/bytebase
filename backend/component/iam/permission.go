@@ -23,7 +23,6 @@ const (
 	PermissionDatabaseSecretsUpdate      Permission = "bb.databaseSecrets.update"
 	PermissionDatabasesAdviseIndex       Permission = "bb.databases.adviseIndex"
 	PermissionDatabasesCheck             Permission = "bb.databases.check"
-	PermissionDatabasesExecute           Permission = "bb.databases.execute"
 	PermissionDatabasesGet               Permission = "bb.databases.get"
 	PermissionDatabasesGetSchema         Permission = "bb.databases.getSchema"
 	PermissionDatabasesList              Permission = "bb.databases.list"
@@ -152,7 +151,6 @@ var allPermissions = []Permission{
 	PermissionDatabaseSecretsUpdate,
 	PermissionDatabasesAdviseIndex,
 	PermissionDatabasesCheck,
-	PermissionDatabasesExecute,
 	PermissionDatabasesGet,
 	PermissionDatabasesGetSchema,
 	PermissionDatabasesList,
