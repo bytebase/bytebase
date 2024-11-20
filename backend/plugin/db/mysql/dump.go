@@ -14,11 +14,16 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // Dump and restore.
 const (
+	emptyCommentLine = "--\n"
+	tempViewHeader   = "-- Temporary view structure for "
+	tableHeader      = "-- Table structure for "
+
 	settingsStmt = "" +
 		"SET character_set_client  = %s;\n" +
 		"SET character_set_results = %s;\n" +
@@ -84,34 +89,125 @@ var (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer) error {
-	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
+func (driver *Driver) Dump(ctx context.Context, out io.Writer, dbSchema *storepb.DatabaseSchemaMetadata) error {
+	if len(dbSchema.Schemas) == 0 {
+		return nil
+	}
 
-	// We must use the same MySQL connection to lock and unlock tables.
-	conn, err := driver.db.Conn(ctx)
+	// Disable foreign key check.
+	// mysqldump uses the same mechanism. When there is any schema or data dependency, we have to disable
+	// the unique and foreign key check so that the restoring will not fail.
+	if _, err := io.WriteString(out, disableUniqueAndForeignKeyCheckStmt); err != nil {
+		return err
+	}
+
+	schema := dbSchema.Schemas[0]
+
+	// Construct temporal views.
+	// Create a temporary view with the same name as the view and with columns of
+	// the same name in order to satisfy views that depend on this view.
+	// This temporary view will be removed when the actual view is created.
+	// The properties of each column, are not preserved in this temporary
+	// view. They are not necessary because other views only need to reference
+	// the column name, thus we generate SELECT 1 AS colName1, 1 AS colName2.
+	// This will not be necessary once we can determine dependencies
+	// between views and can simply dump them in the appropriate order.
+	// https://sourcegraph.com/github.com/mysql/mysql-server/-/blob/client/mysqldump.cc?L2781
+	for _, view := range schema.Views {
+		if err := writeTemporaryView(out, view); err != nil {
+			return err
+		}
+	}
+
+	// Construct tables.
+	for _, table := range schema.Tables {
+		if err := writeTable(out, table); err != nil {
+			return err
+		}
+	}
+}
+
+func writeTable(out io.Writer, table *storepb.TableMetadata) error {
+	// Header.
+	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, tableHeader); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "`"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, table.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "`\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
+		return err
+	}
+
+	// Definition.
+	definition, err := schema.StringifyTable(storepb.Engine_MYSQL, table)
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
-
-	readOnly := driver.getReadOnly()
-	options := sql.TxOptions{ReadOnly: readOnly}
-
-	// If `schemaOnly` is false, now we are still holding the tables' exclusive locks.
-	// Beginning a transaction in the same session will implicitly release existing table locks.
-	// ref: https://dev.mysql.com/doc/refman/8.0/en/lock-tables.html, section "Interaction of Table Locking and Transactions".
-	txn, err := conn.BeginTx(ctx, &options)
-	if err != nil {
+	if _, err := io.WriteString(out, definition); err != nil {
 		return err
 	}
-	defer txn.Rollback()
+	_, err = io.WriteString(out, "\n")
+	return err
+}
 
-	slog.Debug("begin to dump database", slog.String("database", driver.databaseName))
-	if err := dumpTxn(txn, driver.dbType, driver.databaseName, out); err != nil {
+func writeTemporaryView(out io.Writer, view *storepb.ViewMetadata) error {
+	// Header.
+	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, tempViewHeader); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "`"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, view.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "`\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
 		return err
 	}
 
-	err = txn.Commit()
+	// Definition.
+	if _, err := io.WriteString(out, "CREATE VIEW `"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, view.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "` AS SELECT\n  "); err != nil {
+		return err
+	}
+	for i, column := range view.Columns {
+		if i != 0 {
+			if _, err := io.WriteString(out, ",\n  "); err != nil {
+				return err
+			}
+		}
+		if _, err := io.WriteString(out, "1 AS `"); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, column.Name); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, "`"); err != nil {
+			return err
+		}
+	}
+	_, err := io.WriteString(out, ";\n\n")
 	return err
 }
 
