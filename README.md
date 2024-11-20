@@ -32,6 +32,9 @@
   >
     <img alt="Github Stars" src="https://img.shields.io/github/stars/bytebase/bytebase?logo=github">
   </a>
+  <a href="https://gurubase.io/g/bytebase">
+    <img alt="Gurubase" src="https://img.shields.io/badge/Gurubase-Ask%20Bytebase%20Guru-006BFF" />
+  </a>
 </p>
 
 <p align="center">
