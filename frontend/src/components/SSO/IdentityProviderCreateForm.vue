@@ -796,6 +796,32 @@ const identityProviderTemplateList = computed(
   (): IdentityProviderTemplate[] => {
     return [
       {
+        title: "Google",
+        name: "",
+        domain: "google.com",
+        type: IdentityProviderType.OAUTH2,
+        available: subscriptionStore.currentPlanGTE(PlanType.TEAM),
+        config: {
+          clientId: "",
+          clientSecret: "",
+          authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
+          tokenUrl: "https://oauth2.googleapis.com/token",
+          userInfoUrl: "https://www.googleapis.com/oauth2/v2/userinfo",
+          scopes: [
+            "https://www.googleapis.com/auth/userinfo.email",
+            "https://www.googleapis.com/auth/userinfo.profile",
+          ],
+          skipTlsVerify: false,
+          authStyle: OAuth2AuthStyle.IN_PARAMS,
+          fieldMapping: {
+            identifier: "email",
+            displayName: "name",
+            email: "",
+            phone: "",
+          },
+        },
+      },
+      {
         title: "GitHub",
         name: "",
         domain: "github.com",
@@ -831,32 +857,6 @@ const identityProviderTemplateList = computed(
           tokenUrl: "https://gitlab.com/oauth/token",
           userInfoUrl: "https://gitlab.com/api/v4/user",
           scopes: ["read_user"],
-          skipTlsVerify: false,
-          authStyle: OAuth2AuthStyle.IN_PARAMS,
-          fieldMapping: {
-            identifier: "email",
-            displayName: "name",
-            email: "",
-            phone: "",
-          },
-        },
-      },
-      {
-        title: "Google",
-        name: "",
-        domain: "google.com",
-        type: IdentityProviderType.OAUTH2,
-        available: subscriptionStore.currentPlanGTE(PlanType.TEAM),
-        config: {
-          clientId: "",
-          clientSecret: "",
-          authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
-          tokenUrl: "https://oauth2.googleapis.com/token",
-          userInfoUrl: "https://www.googleapis.com/oauth2/v2/userinfo",
-          scopes: [
-            "https://www.googleapis.com/auth/userinfo.email",
-            "https://www.googleapis.com/auth/userinfo.profile",
-          ],
           skipTlsVerify: false,
           authStyle: OAuth2AuthStyle.IN_PARAMS,
           fieldMapping: {
