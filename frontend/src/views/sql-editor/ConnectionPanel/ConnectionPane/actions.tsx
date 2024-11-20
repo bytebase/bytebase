@@ -52,7 +52,7 @@ export const useDropdown = () => {
   const context = ref<TreeNode>();
 
   const allowAdmin = computed(() =>
-    hasWorkspacePermissionV2("bb.instances.adminExecute")
+    hasWorkspacePermissionV2("bb.sql.admin")
   );
 
   const options = computed((): DropdownOptionWithTreeNode[] => {

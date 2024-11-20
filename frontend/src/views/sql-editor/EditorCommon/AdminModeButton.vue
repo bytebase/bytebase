@@ -39,7 +39,7 @@ const props = defineProps({
 });
 
 const allowAdmin = computed(() =>
-  hasWorkspacePermissionV2("bb.instances.adminExecute")
+  hasWorkspacePermissionV2("bb.sql.admin")
 );
 
 const tabStore = useSQLEditorTabStore();

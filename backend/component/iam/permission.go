@@ -28,11 +28,12 @@ const (
 	PermissionDatabasesGet               Permission = "bb.databases.get"
 	PermissionDatabasesGetSchema         Permission = "bb.databases.getSchema"
 	PermissionDatabasesList              Permission = "bb.databases.list"
-	PermissionDatabasesQuery             Permission = "bb.databases.query"
-	PermissionDatabasesQueryDDL          Permission = "bb.databases.queryDDL"
-	PermissionDatabasesQueryDML          Permission = "bb.databases.queryDML"
-	PermissionDatabasesQueryExplain      Permission = "bb.databases.queryExplain"
-	PermissionDatabasesQueryInfo         Permission = "bb.databases.queryInfo"
+	PermissionSqlSelect                  Permission = "bb.sql.select"
+	PermissionSqlDdl                     Permission = "bb.sql.ddl"
+	PermissionSqlDml                     Permission = "bb.sql.dml"
+	PermissionSqlExplain                 Permission = "bb.sql.explain"
+	PermissionSqlInfo                    Permission = "bb.sql.info"
+	PermissionSqlAdmin                   Permission = "bb.sql.admin"
 	PermissionDatabasesSync              Permission = "bb.databases.sync"
 	PermissionDatabasesUpdate            Permission = "bb.databases.update"
 	PermissionEnvironmentsCreate         Permission = "bb.environments.create"
@@ -46,7 +47,6 @@ const (
 	PermissionIdentityProvidersGet       Permission = "bb.identityProviders.get"
 	PermissionIdentityProvidersUndelete  Permission = "bb.identityProviders.undelete"
 	PermissionIdentityProvidersUpdate    Permission = "bb.identityProviders.update"
-	PermissionInstancesAdminExecute      Permission = "bb.instances.adminExecute"
 	PermissionInstancesCreate            Permission = "bb.instances.create"
 	PermissionInstancesDelete            Permission = "bb.instances.delete"
 	PermissionInstancesGet               Permission = "bb.instances.get"
@@ -157,11 +157,12 @@ var allPermissions = []Permission{
 	PermissionDatabasesGet,
 	PermissionDatabasesGetSchema,
 	PermissionDatabasesList,
-	PermissionDatabasesQuery,
-	PermissionDatabasesQueryDDL,
-	PermissionDatabasesQueryDML,
-	PermissionDatabasesQueryExplain,
-	PermissionDatabasesQueryInfo,
+	PermissionSqlSelect,
+	PermissionSqlDdl,
+	PermissionSqlDml,
+	PermissionSqlExplain,
+	PermissionSqlInfo,
+	PermissionSqlAdmin,
 	PermissionDatabasesSync,
 	PermissionDatabasesUpdate,
 	PermissionEnvironmentsCreate,
@@ -175,7 +176,6 @@ var allPermissions = []Permission{
 	PermissionIdentityProvidersGet,
 	PermissionIdentityProvidersUndelete,
 	PermissionIdentityProvidersUpdate,
-	PermissionInstancesAdminExecute,
 	PermissionInstancesCreate,
 	PermissionInstancesDelete,
 	PermissionInstancesGet,
