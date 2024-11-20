@@ -29,7 +29,6 @@ export type Permission =
   | "bb.databases.get"
   | "bb.databases.getSchema"
   | "bb.databases.list"
-  | "bb.databases.execute"
   | "bb.databases.sync"
   | "bb.databases.update"
   | "bb.issueComments.list"

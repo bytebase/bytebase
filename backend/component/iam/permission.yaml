@@ -19,7 +19,6 @@ permissions:
   - bb.databaseSecrets.update
   - bb.databases.adviseIndex
   - bb.databases.check
-  - bb.databases.execute
   - bb.databases.get
   - bb.databases.getSchema
   - bb.databases.list
