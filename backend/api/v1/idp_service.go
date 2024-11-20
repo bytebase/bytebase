@@ -60,10 +60,7 @@ func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, req
 
 // CreateIdentityProvider creates an identity provider.
 func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, request *v1pb.CreateIdentityProviderRequest) (*v1pb.IdentityProvider, error) {
-	if err := s.licenseService.IsFeatureEnabled(api.FeatureSSO); err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
-	}
-	if err := s.checkFeatureAvailable(ctx, request.IdentityProvider.Type); err != nil {
+	if err := s.checkFeatureAvailable(request.IdentityProvider.Type); err != nil {
 		return nil, err
 	}
 
@@ -104,16 +101,13 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 
 // UpdateIdentityProvider updates an identity provider.
 func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, request *v1pb.UpdateIdentityProviderRequest) (*v1pb.IdentityProvider, error) {
-	if err := s.licenseService.IsFeatureEnabled(api.FeatureSSO); err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
-	}
 	if request.IdentityProvider == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "identity provider must be set")
 	}
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
-	if err := s.checkFeatureAvailable(ctx, request.IdentityProvider.Type); err != nil {
+	if err := s.checkFeatureAvailable(request.IdentityProvider.Type); err != nil {
 		return nil, err
 	}
 
@@ -190,9 +184,6 @@ func (s *IdentityProviderService) DeleteIdentityProvider(ctx context.Context, re
 
 // UndeleteIdentityProvider undeletes an identity provider.
 func (s *IdentityProviderService) UndeleteIdentityProvider(ctx context.Context, request *v1pb.UndeleteIdentityProviderRequest) (*v1pb.IdentityProvider, error) {
-	if err := s.licenseService.IsFeatureEnabled(api.FeatureSSO); err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
-	}
 	identityProvider, err := s.getIdentityProviderMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -200,7 +191,7 @@ func (s *IdentityProviderService) UndeleteIdentityProvider(ctx context.Context, 
 	if !identityProvider.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "identity provider %q is active", request.Name)
 	}
-	if err := s.checkFeatureAvailable(ctx, v1pb.IdentityProviderType(identityProvider.Type)); err != nil {
+	if err := s.checkFeatureAvailable(v1pb.IdentityProviderType(identityProvider.Type)); err != nil {
 		return nil, err
 	}
 
@@ -215,18 +206,22 @@ func (s *IdentityProviderService) UndeleteIdentityProvider(ctx context.Context, 
 	return convertToIdentityProvider(identityProvider), nil
 }
 
-func (s *IdentityProviderService) checkFeatureAvailable(ctx context.Context, ssoType v1pb.IdentityProviderType) error {
+func (s *IdentityProviderService) checkFeatureAvailable(ssoType v1pb.IdentityProviderType) error {
+	if err := s.licenseService.IsFeatureEnabled(api.FeatureSSO); err != nil {
+		return status.Error(codes.PermissionDenied, err.Error())
+	}
 	plan := s.licenseService.GetEffectivePlan()
-	if plan == api.FREE {
+	switch plan {
+	case api.FREE:
 		return status.Error(codes.PermissionDenied, "feature is not available for free plan")
-	}
-	if plan == api.ENTERPRISE {
+	case api.ENTERPRISE:
 		return nil
+	case api.TEAM:
+		if ssoType != v1pb.IdentityProviderType_OAUTH2 {
+			return status.Error(codes.PermissionDenied, "only oauth type is available")
+		}
 	}
-	if ssoType == v1pb.IdentityProviderType_OAUTH2 {
-		return nil
-	}
-	return status.Error(codes.PermissionDenied, "only oauth is available")
+	return nil
 }
 
 // TestIdentityProvider tests an identity provider connection.
