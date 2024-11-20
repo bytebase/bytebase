@@ -21,22 +21,27 @@ SET permissions = replace(
             replace(
                 replace(
                     replace(
-                        permissions::text,
-                        'bb.databases.queryDDL',
-                        'bb.sql.ddl'
+                        replace(
+                            permissions::text,
+                            'bb.databases.queryDDL',
+                            'bb.sql.ddl'
+                        ),
+                        'bb.databases.queryDML',
+                        'bb.sql.dml'
                     ),
-                    'bb.databases.queryDML',
-                    'bb.sql.dml'
+                    'bb.databases.queryInfo',
+                    'bb.sql.info'
                 ),
-                'bb.databases.queryInfo',
-                'bb.sql.info'
+                'bb.databases.queryExplain',
+                'bb.sql.explain'
             ),
-            'bb.databases.queryExplain',
-            'bb.sql.explain'
+            'bb.databases.query',
+            'bb.sql.select'
         ),
-        'bb.databases.query',
-        'bb.sql.select'
+        'bb.instances.admin',
+        'bb.sql.admin'
     ),
-    'bb.instances.admin',
-    'bb.sql.admin'
-)::jsonb;
+    'bb.databases.export',
+    'bb.sql.export'
+)::jsonb
+WHERE row_status = 'NORMAL';
