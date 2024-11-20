@@ -21,11 +21,17 @@
       <div class="w-full flex flex-row justify-start items-start space-x-2">
         <NRadioGroup
           v-for="item in identityProviderTypeList"
-          :key="item"
+          :key="item.type"
           v-model:value="state.type"
         >
-          <NRadio :value="item">
-            {{ identityProviderTypeToString(item) }}
+          <NRadio :value="item.type" :disabled="!item.available">
+            <div class="flex items-center space-x-2">
+              <heroicons-solid:sparkles
+                v-if="!item.available"
+                class="w-5 h-5"
+              />
+              {{ identityProviderTypeToString(item.type) }}
+            </div>
           </NRadio>
         </NRadioGroup>
       </div>
@@ -68,9 +74,16 @@
           >
             <NRadio
               :value="template.title"
+              :disabled="!template.available"
               @change="handleTemplateSelect(template)"
             >
-              {{ template.title }}
+              <div class="flex items-center space-x-2">
+                <heroicons-solid:sparkles
+                  v-if="!template.available"
+                  class="w-5 h-5"
+                />
+                {{ template.title }}
+              </div>
             </NRadio>
           </div>
         </NRadioGroup>
@@ -637,7 +650,11 @@ import { identityProviderClient } from "@/grpcweb";
 import { WORKSPACE_ROUTE_SSO } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { SQL_EDITOR_SETTING_GENERAL_MODULE } from "@/router/sqlEditor";
-import { pushNotification, useActuatorV1Store } from "@/store";
+import {
+  pushNotification,
+  useActuatorV1Store,
+  useSubscriptionV1Store,
+} from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import {
   getIdentityProviderResourceId,
@@ -659,15 +676,19 @@ import {
   OIDCIdentityProviderConfig,
   LDAPIdentityProviderConfig,
 } from "@/types/proto/v1/idp_service";
-import type { IdentityProviderTemplate } from "@/utils";
+import { PlanType } from "@/types/proto/v1/subscription_service";
+import type { OAuth2IdentityProviderTemplate } from "@/utils";
 import {
   hasWorkspacePermissionV2,
-  identityProviderTemplateList,
   identityProviderTypeToString,
   openWindowForSSO,
 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 import IdentityProviderExternalURL from "./IdentityProviderExternalURL.vue";
+
+interface IdentityProviderTemplate extends OAuth2IdentityProviderTemplate {
+  available: boolean;
+}
 
 interface LocalState {
   type: IdentityProviderType;
@@ -685,6 +706,7 @@ const props = defineProps<{
 const { t } = useI18n();
 const router = useRouter();
 const identityProviderStore = useIdentityProviderStore();
+const subscriptionStore = useSubscriptionV1Store();
 
 const state = reactive<LocalState>({
   type: IdentityProviderType.OAUTH2,
@@ -718,9 +740,18 @@ const currentIdentityProvider = computed(() => {
 
 const identityProviderTypeList = computed(() => {
   return [
-    IdentityProviderType.OAUTH2,
-    IdentityProviderType.OIDC,
-    IdentityProviderType.LDAP,
+    {
+      type: IdentityProviderType.OAUTH2,
+      available: subscriptionStore.currentPlanGTE(PlanType.TEAM),
+    },
+    {
+      type: IdentityProviderType.OIDC,
+      available: subscriptionStore.currentPlanGTE(PlanType.ENTERPRISE),
+    },
+    {
+      type: IdentityProviderType.LDAP,
+      available: subscriptionStore.currentPlanGTE(PlanType.ENTERPRISE),
+    },
   ];
 });
 
@@ -761,9 +792,136 @@ const userDocLink = computed(() => {
   return "";
 });
 
+const identityProviderTemplateList = computed(
+  (): IdentityProviderTemplate[] => {
+    return [
+      {
+        title: "Google",
+        name: "",
+        domain: "google.com",
+        type: IdentityProviderType.OAUTH2,
+        available: subscriptionStore.currentPlanGTE(PlanType.TEAM),
+        config: {
+          clientId: "",
+          clientSecret: "",
+          authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
+          tokenUrl: "https://oauth2.googleapis.com/token",
+          userInfoUrl: "https://www.googleapis.com/oauth2/v2/userinfo",
+          scopes: [
+            "https://www.googleapis.com/auth/userinfo.email",
+            "https://www.googleapis.com/auth/userinfo.profile",
+          ],
+          skipTlsVerify: false,
+          authStyle: OAuth2AuthStyle.IN_PARAMS,
+          fieldMapping: {
+            identifier: "email",
+            displayName: "name",
+            email: "",
+            phone: "",
+          },
+        },
+      },
+      {
+        title: "GitHub",
+        name: "",
+        domain: "github.com",
+        type: IdentityProviderType.OAUTH2,
+        available: subscriptionStore.currentPlanGTE(PlanType.TEAM),
+        config: {
+          clientId: "",
+          clientSecret: "",
+          authUrl: "https://github.com/login/oauth/authorize",
+          tokenUrl: "https://github.com/login/oauth/access_token",
+          userInfoUrl: "https://api.github.com/user",
+          scopes: ["user"],
+          skipTlsVerify: false,
+          authStyle: OAuth2AuthStyle.IN_PARAMS,
+          fieldMapping: {
+            identifier: "email",
+            displayName: "name",
+            email: "",
+            phone: "",
+          },
+        },
+      },
+      {
+        title: "GitLab",
+        name: "",
+        domain: "gitlab.com",
+        type: IdentityProviderType.OAUTH2,
+        available: subscriptionStore.currentPlanGTE(PlanType.ENTERPRISE),
+        config: {
+          clientId: "",
+          clientSecret: "",
+          authUrl: "https://gitlab.com/oauth/authorize",
+          tokenUrl: "https://gitlab.com/oauth/token",
+          userInfoUrl: "https://gitlab.com/api/v4/user",
+          scopes: ["read_user"],
+          skipTlsVerify: false,
+          authStyle: OAuth2AuthStyle.IN_PARAMS,
+          fieldMapping: {
+            identifier: "email",
+            displayName: "name",
+            email: "",
+            phone: "",
+          },
+        },
+      },
+      {
+        title: "Microsoft Entra",
+        name: "",
+        domain: "",
+        type: IdentityProviderType.OAUTH2,
+        available: subscriptionStore.currentPlanGTE(PlanType.ENTERPRISE),
+        config: {
+          clientId: "",
+          clientSecret: "",
+          authUrl:
+            "https://login.microsoftonline.com/{uuid}/oauth2/v2.0/authorize",
+          tokenUrl:
+            "https://login.microsoftonline.com/{uuid}/oauth2/v2.0/token",
+          userInfoUrl: "https://graph.microsoft.com/v1.0/me",
+          scopes: ["user.read"],
+          skipTlsVerify: false,
+          authStyle: OAuth2AuthStyle.IN_PARAMS,
+          fieldMapping: {
+            identifier: "userPrincipalName",
+            displayName: "displayName",
+            email: "",
+            phone: "",
+          },
+        },
+      },
+      {
+        title: "Custom",
+        name: "",
+        domain: "",
+        type: IdentityProviderType.OAUTH2,
+        available: subscriptionStore.currentPlanGTE(PlanType.ENTERPRISE),
+        config: {
+          clientId: "",
+          clientSecret: "",
+          authUrl: "",
+          tokenUrl: "",
+          userInfoUrl: "",
+          scopes: [],
+          skipTlsVerify: false,
+          authStyle: OAuth2AuthStyle.IN_PARAMS,
+          fieldMapping: {
+            identifier: "",
+            displayName: "",
+            email: "",
+            phone: "",
+          },
+        },
+      },
+    ];
+  }
+);
+
 const templateList = computed(() => {
   if (state.type === IdentityProviderType.OAUTH2) {
-    return identityProviderTemplateList.filter(
+    return identityProviderTemplateList.value.filter(
       (template) => template.type === IdentityProviderType.OAUTH2
     );
   }

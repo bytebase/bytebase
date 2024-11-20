@@ -208,6 +208,9 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       }
       return hasFeature(type) && !instance.activation;
     },
+    currentPlanGTE(plan: PlanType): boolean {
+      return planTypeToNumber(this.currentPlan) >= planTypeToNumber(plan);
+    },
     getMinimumRequiredPlan(type: FeatureType): PlanType {
       const matrix = this.featureMatrix.get(type);
       if (!Array.isArray(matrix)) {
