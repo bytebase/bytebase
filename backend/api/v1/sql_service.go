@@ -1175,7 +1175,7 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.UserMessage, iamPolicies []*storepb.IamPolicy, attributes map[string]any, isExport bool) (bool, error) {
 	wantPermission := iam.PermissionSQLSelect
 	if isExport {
-		wantPermission = iam.PermissionDatabasesExport
+		wantPermission = iam.PermissionSQLExport
 	}
 
 	bindings := utils.GetUserIAMPolicyBindings(ctx, s.store, user, iamPolicies...)
