@@ -28,12 +28,12 @@ const (
 	PermissionDatabasesGet               Permission = "bb.databases.get"
 	PermissionDatabasesGetSchema         Permission = "bb.databases.getSchema"
 	PermissionDatabasesList              Permission = "bb.databases.list"
-	PermissionSqlSelect                  Permission = "bb.sql.select"
-	PermissionSqlDdl                     Permission = "bb.sql.ddl"
-	PermissionSqlDml                     Permission = "bb.sql.dml"
-	PermissionSqlExplain                 Permission = "bb.sql.explain"
-	PermissionSqlInfo                    Permission = "bb.sql.info"
-	PermissionSqlAdmin                   Permission = "bb.sql.admin"
+	PermissionSQLSelect                  Permission = "bb.sql.select"
+	PermissionSQLDdl                     Permission = "bb.sql.ddl"
+	PermissionSQLDml                     Permission = "bb.sql.dml"
+	PermissionSQLExplain                 Permission = "bb.sql.explain"
+	PermissionSQLInfo                    Permission = "bb.sql.info"
+	PermissionSQLAdmin                   Permission = "bb.sql.admin"
 	PermissionDatabasesSync              Permission = "bb.databases.sync"
 	PermissionDatabasesUpdate            Permission = "bb.databases.update"
 	PermissionEnvironmentsCreate         Permission = "bb.environments.create"
@@ -157,12 +157,12 @@ var allPermissions = []Permission{
 	PermissionDatabasesGet,
 	PermissionDatabasesGetSchema,
 	PermissionDatabasesList,
-	PermissionSqlSelect,
-	PermissionSqlDdl,
-	PermissionSqlDml,
-	PermissionSqlExplain,
-	PermissionSqlInfo,
-	PermissionSqlAdmin,
+	PermissionSQLSelect,
+	PermissionSQLDdl,
+	PermissionSQLDml,
+	PermissionSQLExplain,
+	PermissionSQLInfo,
+	PermissionSQLAdmin,
 	PermissionDatabasesSync,
 	PermissionDatabasesUpdate,
 	PermissionEnvironmentsCreate,
