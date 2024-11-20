@@ -23,7 +23,6 @@ roles:
       - bb.databases.adviseIndex
       - bb.databases.check
       - bb.databases.execute
-      - bb.databases.export
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
@@ -110,6 +109,7 @@ roles:
       - bb.sql.explain
       - bb.sql.info
       - bb.sql.select
+      - bb.sql.export
       - bb.users.create
       - bb.users.delete
       - bb.users.undelete
@@ -152,7 +152,6 @@ roles:
       - bb.databases.adviseIndex
       - bb.databases.check
       - bb.databases.execute
-      - bb.databases.export
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
@@ -231,6 +230,7 @@ roles:
       - bb.sql.dml
       - bb.sql.explain
       - bb.sql.info
+      - bb.sql.export
       - bb.sql.select
       - bb.taskRuns.create
       - bb.taskRuns.list
@@ -293,7 +293,6 @@ roles:
       - bb.databases.adviseIndex
       - bb.databases.check
       - bb.databases.execute
-      - bb.databases.export
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
@@ -328,6 +327,7 @@ roles:
       - bb.sql.dml
       - bb.sql.explain
       - bb.sql.info
+      - bb.sql.export
       - bb.sql.select
       - bb.taskRuns.list
       - bb.vcsConnectors.create
@@ -400,12 +400,12 @@ roles:
     title: Project exporter
     permissions:
       - bb.databases.check
-      - bb.databases.export
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
       - bb.projects.get
       - bb.projects.getIamPolicy
+      - bb.sql.export
       - bb.worksheets.get
   - name: roles/projectReleaser
     title: Project releaser

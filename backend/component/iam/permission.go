@@ -24,16 +24,9 @@ const (
 	PermissionDatabasesAdviseIndex       Permission = "bb.databases.adviseIndex"
 	PermissionDatabasesCheck             Permission = "bb.databases.check"
 	PermissionDatabasesExecute           Permission = "bb.databases.execute"
-	PermissionDatabasesExport            Permission = "bb.databases.export"
 	PermissionDatabasesGet               Permission = "bb.databases.get"
 	PermissionDatabasesGetSchema         Permission = "bb.databases.getSchema"
 	PermissionDatabasesList              Permission = "bb.databases.list"
-	PermissionSQLSelect                  Permission = "bb.sql.select"
-	PermissionSQLDdl                     Permission = "bb.sql.ddl"
-	PermissionSQLDml                     Permission = "bb.sql.dml"
-	PermissionSQLExplain                 Permission = "bb.sql.explain"
-	PermissionSQLInfo                    Permission = "bb.sql.info"
-	PermissionSQLAdmin                   Permission = "bb.sql.admin"
 	PermissionDatabasesSync              Permission = "bb.databases.sync"
 	PermissionDatabasesUpdate            Permission = "bb.databases.update"
 	PermissionEnvironmentsCreate         Permission = "bb.environments.create"
@@ -104,6 +97,13 @@ const (
 	PermissionSheetsGet                  Permission = "bb.sheets.get"
 	PermissionSheetsUpdate               Permission = "bb.sheets.update"
 	PermissionSlowQueriesList            Permission = "bb.slowQueries.list"
+	PermissionSQLSelect                  Permission = "bb.sql.select"
+	PermissionSQLDdl                     Permission = "bb.sql.ddl"
+	PermissionSQLDml                     Permission = "bb.sql.dml"
+	PermissionSQLExplain                 Permission = "bb.sql.explain"
+	PermissionSQLInfo                    Permission = "bb.sql.info"
+	PermissionSQLExport                  Permission = "bb.sql.export"
+	PermissionSQLAdmin                   Permission = "bb.sql.admin"
 	PermissionTaskRunsCreate             Permission = "bb.taskRuns.create"
 	PermissionTaskRunsList               Permission = "bb.taskRuns.list"
 	PermissionGroupsCreate               Permission = "bb.groups.create"
@@ -153,7 +153,6 @@ var allPermissions = []Permission{
 	PermissionDatabasesAdviseIndex,
 	PermissionDatabasesCheck,
 	PermissionDatabasesExecute,
-	PermissionDatabasesExport,
 	PermissionDatabasesGet,
 	PermissionDatabasesGetSchema,
 	PermissionDatabasesList,
@@ -162,6 +161,7 @@ var allPermissions = []Permission{
 	PermissionSQLDml,
 	PermissionSQLExplain,
 	PermissionSQLInfo,
+	PermissionSQLExport,
 	PermissionSQLAdmin,
 	PermissionDatabasesSync,
 	PermissionDatabasesUpdate,
