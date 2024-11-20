@@ -32,6 +32,7 @@ roles:
       - bb.sql.dml
       - bb.sql.explain
       - bb.sql.info
+      - bb.sql.admin
       - bb.databases.sync
       - bb.databases.update
       - bb.environments.create
@@ -45,7 +46,6 @@ roles:
       - bb.identityProviders.get
       - bb.identityProviders.undelete
       - bb.identityProviders.update
-      - bb.sql.admin
       - bb.instances.create
       - bb.instances.delete
       - bb.instances.get
@@ -161,6 +161,7 @@ roles:
       - bb.sql.dml
       - bb.sql.explain
       - bb.sql.info
+      - bb.sql.admin
       - bb.databases.sync
       - bb.databases.update
       - bb.environments.create
@@ -174,7 +175,6 @@ roles:
       - bb.identityProviders.get
       - bb.identityProviders.undelete
       - bb.identityProviders.update
-      - bb.sql.admin
       - bb.instances.create
       - bb.instances.delete
       - bb.instances.get
