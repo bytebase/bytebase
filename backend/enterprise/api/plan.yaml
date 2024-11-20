@@ -189,6 +189,10 @@ planList:
         content: anomaly-detection-basic
         tooltip: anomaly-detection-basic-tooltip
       - type: rbac
+      - type: sso
+        content: sso-basic
+        tooltip: sso-basic-tooltip
+      - type: disallow-signup
       # Bespoke
       - type: support
         content: support-email
@@ -264,6 +268,8 @@ planList:
         tooltip: anomaly-detection-advanced-tooltip
       - type: rbac
       - type: sso
+        content: sso-advanced
+        tooltip: sso-advanced-tooltip
       - type: 2fa
       - type: ssh-tunnel
       - type: dba-workflow
