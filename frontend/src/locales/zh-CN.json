@@ -3577,6 +3577,10 @@
       "self": "项目查询者",
       "description": "可查询指定范围的数据。"
     },
+    "sql-editor-user": {
+      "self": "SQL 编辑器用户",
+      "description": "可查询指定范围的数据。"
+    },
     "project-exporter": {
       "self": "项目导出者",
       "description": "可导出指定范围的数据。"

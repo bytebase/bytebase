@@ -121,7 +121,7 @@ const actions = computed(() => {
     admin: false,
     issue: false,
   };
-  if (hasWorkspacePermissionV2("bb.instances.adminExecute")) {
+  if (hasWorkspacePermissionV2("bb.sql.admin")) {
     actions.admin = true;
   }
   if (!disallowNavigateToConsole.value) {

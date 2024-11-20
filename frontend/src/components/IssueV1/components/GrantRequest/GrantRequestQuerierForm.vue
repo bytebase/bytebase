@@ -61,7 +61,7 @@ const state = reactive<LocalState>({
 
 onMounted(async () => {
   const grantRequest = issue.value.grantRequest!;
-  if (grantRequest.role !== PresetRoleType.PROJECT_QUERIER) {
+  if (grantRequest.role !== PresetRoleType.SQL_EDITOR_USER) {
     throw "Only support QUERIER role";
   }
 

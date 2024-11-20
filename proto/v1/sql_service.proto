@@ -33,7 +33,7 @@ service SQLService {
   rpc AdminExecute(stream AdminExecuteRequest) returns (stream AdminExecuteResponse) {
     // GRPC streaming / websocket requires GET method instead of POST.
     option (google.api.http) = {get: "/v1:adminExecute"};
-    option (bytebase.v1.permission) = "bb.instances.adminExecute";
+    option (bytebase.v1.permission) = "bb.sql.admin";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }

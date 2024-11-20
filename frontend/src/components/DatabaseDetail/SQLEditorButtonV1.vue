@@ -83,7 +83,7 @@ const gotoSQLEditor = () => {
 
   const database = props.database as ComposedDatabase;
   if (database.project === DEFAULT_PROJECT_NAME) {
-    if (!hasProjectPermissionV2(defaultProject(), "bb.databases.query")) {
+    if (!hasProjectPermissionV2(defaultProject(), "bb.sql.select")) {
       // For unassigned databases, only high-privileged users
       // are accessible via SQL Editor.
       emit("failed", database);

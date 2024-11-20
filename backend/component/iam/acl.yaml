@@ -27,11 +27,6 @@ roles:
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
-      - bb.databases.query
-      - bb.databases.queryDDL
-      - bb.databases.queryDML
-      - bb.databases.queryExplain
-      - bb.databases.queryInfo
       - bb.databases.sync
       - bb.databases.update
       - bb.environments.create
@@ -45,7 +40,6 @@ roles:
       - bb.identityProviders.get
       - bb.identityProviders.undelete
       - bb.identityProviders.update
-      - bb.instances.adminExecute
       - bb.instances.create
       - bb.instances.delete
       - bb.instances.get
@@ -110,6 +104,12 @@ roles:
       - bb.groups.get
       - bb.groups.list
       - bb.groups.update
+      - bb.sql.admin
+      - bb.sql.ddl
+      - bb.sql.dml
+      - bb.sql.explain
+      - bb.sql.info
+      - bb.sql.select
       - bb.users.create
       - bb.users.delete
       - bb.users.undelete
@@ -156,11 +156,6 @@ roles:
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
-      - bb.databases.query
-      - bb.databases.queryDDL
-      - bb.databases.queryDML
-      - bb.databases.queryExplain
-      - bb.databases.queryInfo
       - bb.databases.sync
       - bb.databases.update
       - bb.environments.create
@@ -174,7 +169,6 @@ roles:
       - bb.identityProviders.get
       - bb.identityProviders.undelete
       - bb.identityProviders.update
-      - bb.instances.adminExecute
       - bb.instances.create
       - bb.instances.delete
       - bb.instances.get
@@ -232,6 +226,12 @@ roles:
       - bb.sheets.get
       - bb.sheets.update
       - bb.slowQueries.list
+      - bb.sql.admin
+      - bb.sql.ddl
+      - bb.sql.dml
+      - bb.sql.explain
+      - bb.sql.info
+      - bb.sql.select
       - bb.taskRuns.create
       - bb.taskRuns.list
       - bb.groups.get
@@ -297,11 +297,6 @@ roles:
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
-      - bb.databases.query
-      - bb.databases.queryDDL
-      - bb.databases.queryDML
-      - bb.databases.queryExplain
-      - bb.databases.queryInfo
       - bb.databases.sync
       - bb.databases.update
       - bb.issueComments.create
@@ -329,6 +324,11 @@ roles:
       - bb.sheets.get
       - bb.sheets.update
       - bb.slowQueries.list
+      - bb.sql.ddl
+      - bb.sql.dml
+      - bb.sql.explain
+      - bb.sql.info
+      - bb.sql.select
       - bb.taskRuns.list
       - bb.vcsConnectors.create
       - bb.vcsConnectors.delete
@@ -381,20 +381,20 @@ roles:
       - bb.taskRuns.list
       - bb.vcsConnectors.get
       - bb.vcsConnectors.list
-  - name: roles/projectQuerier
-    title: Project querier
+  - name: roles/sqlEditorUser
+    title: SQL Editor User
     permissions:
       - bb.databases.check
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
-      - bb.databases.query
-      - bb.databases.queryDDL
-      - bb.databases.queryDML
-      - bb.databases.queryExplain
-      - bb.databases.queryInfo
       - bb.projects.get
       - bb.projects.getIamPolicy
+      - bb.sql.ddl
+      - bb.sql.dml
+      - bb.sql.explain
+      - bb.sql.info
+      - bb.sql.select
       - bb.worksheets.get
   - name: roles/projectExporter
     title: Project exporter

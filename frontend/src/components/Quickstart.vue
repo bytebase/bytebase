@@ -209,7 +209,7 @@ const introList = computed(() => {
       done: computed(() => uiStateStore.getIntroStateByKey("data.query")),
       hide:
         !sampleProject.value ||
-        !hasProjectPermissionV2(sampleProject.value, "bb.databases.query"),
+        !hasProjectPermissionV2(sampleProject.value, "bb.sql.select"),
     },
     {
       name: computed(() => t("quick-start.visit-project")),

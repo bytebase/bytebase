@@ -694,7 +694,7 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 	switch payload.GrantRequest.Role {
 	case common.FormatRole(api.ProjectExporter.String()):
 		riskSource = store.RiskRequestExport
-	case common.FormatRole(api.ProjectQuerier.String()):
+	case common.FormatRole(api.SQLEditorUser.String()):
 		riskSource = store.RiskRequestQuery
 	default:
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("unknown grant request role %v", payload.GrantRequest.Role)

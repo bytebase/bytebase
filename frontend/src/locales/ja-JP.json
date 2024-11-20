@@ -3577,6 +3577,10 @@
       "self": "プロジェクトの問い合わせ者",
       "description": "指定した範囲内のデータをクエリできます。"
     },
+    "sql-editor-user": {
+      "self": "SQLエディタのユーザー",
+      "description": "指定した範囲内のデータをクエリできます。"
+    },
     "project-exporter": {
       "self": "プロジェクトエクスポーター",
       "description": "指定した範囲のデータをエクスポートできます。"

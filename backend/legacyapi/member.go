@@ -21,10 +21,10 @@ const (
 	WorkspaceMember  Role = "workspaceMember"
 	ProjectOwner     Role = "projectOwner"
 	ProjectDeveloper Role = "projectDeveloper"
-	ProjectQuerier   Role = "projectQuerier"
 	ProjectExporter  Role = "projectExporter"
 	ProjectReleaser  Role = "projectReleaser"
 	ProjectViewer    Role = "projectViewer"
+	SQLEditorUser    Role = "sqlEditorUser"
 	UnknownRole      Role = "UNKNOWN"
 )
 
