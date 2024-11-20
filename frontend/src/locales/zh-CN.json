@@ -2173,7 +2173,7 @@
         },
         "postgres-database-tenant-mode": {
           "self": "Postgres 数据库租户模式",
-          "description": "Postgres 数据库租户模式。如果启用，工单将以数据库所有者角色执行。"
+          "description": "Postgres 数据库租户模式。如果启用，该工单将由数据库所有者运行。否则，该工单将由实例连接用户运行。"
         }
       }
     },

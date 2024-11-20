@@ -2173,7 +2173,7 @@
         },
         "postgres-database-tenant-mode": {
           "self": "Postgres database tenant mode",
-          "description": "The tenant mode for Postgres database. If enable, the issue will be run by the database user."
+          "description": "The tenant mode for Postgres database. If enable, the issue will be run by the database user. Otherwise, the issue will be run by the instance connection user."
         }
       }
     },
