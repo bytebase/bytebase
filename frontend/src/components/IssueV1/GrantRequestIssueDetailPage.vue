@@ -15,7 +15,7 @@
             v-if="requestRole === PresetRoleType.PROJECT_EXPORTER"
           />
           <GrantRequestQuerierForm
-            v-if="requestRole === PresetRoleType.PROJECT_QUERIER"
+            v-if="requestRole === PresetRoleType.SQL_EDITOR_USER"
           />
         </div>
 

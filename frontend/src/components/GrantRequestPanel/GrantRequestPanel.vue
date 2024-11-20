@@ -7,7 +7,7 @@
   >
     <DrawerContent
       :title="
-        props.role === PresetRoleType.PROJECT_QUERIER
+        props.role === PresetRoleType.SQL_EDITOR_USER
           ? $t('custom-approval.risk-rule.risk.namespace.request_query')
           : $t('custom-approval.risk-rule.risk.namespace.request_export')
       "
@@ -112,7 +112,7 @@ interface LocalState {
 const props = withDefaults(
   defineProps<{
     projectName: string;
-    role: PresetRoleType.PROJECT_QUERIER | PresetRoleType.PROJECT_EXPORTER;
+    role: PresetRoleType.SQL_EDITOR_USER | PresetRoleType.PROJECT_EXPORTER;
     databaseResource?: DatabaseResource;
     placement?: "left" | "right";
   }>(),
@@ -176,7 +176,7 @@ const doCreateIssue = async () => {
 
   const newIssue = Issue.fromPartial({
     title: generateIssueTitle(
-      props.role === PresetRoleType.PROJECT_QUERIER
+      props.role === PresetRoleType.SQL_EDITOR_USER
         ? "bb.issue.grant.request.querier"
         : "bb.issue.grant.request.exporter",
       state.databaseResources?.map(

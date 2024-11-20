@@ -335,7 +335,7 @@ const instanceEngine = computed(() => {
 
 const allowQuery = computed(() => {
   if (database.value.project === DEFAULT_PROJECT_NAME) {
-    return hasProjectPermissionV2(defaultProject(), "bb.databases.query");
+    return hasProjectPermissionV2(defaultProject(), "bb.sql.select");
   }
   return isDatabaseV1Queryable(database.value);
 });

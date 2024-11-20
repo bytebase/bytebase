@@ -92,7 +92,7 @@ import { hasProjectPermissionV2 } from "@/utils";
 
 interface LocalState {
   requestRole?:
-    | PresetRoleType.PROJECT_QUERIER
+    | PresetRoleType.SQL_EDITOR_USER
     | PresetRoleType.PROJECT_EXPORTER;
 }
 
@@ -207,7 +207,7 @@ const quickActionListForDatabase = computed(() => {
     actions.push({
       title: t("custom-approval.risk-rule.risk.namespace.request_query"),
       icon: () => h(FileSearchIcon),
-      action: () => (state.requestRole = PresetRoleType.PROJECT_QUERIER),
+      action: () => (state.requestRole = PresetRoleType.SQL_EDITOR_USER),
     });
 
     if (!exportDataPolicy.value?.exportDataPolicy?.disable) {

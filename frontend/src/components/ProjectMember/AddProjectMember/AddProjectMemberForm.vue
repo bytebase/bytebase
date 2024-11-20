@@ -34,7 +34,7 @@
     </div>
     <div
       v-if="
-        state.role === PresetRoleType.PROJECT_QUERIER ||
+        state.role === PresetRoleType.SQL_EDITOR_USER ||
         state.role === PresetRoleType.PROJECT_EXPORTER
       "
       class="w-full"
@@ -163,7 +163,7 @@ watch(
       expression.push(`request.time < timestamp("${expiresAt.toISOString()}")`);
     }
     if (
-      state.role === PresetRoleType.PROJECT_QUERIER ||
+      state.role === PresetRoleType.SQL_EDITOR_USER ||
       state.role === PresetRoleType.PROJECT_EXPORTER
     ) {
       if (state.databaseResources) {
@@ -193,7 +193,7 @@ const generateConditionTitle = () => {
 
   const title = [displayRoleTitle(state.role)];
   if (
-    state.role === PresetRoleType.PROJECT_QUERIER ||
+    state.role === PresetRoleType.SQL_EDITOR_USER ||
     state.role === PresetRoleType.PROJECT_EXPORTER
   ) {
     let conditionSuffix = "";
