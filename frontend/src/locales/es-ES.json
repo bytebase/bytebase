@@ -2173,7 +2173,7 @@
         },
         "postgres-database-tenant-mode": {
           "self": "Modo inquilino de base de datos Postgres",
-          "description": "El modo de inquilino para la base de datos Postgres. Si está habilitado, el usuario de la base de datos ejecutará el problema."
+          "description": "Modo de base de datos de inquilino de Postgres. Si está habilitado, esta tarea será ejecutada por el propietario de la base de datos. De lo contrario, la tarea será ejecutada por el usuario de conexión de la instancia."
         }
       }
     },
