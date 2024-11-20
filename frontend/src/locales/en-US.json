@@ -3577,6 +3577,10 @@
       "self": "Project Querier",
       "description": "Permissions for querying database data."
     },
+    "sql-editor-user": {
+      "self": "SQL Editor User",
+      "description": "Permissions for querying database data."
+    },
     "project-exporter": {
       "self": "Project Exporter",
       "description": "Permissions for exporting database data."

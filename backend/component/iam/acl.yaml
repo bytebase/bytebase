@@ -381,8 +381,8 @@ roles:
       - bb.taskRuns.list
       - bb.vcsConnectors.get
       - bb.vcsConnectors.list
-  - name: roles/projectQuerier
-    title: Project querier
+  - name: roles/sqlEditorUser
+    title: SQL Editor User
     permissions:
       - bb.databases.check
       - bb.databases.get

@@ -10,6 +10,8 @@ export const extractRoleResourceName = (resourceId: string): string => {
 };
 
 export const displayRoleTitle = (role: string): string => {
+  t("role.sql-editor-user.self");
+
   if (PRESET_ROLES.includes(role)) {
     return t(`role.${kebabCase(extractRoleResourceName(role))}.self`);
   }

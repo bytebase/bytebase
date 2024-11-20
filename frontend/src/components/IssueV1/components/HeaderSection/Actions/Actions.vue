@@ -45,7 +45,7 @@ const actionType = asyncComputed(async (): Promise<ActionType | undefined> => {
   if (isGrantRequestIssue(issue.value)) {
     if (isFinishedGrantRequestIssueByCurrentUser.value) {
       const role = issue.value.grantRequest?.role;
-      if (role === PresetRoleType.PROJECT_QUERIER) {
+      if (role === PresetRoleType.SQL_EDITOR_USER) {
         return "SQL-EDITOR";
       }
     }
