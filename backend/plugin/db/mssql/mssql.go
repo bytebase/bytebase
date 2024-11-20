@@ -322,8 +322,12 @@ func (driver *Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch stri
 		if !queryContext.Explain && queryContext.Limit > 0 {
 			s = getStatementWithResultLimit(s, queryContext.Limit)
 		}
-		batchBuf.WriteString(s)
-		batchBuf.WriteString("\n")
+		if _, err := batchBuf.WriteString(s); err != nil {
+			return nil, err
+		}
+		if _, err := batchBuf.WriteString("\n"); err != nil {
+			return nil, err
+		}
 	}
 
 	refinedBatch := batchBuf.String()
@@ -396,7 +400,6 @@ func (driver *Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch stri
 			ret = append(ret, queryResult)
 			nextResultSetIdx = getNextResultSetIdx(stmtTypes, nextResultSetIdx+1)
 			skipRowsAffected = true
-
 		}
 	}
 	return ret, nil
@@ -410,6 +413,7 @@ func isExitError(err error) error {
 	switch sqlError := err.(type) {
 	case gomssqldb.Error:
 		errState = sqlError.State
+	default:
 	}
 	// 127 is the magic exit code
 	if errState == 127 {
