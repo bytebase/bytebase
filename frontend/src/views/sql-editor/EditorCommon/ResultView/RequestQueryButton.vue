@@ -9,7 +9,7 @@
       :project-name="database.project"
       :database-resource="databaseResource"
       :placement="'right'"
-      :role="PresetRoleType.PROJECT_QUERIER"
+      :role="PresetRoleType.SQL_EDITOR_USER"
       @close="showPanel = false"
     />
   </div>

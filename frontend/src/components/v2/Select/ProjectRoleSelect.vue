@@ -62,7 +62,7 @@ const FREE_ROLE_LIST: string[] = [
   PresetRoleType.PROJECT_OWNER,
   PresetRoleType.PROJECT_DEVELOPER,
   PresetRoleType.PROJECT_RELEASER,
-  PresetRoleType.PROJECT_QUERIER,
+  PresetRoleType.SQL_EDITOR_USER,
   PresetRoleType.PROJECT_EXPORTER,
   PresetRoleType.PROJECT_VIEWER,
 ];

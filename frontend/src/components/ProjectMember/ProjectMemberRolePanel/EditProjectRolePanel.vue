@@ -24,7 +24,7 @@
         <template v-if="!isLoading">
           <div
             v-if="
-              binding.role === PresetRoleType.PROJECT_QUERIER ||
+              binding.role === PresetRoleType.SQL_EDITOR_USER ||
               binding.role === PresetRoleType.PROJECT_EXPORTER
             "
             class="w-full"
@@ -263,7 +263,7 @@ const handleUpdateRole = async () => {
     );
   }
   if (
-    props.binding.role === PresetRoleType.PROJECT_QUERIER ||
+    props.binding.role === PresetRoleType.SQL_EDITOR_USER ||
     props.binding.role === PresetRoleType.PROJECT_EXPORTER
   ) {
     if (state.databaseResources) {
