@@ -9,6 +9,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -41,6 +42,18 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 		return nil, err
 	}
 	title := string(ctx.Rule.Type)
+
+	if len(ctx.Statements) > common.MaxSheetCheckSize {
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:  level,
+			Title:   title,
+			Content: fmt.Sprintf("The size of the SQL statements exceeds the maximum limit of %d bytes for backup", common.MaxSheetCheckSize),
+			Code:    advisor.BuiltinPriorBackupCheck.Int32(),
+			StartPosition: &storepb.Position{
+				Line: 1,
+			},
+		})
+	}
 
 	for _, stmt := range stmtList {
 		checker := &mysqlparser.StatementTypeChecker{}

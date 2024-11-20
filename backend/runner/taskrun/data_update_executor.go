@@ -219,6 +219,10 @@ func (exec *DataUpdateExecutor) backupData(
 		}
 	}
 
+	if len(statement) > common.MaxSheetCheckSize {
+		return nil, errors.Errorf("statement size %d exceeds the limit %d", len(statement), common.MaxSheetCheckSize)
+	}
+
 	prefix := "_" + time.Now().Format("20060102150405")
 	statements, err := base.TransformDMLToSelect(ctx, instance.Engine, tc, statement, database.DatabaseName, backupDatabaseName, prefix)
 	if err != nil {
