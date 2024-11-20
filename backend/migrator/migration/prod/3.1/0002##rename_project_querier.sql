@@ -43,4 +43,5 @@ SET permissions = replace(
     ),
     'bb.databases.export',
     'bb.sql.export'
-)::jsonb;
+)::jsonb
+WHERE row_status = 'NORMAL';
