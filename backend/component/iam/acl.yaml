@@ -27,12 +27,12 @@ roles:
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
-      - bb.sql.select
+      - bb.sql.admin
       - bb.sql.ddl
       - bb.sql.dml
       - bb.sql.explain
       - bb.sql.info
-      - bb.sql.admin
+      - bb.sql.select
       - bb.databases.sync
       - bb.databases.update
       - bb.environments.create
@@ -156,12 +156,12 @@ roles:
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
-      - bb.sql.select
+      - bb.sql.admin
       - bb.sql.ddl
       - bb.sql.dml
       - bb.sql.explain
       - bb.sql.info
-      - bb.sql.admin
+      - bb.sql.select
       - bb.databases.sync
       - bb.databases.update
       - bb.environments.create
@@ -297,11 +297,11 @@ roles:
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
-      - bb.sql.select
       - bb.sql.ddl
       - bb.sql.dml
       - bb.sql.explain
       - bb.sql.info
+      - bb.sql.select
       - bb.databases.sync
       - bb.databases.update
       - bb.issueComments.create
@@ -388,11 +388,11 @@ roles:
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
-      - bb.sql.select
       - bb.sql.ddl
       - bb.sql.dml
       - bb.sql.explain
       - bb.sql.info
+      - bb.sql.select
       - bb.projects.get
       - bb.projects.getIamPolicy
       - bb.worksheets.get
