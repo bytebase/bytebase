@@ -3,9 +3,8 @@
     :key="timeRange ? 'filled' : 'empty'"
     :value="timeRange"
     :is-date-disabled="isDateDisabled"
-    type="daterange"
+    type="datetimerange"
     clearable
-    style="width: 14rem"
     class="time-range-picker"
     @update:value="handleUpdate"
   >
