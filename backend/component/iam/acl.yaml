@@ -27,12 +27,6 @@ roles:
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
-      - bb.sql.admin
-      - bb.sql.ddl
-      - bb.sql.dml
-      - bb.sql.explain
-      - bb.sql.info
-      - bb.sql.select
       - bb.databases.sync
       - bb.databases.update
       - bb.environments.create
@@ -110,6 +104,12 @@ roles:
       - bb.groups.get
       - bb.groups.list
       - bb.groups.update
+      - bb.sql.admin
+      - bb.sql.ddl
+      - bb.sql.dml
+      - bb.sql.explain
+      - bb.sql.info
+      - bb.sql.select
       - bb.users.create
       - bb.users.delete
       - bb.users.undelete
@@ -156,12 +156,6 @@ roles:
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
-      - bb.sql.admin
-      - bb.sql.ddl
-      - bb.sql.dml
-      - bb.sql.explain
-      - bb.sql.info
-      - bb.sql.select
       - bb.databases.sync
       - bb.databases.update
       - bb.environments.create
@@ -232,6 +226,12 @@ roles:
       - bb.sheets.get
       - bb.sheets.update
       - bb.slowQueries.list
+      - bb.sql.admin
+      - bb.sql.ddl
+      - bb.sql.dml
+      - bb.sql.explain
+      - bb.sql.info
+      - bb.sql.select
       - bb.taskRuns.create
       - bb.taskRuns.list
       - bb.groups.get
@@ -297,11 +297,6 @@ roles:
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
-      - bb.sql.ddl
-      - bb.sql.dml
-      - bb.sql.explain
-      - bb.sql.info
-      - bb.sql.select
       - bb.databases.sync
       - bb.databases.update
       - bb.issueComments.create
@@ -329,6 +324,11 @@ roles:
       - bb.sheets.get
       - bb.sheets.update
       - bb.slowQueries.list
+      - bb.sql.ddl
+      - bb.sql.dml
+      - bb.sql.explain
+      - bb.sql.info
+      - bb.sql.select
       - bb.taskRuns.list
       - bb.vcsConnectors.create
       - bb.vcsConnectors.delete
@@ -388,13 +388,13 @@ roles:
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
+      - bb.projects.get
+      - bb.projects.getIamPolicy
       - bb.sql.ddl
       - bb.sql.dml
       - bb.sql.explain
       - bb.sql.info
       - bb.sql.select
-      - bb.projects.get
-      - bb.projects.getIamPolicy
       - bb.worksheets.get
   - name: roles/projectExporter
     title: Project exporter
