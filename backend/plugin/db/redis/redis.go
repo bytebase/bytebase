@@ -233,19 +233,24 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	startTime := time.Now()
 	lines := strings.Split(statement, "\n")
 	var cmds []*redis.Cmd
+	var inputs [][]any
+	for _, line := range lines {
+		fields, err := shlex.Split(line)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to split command %s", line)
+		}
+		if len(fields) == 0 {
+			continue
+		}
+		var input []any
+		for _, v := range fields {
+			input = append(input, v)
+		}
+		inputs = append(inputs, input)
+	}
+
 	if _, err := d.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
-		for _, line := range lines {
-			fields, err := shlex.Split(line)
-			if err != nil {
-				return errors.Wrapf(err, "failed to split command %s", line)
-			}
-			if len(fields) == 0 {
-				continue
-			}
-			var input []any
-			for _, v := range fields {
-				input = append(input, v)
-			}
+		for _, input := range inputs {
 			cmd := p.Do(ctx, input...)
 			cmds = append(cmds, cmd)
 		}
