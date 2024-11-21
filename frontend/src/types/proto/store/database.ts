@@ -89,6 +89,9 @@ export interface TriggerMetadata {
   timing: string;
   /** The body is the body of the trigger. */
   body: string;
+  sqlMode: string;
+  characterSetClient: string;
+  collationConnection: string;
 }
 
 export interface TaskMetadata {
@@ -1521,7 +1524,16 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
 };
 
 function createBaseTriggerMetadata(): TriggerMetadata {
-  return { name: "", tableName: "", event: "", timing: "", body: "" };
+  return {
+    name: "",
+    tableName: "",
+    event: "",
+    timing: "",
+    body: "",
+    sqlMode: "",
+    characterSetClient: "",
+    collationConnection: "",
+  };
 }
 
 export const TriggerMetadata: MessageFns<TriggerMetadata> = {
@@ -1540,6 +1552,15 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
     }
     if (message.body !== "") {
       writer.uint32(42).string(message.body);
+    }
+    if (message.sqlMode !== "") {
+      writer.uint32(50).string(message.sqlMode);
+    }
+    if (message.characterSetClient !== "") {
+      writer.uint32(58).string(message.characterSetClient);
+    }
+    if (message.collationConnection !== "") {
+      writer.uint32(66).string(message.collationConnection);
     }
     return writer;
   },
@@ -1586,6 +1607,27 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
 
           message.body = reader.string();
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.sqlMode = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.characterSetClient = reader.string();
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.collationConnection = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1602,6 +1644,9 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
       event: isSet(object.event) ? globalThis.String(object.event) : "",
       timing: isSet(object.timing) ? globalThis.String(object.timing) : "",
       body: isSet(object.body) ? globalThis.String(object.body) : "",
+      sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
+      characterSetClient: isSet(object.characterSetClient) ? globalThis.String(object.characterSetClient) : "",
+      collationConnection: isSet(object.collationConnection) ? globalThis.String(object.collationConnection) : "",
     };
   },
 
@@ -1622,6 +1667,15 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
     if (message.body !== "") {
       obj.body = message.body;
     }
+    if (message.sqlMode !== "") {
+      obj.sqlMode = message.sqlMode;
+    }
+    if (message.characterSetClient !== "") {
+      obj.characterSetClient = message.characterSetClient;
+    }
+    if (message.collationConnection !== "") {
+      obj.collationConnection = message.collationConnection;
+    }
     return obj;
   },
 
@@ -1635,6 +1689,9 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
     message.event = object.event ?? "";
     message.timing = object.timing ?? "";
     message.body = object.body ?? "";
+    message.sqlMode = object.sqlMode ?? "";
+    message.characterSetClient = object.characterSetClient ?? "";
+    message.collationConnection = object.collationConnection ?? "";
     return message;
   },
 };
