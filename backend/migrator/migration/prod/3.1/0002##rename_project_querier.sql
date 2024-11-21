@@ -38,7 +38,7 @@ SET permissions = replace(
             'bb.databases.query',
             'bb.sql.select'
         ),
-        'bb.instances.admin',
+        'bb.instances.adminExecute',
         'bb.sql.admin'
     ),
     'bb.databases.export',
