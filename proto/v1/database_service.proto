@@ -519,6 +519,12 @@ message TriggerMetadata {
 
   // The body is the body of the trigger.
   string body = 5;
+
+  string sql_mode = 6;
+
+  string character_set_client = 7;
+
+  string collation_connection = 8;
 }
 
 message ExternalTableMetadata {

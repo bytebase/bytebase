@@ -1516,6 +1516,9 @@ TablePartitionMetadata is the metadata for table partitions.
 | event | [string](#string) |  | The event is the event of the trigger, such as INSERT, UPDATE, DELETE, TRUNCATE. |
 | timing | [string](#string) |  | The timing is the timing of the trigger, such as BEFORE, AFTER. |
 | body | [string](#string) |  | The body is the body of the trigger. |
+| sql_mode | [string](#string) |  |  |
+| character_set_client | [string](#string) |  |  |
+| collation_connection | [string](#string) |  |  |
 
 
 
