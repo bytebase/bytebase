@@ -469,6 +469,13 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		}
 	}
 
+	// Query triggers.
+	triggerList, err := driver.getTriggerList(ctx, driver.databaseName)
+	if err != nil {
+		return nil, err
+	}
+	schemaMetadata.Triggers = triggerList
+
 	// Query foreign key info.
 	foreignKeysMap, err := driver.getForeignKeyList(ctx, driver.databaseName)
 	if err != nil {
@@ -605,6 +612,59 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 
 	return databaseMetadata, err
+}
+
+func (driver *Driver) getTriggerList(ctx context.Context, databaseName string) ([]*storepb.TriggerMetadata, error) {
+	triggersQuery := `
+	SELECT 
+		TRIGGER_NAME,
+		EVENT_OBJECT_TABLE,
+		EVENT_MANIPULATION,
+		ACTION_TIMING,
+		ACTION_STATEMENT,
+		SQL_MODE,
+		CHARACTER_SET_CLIENT,
+		COLLATION_CONNECTION
+	FROM INFORMATION_SCHEMA.TRIGGERS
+	WHERE TRIGGER_SCHEMA = ?
+	ORDER BY EVENT_OBJECT_TABLE ASC, EVENT_MANIPULATION ASC, ACTION_TIMING ASC, ACTION_ORDER ASC;
+	`
+	triggerRows, err := driver.db.QueryContext(ctx, triggersQuery, databaseName)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, triggersQuery)
+	}
+	defer triggerRows.Close()
+	var triggers []*storepb.TriggerMetadata
+	for triggerRows.Next() {
+		var name, table, event, timing, statement, sqlMode, charsetClient, collationConnection string
+		if err := triggerRows.Scan(
+			&name,
+			&table,
+			&event,
+			&timing,
+			&statement,
+			&sqlMode,
+			&charsetClient,
+			&collationConnection,
+		); err != nil {
+			return nil, err
+		}
+		trigger := &storepb.TriggerMetadata{
+			Name:                name,
+			TableName:           table,
+			Event:               event,
+			Timing:              timing,
+			Body:                statement,
+			SqlMode:             sqlMode,
+			CharacterSetClient:  charsetClient,
+			CollationConnection: collationConnection,
+		}
+		triggers = append(triggers, trigger)
+	}
+	if err := triggerRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, triggersQuery)
+	}
+	return triggers, nil
 }
 
 func (driver *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*storepb.FunctionMetadata, []*storepb.ProcedureMetadata, error) {
