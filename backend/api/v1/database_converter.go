@@ -83,9 +83,13 @@ func convertStoreDatabaseMetadata(ctx context.Context, metadata *storepb.Databas
 				continue
 			}
 			v1Func := &v1pb.FunctionMetadata{
-				Name:       function.Name,
-				Definition: function.Definition,
-				Signature:  function.Signature,
+				Name:                function.Name,
+				Definition:          function.Definition,
+				Signature:           function.Signature,
+				CharacterSetClient:  function.CharacterSetClient,
+				CollationConnection: function.CollationConnection,
+				DatabaseCollation:   function.DatabaseCollation,
+				SqlMode:             function.SqlMode,
 			}
 			s.Functions = append(s.Functions, v1Func)
 		}
@@ -94,8 +98,13 @@ func convertStoreDatabaseMetadata(ctx context.Context, metadata *storepb.Databas
 				continue
 			}
 			v1Procedure := &v1pb.ProcedureMetadata{
-				Name:       procedure.Name,
-				Definition: procedure.Definition,
+				Name:                procedure.Name,
+				Definition:          procedure.Definition,
+				Signature:           procedure.Signature,
+				CharacterSetClient:  procedure.CharacterSetClient,
+				CollationConnection: procedure.CollationConnection,
+				DatabaseCollation:   procedure.DatabaseCollation,
+				SqlMode:             procedure.SqlMode,
 			}
 			s.Procedures = append(s.Procedures, v1Procedure)
 		}
@@ -513,9 +522,13 @@ func convertV1DatabaseMetadata(ctx context.Context, metadata *v1pb.DatabaseMetad
 				continue
 			}
 			storeFunc := &storepb.FunctionMetadata{
-				Name:       function.Name,
-				Definition: function.Definition,
-				Signature:  function.Signature,
+				Name:                function.Name,
+				Definition:          function.Definition,
+				Signature:           function.Signature,
+				CharacterSetClient:  function.CharacterSetClient,
+				CollationConnection: function.CollationConnection,
+				DatabaseCollation:   function.DatabaseCollation,
+				SqlMode:             function.SqlMode,
 			}
 			s.Functions = append(s.Functions, storeFunc)
 		}
@@ -524,8 +537,13 @@ func convertV1DatabaseMetadata(ctx context.Context, metadata *v1pb.DatabaseMetad
 				continue
 			}
 			storeProcedure := &storepb.ProcedureMetadata{
-				Name:       procedure.Name,
-				Definition: procedure.Definition,
+				Name:                procedure.Name,
+				Definition:          procedure.Definition,
+				Signature:           procedure.Signature,
+				CharacterSetClient:  procedure.CharacterSetClient,
+				CollationConnection: procedure.CollationConnection,
+				DatabaseCollation:   procedure.DatabaseCollation,
+				SqlMode:             procedure.SqlMode,
 			}
 			s.Procedures = append(s.Procedures, storeProcedure)
 		}

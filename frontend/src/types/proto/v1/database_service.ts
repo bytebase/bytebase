@@ -838,6 +838,11 @@ export interface FunctionMetadata {
   definition: string;
   /** The signature is the name with the number and type of input arguments the function takes. */
   signature: string;
+  /** MySQL specific metadata. */
+  characterSetClient: string;
+  collationConnection: string;
+  databaseCollation: string;
+  sqlMode: string;
 }
 
 /** ProcedureMetadata is the metadata for procedures. */
@@ -846,6 +851,13 @@ export interface ProcedureMetadata {
   name: string;
   /** The definition is the definition of a procedure. */
   definition: string;
+  /** The signature is the name with the number and type of input arguments the function takes. */
+  signature: string;
+  /** MySQL specific metadata. */
+  characterSetClient: string;
+  collationConnection: string;
+  databaseCollation: string;
+  sqlMode: string;
 }
 
 /** PackageMetadata is the metadata for packages. */
@@ -5245,7 +5257,15 @@ export const MaterializedViewMetadata: MessageFns<MaterializedViewMetadata> = {
 };
 
 function createBaseFunctionMetadata(): FunctionMetadata {
-  return { name: "", definition: "", signature: "" };
+  return {
+    name: "",
+    definition: "",
+    signature: "",
+    characterSetClient: "",
+    collationConnection: "",
+    databaseCollation: "",
+    sqlMode: "",
+  };
 }
 
 export const FunctionMetadata: MessageFns<FunctionMetadata> = {
@@ -5258,6 +5278,18 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     }
     if (message.signature !== "") {
       writer.uint32(26).string(message.signature);
+    }
+    if (message.characterSetClient !== "") {
+      writer.uint32(34).string(message.characterSetClient);
+    }
+    if (message.collationConnection !== "") {
+      writer.uint32(42).string(message.collationConnection);
+    }
+    if (message.databaseCollation !== "") {
+      writer.uint32(50).string(message.databaseCollation);
+    }
+    if (message.sqlMode !== "") {
+      writer.uint32(58).string(message.sqlMode);
     }
     return writer;
   },
@@ -5290,6 +5322,34 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
 
           message.signature = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.characterSetClient = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.collationConnection = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.databaseCollation = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.sqlMode = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5304,6 +5364,10 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
       signature: isSet(object.signature) ? globalThis.String(object.signature) : "",
+      characterSetClient: isSet(object.characterSetClient) ? globalThis.String(object.characterSetClient) : "",
+      collationConnection: isSet(object.collationConnection) ? globalThis.String(object.collationConnection) : "",
+      databaseCollation: isSet(object.databaseCollation) ? globalThis.String(object.databaseCollation) : "",
+      sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
     };
   },
 
@@ -5318,6 +5382,18 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     if (message.signature !== "") {
       obj.signature = message.signature;
     }
+    if (message.characterSetClient !== "") {
+      obj.characterSetClient = message.characterSetClient;
+    }
+    if (message.collationConnection !== "") {
+      obj.collationConnection = message.collationConnection;
+    }
+    if (message.databaseCollation !== "") {
+      obj.databaseCollation = message.databaseCollation;
+    }
+    if (message.sqlMode !== "") {
+      obj.sqlMode = message.sqlMode;
+    }
     return obj;
   },
 
@@ -5329,12 +5405,24 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     message.name = object.name ?? "";
     message.definition = object.definition ?? "";
     message.signature = object.signature ?? "";
+    message.characterSetClient = object.characterSetClient ?? "";
+    message.collationConnection = object.collationConnection ?? "";
+    message.databaseCollation = object.databaseCollation ?? "";
+    message.sqlMode = object.sqlMode ?? "";
     return message;
   },
 };
 
 function createBaseProcedureMetadata(): ProcedureMetadata {
-  return { name: "", definition: "" };
+  return {
+    name: "",
+    definition: "",
+    signature: "",
+    characterSetClient: "",
+    collationConnection: "",
+    databaseCollation: "",
+    sqlMode: "",
+  };
 }
 
 export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
@@ -5344,6 +5432,21 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
     }
     if (message.definition !== "") {
       writer.uint32(18).string(message.definition);
+    }
+    if (message.signature !== "") {
+      writer.uint32(26).string(message.signature);
+    }
+    if (message.characterSetClient !== "") {
+      writer.uint32(34).string(message.characterSetClient);
+    }
+    if (message.collationConnection !== "") {
+      writer.uint32(42).string(message.collationConnection);
+    }
+    if (message.databaseCollation !== "") {
+      writer.uint32(50).string(message.databaseCollation);
+    }
+    if (message.sqlMode !== "") {
+      writer.uint32(58).string(message.sqlMode);
     }
     return writer;
   },
@@ -5369,6 +5472,41 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
 
           message.definition = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.signature = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.characterSetClient = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.collationConnection = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.databaseCollation = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.sqlMode = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5382,6 +5520,11 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
+      signature: isSet(object.signature) ? globalThis.String(object.signature) : "",
+      characterSetClient: isSet(object.characterSetClient) ? globalThis.String(object.characterSetClient) : "",
+      collationConnection: isSet(object.collationConnection) ? globalThis.String(object.collationConnection) : "",
+      databaseCollation: isSet(object.databaseCollation) ? globalThis.String(object.databaseCollation) : "",
+      sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
     };
   },
 
@@ -5393,6 +5536,21 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
     if (message.definition !== "") {
       obj.definition = message.definition;
     }
+    if (message.signature !== "") {
+      obj.signature = message.signature;
+    }
+    if (message.characterSetClient !== "") {
+      obj.characterSetClient = message.characterSetClient;
+    }
+    if (message.collationConnection !== "") {
+      obj.collationConnection = message.collationConnection;
+    }
+    if (message.databaseCollation !== "") {
+      obj.databaseCollation = message.databaseCollation;
+    }
+    if (message.sqlMode !== "") {
+      obj.sqlMode = message.sqlMode;
+    }
     return obj;
   },
 
@@ -5403,6 +5561,11 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
     const message = createBaseProcedureMetadata();
     message.name = object.name ?? "";
     message.definition = object.definition ?? "";
+    message.signature = object.signature ?? "";
+    message.characterSetClient = object.characterSetClient ?? "";
+    message.collationConnection = object.collationConnection ?? "";
+    message.databaseCollation = object.databaseCollation ?? "";
+    message.sqlMode = object.sqlMode ?? "";
     return message;
   },
 };
