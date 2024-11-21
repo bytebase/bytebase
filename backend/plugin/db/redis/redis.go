@@ -232,64 +232,114 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 
 	startTime := time.Now()
 	lines := strings.Split(statement, "\n")
-	var cmds []*redis.Cmd
-	if _, err := d.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
-		for _, line := range lines {
-			fields, err := shlex.Split(line)
-			if err != nil {
-				return errors.Wrapf(err, "failed to split command %s", line)
-			}
-			if len(fields) == 0 {
-				continue
-			}
-			var input []any
-			for _, v := range fields {
-				input = append(input, v)
-			}
-			cmd := p.Do(ctx, input...)
-			cmds = append(cmds, cmd)
+	var inputs [][]any
+	for _, line := range lines {
+		fields, err := shlex.Split(line)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to split command %s", line)
 		}
-		return nil
-	}); err != nil && err != redis.Nil {
-		return nil, err
-	}
-
-	var queryResult []*v1pb.QueryResult
-	for i, cmd := range cmds {
-		if cmd.Err() == redis.Nil {
-			queryResult = append(queryResult, &v1pb.QueryResult{
-				ColumnNames:     []string{"#", "Value"},
-				ColumnTypeNames: []string{"INT", "TEXT"},
-				Rows: []*v1pb.QueryRow{
-					{
-						Values: []*v1pb.RowValue{
-							{Kind: &v1pb.RowValue_Int32Value{Int32Value: 1}},
-							{Kind: &v1pb.RowValue_NullValue{}},
-						},
-					},
-				},
-				Latency:   durationpb.New(time.Since(startTime)),
-				Statement: lines[i],
-			})
+		if len(fields) == 0 {
 			continue
 		}
+		var input []any
+		for _, v := range fields {
+			input = append(input, v)
+		}
+		inputs = append(inputs, input)
+	}
 
-		// RowValue cannot handle interface{} type
-		result := &v1pb.QueryResult{
+	results := make([]*v1pb.QueryResult, len(inputs))
+	for i := range results {
+		results[i] = &v1pb.QueryResult{
 			ColumnNames:     []string{"#", "Value"},
 			ColumnTypeNames: []string{"INT", "TEXT"},
 			Statement:       lines[i],
 		}
-		setQueryResultRows(result, cmd, d.maximumSQLResultSize)
-		result.Latency = durationpb.New(time.Since(startTime))
-
-		queryResult = append(queryResult, result)
 	}
 
-	return queryResult, nil
+	switch queryContext.Option.GetRedisRunCommandsOn() {
+	case
+		v1pb.QueryOption_REDIS_RUN_COMMANDS_ON_UNSPECIFIED,
+		v1pb.QueryOption_SINGLE_NODE:
+		var cmds []*redis.Cmd
+		if _, err := d.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
+			for _, input := range inputs {
+				cmd := p.Do(ctx, input...)
+				cmds = append(cmds, cmd)
+			}
+			return nil
+		}); err != nil && err != redis.Nil {
+			return nil, err
+		}
+
+		for i, cmd := range cmds {
+			setQueryResultRows(results[i], cmd, d.maximumSQLResultSize)
+			results[i].Latency = durationpb.New(time.Since(startTime))
+		}
+
+	case v1pb.QueryOption_ALL_NODES:
+		cluster, ok := d.rdb.(*redis.ClusterClient)
+		if !ok {
+			return nil, errors.Errorf("expect *redis.ClusterClient, but get %T", d.rdb)
+		}
+
+		var cmdss [][]*redis.Cmd
+		cmdsChan := make(chan []*redis.Cmd)
+		stopChan := make(chan struct{})
+		go func() {
+			for {
+				select {
+				case cmds := <-cmdsChan:
+					cmdss = append(cmdss, cmds)
+				case <-stopChan:
+					return
+				}
+			}
+		}()
+
+		err := cluster.ForEachShard(ctx, func(ctx context.Context, client *redis.Client) error {
+			var cmds []*redis.Cmd
+			if _, err := client.Pipelined(ctx, func(p redis.Pipeliner) error {
+				for _, input := range inputs {
+					cmd := p.Do(ctx, input...)
+					cmds = append(cmds, cmd)
+				}
+				return nil
+			}); err != nil && err != redis.Nil {
+				return err
+			}
+			cmdsChan <- cmds
+			return nil
+		})
+		close(stopChan)
+		if err != nil && err != redis.Nil {
+			return nil, errors.Wrapf(err, "failed to query for each shard")
+		}
+
+		for _, cmds := range cmdss {
+			for i, cmd := range cmds {
+				setQueryResultRows(results[i], cmd, d.maximumSQLResultSize)
+				results[i].Latency = durationpb.New(time.Since(startTime))
+			}
+		}
+	default:
+		return nil, errors.Errorf("unknown RedisRunCommandOn enum %v", queryContext.Option.GetRedisRunCommandsOn())
+	}
+
+	return results, nil
 }
 
 func setQueryResultRows(result *v1pb.QueryResult, cmd *redis.Cmd, limit int64) {
+	if cmd.Err() == redis.Nil {
+		result.Rows = append(result.Rows, &v1pb.QueryRow{
+			Values: []*v1pb.RowValue{
+				{Kind: &v1pb.RowValue_Int32Value{Int32Value: 1}},
+				{Kind: &v1pb.RowValue_NullValue{}},
+			},
+		})
+		return
+	}
+
 	val := cmd.Val()
 	l, ok := val.([]any)
 	if ok {

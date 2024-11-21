@@ -2814,6 +2814,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.QueryOption"><span class="badge">M</span>QueryOption</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.QueryRequest"><span class="badge">M</span>QueryRequest</a>
                 </li>
               
@@ -2868,6 +2872,10 @@
               
                 <li>
                   <a href="#bytebase.v1.QueryHistory.Type"><span class="badge">E</span>QueryHistory.Type</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.QueryOption.RedisRunCommandsOn"><span class="badge">E</span>QueryOption.RedisRunCommandsOn</a>
                 </li>
               
               
@@ -30461,6 +30469,30 @@ Format: instances/{instance}/databases/{databaseName} </p></td>
 
         
       
+        <h3 id="bytebase.v1.QueryOption">QueryOption</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>redis_run_commands_on</td>
+                  <td><a href="#bytebase.v1.QueryOption.RedisRunCommandsOn">QueryOption.RedisRunCommandsOn</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.QueryRequest">QueryRequest</h3>
         <p></p>
 
@@ -30521,6 +30553,13 @@ Or it can be used to query a specific read-only data source. </p></td>
                   <td><a href="#string">string</a></td>
                   <td>optional</td>
                   <td><p>The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>query_option</td>
+                  <td><a href="#bytebase.v1.QueryOption">QueryOption</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -31205,6 +31244,35 @@ to retrieve the next page of history. </p></td>
             
               <tr>
                 <td>EXPORT</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.QueryOption.RedisRunCommandsOn">QueryOption.RedisRunCommandsOn</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>REDIS_RUN_COMMANDS_ON_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>UNSPECIFIED defaults to SINGLE_NODE.</p></td>
+              </tr>
+            
+              <tr>
+                <td>SINGLE_NODE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ALL_NODES</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>

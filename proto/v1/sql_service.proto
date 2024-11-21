@@ -166,6 +166,8 @@ message QueryRequest {
 
   // The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres.
   optional string schema = 8;
+
+  QueryOption query_option = 9;
 }
 
 message QueryResponse {
@@ -177,6 +179,16 @@ message QueryResponse {
 
   // The query is allowed to be exported or not.
   bool allow_export = 3;
+}
+
+message QueryOption {
+  enum RedisRunCommandsOn {
+    // UNSPECIFIED defaults to SINGLE_NODE.
+    REDIS_RUN_COMMANDS_ON_UNSPECIFIED = 0;
+    SINGLE_NODE = 1;
+    ALL_NODES = 2;
+  }
+  RedisRunCommandsOn redis_run_commands_on = 1;
 }
 
 message QueryResult {
