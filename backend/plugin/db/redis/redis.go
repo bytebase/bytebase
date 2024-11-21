@@ -299,7 +299,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 
 		err := cluster.ForEachShard(ctx, func(ctx context.Context, client *redis.Client) error {
 			var cmds []*redis.Cmd
-			if _, err := d.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
+			if _, err := client.Pipelined(ctx, func(p redis.Pipeliner) error {
 				for _, input := range inputs {
 					cmd := p.Do(ctx, input...)
 					cmds = append(cmds, cmd)
