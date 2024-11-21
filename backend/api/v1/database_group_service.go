@@ -294,7 +294,7 @@ func (s *DatabaseGroupService) convertStoreToAPIDatabaseGroupFull(ctx context.Co
 
 func convertStoreToAPIDatabaseGroupBasic(databaseGroup *store.DatabaseGroupMessage, projectResourceID string) *v1pb.DatabaseGroup {
 	databaseGroupV1 := &v1pb.DatabaseGroup{
-		Name:                fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, projectResourceID, common.DatabaseGroupNamePrefix, databaseGroup.ResourceID),
+		Name:                fmt.Sprintf("%s/%s%s", common.FormatProject(projectResourceID), common.DatabaseGroupNamePrefix, databaseGroup.ResourceID),
 		DatabasePlaceholder: databaseGroup.Placeholder,
 		DatabaseExpr:        databaseGroup.Expression,
 	}

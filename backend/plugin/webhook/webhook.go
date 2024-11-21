@@ -67,8 +67,8 @@ type TaskResult struct {
 
 // Project object of project.
 type Project struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+	Name  string `json:"name"`
+	Title string `json:"title"`
 }
 
 // Context is the context of webhook.
