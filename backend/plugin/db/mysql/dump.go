@@ -20,9 +20,18 @@ import (
 
 // Dump and restore.
 const (
-	emptyCommentLine = "--\n"
-	tempViewHeader   = "-- Temporary view structure for "
-	tableHeader      = "-- Table structure for "
+	emptyCommentLine      = "--\n"
+	tempViewHeader        = "-- Temporary view structure for "
+	tableHeader           = "-- Table structure for "
+	viewHeader            = "-- View structure for "
+	functionHeader        = "-- Function structure for "
+	procedureHeader       = "-- Procedure structure for "
+	setCharacterSetClient = "SET character_set_client = "
+	setCharacterSetResult = "SET character_set_results = "
+	setCollation          = "SET collation_connection = "
+	setSQLMode            = "SET sql_mode = "
+	delimiterDoubleSemi   = "DELIMITER ;;\n"
+	delimiterSemi         = "DELIMITER ;\n"
 
 	settingsStmt = "" +
 		"SET character_set_client  = %s;\n" +
@@ -125,6 +134,235 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, dbSchema *storepb
 			return err
 		}
 	}
+
+	// Construct views.
+	for _, view := range schema.Views {
+		if err := writeView(out, view); err != nil {
+			return err
+		}
+	}
+
+	// Construct functions.
+	for _, function := range schema.Functions {
+		if err := writeFunction(out, function); err != nil {
+			return err
+		}
+	}
+
+	// Construct procedures.
+	for _, procedure := range schema.Procedures {
+		if err := writeProcedure(out, procedure); err != nil {
+			return err
+		}
+	}
+
+	// todo: dump triggers and events.
+	return nil
+}
+
+func writeProcedure(out io.Writer, procedure *storepb.ProcedureMetadata) error {
+	// Header.
+	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, procedureHeader); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "`"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, procedure.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "`\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
+		return err
+	}
+
+	// Set charset, collation, and sql mode.
+	if _, err := io.WriteString(out, setCharacterSetClient); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, procedure.CharacterSetClient); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, ";\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, setCharacterSetResult); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, procedure.CharacterSetClient); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, ";\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, setCollation); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, procedure.CollationConnection); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, ";\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, setSQLMode); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, procedure.SqlMode); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, ";\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, delimiterDoubleSemi); err != nil {
+		return err
+	}
+
+	// Definition.
+	if _, err := io.WriteString(out, procedure.Definition); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, ";;\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, delimiterSemi); err != nil {
+		return err
+	}
+
+	_, err := io.WriteString(out, "\n")
+	return err
+}
+
+func writeFunction(out io.Writer, function *storepb.FunctionMetadata) error {
+	// Header.
+	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, functionHeader); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "`"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, function.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "`\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
+		return err
+	}
+
+	// Set charset, collation, and sql mode.
+	if _, err := io.WriteString(out, setCharacterSetClient); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, function.CharacterSetClient); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, ";\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, setCharacterSetResult); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, function.CharacterSetClient); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, ";\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, setCollation); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, function.CollationConnection); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, ";\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, setSQLMode); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, function.SqlMode); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, ";\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, delimiterDoubleSemi); err != nil {
+		return err
+	}
+
+	// Definition.
+	if _, err := io.WriteString(out, function.Definition); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, ";;\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, delimiterSemi); err != nil {
+		return err
+	}
+
+	_, err := io.WriteString(out, "\n")
+	return err
+}
+
+func writeView(out io.Writer, view *storepb.ViewMetadata) error {
+	// Header.
+	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, viewHeader); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "`"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, view.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "`\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
+		return err
+	}
+
+	// Drop temporary view.
+	if _, err := io.WriteString(out, "DROP VIEW IF EXISTS `"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, view.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "`;\n"); err != nil {
+		return err
+	}
+
+	// Definition.
+	if _, err := io.WriteString(out, "CREATE VIEW `"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, view.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "` AS "); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, view.Definition); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, ";\n\n")
+	return err
 }
 
 func writeTable(out io.Writer, table *storepb.TableMetadata) error {

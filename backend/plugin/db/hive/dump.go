@@ -8,6 +8,8 @@ import (
 
 	"github.com/beltran/gohive"
 	"github.com/pkg/errors"
+
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 const (
@@ -53,7 +55,7 @@ type MaterializedViewDDLOptions struct {
 	as             string
 }
 
-func (d *Driver) Dump(ctx context.Context, out io.Writer) error {
+func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
 	var builder strings.Builder
 
 	databaseName := d.config.Database
