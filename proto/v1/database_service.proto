@@ -742,6 +742,15 @@ message FunctionMetadata {
 
   // The signature is the name with the number and type of input arguments the function takes.
   string signature = 3;
+
+  // MySQL specific metadata.
+  string character_set_client = 4;
+
+  string collation_connection = 5;
+
+  string database_collation = 6;
+
+  string sql_mode = 7;
 }
 
 // ProcedureMetadata is the metadata for procedures.
@@ -751,6 +760,18 @@ message ProcedureMetadata {
 
   // The definition is the definition of a procedure.
   string definition = 2;
+
+  // The signature is the name with the number and type of input arguments the function takes.
+  string signature = 3;
+
+  // MySQL specific metadata.
+  string character_set_client = 4;
+
+  string collation_connection = 5;
+
+  string database_collation = 6;
+
+  string sql_mode = 7;
 }
 
 // PackageMetadata is the metadata for packages.

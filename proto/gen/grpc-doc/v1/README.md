@@ -2197,6 +2197,10 @@ FunctionMetadata is the metadata for functions.
 | name | [string](#string) |  | The name is the name of a function. |
 | definition | [string](#string) |  | The definition is the definition of a function. |
 | signature | [string](#string) |  | The signature is the name with the number and type of input arguments the function takes. |
+| character_set_client | [string](#string) |  | MySQL specific metadata. |
+| collation_connection | [string](#string) |  |  |
+| database_collation | [string](#string) |  |  |
+| sql_mode | [string](#string) |  |  |
 
 
 
@@ -2664,6 +2668,11 @@ ProcedureMetadata is the metadata for procedures.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a procedure. |
 | definition | [string](#string) |  | The definition is the definition of a procedure. |
+| signature | [string](#string) |  | The signature is the name with the number and type of input arguments the function takes. |
+| character_set_client | [string](#string) |  | MySQL specific metadata. |
+| collation_connection | [string](#string) |  |  |
+| database_collation | [string](#string) |  |  |
+| sql_mode | [string](#string) |  |  |
 
 
 
