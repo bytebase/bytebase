@@ -416,14 +416,14 @@ func TestFindIamPolicyDeltas(t *testing.T) {
 			oldPolicy: &storepb.IamPolicy{
 				Bindings: []*storepb.Binding{
 					{
-						Role: "roles/projectQuerier",
+						Role: "roles/sqlEditorUser",
 						Members: []string{
 							"usr103",
 						},
 						Condition: &expr.Expr{},
 					},
 					{
-						Role: "roles/projectQuerier",
+						Role: "roles/sqlEditorUser",
 						Members: []string{
 							"usr103",
 						},
@@ -434,7 +434,7 @@ func TestFindIamPolicyDeltas(t *testing.T) {
 			newIamPolicy: &storepb.IamPolicy{
 				Bindings: []*storepb.Binding{
 					{
-						Role: "roles/projectQuerier",
+						Role: "roles/sqlEditorUser",
 						Members: []string{
 							"usr103",
 						},
@@ -449,7 +449,7 @@ func TestFindIamPolicyDeltas(t *testing.T) {
 			oldPolicy: &storepb.IamPolicy{
 				Bindings: []*storepb.Binding{
 					{
-						Role: "roles/projectQuerier",
+						Role: "roles/sqlEditorUser",
 						Members: []string{
 							"usr103",
 						},
@@ -462,7 +462,7 @@ func TestFindIamPolicyDeltas(t *testing.T) {
 			newIamPolicy: &storepb.IamPolicy{
 				Bindings: []*storepb.Binding{
 					{
-						Role: "roles/projectQuerier",
+						Role: "roles/sqlEditorUser",
 						Members: []string{
 							"usr103",
 						},
@@ -484,7 +484,7 @@ func TestFindIamPolicyDeltas(t *testing.T) {
 				{
 					Action: v1pb.BindingDelta_ADD,
 					Member: "usr103",
-					Role:   "roles/projectQuerier",
+					Role:   "roles/sqlEditorUser",
 					Condition: &expr.Expr{
 						Expression: "time > 1000",
 					},
@@ -504,7 +504,7 @@ func TestFindIamPolicyDeltas(t *testing.T) {
 				{
 					Action: v1pb.BindingDelta_REMOVE,
 					Member: "usr103",
-					Role:   "roles/projectQuerier",
+					Role:   "roles/sqlEditorUser",
 					Condition: &expr.Expr{
 						Expression: "time > 500",
 					},

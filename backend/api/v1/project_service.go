@@ -880,7 +880,11 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 				Type:        "bb.issue.database.create",
 				Description: "This is a test issue",
 			},
-			Project: &webhookplugin.Project{Name: project.Title},
+
+			Project: &webhookplugin.Project{
+				Name:  common.FormatProject(project.ResourceID),
+				Title: project.Title,
+			},
 		},
 	)
 	if err != nil {
@@ -1255,7 +1259,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	var projectWebhooks []*v1pb.Webhook
 	for _, webhook := range projectMessage.Webhooks {
 		projectWebhooks = append(projectWebhooks, &v1pb.Webhook{
-			Name:              fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, projectMessage.ResourceID, common.WebhookIDPrefix, webhook.ID),
+			Name:              fmt.Sprintf("%s/%s%d", common.FormatProject(projectMessage.ResourceID), common.WebhookIDPrefix, webhook.ID),
 			Type:              convertWebhookTypeString(webhook.Type),
 			Title:             webhook.Title,
 			Url:               webhook.URL,
@@ -1274,7 +1278,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	}
 
 	return &v1pb.Project{
-		Name:                       fmt.Sprintf("%s%s", common.ProjectNamePrefix, projectMessage.ResourceID),
+		Name:                       common.FormatProject(projectMessage.ResourceID),
 		State:                      convertDeletedToState(projectMessage.Deleted),
 		Title:                      projectMessage.Title,
 		Key:                        projectMessage.Key,
@@ -1513,8 +1517,8 @@ func (*ProjectService) validateBindings(bindings []*v1pb.Binding, roles []*v1pb.
 			return err
 		}
 
-		// Only validate when maximumRoleExpiration is set and the role is ProjectQuerier or ProjectExporter.
-		rolesToValidate := []string{fmt.Sprintf("roles/%s", api.ProjectQuerier), fmt.Sprintf("roles/%s", api.ProjectExporter)}
+		// Only validate when maximumRoleExpiration is set and the role is SQLEditorUser or ProjectExporter.
+		rolesToValidate := []string{fmt.Sprintf("roles/%s", api.SQLEditorUser), fmt.Sprintf("roles/%s", api.ProjectExporter)}
 		if maximumRoleExpiration != nil && binding.Condition != nil && binding.Condition.Expression != "" && slices.Contains(rolesToValidate, binding.Role) {
 			if err := validateIAMPolicyExpression(binding.Condition.Expression, maximumRoleExpiration); err != nil {
 				return err

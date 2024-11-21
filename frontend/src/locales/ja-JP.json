@@ -2173,7 +2173,7 @@
         },
         "postgres-database-tenant-mode": {
           "self": "Postgres データベーステナントモード",
-          "description": "Postgres データベースのテナント モード。有効にすると、問題はデータベース ユーザーによって実行されます。"
+          "description": "Postgres データベーステナントモード。有効にすると、このイシューはデータベース所有者によって実行されます。無効にすると、このイシューはインスタンス接続ユーザーによって実行されます。"
         }
       }
     },
@@ -3575,6 +3575,10 @@
     },
     "project-querier": {
       "self": "プロジェクトの問い合わせ者",
+      "description": "指定した範囲内のデータをクエリできます。"
+    },
+    "sql-editor-user": {
+      "self": "SQLエディタのユーザー",
       "description": "指定した範囲内のデータをクエリできます。"
     },
     "project-exporter": {

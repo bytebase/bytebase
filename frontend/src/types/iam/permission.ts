@@ -26,16 +26,9 @@ export type Permission =
   | "bb.databaseSecrets.update"
   | "bb.databases.adviseIndex"
   | "bb.databases.check"
-  | "bb.databases.export"
   | "bb.databases.get"
   | "bb.databases.getSchema"
   | "bb.databases.list"
-  | "bb.databases.query"
-  | "bb.databases.execute"
-  | "bb.databases.queryInfo"
-  | "bb.databases.queryExplain"
-  | "bb.databases.queryDML"
-  | "bb.databases.queryDDL"
   | "bb.databases.sync"
   | "bb.databases.update"
   | "bb.issueComments.list"
@@ -60,6 +53,12 @@ export type Permission =
   | "bb.rollouts.list"
   | "bb.rollouts.preview"
   | "bb.slowQueries.list"
+  | "bb.sql.select"
+  | "bb.sql.info"
+  | "bb.sql.explain"
+  | "bb.sql.dml"
+  | "bb.sql.ddl"
+  | "bb.sql.export"
   | "bb.taskRuns.create"
   | "bb.taskRuns.list"
   | "bb.environments.create"
@@ -80,7 +79,7 @@ export type Permission =
   | "bb.identityProviders.get"
   | "bb.identityProviders.undelete"
   | "bb.identityProviders.update"
-  | "bb.instances.adminExecute"
+  | "bb.sql.admin"
   | "bb.instances.create"
   | "bb.instances.delete"
   | "bb.instances.get"
@@ -122,22 +121,22 @@ export type Permission =
 
 export type QueryPermission = PickLiteral<
   Permission,
-  | "bb.databases.query"
-  | "bb.databases.queryInfo"
-  | "bb.databases.queryExplain"
-  | "bb.databases.queryDDL"
-  | "bb.databases.queryDML"
-  | "bb.databases.execute"
+  | "bb.sql.select"
+  | "bb.sql.info"
+  | "bb.sql.explain"
+  | "bb.sql.ddl"
+  | "bb.sql.dml"
+  | "bb.sql.admin"
 >;
 
 export const QueryPermissionQueryOnly: QueryPermission[] = [
-  "bb.databases.query",
+  "bb.sql.select",
 ];
 export const QueryPermissionQueryAny: QueryPermission[] = [
-  "bb.databases.query",
-  "bb.databases.queryInfo",
-  "bb.databases.queryExplain",
-  "bb.databases.queryDDL",
-  "bb.databases.queryDML",
-  "bb.databases.execute",
+  "bb.sql.select",
+  "bb.sql.info",
+  "bb.sql.explain",
+  "bb.sql.ddl",
+  "bb.sql.dml",
+  "bb.sql.admin",
 ];

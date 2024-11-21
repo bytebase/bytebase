@@ -1004,18 +1004,18 @@ func (s *SQLService) accessCheck(
 			case base.QueryTypeUnknown:
 				return status.Error(codes.PermissionDenied, "disallowed query type")
 			case base.DDL:
-				permission = iam.PermissionDatabasesQueryDDL
+				permission = iam.PermissionSQLDdl
 			case base.DML:
-				permission = iam.PermissionDatabasesQueryDML
+				permission = iam.PermissionSQLDml
 			case base.Explain:
-				permission = iam.PermissionDatabasesQueryExplain
+				permission = iam.PermissionSQLExplain
 			case base.SelectInfoSchema:
-				permission = iam.PermissionDatabasesQueryInfo
+				permission = iam.PermissionSQLInfo
 			case base.Select:
 				// Conditional permission check below.
 			}
 			if isExplain {
-				permission = iam.PermissionDatabasesQueryExplain
+				permission = iam.PermissionSQLExplain
 			}
 			if span.Type == base.DDL || span.Type == base.DML {
 				if err := checkDataSourceQueryPolicy(ctx, s.store, database, span.Type); err != nil {
@@ -1173,9 +1173,9 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 }
 
 func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.UserMessage, iamPolicies []*storepb.IamPolicy, attributes map[string]any, isExport bool) (bool, error) {
-	wantPermission := iam.PermissionDatabasesQuery
+	wantPermission := iam.PermissionSQLSelect
 	if isExport {
-		wantPermission = iam.PermissionDatabasesExport
+		wantPermission = iam.PermissionSQLExport
 	}
 
 	bindings := utils.GetUserIAMPolicyBindings(ctx, s.store, user, iamPolicies...)

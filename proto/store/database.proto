@@ -80,6 +80,32 @@ message SchemaMetadata {
   repeated PackageMetadata packages = 11;
 
   string owner = 12;
+
+  // The triggers is the list of triggers in a schema, triggers are sorted by table_name, name, event, timing, action_order.
+  repeated TriggerMetadata triggers = 13;
+}
+
+message TriggerMetadata {
+  // The name is the name of the trigger.
+  string name = 1;
+
+  // The table_name is the name of the table/view that the trigger is created on.
+  string table_name = 2;
+
+  // The event is the event of the trigger, such as INSERT, UPDATE, DELETE, TRUNCATE.
+  string event = 3;
+
+  // The timing is the timing of the trigger, such as BEFORE, AFTER.
+  string timing = 4;
+
+  // The body is the body of the trigger.
+  string body = 5;
+
+  string sql_mode = 6;
+
+  string character_set_client = 7;
+
+  string collation_connection = 8;
 }
 
 message TaskMetadata {
@@ -393,6 +419,15 @@ message FunctionMetadata {
 
   // The signature is the name with the number and type of input arguments the function takes.
   string signature = 3;
+
+  // MySQL specific metadata.
+  string character_set_client = 4;
+
+  string collation_connection = 5;
+
+  string database_collation = 6;
+
+  string sql_mode = 7;
 }
 
 // ProcedureMetadata is the metadata for procedures.
@@ -402,6 +437,18 @@ message ProcedureMetadata {
 
   // The definition is the definition of a procedure.
   string definition = 2;
+
+  // The signature is the name with the number and type of input arguments the function takes.
+  string signature = 3;
+
+  // MySQL specific metadata.
+  string character_set_client = 4;
+
+  string collation_connection = 5;
+
+  string database_collation = 6;
+
+  string sql_mode = 7;
 }
 
 // PackageMetadata is the metadata for packages.

@@ -707,6 +707,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.TriggerMetadata"><span class="badge">M</span>TriggerMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.UpdateDatabaseMetadataRequest"><span class="badge">M</span>UpdateDatabaseMetadataRequest</a>
                 </li>
               
@@ -6966,6 +6970,34 @@ Format: projcets/{project}/branches/{branch} </p></td>
                   <td><p>The signature is the name with the number and type of input arguments the function takes. </p></td>
                 </tr>
               
+                <tr>
+                  <td>character_set_client</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>MySQL specific metadata. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>collation_connection</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database_collation</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sql_mode</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -8105,6 +8137,41 @@ Format: projcets/{project}/branches/{branch} </p></td>
                   <td><p>The definition is the definition of a procedure. </p></td>
                 </tr>
               
+                <tr>
+                  <td>signature</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The signature is the name with the number and type of input arguments the function takes. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>character_set_client</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>MySQL specific metadata. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>collation_connection</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database_collation</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sql_mode</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -8359,6 +8426,13 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>triggers</td>
+                  <td><a href="#bytebase.v1.TriggerMetadata">TriggerMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The triggers is the list of triggers in a schema, triggers are sorted by table_name, name, event, timing, action_order. </p></td>
                 </tr>
               
             </tbody>
@@ -9075,6 +9149,79 @@ Example: 01ad32a0-1bb6-5e93-0000-000000000001 </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The definition of the task. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TriggerMetadata">TriggerMetadata</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of the trigger. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>table_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The table_name is the name of the table/view that the trigger is created on. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>event</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The event is the event of the trigger, such as INSERT, UPDATE, DELETE, TRUNCATE. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>timing</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The timing is the timing of the trigger, such as BEFORE, AFTER. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>body</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The body is the body of the trigger. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sql_mode</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>character_set_client</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>collation_connection</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>

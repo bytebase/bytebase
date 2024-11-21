@@ -76,6 +76,7 @@
     - [TableMetadata](#bytebase-store-TableMetadata)
     - [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata)
     - [TaskMetadata](#bytebase-store-TaskMetadata)
+    - [TriggerMetadata](#bytebase-store-TriggerMetadata)
     - [ViewConfig](#bytebase-store-ViewConfig)
     - [ViewMetadata](#bytebase-store-ViewMetadata)
   
@@ -1134,6 +1135,10 @@ FunctionMetadata is the metadata for functions.
 | name | [string](#string) |  | The name is the name of a function. |
 | definition | [string](#string) |  | The definition is the definition of a function. |
 | signature | [string](#string) |  | The signature is the name with the number and type of input arguments the function takes. |
+| character_set_client | [string](#string) |  | MySQL specific metadata. |
+| collation_connection | [string](#string) |  |  |
+| database_collation | [string](#string) |  |  |
+| sql_mode | [string](#string) |  |  |
 
 
 
@@ -1275,6 +1280,11 @@ ProcedureMetadata is the metadata for procedures.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a procedure. |
 | definition | [string](#string) |  | The definition is the definition of a procedure. |
+| signature | [string](#string) |  | The signature is the name with the number and type of input arguments the function takes. |
+| character_set_client | [string](#string) |  | MySQL specific metadata. |
+| collation_connection | [string](#string) |  |  |
+| database_collation | [string](#string) |  |  |
+| sql_mode | [string](#string) |  |  |
 
 
 
@@ -1321,6 +1331,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | sequences | [SequenceMetadata](#bytebase-store-SequenceMetadata) | repeated | The sequences is the list of sequences in a schema. |
 | packages | [PackageMetadata](#bytebase-store-PackageMetadata) | repeated | The packages is the list of packages in a schema. |
 | owner | [string](#string) |  |  |
+| triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The triggers is the list of triggers in a schema, triggers are sorted by table_name, name, event, timing, action_order. |
 
 
 
@@ -1486,6 +1497,28 @@ TablePartitionMetadata is the metadata for table partitions.
 | state | [TaskMetadata.State](#bytebase-store-TaskMetadata-State) |  | The state of the task. |
 | condition | [string](#string) |  | The condition of the task. |
 | definition | [string](#string) |  | The definition of the task. |
+
+
+
+
+
+
+<a name="bytebase-store-TriggerMetadata"></a>
+
+### TriggerMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of the trigger. |
+| table_name | [string](#string) |  | The table_name is the name of the table/view that the trigger is created on. |
+| event | [string](#string) |  | The event is the event of the trigger, such as INSERT, UPDATE, DELETE, TRUNCATE. |
+| timing | [string](#string) |  | The timing is the timing of the trigger, such as BEFORE, AFTER. |
+| body | [string](#string) |  | The body is the body of the trigger. |
+| sql_mode | [string](#string) |  |  |
+| character_set_client | [string](#string) |  |  |
+| collation_connection | [string](#string) |  |  |
 
 
 

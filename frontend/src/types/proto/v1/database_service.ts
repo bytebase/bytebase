@@ -492,6 +492,24 @@ export interface SchemaMetadata {
   /** The packages is the list of packages in a schema. */
   packages: PackageMetadata[];
   owner: string;
+  /** The triggers is the list of triggers in a schema, triggers are sorted by table_name, name, event, timing, action_order. */
+  triggers: TriggerMetadata[];
+}
+
+export interface TriggerMetadata {
+  /** The name is the name of the trigger. */
+  name: string;
+  /** The table_name is the name of the table/view that the trigger is created on. */
+  tableName: string;
+  /** The event is the event of the trigger, such as INSERT, UPDATE, DELETE, TRUNCATE. */
+  event: string;
+  /** The timing is the timing of the trigger, such as BEFORE, AFTER. */
+  timing: string;
+  /** The body is the body of the trigger. */
+  body: string;
+  sqlMode: string;
+  characterSetClient: string;
+  collationConnection: string;
 }
 
 export interface ExternalTableMetadata {
@@ -838,6 +856,11 @@ export interface FunctionMetadata {
   definition: string;
   /** The signature is the name with the number and type of input arguments the function takes. */
   signature: string;
+  /** MySQL specific metadata. */
+  characterSetClient: string;
+  collationConnection: string;
+  databaseCollation: string;
+  sqlMode: string;
 }
 
 /** ProcedureMetadata is the metadata for procedures. */
@@ -846,6 +869,13 @@ export interface ProcedureMetadata {
   name: string;
   /** The definition is the definition of a procedure. */
   definition: string;
+  /** The signature is the name with the number and type of input arguments the function takes. */
+  signature: string;
+  /** MySQL specific metadata. */
+  characterSetClient: string;
+  collationConnection: string;
+  databaseCollation: string;
+  sqlMode: string;
 }
 
 /** PackageMetadata is the metadata for packages. */
@@ -3681,6 +3711,7 @@ function createBaseSchemaMetadata(): SchemaMetadata {
     materializedViews: [],
     packages: [],
     owner: "",
+    triggers: [],
   };
 }
 
@@ -3718,6 +3749,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     }
     if (message.owner !== "") {
       writer.uint32(90).string(message.owner);
+    }
+    for (const v of message.triggers) {
+      TriggerMetadata.encode(v!, writer.uint32(98).fork()).join();
     }
     return writer;
   },
@@ -3806,6 +3840,13 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
 
           message.owner = reader.string();
           continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.triggers.push(TriggerMetadata.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3840,6 +3881,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
         ? object.packages.map((e: any) => PackageMetadata.fromJSON(e))
         : [],
       owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
+      triggers: globalThis.Array.isArray(object?.triggers)
+        ? object.triggers.map((e: any) => TriggerMetadata.fromJSON(e))
+        : [],
     };
   },
 
@@ -3878,6 +3922,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     if (message.owner !== "") {
       obj.owner = message.owner;
     }
+    if (message.triggers?.length) {
+      obj.triggers = message.triggers.map((e) => TriggerMetadata.toJSON(e));
+    }
     return obj;
   },
 
@@ -3897,6 +3944,180 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     message.materializedViews = object.materializedViews?.map((e) => MaterializedViewMetadata.fromPartial(e)) || [];
     message.packages = object.packages?.map((e) => PackageMetadata.fromPartial(e)) || [];
     message.owner = object.owner ?? "";
+    message.triggers = object.triggers?.map((e) => TriggerMetadata.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseTriggerMetadata(): TriggerMetadata {
+  return {
+    name: "",
+    tableName: "",
+    event: "",
+    timing: "",
+    body: "",
+    sqlMode: "",
+    characterSetClient: "",
+    collationConnection: "",
+  };
+}
+
+export const TriggerMetadata: MessageFns<TriggerMetadata> = {
+  encode(message: TriggerMetadata, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.tableName !== "") {
+      writer.uint32(18).string(message.tableName);
+    }
+    if (message.event !== "") {
+      writer.uint32(26).string(message.event);
+    }
+    if (message.timing !== "") {
+      writer.uint32(34).string(message.timing);
+    }
+    if (message.body !== "") {
+      writer.uint32(42).string(message.body);
+    }
+    if (message.sqlMode !== "") {
+      writer.uint32(50).string(message.sqlMode);
+    }
+    if (message.characterSetClient !== "") {
+      writer.uint32(58).string(message.characterSetClient);
+    }
+    if (message.collationConnection !== "") {
+      writer.uint32(66).string(message.collationConnection);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): TriggerMetadata {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTriggerMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.tableName = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.event = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timing = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.body = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.sqlMode = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.characterSetClient = reader.string();
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.collationConnection = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TriggerMetadata {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      tableName: isSet(object.tableName) ? globalThis.String(object.tableName) : "",
+      event: isSet(object.event) ? globalThis.String(object.event) : "",
+      timing: isSet(object.timing) ? globalThis.String(object.timing) : "",
+      body: isSet(object.body) ? globalThis.String(object.body) : "",
+      sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
+      characterSetClient: isSet(object.characterSetClient) ? globalThis.String(object.characterSetClient) : "",
+      collationConnection: isSet(object.collationConnection) ? globalThis.String(object.collationConnection) : "",
+    };
+  },
+
+  toJSON(message: TriggerMetadata): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.tableName !== "") {
+      obj.tableName = message.tableName;
+    }
+    if (message.event !== "") {
+      obj.event = message.event;
+    }
+    if (message.timing !== "") {
+      obj.timing = message.timing;
+    }
+    if (message.body !== "") {
+      obj.body = message.body;
+    }
+    if (message.sqlMode !== "") {
+      obj.sqlMode = message.sqlMode;
+    }
+    if (message.characterSetClient !== "") {
+      obj.characterSetClient = message.characterSetClient;
+    }
+    if (message.collationConnection !== "") {
+      obj.collationConnection = message.collationConnection;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TriggerMetadata>): TriggerMetadata {
+    return TriggerMetadata.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TriggerMetadata>): TriggerMetadata {
+    const message = createBaseTriggerMetadata();
+    message.name = object.name ?? "";
+    message.tableName = object.tableName ?? "";
+    message.event = object.event ?? "";
+    message.timing = object.timing ?? "";
+    message.body = object.body ?? "";
+    message.sqlMode = object.sqlMode ?? "";
+    message.characterSetClient = object.characterSetClient ?? "";
+    message.collationConnection = object.collationConnection ?? "";
     return message;
   },
 };
@@ -5245,7 +5466,15 @@ export const MaterializedViewMetadata: MessageFns<MaterializedViewMetadata> = {
 };
 
 function createBaseFunctionMetadata(): FunctionMetadata {
-  return { name: "", definition: "", signature: "" };
+  return {
+    name: "",
+    definition: "",
+    signature: "",
+    characterSetClient: "",
+    collationConnection: "",
+    databaseCollation: "",
+    sqlMode: "",
+  };
 }
 
 export const FunctionMetadata: MessageFns<FunctionMetadata> = {
@@ -5258,6 +5487,18 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     }
     if (message.signature !== "") {
       writer.uint32(26).string(message.signature);
+    }
+    if (message.characterSetClient !== "") {
+      writer.uint32(34).string(message.characterSetClient);
+    }
+    if (message.collationConnection !== "") {
+      writer.uint32(42).string(message.collationConnection);
+    }
+    if (message.databaseCollation !== "") {
+      writer.uint32(50).string(message.databaseCollation);
+    }
+    if (message.sqlMode !== "") {
+      writer.uint32(58).string(message.sqlMode);
     }
     return writer;
   },
@@ -5290,6 +5531,34 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
 
           message.signature = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.characterSetClient = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.collationConnection = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.databaseCollation = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.sqlMode = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5304,6 +5573,10 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
       signature: isSet(object.signature) ? globalThis.String(object.signature) : "",
+      characterSetClient: isSet(object.characterSetClient) ? globalThis.String(object.characterSetClient) : "",
+      collationConnection: isSet(object.collationConnection) ? globalThis.String(object.collationConnection) : "",
+      databaseCollation: isSet(object.databaseCollation) ? globalThis.String(object.databaseCollation) : "",
+      sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
     };
   },
 
@@ -5318,6 +5591,18 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     if (message.signature !== "") {
       obj.signature = message.signature;
     }
+    if (message.characterSetClient !== "") {
+      obj.characterSetClient = message.characterSetClient;
+    }
+    if (message.collationConnection !== "") {
+      obj.collationConnection = message.collationConnection;
+    }
+    if (message.databaseCollation !== "") {
+      obj.databaseCollation = message.databaseCollation;
+    }
+    if (message.sqlMode !== "") {
+      obj.sqlMode = message.sqlMode;
+    }
     return obj;
   },
 
@@ -5329,12 +5614,24 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     message.name = object.name ?? "";
     message.definition = object.definition ?? "";
     message.signature = object.signature ?? "";
+    message.characterSetClient = object.characterSetClient ?? "";
+    message.collationConnection = object.collationConnection ?? "";
+    message.databaseCollation = object.databaseCollation ?? "";
+    message.sqlMode = object.sqlMode ?? "";
     return message;
   },
 };
 
 function createBaseProcedureMetadata(): ProcedureMetadata {
-  return { name: "", definition: "" };
+  return {
+    name: "",
+    definition: "",
+    signature: "",
+    characterSetClient: "",
+    collationConnection: "",
+    databaseCollation: "",
+    sqlMode: "",
+  };
 }
 
 export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
@@ -5344,6 +5641,21 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
     }
     if (message.definition !== "") {
       writer.uint32(18).string(message.definition);
+    }
+    if (message.signature !== "") {
+      writer.uint32(26).string(message.signature);
+    }
+    if (message.characterSetClient !== "") {
+      writer.uint32(34).string(message.characterSetClient);
+    }
+    if (message.collationConnection !== "") {
+      writer.uint32(42).string(message.collationConnection);
+    }
+    if (message.databaseCollation !== "") {
+      writer.uint32(50).string(message.databaseCollation);
+    }
+    if (message.sqlMode !== "") {
+      writer.uint32(58).string(message.sqlMode);
     }
     return writer;
   },
@@ -5369,6 +5681,41 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
 
           message.definition = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.signature = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.characterSetClient = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.collationConnection = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.databaseCollation = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.sqlMode = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5382,6 +5729,11 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
+      signature: isSet(object.signature) ? globalThis.String(object.signature) : "",
+      characterSetClient: isSet(object.characterSetClient) ? globalThis.String(object.characterSetClient) : "",
+      collationConnection: isSet(object.collationConnection) ? globalThis.String(object.collationConnection) : "",
+      databaseCollation: isSet(object.databaseCollation) ? globalThis.String(object.databaseCollation) : "",
+      sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
     };
   },
 
@@ -5393,6 +5745,21 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
     if (message.definition !== "") {
       obj.definition = message.definition;
     }
+    if (message.signature !== "") {
+      obj.signature = message.signature;
+    }
+    if (message.characterSetClient !== "") {
+      obj.characterSetClient = message.characterSetClient;
+    }
+    if (message.collationConnection !== "") {
+      obj.collationConnection = message.collationConnection;
+    }
+    if (message.databaseCollation !== "") {
+      obj.databaseCollation = message.databaseCollation;
+    }
+    if (message.sqlMode !== "") {
+      obj.sqlMode = message.sqlMode;
+    }
     return obj;
   },
 
@@ -5403,6 +5770,11 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
     const message = createBaseProcedureMetadata();
     message.name = object.name ?? "";
     message.definition = object.definition ?? "";
+    message.signature = object.signature ?? "";
+    message.characterSetClient = object.characterSetClient ?? "";
+    message.collationConnection = object.collationConnection ?? "";
+    message.databaseCollation = object.databaseCollation ?? "";
+    message.sqlMode = object.sqlMode ?? "";
     return message;
   },
 };

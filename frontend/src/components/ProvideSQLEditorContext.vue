@@ -224,7 +224,7 @@ const prepareSheetLegacy = async () => {
 
   try {
     const project = await projectStore.getOrFetchProjectByName(projectName);
-    if (!hasProjectPermissionV2(project, "bb.databases.query")) {
+    if (!hasProjectPermissionV2(project, "bb.sql.select")) {
       return false;
     }
   } catch {
@@ -292,7 +292,7 @@ const prepareSheet = async () => {
   const sheetName = `worksheets/${sheetId}`;
 
   const project = await projectStore.getOrFetchProjectByName(projectName);
-  if (!hasProjectPermissionV2(project, "bb.databases.query")) {
+  if (!hasProjectPermissionV2(project, "bb.sql.select")) {
     return false;
   }
   await maybeSwitchProject(projectName);

@@ -305,7 +305,7 @@ const allowRevokeMember = computed(() => {
 
 const isRoleShouldShowDatabaseRelatedColumns = (role: string) => {
   return (
-    role === PresetRoleType.PROJECT_QUERIER ||
+    role === PresetRoleType.SQL_EDITOR_USER ||
     role === PresetRoleType.PROJECT_EXPORTER
   );
 };

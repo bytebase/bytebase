@@ -34,7 +34,7 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 
 func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage) (*v1pb.Plan, error) {
 	p := &v1pb.Plan{
-		Name:        fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, plan.ProjectID, common.PlanPrefix, plan.UID),
+		Name:        common.FormatPlan(plan.ProjectID, plan.UID),
 		Issue:       "",
 		Title:       plan.Name,
 		Description: plan.Description,
@@ -63,7 +63,7 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 		return nil, errors.Wrapf(err, "failed to get issue by plan uid %d", plan.UID)
 	}
 	if issue != nil {
-		p.Issue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.IssueNamePrefix, issue.UID)
+		p.Issue = common.FormatIssue(issue.Project.ResourceID, issue.UID)
 	}
 	return p, nil
 }
@@ -342,7 +342,7 @@ func convertToPlanCheckRuns(ctx context.Context, s *store.Store, projectID strin
 
 func convertToPlanCheckRun(ctx context.Context, s *store.Store, projectID string, planUID int64, run *store.PlanCheckRunMessage) (*v1pb.PlanCheckRun, error) {
 	converted := &v1pb.PlanCheckRun{
-		Name:       fmt.Sprintf("%s%s/%s%d/%s%d", common.ProjectNamePrefix, projectID, common.PlanPrefix, planUID, common.PlanCheckRunPrefix, run.UID),
+		Name:       common.FormatPlanCheckRun(projectID, planUID, int64(run.UID)),
 		CreateTime: timestamppb.New(time.Unix(run.CreatedTs, 0)),
 		Type:       convertToPlanCheckRunType(run.Type),
 		Status:     convertToPlanCheckRunStatus(run.Status),
@@ -360,7 +360,7 @@ func convertToPlanCheckRun(ctx context.Context, s *store.Store, projectID string
 		if sheet == nil {
 			return nil, errors.Errorf("sheet not found for uid %d", sheetUID)
 		}
-		converted.Sheet = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, projectID, common.SheetIDPrefix, sheet.UID)
+		converted.Sheet = common.FormatSheet(projectID, sheet.UID)
 	}
 
 	instanceUID := int(run.Config.InstanceUid)
@@ -369,7 +369,7 @@ func convertToPlanCheckRun(ctx context.Context, s *store.Store, projectID string
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance")
 	}
-	converted.Target = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, instance.ResourceID, common.DatabaseIDPrefix, databaseName)
+	converted.Target = common.FormatDatabase(instance.ResourceID, databaseName)
 
 	return converted, nil
 }
@@ -473,7 +473,7 @@ func convertToTaskRuns(ctx context.Context, s *store.Store, stateCfg *state.Stat
 
 func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State, taskRun *store.TaskRunMessage) (*v1pb.TaskRun, error) {
 	t := &v1pb.TaskRun{
-		Name:          fmt.Sprintf("%s%s/%s%d/%s%d/%s%d/%s%d", common.ProjectNamePrefix, taskRun.ProjectID, common.RolloutPrefix, taskRun.PipelineUID, common.StagePrefix, taskRun.StageUID, common.TaskPrefix, taskRun.TaskUID, common.TaskRunPrefix, taskRun.ID),
+		Name:          common.FormatTaskRun(taskRun.ProjectID, taskRun.PipelineUID, taskRun.StageUID, taskRun.TaskUID, taskRun.ID),
 		Creator:       common.FormatUserEmail(taskRun.Creator.Email),
 		Updater:       common.FormatUserEmail(taskRun.Updater.Email),
 		CreateTime:    timestamppb.New(time.Unix(taskRun.CreatedTs, 0)),
@@ -619,7 +619,7 @@ func convertToTaskRunPriorBackupDetail(priorBackupDetail *storepb.PriorBackupDet
 
 func convertToRollout(ctx context.Context, s *store.Store, project *store.ProjectMessage, rollout *store.PipelineMessage) (*v1pb.Rollout, error) {
 	rolloutV1 := &v1pb.Rollout{
-		Name:       fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, rollout.ID),
+		Name:       common.FormatRollout(project.ResourceID, rollout.ID),
 		Plan:       "",
 		Title:      rollout.Name,
 		Stages:     nil,
@@ -641,11 +641,11 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 		return nil, errors.Wrapf(err, "failed to get plan")
 	}
 	if plan != nil {
-		rolloutV1.Plan = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.PlanPrefix, plan.UID)
+		rolloutV1.Plan = common.FormatPlan(project.ResourceID, plan.UID)
 	}
 
 	if rollout.IssueID != nil {
-		rolloutV1.Issue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.IssueNamePrefix, *rollout.IssueID)
+		rolloutV1.Issue = common.FormatIssue(project.ResourceID, *rollout.IssueID)
 	}
 
 	taskIDToName := map[int]string{}
@@ -660,7 +660,7 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 			return nil, errors.Errorf("environment %d not found", stage.EnvironmentID)
 		}
 		rolloutStage := &v1pb.Stage{
-			Name:  fmt.Sprintf("%s%s/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, rollout.ID, common.StagePrefix, stage.ID),
+			Name:  common.FormatStage(project.ResourceID, rollout.ID, stage.ID),
 			Title: stage.Name,
 		}
 		for _, task := range stage.TaskList {
@@ -739,7 +739,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 		return nil, errors.Wrapf(err, "failed to convert database labels %v", payload.Labels)
 	}
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
+		Name:           common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecId,
 		Type:           convertToTaskType(task.Type),
@@ -752,7 +752,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 				Project:      "",
 				Database:     payload.DatabaseName,
 				Table:        payload.TableName,
-				Sheet:        getResourceNameForSheet(project, int(payload.SheetId)),
+				Sheet:        common.FormatSheet(project.ResourceID, int(payload.SheetId)),
 				CharacterSet: payload.CharacterSet,
 				Collation:    payload.Collation,
 				Environment:  common.FormatEnvironment(payload.EnvironmentId),
@@ -780,7 +780,7 @@ func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, projec
 		return nil, errors.Errorf("database not found")
 	}
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
+		Name:           common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecId,
 		Type:           convertToTaskType(task.Type),
@@ -814,7 +814,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 	}
 
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
+		Name:           common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecId,
 		Type:           convertToTaskType(task.Type),
@@ -824,7 +824,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaUpdate_{
 			DatabaseSchemaUpdate: &v1pb.Task_DatabaseSchemaUpdate{
-				Sheet:         getResourceNameForSheet(project, int(payload.SheetId)),
+				Sheet:         common.FormatSheet(project.ResourceID, int(payload.SheetId)),
 				SchemaVersion: payload.SchemaVersion,
 			},
 		},
@@ -848,7 +848,7 @@ func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Sto
 		return nil, errors.Errorf("database not found")
 	}
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
+		Name:           common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecId,
 		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
@@ -878,7 +878,7 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	}
 
 	v1pbTask := &v1pb.Task{
-		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
+		Name:           common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecId,
 		Type:           convertToTaskType(task.Type),
@@ -890,7 +890,7 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	}
 	v1pbTaskPayload := &v1pb.Task_DatabaseDataUpdate_{
 		DatabaseDataUpdate: &v1pb.Task_DatabaseDataUpdate{
-			Sheet:         getResourceNameForSheet(project, int(payload.SheetId)),
+			Sheet:         common.FormatSheet(project.ResourceID, int(payload.SheetId)),
 			SchemaVersion: payload.SchemaVersion,
 		},
 	}
@@ -915,7 +915,7 @@ func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, pr
 		return nil, errors.Errorf("database not found")
 	}
 	targetDatabaseName := fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
-	sheet := getResourceNameForSheet(project, int(payload.SheetId))
+	sheet := common.FormatSheet(project.ResourceID, int(payload.SheetId))
 	v1pbTaskPayload := v1pb.Task_DatabaseDataExport_{
 		DatabaseDataExport: &v1pb.Task_DatabaseDataExport{
 			Target:   targetDatabaseName,
@@ -925,7 +925,7 @@ func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, pr
 		},
 	}
 	v1pbTask := &v1pb.Task{
-		Name:    fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
+		Name:    common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
 		Title:   task.Name,
 		SpecId:  payload.SpecId,
 		Type:    convertToTaskType(task.Type),
@@ -1141,8 +1141,4 @@ func convertTaskRunLogTransactionControlType(t storepb.TaskRunLog_TransactionCon
 	default:
 		return v1pb.TaskRunLogEntry_TransactionControl_TYPE_UNSPECIFIED
 	}
-}
-
-func getResourceNameForSheet(project *store.ProjectMessage, sheetUID int) string {
-	return fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.SheetIDPrefix, sheetUID)
 }

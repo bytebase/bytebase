@@ -23,16 +23,9 @@ const (
 	PermissionDatabaseSecretsUpdate      Permission = "bb.databaseSecrets.update"
 	PermissionDatabasesAdviseIndex       Permission = "bb.databases.adviseIndex"
 	PermissionDatabasesCheck             Permission = "bb.databases.check"
-	PermissionDatabasesExecute           Permission = "bb.databases.execute"
-	PermissionDatabasesExport            Permission = "bb.databases.export"
 	PermissionDatabasesGet               Permission = "bb.databases.get"
 	PermissionDatabasesGetSchema         Permission = "bb.databases.getSchema"
 	PermissionDatabasesList              Permission = "bb.databases.list"
-	PermissionDatabasesQuery             Permission = "bb.databases.query"
-	PermissionDatabasesQueryDDL          Permission = "bb.databases.queryDDL"
-	PermissionDatabasesQueryDML          Permission = "bb.databases.queryDML"
-	PermissionDatabasesQueryExplain      Permission = "bb.databases.queryExplain"
-	PermissionDatabasesQueryInfo         Permission = "bb.databases.queryInfo"
 	PermissionDatabasesSync              Permission = "bb.databases.sync"
 	PermissionDatabasesUpdate            Permission = "bb.databases.update"
 	PermissionEnvironmentsCreate         Permission = "bb.environments.create"
@@ -46,7 +39,6 @@ const (
 	PermissionIdentityProvidersGet       Permission = "bb.identityProviders.get"
 	PermissionIdentityProvidersUndelete  Permission = "bb.identityProviders.undelete"
 	PermissionIdentityProvidersUpdate    Permission = "bb.identityProviders.update"
-	PermissionInstancesAdminExecute      Permission = "bb.instances.adminExecute"
 	PermissionInstancesCreate            Permission = "bb.instances.create"
 	PermissionInstancesDelete            Permission = "bb.instances.delete"
 	PermissionInstancesGet               Permission = "bb.instances.get"
@@ -104,6 +96,13 @@ const (
 	PermissionSheetsGet                  Permission = "bb.sheets.get"
 	PermissionSheetsUpdate               Permission = "bb.sheets.update"
 	PermissionSlowQueriesList            Permission = "bb.slowQueries.list"
+	PermissionSQLSelect                  Permission = "bb.sql.select"
+	PermissionSQLDdl                     Permission = "bb.sql.ddl"
+	PermissionSQLDml                     Permission = "bb.sql.dml"
+	PermissionSQLExplain                 Permission = "bb.sql.explain"
+	PermissionSQLInfo                    Permission = "bb.sql.info"
+	PermissionSQLExport                  Permission = "bb.sql.export"
+	PermissionSQLAdmin                   Permission = "bb.sql.admin"
 	PermissionTaskRunsCreate             Permission = "bb.taskRuns.create"
 	PermissionTaskRunsList               Permission = "bb.taskRuns.list"
 	PermissionGroupsCreate               Permission = "bb.groups.create"
@@ -152,16 +151,9 @@ var allPermissions = []Permission{
 	PermissionDatabaseSecretsUpdate,
 	PermissionDatabasesAdviseIndex,
 	PermissionDatabasesCheck,
-	PermissionDatabasesExecute,
-	PermissionDatabasesExport,
 	PermissionDatabasesGet,
 	PermissionDatabasesGetSchema,
 	PermissionDatabasesList,
-	PermissionDatabasesQuery,
-	PermissionDatabasesQueryDDL,
-	PermissionDatabasesQueryDML,
-	PermissionDatabasesQueryExplain,
-	PermissionDatabasesQueryInfo,
 	PermissionDatabasesSync,
 	PermissionDatabasesUpdate,
 	PermissionEnvironmentsCreate,
@@ -175,7 +167,6 @@ var allPermissions = []Permission{
 	PermissionIdentityProvidersGet,
 	PermissionIdentityProvidersUndelete,
 	PermissionIdentityProvidersUpdate,
-	PermissionInstancesAdminExecute,
 	PermissionInstancesCreate,
 	PermissionInstancesDelete,
 	PermissionInstancesGet,
@@ -233,6 +224,13 @@ var allPermissions = []Permission{
 	PermissionSheetsGet,
 	PermissionSheetsUpdate,
 	PermissionSlowQueriesList,
+	PermissionSQLSelect,
+	PermissionSQLDdl,
+	PermissionSQLDml,
+	PermissionSQLExplain,
+	PermissionSQLInfo,
+	PermissionSQLExport,
+	PermissionSQLAdmin,
 	PermissionTaskRunsCreate,
 	PermissionTaskRunsList,
 	PermissionGroupsCreate,

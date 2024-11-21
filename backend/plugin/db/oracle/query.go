@@ -89,10 +89,14 @@ func convertValue(typeName string, value any) *v1pb.RowValue {
 		}
 	case *sql.NullTime:
 		if raw.Valid {
+			// The go-ora driver retrieves the database timezone from the wire protocol and appends it to the timestamp.
+			// To ensure consistency with Oracle Date expectations, we should remove the timezone information.
+			// https://github.com/sijms/go-ora/blob/2962e725e7a756a667a546fb360ef09afd4c8bd0/v2/parameter.go#L616
 			if typeName == "DATE" || typeName == "TIMESTAMPDTY" {
+				timeStripped := time.Date(raw.Time.Year(), raw.Time.Month(), raw.Time.Day(), raw.Time.Hour(), raw.Time.Minute(), raw.Time.Second(), raw.Time.Nanosecond(), time.UTC)
 				return &v1pb.RowValue{
 					Kind: &v1pb.RowValue_TimestampValue{
-						TimestampValue: timestamppb.New(raw.Time),
+						TimestampValue: timestamppb.New(timeStripped),
 					},
 				}
 			}
