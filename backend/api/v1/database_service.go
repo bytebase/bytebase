@@ -1094,10 +1094,10 @@ func (s *DatabaseService) convertToChangeHistory(ctx context.Context, h *store.I
 		projectID = p.ResourceID
 	}
 	if h.SheetID != nil && projectID != "" {
-		v1pbHistory.StatementSheet = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, projectID, common.SheetIDPrefix, *h.SheetID)
+		v1pbHistory.StatementSheet = common.FormatSheet(projectID, *h.SheetID)
 	}
 	if h.IssueUID != nil && projectID != "" {
-		v1pbHistory.Issue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, projectID, common.IssueNamePrefix, *h.IssueUID)
+		v1pbHistory.Issue = common.FormatIssue(projectID, *h.IssueUID)
 	}
 	if h.Payload != nil && h.Payload.ChangedResources != nil {
 		v1pbHistory.ChangedResources = convertToChangedResources(h.Payload.ChangedResources)
@@ -1674,7 +1674,7 @@ func validSlowQueryOrderByKey(keys []orderByKey) error {
 func convertToSlowQueryLog(instanceID string, databaseName string, projectID string, log *v1pb.SlowQueryLog) *v1pb.SlowQueryLog {
 	return &v1pb.SlowQueryLog{
 		Resource:   fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, instanceID, common.DatabaseIDPrefix, databaseName),
-		Project:    fmt.Sprintf("%s%s", common.ProjectNamePrefix, projectID),
+		Project:    common.FormatProject(projectID),
 		Statistics: log.Statistics,
 	}
 }
@@ -1709,7 +1709,7 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 		Name:                 common.FormatDatabase(database.InstanceID, database.DatabaseName),
 		SyncState:            syncState,
 		SuccessfulSyncTime:   timestamppb.New(time.Unix(database.SuccessfulSyncTimeTs, 0)),
-		Project:              fmt.Sprintf("%s%s", common.ProjectNamePrefix, database.ProjectID),
+		Project:              common.FormatProject(database.ProjectID),
 		Environment:          environment,
 		EffectiveEnvironment: effectiveEnvironment,
 		SchemaVersion:        database.SchemaVersion.Version,

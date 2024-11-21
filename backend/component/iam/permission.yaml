@@ -19,16 +19,9 @@ permissions:
   - bb.databaseSecrets.update
   - bb.databases.adviseIndex
   - bb.databases.check
-  - bb.databases.execute
-  - bb.databases.export
   - bb.databases.get
   - bb.databases.getSchema
   - bb.databases.list
-  - bb.sql.select
-  - bb.sql.ddl
-  - bb.sql.dml
-  - bb.sql.explain
-  - bb.sql.info
   - bb.databases.sync
   - bb.databases.update
   - bb.environments.create
@@ -47,7 +40,6 @@ permissions:
   - bb.identityProviders.get
   - bb.identityProviders.undelete
   - bb.identityProviders.update
-  - bb.sql.admin
   - bb.instances.create
   - bb.instances.delete
   - bb.instances.get
@@ -105,6 +97,13 @@ permissions:
   - bb.sheets.get
   - bb.sheets.update
   - bb.slowQueries.list
+  - bb.sql.select
+  - bb.sql.ddl
+  - bb.sql.dml
+  - bb.sql.explain
+  - bb.sql.info
+  - bb.sql.export
+  - bb.sql.admin
   - bb.taskRuns.create
   - bb.taskRuns.list
   - bb.users.create
