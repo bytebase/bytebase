@@ -427,7 +427,17 @@ func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
 
 			switch value := v.(type) {
 			case primitive.Binary:
-				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: value.Data}}
+				switch value.Subtype {
+				case 0x3, 0x4:
+					uuid, err := uuid.FromBytes(value.Data)
+					if err != nil {
+						return nil, errors.Wrapf(err, "failed to convert binary to uuid")
+					}
+					values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: uuid.String()}}
+				default:
+					values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: value.Data}}
+				}
+
 			case primitive.DateTime:
 				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_TimestampValue{TimestampValue: timestamppb.New(value.Time())}}
 			case primitive.Decimal128:
