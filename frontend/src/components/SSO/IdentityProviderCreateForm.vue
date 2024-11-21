@@ -24,15 +24,41 @@
           :key="item.type"
           v-model:value="state.type"
         >
-          <NRadio :value="item.type" :disabled="!item.available">
-            <div class="flex items-center space-x-2">
-              <heroicons-solid:sparkles
-                v-if="!item.available"
-                class="w-5 h-5"
-              />
-              {{ identityProviderTypeToString(item.type) }}
-            </div>
-          </NRadio>
+          <NTooltip
+            :disabled="
+              subscriptionStore.currentPlanGTE(item.minimumRequiredPlan)
+            "
+          >
+            <template #trigger>
+              <NRadio
+                :value="item.type"
+                :disabled="
+                  !subscriptionStore.currentPlanGTE(item.minimumRequiredPlan)
+                "
+              >
+                <div class="flex items-center space-x-2">
+                  <heroicons-solid:sparkles
+                    v-if="
+                      !subscriptionStore.currentPlanGTE(
+                        item.minimumRequiredPlan
+                      )
+                    "
+                    class="w-5 h-5"
+                  />
+                  {{ identityProviderTypeToString(item.type) }}
+                </div>
+              </NRadio>
+            </template>
+            {{
+              $t("subscription.require-subscription", {
+                requiredPlan: $t(
+                  `subscription.plan.${planTypeToString(
+                    item.minimumRequiredPlan
+                  )}.title`
+                ),
+              })
+            }}
+          </NTooltip>
         </NRadioGroup>
       </div>
 
@@ -69,23 +95,48 @@
           :key="template.title"
           :value="selectedTemplate?.title"
         >
-          <div
-            class="w-auto px-3 py-2 border rounded-md flex items-center justify-center"
+          <NTooltip
+            :disabled="
+              subscriptionStore.currentPlanGTE(template.minimumRequiredPlan)
+            "
           >
-            <NRadio
-              :value="template.title"
-              :disabled="!template.available"
-              @change="handleTemplateSelect(template)"
-            >
-              <div class="flex items-center space-x-2">
-                <heroicons-solid:sparkles
-                  v-if="!template.available"
-                  class="w-5 h-5"
-                />
-                {{ template.title }}
+            <template #trigger>
+              <div
+                class="w-auto px-3 py-2 border rounded-md flex items-center justify-center"
+              >
+                <NRadio
+                  :value="template.title"
+                  :disabled="
+                    !subscriptionStore.currentPlanGTE(
+                      template.minimumRequiredPlan
+                    )
+                  "
+                  @change="handleTemplateSelect(template)"
+                >
+                  <div class="flex items-center space-x-2">
+                    <heroicons-solid:sparkles
+                      v-if="
+                        !subscriptionStore.currentPlanGTE(
+                          template.minimumRequiredPlan
+                        )
+                      "
+                      class="w-5 h-5"
+                    />
+                    {{ template.title }}
+                  </div>
+                </NRadio>
               </div>
-            </NRadio>
-          </div>
+            </template>
+            {{
+              $t("subscription.require-subscription", {
+                requiredPlan: $t(
+                  `subscription.plan.${planTypeToString(
+                    template.minimumRequiredPlan
+                  )}.title`
+                ),
+              })
+            }}
+          </NTooltip>
         </NRadioGroup>
       </div>
     </div>
@@ -665,6 +716,7 @@ import type {
   ResourceId,
   ValidatedMessage,
 } from "@/types";
+import { planTypeToString } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
   FieldMapping,
@@ -687,7 +739,7 @@ import { getErrorCode } from "@/utils/grpcweb";
 import IdentityProviderExternalURL from "./IdentityProviderExternalURL.vue";
 
 interface IdentityProviderTemplate extends OAuth2IdentityProviderTemplate {
-  available: boolean;
+  minimumRequiredPlan: PlanType;
 }
 
 interface LocalState {
@@ -742,15 +794,15 @@ const identityProviderTypeList = computed(() => {
   return [
     {
       type: IdentityProviderType.OAUTH2,
-      available: subscriptionStore.currentPlanGTE(PlanType.TEAM),
+      minimumRequiredPlan: PlanType.TEAM,
     },
     {
       type: IdentityProviderType.OIDC,
-      available: subscriptionStore.currentPlanGTE(PlanType.ENTERPRISE),
+      minimumRequiredPlan: PlanType.ENTERPRISE,
     },
     {
       type: IdentityProviderType.LDAP,
-      available: subscriptionStore.currentPlanGTE(PlanType.ENTERPRISE),
+      minimumRequiredPlan: PlanType.ENTERPRISE,
     },
   ];
 });
@@ -800,7 +852,7 @@ const identityProviderTemplateList = computed(
         name: "",
         domain: "google.com",
         type: IdentityProviderType.OAUTH2,
-        available: subscriptionStore.currentPlanGTE(PlanType.TEAM),
+        minimumRequiredPlan: PlanType.TEAM,
         config: {
           clientId: "",
           clientSecret: "",
@@ -826,7 +878,7 @@ const identityProviderTemplateList = computed(
         name: "",
         domain: "github.com",
         type: IdentityProviderType.OAUTH2,
-        available: subscriptionStore.currentPlanGTE(PlanType.TEAM),
+        minimumRequiredPlan: PlanType.TEAM,
         config: {
           clientId: "",
           clientSecret: "",
@@ -849,7 +901,7 @@ const identityProviderTemplateList = computed(
         name: "",
         domain: "gitlab.com",
         type: IdentityProviderType.OAUTH2,
-        available: subscriptionStore.currentPlanGTE(PlanType.ENTERPRISE),
+        minimumRequiredPlan: PlanType.ENTERPRISE,
         config: {
           clientId: "",
           clientSecret: "",
@@ -872,7 +924,7 @@ const identityProviderTemplateList = computed(
         name: "",
         domain: "",
         type: IdentityProviderType.OAUTH2,
-        available: subscriptionStore.currentPlanGTE(PlanType.ENTERPRISE),
+        minimumRequiredPlan: PlanType.ENTERPRISE,
         config: {
           clientId: "",
           clientSecret: "",
@@ -897,7 +949,7 @@ const identityProviderTemplateList = computed(
         name: "",
         domain: "",
         type: IdentityProviderType.OAUTH2,
-        available: subscriptionStore.currentPlanGTE(PlanType.ENTERPRISE),
+        minimumRequiredPlan: PlanType.ENTERPRISE,
         config: {
           clientId: "",
           clientSecret: "",

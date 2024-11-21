@@ -41,7 +41,7 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 	}
 
 	issueV1 := &v1pb.Issue{
-		Name:                 fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.IssueNamePrefix, issue.UID),
+		Name:                 common.FormatIssue(issue.Project.ResourceID, issue.UID),
 		Title:                issue.Title,
 		Description:          issue.Description,
 		Type:                 convertToIssueType(issue.Type),
@@ -64,10 +64,10 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 	}
 
 	if issue.PlanUID != nil {
-		issueV1.Plan = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.PlanPrefix, *issue.PlanUID)
+		issueV1.Plan = common.FormatPlan(issue.Project.ResourceID, *issue.PlanUID)
 	}
 	if issue.PipelineUID != nil {
-		issueV1.Rollout = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.RolloutPrefix, *issue.PipelineUID)
+		issueV1.Rollout = common.FormatRollout(issue.Project.ResourceID, *issue.PipelineUID)
 	}
 
 	for _, subscriber := range issue.Subscribers {

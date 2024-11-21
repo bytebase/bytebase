@@ -905,7 +905,7 @@ func (s *BranchService) convertBranchToBranch(ctx context.Context, project *stor
 	}
 
 	v1Branch := &v1pb.Branch{
-		Name:             fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.BranchPrefix, branch.ResourceID),
+		Name:             common.FormatBranchResourceID(project.ResourceID, branch.ResourceID),
 		BranchId:         branch.ResourceID,
 		Etag:             fmt.Sprintf("%d", branch.UpdatedTime.UnixMilli()),
 		ParentBranch:     baselineBranch,
@@ -1030,16 +1030,25 @@ func filterDatabaseMetadataByEngine(metadata *storepb.DatabaseSchemaMetadata, en
 		if engine == storepb.Engine_MYSQL {
 			for _, function := range schema.Functions {
 				filteredFunction := &storepb.FunctionMetadata{
-					Name:       function.Name,
-					Definition: function.Definition,
-					Signature:  function.Signature,
+					Name:                function.Name,
+					Definition:          function.Definition,
+					Signature:           function.Signature,
+					CharacterSetClient:  function.CharacterSetClient,
+					CollationConnection: function.CollationConnection,
+					DatabaseCollation:   function.DatabaseCollation,
+					SqlMode:             function.SqlMode,
 				}
 				filteredSchema.Functions = append(filteredSchema.Functions, filteredFunction)
 			}
 			for _, procedure := range schema.Procedures {
 				filteredProcedure := &storepb.ProcedureMetadata{
-					Name:       procedure.Name,
-					Definition: procedure.Definition,
+					Name:                procedure.Name,
+					Definition:          procedure.Definition,
+					Signature:           procedure.Signature,
+					CharacterSetClient:  procedure.CharacterSetClient,
+					CollationConnection: procedure.CollationConnection,
+					DatabaseCollation:   procedure.DatabaseCollation,
+					SqlMode:             procedure.SqlMode,
 				}
 				filteredSchema.Procedures = append(filteredSchema.Procedures, filteredProcedure)
 			}

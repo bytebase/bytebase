@@ -393,7 +393,7 @@ func convertStoreVCSConnector(ctx context.Context, stores *store.Store, vcsConne
 	}
 
 	v1VCSConnector := &v1pb.VCSConnector{
-		Name:          fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, vcsConnector.ProjectID, common.VCSConnectorPrefix, vcsConnector.ResourceID),
+		Name:          fmt.Sprintf("%s/%s%s", common.FormatProject(vcsConnector.ProjectID), common.VCSConnectorPrefix, vcsConnector.ResourceID),
 		CreateTime:    timestamppb.New(vcsConnector.CreatedTime),
 		UpdateTime:    timestamppb.New(vcsConnector.UpdatedTime),
 		Creator:       fmt.Sprintf("users/%s", creator.Email),

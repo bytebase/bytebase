@@ -38,10 +38,18 @@ SET permissions = replace(
             'bb.databases.query',
             'bb.sql.select'
         ),
-        'bb.instances.admin',
+        'bb.instances.adminExecute',
         'bb.sql.admin'
     ),
     'bb.databases.export',
     'bb.sql.export'
 )::jsonb
 WHERE row_status = 'NORMAL';
+
+UPDATE role
+SET permissions = jsonb_set(
+    permissions,
+    '{permissions}',
+    (permissions->'permissions')::jsonb - 'bb.databases.execute'
+)
+WHERE row_status='NORMAL';

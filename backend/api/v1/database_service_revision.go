@@ -258,7 +258,7 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 			return nil, errors.Wrapf(err, "failed to get issue by rollout %q", rolloutUID)
 		}
 		if issue != nil {
-			issueName = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.IssueNamePrefix, issue.UID)
+			issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
 		}
 	}
 

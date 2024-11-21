@@ -24,11 +24,16 @@
       </span>
     </MaskSpinner>
 
-    <NTabs v-model:value="state.selectedTab" type="card" style="flex: 1">
+    <NTabs
+      v-model:value="state.selectedTab"
+      size="small"
+      type="card"
+      class="flex-1"
+    >
       <NTabPane
+        class="flex-1"
         name="schema-editor"
         :tab="$t('schema-editor.self')"
-        style="flex: 1"
         display-directive="show:lazy"
       >
         <SchemaEditorLite
@@ -42,9 +47,9 @@
         />
       </NTabPane>
       <NTabPane
+        class="flex-1"
         name="raw-sql"
         :tab="$t('schema-editor.raw-sql')"
-        style="flex: 1"
         display-directive="show:lazy"
       >
         <div class="w-full h-full grid grid-rows-[50px,_1fr] overflow-y-auto">
