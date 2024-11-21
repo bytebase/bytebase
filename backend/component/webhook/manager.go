@@ -329,8 +329,8 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 			Creator:     e.Issue.Creator,
 		},
 		Project: &webhook.Project{
-			ID:   e.Project.UID,
-			Name: e.Project.Title,
+			Name:  common.FormatProject(e.Project.ResourceID),
+			Title: e.Project.Title,
 		},
 		Stage:               nil,
 		TaskResult:          nil,

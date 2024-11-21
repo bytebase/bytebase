@@ -462,7 +462,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 			Title: prInfo.title,
 			Steps: steps,
 			VcsSource: &v1pb.Plan_VCSSource{
-				VcsConnector:   fmt.Sprintf("%s%s/%s%s", common.ProjectNamePrefix, vcsConnector.ProjectID, common.VCSConnectorPrefix, vcsConnector.ResourceID),
+				VcsConnector:   fmt.Sprintf("%s/%s%s", common.FormatProject(vcsConnector.ProjectID), common.VCSConnectorPrefix, vcsConnector.ResourceID),
 				PullRequestUrl: prInfo.url,
 				VcsType:        v1pb.VCSType(vcsProvider.Type),
 			},

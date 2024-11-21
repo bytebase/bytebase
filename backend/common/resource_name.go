@@ -685,27 +685,35 @@ func FormatRole(role string) string {
 }
 
 func FormatSheet(projectID string, sheetUID int) string {
-	return fmt.Sprintf("%s%s/%s%d", ProjectNamePrefix, projectID, SheetIDPrefix, sheetUID)
+	return fmt.Sprintf("%s/%s%d", FormatProject(projectID), SheetIDPrefix, sheetUID)
 }
 
 func FormatIssue(projectID string, issueUID int) string {
-	return fmt.Sprintf("%s%s/%s%d", ProjectNamePrefix, projectID, IssueNamePrefix, issueUID)
+	return fmt.Sprintf("%s/%s%d", FormatProject(projectID), IssueNamePrefix, issueUID)
+}
+
+func FormatRollout(projectID string, pipelineUID int) string {
+	return fmt.Sprintf("%s/%s%d", FormatProject(projectID), RolloutPrefix, pipelineUID)
+}
+
+func FormatStage(projectID string, pipelineUID, stageUID int) string {
+	return fmt.Sprintf("%s/%s%d", FormatRollout(projectID, pipelineUID), StagePrefix, stageUID)
 }
 
 func FormatTask(projectID string, pipelineUID, stageUID, taskUID int) string {
-	return fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", ProjectNamePrefix, projectID, RolloutPrefix, pipelineUID, StagePrefix, stageUID, TaskPrefix, taskUID)
+	return fmt.Sprintf("%s/%s%d", FormatStage(projectID, pipelineUID, stageUID), TaskPrefix, taskUID)
 }
 
 func FormatTaskRun(projectID string, pipelineUID, stageUID, taskUID, taskRunUID int) string {
-	return fmt.Sprintf("%s%s/%s%d/%s%d/%s%d/%s%d", ProjectNamePrefix, projectID, RolloutPrefix, pipelineUID, StagePrefix, stageUID, TaskPrefix, taskUID, TaskRunPrefix, taskRunUID)
+	return fmt.Sprintf("%s/%s%d", FormatTask(projectID, pipelineUID, stageUID, taskUID), TaskRunPrefix, taskRunUID)
 }
 
 func FormatBranchResourceID(projectID string, branchID string) string {
-	return fmt.Sprintf("%s%s/%s%s", ProjectNamePrefix, projectID, BranchPrefix, branchID)
+	return fmt.Sprintf("%s/%s%s", FormatProject(projectID), BranchPrefix, branchID)
 }
 
 func FormatReleaseName(projectID string, releaseUID int64) string {
-	return fmt.Sprintf("%s%s/%s%d", ProjectNamePrefix, projectID, ReleaseNamePrefix, releaseUID)
+	return fmt.Sprintf("%s/%s%d", FormatProject(projectID), ReleaseNamePrefix, releaseUID)
 }
 
 func FormatReleaseFile(release string, fileID string) string {
@@ -718,4 +726,12 @@ func FormatRevision(instanceID, databaseID string, revisionUID int64) string {
 
 func FormatChangelog(instanceID, databaseID string, changelogUID int64) string {
 	return fmt.Sprintf("%s/%s%d", FormatDatabase(instanceID, databaseID), ChangelogPrefix, changelogUID)
+}
+
+func FormatPlan(projectID string, planUID int64) string {
+	return fmt.Sprintf("%s/%s%d", FormatProject(projectID), PlanPrefix, planUID)
+}
+
+func FormatPlanCheckRun(projectID string, planUID, runUID int64) string {
+	return fmt.Sprintf("%s/%s%d", FormatPlan(projectID, planUID), PlanCheckRunPrefix, runUID)
 }
