@@ -249,6 +249,15 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		inputs = append(inputs, input)
 	}
 
+	results := make([]*v1pb.QueryResult, len(inputs))
+	for i := range results {
+		results[i] = &v1pb.QueryResult{
+			ColumnNames:     []string{"#", "Value"},
+			ColumnTypeNames: []string{"INT", "TEXT"},
+			Statement:       lines[i],
+		}
+	}
+
 	if _, err := d.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
 		for _, input := range inputs {
 			cmd := p.Do(ctx, input...)
@@ -259,42 +268,25 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		return nil, err
 	}
 
-	var queryResult []*v1pb.QueryResult
 	for i, cmd := range cmds {
-		if cmd.Err() == redis.Nil {
-			queryResult = append(queryResult, &v1pb.QueryResult{
-				ColumnNames:     []string{"#", "Value"},
-				ColumnTypeNames: []string{"INT", "TEXT"},
-				Rows: []*v1pb.QueryRow{
-					{
-						Values: []*v1pb.RowValue{
-							{Kind: &v1pb.RowValue_Int32Value{Int32Value: 1}},
-							{Kind: &v1pb.RowValue_NullValue{}},
-						},
-					},
-				},
-				Latency:   durationpb.New(time.Since(startTime)),
-				Statement: lines[i],
-			})
-			continue
-		}
-
-		// RowValue cannot handle interface{} type
-		result := &v1pb.QueryResult{
-			ColumnNames:     []string{"#", "Value"},
-			ColumnTypeNames: []string{"INT", "TEXT"},
-			Statement:       lines[i],
-		}
-		setQueryResultRows(result, cmd, d.maximumSQLResultSize)
-		result.Latency = durationpb.New(time.Since(startTime))
-
-		queryResult = append(queryResult, result)
+		setQueryResultRows(results[i], cmd, d.maximumSQLResultSize)
+		results[i].Latency = durationpb.New(time.Since(startTime))
 	}
 
-	return queryResult, nil
+	return results, nil
 }
 
 func setQueryResultRows(result *v1pb.QueryResult, cmd *redis.Cmd, limit int64) {
+	if cmd.Err() == redis.Nil {
+		result.Rows = append(result.Rows, &v1pb.QueryRow{
+			Values: []*v1pb.RowValue{
+				{Kind: &v1pb.RowValue_Int32Value{Int32Value: 1}},
+				{Kind: &v1pb.RowValue_NullValue{}},
+			},
+		})
+		return
+	}
+
 	val := cmd.Val()
 	l, ok := val.([]any)
 	if ok {
