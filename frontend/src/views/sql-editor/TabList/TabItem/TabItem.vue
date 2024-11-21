@@ -20,7 +20,7 @@
       :style="
         backgroundColorRgb.length > 0
           ? {
-              backgroundColor: `rgba(${backgroundColorRgb[0]}, ${backgroundColorRgb[1]}, ${backgroundColorRgb[2]}, 0.5)`,
+              backgroundColor: `rgba(${backgroundColorRgb[0]}, ${backgroundColorRgb[1]}, ${backgroundColorRgb[2]}, 0.1)`,
               borderTopColor: `rgb(${backgroundColorRgb[0]}, ${backgroundColorRgb[1]}, ${backgroundColorRgb[2]})`,
               color: `rgb(${backgroundColorRgb[0]}, ${backgroundColorRgb[1]}, ${backgroundColorRgb[2]})`,
             }
