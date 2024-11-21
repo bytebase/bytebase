@@ -232,7 +232,6 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 
 	startTime := time.Now()
 	lines := strings.Split(statement, "\n")
-	var cmds []*redis.Cmd
 	var inputs [][]any
 	for _, line := range lines {
 		fields, err := shlex.Split(line)
@@ -258,19 +257,73 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		}
 	}
 
-	if _, err := d.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
-		for _, input := range inputs {
-			cmd := p.Do(ctx, input...)
-			cmds = append(cmds, cmd)
+	switch queryContext.Option.GetRedisRunCommandsOn() {
+	case
+		v1pb.QueryOption_REDIS_RUN_COMMANDS_ON_UNSPECIFIED,
+		v1pb.QueryOption_SINGLE_NODE:
+		var cmds []*redis.Cmd
+		if _, err := d.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
+			for _, input := range inputs {
+				cmd := p.Do(ctx, input...)
+				cmds = append(cmds, cmd)
+			}
+			return nil
+		}); err != nil && err != redis.Nil {
+			return nil, err
 		}
-		return nil
-	}); err != nil && err != redis.Nil {
-		return nil, err
-	}
 
-	for i, cmd := range cmds {
-		setQueryResultRows(results[i], cmd, d.maximumSQLResultSize)
-		results[i].Latency = durationpb.New(time.Since(startTime))
+		for i, cmd := range cmds {
+			setQueryResultRows(results[i], cmd, d.maximumSQLResultSize)
+			results[i].Latency = durationpb.New(time.Since(startTime))
+		}
+
+	case v1pb.QueryOption_ALL_NODES:
+		cluster, ok := d.rdb.(*redis.ClusterClient)
+		if !ok {
+			return nil, errors.Errorf("expect *redis.ClusterClient, but get %T", d.rdb)
+		}
+
+		var cmdss [][]*redis.Cmd
+		cmdsChan := make(chan []*redis.Cmd)
+		stopChan := make(chan struct{})
+		go func() {
+			for {
+				select {
+				case cmds := <-cmdsChan:
+					cmdss = append(cmdss, cmds)
+				case <-stopChan:
+					return
+				}
+			}
+		}()
+
+		err := cluster.ForEachShard(ctx, func(ctx context.Context, client *redis.Client) error {
+			var cmds []*redis.Cmd
+			if _, err := d.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
+				for _, input := range inputs {
+					cmd := p.Do(ctx, input...)
+					cmds = append(cmds, cmd)
+				}
+				return nil
+			}); err != nil && err != redis.Nil {
+				return err
+			}
+			cmdsChan <- cmds
+			return nil
+		})
+		close(stopChan)
+		if err != nil && err != redis.Nil {
+			return nil, errors.Wrapf(err, "failed to query for each shard")
+		}
+
+		for _, cmds := range cmdss {
+			for i, cmd := range cmds {
+				setQueryResultRows(results[i], cmd, d.maximumSQLResultSize)
+				results[i].Latency = durationpb.New(time.Since(startTime))
+			}
+		}
+	default:
+		return nil, errors.Errorf("unknown RedisRunCommandOn enum %v", queryContext.Option.GetRedisRunCommandsOn())
 	}
 
 	return results, nil
