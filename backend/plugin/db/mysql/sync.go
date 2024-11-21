@@ -612,7 +612,11 @@ func (driver *Driver) syncRoutines(ctx context.Context, databaseName string) ([]
 	routinesQuery := `
 		SELECT
 			ROUTINE_NAME,
-			ROUTINE_TYPE
+			ROUTINE_TYPE,
+			SQL_MODE,
+			CHARACTER_SET_CLIENT,
+			COLLATION_CONNECTION,
+			DATABASE_COLLATION
 		FROM
 			INFORMATION_SCHEMA.ROUTINES
 		WHERE ROUTINE_SCHEMA = ? AND ROUTINE_TYPE IN ('FUNCTION', 'PROCEDURE')
@@ -627,9 +631,14 @@ func (driver *Driver) syncRoutines(ctx context.Context, databaseName string) ([]
 	var procedures []*storepb.ProcedureMetadata
 	for routineRows.Next() {
 		var name, routineType string
+		var sqlMode, charsetClient, collationConnection, databaseCollation sql.NullString
 		if err := routineRows.Scan(
 			&name,
 			&routineType,
+			&sqlMode,
+			&charsetClient,
+			&collationConnection,
+			&databaseCollation,
 		); err != nil {
 			return nil, nil, err
 		}
@@ -639,8 +648,12 @@ func (driver *Driver) syncRoutines(ctx context.Context, databaseName string) ([]
 				return nil, nil, err
 			}
 			procedures = append(procedures, &storepb.ProcedureMetadata{
-				Name:       name,
-				Definition: procedureDef,
+				Name:                name,
+				Definition:          procedureDef,
+				SqlMode:             sqlMode.String,
+				CharacterSetClient:  charsetClient.String,
+				CollationConnection: collationConnection.String,
+				DatabaseCollation:   databaseCollation.String,
 			})
 		} else {
 			functionDef, err := driver.getCreateFunctionStmt(ctx, databaseName, name)
@@ -648,8 +661,12 @@ func (driver *Driver) syncRoutines(ctx context.Context, databaseName string) ([]
 				return nil, nil, err
 			}
 			functions = append(functions, &storepb.FunctionMetadata{
-				Name:       name,
-				Definition: functionDef,
+				Name:                name,
+				Definition:          functionDef,
+				SqlMode:             sqlMode.String,
+				CharacterSetClient:  charsetClient.String,
+				CollationConnection: collationConnection.String,
+				DatabaseCollation:   databaseCollation.String,
 			})
 		}
 	}
