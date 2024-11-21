@@ -67,8 +67,8 @@ type TaskResult struct {
 
 // Project object of project.
 type Project struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+	Name  string `json:"name"`
+	Title string `json:"title"`
 }
 
 // Context is the context of webhook.
@@ -106,9 +106,13 @@ func (c *Context) GetMetaList() []Meta {
 
 	if c.Project != nil {
 		m = append(m, Meta{
-			Name:  "Project",
-			Value: c.Project.Name,
-		})
+			Name:  "Project Title",
+			Value: c.Project.Title,
+		},
+			Meta{
+				Name:  "Project ID",
+				Value: c.Project.Name,
+			})
 	}
 
 	if c.Issue != nil {
@@ -167,7 +171,10 @@ func (c *Context) GetMetaListZh() []Meta {
 
 	if c.Project != nil {
 		m = append(m, Meta{
-			Name:  "项目",
+			Name:  "项目名称",
+			Value: c.Project.Title,
+		}, Meta{
+			Name:  "项目 ID",
 			Value: c.Project.Name,
 		})
 	}

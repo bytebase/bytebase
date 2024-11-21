@@ -292,7 +292,7 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 	}
 
 	return &v1pb.Sheet{
-		Name:        fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.SheetIDPrefix, sheet.UID),
+		Name:        common.FormatSheet(project.ResourceID, sheet.UID),
 		Title:       sheet.Title,
 		Creator:     fmt.Sprintf("users/%s", creator.Email),
 		CreateTime:  timestamppb.New(sheet.CreatedTime),

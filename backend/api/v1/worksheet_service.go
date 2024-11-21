@@ -573,7 +573,7 @@ func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, wor
 	}
 	return &v1pb.Worksheet{
 		Name:        fmt.Sprintf("%s%d", common.WorksheetIDPrefix, worksheet.UID),
-		Project:     fmt.Sprintf("%s%s", common.ProjectNamePrefix, project.ResourceID),
+		Project:     common.FormatProject(project.ResourceID),
 		Database:    databaseParent,
 		Title:       worksheet.Title,
 		Creator:     fmt.Sprintf("users/%s", creator.Email),

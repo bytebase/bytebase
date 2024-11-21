@@ -766,7 +766,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					p := &storepb.IssueCommentPayload{
 						Event: &storepb.IssueCommentPayload_StageEnd_{
 							StageEnd: &storepb.IssueCommentPayload_StageEnd{
-								Stage: fmt.Sprintf("%s%s/%s%d/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.RolloutPrefix, taskStage.PipelineID, common.StagePrefix, taskStage.ID),
+								Stage: common.FormatStage(issue.Project.ResourceID, taskStage.PipelineID, taskStage.ID),
 							},
 						},
 					}
