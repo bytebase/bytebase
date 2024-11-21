@@ -905,7 +905,7 @@ func (s *BranchService) convertBranchToBranch(ctx context.Context, project *stor
 	}
 
 	v1Branch := &v1pb.Branch{
-		Name:             fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.BranchPrefix, branch.ResourceID),
+		Name:             common.FormatBranchResourceID(project.ResourceID, branch.ResourceID),
 		BranchId:         branch.ResourceID,
 		Etag:             fmt.Sprintf("%d", branch.UpdatedTime.UnixMilli()),
 		ParentBranch:     baselineBranch,
