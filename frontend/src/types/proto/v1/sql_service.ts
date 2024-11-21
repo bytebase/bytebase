@@ -72,6 +72,7 @@ export interface QueryRequest {
   explain: boolean;
   /** The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres. */
   schema?: string | undefined;
+  queryOption: QueryOption | undefined;
 }
 
 export interface QueryResponse {
@@ -81,6 +82,64 @@ export interface QueryResponse {
   advices: Advice[];
   /** The query is allowed to be exported or not. */
   allowExport: boolean;
+}
+
+export interface QueryOption {
+  redisRunCommandsOn: QueryOption_RedisRunCommandsOn;
+}
+
+export enum QueryOption_RedisRunCommandsOn {
+  /** REDIS_RUN_COMMANDS_ON_UNSPECIFIED - UNSPECIFIED defaults to SINGLE_NODE. */
+  REDIS_RUN_COMMANDS_ON_UNSPECIFIED = "REDIS_RUN_COMMANDS_ON_UNSPECIFIED",
+  SINGLE_NODE = "SINGLE_NODE",
+  ALL_NODES = "ALL_NODES",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function queryOption_RedisRunCommandsOnFromJSON(object: any): QueryOption_RedisRunCommandsOn {
+  switch (object) {
+    case 0:
+    case "REDIS_RUN_COMMANDS_ON_UNSPECIFIED":
+      return QueryOption_RedisRunCommandsOn.REDIS_RUN_COMMANDS_ON_UNSPECIFIED;
+    case 1:
+    case "SINGLE_NODE":
+      return QueryOption_RedisRunCommandsOn.SINGLE_NODE;
+    case 2:
+    case "ALL_NODES":
+      return QueryOption_RedisRunCommandsOn.ALL_NODES;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return QueryOption_RedisRunCommandsOn.UNRECOGNIZED;
+  }
+}
+
+export function queryOption_RedisRunCommandsOnToJSON(object: QueryOption_RedisRunCommandsOn): string {
+  switch (object) {
+    case QueryOption_RedisRunCommandsOn.REDIS_RUN_COMMANDS_ON_UNSPECIFIED:
+      return "REDIS_RUN_COMMANDS_ON_UNSPECIFIED";
+    case QueryOption_RedisRunCommandsOn.SINGLE_NODE:
+      return "SINGLE_NODE";
+    case QueryOption_RedisRunCommandsOn.ALL_NODES:
+      return "ALL_NODES";
+    case QueryOption_RedisRunCommandsOn.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function queryOption_RedisRunCommandsOnToNumber(object: QueryOption_RedisRunCommandsOn): number {
+  switch (object) {
+    case QueryOption_RedisRunCommandsOn.REDIS_RUN_COMMANDS_ON_UNSPECIFIED:
+      return 0;
+    case QueryOption_RedisRunCommandsOn.SINGLE_NODE:
+      return 1;
+    case QueryOption_RedisRunCommandsOn.ALL_NODES:
+      return 2;
+    case QueryOption_RedisRunCommandsOn.UNRECOGNIZED:
+    default:
+      return -1;
+  }
 }
 
 export interface QueryResult {
@@ -744,7 +803,16 @@ export const AdminExecuteResponse: MessageFns<AdminExecuteResponse> = {
 };
 
 function createBaseQueryRequest(): QueryRequest {
-  return { name: "", statement: "", limit: 0, timeout: undefined, dataSourceId: "", explain: false, schema: undefined };
+  return {
+    name: "",
+    statement: "",
+    limit: 0,
+    timeout: undefined,
+    dataSourceId: "",
+    explain: false,
+    schema: undefined,
+    queryOption: undefined,
+  };
 }
 
 export const QueryRequest: MessageFns<QueryRequest> = {
@@ -769,6 +837,9 @@ export const QueryRequest: MessageFns<QueryRequest> = {
     }
     if (message.schema !== undefined) {
       writer.uint32(66).string(message.schema);
+    }
+    if (message.queryOption !== undefined) {
+      QueryOption.encode(message.queryOption, writer.uint32(74).fork()).join();
     }
     return writer;
   },
@@ -829,6 +900,13 @@ export const QueryRequest: MessageFns<QueryRequest> = {
 
           message.schema = reader.string();
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.queryOption = QueryOption.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -847,6 +925,7 @@ export const QueryRequest: MessageFns<QueryRequest> = {
       dataSourceId: isSet(object.dataSourceId) ? globalThis.String(object.dataSourceId) : "",
       explain: isSet(object.explain) ? globalThis.Boolean(object.explain) : false,
       schema: isSet(object.schema) ? globalThis.String(object.schema) : undefined,
+      queryOption: isSet(object.queryOption) ? QueryOption.fromJSON(object.queryOption) : undefined,
     };
   },
 
@@ -873,6 +952,9 @@ export const QueryRequest: MessageFns<QueryRequest> = {
     if (message.schema !== undefined) {
       obj.schema = message.schema;
     }
+    if (message.queryOption !== undefined) {
+      obj.queryOption = QueryOption.toJSON(message.queryOption);
+    }
     return obj;
   },
 
@@ -890,6 +972,9 @@ export const QueryRequest: MessageFns<QueryRequest> = {
     message.dataSourceId = object.dataSourceId ?? "";
     message.explain = object.explain ?? false;
     message.schema = object.schema ?? undefined;
+    message.queryOption = (object.queryOption !== undefined && object.queryOption !== null)
+      ? QueryOption.fromPartial(object.queryOption)
+      : undefined;
     return message;
   },
 };
@@ -979,6 +1064,68 @@ export const QueryResponse: MessageFns<QueryResponse> = {
     message.results = object.results?.map((e) => QueryResult.fromPartial(e)) || [];
     message.advices = object.advices?.map((e) => Advice.fromPartial(e)) || [];
     message.allowExport = object.allowExport ?? false;
+    return message;
+  },
+};
+
+function createBaseQueryOption(): QueryOption {
+  return { redisRunCommandsOn: QueryOption_RedisRunCommandsOn.REDIS_RUN_COMMANDS_ON_UNSPECIFIED };
+}
+
+export const QueryOption: MessageFns<QueryOption> = {
+  encode(message: QueryOption, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.redisRunCommandsOn !== QueryOption_RedisRunCommandsOn.REDIS_RUN_COMMANDS_ON_UNSPECIFIED) {
+      writer.uint32(8).int32(queryOption_RedisRunCommandsOnToNumber(message.redisRunCommandsOn));
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryOption {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryOption();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.redisRunCommandsOn = queryOption_RedisRunCommandsOnFromJSON(reader.int32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryOption {
+    return {
+      redisRunCommandsOn: isSet(object.redisRunCommandsOn)
+        ? queryOption_RedisRunCommandsOnFromJSON(object.redisRunCommandsOn)
+        : QueryOption_RedisRunCommandsOn.REDIS_RUN_COMMANDS_ON_UNSPECIFIED,
+    };
+  },
+
+  toJSON(message: QueryOption): unknown {
+    const obj: any = {};
+    if (message.redisRunCommandsOn !== QueryOption_RedisRunCommandsOn.REDIS_RUN_COMMANDS_ON_UNSPECIFIED) {
+      obj.redisRunCommandsOn = queryOption_RedisRunCommandsOnToJSON(message.redisRunCommandsOn);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<QueryOption>): QueryOption {
+    return QueryOption.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<QueryOption>): QueryOption {
+    const message = createBaseQueryOption();
+    message.redisRunCommandsOn = object.redisRunCommandsOn ??
+      QueryOption_RedisRunCommandsOn.REDIS_RUN_COMMANDS_ON_UNSPECIFIED;
     return message;
   },
 };
