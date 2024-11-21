@@ -138,6 +138,7 @@
     - [TableMetadata](#bytebase-v1-TableMetadata)
     - [TablePartitionMetadata](#bytebase-v1-TablePartitionMetadata)
     - [TaskMetadata](#bytebase-v1-TaskMetadata)
+    - [TriggerMetadata](#bytebase-v1-TriggerMetadata)
     - [UpdateDatabaseMetadataRequest](#bytebase-v1-UpdateDatabaseMetadataRequest)
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
     - [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest)
@@ -2735,6 +2736,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | materialized_views | [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata) | repeated | The materialized_views is the list of materialized views in a schema. |
 | packages | [PackageMetadata](#bytebase-v1-PackageMetadata) | repeated | The packages is the list of packages in a schema. |
 | owner | [string](#string) |  |  |
+| triggers | [TriggerMetadata](#bytebase-v1-TriggerMetadata) | repeated | The triggers is the list of triggers in a schema, triggers are sorted by table_name, name, event, timing, action_order. |
 
 
 
@@ -2959,6 +2961,25 @@ TablePartitionMetadata is the metadata for table partitions.
 | state | [TaskMetadata.State](#bytebase-v1-TaskMetadata-State) |  | The state of the task. |
 | condition | [string](#string) |  | The condition of the task. |
 | definition | [string](#string) |  | The definition of the task. |
+
+
+
+
+
+
+<a name="bytebase-v1-TriggerMetadata"></a>
+
+### TriggerMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of the trigger. |
+| table_name | [string](#string) |  | The table_name is the name of the table/view that the trigger is created on. |
+| event | [string](#string) |  | The event is the event of the trigger, such as INSERT, UPDATE, DELETE, TRUNCATE. |
+| timing | [string](#string) |  | The timing is the timing of the trigger, such as BEFORE, AFTER. |
+| body | [string](#string) |  | The body is the body of the trigger. |
 
 
 

@@ -80,6 +80,26 @@ message SchemaMetadata {
   repeated PackageMetadata packages = 11;
 
   string owner = 12;
+
+  // The triggers is the list of triggers in a schema, triggers are sorted by table_name, name, event, timing, action_order.
+  repeated TriggerMetadata triggers = 13;
+}
+
+message TriggerMetadata {
+  // The name is the name of the trigger.
+  string name = 1;
+
+  // The table_name is the name of the table/view that the trigger is created on.
+  string table_name = 2;
+
+  // The event is the event of the trigger, such as INSERT, UPDATE, DELETE, TRUNCATE.
+  string event = 3;
+
+  // The timing is the timing of the trigger, such as BEFORE, AFTER.
+  string timing = 4;
+
+  // The body is the body of the trigger.
+  string body = 5;
 }
 
 message TaskMetadata {
