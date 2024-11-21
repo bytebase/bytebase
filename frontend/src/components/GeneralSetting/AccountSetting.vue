@@ -5,7 +5,6 @@
         <h1 class="text-2xl font-bold">
           {{ $t("settings.general.workspace.account") }}
         </h1>
-        <FeatureBadge feature="bb.feature.watermark" />
       </div>
       <span v-if="!allowEdit" class="text-sm text-gray-400">
         {{ $t("settings.general.workspace.only-admin-can-edit") }}
@@ -13,6 +12,25 @@
     </div>
 
     <div class="flex-1 lg:px-4">
+      <div v-if="!isSaaSMode" class="mb-7 mt-4 lg:mt-0">
+        <div class="flex items-center gap-x-2">
+          <Switch
+            :value="disallowSignupEnabled"
+            :text="true"
+            :disabled="!allowEdit || !hasDisallowSignupFeature"
+            @update:value="handleDisallowSignupToggle"
+          />
+          <span class="textlabel">
+            {{ $t("settings.general.workspace.disallow-signup.enable") }}
+          </span>
+        </div>
+        <div class="mt-1 mb-3 text-sm text-gray-400">
+          {{ $t("settings.general.workspace.disallow-signup.description") }}
+        </div>
+      </div>
+
+      <NDivider v-if="!isSaaSMode" />
+
       <PasswordRestrictionSetting :allow-edit="allowEdit" />
       <NDivider />
 
@@ -22,31 +40,16 @@
             <Switch
               :value="require2FAEnabled"
               :text="true"
-              :disabled="!allowEdit"
+              :disabled="!allowEdit || !has2FAFeature"
               @update:value="handleRequire2FAToggle"
             />
-            <span class="textlabel">
+            <div class="textlabel flex items-center space-x-2">
               {{ $t("settings.general.workspace.require-2fa.enable") }}
-            </span>
+              <FeatureBadge feature="bb.feature.2fa" />
+            </div>
           </div>
           <div class="mt-1 mb-3 text-sm text-gray-400">
             {{ $t("settings.general.workspace.require-2fa.description") }}
-          </div>
-        </div>
-        <div v-if="!isSaaSMode" class="mb-7 mt-4 lg:mt-0">
-          <div class="flex items-center gap-x-2">
-            <Switch
-              :value="disallowSignupEnabled"
-              :text="true"
-              :disabled="!allowEdit"
-              @update:value="handleDisallowSignupToggle"
-            />
-            <span class="textlabel">
-              {{ $t("settings.general.workspace.disallow-signup.enable") }}
-            </span>
-          </div>
-          <div class="mt-1 mb-3 text-sm text-gray-400">
-            {{ $t("settings.general.workspace.disallow-signup.description") }}
           </div>
         </div>
         <div class="mb-7 mt-4 lg:mt-0">
@@ -54,14 +57,15 @@
             <Switch
               :value="disallowPasswordSignin"
               :text="true"
-              :disabled="!allowEdit"
+              :disabled="!allowEdit || !hasDisallowPasswordSigninFeature"
               @update:value="handleDisallowPasswordSigninToggle"
             />
-            <span class="textlabel">
+            <div class="textlabel flex items-center space-x-2">
               {{
                 $t("settings.general.workspace.disallow-password-signin.enable")
               }}
-            </span>
+              <FeatureBadge feature="bb.feature.disallow-password-signin" />
+            </div>
           </div>
           <div class="mt-1 mb-3 text-sm text-gray-400">
             {{
