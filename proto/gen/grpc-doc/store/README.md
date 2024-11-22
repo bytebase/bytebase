@@ -1380,7 +1380,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of a sequence. |
 | data_type | [string](#string) |  | The data type of a sequence. |
-| start | [int64](#int64) |  | The start value of a sequence. |
+| start | [string](#string) |  | The start value of a sequence. |
 | min_value | [string](#string) |  | The minimum value of a sequence. |
 | max_value | [string](#string) |  | The maximum value of a sequence. |
 | increment | [string](#string) |  | Increment value of a sequence. |

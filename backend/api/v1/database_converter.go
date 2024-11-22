@@ -170,6 +170,24 @@ func convertStoreDatabaseMetadata(ctx context.Context, metadata *storepb.Databas
 			}
 			s.Triggers = append(s.Triggers, v1Trigger)
 		}
+
+		for _, sequence := range schema.Sequences {
+			if sequence == nil {
+				continue
+			}
+			v1Sequence := &v1pb.SequenceMetadata{
+				Name:      sequence.Name,
+				DataType:  sequence.DataType,
+				Start:     sequence.Start,
+				MinValue:  sequence.MinValue,
+				MaxValue:  sequence.MaxValue,
+				Increment: sequence.Increment,
+				Cycle:     sequence.Cycle,
+				CacheSize: sequence.CacheSize,
+				LastValue: sequence.LastValue,
+			}
+			s.Sequences = append(s.Sequences, v1Sequence)
+		}
 	}
 	for _, extension := range metadata.Extensions {
 		if extension == nil {
