@@ -328,11 +328,7 @@ const useExecuteSQL = () => {
         );
 
         if (checkBehavior === "NOTIFICATION") {
-          const combinedAdvices =
-            resultSet.advices.length > 0
-              ? resultSet.advices
-              : (checkResult.advices ?? []);
-          notifyAdvices(combinedAdvices);
+          notifyAdvices(checkResult.advices ?? []);
         }
 
         if (resultSet.error) {
