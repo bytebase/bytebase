@@ -11178,7 +11178,6 @@ Type of the SheetPayload.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | results | [QueryResult](#bytebase-v1-QueryResult) | repeated | The query results. |
-| advices | [Advice](#bytebase-v1-Advice) | repeated | The query advices. |
 | allow_export | [bool](#bool) |  | The query is allowed to be exported or not. |
 
 

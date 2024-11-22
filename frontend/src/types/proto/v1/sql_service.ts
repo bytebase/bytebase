@@ -78,8 +78,6 @@ export interface QueryRequest {
 export interface QueryResponse {
   /** The query results. */
   results: QueryResult[];
-  /** The query advices. */
-  advices: Advice[];
   /** The query is allowed to be exported or not. */
   allowExport: boolean;
 }
@@ -980,16 +978,13 @@ export const QueryRequest: MessageFns<QueryRequest> = {
 };
 
 function createBaseQueryResponse(): QueryResponse {
-  return { results: [], advices: [], allowExport: false };
+  return { results: [], allowExport: false };
 }
 
 export const QueryResponse: MessageFns<QueryResponse> = {
   encode(message: QueryResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     for (const v of message.results) {
       QueryResult.encode(v!, writer.uint32(10).fork()).join();
-    }
-    for (const v of message.advices) {
-      Advice.encode(v!, writer.uint32(18).fork()).join();
     }
     if (message.allowExport !== false) {
       writer.uint32(24).bool(message.allowExport);
@@ -1011,13 +1006,6 @@ export const QueryResponse: MessageFns<QueryResponse> = {
 
           message.results.push(QueryResult.decode(reader, reader.uint32()));
           continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.advices.push(Advice.decode(reader, reader.uint32()));
-          continue;
         case 3:
           if (tag !== 24) {
             break;
@@ -1037,7 +1025,6 @@ export const QueryResponse: MessageFns<QueryResponse> = {
   fromJSON(object: any): QueryResponse {
     return {
       results: globalThis.Array.isArray(object?.results) ? object.results.map((e: any) => QueryResult.fromJSON(e)) : [],
-      advices: globalThis.Array.isArray(object?.advices) ? object.advices.map((e: any) => Advice.fromJSON(e)) : [],
       allowExport: isSet(object.allowExport) ? globalThis.Boolean(object.allowExport) : false,
     };
   },
@@ -1046,9 +1033,6 @@ export const QueryResponse: MessageFns<QueryResponse> = {
     const obj: any = {};
     if (message.results?.length) {
       obj.results = message.results.map((e) => QueryResult.toJSON(e));
-    }
-    if (message.advices?.length) {
-      obj.advices = message.advices.map((e) => Advice.toJSON(e));
     }
     if (message.allowExport !== false) {
       obj.allowExport = message.allowExport;
@@ -1062,7 +1046,6 @@ export const QueryResponse: MessageFns<QueryResponse> = {
   fromPartial(object: DeepPartial<QueryResponse>): QueryResponse {
     const message = createBaseQueryResponse();
     message.results = object.results?.map((e) => QueryResult.fromPartial(e)) || [];
-    message.advices = object.advices?.map((e) => Advice.fromPartial(e)) || [];
     message.allowExport = object.allowExport ?? false;
     return message;
   },
