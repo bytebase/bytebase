@@ -667,6 +667,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.SequenceMetadata"><span class="badge">M</span>SequenceMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.SlowQueryDetails"><span class="badge">M</span>SlowQueryDetails</a>
                 </li>
               
@@ -704,6 +708,10 @@
               
                 <li>
                   <a href="#bytebase.v1.TaskMetadata"><span class="badge">M</span>TaskMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TriggerMetadata"><span class="badge">M</span>TriggerMetadata</a>
                 </li>
               
                 <li>
@@ -2810,6 +2818,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.QueryOption"><span class="badge">M</span>QueryOption</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.QueryRequest"><span class="badge">M</span>QueryRequest</a>
                 </li>
               
@@ -2864,6 +2876,10 @@
               
                 <li>
                   <a href="#bytebase.v1.QueryHistory.Type"><span class="badge">E</span>QueryHistory.Type</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.QueryOption.RedisRunCommandsOn"><span class="badge">E</span>QueryOption.RedisRunCommandsOn</a>
                 </li>
               
               
@@ -5537,7 +5553,8 @@ A maximum of 1000 databases can be modified in a batch. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} </p></td>
+                  <td><p>Format:
+instances/{instance}/databases/{database}/changeHistories/{changeHistory} </p></td>
                 </tr>
               
                 <tr>
@@ -6019,7 +6036,8 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Could be empty
-TODO(p0ny): We will migrate ChangeHistory to Changelog, and they won&#39;t have task_run. </p></td>
+TODO(p0ny): We will migrate ChangeHistory to Changelog, and they won&#39;t have
+task_run. </p></td>
                 </tr>
               
                 <tr>
@@ -6215,7 +6233,8 @@ Or present but not found if deleted </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The on_update is the on update action of a column.
-For MySQL like databases, it&#39;s only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value. </p></td>
+For MySQL like databases, it&#39;s only supported for TIMESTAMP columns with
+CURRENT_TIMESTAMP as on update value. </p></td>
                 </tr>
               
                 <tr>
@@ -6265,8 +6284,8 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td>effective_masking_level</td>
                   <td><a href="#bytebase.v1.MaskingLevel">MaskingLevel</a></td>
                   <td></td>
-                  <td><p>The effective_masking_level is the effective masking level of the column, evaluate from the
-column masking data and global masking rules. </p></td>
+                  <td><p>The effective_masking_level is the effective masking level of the column,
+evaluate from the column masking data and global masking rules. </p></td>
                 </tr>
               
                 <tr>
@@ -6374,8 +6393,9 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
                   <td>effective_environment</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The effective environment based on environment tag above and environment tag on the instance.
-Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-overview. </p></td>
+                  <td><p>The effective environment based on environment tag above and environment
+tag on the instance. Inheritance follows
+https://cloud.google.com/resource-manager/docs/tags/tags-overview. </p></td>
                 </tr>
               
                 <tr>
@@ -6666,7 +6686,8 @@ instances/{instance}/databases/{database}/secrets/{secret} </p></td>
                   <td><p>The name of the database or change history.
 Format:
 database: instances/{instance}/databases/{database}
-change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory} </p></td>
+change history:
+instances/{instance}/databases/{database}/changeHistories/{changeHistory} </p></td>
                 </tr>
               
                 <tr>
@@ -6681,7 +6702,8 @@ change history: instances/{instance}/databases/{database}/changeHistories/{chang
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The resource name of the change history
-Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} </p></td>
+Format:
+instances/{instance}/databases/{database}/changeHistories/{changeHistory} </p></td>
                 </tr>
               
                 <tr>
@@ -6743,7 +6765,8 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
                   <td>schema</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The schema is the extension that is installed to. But the extension usage is not limited to the schema. </p></td>
+                  <td><p>The schema is the extension that is installed to. But the extension usage
+is not limited to the schema. </p></td>
                 </tr>
               
                 <tr>
@@ -6963,7 +6986,8 @@ Format: projcets/{project}/branches/{branch} </p></td>
                   <td>signature</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The signature is the name with the number and type of input arguments the function takes. </p></td>
+                  <td><p>The signature is the name with the number and type of input arguments the
+function takes. </p></td>
                 </tr>
               
                 <tr>
@@ -7047,7 +7071,8 @@ Format: projcets/{project}/branches/{branch} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the change history to retrieve.
-Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} </p></td>
+Format:
+instances/{instance}/databases/{database}/changeHistories/{changeHistory} </p></td>
                 </tr>
               
                 <tr>
@@ -7371,9 +7396,10 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>page_size</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The maximum number of change histories to return. The service may return fewer than this value.
-If unspecified, at most 10 change histories will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                  <td><p>The maximum number of change histories to return. The service may return
+fewer than this value. If unspecified, at most 10 change histories will be
+returned. The maximum value is 1000; values above 1000 will be coerced to
+1000. </p></td>
                 </tr>
               
                 <tr>
@@ -7383,8 +7409,8 @@ The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
                   <td><p>A page token, received from a previous `ListChangeHistories` call.
 Provide this to retrieve the subsequent page.
 
-When paginating, all other parameters provided to `ListChangeHistories` must match
-the call that provided the page token. </p></td>
+When paginating, all other parameters provided to `ListChangeHistories`
+must match the call that provided the page token. </p></td>
                 </tr>
               
                 <tr>
@@ -7399,28 +7425,29 @@ the call that provided the page token. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The filter of the change histories.
-follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-Support filter by type, source or table.
-For example:
-table = &#34;tableExists(&#39;{database}&#39;, &#39;{schema}&#39;, &#39;{table}&#39;)&#34;
-table = &#34;tableExists(&#39;db&#39;, &#39;public&#39;, &#39;table1&#39;) || tableExists(&#39;db&#39;, &#39;public&#39;, &#39;table2&#39;)&#34;
-type = &#34;MIGRATE | DATA&#34;
-source = &#34;UI&#34;
-source = &#34;VCS&#34;
+follow the
+[ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
+syntax. Support filter by type, source or table. For example: table =
+&#34;tableExists(&#39;{database}&#39;, &#39;{schema}&#39;, &#39;{table}&#39;)&#34; table =
+&#34;tableExists(&#39;db&#39;, &#39;public&#39;, &#39;table1&#39;) || tableExists(&#39;db&#39;, &#39;public&#39;,
+&#39;table2&#39;)&#34; type = &#34;MIGRATE | DATA&#34; source = &#34;UI&#34; source = &#34;VCS&#34;
 
 The table filter follow the CEL syntax.
 currently, we have one function for CEL:
-- tableExists(database, schema, table): return true if the table exists in changed resources.
+- tableExists(database, schema, table): return true if the table exists in
+changed resources.
 
 examples:
 Use
   tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table1&#34;)
-to filter the change histories which have the table &#34;table1&#34; in the schema &#34;public&#34; of the database &#34;db&#34;.
-For MySQL, the schema is always &#34;&#34;, such as tableExists(&#34;db&#34;, &#34;&#34;, &#34;table1&#34;).
+to filter the change histories which have the table &#34;table1&#34; in the schema
+&#34;public&#34; of the database &#34;db&#34;. For MySQL, the schema is always &#34;&#34;, such as
+tableExists(&#34;db&#34;, &#34;&#34;, &#34;table1&#34;).
 
-Combine multiple functions with &#34;&amp;&amp;&#34; and &#34;||&#34;, we MUST use the Disjunctive Normal Form(DNF).
-In other words, the CEL expression consists of several parts connected by OR operators.
-For example, the following expression is valid:
+Combine multiple functions with &#34;&amp;&amp;&#34; and &#34;||&#34;, we MUST use the Disjunctive
+Normal Form(DNF). In other words, the CEL expression consists of several
+parts connected by OR operators. For example, the following expression is
+valid:
 (
  tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table1&#34;) &amp;&amp;
  tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table2&#34;)
@@ -7490,8 +7517,8 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>page_size</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The maximum number of changelogs to return. The service may return fewer than this value.
-If unspecified, at most 10 changelogs will be returned.
+                  <td><p>The maximum number of changelogs to return. The service may return fewer
+than this value. If unspecified, at most 10 changelogs will be returned.
 The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
                 </tr>
               
@@ -7518,28 +7545,29 @@ the call that provided the page token. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The filter of the changelogs.
-follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-Support filter by type, source or table.
-For example:
-table = &#34;tableExists(&#39;{database}&#39;, &#39;{schema}&#39;, &#39;{table}&#39;)&#34;
-table = &#34;tableExists(&#39;db&#39;, &#39;public&#39;, &#39;table1&#39;) || tableExists(&#39;db&#39;, &#39;public&#39;, &#39;table2&#39;)&#34;
-type = &#34;MIGRATE | DATA&#34;
-source = &#34;UI&#34;
-source = &#34;VCS&#34;
+follow the
+[ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
+syntax. Support filter by type, source or table. For example: table =
+&#34;tableExists(&#39;{database}&#39;, &#39;{schema}&#39;, &#39;{table}&#39;)&#34; table =
+&#34;tableExists(&#39;db&#39;, &#39;public&#39;, &#39;table1&#39;) || tableExists(&#39;db&#39;, &#39;public&#39;,
+&#39;table2&#39;)&#34; type = &#34;MIGRATE | DATA&#34; source = &#34;UI&#34; source = &#34;VCS&#34;
 
 The table filter follow the CEL syntax.
 currently, we have one function for CEL:
-- tableExists(database, schema, table): return true if the table exists in changed resources.
+- tableExists(database, schema, table): return true if the table exists in
+changed resources.
 
 examples:
 Use
   tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table1&#34;)
-to filter the changelogs which have the table &#34;table1&#34; in the schema &#34;public&#34; of the database &#34;db&#34;.
-For MySQL, the schema is always &#34;&#34;, such as tableExists(&#34;db&#34;, &#34;&#34;, &#34;table1&#34;).
+to filter the changelogs which have the table &#34;table1&#34; in the schema
+&#34;public&#34; of the database &#34;db&#34;. For MySQL, the schema is always &#34;&#34;, such as
+tableExists(&#34;db&#34;, &#34;&#34;, &#34;table1&#34;).
 
-Combine multiple functions with &#34;&amp;&amp;&#34; and &#34;||&#34;, we MUST use the Disjunctive Normal Form(DNF).
-In other words, the CEL expression consists of several parts connected by OR operators.
-For example, the following expression is valid:
+Combine multiple functions with &#34;&amp;&amp;&#34; and &#34;||&#34;, we MUST use the Disjunctive
+Normal Form(DNF). In other words, the CEL expression consists of several
+parts connected by OR operators. For example, the following expression is
+valid:
 (
  tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table1&#34;) &amp;&amp;
  tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table2&#34;)
@@ -7610,9 +7638,8 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td>page_size</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The maximum number of databases to return. The service may return fewer than
-this value.
-If unspecified, at most 10 databases will be returned. </p></td>
+                  <td><p>The maximum number of databases to return. The service may return fewer
+than this value. If unspecified, at most 10 databases will be returned. </p></td>
                 </tr>
               
                 <tr>
@@ -7622,8 +7649,8 @@ If unspecified, at most 10 databases will be returned. </p></td>
                   <td><p>A page token, received from a previous `ListDatabases` call.
 Provide this to retrieve the subsequent page.
 
-When paginating, all other parameters provided to `ListDatabases` must match
-the call that provided the page token. </p></td>
+When paginating, all other parameters provided to `ListDatabases` must
+match the call that provided the page token. </p></td>
                 </tr>
               
             </tbody>
@@ -7680,16 +7707,16 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The parent, which owns this collection of databases.
-- instances/{instance}: list all databases for an instance. Use &#34;instances/-&#34; to list all databases. </p></td>
+- instances/{instance}: list all databases for an instance. Use
+&#34;instances/-&#34; to list all databases. </p></td>
                 </tr>
               
                 <tr>
                   <td>page_size</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The maximum number of databases to return. The service may return fewer than
-this value.
-If unspecified, at most 10 databases will be returned. </p></td>
+                  <td><p>The maximum number of databases to return. The service may return fewer
+than this value. If unspecified, at most 10 databases will be returned. </p></td>
                 </tr>
               
                 <tr>
@@ -7699,8 +7726,8 @@ If unspecified, at most 10 databases will be returned. </p></td>
                   <td><p>A page token, received from a previous `ListInstanceDatabases` call.
 Provide this to retrieve the subsequent page.
 
-When paginating, all other parameters provided to `ListInstanceDatabases` must match
-the call that provided the page token. </p></td>
+When paginating, all other parameters provided to `ListInstanceDatabases`
+must match the call that provided the page token. </p></td>
                 </tr>
               
                 <tr>
@@ -7709,8 +7736,8 @@ the call that provided the page token. </p></td>
                   <td></td>
                   <td><p>Deprecated.
 Filter is used to filter databases returned in the list.
-For example, `project == &#34;projects/{project}&#34;` can be used to list databases in a project.
-Note: the project filter will be moved to parent. </p></td>
+For example, `project == &#34;projects/{project}&#34;` can be used to list
+databases in a project. Note: the project filter will be moved to parent. </p></td>
                 </tr>
               
             </tbody>
@@ -7774,9 +7801,9 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>page_size</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The maximum number of revisions to return. The service may return fewer than this value.
-If unspecified, at most 10 revisions will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                  <td><p>The maximum number of revisions to return. The service may return fewer
+than this value. If unspecified, at most 10 revisions will be returned. The
+maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
                 </tr>
               
                 <tr>
@@ -7786,8 +7813,8 @@ The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
                   <td><p>A page token, received from a previous `ListRevisions` call.
 Provide this to retrieve the subsequent page.
 
-When paginating, all other parameters provided to `ListRevisions` must match
-the call that provided the page token. </p></td>
+When paginating, all other parameters provided to `ListRevisions` must
+match the call that provided the page token. </p></td>
                 </tr>
               
             </tbody>
@@ -7898,8 +7925,8 @@ the call that provided the page token. </p></td>
                   <td>next_page_token</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Not used. A token, which can be sent as `page_token` to retrieve the next page.
-If this field is omitted, there are no subsequent pages. </p></td>
+                  <td><p>Not used. A token, which can be sent as `page_token` to retrieve the next
+page. If this field is omitted, there are no subsequent pages. </p></td>
                 </tr>
               
             </tbody>
@@ -7931,11 +7958,12 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The filter of the slow query log.
-follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-Support filter by database and start_time in SlowQueryDetails for now.
-For example:
-Search the slow query log of the specific database:
-  - the specific database: database = &#34;instances/{instance}/databases/{database}&#34;
+follow the
+[ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
+syntax. Support filter by database and start_time in SlowQueryDetails for
+now. For example: Search the slow query log of the specific database:
+  - the specific database: database =
+  &#34;instances/{instance}/databases/{database}&#34;
 Search the slow query log that start_time after 2022-01-01T12:00:00.000Z:
   - start_time &gt; &#34;2022-01-01T12:00:00.000Z&#34;
   - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339).
@@ -7947,9 +7975,9 @@ Search the slow query log that start_time after 2022-01-01T12:00:00.000Z:
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The order by of the slow query log.
-Support order by count, latest_log_time, average_query_time, maximum_query_time,
-average_rows_sent, maximum_rows_sent, average_rows_examined, maximum_rows_examined for now.
-For example:
+Support order by count, latest_log_time, average_query_time,
+maximum_query_time, average_rows_sent, maximum_rows_sent,
+average_rows_examined, maximum_rows_examined for now. For example:
  - order by count: order_by = &#34;count&#34;
  - order by latest_log_time desc: order_by = &#34;latest_log_time desc&#34;
 Default: order by average_query_time desc. </p></td>
@@ -8021,7 +8049,8 @@ Default: order by average_query_time desc. </p></td>
                   <td>dependent_columns</td>
                   <td><a href="#bytebase.v1.DependentColumn">DependentColumn</a></td>
                   <td>repeated</td>
-                  <td><p>The dependent_columns is the list of dependent columns of a materialized view. </p></td>
+                  <td><p>The dependent_columns is the list of dependent columns of a materialized
+view. </p></td>
                 </tr>
               
             </tbody>
@@ -8137,7 +8166,8 @@ Format: projcets/{project}/branches/{branch} </p></td>
                   <td>signature</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The signature is the name with the number and type of input arguments the function takes. </p></td>
+                  <td><p>The signature is the name with the number and type of input arguments the
+function takes. </p></td>
                 </tr>
               
                 <tr>
@@ -8273,7 +8303,8 @@ Format: projects/{project}/issues/{issue} </p></td>
                   <td></td>
                   <td><p>The task run associated with the revision.
 Can be empty.
-Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
+Format:
+projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
                 </tr>
               
             </tbody>
@@ -8393,14 +8424,16 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                   <td>streams</td>
                   <td><a href="#bytebase.v1.StreamMetadata">StreamMetadata</a></td>
                   <td>repeated</td>
-                  <td><p>The streams is the list of streams in a schema, currently, only used for Snowflake. </p></td>
+                  <td><p>The streams is the list of streams in a schema, currently, only used for
+Snowflake. </p></td>
                 </tr>
               
                 <tr>
                   <td>tasks</td>
                   <td><a href="#bytebase.v1.TaskMetadata">TaskMetadata</a></td>
                   <td>repeated</td>
-                  <td><p>The routines is the list of routines in a schema, currently, only used for Snowflake. </p></td>
+                  <td><p>The routines is the list of routines in a schema, currently, only used for
+Snowflake. </p></td>
                 </tr>
               
                 <tr>
@@ -8422,6 +8455,21 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>triggers</td>
+                  <td><a href="#bytebase.v1.TriggerMetadata">TriggerMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The triggers is the list of triggers in a schema, triggers are sorted by
+table_name, name, event, timing, action_order. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sequences</td>
+                  <td><a href="#bytebase.v1.SequenceMetadata">SequenceMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The sequences is the list of sequences in a schema, sorted by name. </p></td>
                 </tr>
               
             </tbody>
@@ -8476,6 +8524,86 @@ instances/{instance}/databases/{database}/secrets/{secret} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The description of the secret. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SequenceMetadata">SequenceMetadata</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of a sequence. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>data_type</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The data type of a sequence. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>start</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The start value of a sequence. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>min_value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The minimum value of a sequence. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>max_value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The maximum value of a sequence. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>increment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Increment value of a sequence. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>cycle</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Cycle is whether the sequence cycles. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>cache_size</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Cache size of a sequence. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>last_value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Last value of a sequence. </p></td>
                 </tr>
               
             </tbody>
@@ -8675,7 +8803,8 @@ The format is &#34;projects/{project}&#34;. </p></td>
                   <td>samples</td>
                   <td><a href="#bytebase.v1.SlowQueryDetails">SlowQueryDetails</a></td>
                   <td>repeated</td>
-                  <td><p>Samples are details of the sample slow query logs with the same fingerprint. </p></td>
+                  <td><p>Samples are details of the sample slow query logs with the same
+fingerprint. </p></td>
                 </tr>
               
             </tbody>
@@ -9017,8 +9146,10 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The expression is the expression of a table partition.
-For PostgreSQL, the expression is the text of {FOR VALUES partition_bound_spec}, see https://www.postgresql.org/docs/current/sql-createtable.html.
-For MySQL, the expression is the `expr` or `column_list` of the following syntax.
+For PostgreSQL, the expression is the text of {FOR VALUES
+partition_bound_spec}, see
+https://www.postgresql.org/docs/current/sql-createtable.html. For MySQL,
+the expression is the `expr` or `column_list` of the following syntax.
 PARTITION BY
    { [LINEAR] HASH(expr)
    | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list)
@@ -9032,8 +9163,11 @@ PARTITION BY
                   <td></td>
                   <td><p>The value is the value of a table partition.
 For MySQL, the value is for RANGE and LIST partition types,
-- For a RANGE partition, it contains the value set in the partition&#39;s VALUES LESS THAN clause, which can be either an integer or MAXVALUE.
-- For a LIST partition, this column contains the values defined in the partition&#39;s VALUES IN clause, which is a list of comma-separated integer values.
+- For a RANGE partition, it contains the value set in the partition&#39;s
+VALUES LESS THAN clause, which can be either an integer or MAXVALUE.
+- For a LIST partition, this column contains the values defined in the
+partition&#39;s VALUES IN clause, which is a list of comma-separated integer
+values.
 - For others, it&#39;s an empty string. </p></td>
                 </tr>
               
@@ -9041,8 +9175,10 @@ For MySQL, the value is for RANGE and LIST partition types,
                   <td>use_default</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The use_default is whether the users use the default partition, it stores the different value for different database engines.
-For MySQL, it&#39;s [INT] type, 0 means not use default partition, otherwise, it&#39;s equals to number in syntax [SUB]PARTITION {number}. </p></td>
+                  <td><p>The use_default is whether the users use the default partition, it stores
+the different value for different database engines. For MySQL, it&#39;s [INT]
+type, 0 means not use default partition, otherwise, it&#39;s equals to number
+in syntax [SUB]PARTITION {number}. </p></td>
                 </tr>
               
                 <tr>
@@ -9147,6 +9283,81 @@ Example: 01ad32a0-1bb6-5e93-0000-000000000001 </p></td>
 
         
       
+        <h3 id="bytebase.v1.TriggerMetadata">TriggerMetadata</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of the trigger. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>table_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The table_name is the name of the table/view that the trigger is created
+on. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>event</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
+TRUNCATE. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>timing</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The timing is the timing of the trigger, such as BEFORE, AFTER. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>body</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The body is the body of the trigger. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sql_mode</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>character_set_client</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>collation_connection</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.UpdateDatabaseMetadataRequest">UpdateDatabaseMetadataRequest</h3>
         <p></p>
 
@@ -9163,8 +9374,9 @@ Example: 01ad32a0-1bb6-5e93-0000-000000000001 </p></td>
                   <td></td>
                   <td><p>The database metadata to update.
 
-The database_metadata&#39;s `name` field is used to identify the database metadata to update.
-Format: instances/{instance}/databases/{database}/metadata </p></td>
+The database_metadata&#39;s `name` field is used to identify the database
+metadata to update. Format:
+instances/{instance}/databases/{database}/metadata </p></td>
                 </tr>
               
                 <tr>
@@ -9584,7 +9796,8 @@ The API will default to the BASIC view.</p></td>
               <tr>
                 <td>DATABASE_METADATA_VIEW_BASIC</td>
                 <td>1</td>
-                <td><p>Include basic information of schema object names such as schema, table, view, function names.</p></td>
+                <td><p>Include basic information of schema object names such as schema, table,
+view, function names.</p></td>
               </tr>
             
               <tr>
@@ -9684,7 +9897,7 @@ The API will default to the BASIC view.</p></td>
         </table>
       
         <h3 id="bytebase.v1.TablePartitionMetadata.Type">TablePartitionMetadata.Type</h3>
-        <p>Type is the type of a table partition, some database engines may not support all types.</p><p>Only avilable for the following database engines now:</p><p>MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY, LINEAR_KEY (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)</p><p>TiDB: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY</p><p>PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)</p>
+        <p>Type is the type of a table partition, some database engines may not</p><p>support all types. Only avilable for the following database engines now:</p><p>MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY,</p><p>LINEAR_KEY</p><p>(https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html) TiDB:</p><p>RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY PostgreSQL: RANGE,</p><p>LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -30377,6 +30590,30 @@ Format: instances/{instance}/databases/{databaseName} </p></td>
 
         
       
+        <h3 id="bytebase.v1.QueryOption">QueryOption</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>redis_run_commands_on</td>
+                  <td><a href="#bytebase.v1.QueryOption.RedisRunCommandsOn">QueryOption.RedisRunCommandsOn</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.QueryRequest">QueryRequest</h3>
         <p></p>
 
@@ -30437,6 +30674,13 @@ Or it can be used to query a specific read-only data source. </p></td>
                   <td><a href="#string">string</a></td>
                   <td>optional</td>
                   <td><p>The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>query_option</td>
+                  <td><a href="#bytebase.v1.QueryOption">QueryOption</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -31121,6 +31365,35 @@ to retrieve the next page of history. </p></td>
             
               <tr>
                 <td>EXPORT</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.QueryOption.RedisRunCommandsOn">QueryOption.RedisRunCommandsOn</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>REDIS_RUN_COMMANDS_ON_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>UNSPECIFIED defaults to SINGLE_NODE.</p></td>
+              </tr>
+            
+              <tr>
+                <td>SINGLE_NODE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ALL_NODES</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>

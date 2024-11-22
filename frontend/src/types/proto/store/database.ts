@@ -63,9 +63,15 @@ export interface SchemaMetadata {
   functions: FunctionMetadata[];
   /** The procedures is the list of procedures in a schema. */
   procedures: ProcedureMetadata[];
-  /** The streams is the list of streams in a schema, currently, only used for Snowflake. */
+  /**
+   * The streams is the list of streams in a schema, currently, only used for
+   * Snowflake.
+   */
   streams: StreamMetadata[];
-  /** The routines is the list of routines in a schema, currently, only used for Snowflake. */
+  /**
+   * The routines is the list of routines in a schema, currently, only used for
+   * Snowflake.
+   */
   tasks: TaskMetadata[];
   /** The materialized_views is the list of materialized views in a schema. */
   materializedViews: MaterializedViewMetadata[];
@@ -74,6 +80,54 @@ export interface SchemaMetadata {
   /** The packages is the list of packages in a schema. */
   packages: PackageMetadata[];
   owner: string;
+  /**
+   * The triggers is the list of triggers in a schema, triggers are sorted by
+   * table_name, event, timing, action_order.
+   */
+  triggers: TriggerMetadata[];
+}
+
+export interface SequenceMetadata {
+  /** The name of a sequence. */
+  name: string;
+  /** The data type of a sequence. */
+  dataType: string;
+  /** The start value of a sequence. */
+  start: string;
+  /** The minimum value of a sequence. */
+  minValue: string;
+  /** The maximum value of a sequence. */
+  maxValue: string;
+  /** Increment value of a sequence. */
+  increment: string;
+  /** Cycle is whether the sequence cycles. */
+  cycle: boolean;
+  /** Cache size of a sequence. */
+  cacheSize: string;
+  /** Last value of a sequence. */
+  lastValue: string;
+}
+
+export interface TriggerMetadata {
+  /** The name is the name of the trigger. */
+  name: string;
+  /**
+   * The table_name is the name of the table/view that the trigger is created
+   * on.
+   */
+  tableName: string;
+  /**
+   * The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
+   * TRUNCATE.
+   */
+  event: string;
+  /** The timing is the timing of the trigger, such as BEFORE, AFTER. */
+  timing: string;
+  /** The body is the body of the trigger. */
+  body: string;
+  sqlMode: string;
+  characterSetClient: string;
+  collationConnection: string;
 }
 
 export interface TaskMetadata {
@@ -346,8 +400,10 @@ export interface TablePartitionMetadata {
   type: TablePartitionMetadata_Type;
   /**
    * The expression is the expression of a table partition.
-   * For PostgreSQL, the expression is the text of {FOR VALUES partition_bound_spec}, see https://www.postgresql.org/docs/current/sql-createtable.html.
-   * For MySQL, the expression is the `expr` or `column_list` of the following syntax.
+   * For PostgreSQL, the expression is the text of {FOR VALUES
+   * partition_bound_spec}, see
+   * https://www.postgresql.org/docs/current/sql-createtable.html. For MySQL,
+   * the expression is the `expr` or `column_list` of the following syntax.
    * PARTITION BY
    *    { [LINEAR] HASH(expr)
    *    | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list)
@@ -358,14 +414,19 @@ export interface TablePartitionMetadata {
   /**
    * The value is the value of a table partition.
    * For MySQL, the value is for RANGE and LIST partition types,
-   * - For a RANGE partition, it contains the value set in the partition's VALUES LESS THAN clause, which can be either an integer or MAXVALUE.
-   * - For a LIST partition, this column contains the values defined in the partition's VALUES IN clause, which is a list of comma-separated integer values.
+   * - For a RANGE partition, it contains the value set in the partition's
+   * VALUES LESS THAN clause, which can be either an integer or MAXVALUE.
+   * - For a LIST partition, this column contains the values defined in the
+   * partition's VALUES IN clause, which is a list of comma-separated integer
+   * values.
    * - For others, it's an empty string.
    */
   value: string;
   /**
-   * The use_default is whether the users use the default partition, it stores the different value for different database engines.
-   * For MySQL, it's [INT] type, 0 means not use default partition, otherwise, it's equals to number in syntax [SUB]PARTITION {number}.
+   * The use_default is whether the users use the default partition, it stores
+   * the different value for different database engines. For MySQL, it's [INT]
+   * type, 0 means not use default partition, otherwise, it's equals to number
+   * in syntax [SUB]PARTITION {number}.
    */
   useDefault: string;
   /** The subpartitions is the list of subpartitions in a table partition. */
@@ -373,11 +434,13 @@ export interface TablePartitionMetadata {
 }
 
 /**
- * Type is the type of a table partition, some database engines may not support all types.
- * Only avilable for the following database engines now:
- * MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY, LINEAR_KEY (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)
- * TiDB: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY
- * PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
+ * Type is the type of a table partition, some database engines may not
+ * support all types. Only avilable for the following database engines now:
+ * MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY,
+ * LINEAR_KEY
+ * (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html) TiDB:
+ * RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY PostgreSQL: RANGE,
+ * LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
  */
 export enum TablePartitionMetadata_Type {
   TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
@@ -486,7 +549,10 @@ export interface ColumnMetadata {
   name: string;
   /** The position is the position in columns. */
   position: number;
-  /** The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default. */
+  /**
+   * The default is the default of a column. Use google.protobuf.StringValue
+   * to distinguish between an empty string default value or no default.
+   */
   default?: string | undefined;
   defaultNull?: boolean | undefined;
   defaultExpression?:
@@ -494,7 +560,8 @@ export interface ColumnMetadata {
     | undefined;
   /**
    * The on_update is the on update action of a column.
-   * For MySQL like databases, it's only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value.
+   * For MySQL like databases, it's only supported for TIMESTAMP columns with
+   * CURRENT_TIMESTAMP as on update value.
    */
   onUpdate: string;
   /** The nullable is the nullable of a column. */
@@ -616,7 +683,10 @@ export interface FunctionMetadata {
   name: string;
   /** The definition is the definition of a function. */
   definition: string;
-  /** The signature is the name with the number and type of input arguments the function takes. */
+  /**
+   * The signature is the name with the number and type of input arguments the
+   * function takes.
+   */
   signature: string;
   /** MySQL specific metadata. */
   characterSetClient: string;
@@ -631,7 +701,10 @@ export interface ProcedureMetadata {
   name: string;
   /** The definition is the definition of a procedure. */
   definition: string;
-  /** The signature is the name with the number and type of input arguments the function takes. */
+  /**
+   * The signature is the name with the number and type of input arguments the
+   * function takes.
+   */
   signature: string;
   /** MySQL specific metadata. */
   characterSetClient: string;
@@ -682,7 +755,10 @@ export interface IndexMetadata {
 export interface ExtensionMetadata {
   /** The name is the name of an extension. */
   name: string;
-  /** The schema is the extension that is installed to. But the extension usage is not limited to the schema. */
+  /**
+   * The schema is the extension that is installed to. But the extension usage
+   * is not limited to the schema.
+   */
   schema: string;
   /** The version is the version of an extension. */
   version: string;
@@ -721,7 +797,10 @@ export interface ForeignKeyMetadata {
 export interface InstanceRoleMetadata {
   /** The role name. It's unique within the instance. */
   name: string;
-  /** The grant display string on the instance. It's generated by database engine. */
+  /**
+   * The grant display string on the instance. It's generated by database
+   * engine.
+   */
   grant: string;
 }
 
@@ -847,14 +926,6 @@ export interface LinkedDatabaseMetadata {
   name: string;
   username: string;
   host: string;
-}
-
-/** SequenceMetadata is the metadata for sequences. */
-export interface SequenceMetadata {
-  /** The name of a sequence. */
-  name: string;
-  /** The data type of a sequence. */
-  dataType: string;
 }
 
 function createBaseDatabaseMetadata(): DatabaseMetadata {
@@ -1250,6 +1321,7 @@ function createBaseSchemaMetadata(): SchemaMetadata {
     sequences: [],
     packages: [],
     owner: "",
+    triggers: [],
   };
 }
 
@@ -1290,6 +1362,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     }
     if (message.owner !== "") {
       writer.uint32(98).string(message.owner);
+    }
+    for (const v of message.triggers) {
+      TriggerMetadata.encode(v!, writer.uint32(106).fork()).join();
     }
     return writer;
   },
@@ -1385,6 +1460,13 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
 
           message.owner = reader.string();
           continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.triggers.push(TriggerMetadata.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1422,6 +1504,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
         ? object.packages.map((e: any) => PackageMetadata.fromJSON(e))
         : [],
       owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
+      triggers: globalThis.Array.isArray(object?.triggers)
+        ? object.triggers.map((e: any) => TriggerMetadata.fromJSON(e))
+        : [],
     };
   },
 
@@ -1463,6 +1548,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     if (message.owner !== "") {
       obj.owner = message.owner;
     }
+    if (message.triggers?.length) {
+      obj.triggers = message.triggers.map((e) => TriggerMetadata.toJSON(e));
+    }
     return obj;
   },
 
@@ -1483,6 +1571,369 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     message.sequences = object.sequences?.map((e) => SequenceMetadata.fromPartial(e)) || [];
     message.packages = object.packages?.map((e) => PackageMetadata.fromPartial(e)) || [];
     message.owner = object.owner ?? "";
+    message.triggers = object.triggers?.map((e) => TriggerMetadata.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSequenceMetadata(): SequenceMetadata {
+  return {
+    name: "",
+    dataType: "",
+    start: "",
+    minValue: "",
+    maxValue: "",
+    increment: "",
+    cycle: false,
+    cacheSize: "",
+    lastValue: "",
+  };
+}
+
+export const SequenceMetadata: MessageFns<SequenceMetadata> = {
+  encode(message: SequenceMetadata, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.dataType !== "") {
+      writer.uint32(18).string(message.dataType);
+    }
+    if (message.start !== "") {
+      writer.uint32(26).string(message.start);
+    }
+    if (message.minValue !== "") {
+      writer.uint32(34).string(message.minValue);
+    }
+    if (message.maxValue !== "") {
+      writer.uint32(42).string(message.maxValue);
+    }
+    if (message.increment !== "") {
+      writer.uint32(50).string(message.increment);
+    }
+    if (message.cycle !== false) {
+      writer.uint32(56).bool(message.cycle);
+    }
+    if (message.cacheSize !== "") {
+      writer.uint32(66).string(message.cacheSize);
+    }
+    if (message.lastValue !== "") {
+      writer.uint32(74).string(message.lastValue);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SequenceMetadata {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSequenceMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.dataType = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.start = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.minValue = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.maxValue = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.increment = reader.string();
+          continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.cycle = reader.bool();
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.cacheSize = reader.string();
+          continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.lastValue = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SequenceMetadata {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      dataType: isSet(object.dataType) ? globalThis.String(object.dataType) : "",
+      start: isSet(object.start) ? globalThis.String(object.start) : "",
+      minValue: isSet(object.minValue) ? globalThis.String(object.minValue) : "",
+      maxValue: isSet(object.maxValue) ? globalThis.String(object.maxValue) : "",
+      increment: isSet(object.increment) ? globalThis.String(object.increment) : "",
+      cycle: isSet(object.cycle) ? globalThis.Boolean(object.cycle) : false,
+      cacheSize: isSet(object.cacheSize) ? globalThis.String(object.cacheSize) : "",
+      lastValue: isSet(object.lastValue) ? globalThis.String(object.lastValue) : "",
+    };
+  },
+
+  toJSON(message: SequenceMetadata): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.dataType !== "") {
+      obj.dataType = message.dataType;
+    }
+    if (message.start !== "") {
+      obj.start = message.start;
+    }
+    if (message.minValue !== "") {
+      obj.minValue = message.minValue;
+    }
+    if (message.maxValue !== "") {
+      obj.maxValue = message.maxValue;
+    }
+    if (message.increment !== "") {
+      obj.increment = message.increment;
+    }
+    if (message.cycle !== false) {
+      obj.cycle = message.cycle;
+    }
+    if (message.cacheSize !== "") {
+      obj.cacheSize = message.cacheSize;
+    }
+    if (message.lastValue !== "") {
+      obj.lastValue = message.lastValue;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SequenceMetadata>): SequenceMetadata {
+    return SequenceMetadata.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SequenceMetadata>): SequenceMetadata {
+    const message = createBaseSequenceMetadata();
+    message.name = object.name ?? "";
+    message.dataType = object.dataType ?? "";
+    message.start = object.start ?? "";
+    message.minValue = object.minValue ?? "";
+    message.maxValue = object.maxValue ?? "";
+    message.increment = object.increment ?? "";
+    message.cycle = object.cycle ?? false;
+    message.cacheSize = object.cacheSize ?? "";
+    message.lastValue = object.lastValue ?? "";
+    return message;
+  },
+};
+
+function createBaseTriggerMetadata(): TriggerMetadata {
+  return {
+    name: "",
+    tableName: "",
+    event: "",
+    timing: "",
+    body: "",
+    sqlMode: "",
+    characterSetClient: "",
+    collationConnection: "",
+  };
+}
+
+export const TriggerMetadata: MessageFns<TriggerMetadata> = {
+  encode(message: TriggerMetadata, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.tableName !== "") {
+      writer.uint32(18).string(message.tableName);
+    }
+    if (message.event !== "") {
+      writer.uint32(26).string(message.event);
+    }
+    if (message.timing !== "") {
+      writer.uint32(34).string(message.timing);
+    }
+    if (message.body !== "") {
+      writer.uint32(42).string(message.body);
+    }
+    if (message.sqlMode !== "") {
+      writer.uint32(50).string(message.sqlMode);
+    }
+    if (message.characterSetClient !== "") {
+      writer.uint32(58).string(message.characterSetClient);
+    }
+    if (message.collationConnection !== "") {
+      writer.uint32(66).string(message.collationConnection);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): TriggerMetadata {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTriggerMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.tableName = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.event = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.timing = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.body = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.sqlMode = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.characterSetClient = reader.string();
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.collationConnection = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TriggerMetadata {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      tableName: isSet(object.tableName) ? globalThis.String(object.tableName) : "",
+      event: isSet(object.event) ? globalThis.String(object.event) : "",
+      timing: isSet(object.timing) ? globalThis.String(object.timing) : "",
+      body: isSet(object.body) ? globalThis.String(object.body) : "",
+      sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
+      characterSetClient: isSet(object.characterSetClient) ? globalThis.String(object.characterSetClient) : "",
+      collationConnection: isSet(object.collationConnection) ? globalThis.String(object.collationConnection) : "",
+    };
+  },
+
+  toJSON(message: TriggerMetadata): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.tableName !== "") {
+      obj.tableName = message.tableName;
+    }
+    if (message.event !== "") {
+      obj.event = message.event;
+    }
+    if (message.timing !== "") {
+      obj.timing = message.timing;
+    }
+    if (message.body !== "") {
+      obj.body = message.body;
+    }
+    if (message.sqlMode !== "") {
+      obj.sqlMode = message.sqlMode;
+    }
+    if (message.characterSetClient !== "") {
+      obj.characterSetClient = message.characterSetClient;
+    }
+    if (message.collationConnection !== "") {
+      obj.collationConnection = message.collationConnection;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TriggerMetadata>): TriggerMetadata {
+    return TriggerMetadata.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TriggerMetadata>): TriggerMetadata {
+    const message = createBaseTriggerMetadata();
+    message.name = object.name ?? "";
+    message.tableName = object.tableName ?? "";
+    message.event = object.event ?? "";
+    message.timing = object.timing ?? "";
+    message.body = object.body ?? "";
+    message.sqlMode = object.sqlMode ?? "";
+    message.characterSetClient = object.characterSetClient ?? "";
+    message.collationConnection = object.collationConnection ?? "";
     return message;
   },
 };
@@ -5239,80 +5690,6 @@ export const LinkedDatabaseMetadata: MessageFns<LinkedDatabaseMetadata> = {
     message.name = object.name ?? "";
     message.username = object.username ?? "";
     message.host = object.host ?? "";
-    return message;
-  },
-};
-
-function createBaseSequenceMetadata(): SequenceMetadata {
-  return { name: "", dataType: "" };
-}
-
-export const SequenceMetadata: MessageFns<SequenceMetadata> = {
-  encode(message: SequenceMetadata, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    if (message.dataType !== "") {
-      writer.uint32(18).string(message.dataType);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): SequenceMetadata {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSequenceMetadata();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.dataType = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SequenceMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      dataType: isSet(object.dataType) ? globalThis.String(object.dataType) : "",
-    };
-  },
-
-  toJSON(message: SequenceMetadata): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.dataType !== "") {
-      obj.dataType = message.dataType;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SequenceMetadata>): SequenceMetadata {
-    return SequenceMetadata.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SequenceMetadata>): SequenceMetadata {
-    const message = createBaseSequenceMetadata();
-    message.name = object.name ?? "";
-    message.dataType = object.dataType ?? "";
     return message;
   },
 };

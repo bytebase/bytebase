@@ -293,7 +293,7 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 
 	var nextPageToken string
 	if len(issues) == limitPlusOne {
-		if nextPageToken, err = offset.getPageToken(); err != nil {
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
 		issues = issues[:offset.limit]
@@ -353,7 +353,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 
 	var nextPageToken string
 	if len(issues) == limitPlusOne {
-		if nextPageToken, err = offset.getPageToken(); err != nil {
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
 		issues = issues[:offset.limit]
@@ -1408,7 +1408,7 @@ func (s *IssueService) ListIssueComments(ctx context.Context, request *v1pb.List
 	}
 	var nextPageToken string
 	if len(issueComments) == limitPlusOne {
-		if nextPageToken, err = offset.getPageToken(); err != nil {
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
 		issueComments = issueComments[:offset.limit]

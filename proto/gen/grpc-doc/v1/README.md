@@ -128,6 +128,7 @@
     - [SchemaConfig](#bytebase-v1-SchemaConfig)
     - [SchemaMetadata](#bytebase-v1-SchemaMetadata)
     - [Secret](#bytebase-v1-Secret)
+    - [SequenceMetadata](#bytebase-v1-SequenceMetadata)
     - [SlowQueryDetails](#bytebase-v1-SlowQueryDetails)
     - [SlowQueryLog](#bytebase-v1-SlowQueryLog)
     - [SlowQueryStatistics](#bytebase-v1-SlowQueryStatistics)
@@ -138,6 +139,7 @@
     - [TableMetadata](#bytebase-v1-TableMetadata)
     - [TablePartitionMetadata](#bytebase-v1-TablePartitionMetadata)
     - [TaskMetadata](#bytebase-v1-TaskMetadata)
+    - [TriggerMetadata](#bytebase-v1-TriggerMetadata)
     - [UpdateDatabaseMetadataRequest](#bytebase-v1-UpdateDatabaseMetadataRequest)
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
     - [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest)
@@ -689,6 +691,7 @@
     - [PrettyRequest](#bytebase-v1-PrettyRequest)
     - [PrettyResponse](#bytebase-v1-PrettyResponse)
     - [QueryHistory](#bytebase-v1-QueryHistory)
+    - [QueryOption](#bytebase-v1-QueryOption)
     - [QueryRequest](#bytebase-v1-QueryRequest)
     - [QueryResponse](#bytebase-v1-QueryResponse)
     - [QueryResult](#bytebase-v1-QueryResult)
@@ -704,6 +707,7 @@
     - [Advice.Status](#bytebase-v1-Advice-Status)
     - [CheckRequest.ChangeType](#bytebase-v1-CheckRequest-ChangeType)
     - [QueryHistory.Type](#bytebase-v1-QueryHistory-Type)
+    - [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -2744,6 +2748,8 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | materialized_views | [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata) | repeated | The materialized_views is the list of materialized views in a schema. |
 | packages | [PackageMetadata](#bytebase-v1-PackageMetadata) | repeated | The packages is the list of packages in a schema. |
 | owner | [string](#string) |  |  |
+| triggers | [TriggerMetadata](#bytebase-v1-TriggerMetadata) | repeated | The triggers is the list of triggers in a schema, triggers are sorted by table_name, name, event, timing, action_order. |
+| sequences | [SequenceMetadata](#bytebase-v1-SequenceMetadata) | repeated | The sequences is the list of sequences in a schema, sorted by name. |
 
 
 
@@ -2763,6 +2769,29 @@ Secret is the secret of the database now.
 | updated_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Not used. The timestamp when the secret resource was updated. |
 | value | [string](#string) |  | The value of the secret. |
 | description | [string](#string) |  | The description of the secret. |
+
+
+
+
+
+
+<a name="bytebase-v1-SequenceMetadata"></a>
+
+### SequenceMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of a sequence. |
+| data_type | [string](#string) |  | The data type of a sequence. |
+| start | [string](#string) |  | The start value of a sequence. |
+| min_value | [string](#string) |  | The minimum value of a sequence. |
+| max_value | [string](#string) |  | The maximum value of a sequence. |
+| increment | [string](#string) |  | Increment value of a sequence. |
+| cycle | [bool](#bool) |  | Cycle is whether the sequence cycles. |
+| cache_size | [string](#string) |  | Cache size of a sequence. |
+| last_value | [string](#string) |  | Last value of a sequence. |
 
 
 
@@ -2968,6 +2997,28 @@ TablePartitionMetadata is the metadata for table partitions.
 | state | [TaskMetadata.State](#bytebase-v1-TaskMetadata-State) |  | The state of the task. |
 | condition | [string](#string) |  | The condition of the task. |
 | definition | [string](#string) |  | The definition of the task. |
+
+
+
+
+
+
+<a name="bytebase-v1-TriggerMetadata"></a>
+
+### TriggerMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of the trigger. |
+| table_name | [string](#string) |  | The table_name is the name of the table/view that the trigger is created on. |
+| event | [string](#string) |  | The event is the event of the trigger, such as INSERT, UPDATE, DELETE, TRUNCATE. |
+| timing | [string](#string) |  | The timing is the timing of the trigger, such as BEFORE, AFTER. |
+| body | [string](#string) |  | The body is the body of the trigger. |
+| sql_mode | [string](#string) |  |  |
+| character_set_client | [string](#string) |  |  |
+| collation_connection | [string](#string) |  |  |
 
 
 
@@ -3205,11 +3256,13 @@ ViewMetadata is the metadata for views.
 <a name="bytebase-v1-TablePartitionMetadata-Type"></a>
 
 ### TablePartitionMetadata.Type
-Type is the type of a table partition, some database engines may not support all types.
-Only avilable for the following database engines now:
-MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY, LINEAR_KEY (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)
-TiDB: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY
-PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
+Type is the type of a table partition, some database engines may not
+support all types. Only avilable for the following database engines now:
+MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY,
+LINEAR_KEY
+(https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html) TiDB:
+RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY PostgreSQL: RANGE,
+LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -11079,6 +11132,21 @@ Type of the SheetPayload.
 
 
 
+<a name="bytebase-v1-QueryOption"></a>
+
+### QueryOption
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| redis_run_commands_on | [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-QueryRequest"></a>
 
 ### QueryRequest
@@ -11094,6 +11162,7 @@ Type of the SheetPayload.
 | data_source_id | [string](#string) |  | The id of data source. It is used for querying admin data source even if the instance has read-only data sources. Or it can be used to query a specific read-only data source. |
 | explain | [bool](#bool) |  | Explain the statement. |
 | schema | [string](#string) | optional | The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres. |
+| query_option | [QueryOption](#bytebase-v1-QueryOption) |  |  |
 
 
 
@@ -11337,6 +11406,19 @@ for field description.
 | TYPE_UNSPECIFIED | 0 |  |
 | QUERY | 1 |  |
 | EXPORT | 2 |  |
+
+
+
+<a name="bytebase-v1-QueryOption-RedisRunCommandsOn"></a>
+
+### QueryOption.RedisRunCommandsOn
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| REDIS_RUN_COMMANDS_ON_UNSPECIFIED | 0 | UNSPECIFIED defaults to SINGLE_NODE. |
+| SINGLE_NODE | 1 |  |
+| ALL_NODES | 2 |  |
 
 
  

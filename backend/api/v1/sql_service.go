@@ -205,7 +205,12 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		defer conn.Close()
 	}
 
-	queryContext := db.QueryContext{Explain: request.Explain, Limit: int(request.Limit), OperatorEmail: user.Email}
+	queryContext := db.QueryContext{
+		Explain:       request.Explain,
+		Limit:         int(request.Limit),
+		OperatorEmail: user.Email,
+		Option:        request.QueryOption,
+	}
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
@@ -640,7 +645,10 @@ func DoExport(
 		}
 		defer conn.Close()
 	}
-	queryContext := db.QueryContext{Limit: int(request.Limit), OperatorEmail: user.Email}
+	queryContext := db.QueryContext{
+		Limit:         int(request.Limit),
+		OperatorEmail: user.Email,
+	}
 	results, spans, duration, queryErr := queryRetry(ctx, storeInstance, user, instance, database, driver, conn, request.Statement, nil /* timeDuration */, queryContext, true, licenseService, optionalAccessCheck, schemaSyncer)
 	if queryErr != nil {
 		return nil, duration, err
@@ -819,7 +827,7 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, request *v1pb.Sea
 	nextPageToken := ""
 	if len(historyList) == limitPlusOne {
 		historyList = historyList[:offset.limit]
-		if nextPageToken, err = offset.getPageToken(); err != nil {
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
 		}
 	}
