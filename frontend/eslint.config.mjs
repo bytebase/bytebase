@@ -29,6 +29,7 @@ export default [
   {
     rules: {
       "no-empty-pattern": "error",
+      "vue/no-ref-as-operand": "error",
       "no-useless-escape": "error",
       "@typescript-eslint/no-empty-interface": "error",
       "@typescript-eslint/no-unused-vars": [

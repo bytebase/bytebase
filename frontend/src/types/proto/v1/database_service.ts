@@ -32,7 +32,10 @@ export enum DatabaseMetadataView {
    * The API will default to the BASIC view.
    */
   DATABASE_METADATA_VIEW_UNSPECIFIED = "DATABASE_METADATA_VIEW_UNSPECIFIED",
-  /** DATABASE_METADATA_VIEW_BASIC - Include basic information of schema object names such as schema, table, view, function names. */
+  /**
+   * DATABASE_METADATA_VIEW_BASIC - Include basic information of schema object names such as schema, table,
+   * view, function names.
+   */
   DATABASE_METADATA_VIEW_BASIC = "DATABASE_METADATA_VIEW_BASIC",
   /** DATABASE_METADATA_VIEW_FULL - Include everything such as columns and column masking level. */
   DATABASE_METADATA_VIEW_FULL = "DATABASE_METADATA_VIEW_FULL",
@@ -210,28 +213,28 @@ export interface GetDatabaseRequest {
 export interface ListInstanceDatabasesRequest {
   /**
    * The parent, which owns this collection of databases.
-   * - instances/{instance}: list all databases for an instance. Use "instances/-" to list all databases.
+   * - instances/{instance}: list all databases for an instance. Use
+   * "instances/-" to list all databases.
    */
   parent: string;
   /**
-   * The maximum number of databases to return. The service may return fewer than
-   * this value.
-   * If unspecified, at most 10 databases will be returned.
+   * The maximum number of databases to return. The service may return fewer
+   * than this value. If unspecified, at most 10 databases will be returned.
    */
   pageSize: number;
   /**
    * A page token, received from a previous `ListInstanceDatabases` call.
    * Provide this to retrieve the subsequent page.
    *
-   * When paginating, all other parameters provided to `ListInstanceDatabases` must match
-   * the call that provided the page token.
+   * When paginating, all other parameters provided to `ListInstanceDatabases`
+   * must match the call that provided the page token.
    */
   pageToken: string;
   /**
    * Deprecated.
    * Filter is used to filter databases returned in the list.
-   * For example, `project == "projects/{project}"` can be used to list databases in a project.
-   * Note: the project filter will be moved to parent.
+   * For example, `project == "projects/{project}"` can be used to list
+   * databases in a project. Note: the project filter will be moved to parent.
    */
   filter: string;
 }
@@ -254,17 +257,16 @@ export interface ListDatabasesRequest {
    */
   parent: string;
   /**
-   * The maximum number of databases to return. The service may return fewer than
-   * this value.
-   * If unspecified, at most 10 databases will be returned.
+   * The maximum number of databases to return. The service may return fewer
+   * than this value. If unspecified, at most 10 databases will be returned.
    */
   pageSize: number;
   /**
    * A page token, received from a previous `ListDatabases` call.
    * Provide this to retrieve the subsequent page.
    *
-   * When paginating, all other parameters provided to `ListDatabases` must match
-   * the call that provided the page token.
+   * When paginating, all other parameters provided to `ListDatabases` must
+   * match the call that provided the page token.
    */
   pageToken: string;
 }
@@ -344,8 +346,9 @@ export interface UpdateDatabaseMetadataRequest {
   /**
    * The database metadata to update.
    *
-   * The database_metadata's `name` field is used to identify the database metadata to update.
-   * Format: instances/{instance}/databases/{database}/metadata
+   * The database_metadata's `name` field is used to identify the database
+   * metadata to update. Format:
+   * instances/{instance}/databases/{database}/metadata
    */
   databaseMetadata:
     | DatabaseMetadata
@@ -375,7 +378,8 @@ export interface DiffSchemaRequest {
    * The name of the database or change history.
    * Format:
    * database: instances/{instance}/databases/{database}
-   * change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+   * change history:
+   * instances/{instance}/databases/{database}/changeHistories/{changeHistory}
    */
   name: string;
   /** The target schema. */
@@ -384,7 +388,8 @@ export interface DiffSchemaRequest {
     | undefined;
   /**
    * The resource name of the change history
-   * Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+   * Format:
+   * instances/{instance}/databases/{database}/changeHistories/{changeHistory}
    */
   changeHistory?:
     | string
@@ -423,8 +428,9 @@ export interface Database {
    */
   environment: string;
   /**
-   * The effective environment based on environment tag above and environment tag on the instance.
-   * Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-overview.
+   * The effective environment based on environment tag above and environment
+   * tag on the instance. Inheritance follows
+   * https://cloud.google.com/resource-manager/docs/tags/tags-overview.
    */
   effectiveEnvironment: string;
   /** Labels will be used for deployment and policy control. */
@@ -483,25 +489,63 @@ export interface SchemaMetadata {
   functions: FunctionMetadata[];
   /** The procedures is the list of procedures in a schema. */
   procedures: ProcedureMetadata[];
-  /** The streams is the list of streams in a schema, currently, only used for Snowflake. */
+  /**
+   * The streams is the list of streams in a schema, currently, only used for
+   * Snowflake.
+   */
   streams: StreamMetadata[];
-  /** The routines is the list of routines in a schema, currently, only used for Snowflake. */
+  /**
+   * The routines is the list of routines in a schema, currently, only used for
+   * Snowflake.
+   */
   tasks: TaskMetadata[];
   /** The materialized_views is the list of materialized views in a schema. */
   materializedViews: MaterializedViewMetadata[];
   /** The packages is the list of packages in a schema. */
   packages: PackageMetadata[];
   owner: string;
-  /** The triggers is the list of triggers in a schema, triggers are sorted by table_name, name, event, timing, action_order. */
+  /**
+   * The triggers is the list of triggers in a schema, triggers are sorted by
+   * table_name, name, event, timing, action_order.
+   */
   triggers: TriggerMetadata[];
+  /** The sequences is the list of sequences in a schema, sorted by name. */
+  sequences: SequenceMetadata[];
+}
+
+export interface SequenceMetadata {
+  /** The name of a sequence. */
+  name: string;
+  /** The data type of a sequence. */
+  dataType: string;
+  /** The start value of a sequence. */
+  start: string;
+  /** The minimum value of a sequence. */
+  minValue: string;
+  /** The maximum value of a sequence. */
+  maxValue: string;
+  /** Increment value of a sequence. */
+  increment: string;
+  /** Cycle is whether the sequence cycles. */
+  cycle: boolean;
+  /** Cache size of a sequence. */
+  cacheSize: string;
+  /** Last value of a sequence. */
+  lastValue: string;
 }
 
 export interface TriggerMetadata {
   /** The name is the name of the trigger. */
   name: string;
-  /** The table_name is the name of the table/view that the trigger is created on. */
+  /**
+   * The table_name is the name of the table/view that the trigger is created
+   * on.
+   */
   tableName: string;
-  /** The event is the event of the trigger, such as INSERT, UPDATE, DELETE, TRUNCATE. */
+  /**
+   * The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
+   * TRUNCATE.
+   */
   event: string;
   /** The timing is the timing of the trigger, such as BEFORE, AFTER. */
   timing: string;
@@ -579,8 +623,10 @@ export interface TablePartitionMetadata {
   type: TablePartitionMetadata_Type;
   /**
    * The expression is the expression of a table partition.
-   * For PostgreSQL, the expression is the text of {FOR VALUES partition_bound_spec}, see https://www.postgresql.org/docs/current/sql-createtable.html.
-   * For MySQL, the expression is the `expr` or `column_list` of the following syntax.
+   * For PostgreSQL, the expression is the text of {FOR VALUES
+   * partition_bound_spec}, see
+   * https://www.postgresql.org/docs/current/sql-createtable.html. For MySQL,
+   * the expression is the `expr` or `column_list` of the following syntax.
    * PARTITION BY
    *    { [LINEAR] HASH(expr)
    *    | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list)
@@ -591,14 +637,19 @@ export interface TablePartitionMetadata {
   /**
    * The value is the value of a table partition.
    * For MySQL, the value is for RANGE and LIST partition types,
-   * - For a RANGE partition, it contains the value set in the partition's VALUES LESS THAN clause, which can be either an integer or MAXVALUE.
-   * - For a LIST partition, this column contains the values defined in the partition's VALUES IN clause, which is a list of comma-separated integer values.
+   * - For a RANGE partition, it contains the value set in the partition's
+   * VALUES LESS THAN clause, which can be either an integer or MAXVALUE.
+   * - For a LIST partition, this column contains the values defined in the
+   * partition's VALUES IN clause, which is a list of comma-separated integer
+   * values.
    * - For others, it's an empty string.
    */
   value: string;
   /**
-   * The use_default is whether the users use the default partition, it stores the different value for different database engines.
-   * For MySQL, it's [INT] type, 0 means not use default partition, otherwise, it's equals to number in syntax [SUB]PARTITION {number}.
+   * The use_default is whether the users use the default partition, it stores
+   * the different value for different database engines. For MySQL, it's [INT]
+   * type, 0 means not use default partition, otherwise, it's equals to number
+   * in syntax [SUB]PARTITION {number}.
    */
   useDefault: string;
   /** The subpartitions is the list of subpartitions in a table partition. */
@@ -606,11 +657,13 @@ export interface TablePartitionMetadata {
 }
 
 /**
- * Type is the type of a table partition, some database engines may not support all types.
- * Only avilable for the following database engines now:
- * MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY, LINEAR_KEY (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)
- * TiDB: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY
- * PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
+ * Type is the type of a table partition, some database engines may not
+ * support all types. Only avilable for the following database engines now:
+ * MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY,
+ * LINEAR_KEY
+ * (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html) TiDB:
+ * RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY PostgreSQL: RANGE,
+ * LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
  */
 export enum TablePartitionMetadata_Type {
   TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
@@ -727,7 +780,8 @@ export interface ColumnMetadata {
     | undefined;
   /**
    * The on_update is the on update action of a column.
-   * For MySQL like databases, it's only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value.
+   * For MySQL like databases, it's only supported for TIMESTAMP columns with
+   * CURRENT_TIMESTAMP as on update value.
    */
   onUpdate: string;
   /** The nullable is the nullable of a column. */
@@ -746,8 +800,8 @@ export interface ColumnMetadata {
   /** The user_comment is the user comment of a column parsed from the comment. */
   userComment: string;
   /**
-   * The effective_masking_level is the effective masking level of the column, evaluate from the
-   * column masking data and global masking rules.
+   * The effective_masking_level is the effective masking level of the column,
+   * evaluate from the column masking data and global masking rules.
    */
   effectiveMaskingLevel: MaskingLevel;
   /** The generation is the generation of a column. */
@@ -844,7 +898,10 @@ export interface MaterializedViewMetadata {
   definition: string;
   /** The comment is the comment of a materialized view. */
   comment: string;
-  /** The dependent_columns is the list of dependent columns of a materialized view. */
+  /**
+   * The dependent_columns is the list of dependent columns of a materialized
+   * view.
+   */
   dependentColumns: DependentColumn[];
 }
 
@@ -854,7 +911,10 @@ export interface FunctionMetadata {
   name: string;
   /** The definition is the definition of a function. */
   definition: string;
-  /** The signature is the name with the number and type of input arguments the function takes. */
+  /**
+   * The signature is the name with the number and type of input arguments the
+   * function takes.
+   */
   signature: string;
   /** MySQL specific metadata. */
   characterSetClient: string;
@@ -869,7 +929,10 @@ export interface ProcedureMetadata {
   name: string;
   /** The definition is the definition of a procedure. */
   definition: string;
-  /** The signature is the name with the number and type of input arguments the function takes. */
+  /**
+   * The signature is the name with the number and type of input arguments the
+   * function takes.
+   */
   signature: string;
   /** MySQL specific metadata. */
   characterSetClient: string;
@@ -1124,7 +1187,10 @@ export interface IndexMetadata {
 export interface ExtensionMetadata {
   /** The name is the name of an extension. */
   name: string;
-  /** The schema is the extension that is installed to. But the extension usage is not limited to the schema. */
+  /**
+   * The schema is the extension that is installed to. But the extension usage
+   * is not limited to the schema.
+   */
   schema: string;
   /** The version is the version of an extension. */
   version: string;
@@ -1275,11 +1341,12 @@ export interface ListSlowQueriesRequest {
   parent: string;
   /**
    * The filter of the slow query log.
-   * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-   * Support filter by database and start_time in SlowQueryDetails for now.
-   * For example:
-   * Search the slow query log of the specific database:
-   *   - the specific database: database = "instances/{instance}/databases/{database}"
+   * follow the
+   * [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
+   * syntax. Support filter by database and start_time in SlowQueryDetails for
+   * now. For example: Search the slow query log of the specific database:
+   *   - the specific database: database =
+   *   "instances/{instance}/databases/{database}"
    * Search the slow query log that start_time after 2022-01-01T12:00:00.000Z:
    *   - start_time > "2022-01-01T12:00:00.000Z"
    *   - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339).
@@ -1288,9 +1355,9 @@ export interface ListSlowQueriesRequest {
   filter: string;
   /**
    * The order by of the slow query log.
-   * Support order by count, latest_log_time, average_query_time, maximum_query_time,
-   * average_rows_sent, maximum_rows_sent, average_rows_examined, maximum_rows_examined for now.
-   * For example:
+   * Support order by count, latest_log_time, average_query_time,
+   * maximum_query_time, average_rows_sent, maximum_rows_sent,
+   * average_rows_examined, maximum_rows_examined for now. For example:
    *  - order by count: order_by = "count"
    *  - order by latest_log_time desc: order_by = "latest_log_time desc"
    * Default: order by average_query_time desc.
@@ -1350,7 +1417,10 @@ export interface SlowQueryStatistics {
   queryTimePercent: number;
   /** The percentage of the count. */
   countPercent: number;
-  /** Samples are details of the sample slow query logs with the same fingerprint. */
+  /**
+   * Samples are details of the sample slow query logs with the same
+   * fingerprint.
+   */
   samples: SlowQueryDetails[];
 }
 
@@ -1405,8 +1475,8 @@ export interface ListSecretsResponse {
   /** The list of secrets. */
   secrets: Secret[];
   /**
-   * Not used. A token, which can be sent as `page_token` to retrieve the next page.
-   * If this field is omitted, there are no subsequent pages.
+   * Not used. A token, which can be sent as `page_token` to retrieve the next
+   * page. If this field is omitted, there are no subsequent pages.
    */
   nextPageToken: string;
 }
@@ -1474,7 +1544,10 @@ export interface AdviseIndexResponse {
 }
 
 export interface ChangeHistory {
-  /** Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} */
+  /**
+   * Format:
+   * instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+   */
   name: string;
   /** Format: users/hello@world.com */
   creator: string;
@@ -1758,44 +1831,46 @@ export interface ListChangeHistoriesRequest {
    */
   parent: string;
   /**
-   * The maximum number of change histories to return. The service may return fewer than this value.
-   * If unspecified, at most 10 change histories will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   * The maximum number of change histories to return. The service may return
+   * fewer than this value. If unspecified, at most 10 change histories will be
+   * returned. The maximum value is 1000; values above 1000 will be coerced to
+   * 1000.
    */
   pageSize: number;
   /**
    * A page token, received from a previous `ListChangeHistories` call.
    * Provide this to retrieve the subsequent page.
    *
-   * When paginating, all other parameters provided to `ListChangeHistories` must match
-   * the call that provided the page token.
+   * When paginating, all other parameters provided to `ListChangeHistories`
+   * must match the call that provided the page token.
    */
   pageToken: string;
   view: ChangeHistoryView;
   /**
    * The filter of the change histories.
-   * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-   * Support filter by type, source or table.
-   * For example:
-   * table = "tableExists('{database}', '{schema}', '{table}')"
-   * table = "tableExists('db', 'public', 'table1') || tableExists('db', 'public', 'table2')"
-   * type = "MIGRATE | DATA"
-   * source = "UI"
-   * source = "VCS"
+   * follow the
+   * [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
+   * syntax. Support filter by type, source or table. For example: table =
+   * "tableExists('{database}', '{schema}', '{table}')" table =
+   * "tableExists('db', 'public', 'table1') || tableExists('db', 'public',
+   * 'table2')" type = "MIGRATE | DATA" source = "UI" source = "VCS"
    *
    * The table filter follow the CEL syntax.
    * currently, we have one function for CEL:
-   * - tableExists(database, schema, table): return true if the table exists in changed resources.
+   * - tableExists(database, schema, table): return true if the table exists in
+   * changed resources.
    *
    * examples:
    * Use
    *   tableExists("db", "public", "table1")
-   * to filter the change histories which have the table "table1" in the schema "public" of the database "db".
-   * For MySQL, the schema is always "", such as tableExists("db", "", "table1").
+   * to filter the change histories which have the table "table1" in the schema
+   * "public" of the database "db". For MySQL, the schema is always "", such as
+   * tableExists("db", "", "table1").
    *
-   * Combine multiple functions with "&&" and "||", we MUST use the Disjunctive Normal Form(DNF).
-   * In other words, the CEL expression consists of several parts connected by OR operators.
-   * For example, the following expression is valid:
+   * Combine multiple functions with "&&" and "||", we MUST use the Disjunctive
+   * Normal Form(DNF). In other words, the CEL expression consists of several
+   * parts connected by OR operators. For example, the following expression is
+   * valid:
    * (
    *  tableExists("db", "public", "table1") &&
    *  tableExists("db", "public", "table2")
@@ -1819,7 +1894,8 @@ export interface ListChangeHistoriesResponse {
 export interface GetChangeHistoryRequest {
   /**
    * The name of the change history to retrieve.
-   * Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+   * Format:
+   * instances/{instance}/databases/{database}/changeHistories/{changeHistory}
    */
   name: string;
   view: ChangeHistoryView;
@@ -1840,17 +1916,17 @@ export interface ListRevisionsRequest {
    */
   parent: string;
   /**
-   * The maximum number of revisions to return. The service may return fewer than this value.
-   * If unspecified, at most 10 revisions will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   * The maximum number of revisions to return. The service may return fewer
+   * than this value. If unspecified, at most 10 revisions will be returned. The
+   * maximum value is 1000; values above 1000 will be coerced to 1000.
    */
   pageSize: number;
   /**
    * A page token, received from a previous `ListRevisions` call.
    * Provide this to retrieve the subsequent page.
    *
-   * When paginating, all other parameters provided to `ListRevisions` must match
-   * the call that provided the page token.
+   * When paginating, all other parameters provided to `ListRevisions` must
+   * match the call that provided the page token.
    */
   pageToken: string;
 }
@@ -1925,7 +2001,8 @@ export interface Revision {
   /**
    * The task run associated with the revision.
    * Can be empty.
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+   * Format:
+   * projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
    */
   taskRun: string;
 }
@@ -1937,8 +2014,8 @@ export interface ListChangelogsRequest {
    */
   parent: string;
   /**
-   * The maximum number of changelogs to return. The service may return fewer than this value.
-   * If unspecified, at most 10 changelogs will be returned.
+   * The maximum number of changelogs to return. The service may return fewer
+   * than this value. If unspecified, at most 10 changelogs will be returned.
    * The maximum value is 1000; values above 1000 will be coerced to 1000.
    */
   pageSize: number;
@@ -1953,28 +2030,29 @@ export interface ListChangelogsRequest {
   view: ChangelogView;
   /**
    * The filter of the changelogs.
-   * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-   * Support filter by type, source or table.
-   * For example:
-   * table = "tableExists('{database}', '{schema}', '{table}')"
-   * table = "tableExists('db', 'public', 'table1') || tableExists('db', 'public', 'table2')"
-   * type = "MIGRATE | DATA"
-   * source = "UI"
-   * source = "VCS"
+   * follow the
+   * [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
+   * syntax. Support filter by type, source or table. For example: table =
+   * "tableExists('{database}', '{schema}', '{table}')" table =
+   * "tableExists('db', 'public', 'table1') || tableExists('db', 'public',
+   * 'table2')" type = "MIGRATE | DATA" source = "UI" source = "VCS"
    *
    * The table filter follow the CEL syntax.
    * currently, we have one function for CEL:
-   * - tableExists(database, schema, table): return true if the table exists in changed resources.
+   * - tableExists(database, schema, table): return true if the table exists in
+   * changed resources.
    *
    * examples:
    * Use
    *   tableExists("db", "public", "table1")
-   * to filter the changelogs which have the table "table1" in the schema "public" of the database "db".
-   * For MySQL, the schema is always "", such as tableExists("db", "", "table1").
+   * to filter the changelogs which have the table "table1" in the schema
+   * "public" of the database "db". For MySQL, the schema is always "", such as
+   * tableExists("db", "", "table1").
    *
-   * Combine multiple functions with "&&" and "||", we MUST use the Disjunctive Normal Form(DNF).
-   * In other words, the CEL expression consists of several parts connected by OR operators.
-   * For example, the following expression is valid:
+   * Combine multiple functions with "&&" and "||", we MUST use the Disjunctive
+   * Normal Form(DNF). In other words, the CEL expression consists of several
+   * parts connected by OR operators. For example, the following expression is
+   * valid:
    * (
    *  tableExists("db", "public", "table1") &&
    *  tableExists("db", "public", "table2")
@@ -2035,7 +2113,8 @@ export interface Changelog {
   issue: string;
   /**
    * Could be empty
-   * TODO(p0ny): We will migrate ChangeHistory to Changelog, and they won't have task_run.
+   * TODO(p0ny): We will migrate ChangeHistory to Changelog, and they won't have
+   * task_run.
    */
   taskRun: string;
   /** Could be empty */
@@ -3712,6 +3791,7 @@ function createBaseSchemaMetadata(): SchemaMetadata {
     packages: [],
     owner: "",
     triggers: [],
+    sequences: [],
   };
 }
 
@@ -3752,6 +3832,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     }
     for (const v of message.triggers) {
       TriggerMetadata.encode(v!, writer.uint32(98).fork()).join();
+    }
+    for (const v of message.sequences) {
+      SequenceMetadata.encode(v!, writer.uint32(106).fork()).join();
     }
     return writer;
   },
@@ -3847,6 +3930,13 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
 
           message.triggers.push(TriggerMetadata.decode(reader, reader.uint32()));
           continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.sequences.push(SequenceMetadata.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3883,6 +3973,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
       owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
       triggers: globalThis.Array.isArray(object?.triggers)
         ? object.triggers.map((e: any) => TriggerMetadata.fromJSON(e))
+        : [],
+      sequences: globalThis.Array.isArray(object?.sequences)
+        ? object.sequences.map((e: any) => SequenceMetadata.fromJSON(e))
         : [],
     };
   },
@@ -3925,6 +4018,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     if (message.triggers?.length) {
       obj.triggers = message.triggers.map((e) => TriggerMetadata.toJSON(e));
     }
+    if (message.sequences?.length) {
+      obj.sequences = message.sequences.map((e) => SequenceMetadata.toJSON(e));
+    }
     return obj;
   },
 
@@ -3945,6 +4041,196 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     message.packages = object.packages?.map((e) => PackageMetadata.fromPartial(e)) || [];
     message.owner = object.owner ?? "";
     message.triggers = object.triggers?.map((e) => TriggerMetadata.fromPartial(e)) || [];
+    message.sequences = object.sequences?.map((e) => SequenceMetadata.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSequenceMetadata(): SequenceMetadata {
+  return {
+    name: "",
+    dataType: "",
+    start: "",
+    minValue: "",
+    maxValue: "",
+    increment: "",
+    cycle: false,
+    cacheSize: "",
+    lastValue: "",
+  };
+}
+
+export const SequenceMetadata: MessageFns<SequenceMetadata> = {
+  encode(message: SequenceMetadata, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.dataType !== "") {
+      writer.uint32(18).string(message.dataType);
+    }
+    if (message.start !== "") {
+      writer.uint32(26).string(message.start);
+    }
+    if (message.minValue !== "") {
+      writer.uint32(34).string(message.minValue);
+    }
+    if (message.maxValue !== "") {
+      writer.uint32(42).string(message.maxValue);
+    }
+    if (message.increment !== "") {
+      writer.uint32(50).string(message.increment);
+    }
+    if (message.cycle !== false) {
+      writer.uint32(56).bool(message.cycle);
+    }
+    if (message.cacheSize !== "") {
+      writer.uint32(66).string(message.cacheSize);
+    }
+    if (message.lastValue !== "") {
+      writer.uint32(74).string(message.lastValue);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SequenceMetadata {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSequenceMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.dataType = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.start = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.minValue = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.maxValue = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.increment = reader.string();
+          continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.cycle = reader.bool();
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.cacheSize = reader.string();
+          continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.lastValue = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SequenceMetadata {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      dataType: isSet(object.dataType) ? globalThis.String(object.dataType) : "",
+      start: isSet(object.start) ? globalThis.String(object.start) : "",
+      minValue: isSet(object.minValue) ? globalThis.String(object.minValue) : "",
+      maxValue: isSet(object.maxValue) ? globalThis.String(object.maxValue) : "",
+      increment: isSet(object.increment) ? globalThis.String(object.increment) : "",
+      cycle: isSet(object.cycle) ? globalThis.Boolean(object.cycle) : false,
+      cacheSize: isSet(object.cacheSize) ? globalThis.String(object.cacheSize) : "",
+      lastValue: isSet(object.lastValue) ? globalThis.String(object.lastValue) : "",
+    };
+  },
+
+  toJSON(message: SequenceMetadata): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.dataType !== "") {
+      obj.dataType = message.dataType;
+    }
+    if (message.start !== "") {
+      obj.start = message.start;
+    }
+    if (message.minValue !== "") {
+      obj.minValue = message.minValue;
+    }
+    if (message.maxValue !== "") {
+      obj.maxValue = message.maxValue;
+    }
+    if (message.increment !== "") {
+      obj.increment = message.increment;
+    }
+    if (message.cycle !== false) {
+      obj.cycle = message.cycle;
+    }
+    if (message.cacheSize !== "") {
+      obj.cacheSize = message.cacheSize;
+    }
+    if (message.lastValue !== "") {
+      obj.lastValue = message.lastValue;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SequenceMetadata>): SequenceMetadata {
+    return SequenceMetadata.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SequenceMetadata>): SequenceMetadata {
+    const message = createBaseSequenceMetadata();
+    message.name = object.name ?? "";
+    message.dataType = object.dataType ?? "";
+    message.start = object.start ?? "";
+    message.minValue = object.minValue ?? "";
+    message.maxValue = object.maxValue ?? "";
+    message.increment = object.increment ?? "";
+    message.cycle = object.cycle ?? false;
+    message.cacheSize = object.cacheSize ?? "";
+    message.lastValue = object.lastValue ?? "";
     return message;
   },
 };
