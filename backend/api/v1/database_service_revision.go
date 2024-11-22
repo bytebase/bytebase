@@ -66,7 +66,7 @@ func (s *DatabaseService) ListRevisions(ctx context.Context, request *v1pb.ListR
 
 	var nextPageToken string
 	if len(revisions) == limitPlusOne {
-		if nextPageToken, err = offset.getPageToken(); err != nil {
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
 		revisions = revisions[:offset.limit]

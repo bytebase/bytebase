@@ -88,7 +88,7 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, request *v1pb.List
 
 	nextPageToken := ""
 	if len(changelogs) == limitPlusOne {
-		if nextPageToken, err = offset.getPageToken(); err != nil {
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
 		changelogs = changelogs[:offset.limit]
