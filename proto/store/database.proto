@@ -650,15 +650,14 @@ message TableConfig {
 
   // The last updater of the table in branch.
   // Format: users/{userUID}.
-  string updater = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  string updater = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The last change come from branch.
   // Format: projcets/{project}/branches/{branch}
-  string source_branch = 6 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  string source_branch = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the table is updated in branch.
-  google.protobuf.Timestamp update_time = 5
-      [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  google.protobuf.Timestamp update_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message FunctionConfig {
@@ -667,15 +666,14 @@ message FunctionConfig {
 
   // The last updater of the function in branch.
   // Format: users/{userUID}.
-  string updater = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The last change come from branch.
   // Format: projcets/{project}/branches/{branch}
-  string source_branch = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  string source_branch = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the function is updated in branch.
-  google.protobuf.Timestamp update_time = 3
-      [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message ProcedureConfig {
@@ -684,15 +682,14 @@ message ProcedureConfig {
 
   // The last updater of the procedure in branch.
   // Format: users/{userUID}.
-  string updater = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The last change come from branch.
   // Format: projcets/{project}/branches/{branch}
-  string source_branch = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  string source_branch = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the procedure is updated in branch.
-  google.protobuf.Timestamp update_time = 3
-      [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message ViewConfig {
@@ -701,15 +698,14 @@ message ViewConfig {
 
   // The last updater of the view in branch.
   // Format: users/{userUID}.
-  string updater = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The last change come from branch.
   // Format: projcets/{project}/branches/{branch}
-  string source_branch = 4 [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  string source_branch = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the view is updated in branch.
-  google.protobuf.Timestamp update_time = 3
-      [ (google.api.field_behavior) = OUTPUT_ONLY ];
+  google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message ColumnConfig {
