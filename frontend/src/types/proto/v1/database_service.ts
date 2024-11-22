@@ -519,7 +519,7 @@ export interface SequenceMetadata {
   /** The data type of a sequence. */
   dataType: string;
   /** The start value of a sequence. */
-  start: Long;
+  start: string;
   /** The minimum value of a sequence. */
   minValue: string;
   /** The maximum value of a sequence. */
@@ -4050,7 +4050,7 @@ function createBaseSequenceMetadata(): SequenceMetadata {
   return {
     name: "",
     dataType: "",
-    start: Long.ZERO,
+    start: "",
     minValue: "",
     maxValue: "",
     increment: "",
@@ -4068,8 +4068,8 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     if (message.dataType !== "") {
       writer.uint32(18).string(message.dataType);
     }
-    if (!message.start.equals(Long.ZERO)) {
-      writer.uint32(24).int64(message.start.toString());
+    if (message.start !== "") {
+      writer.uint32(26).string(message.start);
     }
     if (message.minValue !== "") {
       writer.uint32(34).string(message.minValue);
@@ -4114,11 +4114,11 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
           message.dataType = reader.string();
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag !== 26) {
             break;
           }
 
-          message.start = Long.fromString(reader.int64().toString());
+          message.start = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
@@ -4175,7 +4175,7 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       dataType: isSet(object.dataType) ? globalThis.String(object.dataType) : "",
-      start: isSet(object.start) ? Long.fromValue(object.start) : Long.ZERO,
+      start: isSet(object.start) ? globalThis.String(object.start) : "",
       minValue: isSet(object.minValue) ? globalThis.String(object.minValue) : "",
       maxValue: isSet(object.maxValue) ? globalThis.String(object.maxValue) : "",
       increment: isSet(object.increment) ? globalThis.String(object.increment) : "",
@@ -4193,8 +4193,8 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     if (message.dataType !== "") {
       obj.dataType = message.dataType;
     }
-    if (!message.start.equals(Long.ZERO)) {
-      obj.start = (message.start || Long.ZERO).toString();
+    if (message.start !== "") {
+      obj.start = message.start;
     }
     if (message.minValue !== "") {
       obj.minValue = message.minValue;
@@ -4224,7 +4224,7 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     const message = createBaseSequenceMetadata();
     message.name = object.name ?? "";
     message.dataType = object.dataType ?? "";
-    message.start = (object.start !== undefined && object.start !== null) ? Long.fromValue(object.start) : Long.ZERO;
+    message.start = object.start ?? "";
     message.minValue = object.minValue ?? "";
     message.maxValue = object.maxValue ?? "";
     message.increment = object.increment ?? "";

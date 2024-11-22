@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -763,26 +764,54 @@ func getExtensions(txn *sql.Tx) ([]*storepb.ExtensionMetadata, error) {
 
 // getSequences gets all sequences of a database.
 func getSequences(txn *sql.Tx) (map[string][]*storepb.SequenceMetadata, error) {
-	query := `SELECT sequence_schema, sequence_name, data_type FROM information_schema.sequences;`
+	query := `
+	SELECT
+		schemaname,
+		sequencename,
+		data_type,
+		start_value,
+		min_value,
+		max_value,
+		increment_by,
+		cycle,
+		cache_size,
+		last_value
+	FROM pg_sequences
+	ORDER BY schemaname, sequencename;`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
 	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
 	for rows.Next() {
-		sequence := &storepb.SequenceMetadata{}
-		var schemaName string
-		if err := rows.Scan(&schemaName, &sequence.Name, &sequence.DataType); err != nil {
+		var schemaName, sequenceName, dataType string
+		var startValue, minValue, maxValue, incrementBy, cacheSize int64
+		var cycle bool
+		var lastValue sql.NullInt64
+		if err := rows.Scan(&schemaName, &sequenceName, &dataType, &startValue, &minValue, &maxValue, &incrementBy, &cycle, &cacheSize, &lastValue); err != nil {
 			return nil, err
+		}
+		lastValueStr := ""
+		if lastValue.Valid {
+			lastValueStr = strconv.FormatInt(lastValue.Int64, 10)
+		}
+		sequence := &storepb.SequenceMetadata{
+			Name:      sequenceName,
+			DataType:  dataType,
+			Start:     strconv.FormatInt(startValue, 10),
+			MinValue:  strconv.FormatInt(minValue, 10),
+			MaxValue:  strconv.FormatInt(maxValue, 10),
+			Increment: strconv.FormatInt(incrementBy, 10),
+			Cycle:     cycle,
+			CacheSize: strconv.FormatInt(cacheSize, 10),
+			LastValue: lastValueStr,
 		}
 		sequenceMap[schemaName] = append(sequenceMap[schemaName], sequence)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-
 	return sequenceMap, nil
 }
 
