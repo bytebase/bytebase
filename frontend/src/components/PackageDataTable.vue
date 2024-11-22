@@ -52,7 +52,7 @@ const columns = computed(() => {
       },
     },
     {
-      key: "name",
+      key: "definition",
       title: t("common.definition"),
       render: (row) => {
         return <EllipsisSQLView sql={row.definition} />;

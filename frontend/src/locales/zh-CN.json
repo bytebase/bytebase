@@ -1429,7 +1429,18 @@
     "create": "创建数据库",
     "procedures": "存储过程",
     "partitions": "分区",
-    "packages": "包"
+    "packages": "包",
+    "sequences": "序列",
+    "sequence": {
+      "data-type": "数据类型",
+      "start": "起始值",
+      "min-value": "最小值",
+      "max-value": "最大值",
+      "increment": "增量",
+      "cycle": "循环",
+      "cacheSize": "缓存大小",
+      "lastValue": "最后值"
+    }
   },
   "instance": {
     "select": "选择实例",
