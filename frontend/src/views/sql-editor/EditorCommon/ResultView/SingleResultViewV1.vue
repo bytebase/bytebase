@@ -301,7 +301,7 @@ const disallowExportQueryData = computed(() => {
     "bb.feature.sql-editor.disallow-export-query-data"
   );
 
-  return disableDataExport || appFeatureDisallowExport;
+  return disableDataExport || appFeatureDisallowExport.value;
 });
 
 const viewMode = computed((): ViewMode => {
