@@ -1,10 +1,8 @@
 import type { Status } from "nice-grpc-common";
-import type { Advice, QueryResult } from "../proto/v1/sql_service";
+import type { Advice, QueryResponse } from "../proto/v1/sql_service";
 
-export type SQLResultSetV1 = {
+export interface SQLResultSetV1 extends QueryResponse {
   error: string; // empty if no error occurred
-  results: QueryResult[];
   advices: Advice[];
-  allowExport: boolean;
   status?: Status;
-};
+}

@@ -57,6 +57,7 @@ export const useSQLStore = defineStore("sql", () => {
 
       return {
         error: "",
+        advices: [],
         ...response,
       };
     } catch (err) {

@@ -8672,23 +8672,13 @@ components:
                 content:
                     type: string
                     description: The advice content.
-                line:
-                    type: integer
-                    description: The advice line number in the SQL statement.
-                    format: int32
-                column:
-                    type: integer
-                    description: The advice column number in the SQL statement.
-                    format: int32
                 detail:
                     type: string
                     description: The advice detail.
                 startPosition:
                     allOf:
                         - $ref: '#/components/schemas/Position'
-                    description: |-
-                        1-based Position of the SQL statement.
-                         To supersede `line` and `column` above.
+                    description: 1-based positions of the sql statment.
                 endPosition:
                     $ref: '#/components/schemas/Position'
         AdviseIndexResponse:
@@ -12686,11 +12676,6 @@ components:
                     items:
                         $ref: '#/components/schemas/QueryResult'
                     description: The query results.
-                advices:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Advice'
-                    description: The query advices.
                 allowExport:
                     type: boolean
                     description: The query is allowed to be exported or not.
