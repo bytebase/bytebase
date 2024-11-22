@@ -9,6 +9,7 @@ import PackageIcon from "./PackageIcon.vue";
 import PrimaryKeyIcon from "./PrimaryKeyIcon.vue";
 import ProcedureIcon from "./ProcedureIcon.vue";
 import SchemaIcon from "./SchemaIcon.vue";
+import SequenceIcon from "./SequenceIcon.vue";
 import SkipIcon from "./SkipIcon.vue";
 import TableIcon from "./TableIcon.vue";
 import TablePartitionIcon from "./TablePartitionIcon.vue";
@@ -30,4 +31,5 @@ export {
   TablePartitionIcon,
   ForeignKeyIcon,
   PackageIcon,
+  SequenceIcon,
 };

@@ -38,6 +38,9 @@
   <template v-if="type === 'function'">
     <FunctionNode :node="node" :keyword="keyword" />
   </template>
+  <template v-if="type === 'sequence'">
+    <SequenceNode :node="node" :keyword="keyword" />
+  </template>
   <template v-if="type === 'expandable-text'">
     <TextNode :node="node" :keyword="keyword" />
   </template>
@@ -61,6 +64,7 @@ import PackageNode from "./PackageNode.vue";
 import PartitionTableNode from "./PartitionTableNode.vue";
 import ProcedureNode from "./ProcedureNode.vue";
 import SchemaNode from "./SchemaNode.vue";
+import SequenceNode from "./SequenceNode.vue";
 import TableNode from "./TableNode.vue";
 import TextNode from "./TextNode.vue";
 import ViewNode from "./ViewNode.vue";
