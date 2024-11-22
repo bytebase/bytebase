@@ -51,22 +51,9 @@ const dbGroupOptions = computed(() => {
   }));
 });
 
-const invalidateSelectionIfNeeded = () => {
-  if (
-    state.selectedDatabaseGroup &&
-    !dbGroupList.value.find(
-      (item: DatabaseGroup) => item.name == state.selectedDatabaseGroup
-    )
-  ) {
-    state.selectedDatabaseGroup = undefined;
-    emit("update:selected", undefined);
-  }
-};
-
 watch(
   [() => props.project, () => props.selected],
   () => {
-    invalidateSelectionIfNeeded();
     state.selectedDatabaseGroup = dbGroupList.value.find(
       (item) => item.name === props.selected
     )?.name;
