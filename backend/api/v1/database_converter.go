@@ -153,6 +153,23 @@ func convertStoreDatabaseMetadata(ctx context.Context, metadata *storepb.Databas
 			s.Streams = append(s.Streams, v1Stream)
 		}
 		m.Schemas = append(m.Schemas, s)
+
+		for _, trigger := range schema.Triggers {
+			if trigger == nil {
+				continue
+			}
+			v1Trigger := &v1pb.TriggerMetadata{
+				Name:                trigger.Name,
+				TableName:           trigger.TableName,
+				Event:               trigger.Event,
+				Timing:              trigger.Timing,
+				Body:                trigger.Body,
+				SqlMode:             trigger.SqlMode,
+				CharacterSetClient:  trigger.CharacterSetClient,
+				CollationConnection: trigger.CollationConnection,
+			}
+			s.Triggers = append(s.Triggers, v1Trigger)
+		}
 	}
 	for _, extension := range metadata.Extensions {
 		if extension == nil {
