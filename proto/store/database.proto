@@ -64,10 +64,12 @@ message SchemaMetadata {
   // The procedures is the list of procedures in a schema.
   repeated ProcedureMetadata procedures = 6;
 
-  // The streams is the list of streams in a schema, currently, only used for Snowflake.
+  // The streams is the list of streams in a schema, currently, only used for
+  // Snowflake.
   repeated StreamMetadata streams = 7;
 
-  // The routines is the list of routines in a schema, currently, only used for Snowflake.
+  // The routines is the list of routines in a schema, currently, only used for
+  // Snowflake.
   repeated TaskMetadata tasks = 8;
 
   // The materialized_views is the list of materialized views in a schema.
@@ -81,18 +83,50 @@ message SchemaMetadata {
 
   string owner = 12;
 
-  // The triggers is the list of triggers in a schema, triggers are sorted by table_name, name, event, timing, action_order.
+  // The triggers is the list of triggers in a schema, triggers are sorted by
+  // table_name, event, timing, action_order.
   repeated TriggerMetadata triggers = 13;
+}
+
+message SequenceMetadata {
+  // The name of a sequence.
+  string name = 1;
+
+  // The data type of a sequence.
+  string data_type = 2;
+
+  // The start value of a sequence.
+  int64 start = 3;
+
+  // The minimum value of a sequence.
+  string min_value = 4;
+
+  // The maximum value of a sequence.
+  string max_value = 5;
+
+  // Increment value of a sequence.
+  string increment = 6;
+
+  // Cycle is whether the sequence cycles.
+  bool cycle = 7;
+
+  // Cache size of a sequence.
+  string cache_size = 8;
+
+  // Last value of a sequence.
+  string last_value = 9;
 }
 
 message TriggerMetadata {
   // The name is the name of the trigger.
   string name = 1;
 
-  // The table_name is the name of the table/view that the trigger is created on.
+  // The table_name is the name of the table/view that the trigger is created
+  // on.
   string table_name = 2;
 
-  // The event is the event of the trigger, such as INSERT, UPDATE, DELETE, TRUNCATE.
+  // The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
+  // TRUNCATE.
   string event = 3;
 
   // The timing is the timing of the trigger, such as BEFORE, AFTER.
@@ -193,7 +227,8 @@ message TableMetadata {
   // The indexes is the list of indexes in a table.
   repeated IndexMetadata indexes = 3;
 
-  // TODO(d): figure out whether we need to store table type such as "BASE TABLE".
+  // TODO(d): figure out whether we need to store table type such as "BASE
+  // TABLE".
 
   // The engine is the engine of a table.
   string engine = 4;
@@ -265,11 +300,13 @@ message TablePartitionMetadata {
   // The name is the name of a table partition.
   string name = 1;
 
-  // Type is the type of a table partition, some database engines may not support all types.
-  // Only avilable for the following database engines now:
-  // MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY, LINEAR_KEY (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)
-  // TiDB: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY
-  // PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
+  // Type is the type of a table partition, some database engines may not
+  // support all types. Only avilable for the following database engines now:
+  // MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY,
+  // LINEAR_KEY
+  // (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html) TiDB:
+  // RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY PostgreSQL: RANGE,
+  // LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
   enum Type {
     TYPE_UNSPECIFIED = 0;
     RANGE = 1;
@@ -286,8 +323,10 @@ message TablePartitionMetadata {
   Type type = 2;
 
   // The expression is the expression of a table partition.
-  // For PostgreSQL, the expression is the text of {FOR VALUES partition_bound_spec}, see https://www.postgresql.org/docs/current/sql-createtable.html.
-  // For MySQL, the expression is the `expr` or `column_list` of the following syntax.
+  // For PostgreSQL, the expression is the text of {FOR VALUES
+  // partition_bound_spec}, see
+  // https://www.postgresql.org/docs/current/sql-createtable.html. For MySQL,
+  // the expression is the `expr` or `column_list` of the following syntax.
   // PARTITION BY
   //    { [LINEAR] HASH(expr)
   //    | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list)
@@ -297,13 +336,18 @@ message TablePartitionMetadata {
 
   // The value is the value of a table partition.
   // For MySQL, the value is for RANGE and LIST partition types,
-  // - For a RANGE partition, it contains the value set in the partition's VALUES LESS THAN clause, which can be either an integer or MAXVALUE.
-  // - For a LIST partition, this column contains the values defined in the partition's VALUES IN clause, which is a list of comma-separated integer values.
+  // - For a RANGE partition, it contains the value set in the partition's
+  // VALUES LESS THAN clause, which can be either an integer or MAXVALUE.
+  // - For a LIST partition, this column contains the values defined in the
+  // partition's VALUES IN clause, which is a list of comma-separated integer
+  // values.
   // - For others, it's an empty string.
   string value = 4;
 
-  // The use_default is whether the users use the default partition, it stores the different value for different database engines.
-  // For MySQL, it's [INT] type, 0 means not use default partition, otherwise, it's equals to number in syntax [SUB]PARTITION {number}.
+  // The use_default is whether the users use the default partition, it stores
+  // the different value for different database engines. For MySQL, it's [INT]
+  // type, 0 means not use default partition, otherwise, it's equals to number
+  // in syntax [SUB]PARTITION {number}.
   string use_default = 5;
 
   // The subpartitions is the list of subpartitions in a table partition.
@@ -320,14 +364,16 @@ message ColumnMetadata {
 
   // The default_value is the default value of a column.
   oneof default_value {
-    // The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default.
+    // The default is the default of a column. Use google.protobuf.StringValue
+    // to distinguish between an empty string default value or no default.
     google.protobuf.StringValue default = 3;
     bool default_null = 4;
     string default_expression = 5;
   }
 
   // The on_update is the on update action of a column.
-  // For MySQL like databases, it's only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value.
+  // For MySQL like databases, it's only supported for TIMESTAMP columns with
+  // CURRENT_TIMESTAMP as on update value.
   string on_update = 13;
 
   // The nullable is the nullable of a column.
@@ -417,7 +463,8 @@ message FunctionMetadata {
   // The definition is the definition of a function.
   string definition = 2;
 
-  // The signature is the name with the number and type of input arguments the function takes.
+  // The signature is the name with the number and type of input arguments the
+  // function takes.
   string signature = 3;
 
   // MySQL specific metadata.
@@ -438,7 +485,8 @@ message ProcedureMetadata {
   // The definition is the definition of a procedure.
   string definition = 2;
 
-  // The signature is the name with the number and type of input arguments the function takes.
+  // The signature is the name with the number and type of input arguments the
+  // function takes.
   string signature = 3;
 
   // MySQL specific metadata.
@@ -500,7 +548,8 @@ message ExtensionMetadata {
   // The name is the name of an extension.
   string name = 1;
 
-  // The schema is the extension that is installed to. But the extension usage is not limited to the schema.
+  // The schema is the extension that is installed to. But the extension usage
+  // is not limited to the schema.
   string schema = 2;
 
   // The version is the version of an extension.
@@ -545,7 +594,8 @@ message InstanceRoleMetadata {
   // The role name. It's unique within the instance.
   string name = 2;
 
-  // The grant display string on the instance. It's generated by database engine.
+  // The grant display string on the instance. It's generated by database
+  // engine.
   string grant = 7;
 }
 
@@ -676,13 +726,4 @@ message LinkedDatabaseMetadata {
   string username = 2;
 
   string host = 3;
-}
-
-// SequenceMetadata is the metadata for sequences.
-message SequenceMetadata {
-  // The name of a sequence.
-  string name = 1;
-
-  // The data type of a sequence.
-  string data_type = 2;
 }

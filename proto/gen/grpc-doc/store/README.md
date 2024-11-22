@@ -1331,7 +1331,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | sequences | [SequenceMetadata](#bytebase-store-SequenceMetadata) | repeated | The sequences is the list of sequences in a schema. |
 | packages | [PackageMetadata](#bytebase-store-PackageMetadata) | repeated | The packages is the list of packages in a schema. |
 | owner | [string](#string) |  |  |
-| triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The triggers is the list of triggers in a schema, triggers are sorted by table_name, name, event, timing, action_order. |
+| triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The triggers is the list of triggers in a schema, triggers are sorted by table_name, event, timing, action_order. |
 
 
 
@@ -1373,13 +1373,20 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 <a name="bytebase-store-SequenceMetadata"></a>
 
 ### SequenceMetadata
-SequenceMetadata is the metadata for sequences.
+
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of a sequence. |
 | data_type | [string](#string) |  | The data type of a sequence. |
+| start | [int64](#int64) |  | The start value of a sequence. |
+| min_value | [string](#string) |  | The minimum value of a sequence. |
+| max_value | [string](#string) |  | The maximum value of a sequence. |
+| increment | [string](#string) |  | Increment value of a sequence. |
+| cycle | [bool](#bool) |  | Cycle is whether the sequence cycles. |
+| cache_size | [string](#string) |  | Cache size of a sequence. |
+| last_value | [string](#string) |  | Last value of a sequence. |
 
 
 
@@ -1606,11 +1613,13 @@ ViewMetadata is the metadata for views.
 <a name="bytebase-store-TablePartitionMetadata-Type"></a>
 
 ### TablePartitionMetadata.Type
-Type is the type of a table partition, some database engines may not support all types.
-Only avilable for the following database engines now:
-MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY, LINEAR_KEY (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)
-TiDB: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY
-PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
+Type is the type of a table partition, some database engines may not
+support all types. Only avilable for the following database engines now:
+MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY,
+LINEAR_KEY
+(https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html) TiDB:
+RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY PostgreSQL: RANGE,
+LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
