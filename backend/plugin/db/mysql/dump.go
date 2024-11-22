@@ -26,6 +26,7 @@ const (
 	viewHeader            = "-- View structure for "
 	functionHeader        = "-- Function structure for "
 	procedureHeader       = "-- Procedure structure for "
+	triggerHeader         = "-- Trigger structure for "
 	setCharacterSetClient = "SET character_set_client = "
 	setCharacterSetResult = "SET character_set_results = "
 	setCollation          = "SET collation_connection = "
@@ -162,8 +163,120 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, dbSchema *storepb
 		}
 	}
 
-	// todo: dump triggers and events.
+	// Construct triggers.
+	for _, trigger := range schema.Triggers {
+		if err := writeTrigger(out, trigger); err != nil {
+			return err
+		}
+	}
+
+	// todo: dump events.
 	return nil
+}
+
+func writeTrigger(out io.Writer, trigger *storepb.TriggerMetadata) error {
+	// Header.
+	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, triggerHeader); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "`"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, trigger.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "`\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
+		return err
+	}
+
+	// Set charset, collation, and sql mode.
+	if _, err := io.WriteString(out, setCharacterSetClient); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, trigger.CharacterSetClient); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, ";\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, setCharacterSetResult); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, trigger.CharacterSetClient); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, ";\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, setCollation); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, trigger.CollationConnection); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, ";\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, setSQLMode); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, trigger.SqlMode); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, ";\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, delimiterDoubleSemi); err != nil {
+		return err
+	}
+
+	// Definition.
+	if _, err := io.WriteString(out, "CREATE TRIGGER `"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, trigger.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "`\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, trigger.Timing); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, " "); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, trigger.Event); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, " ON `"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, trigger.TableName); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "` FOR EACH ROW\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, trigger.Body); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, ";;\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, delimiterSemi); err != nil {
+		return err
+	}
+
+	_, err := io.WriteString(out, "\n")
+	return err
 }
 
 func writeProcedure(out io.Writer, procedure *storepb.ProcedureMetadata) error {
