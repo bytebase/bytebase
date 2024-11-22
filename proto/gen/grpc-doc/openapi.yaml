@@ -1286,9 +1286,8 @@ paths:
                 - name: pageSize
                   in: query
                   description: |-
-                    The maximum number of databases to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 10 databases will be returned.
+                    The maximum number of databases to return. The service may return fewer
+                     than this value. If unspecified, at most 10 databases will be returned.
                   schema:
                     type: integer
                     format: int32
@@ -1298,8 +1297,8 @@ paths:
                     A page token, received from a previous `ListInstanceDatabases` call.
                      Provide this to retrieve the subsequent page.
 
-                     When paginating, all other parameters provided to `ListInstanceDatabases` must match
-                     the call that provided the page token.
+                     When paginating, all other parameters provided to `ListInstanceDatabases`
+                     must match the call that provided the page token.
                   schema:
                     type: string
                 - name: filter
@@ -1307,8 +1306,8 @@ paths:
                   description: |-
                     Deprecated.
                      Filter is used to filter databases returned in the list.
-                     For example, `project == "projects/{project}"` can be used to list databases in a project.
-                     Note: the project filter will be moved to parent.
+                     For example, `project == "projects/{project}"` can be used to list
+                     databases in a project. Note: the project filter will be moved to parent.
                   schema:
                     type: string
             responses:
@@ -1418,9 +1417,10 @@ paths:
                 - name: pageSize
                   in: query
                   description: |-
-                    The maximum number of change histories to return. The service may return fewer than this value.
-                     If unspecified, at most 10 change histories will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
+                    The maximum number of change histories to return. The service may return
+                     fewer than this value. If unspecified, at most 10 change histories will be
+                     returned. The maximum value is 1000; values above 1000 will be coerced to
+                     1000.
                   schema:
                     type: integer
                     format: int32
@@ -1430,8 +1430,8 @@ paths:
                     A page token, received from a previous `ListChangeHistories` call.
                      Provide this to retrieve the subsequent page.
 
-                     When paginating, all other parameters provided to `ListChangeHistories` must match
-                     the call that provided the page token.
+                     When paginating, all other parameters provided to `ListChangeHistories`
+                     must match the call that provided the page token.
                   schema:
                     type: string
                 - name: view
@@ -1447,28 +1447,29 @@ paths:
                   in: query
                   description: |-
                     The filter of the change histories.
-                     follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-                     Support filter by type, source or table.
-                     For example:
-                     table = "tableExists('{database}', '{schema}', '{table}')"
-                     table = "tableExists('db', 'public', 'table1') || tableExists('db', 'public', 'table2')"
-                     type = "MIGRATE | DATA"
-                     source = "UI"
-                     source = "VCS"
+                     follow the
+                     [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
+                     syntax. Support filter by type, source or table. For example: table =
+                     "tableExists('{database}', '{schema}', '{table}')" table =
+                     "tableExists('db', 'public', 'table1') || tableExists('db', 'public',
+                     'table2')" type = "MIGRATE | DATA" source = "UI" source = "VCS"
 
                      The table filter follow the CEL syntax.
                      currently, we have one function for CEL:
-                     - tableExists(database, schema, table): return true if the table exists in changed resources.
+                     - tableExists(database, schema, table): return true if the table exists in
+                     changed resources.
 
                      examples:
                      Use
                        tableExists("db", "public", "table1")
-                     to filter the change histories which have the table "table1" in the schema "public" of the database "db".
-                     For MySQL, the schema is always "", such as tableExists("db", "", "table1").
+                     to filter the change histories which have the table "table1" in the schema
+                     "public" of the database "db". For MySQL, the schema is always "", such as
+                     tableExists("db", "", "table1").
 
-                     Combine multiple functions with "&&" and "||", we MUST use the Disjunctive Normal Form(DNF).
-                     In other words, the CEL expression consists of several parts connected by OR operators.
-                     For example, the following expression is valid:
+                     Combine multiple functions with "&&" and "||", we MUST use the Disjunctive
+                     Normal Form(DNF). In other words, the CEL expression consists of several
+                     parts connected by OR operators. For example, the following expression is
+                     valid:
                      (
                       tableExists("db", "public", "table1") &&
                       tableExists("db", "public", "table2")
@@ -1613,8 +1614,8 @@ paths:
                 - name: pageSize
                   in: query
                   description: |-
-                    The maximum number of changelogs to return. The service may return fewer than this value.
-                     If unspecified, at most 10 changelogs will be returned.
+                    The maximum number of changelogs to return. The service may return fewer
+                     than this value. If unspecified, at most 10 changelogs will be returned.
                      The maximum value is 1000; values above 1000 will be coerced to 1000.
                   schema:
                     type: integer
@@ -1642,28 +1643,29 @@ paths:
                   in: query
                   description: |-
                     The filter of the changelogs.
-                     follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-                     Support filter by type, source or table.
-                     For example:
-                     table = "tableExists('{database}', '{schema}', '{table}')"
-                     table = "tableExists('db', 'public', 'table1') || tableExists('db', 'public', 'table2')"
-                     type = "MIGRATE | DATA"
-                     source = "UI"
-                     source = "VCS"
+                     follow the
+                     [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
+                     syntax. Support filter by type, source or table. For example: table =
+                     "tableExists('{database}', '{schema}', '{table}')" table =
+                     "tableExists('db', 'public', 'table1') || tableExists('db', 'public',
+                     'table2')" type = "MIGRATE | DATA" source = "UI" source = "VCS"
 
                      The table filter follow the CEL syntax.
                      currently, we have one function for CEL:
-                     - tableExists(database, schema, table): return true if the table exists in changed resources.
+                     - tableExists(database, schema, table): return true if the table exists in
+                     changed resources.
 
                      examples:
                      Use
                        tableExists("db", "public", "table1")
-                     to filter the changelogs which have the table "table1" in the schema "public" of the database "db".
-                     For MySQL, the schema is always "", such as tableExists("db", "", "table1").
+                     to filter the changelogs which have the table "table1" in the schema
+                     "public" of the database "db". For MySQL, the schema is always "", such as
+                     tableExists("db", "", "table1").
 
-                     Combine multiple functions with "&&" and "||", we MUST use the Disjunctive Normal Form(DNF).
-                     In other words, the CEL expression consists of several parts connected by OR operators.
-                     For example, the following expression is valid:
+                     Combine multiple functions with "&&" and "||", we MUST use the Disjunctive
+                     Normal Form(DNF). In other words, the CEL expression consists of several
+                     parts connected by OR operators. For example, the following expression is
+                     valid:
                      (
                       tableExists("db", "public", "table1") &&
                       tableExists("db", "public", "table2")
@@ -2109,9 +2111,9 @@ paths:
                 - name: pageSize
                   in: query
                   description: |-
-                    The maximum number of revisions to return. The service may return fewer than this value.
-                     If unspecified, at most 10 revisions will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
+                    The maximum number of revisions to return. The service may return fewer
+                     than this value. If unspecified, at most 10 revisions will be returned. The
+                     maximum value is 1000; values above 1000 will be coerced to 1000.
                   schema:
                     type: integer
                     format: int32
@@ -2121,8 +2123,8 @@ paths:
                     A page token, received from a previous `ListRevisions` call.
                      Provide this to retrieve the subsequent page.
 
-                     When paginating, all other parameters provided to `ListRevisions` must match
-                     the call that provided the page token.
+                     When paginating, all other parameters provided to `ListRevisions` must
+                     match the call that provided the page token.
                   schema:
                     type: string
             responses:
@@ -4436,9 +4438,8 @@ paths:
                 - name: pageSize
                   in: query
                   description: |-
-                    The maximum number of databases to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 10 databases will be returned.
+                    The maximum number of databases to return. The service may return fewer
+                     than this value. If unspecified, at most 10 databases will be returned.
                   schema:
                     type: integer
                     format: int32
@@ -4448,8 +4449,8 @@ paths:
                     A page token, received from a previous `ListDatabases` call.
                      Provide this to retrieve the subsequent page.
 
-                     When paginating, all other parameters provided to `ListDatabases` must match
-                     the call that provided the page token.
+                     When paginating, all other parameters provided to `ListDatabases` must
+                     match the call that provided the page token.
                   schema:
                     type: string
             responses:
@@ -6474,11 +6475,12 @@ paths:
                   in: query
                   description: |-
                     The filter of the slow query log.
-                     follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-                     Support filter by database and start_time in SlowQueryDetails for now.
-                     For example:
-                     Search the slow query log of the specific database:
-                       - the specific database: database = "instances/{instance}/databases/{database}"
+                     follow the
+                     [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
+                     syntax. Support filter by database and start_time in SlowQueryDetails for
+                     now. For example: Search the slow query log of the specific database:
+                       - the specific database: database =
+                       "instances/{instance}/databases/{database}"
                      Search the slow query log that start_time after 2022-01-01T12:00:00.000Z:
                        - start_time > "2022-01-01T12:00:00.000Z"
                        - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339).
@@ -6489,9 +6491,9 @@ paths:
                   in: query
                   description: |-
                     The order by of the slow query log.
-                     Support order by count, latest_log_time, average_query_time, maximum_query_time,
-                     average_rows_sent, maximum_rows_sent, average_rows_examined, maximum_rows_examined for now.
-                     For example:
+                     Support order by count, latest_log_time, average_query_time,
+                     maximum_query_time, average_rows_sent, maximum_rows_sent,
+                     average_rows_examined, maximum_rows_examined for now. For example:
                       - order by count: order_by = "count"
                       - order by latest_log_time desc: order_by = "latest_log_time desc"
                      Default: order by average_query_time desc.
@@ -8383,9 +8385,8 @@ paths:
                 - name: pageSize
                   in: query
                   description: |-
-                    The maximum number of databases to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 10 databases will be returned.
+                    The maximum number of databases to return. The service may return fewer
+                     than this value. If unspecified, at most 10 databases will be returned.
                   schema:
                     type: integer
                     format: int32
@@ -8395,8 +8396,8 @@ paths:
                     A page token, received from a previous `ListDatabases` call.
                      Provide this to retrieve the subsequent page.
 
-                     When paginating, all other parameters provided to `ListDatabases` must match
-                     the call that provided the page token.
+                     When paginating, all other parameters provided to `ListDatabases` must
+                     match the call that provided the page token.
                   schema:
                     type: string
             responses:
@@ -9369,7 +9370,9 @@ components:
             properties:
                 name:
                     type: string
-                    description: 'Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}'
+                    description: |-
+                        Format:
+                         instances/{instance}/databases/{database}/changeHistories/{changeHistory}
                 creator:
                     type: string
                     description: 'Format: users/hello@world.com'
@@ -9588,7 +9591,8 @@ components:
                     type: string
                     description: |-
                         Could be empty
-                         TODO(p0ny): We will migrate ChangeHistory to Changelog, and they won't have task_run.
+                         TODO(p0ny): We will migrate ChangeHistory to Changelog, and they won't have
+                         task_run.
                 version:
                     type: string
                     description: Could be empty
@@ -9680,7 +9684,8 @@ components:
                     type: string
                     description: |-
                         The on_update is the on update action of a column.
-                         For MySQL like databases, it's only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value.
+                         For MySQL like databases, it's only supported for TIMESTAMP columns with
+                         CURRENT_TIMESTAMP as on update value.
                 nullable:
                     type: boolean
                     description: The nullable is the nullable of a column.
@@ -9709,8 +9714,8 @@ components:
                         - FULL
                     type: string
                     description: |-
-                        The effective_masking_level is the effective masking level of the column, evaluate from the
-                         column masking data and global masking rules.
+                        The effective_masking_level is the effective masking level of the column,
+                         evaluate from the column masking data and global masking rules.
                     format: enum
                 generation:
                     allOf:
@@ -10031,8 +10036,9 @@ components:
                     readOnly: true
                     type: string
                     description: |-
-                        The effective environment based on environment tag above and environment tag on the instance.
-                         Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-overview.
+                        The effective environment based on environment tag above and environment
+                         tag on the instance. Inheritance follows
+                         https://cloud.google.com/resource-manager/docs/tags/tags-overview.
                 labels:
                     type: object
                     additionalProperties:
@@ -10199,7 +10205,8 @@ components:
                         The name of the database or change history.
                          Format:
                          database: instances/{instance}/databases/{database}
-                         change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+                         change history:
+                         instances/{instance}/databases/{database}/changeHistories/{changeHistory}
                 schema:
                     type: string
                     description: The target schema.
@@ -10207,7 +10214,8 @@ components:
                     type: string
                     description: |-
                         The resource name of the change history
-                         Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+                         Format:
+                         instances/{instance}/databases/{database}/changeHistories/{changeHistory}
                 sdlFormat:
                     type: boolean
                     description: Format the schema dump into SDL format.
@@ -11611,8 +11619,8 @@ components:
                 nextPageToken:
                     type: string
                     description: |-
-                        Not used. A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
+                        Not used. A token, which can be sent as `page_token` to retrieve the next
+                         page. If this field is omitted, there are no subsequent pages.
         ListSettingsResponse:
             type: object
             properties:
@@ -13097,7 +13105,8 @@ components:
                     description: |-
                         The task run associated with the revision.
                          Can be empty.
-                         Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+                         Format:
+                         projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
         Risk:
             type: object
             properties:
@@ -14163,7 +14172,9 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/SlowQueryDetails'
-                    description: Samples are details of the sample slow query logs with the same fingerprint.
+                    description: |-
+                        Samples are details of the sample slow query logs with the same
+                         fingerprint.
             description: SlowQueryStatistics is the statistics of the slow query log.
         Stage:
             type: object
@@ -14439,8 +14450,10 @@ components:
                     type: string
                     description: |-
                         The expression is the expression of a table partition.
-                         For PostgreSQL, the expression is the text of {FOR VALUES partition_bound_spec}, see https://www.postgresql.org/docs/current/sql-createtable.html.
-                         For MySQL, the expression is the `expr` or `column_list` of the following syntax.
+                         For PostgreSQL, the expression is the text of {FOR VALUES
+                         partition_bound_spec}, see
+                         https://www.postgresql.org/docs/current/sql-createtable.html. For MySQL,
+                         the expression is the `expr` or `column_list` of the following syntax.
                          PARTITION BY
                             { [LINEAR] HASH(expr)
                             | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list)
@@ -14451,14 +14464,19 @@ components:
                     description: |-
                         The value is the value of a table partition.
                          For MySQL, the value is for RANGE and LIST partition types,
-                         - For a RANGE partition, it contains the value set in the partition's VALUES LESS THAN clause, which can be either an integer or MAXVALUE.
-                         - For a LIST partition, this column contains the values defined in the partition's VALUES IN clause, which is a list of comma-separated integer values.
+                         - For a RANGE partition, it contains the value set in the partition's
+                         VALUES LESS THAN clause, which can be either an integer or MAXVALUE.
+                         - For a LIST partition, this column contains the values defined in the
+                         partition's VALUES IN clause, which is a list of comma-separated integer
+                         values.
                          - For others, it's an empty string.
                 useDefault:
                     type: string
                     description: |-
-                        The use_default is whether the users use the default partition, it stores the different value for different database engines.
-                         For MySQL, it's [INT] type, 0 means not use default partition, otherwise, it's equals to number in syntax [SUB]PARTITION {number}.
+                        The use_default is whether the users use the default partition, it stores
+                         the different value for different database engines. For MySQL, it's [INT]
+                         type, 0 means not use default partition, otherwise, it's equals to number
+                         in syntax [SUB]PARTITION {number}.
                 subpartitions:
                     type: array
                     items:
