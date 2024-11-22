@@ -38,7 +38,7 @@
           </i18n-t>
           <a
             class="inline-flex items-center text-blue-600 ml-1 hover:underline"
-            href="https://www.bytebase.com/docs/administration/environment-policy/tier"
+            href="https://www.bytebase.com/docs/administration/environment-policy/overview/?source=console#environment-tier"
             target="_blank"
             >{{ $t("common.learn-more")
             }}<heroicons-outline:external-link class="w-4 h-4"
