@@ -14,7 +14,6 @@ import { head } from "lodash-es";
 import { NSelect, type SelectOption } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useDBGroupListByProject } from "@/store";
-import type { DatabaseGroup } from "@/types/proto/v1/database_group_service";
 
 interface LocalState {
   selectedDatabaseGroup?: string;
@@ -51,22 +50,9 @@ const dbGroupOptions = computed(() => {
   }));
 });
 
-const invalidateSelectionIfNeeded = () => {
-  if (
-    state.selectedDatabaseGroup &&
-    !dbGroupList.value.find(
-      (item: DatabaseGroup) => item.name == state.selectedDatabaseGroup
-    )
-  ) {
-    state.selectedDatabaseGroup = undefined;
-    emit("update:selected", undefined);
-  }
-};
-
 watch(
   [() => props.project, () => props.selected],
   () => {
-    invalidateSelectionIfNeeded();
     state.selectedDatabaseGroup = dbGroupList.value.find(
       (item) => item.name === props.selected
     )?.name;
