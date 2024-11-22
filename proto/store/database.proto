@@ -96,7 +96,7 @@ message SequenceMetadata {
   string data_type = 2;
 
   // The start value of a sequence.
-  int64 start = 3;
+  string start = 3;
 
   // The minimum value of a sequence.
   string min_value = 4;
