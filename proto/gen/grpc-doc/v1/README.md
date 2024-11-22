@@ -690,6 +690,7 @@
     - [PrettyRequest](#bytebase-v1-PrettyRequest)
     - [PrettyResponse](#bytebase-v1-PrettyResponse)
     - [QueryHistory](#bytebase-v1-QueryHistory)
+    - [QueryOption](#bytebase-v1-QueryOption)
     - [QueryRequest](#bytebase-v1-QueryRequest)
     - [QueryResponse](#bytebase-v1-QueryResponse)
     - [QueryResult](#bytebase-v1-QueryResult)
@@ -705,6 +706,7 @@
     - [Advice.Status](#bytebase-v1-Advice-Status)
     - [CheckRequest.ChangeType](#bytebase-v1-CheckRequest-ChangeType)
     - [QueryHistory.Type](#bytebase-v1-QueryHistory-Type)
+    - [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -11103,6 +11105,21 @@ Type of the SheetPayload.
 
 
 
+<a name="bytebase-v1-QueryOption"></a>
+
+### QueryOption
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| redis_run_commands_on | [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-QueryRequest"></a>
 
 ### QueryRequest
@@ -11118,6 +11135,7 @@ Type of the SheetPayload.
 | data_source_id | [string](#string) |  | The id of data source. It is used for querying admin data source even if the instance has read-only data sources. Or it can be used to query a specific read-only data source. |
 | explain | [bool](#bool) |  | Explain the statement. |
 | schema | [string](#string) | optional | The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres. |
+| query_option | [QueryOption](#bytebase-v1-QueryOption) |  |  |
 
 
 
@@ -11361,6 +11379,19 @@ for field description.
 | TYPE_UNSPECIFIED | 0 |  |
 | QUERY | 1 |  |
 | EXPORT | 2 |  |
+
+
+
+<a name="bytebase-v1-QueryOption-RedisRunCommandsOn"></a>
+
+### QueryOption.RedisRunCommandsOn
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| REDIS_RUN_COMMANDS_ON_UNSPECIFIED | 0 | UNSPECIFIED defaults to SINGLE_NODE. |
+| SINGLE_NODE | 1 |  |
+| ALL_NODES | 2 |  |
 
 
  

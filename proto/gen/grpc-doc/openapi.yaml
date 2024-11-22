@@ -12625,6 +12625,16 @@ components:
                         - EXPORT
                     type: string
                     format: enum
+        QueryOption:
+            type: object
+            properties:
+                redisRunCommandsOn:
+                    enum:
+                        - REDIS_RUN_COMMANDS_ON_UNSPECIFIED
+                        - SINGLE_NODE
+                        - ALL_NODES
+                    type: string
+                    format: enum
         QueryRequest:
             required:
                 - name
@@ -12658,6 +12668,8 @@ components:
                 schema:
                     type: string
                     description: The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres.
+                queryOption:
+                    $ref: '#/components/schemas/QueryOption'
         QueryResponse:
             type: object
             properties:

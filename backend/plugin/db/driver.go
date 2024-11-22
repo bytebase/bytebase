@@ -250,6 +250,7 @@ type QueryContext struct {
 	Limit         int
 	Explain       bool
 	OperatorEmail string
+	Option        *v1pb.QueryOption
 }
 
 // DatabaseRoleMessage is the API message for database role.
