@@ -1,10 +1,6 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
-  <div
-    class="relative px-2 py-1 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all"
-    :class="classes"
-    @click="handleClick"
-  >
+  <div class="relative px-2 py-1" :class="classes" @click="handleClick">
     <div
       ref="wrapperRef"
       class="whitespace-nowrap font-mono text-start line-clamp-1"
@@ -27,20 +23,19 @@
 
 <script setup lang="ts">
 import { type Table } from "@tanstack/vue-table";
+import { useResizeObserver } from "@vueuse/core";
 import { escape } from "lodash-es";
 import { NButton } from "naive-ui";
-import stringWidth from "string-width";
 import { computed, ref } from "vue";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
 import { extractSQLRowValue, getHighlightHTMLByRegExp } from "@/utils";
-import { useSQLResultViewContext } from "../context";
+import { useSQLResultViewContext } from "../../context";
 
 const props = defineProps<{
   table: Table<QueryRow>;
   value: RowValue;
-  width: number;
   setIndex: number;
   rowIndex: number;
   colIndex: number;
@@ -49,19 +44,18 @@ const props = defineProps<{
 const { dark, disallowCopyingData, detail, keyword } =
   useSQLResultViewContext();
 const wrapperRef = ref<HTMLDivElement>();
-const plainValue = computed(() => {
-  return extractSQLRowValue(props.value).plain;
-});
-const truncated = computed(() => {
-  // not that accurate
-  const content = String(plainValue.value);
-  const em = 8;
-  const padding = 8;
-  const guessedContentWidth = stringWidth(content) * em + padding * 2;
+const truncated = ref(false);
 
-  return guessedContentWidth > props.width;
+useResizeObserver(wrapperRef, (entries) => {
+  const div = entries[0].target as HTMLDivElement;
+  const contentWidth = div.scrollWidth;
+  const visibleWidth = div.offsetWidth;
+  if (contentWidth > visibleWidth) {
+    truncated.value = true;
+  } else {
+    truncated.value = false;
+  }
 });
-
 const { database } = useConnectionOfCurrentSQLEditorTab();
 
 const clickable = computed(() => {
@@ -90,7 +84,7 @@ const classes = computed(() => {
 });
 
 const html = computed(() => {
-  const value = plainValue.value;
+  const value = extractSQLRowValue(props.value).plain;
   if (value === undefined) {
     return `<span class="text-gray-400 italic">UNSET</span>`;
   }
