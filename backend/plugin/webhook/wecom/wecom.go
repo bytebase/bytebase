@@ -47,9 +47,9 @@ type Receiver struct {
 func getMessageCard(context webhook.Context) *WebhookMarkdown {
 	metaStrList := []string{}
 	for _, meta := range context.GetMetaList() {
-		metaStrList = append(metaStrList, fmt.Sprintf("%s: <font color=\"comment\">%s</font>", meta.Name, meta.Value))
+		metaStrList = append(metaStrList, fmt.Sprintf("**%s**: %s", meta.Name, meta.Value))
 	}
-	metaStrList = append(metaStrList, fmt.Sprintf("Actor: <font color=\"comment\">%s (%s)</font>", context.ActorName, context.ActorEmail))
+	metaStrList = append(metaStrList, fmt.Sprintf("**Actor**: %s (%s)", context.ActorName, context.ActorEmail))
 
 	status := ""
 	switch context.Level {
