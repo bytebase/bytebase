@@ -123,6 +123,12 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, dbSchema *storepb
 	// between views and can simply dump them in the appropriate order.
 	// https://sourcegraph.com/github.com/mysql/mysql-server/-/blob/client/mysqldump.cc?L2781
 	for _, view := range schema.Views {
+		if len(view.Columns) == 0 {
+			if err := writeInvalidTemporaryView(out, view); err != nil {
+				return err
+			}
+			continue
+		}
 		if err := writeTemporaryView(out, view); err != nil {
 			return err
 		}
@@ -395,6 +401,36 @@ func writeTable(out io.Writer, table *storepb.TableMetadata) error {
 		return err
 	}
 	_, err = io.WriteString(out, "\n")
+	return err
+}
+
+func writeInvalidTemporaryView(out io.Writer, view *storepb.ViewMetadata) error {
+	// Header.
+	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, tempViewHeader); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "`"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, view.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "`\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "-- `"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, view.Name); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, "` references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them\n\n")
 	return err
 }
 
