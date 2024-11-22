@@ -160,7 +160,7 @@ func (s *DatabaseService) ListInstanceDatabases(ctx context.Context, request *v1
 	nextPageToken := ""
 	if len(databaseMessages) == limitPlusOne {
 		databaseMessages = databaseMessages[:offset.limit]
-		if nextPageToken, err = offset.getPageToken(); err != nil {
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
 		}
 	}
@@ -219,7 +219,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	nextPageToken := ""
 	if len(databaseMessages) == limitPlusOne {
 		databaseMessages = databaseMessages[:offset.limit]
-		if nextPageToken, err = offset.getPageToken(); err != nil {
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
 		}
 	}
@@ -805,7 +805,7 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 
 	nextPageToken := ""
 	if len(changeHistories) == limitPlusOne {
-		if nextPageToken, err = offset.getPageToken(); err != nil {
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
 		changeHistories = changeHistories[:offset.limit]

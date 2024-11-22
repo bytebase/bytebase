@@ -142,7 +142,7 @@ func (s *ReleaseService) ListReleases(ctx context.Context, request *v1pb.ListRel
 
 	var nextPageToken string
 	if len(releaseMessages) == limitPlusOne {
-		if nextPageToken, err = offset.getPageToken(); err != nil {
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
 		releaseMessages = releaseMessages[:offset.limit]
