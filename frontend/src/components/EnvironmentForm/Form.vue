@@ -225,11 +225,7 @@ const renderColorPicker = () => {
           }}
         ></div>
       )}
-      onUpdateValue={(color: string) => {
-        if (!hasEnvironmentPolicyFeature.value) {
-          missingFeature.value = "bb.feature.environment-tier-policy";
-          return;
-        }
+      onComplete={(color: string) => {
         if (color.toUpperCase() === "#FFFFFF") {
           pushNotification({
             module: "bytebase",
@@ -237,6 +233,13 @@ const renderColorPicker = () => {
             title: t("common.warning"),
             description: "Invalid color",
           });
+          state.value.environment.color = "#4f46e5";
+          return;
+        }
+      }}
+      onUpdateValue={(color: string) => {
+        if (!hasEnvironmentPolicyFeature.value) {
+          missingFeature.value = "bb.feature.environment-tier-policy";
           return;
         }
         state.value.environment.color = color;
