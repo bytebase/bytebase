@@ -145,7 +145,7 @@ const imList = computed(() => {
     },
     {
       name: t("common.feishu"),
-      type: Webhook_Type.TYPE_DINGTALK,
+      type: Webhook_Type.TYPE_FEISHU,
       enabled: state.setting.feishu?.enabled,
       render: () => {
         return (
