@@ -1441,7 +1441,13 @@
       "cacheSize": "キャッシュサイズ",
       "lastValue": "最後の値"
     },
-    "triggers": "トリガー"
+    "triggers": "トリガー",
+    "trigger": {
+      "body": "体",
+      "timing": "タイミング",
+      "event": "イベント",
+      "table-name": "テーブル名"
+    }
   },
   "instance": {
     "select": "インスタンスの選択",

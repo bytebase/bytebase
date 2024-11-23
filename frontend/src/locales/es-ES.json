@@ -1441,7 +1441,13 @@
       "cacheSize": "Tamaño de caché",
       "lastValue": "Último valor"
     },
-    "triggers": "Desencadenantes"
+    "triggers": "Desencadenantes",
+    "trigger": {
+      "body": "Cuerpo",
+      "timing": "Momento",
+      "event": "Evento",
+      "table-name": "Nombre de la tabla"
+    }
   },
   "instance": {
     "select": "Seleccionar instancia",

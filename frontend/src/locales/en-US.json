@@ -1441,7 +1441,13 @@
       "cacheSize": "Cache size",
       "lastValue": "Last value"
     },
-    "triggers": "Triggers"
+    "triggers": "Triggers",
+    "trigger": {
+      "body": "Body",
+      "timing": "Timing",
+      "event": "Event",
+      "table-name": "Table name"
+    }
   },
   "instance": {
     "select": "Select instance",
