@@ -14,6 +14,7 @@
           v-if="viewState.view === 'PROCEDURES'"
           :key="tab?.id"
         />
+        <SequencesPanel v-if="viewState.view === 'SEQUENCES'" :key="tab?.id" />
         <PackagesPanel v-if="viewState.view === 'PACKAGES'" :key="tab?.id" />
         <ExternalTablesPanel
           v-if="viewState.view === 'EXTERNAL_TABLES'"
@@ -54,6 +55,7 @@ import FunctionsPanel from "./FunctionsPanel";
 import InfoPanel from "./InfoPanel";
 import PackagesPanel from "./PackagesPanel";
 import ProceduresPanel from "./ProceduresPanel";
+import SequencesPanel from "./SequencesPanel";
 import TablesPanel from "./TablesPanel";
 import ViewsPanel from "./ViewsPanel";
 

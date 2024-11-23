@@ -274,6 +274,7 @@ const selectedKeys = computed(() => {
       view,
       procedure,
       func,
+      sequence,
       externalTable,
       package: pack,
       partition,
@@ -306,6 +307,8 @@ const selectedKeys = computed(() => {
     parts.push(`procedures/${procedure}`);
   } else if (func) {
     parts.push(`functions/${func}`);
+  } else if (sequence) {
+    parts.push(`sequences/${sequence}`);
   } else if (externalTable) {
     parts.push(`externalTables/${externalTable}`);
   } else if (pack) {

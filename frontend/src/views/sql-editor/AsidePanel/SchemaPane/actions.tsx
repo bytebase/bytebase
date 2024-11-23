@@ -170,6 +170,7 @@ export const useActions = () => {
       "procedure",
       "package",
       "function",
+      "sequence",
       "index",
       "foreign-key",
       "partition-table",
@@ -248,6 +249,7 @@ export const useActions = () => {
       | "procedure"
       | "package"
       | "function"
+      | "sequence"
       | "external-table"
       | "index"
       | "foreign-key"
@@ -330,6 +332,10 @@ export const useActions = () => {
     if (type === "function") {
       const { function: func, position } = target as NodeTarget<"function">;
       detail.func = keyWithPosition(func.name, position);
+    }
+    if (type === "sequence") {
+      const { sequence, position } = target as NodeTarget<"sequence">;
+      detail.sequence = keyWithPosition(sequence.name, position);
     }
     if (type === "external-table") {
       detail.externalTable = (

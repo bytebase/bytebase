@@ -13,6 +13,7 @@
           <ViewIcon v-if="view === 'VIEWS'" :class="iconClass" />
           <FunctionIcon v-if="view === 'FUNCTIONS'" :class="iconClass" />
           <ProcedureIcon v-if="view === 'PROCEDURES'" :class="iconClass" />
+          <SequenceIcon v-if="view === 'SEQUENCES'" :class="iconClass" />
           <PackageIcon v-if="view === 'PACKAGES'" :class="iconClass" />
           <ExternalTableIcon
             v-if="view === 'EXTERNAL_TABLES'"
@@ -40,6 +41,7 @@ import {
   ProcedureIcon,
   ExternalTableIcon,
   PackageIcon,
+  SequenceIcon,
 } from "@/components/Icon";
 import { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { useEditorPanelContext } from "../context";
@@ -74,6 +76,10 @@ const text = computed(() => {
       return t("db.functions");
     case "PROCEDURES":
       return t("db.procedures");
+    case "SEQUENCES":
+      return t("db.sequences");
+    case "TRIGGERS":
+      return t("db.triggers");
     case "PACKAGES":
       return t("db.packages");
     case "EXTERNAL_TABLES":

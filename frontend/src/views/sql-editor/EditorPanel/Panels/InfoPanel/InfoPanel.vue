@@ -118,6 +118,38 @@
       </div>
 
       <div
+        v-if="instanceV1SupportsSequence(database.instanceResource)"
+        class="flex flex-col gap-2"
+      >
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg">{{ $t("db.sequences") }}</h2>
+          <SearchBox v-model:value="state.keywords.sequences" />
+        </div>
+        <div class="max-h-[16rem] overflow-x-auto overflow-y-hidden">
+          <SequencesTable
+            v-if="metadata.schema"
+            :db="database"
+            :database="metadata.database"
+            :schema="metadata.schema"
+            :sequences="metadata.schema.sequences"
+            :keyword="state.keywords.sequences"
+            :max-height="230"
+            @click="
+              updateViewState({
+                view: 'SEQUENCES',
+                detail: {
+                  sequence: keyWithPosition(
+                    $event.sequence.name,
+                    $event.position
+                  ),
+                },
+              })
+            "
+          />
+        </div>
+      </div>
+
+      <div
         v-if="instanceV1SupportsExternalTable(database.instanceResource)"
         class="flex flex-col gap-2"
       >
@@ -193,6 +225,7 @@ import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import {
   instanceV1SupportsExternalTable,
   instanceV1SupportsPackage,
+  instanceV1SupportsSequence,
 } from "@/utils";
 import { keyWithPosition } from "@/views/sql-editor/EditorCommon";
 import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
@@ -201,6 +234,7 @@ import ExternalTablesTable from "../ExternalTablesPanel/ExternalTablesTable.vue"
 import FunctionsTable from "../FunctionsPanel/FunctionsTable.vue";
 import PackagesTable from "../PackagesPanel/PackagesTable.vue";
 import ProceduresTable from "../ProceduresPanel/ProceduresTable.vue";
+import SequencesTable from "../SequencesPanel/SequencesTable.vue";
 import TablesTable from "../TablesPanel/TablesTable.vue";
 import ViewsTable from "../ViewsPanel/ViewsTable.vue";
 import { SchemaSelectToolbar } from "../common";
@@ -211,6 +245,7 @@ const state = reactive({
     views: "",
     functions: "",
     procedures: "",
+    sequences: "",
     externalTables: "",
     packages: "",
   },
