@@ -1440,7 +1440,8 @@
       "cycle": "循环",
       "cacheSize": "缓存大小",
       "lastValue": "最后值"
-    }
+    },
+    "triggers": "触发器"
   },
   "instance": {
     "select": "选择实例",
