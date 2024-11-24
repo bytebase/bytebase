@@ -1,9 +1,10 @@
 <template>
   <NRadioGroup
     v-bind="$attrs"
-    v-model:value="state.value"
+    :value="state.selected"
     class="w-full !grid grid-cols-3 gap-2"
     name="radiogroup"
+    @update:value="onSelect"
   >
     <div
       v-for="option in options"
@@ -14,18 +15,18 @@
     </div>
     <div class="col-span-3 flex flex-row justify-start items-center">
       <NRadio :value="-1" :label="$t('issue.grant-request.custom')" />
-      <NInputNumber
-        v-model:value="state.customValue"
-        class="!w-24 ml-2"
-        :disabled="!useCustom"
-        :min="1"
-        :max="maximumRoleExpiration"
-        :show-button="false"
-        :placeholder="''"
-      >
-        <template #suffix>{{ $t("common.date.days") }}</template>
-      </NInputNumber>
-
+      <NDatePicker
+        :value="
+          state.selected === -1 ? state.expirationTimestampInMS : undefined
+        "
+        :disabled="state.selected !== -1"
+        :actions="null"
+        :update-value-on-close="true"
+        type="datetime"
+        :is-date-disabled="(date: number) => date < Date.now()"
+        clearable
+        @update:value="(val) => (state.expirationTimestampInMS = val)"
+      />
       <span v-if="maximumRoleExpiration" class="ml-3 textinfolabel">
         {{ $t("settings.general.workspace.maximum-role-expiration.self") }}:
         {{ $t("common.date.days", { days: maximumRoleExpiration }) }}
@@ -35,8 +36,8 @@
 </template>
 
 <script lang="ts" setup>
-import { NRadio, NRadioGroup, NInputNumber } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { NRadio, NRadioGroup, NDatePicker } from "naive-ui";
+import { computed, reactive, watch, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useSettingV1Store } from "@/store";
 
@@ -46,27 +47,24 @@ interface ExpirationOption {
 }
 
 interface LocalState {
-  value: number;
-  customValue: number;
+  selected: number;
+  expirationTimestampInMS?: number;
 }
 
 const props = defineProps<{
-  value: number;
+  timestampInMs?: number;
 }>();
 
 const emit = defineEmits<{
-  (event: "update", value: number): void;
+  (event: "update:timestampInMs", timestampInMS: number | undefined): void;
 }>();
 
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 
 const state = reactive<LocalState>({
-  value: props.value,
-  customValue: 7,
+  selected: props.timestampInMs === undefined ? 0 : -1,
 });
-
-const useCustom = computed(() => state.value === -1);
 
 const maximumRoleExpiration = computed(() => {
   const seconds =
@@ -113,10 +111,27 @@ const options = computed((): ExpirationOption[] => {
   return options;
 });
 
+const onSelect = (value: number) => {
+  if (value >= 0) {
+    state.expirationTimestampInMS = value * 24 * 60 * 60 * 1000;
+  } else {
+    state.expirationTimestampInMS = undefined;
+  }
+  state.selected = value;
+};
+
+onMounted(() => {
+  let value = state.selected;
+  if (!options.value.find((o) => o.value === state.selected)) {
+    value = options.value[0].value;
+  }
+  onSelect(value);
+});
+
 watch(
-  () => [state.value, state.customValue],
+  () => state.expirationTimestampInMS,
   () => {
-    emit("update", useCustom.value ? state.customValue : state.value);
+    emit("update:timestampInMs", state.expirationTimestampInMS);
   }
 );
 </script>
