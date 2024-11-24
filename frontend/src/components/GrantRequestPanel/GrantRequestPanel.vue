@@ -43,9 +43,8 @@
             <RequiredStar />
           </span>
           <ExpirationSelector
+            v-model:timestamp-in-ms="state.expirationTimestampInMS"
             class="grid-cols-3 sm:grid-cols-4"
-            :value="state.expireDays"
-            @update="state.expireDays = $event"
           />
         </div>
         <div class="w-full flex flex-col justify-start items-start">
@@ -104,7 +103,7 @@ import MaxRowCountSelect from "./MaxRowCountSelect.vue";
 
 interface LocalState {
   databaseResources: DatabaseResource[];
-  expireDays: number;
+  expirationTimestampInMS?: number;
   description: string;
   maxRowCount: number;
 }
@@ -151,7 +150,7 @@ const extractDatabaseResourcesFromProps = (): Pick<
 const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
   ...extractDatabaseResourcesFromProps(),
-  expireDays: 1,
+  expirationTimestampInMS: undefined,
   description: "",
   maxRowCount: 1000,
 });
@@ -164,6 +163,9 @@ const allowCreate = computed(() => {
     !isUndefined(state.databaseResources) &&
     state.databaseResources.length === 0
   ) {
+    return false;
+  }
+  if (state.expirationTimestampInMS === undefined) {
     return false;
   }
   return true;
@@ -195,12 +197,12 @@ const doCreateIssue = async () => {
   if (state.databaseResources) {
     expression.push(stringifyDatabaseResources(state.databaseResources));
   }
-  const expireDays = state.expireDays;
-  if (expireDays > 0) {
+  const expirationTimestampInMS = state.expirationTimestampInMS;
+  if (expirationTimestampInMS && expirationTimestampInMS > 0) {
     expression.push(
-      `request.time < timestamp("${dayjs()
-        .add(expireDays, "days")
-        .toISOString()}")`
+      `request.time < timestamp("${dayjs(
+        expirationTimestampInMS
+      ).toISOString()}")`
     );
   }
   if (props.role === PresetRoleType.PROJECT_EXPORTER) {
@@ -217,9 +219,9 @@ const doCreateIssue = async () => {
       expression: celExpressionString,
     });
   }
-  if (expireDays > 0) {
+  if (expirationTimestampInMS && expirationTimestampInMS > 0) {
     newIssue.grantRequest.expiration = Duration.fromPartial({
-      seconds: expireDays * 24 * 60 * 60,
+      seconds: dayjs(expirationTimestampInMS).unix() - dayjs().unix(),
     });
   }
 

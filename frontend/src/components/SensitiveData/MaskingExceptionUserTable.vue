@@ -394,6 +394,7 @@ const accessTableColumns = computed(
               value={item.expirationTimestamp}
               style={"width: 100%"}
               type={"datetime"}
+              actions={["confirm"]}
               isDateDisabled={(date: number) => date < Date.now()}
               clearable={true}
               disabled={!hasPermission.value || props.disabled}
