@@ -11,7 +11,7 @@
 
 <script lang="tsx" setup>
 import type { DataTableColumn } from "naive-ui";
-import { NCheckbox, NDataTable } from "naive-ui";
+import { NCheckbox, NDataTable, NPerformantEllipsis } from "naive-ui";
 import type { PropType } from "vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
@@ -44,7 +44,13 @@ const columns = computed(() => {
       title: t("common.name"),
       resizable: true,
       render: (seq) => {
-        return seq.name;
+        return (
+          <NPerformantEllipsis>
+            {{
+              default: () => seq.name,
+            }}
+          </NPerformantEllipsis>
+        );
       },
     },
     {
@@ -76,7 +82,13 @@ const columns = computed(() => {
       title: t("db.sequence.max-value"),
       resizable: true,
       render: (seq) => {
-        return seq.maxValue;
+        return (
+          <NPerformantEllipsis>
+            {{
+              default: () => seq.maxValue,
+            }}
+          </NPerformantEllipsis>
+        );
       },
     },
     {
@@ -108,7 +120,13 @@ const columns = computed(() => {
       title: t("db.sequence.lastValue"),
       resizable: true,
       render: (seq) => {
-        return seq.lastValue;
+        return (
+          <NPerformantEllipsis>
+            {{
+              default: () => seq.lastValue,
+            }}
+          </NPerformantEllipsis>
+        );
       },
     },
   ];

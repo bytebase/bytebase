@@ -8,7 +8,7 @@
         ({ sequence, position }) => keyWithPosition(sequence.name, position)
       "
       :columns="columns"
-      :data="layoutReady ? filteredFuncs : []"
+      :data="layoutReady ? filteredSequences : []"
       :row-props="rowProps"
       :max-height="tableBodyHeight"
       :virtual-scroll="true"
@@ -68,7 +68,7 @@ const funcsWithPosition = computed(() => {
   }));
 });
 
-const filteredFuncs = computed(() => {
+const filteredSequences = computed(() => {
   const keyword = props.keyword?.trim().toLowerCase();
   if (keyword) {
     return funcsWithPosition.value.filter(({ sequence: func }) =>
@@ -85,7 +85,7 @@ const {
   layoutReady,
   virtualListRef,
 } = useAutoHeightDataTable(
-  filteredFuncs,
+  filteredSequences,
   computed(() => ({
     maxHeight: props.maxHeight ? props.maxHeight : null,
   }))
@@ -135,7 +135,9 @@ const columns = computed(() => {
       title: t("db.sequence.max-value"),
       resizable: true,
       render: ({ sequence }) => {
-        return sequence.maxValue;
+        return h(EllipsisCell, {
+          content: sequence.maxValue,
+        });
       },
     },
     {
@@ -167,7 +169,9 @@ const columns = computed(() => {
       title: t("db.sequence.lastValue"),
       resizable: true,
       render: ({ sequence }) => {
-        return sequence.lastValue;
+        return h(EllipsisCell, {
+          content: sequence.lastValue,
+        });
       },
     },
   ];
