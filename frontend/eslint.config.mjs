@@ -36,7 +36,6 @@ export default [
             /^carbon:/,
             /^tabler:/,
             /^octicon:/,
-            /^mdi:/,
             /^router-view$/,
             /^router-link$/,
             /^i18n-t$/,
