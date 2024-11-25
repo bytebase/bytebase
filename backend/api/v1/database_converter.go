@@ -188,6 +188,21 @@ func convertStoreDatabaseMetadata(ctx context.Context, metadata *storepb.Databas
 			}
 			s.Sequences = append(s.Sequences, v1Sequence)
 		}
+
+		for _, event := range schema.Events {
+			if event == nil {
+				continue
+			}
+			v1Event := &v1pb.EventMetadata{
+				Name:                event.Name,
+				TimeZone:            event.TimeZone,
+				Definition:          event.Definition,
+				SqlMode:             event.SqlMode,
+				CharacterSetClient:  event.CharacterSetClient,
+				CollationConnection: event.CollationConnection,
+			}
+			s.Events = append(s.Events, v1Event)
+		}
 	}
 	for _, extension := range metadata.Extensions {
 		if extension == nil {
@@ -625,6 +640,20 @@ func convertV1DatabaseMetadata(ctx context.Context, metadata *v1pb.DatabaseMetad
 				Definition: stream.Definition,
 			}
 			s.Streams = append(s.Streams, storeStream)
+		}
+		for _, event := range schema.Events {
+			if event == nil {
+				continue
+			}
+			storeEvent := &storepb.EventMetadata{
+				Name:                event.Name,
+				TimeZone:            event.TimeZone,
+				Definition:          event.Definition,
+				SqlMode:             event.SqlMode,
+				CharacterSetClient:  event.CharacterSetClient,
+				CollationConnection: event.CollationConnection,
+			}
+			s.Events = append(s.Events, storeEvent)
 		}
 		m.Schemas = append(m.Schemas, s)
 	}
