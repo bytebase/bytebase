@@ -20,14 +20,14 @@ export type EditorPanelViewState = {
     view?: string;
     procedure?: string;
     func?: string;
+    sequence?: string;
+    trigger?: string;
     externalTable?: string;
     partition?: string;
     index?: string;
     foreignKey?: string;
     dependentColumn?: string;
     package?: string;
-    sequence?: string;
-    trigger?: string;
   };
 };
 

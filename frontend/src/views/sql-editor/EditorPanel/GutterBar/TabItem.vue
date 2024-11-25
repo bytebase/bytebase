@@ -14,6 +14,7 @@
           <FunctionIcon v-if="view === 'FUNCTIONS'" :class="iconClass" />
           <ProcedureIcon v-if="view === 'PROCEDURES'" :class="iconClass" />
           <SequenceIcon v-if="view === 'SEQUENCES'" :class="iconClass" />
+          <TriggerIcon v-if="view === 'TRIGGERS'" :class="iconClass" />
           <PackageIcon v-if="view === 'PACKAGES'" :class="iconClass" />
           <ExternalTableIcon
             v-if="view === 'EXTERNAL_TABLES'"
@@ -42,6 +43,7 @@ import {
   ExternalTableIcon,
   PackageIcon,
   SequenceIcon,
+  TriggerIcon,
 } from "@/components/Icon";
 import { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { useEditorPanelContext } from "../context";

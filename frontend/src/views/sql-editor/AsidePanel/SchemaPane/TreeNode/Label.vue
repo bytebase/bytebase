@@ -41,6 +41,9 @@
   <template v-if="type === 'sequence'">
     <SequenceNode :node="node" :keyword="keyword" />
   </template>
+  <template v-if="type === 'trigger'">
+    <TriggerNode :node="node" :keyword="keyword" />
+  </template>
   <template v-if="type === 'expandable-text'">
     <TextNode :node="node" :keyword="keyword" />
   </template>
@@ -67,6 +70,7 @@ import SchemaNode from "./SchemaNode.vue";
 import SequenceNode from "./SequenceNode.vue";
 import TableNode from "./TableNode.vue";
 import TextNode from "./TextNode.vue";
+import TriggerNode from "./TriggerNode.vue";
 import ViewNode from "./ViewNode.vue";
 
 const props = defineProps<{

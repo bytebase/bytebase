@@ -171,6 +171,7 @@ export const useActions = () => {
       "package",
       "function",
       "sequence",
+      "trigger",
       "index",
       "foreign-key",
       "partition-table",
@@ -250,6 +251,7 @@ export const useActions = () => {
       | "package"
       | "function"
       | "sequence"
+      | "trigger"
       | "external-table"
       | "index"
       | "foreign-key"
@@ -336,6 +338,10 @@ export const useActions = () => {
     if (type === "sequence") {
       const { sequence, position } = target as NodeTarget<"sequence">;
       detail.sequence = keyWithPosition(sequence.name, position);
+    }
+    if (type === "trigger") {
+      const { trigger, position } = target as NodeTarget<"trigger">;
+      detail.trigger = keyWithPosition(trigger.name, position);
     }
     if (type === "external-table") {
       detail.externalTable = (

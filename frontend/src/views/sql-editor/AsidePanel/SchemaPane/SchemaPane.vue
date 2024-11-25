@@ -275,6 +275,7 @@ const selectedKeys = computed(() => {
       procedure,
       func,
       sequence,
+      trigger,
       externalTable,
       package: pack,
       partition,
@@ -309,6 +310,8 @@ const selectedKeys = computed(() => {
     parts.push(`functions/${func}`);
   } else if (sequence) {
     parts.push(`sequences/${sequence}`);
+  } else if (trigger) {
+    parts.push(`triggers/${trigger}`);
   } else if (externalTable) {
     parts.push(`externalTables/${externalTable}`);
   } else if (pack) {

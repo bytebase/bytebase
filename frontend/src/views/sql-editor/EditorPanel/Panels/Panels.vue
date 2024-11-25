@@ -15,6 +15,7 @@
           :key="tab?.id"
         />
         <SequencesPanel v-if="viewState.view === 'SEQUENCES'" :key="tab?.id" />
+        <TriggersPanel v-if="viewState.view === 'TRIGGERS'" :key="tab?.id" />
         <PackagesPanel v-if="viewState.view === 'PACKAGES'" :key="tab?.id" />
         <ExternalTablesPanel
           v-if="viewState.view === 'EXTERNAL_TABLES'"
@@ -57,6 +58,7 @@ import PackagesPanel from "./PackagesPanel";
 import ProceduresPanel from "./ProceduresPanel";
 import SequencesPanel from "./SequencesPanel";
 import TablesPanel from "./TablesPanel";
+import TriggersPanel from "./TriggersPanel";
 import ViewsPanel from "./ViewsPanel";
 
 defineProps<{
