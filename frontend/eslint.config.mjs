@@ -20,7 +20,6 @@ export default [
       "vue/no-ref-as-operand": "error",
       "no-useless-escape": "error",
       "@typescript-eslint/no-empty-interface": "error",
-      "@typescript-eslint/no-empty-object-type": "off",
       "@typescript-eslint/no-unused-vars": [
         "error",
         { varsIgnorePattern: "^_", argsIgnorePattern: "^_" },

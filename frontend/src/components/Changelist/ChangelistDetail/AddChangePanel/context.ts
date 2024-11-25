@@ -6,9 +6,8 @@ import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_se
 import { useChangelistDetailContext } from "../context";
 import { emptyRawSQLChange } from "./utils";
 
-export type AddChangeEvents = Emittery<{
-  // not used yet
-}>;
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export type AddChangeEvents = Emittery<{}>;
 
 export type AddChangeContext = {
   changeSource: Ref<ChangeSource>;
