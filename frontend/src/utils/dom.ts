@@ -1,9 +1,4 @@
-import {
-  onBeforeUnmount,
-  unref,
-  watch,
-  type Ref,
-} from "vue";
+import { onBeforeUnmount, unref, watch, type Ref } from "vue";
 
 export const isDescendantOf = (
   node: Element | null | undefined,
@@ -86,6 +81,8 @@ export const usePreventBackAndForward = (
   );
 
   onBeforeUnmount(() => {
-    unregister && unregister();
+    if (unregister) {
+      unregister();
+    }
   });
 };

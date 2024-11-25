@@ -734,7 +734,7 @@ const onSemanticTypeRemove = async (column: ColumnMetadata) => {
   });
 };
 
-const classesForRow = (column: ColumnMetadata, index: number) => {
+const classesForRow = (column: ColumnMetadata) => {
   return props.getColumnItemComputedClassList(column);
 };
 

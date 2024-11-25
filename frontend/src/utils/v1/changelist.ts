@@ -30,9 +30,12 @@ export const getChangelistChangeSourceType = (
 
 export const generateSQLForChangeToDatabase = async (
   change: Change,
-  database: ComposedDatabase
+  _database: ComposedDatabase
 ) => {
-  const sheet = await useSheetV1Store().getOrFetchSheetByName(change.sheet, "FULL");
+  const sheet = await useSheetV1Store().getOrFetchSheetByName(
+    change.sheet,
+    "FULL"
+  );
   if (!sheet) {
     return "";
   }

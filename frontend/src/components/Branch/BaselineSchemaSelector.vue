@@ -73,7 +73,7 @@ watch(
         state.databaseName = database.name;
         state.environmentName = database.effectiveEnvironment;
       }
-    } catch (error) {
+    } catch {
       // do nothing.
     }
     emit("update:database-name", database?.name);

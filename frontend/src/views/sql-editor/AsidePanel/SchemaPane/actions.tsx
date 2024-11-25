@@ -69,7 +69,7 @@ const VIEW_SCHEMA_ACTION_ENABLED_ENGINES = [
 
 const confirmOverrideStatement = async (
   $d: ReturnType<typeof useDialog>,
-  statement: string
+  _statement: string
 ): Promise<"CANCEL" | "OVERRIDE" | "COPY"> => {
   const { currentTab } = useSQLEditorTabStore();
   if (!currentTab) {
@@ -770,7 +770,7 @@ const formatCode = async (code: string, engine: Engine) => {
       return result.data;
     }
     return code; // fallback;
-  } catch (err) {
+  } catch {
     return code; // fallback
   }
 };

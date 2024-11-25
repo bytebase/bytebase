@@ -406,7 +406,7 @@ watch(
   }
 );
 
-useEventListener(treeContainerElRef, "keydown", (e) => {
+useEventListener(treeContainerElRef, "keydown", () => {
   searchBoxRef.value?.inputRef?.focus();
 });
 </script>

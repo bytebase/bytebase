@@ -141,7 +141,7 @@ const onWindowResize = () => {
   }
 };
 
-const onInputDataDeleteEnter = (e: KeyboardEvent) => {
+const onInputDataDeleteEnter = () => {
   if (!state.inputData && state.templateInputs.length > 0) {
     const last = state.templateInputs.slice(-1)[0];
     if (last.type === InputType.Template) {
@@ -150,7 +150,7 @@ const onInputDataDeleteEnter = (e: KeyboardEvent) => {
   }
 };
 
-const onInputDataDeleteLeave = (e: KeyboardEvent) => {
+const onInputDataDeleteLeave = () => {
   if (!state.inputData && state.templateInputs.length > 0) {
     const last = state.templateInputs.slice(-1)[0];
     if (last && last.type === InputType.String) {

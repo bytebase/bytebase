@@ -1,28 +1,19 @@
-import { FlatCompat } from "@eslint/eslintrc";
-import js from "@eslint/js";
+import vueTsEslintConfig from "@vue/eslint-config-typescript";
 import pluginVue from "eslint-plugin-vue";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-  recommendedConfig: js.configs.recommended,
-});
-
-// Reference: https://github.com/vuejs/eslint-config-typescript/issues/76#issuecomment-2051234597
 export default [
-  js.configs.recommended,
-  ...pluginVue.configs["flat/recommended"],
-  ...compat.extends("@vue/eslint-config-typescript/recommended"),
-  ...compat.extends("@vue/eslint-config-prettier/skip-formatting"),
-  {
-    files: ["**/*.js", "**/*.vue", "**/*.ts", "**/*.tsx"],
-    languageOptions: {
-      sourceType: "module",
+  ...pluginVue.configs["flat/essential"],
+  ...vueTsEslintConfig({
+    // Optional: extend additional configurations from `typescript-eslint`.
+    // Supports all the configurations in
+    // https://typescript-eslint.io/users/configs#recommended-configurations
+    extends: ["recommended"],
+    supportedScriptLangs: {
+      ts: true,
+      tsx: true,
     },
-  },
+    rootDir: import.meta.dirname,
+  }),
   {
     ignores: ["**/dist/**", "**/node_modules/**", "**/proto/**"],
   },
@@ -32,9 +23,10 @@ export default [
       "vue/no-ref-as-operand": "error",
       "no-useless-escape": "error",
       "@typescript-eslint/no-empty-interface": "error",
+      "@typescript-eslint/no-empty-object-type": "off",
       "@typescript-eslint/no-unused-vars": [
         "error",
-        { varsIgnorePattern: "^_", args: "none" },
+        { varsIgnorePattern: "^_", argsIgnorePattern: "^_" },
       ],
       "@typescript-eslint/no-explicit-any": "off",
       "vue/no-mutating-props": "error",

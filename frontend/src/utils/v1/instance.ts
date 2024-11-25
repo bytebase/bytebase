@@ -138,7 +138,7 @@ export const instanceV1HasAlterSchema = (
 };
 
 export const instanceV1HasReadonlyMode = (
-  instanceOrEngine: Instance | InstanceResource | Engine
+  _instanceOrEngine: Instance | InstanceResource | Engine
 ): boolean => {
   // For MongoDB and Redis, we rely on users setting up read-only data source for queries.
   return true;

@@ -72,7 +72,7 @@ const useTableResize = (options: TableResizeOptions) => {
   // Able to estimate multiple columns in a time.
   const autoAdjustColumnWidth = (indexList: number[]): Promise<number[]> => {
     return new Promise((resolve) => {
-      const cellListOfEachColumn = indexList.map((index, i) => {
+      const cellListOfEachColumn = indexList.map((index) => {
         const pseudo = `:nth-child(${index + 1})`;
         // Find all cells in this column
         const cellList = Array.from(

@@ -468,7 +468,7 @@ const handleUpdateStatementAndOverwrite = async (
 ) => {
   try {
     await showOverwriteConfirmDialog();
-  } catch (error) {
+  } catch {
     return;
   }
 

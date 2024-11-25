@@ -94,7 +94,7 @@ export const resolveCELExpr = (expr: CELExpr): SimpleExpr => {
         return resolveCollectionExpr(expr, negative);
       }
       throw new Error(`unsupported expr "${JSON.stringify(expr)}"`);
-    } catch (error) {
+    } catch {
       // Any error occurs, we treat it as a raw string.
       return resolveRawStringExpr(expr);
     }

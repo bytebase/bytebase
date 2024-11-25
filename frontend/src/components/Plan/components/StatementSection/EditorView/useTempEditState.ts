@@ -89,7 +89,9 @@ export const useTempEditState = (state: EditState) => {
       } else {
         // If we are creating an plan, we don't need the temp editing state
         // feature since all specs are still in editing mode.
-        stopWatching && stopWatching();
+        if (stopWatching) {
+          stopWatching();
+        }
       }
     },
     { immediate: true }
