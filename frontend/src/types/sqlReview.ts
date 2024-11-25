@@ -767,8 +767,8 @@ export const getRuleLocalization = (
 };
 
 export const ruleIsAvailableInSubscription = (
-  ruleType: string,
-  subscriptionPlan: PlanType
+  _ruleType: string,
+  _subscriptionPlan: PlanType
 ): boolean => {
   return true;
 };

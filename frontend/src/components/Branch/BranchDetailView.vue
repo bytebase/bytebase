@@ -500,8 +500,8 @@ const deleteBranch = async (force: boolean) => {
     router.replace({
       name: PROJECT_V1_ROUTE_BRANCHES,
     });
-  } catch (ex) {
-    if (getErrorCode(ex) === Status.FAILED_PRECONDITION) {
+  } catch (err) {
+    if (getErrorCode(err) === Status.FAILED_PRECONDITION) {
       const confirmed = await confirmForceDeleteBranch();
       if (confirmed) {
         deleteBranch(true);

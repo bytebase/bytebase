@@ -1,9 +1,8 @@
 import { useLocalStorage } from "@vueuse/core";
 import type { ClientMiddleware } from "nice-grpc-web";
 
-export type SimulateLatencyOptions = {
-  // empty
-};
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export type SimulateLatencyOptions = {};
 
 const simulateLatency = (minMS: number, maxMS: number, tags: string[] = []) => {
   if (maxMS < minMS) return;

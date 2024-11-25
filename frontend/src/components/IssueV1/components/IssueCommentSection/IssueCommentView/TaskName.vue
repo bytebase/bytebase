@@ -63,7 +63,7 @@ const link = computed(() => {
   };
 });
 
-const toTop = (e: Event) => {
+const toTop = () => {
   const taskElem = document.querySelector(
     `[data-task-id="${extractTaskUID(props.task.name)}"]`
   );

@@ -272,7 +272,7 @@ export const useConversationStore = defineStore("ai-conversation", () => {
     try {
       await Promise.all(ready);
       await Promise.all([conversations.destroy(), messages.destroy()]);
-    } catch (ex) {
+    } catch {
       // nothing todo
     }
   };

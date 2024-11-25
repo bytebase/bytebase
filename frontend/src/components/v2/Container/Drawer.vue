@@ -45,7 +45,7 @@ const onUpdateShow = (show: boolean) => {
 
 const { id, upmost, events } = useOverlayStack(toRef(props, "show"));
 
-useEmitteryEventListener(events, "esc", (e) => {
+useEmitteryEventListener(events, "esc", () => {
   if (upmost.value && props.closeOnEsc) {
     emit("update:show", false);
     emit("close");

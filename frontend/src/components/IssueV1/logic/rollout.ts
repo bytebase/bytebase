@@ -40,12 +40,6 @@ export const allowUserToEditStatementForTask = (
   const { getPlanCheckRunsForTask } = issueContext;
   const denyReasons: string[] = [];
 
-  if (isTaskV1TriggeredByVCS(issue, task)) {
-    // If an issue is triggered by VCS, its creator will be 1 (SYSTEM_BOT_ID)
-    // We should "Allow" current user to edit the statement (via VCS).
-    return [];
-  }
-
   if (
     issue.type !== Issue_Type.DATABASE_CHANGE &&
     issue.type !== Issue_Type.DATABASE_DATA_EXPORT
@@ -111,13 +105,6 @@ export const isTaskEditable = (
 
 export const isTaskFinished = (task: Task): boolean => {
   return [Task_Status.DONE, Task_Status.SKIPPED].includes(task.status);
-};
-
-export const isTaskV1TriggeredByVCS = (
-  issue: ComposedIssue,
-  task: Task
-): boolean => {
-  return false; // TODO
 };
 
 export const semanticTaskType = (type: Task_Type) => {

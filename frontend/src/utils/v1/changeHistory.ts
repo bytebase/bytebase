@@ -41,11 +41,7 @@ export const isValidChangeHistoryName = (name: string | undefined) => {
   return uid && uid !== String(EMPTY_ID) && uid !== String(UNKNOWN_ID);
 };
 
-export const changeHistoryLinkRaw = (
-  parent: string,
-  uid: string,
-  version: string
-) => {
+export const changeHistoryLinkRaw = (parent: string, uid: string) => {
   const { database } = extractDatabaseResourceName(parent);
   const composedDatabase = useDatabaseV1Store().getDatabaseByName(database);
   const path = [databaseV1Url(composedDatabase), "change-histories", uid].join(
@@ -55,8 +51,8 @@ export const changeHistoryLinkRaw = (
 };
 
 export const changeHistoryLink = (changeHistory: ChangeHistory): string => {
-  const { name, version } = changeHistory;
-  return changeHistoryLinkRaw(name, extractChangeHistoryUID(name), version);
+  const { name } = changeHistory;
+  return changeHistoryLinkRaw(name, extractChangeHistoryUID(name));
 };
 
 export const getAffectedTablesOfChangeHistory = (

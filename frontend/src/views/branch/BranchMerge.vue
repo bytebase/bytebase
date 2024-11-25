@@ -50,11 +50,7 @@ const handleUpdateHeadBranchName = (branchName: string | null) => {
   });
 };
 
-const handleMerged = (
-  mergedBranch: Branch,
-  headBranchName: string,
-  headBranch: Branch | undefined
-) => {
+const handleMerged = (mergedBranch: Branch) => {
   router.replace({
     name: PROJECT_V1_ROUTE_BRANCH_DETAIL,
     params: {

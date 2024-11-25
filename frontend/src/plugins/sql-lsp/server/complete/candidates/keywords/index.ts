@@ -20,7 +20,7 @@ export const keywordGroupsOfDialect = async (dialect: SQLDialect) => {
       `./dialects/${dialect.toLowerCase()}.ts`
     );
     Object.assign(dialectOnly, additional);
-  } catch (ex) {
+  } catch {
     // nothing
   }
   return {

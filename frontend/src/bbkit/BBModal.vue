@@ -102,7 +102,7 @@ export default defineComponent({
   setup(props, { emit }) {
     const { id, upmost, events } = useOverlayStack(toRef(props, "show"));
 
-    useEmitteryEventListener(events, "esc", (e) => {
+    useEmitteryEventListener(events, "esc", () => {
       if (upmost.value && props.closeOnEsc) {
         tryClose();
       }
