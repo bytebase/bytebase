@@ -121,6 +121,28 @@
           />
         </template>
 
+        <template v-if="instanceV1SupportsSequence(databaseEngine)">
+          <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+            {{ $t("db.sequences") }}
+          </div>
+          <SequenceDataTable
+            :database="database"
+            :schema-name="state.selectedSchemaName"
+            :sequence-list="sequenceList"
+          />
+        </template>
+
+        <template v-if="instanceV1SupportsTrigger(databaseEngine)">
+          <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+            {{ $t("db.triggers") }}
+          </div>
+          <TriggerDataTable
+            :database="database"
+            :schema-name="state.selectedSchemaName"
+            :trigger-list="triggerList"
+          />
+        </template>
+
         <template v-if="databaseEngine === Engine.SNOWFLAKE">
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
             {{ $t("db.streams") }}
@@ -178,8 +200,15 @@ import type { ComposedDatabase } from "@/types";
 import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { hasSchemaProperty, instanceV1SupportsPackage } from "@/utils";
+import {
+  hasSchemaProperty,
+  instanceV1SupportsPackage,
+  instanceV1SupportsSequence,
+  instanceV1SupportsTrigger,
+} from "@/utils";
 import PackageDataTable from "../PackageDataTable.vue";
+import SequenceDataTable from "../SequenceDataTable.vue";
+import TriggerDataTable from "../TriggerDataTable.vue";
 import { SearchBox } from "../v2";
 import DatabaseOverviewInfo from "./DatabaseOverviewInfo.vue";
 
@@ -354,6 +383,34 @@ const packageList = computed(() => {
   return dbSchemaStore
     .getDatabaseMetadata(props.database.name)
     .schemas.map((schema) => schema.packages)
+    .flat();
+});
+
+const sequenceList = computed(() => {
+  if (hasSchemaPropertyV1.value) {
+    return (
+      schemaList.value.find(
+        (schema) => schema.name === state.selectedSchemaName
+      )?.sequences || []
+    );
+  }
+  return dbSchemaStore
+    .getDatabaseMetadata(props.database.name)
+    .schemas.map((schema) => schema.sequences)
+    .flat();
+});
+
+const triggerList = computed(() => {
+  if (hasSchemaPropertyV1.value) {
+    return (
+      schemaList.value.find(
+        (schema) => schema.name === state.selectedSchemaName
+      )?.triggers || []
+    );
+  }
+  return dbSchemaStore
+    .getDatabaseMetadata(props.database.name)
+    .schemas.map((schema) => schema.triggers)
     .flat();
 });
 
