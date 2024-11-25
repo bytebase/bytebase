@@ -114,7 +114,7 @@ const save = () => {
     projectPatch.key = state.key;
     updateMask.push("key");
   }
-  projectV1Store.updateProject(projectPatch, updateMask).then((updated) => {
+  projectV1Store.updateProject(projectPatch, updateMask).then(() => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
