@@ -1,4 +1,8 @@
 <template>
+  <div class="issue-debug">
+    <pre>actionType: {{ actionType }}</pre>
+    <pre>reviewDone: {{ reviewDone }}</pre>
+  </div>
   <div class="flex flex-col items-end">
     <CreateButton v-if="actionType === 'CREATE'" />
 
@@ -16,7 +20,7 @@ import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
 import { PresetRoleType } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
-import { isGrantRequestIssue, isIssueActuallySucceedRolledout } from "@/utils";
+import { isGrantRequestIssue } from "@/utils";
 import { useIssueContext } from "../../../logic";
 import { CreateButton } from "./create";
 import { TinySQLEditorButton } from "./request";
@@ -52,7 +56,7 @@ const actionType = asyncComputed(async (): Promise<ActionType | undefined> => {
     return "REVIEW";
   }
 
-  if (reviewDone.value || isIssueActuallySucceedRolledout(issue.value)) {
+  if (reviewDone.value) {
     return "ROLLOUT";
   }
 

@@ -190,17 +190,3 @@ export const buildIssueV1LinkWithTask = (
 
   return url;
 };
-
-export const isIssueActuallySucceedRolledout = (issue: ComposedIssue) => {
-  // Issues might be rolled out by "Force rollout" without reviewing.
-  const tasks = flattenTaskV1List(issue.rolloutEntity);
-  return tasks.some((task) =>
-    [
-      Task_Status.CANCELED,
-      Task_Status.DONE,
-      Task_Status.PENDING,
-      Task_Status.RUNNING,
-      Task_Status.SKIPPED,
-    ].includes(task.status)
-  );
-};
