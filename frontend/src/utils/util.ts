@@ -96,7 +96,7 @@ export function isUrl(str: string): boolean {
 
   try {
     url = new URL(str);
-  } catch (_) {
+  } catch {
     return false;
   }
 
@@ -106,20 +106,20 @@ export function isUrl(str: string): boolean {
 // Performs inline swap, also handles negative index (counting from the end)
 // arraySwap([1, 2, 3, 4], 1, 2) => [1, 3, 2, 4]
 // arraySwap([1, 2, 3, 4], -1, -2) => [1, 2, 4, 3]
-export function arraySwap(arr: any[], old_index: number, new_index: number) {
-  while (old_index < 0) {
-    old_index += arr.length;
+export function arraySwap(arr: any[], oldIndex: number, newIndex: number) {
+  while (oldIndex < 0) {
+    oldIndex += arr.length;
   }
-  while (new_index < 0) {
-    new_index += arr.length;
+  while (newIndex < 0) {
+    newIndex += arr.length;
   }
-  if (new_index >= arr.length) {
-    let k = new_index - arr.length + 1;
+  if (newIndex >= arr.length) {
+    let k = newIndex - arr.length + 1;
     while (k--) {
       arr.push(undefined);
     }
   }
-  arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
+  arr.splice(newIndex, 0, arr.splice(oldIndex, 1)[0]);
 }
 
 export function sizeToFit(

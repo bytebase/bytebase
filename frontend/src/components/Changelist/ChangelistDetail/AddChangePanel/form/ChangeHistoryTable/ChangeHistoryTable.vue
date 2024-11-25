@@ -113,7 +113,7 @@ const handleSelection = (rowKeys: DataTableRowKey[]) => {
 
 const rowProps = (history: ComposedChangeHistory) => {
   return {
-    onClick: (e: MouseEvent) => {
+    onClick: () => {
       emit("click-item", history);
     },
   };

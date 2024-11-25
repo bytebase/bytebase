@@ -61,7 +61,7 @@ const tagProps = (scope: SearchScope): TagProps => {
   };
 };
 
-const renderValue = (scope: SearchScope, index: number) => {
+const renderValue = (scope: SearchScope, _index: number) => {
   if (scope.id === "created") {
     const [begin, end] = scope.value.split(",").map((ts) => parseInt(ts, 10));
     return [dayjs(begin).format("L"), dayjs(end).format("L")].join("-");

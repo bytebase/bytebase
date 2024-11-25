@@ -24,7 +24,7 @@ export const useInstanceSpecs = (
   const showSSH = computed((): boolean => {
     return instanceV1HasSSH(basicInfo.value.engine);
   });
-  const isEngineBeta = (engine: Engine): boolean => {
+  const isEngineBeta = (_engine: Engine): boolean => {
     return false;
     // return [].includes(engine);
   };

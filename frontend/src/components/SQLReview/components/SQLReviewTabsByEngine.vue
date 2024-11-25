@@ -56,7 +56,7 @@ const engineWithOrderRank = computed(() => {
 });
 
 const sortedData = computed((): [Engine, Map<string, RuleTemplateV2>][] => {
-  return [...props.ruleMapByEngine.entries()].sort(([e1, d1], [e2, d2]) => {
+  return [...props.ruleMapByEngine.entries()].sort(([e1], [e2]) => {
     return (
       (engineWithOrderRank.value.get(e1) ?? 0) -
       (engineWithOrderRank.value.get(e2) ?? 0)

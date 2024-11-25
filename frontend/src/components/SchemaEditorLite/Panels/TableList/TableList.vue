@@ -194,7 +194,7 @@ const statusForTable = (table: TableMetadata) => {
   return getTableStatus(props.db, metadataForTable(table));
 };
 
-const classesForRow = (table: TableMetadata, index: number) => {
+const classesForRow = (table: TableMetadata) => {
   return statusForTable(table);
 };
 

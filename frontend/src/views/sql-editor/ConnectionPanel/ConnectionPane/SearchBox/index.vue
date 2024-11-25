@@ -141,7 +141,7 @@ const handleDatabaseSelect = (databaseName: string) => {
   tryConnectToCoreSQLEditorTab(coreTab);
 };
 
-const handleEscapeKey = (e: KeyboardEvent) => {
+const handleEscapeKey = (_e: KeyboardEvent) => {
   if (isIMECompositing.value) return;
   autoCompleteRef.value?.blur();
 };

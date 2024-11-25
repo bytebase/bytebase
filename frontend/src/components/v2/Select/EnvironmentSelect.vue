@@ -44,7 +44,7 @@ const props = withDefaults(
     showProductionIcon: true,
     multiple: false,
     filter: () => true,
-    renderSuffix: (environment: string) => "",
+    renderSuffix: () => "",
   }
 );
 

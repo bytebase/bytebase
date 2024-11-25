@@ -69,7 +69,7 @@ const props = withDefaults(
     includeArchived: false,
     multiple: false,
     filter: () => true,
-    renderSuffix: (project: string) => "",
+    renderSuffix: () => "",
   }
 );
 

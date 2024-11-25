@@ -43,7 +43,7 @@ export const PossibleIssueStatusActionMap: Record<
 
 export const getApplicableIssueStatusActionList = (
   issue: ComposedIssue,
-  reviewStatus?: Issue_Approver_Status
+  _reviewStatus?: Issue_Approver_Status
 ): IssueStatusAction[] => {
   const list = PossibleIssueStatusActionMap[issue.status];
   return list.filter((action) => {
