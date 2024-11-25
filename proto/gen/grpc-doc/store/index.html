@@ -374,6 +374,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.EventMetadata"><span class="badge">M</span>EventMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.ExtensionMetadata"><span class="badge">M</span>ExtensionMetadata</a>
                 </li>
               
@@ -3241,6 +3245,65 @@ classification and user_comment is parsed from the comment. </p></td>
 
         
       
+        <h3 id="bytebase.store.EventMetadata">EventMetadata</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the event. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>definition</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The schedule of the event. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>time_zone</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The time zone of the event. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sql_mode</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>character_set_client</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>collation_connection</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.ExtensionMetadata">ExtensionMetadata</h3>
         <p>ExtensionMetadata is the metadata for extensions.</p>
 
@@ -4058,6 +4121,13 @@ Snowflake. </p></td>
                   <td>repeated</td>
                   <td><p>The triggers is the list of triggers in a schema, triggers are sorted by
 table_name, event, timing, action_order. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>events</td>
+                  <td><a href="#bytebase.store.EventMetadata">EventMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
