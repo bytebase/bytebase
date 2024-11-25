@@ -1429,7 +1429,25 @@
     "create": "Create database",
     "procedures": "Procedures",
     "partitions": "Partitions",
-    "packages": "Packages"
+    "packages": "Packages",
+    "sequences": "Sequences",
+    "sequence": {
+      "data-type": "Data type",
+      "start": "Start value",
+      "min-value": "Min value",
+      "max-value": "Max value",
+      "increment": "Increment",
+      "cycle": "Cycle",
+      "cacheSize": "Cache size",
+      "lastValue": "Last value"
+    },
+    "triggers": "Triggers",
+    "trigger": {
+      "body": "Body",
+      "timing": "Timing",
+      "event": "Event",
+      "table-name": "Table name"
+    }
   },
   "instance": {
     "select": "Select instance",
