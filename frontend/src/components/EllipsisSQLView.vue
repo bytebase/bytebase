@@ -2,7 +2,17 @@
   <div
     class="group grow-0 w-full flex flex-row justify-start items-center gap-2"
   >
-    <p class="line-clamp-2">
+    <p
+      class="overflow-hidden"
+      style="display: -webkit-box; -webkit-box-orient: vertical"
+      :style="[
+        {
+          '-webkit-line-clamp': lines,
+        },
+        contentStyle,
+      ]"
+      :class="contentClass"
+    >
       <code class="text-sm break-all">{{ sql }}</code>
     </p>
     <div class="hidden group-hover:block shrink-0">
@@ -36,10 +46,21 @@ import { NButton } from "naive-ui";
 import { ref } from "vue";
 import { BBModal } from "@/bbkit";
 import { MonacoEditor } from "@/components/MonacoEditor";
+import type { VueClass, VueStyle } from "@/utils";
 
-defineProps<{
-  sql: string;
-}>();
+withDefaults(
+  defineProps<{
+    sql: string;
+    lines?: number;
+    contentClass?: VueClass;
+    contentStyle?: VueStyle;
+  }>(),
+  {
+    lines: 2,
+    contentClass: undefined,
+    contentStyle: undefined,
+  }
+);
 
 const showModal = ref(false);
 </script>

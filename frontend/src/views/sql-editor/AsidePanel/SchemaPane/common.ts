@@ -14,8 +14,10 @@ import type {
   PackageMetadata,
   ProcedureMetadata,
   SchemaMetadata,
+  SequenceMetadata,
   TableMetadata,
   TablePartitionMetadata,
+  TriggerMetadata,
   ViewMetadata,
 } from "@/types/proto/v1/database_service";
 import { keyForDependentColumn } from "@/utils";
@@ -29,6 +31,8 @@ export type NodeType =
   | "view"
   | "procedure"
   | "function"
+  | "sequence"
+  | "trigger"
   | "package"
   | "partition-table"
   | "column"
@@ -73,6 +77,14 @@ export type RichPartitionTableMetadata = RichTableMetadata & {
 };
 export type RichViewMetadata = RichSchemaMetadata & {
   view: ViewMetadata;
+};
+export type RichSequenceMetadata = RichSchemaMetadata & {
+  sequence: SequenceMetadata;
+  position: number;
+};
+export type RichTriggerMetadata = RichSchemaMetadata & {
+  trigger: TriggerMetadata;
+  position: number;
 };
 export type RichProcedureMetadata = RichSchemaMetadata & {
   procedure: ProcedureMetadata;
@@ -124,11 +136,15 @@ export type NodeTarget<T extends NodeType = NodeType> = T extends "database"
                         ? RichPackageMetadata
                         : T extends "function"
                           ? RichFunctionMetadata
-                          : T extends "expandable-text"
-                            ? TextTarget<true, any>
-                            : T extends "error"
-                              ? ErrorTarget
-                              : never;
+                          : T extends "sequence"
+                            ? RichSequenceMetadata
+                            : T extends "trigger"
+                              ? RichTriggerMetadata
+                              : T extends "expandable-text"
+                                ? TextTarget<true, any>
+                                : T extends "error"
+                                  ? ErrorTarget
+                                  : never;
 
 export type TreeState = "UNSET" | "LOADING" | "READY";
 
@@ -159,6 +175,8 @@ export const LeafNodeTypes: readonly NodeType[] = [
   "procedure",
   "package",
   "function",
+  "sequence",
+  "trigger",
   "dependent-column",
   "error",
 ] as const;
@@ -283,6 +301,22 @@ export const keyForNodeTarget = <T extends NodeType>(
       `functions/${keyWithPosition(func.name, position)}`,
     ].join("/");
   }
+  if (type === "sequence") {
+    const { db, schema, sequence, position } = target as NodeTarget<"sequence">;
+    return [
+      db.name,
+      `schemas/${schema.name}`,
+      `sequences/${keyWithPosition(sequence.name, position)}`,
+    ].join("/");
+  }
+  if (type === "trigger") {
+    const { db, schema, trigger, position } = target as NodeTarget<"trigger">;
+    return [
+      db.name,
+      `schemas/${schema.name}`,
+      `triggers/${keyWithPosition(trigger.name, position)}`,
+    ].join("/");
+  }
   if (type === "expandable-text") {
     const { id } = target as NodeTarget<"expandable-text">;
     return `expandableTexts/${id}`;
@@ -340,6 +374,12 @@ const readableTextForNodeTarget = <T extends NodeType>(
   }
   if (type === "function") {
     return (target as RichFunctionMetadata).function.name;
+  }
+  if (type === "sequence") {
+    return (target as RichSequenceMetadata).sequence.name;
+  }
+  if (type === "trigger") {
+    return (target as RichTriggerMetadata).trigger.name;
   }
   if (type === "expandable-text") {
     const { text, searchable } = target as TextTarget;
@@ -706,6 +746,32 @@ const mapFunctionNodes = (
   }
   return children;
 };
+const mapSequenceNodes = (
+  target: NodeTarget<"schema">,
+  parent: TreeNode<"expandable-text">
+) => {
+  const { schema } = target;
+  const children = schema.sequences.map((sequence, position) =>
+    mapTreeNodeByType("sequence", { ...target, sequence, position }, parent)
+  );
+  if (children.length === 0) {
+    return [createDummyNode("function", parent)];
+  }
+  return children;
+};
+const mapTriggerNodes = (
+  target: NodeTarget<"schema">,
+  parent: TreeNode<"expandable-text">
+) => {
+  const { schema } = target;
+  const children = schema.triggers.map((trigger, position) =>
+    mapTreeNodeByType("trigger", { ...target, trigger, position }, parent)
+  );
+  if (children.length === 0) {
+    return [createDummyNode("function", parent)];
+  }
+  return children;
+};
 const buildSchemaNodeChildren = (
   target: NodeTarget<"schema">,
   parent: TreeNode<"schema"> | TreeNode<"database">
@@ -780,6 +846,25 @@ const buildSchemaNodeChildren = (
     functionNode.children = mapFunctionNodes(target, functionNode);
     children.push(functionNode);
   }
+
+  // Show "Sequences" if there's at least 1 function
+  if (schema.sequences.length > 0) {
+    const sequenceNode = createExpandableTextNode("sequence", parent, () =>
+      t("db.sequences")
+    );
+    sequenceNode.children = mapSequenceNodes(target, sequenceNode);
+    children.push(sequenceNode);
+  }
+
+  // Show "Triggers" if there's at least 1 function
+  if (schema.triggers.length > 0) {
+    const triggerNode = createExpandableTextNode("trigger", parent, () =>
+      t("db.triggers")
+    );
+    triggerNode.children = mapTriggerNodes(target, triggerNode);
+    children.push(triggerNode);
+  }
+
   return children;
 };
 export const buildDatabaseSchemaTree = (
