@@ -1,4 +1,5 @@
-import { computed, watch } from "vue";
+import { computed } from "vue";
+import i18n from "./plugins/i18n";
 import { useActuatorV1Store, useAppFeature, useSettingByName } from "./store";
 import { defaultAppProfile } from "./types";
 import { DatabaseChangeMode } from "./types/proto/v1/setting_service";
@@ -14,12 +15,14 @@ export const overrideAppProfile = () => {
   });
 
   const query = new URLSearchParams(window.location.search);
-  overrideAppFeatures(databaseChangeMode.value, query);
   useCustomTheme(useAppFeature("bb.feature.custom-color-scheme"));
+  overrideAppFeatures(databaseChangeMode.value, query);
 
-  watch(databaseChangeMode, (mode) => {
-    overrideAppFeatures(mode, query);
-  });
+  // Override app language.
+  const lang = query.get("lang");
+  if (lang) {
+    i18n.global.locale.value = lang;
+  }
 };
 
 const overrideAppFeatures = (

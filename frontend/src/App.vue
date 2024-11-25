@@ -53,6 +53,7 @@ import AuthContext from "./AuthContext.vue";
 import NotificationContext from "./NotificationContext.vue";
 import KBarWrapper from "./components/KBar/KBarWrapper.vue";
 import OverlayStackManager from "./components/misc/OverlayStackManager.vue";
+import { overrideAppProfile } from "./customAppProfile";
 import { t } from "./plugins/i18n";
 import {
   useActuatorV1Store,
@@ -108,6 +109,9 @@ onMounted(async () => {
 });
 
 watchEffect(async () => {
+  // Override app profile
+  overrideAppProfile();
+
   if (authStore.currentUserId) {
     await workspaceStore.fetchIamPolicy();
   }
