@@ -551,6 +551,13 @@ func convertToSchedulerInfoWaitingCause(ctx context.Context, s *store.Store, c *
 		if task == nil {
 			return nil, errors.Errorf("task %v not found", taskUID)
 		}
+		pipeline, err := s.GetPipelineV2ByID(ctx, task.PipelineID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get pipeline %v", task.PipelineID)
+		}
+		if pipeline == nil {
+			return nil, errors.Errorf("pipeline %d not found", task.PipelineID)
+		}
 		issue, err := s.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get issue by pipeline %v", task.PipelineID)
@@ -562,7 +569,7 @@ func convertToSchedulerInfoWaitingCause(ctx context.Context, s *store.Store, c *
 		return &v1pb.TaskRun_SchedulerInfo_WaitingCause{
 			Cause: &v1pb.TaskRun_SchedulerInfo_WaitingCause_Task_{
 				Task: &v1pb.TaskRun_SchedulerInfo_WaitingCause_Task{
-					Task:  common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID),
+					Task:  common.FormatTask(pipeline.ProjectID, task.PipelineID, task.StageID, task.ID),
 					Issue: issueName,
 				},
 			},
