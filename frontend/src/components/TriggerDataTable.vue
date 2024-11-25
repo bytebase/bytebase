@@ -75,7 +75,13 @@ const columns = computed(() => {
       title: t("db.trigger.body"),
       resizable: true,
       render: (trigger) => {
-        return <EllipsisSQLView sql={trigger.body} />;
+        return (
+          <EllipsisSQLView
+            sql={trigger.body}
+            lines={1}
+            contentStyle="line-height: 25px"
+          />
+        );
       },
     },
     {
