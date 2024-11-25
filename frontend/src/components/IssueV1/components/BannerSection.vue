@@ -58,7 +58,6 @@ import { Task_Status } from "@/types/proto/v1/rollout_service";
 import {
   activeTaskInRollout,
   isDatabaseChangeRelatedIssue,
-  isIssueActuallySucceedRolledout,
 } from "@/utils";
 import {
   useIssueContext,
@@ -71,7 +70,6 @@ const { status: reviewStatus } = reviewContext;
 const showPendingReview = computed(() => {
   if (isCreating.value) return false;
   if (issue.value.status !== IssueStatus.OPEN) return false;
-  if (isIssueActuallySucceedRolledout(issue.value)) return false;
   return reviewStatus.value === Issue_Approver_Status.PENDING;
 });
 
