@@ -138,7 +138,7 @@ export const instanceV1HasAlterSchema = (
 };
 
 export const instanceV1HasReadonlyMode = (
-  instanceOrEngine: Instance | InstanceResource | Engine
+  _instanceOrEngine: Instance | InstanceResource | Engine
 ): boolean => {
   // For MongoDB and Redis, we rely on users setting up read-only data source for queries.
   return true;
@@ -269,6 +269,20 @@ export const instanceV1SupportsPackage = (
 ) => {
   const engine = engineOfInstanceV1(instanceOrEngine);
   return [Engine.ORACLE, Engine.OCEANBASE_ORACLE].includes(engine);
+};
+
+export const instanceV1SupportsSequence = (
+  instanceOrEngine: Instance | InstanceResource | Engine
+) => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  return [Engine.POSTGRES].includes(engine);
+};
+
+export const instanceV1SupportsTrigger = (
+  instanceOrEngine: Instance | InstanceResource | Engine
+) => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  return [Engine.MYSQL].includes(engine);
 };
 
 export const engineOfInstanceV1 = (

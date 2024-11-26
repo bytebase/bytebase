@@ -77,7 +77,7 @@ const state = reactive<LocalState>({
 
 const nodeProps = ({ option }: { option: TreeOption }) => {
   return {
-    onClick(e: MouseEvent) {
+    onClick() {
       if (!option.isLeaf || !option.key) {
         return;
       }

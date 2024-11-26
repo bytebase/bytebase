@@ -43,7 +43,7 @@ export const useMonacoTextModel = (
       const m = markRaw(createTextModel(filename, unref(content), language));
 
       if (sync && isRef(content)) {
-        m.onDidChangeContent((e) => {
+        m.onDidChangeContent(() => {
           const c = m.getValue();
           if (c !== content.value) {
             // Write-back edited content to content ref

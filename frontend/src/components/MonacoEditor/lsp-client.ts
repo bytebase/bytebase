@@ -167,42 +167,40 @@ export const createLanguageClient = (
 export const createWebSocketAndStartClient = (): {
   languageClient: Promise<MonacoLanguageClient>;
 } => {
-  const languageClient = new Promise<MonacoLanguageClient>(
-    (resolve, reject) => {
-      const languageClient = createLanguageClient({
-        async get() {
-          const ws = await connectWebSocket();
-          const socket = toSocket(ws);
-          const reader = new WebSocketMessageReader(socket);
-          const writer = new WebSocketMessageWriter(socket);
-          return { reader, writer };
-        },
-      });
-      languageClient.onDidChangeState((e) => {
-        if (e.newState === State.Running) {
-          const { lastCommand } = conn;
-          if (lastCommand) {
-            // When LSP Client is reconnected, the LSP context (e.g. setMetadata)
-            // will be cleared.
-            // So we need to catch the last command, and re-send it to recover
-            // the context
-            executeCommand(
-              languageClient,
-              lastCommand.command,
-              lastCommand.arguments
-            );
-          }
+  const languageClient = new Promise<MonacoLanguageClient>((resolve) => {
+    const languageClient = createLanguageClient({
+      async get() {
+        const ws = await connectWebSocket();
+        const socket = toSocket(ws);
+        const reader = new WebSocketMessageReader(socket);
+        const writer = new WebSocketMessageWriter(socket);
+        return { reader, writer };
+      },
+    });
+    languageClient.onDidChangeState((e) => {
+      if (e.newState === State.Running) {
+        const { lastCommand } = conn;
+        if (lastCommand) {
+          // When LSP Client is reconnected, the LSP context (e.g. setMetadata)
+          // will be cleared.
+          // So we need to catch the last command, and re-send it to recover
+          // the context
+          executeCommand(
+            languageClient,
+            lastCommand.command,
+            lastCommand.arguments
+          );
         }
-      });
+      }
+    });
 
-      languageClient.start().catch((err) => {
-        // LSP Client startup failed.
-        errorNotification(err);
-      });
+    languageClient.start().catch((err) => {
+      // LSP Client startup failed.
+      errorNotification(err);
+    });
 
-      resolve(languageClient);
-    }
-  );
+    resolve(languageClient);
+  });
 
   return {
     languageClient,

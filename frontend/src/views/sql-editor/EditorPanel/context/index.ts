@@ -13,6 +13,8 @@ import type { SQLEditorTab } from "@/types";
 import {
   instanceV1SupportsExternalTable,
   instanceV1SupportsPackage,
+  instanceV1SupportsSequence,
+  instanceV1SupportsTrigger,
 } from "@/utils";
 import {
   defaultViewState,
@@ -46,6 +48,12 @@ export const provideEditorPanelContext = (base: {
       "FUNCTIONS",
       "PROCEDURES",
     ];
+    if (instanceV1SupportsSequence(instance.value)) {
+      views.push("SEQUENCES");
+    }
+    if (instanceV1SupportsTrigger(instance.value)) {
+      views.push("TRIGGERS");
+    }
     if (instanceV1SupportsExternalTable(instance.value)) {
       views.push("EXTERNAL_TABLES");
     }

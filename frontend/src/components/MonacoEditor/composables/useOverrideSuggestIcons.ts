@@ -97,8 +97,8 @@ const createColoredCSS = (icon: ColoredIconOverride) => {
 };
 
 export const useOverrideSuggestIcons = (
-  monaco: MonacoModule,
-  editor: monaco.editor.IStandaloneCodeEditor
+  _monaco: MonacoModule,
+  _editor: monaco.editor.IStandaloneCodeEditor
 ) => {
   const style = [
     ...MonochromeIconOverrides.map(createMonochromeCSS),

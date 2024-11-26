@@ -71,7 +71,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       undefined
     );
     if (!stored) {
-      undefined;
+      return undefined;
     }
     const tab = reactive<SQLEditorTab>({
       ...defaultSQLEditorTab(),

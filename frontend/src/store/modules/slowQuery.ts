@@ -17,7 +17,7 @@ export const useSlowQueryStore = defineStore("slow-query", () => {
         response.slowQueryLogs
       );
       return composedLogList;
-    } catch (ex) {
+    } catch {
       return [];
     }
   };

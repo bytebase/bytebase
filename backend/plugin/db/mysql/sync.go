@@ -476,6 +476,13 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 	schemaMetadata.Triggers = triggerList
 
+	// Query events.
+	eventList, err := driver.getEventList(ctx, driver.databaseName)
+	if err != nil {
+		return nil, err
+	}
+	schemaMetadata.Events = eventList
+
 	// Query foreign key info.
 	foreignKeysMap, err := driver.getForeignKeyList(ctx, driver.databaseName)
 	if err != nil {
@@ -612,6 +619,106 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 
 	return databaseMetadata, err
+}
+
+func (driver *Driver) getEventList(ctx context.Context, databaseName string) ([]*storepb.EventMetadata, error) {
+	listEventsQuery := `
+	SELECT
+		EVENT_NAME,
+		TIME_ZONE,
+		SQL_MODE,
+		CHARACTER_SET_CLIENT,
+		COLLATION_CONNECTION
+	FROM INFORMATION_SCHEMA.EVENTS
+	WHERE EVENT_SCHEMA = ?
+	ORDER BY EVENT_NAME ASC;
+	`
+	eventRows, err := driver.db.QueryContext(ctx, listEventsQuery, databaseName)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, listEventsQuery)
+	}
+	defer eventRows.Close()
+	var events []*storepb.EventMetadata
+	for eventRows.Next() {
+		var name, timeZone, sqlMode, charsetClient, collationConnection string
+		if err := eventRows.Scan(
+			&name,
+			&timeZone,
+			&sqlMode,
+			&charsetClient,
+			&collationConnection,
+		); err != nil {
+			return nil, err
+		}
+		eventDef, err := driver.getCreateEventStmt(ctx, databaseName, name)
+		if err != nil {
+			return nil, err
+		}
+		event := &storepb.EventMetadata{
+			Name:                name,
+			TimeZone:            timeZone,
+			Definition:          eventDef,
+			SqlMode:             sqlMode,
+			CharacterSetClient:  charsetClient,
+			CollationConnection: collationConnection,
+		}
+		events = append(events, event)
+	}
+	if err := eventRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, listEventsQuery)
+	}
+	return events, nil
+}
+
+func (driver *Driver) getCreateEventStmt(ctx context.Context, databaseName string, name string) (string, error) {
+	query := fmt.Sprintf("SHOW CREATE EVENT `%s`.`%s`", databaseName, name)
+	rows, err := driver.db.QueryContext(ctx, query)
+	if err != nil {
+		return "", util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	var createEvent sql.NullString
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return "", err
+	}
+	defIdx := -1
+	for i, column := range columns {
+		if strings.EqualFold(column, "Create Event") {
+			defIdx = i
+			break
+		}
+	}
+
+	if defIdx == -1 {
+		return "", errors.Errorf("failed to find column Create Event")
+	}
+
+	for rows.Next() {
+		dests := make([]any, len(columns))
+		for i := 0; i < len(columns); i++ {
+			if i == defIdx {
+				dests[i] = &createEvent
+				continue
+			}
+			dests[i] = new(string)
+		}
+
+		if err := rows.Scan(dests...); err != nil {
+			return "", err
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+
+	if createEvent.Valid {
+		return createEvent.String, nil
+	}
+	return "", nil
 }
 
 func (driver *Driver) getTriggerList(ctx context.Context, databaseName string) ([]*storepb.TriggerMetadata, error) {

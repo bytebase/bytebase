@@ -322,8 +322,7 @@ const tryEditTable = async (schema: SchemaMetadata, table: TableMetadata) => {
 const tryEditColumn = async (
   schema: SchemaMetadata,
   table: TableMetadata,
-  column: ColumnMetadata,
-  target: "name" | "type"
+  column: ColumnMetadata
 ) => {
   if (schema && table && column) {
     await tryEditTable(schema, table);

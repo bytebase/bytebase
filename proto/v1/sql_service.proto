@@ -171,11 +171,10 @@ message QueryRequest {
 }
 
 message QueryResponse {
+  reserved 2;
+
   // The query results.
   repeated QueryResult results = 1;
-
-  // The query advices.
-  repeated Advice advices = 2;
 
   // The query is allowed to be exported or not.
   bool allow_export = 3;

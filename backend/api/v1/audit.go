@@ -496,7 +496,6 @@ func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
 	}
 	n := &v1pb.QueryResponse{
 		Results:     nil,
-		Advices:     nil,
 		AllowExport: r.AllowExport,
 	}
 	for _, result := range r.Results {

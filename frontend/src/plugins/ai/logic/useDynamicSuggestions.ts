@@ -80,7 +80,7 @@ export const useDynamicSuggestions = () => {
       const text = head(data?.choices)?.message.content?.trim() ?? "";
       const card = JSON.parse(text) as Record<string, string>;
       return values(card ?? {});
-    } catch (err) {
+    } catch {
       return [];
     }
   };
