@@ -43,7 +43,7 @@
           {{ access.title }}
         </component>
       </div>
-      <div class="text-sm space-y-2">
+      <div class="space-y-2">
         <a
           v-if="actuatorStore.changelogURL"
           class="underline normal-link"
