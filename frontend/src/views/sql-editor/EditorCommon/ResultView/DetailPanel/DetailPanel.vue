@@ -66,7 +66,7 @@
                 @click="format = !format"
               >
                 <template #icon>
-                  <BracesIcon class="w-3 h-3" />
+                  <BracesIcon class="w-4 h-4" />
                 </template>
               </NButton>
             </template>
@@ -86,6 +86,7 @@
         class="flex-1 overflow-hidden text-sm font-mono border p-2 relative"
         :content-class="contentClass"
         :x-scrollable="true"
+        trigger="none"
       >
         <template v-if="guessedIsJSON && format">
           <div
