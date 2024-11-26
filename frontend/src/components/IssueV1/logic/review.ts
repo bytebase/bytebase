@@ -183,7 +183,7 @@ export const displayReviewRoleTitle = (node: ApprovalNode) => {
   } else if (groupValue === ApprovalNode_GroupValue.PROJECT_OWNER) {
     return displayRoleTitle(PresetRoleType.PROJECT_OWNER);
   } else if (groupValue === ApprovalNode_GroupValue.PROJECT_MEMBER) {
-    return t("common.project-member");
+    return displayRoleTitle(PresetRoleType.PROJECT_DEVELOPER);
   } else if (role) {
     return displayRoleTitle(role);
   }

@@ -3376,7 +3376,7 @@
           "WORKSPACE_OWNER": "Workspace Admin",
           "WORKSPACE_DBA": "DBA",
           "PROJECT_OWNER": "Project Owner",
-          "PROJECT_MEMBER": "Project Member"
+          "PROJECT_MEMBER": "Project Developer"
         },
         "add": "Add node",
         "delete": "Delete approval node",

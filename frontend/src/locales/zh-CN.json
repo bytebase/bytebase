@@ -3376,7 +3376,7 @@
           "WORKSPACE_OWNER": "工作空间管理员",
           "WORKSPACE_DBA": "DBA",
           "PROJECT_OWNER": "项目所有者",
-          "PROJECT_MEMBER": "项目成员"
+          "PROJECT_MEMBER": "项目开发者"
         },
         "add": "增加节点",
         "delete": "删除审批节点",
