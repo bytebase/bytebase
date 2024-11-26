@@ -1,8 +1,6 @@
 package oracle
 
 import (
-	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 
@@ -47,7 +45,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 	}
 	title := string(ctx.Rule.Type)
 
-	if !databaseExists(ctx.Context, ctx.Driver, extractDatabaseName(ctx.PreUpdateBackupDetail.Database)) {
+	if !advisor.DatabaseExists(ctx, extractDatabaseName(ctx.PreUpdateBackupDetail.Database)) {
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:  level,
 			Title:   title,
@@ -348,13 +346,4 @@ func (l *statementDisallowMixDMLChecker) EnterUnit_statement(ctx *plsql.Unit_sta
 func extractDatabaseName(databaseUID string) string {
 	segments := strings.Split(databaseUID, "/")
 	return segments[len(segments)-1]
-}
-
-func databaseExists(ctx context.Context, driver *sql.DB, databaseName string) bool {
-	var exists bool
-	err := driver.QueryRowContext(ctx, fmt.Sprintf("SELECT 1 FROM all_users WHERE username = '%s'", databaseName)).Scan(&exists)
-	if err != nil {
-		return false
-	}
-	return exists
 }

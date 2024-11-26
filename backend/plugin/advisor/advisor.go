@@ -13,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -51,6 +52,8 @@ type Context struct {
 	ChangeType            storepb.PlanCheckRunConfig_ChangeDatabaseType
 	PreUpdateBackupDetail *storepb.PreUpdateBackupDetail
 	ClassificationConfig  *storepb.DataClassificationSetting_DataClassificationConfig
+	ListDatabaseNamesFunc base.ListDatabaseNamesFunc
+	InstanceID            string
 
 	// SQL review rule special fields.
 	AST     any
