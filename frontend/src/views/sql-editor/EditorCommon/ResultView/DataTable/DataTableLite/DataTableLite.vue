@@ -56,7 +56,7 @@ import { type DataTableColumn, type DataTableInst, NDataTable } from "naive-ui";
 import { computed, h, nextTick, ref, toRef, watch, type StyleValue } from "vue";
 import { QueryRow, type RowValue } from "@/types/proto/v1/sql_service";
 import { nextAnimationFrame, usePreventBackAndForward } from "@/utils";
-import { useSQLResultViewContext } from "../context";
+import { useSQLResultViewContext } from "../../context";
 import ColumnHeader from "./ColumnHeader.vue";
 import TableCell from "./TableCell.vue";
 import useTableColumnWidthLogic from "./useTableResize";
