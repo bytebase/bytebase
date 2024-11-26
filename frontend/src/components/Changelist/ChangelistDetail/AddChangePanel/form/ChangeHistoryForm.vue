@@ -254,7 +254,7 @@ watch(() => database.value?.name, fetchChangeHistoryList, { immediate: true });
 
 watch(
   () => state.changeHistoryList,
-  (options) => {
+  () => {
     state.affectedTable = EmptyAffectedTable;
   },
   { immediate: true }

@@ -436,10 +436,10 @@ type pageOffset struct {
 	offset int
 }
 
-func (p *pageOffset) getPageToken() (string, error) {
+func (p *pageOffset) getNextPageToken() (string, error) {
 	return marshalPageToken(&storepb.PageToken{
 		Limit:  int32(p.limit),
-		Offset: int32(p.offset),
+		Offset: int32(p.offset + p.limit),
 	})
 }
 

@@ -161,7 +161,7 @@ const highlight = (content: string) => {
 const rowProps = (review: SQLReviewPolicy) => {
   return {
     style: props.customClick ? "cursor: pointer;" : "",
-    onClick: (e: MouseEvent) => {
+    onClick: () => {
       if (props.customClick) {
         emit("row-click", review);
         return;

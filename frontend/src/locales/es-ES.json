@@ -1429,7 +1429,25 @@
     "create": "Crear base de datos",
     "procedures": "Trámites",
     "partitions": "Particiones",
-    "packages": "Paquetes"
+    "packages": "Paquetes",
+    "sequences": "Secuencias",
+    "sequence": {
+      "data-type": "tipo de datos",
+      "start": "Valor inicial",
+      "min-value": "valor mínimo",
+      "max-value": "valor máximo",
+      "increment": "Incremento",
+      "cycle": "Ciclo",
+      "cacheSize": "Tamaño de caché",
+      "lastValue": "Último valor"
+    },
+    "triggers": "Desencadenantes",
+    "trigger": {
+      "body": "Cuerpo",
+      "timing": "Momento",
+      "event": "Evento",
+      "table-name": "Nombre de la tabla"
+    }
   },
   "instance": {
     "select": "Seleccionar instancia",
@@ -3358,7 +3376,7 @@
           "WORKSPACE_OWNER": "Administrador del espacio de trabajo",
           "WORKSPACE_DBA": "DBA",
           "PROJECT_OWNER": "Propietario del proyecto",
-          "PROJECT_MEMBER": "Miembro del proyecto"
+          "PROJECT_MEMBER": "Desarrollador del proyecto"
         },
         "add": "Agregar nodo",
         "delete": "Eliminar nodo de aprobación",

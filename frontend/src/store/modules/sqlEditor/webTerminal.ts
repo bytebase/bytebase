@@ -61,7 +61,7 @@ const createQueryState = (tab: SQLEditorTab): WebTerminalQueryState => {
 };
 
 const createInitialQueryItemByTab = (
-  tab: SQLEditorTab
+  _tab: SQLEditorTab
 ): WebTerminalQueryItemV1 => {
   return createQueryItemV1("");
 };
@@ -124,7 +124,7 @@ const createStreamingQueryController = (tab: SQLEditorTab) => {
     const response$ = new Observable<AdminExecuteResponse>((subscriber) => {
       let requestSubscription: Subscription;
 
-      ws.addEventListener("open", (event) => {
+      ws.addEventListener("open", () => {
         console.debug("ws open");
         if (initialRequest) {
           send(initialRequest);

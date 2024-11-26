@@ -138,8 +138,7 @@ function emphasisToVNode(
 }
 
 function footnoteDefinitionToVNode(
-  node: RootContentMap["footnoteDefinition"],
-  state?: State
+  node: RootContentMap["footnoteDefinition"]
 ): VNode | string {
   // footnoteDefinition的children只有一个child并且为text，这里强行转一下
   const text = node.children[0] as unknown as Text;
@@ -186,10 +185,7 @@ function footnoteDefinitionToVNode(
   // ]);
 }
 
-function footnoteReferenceToVNode(
-  node: RootContentMap["footnoteReference"],
-  state?: State
-): VNode | string {
+function footnoteReferenceToVNode(): VNode | string {
   return "";
 
   // const clobberPrefix = "user-content-";

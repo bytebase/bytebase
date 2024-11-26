@@ -38,7 +38,7 @@
           </i18n-t>
           <a
             class="inline-flex items-center text-blue-600 ml-1 hover:underline"
-            href="https://www.bytebase.com/docs/administration/environment-policy/tier"
+            href="https://www.bytebase.com/docs/administration/environment-policy/overview/?source=console#environment-tier"
             target="_blank"
             >{{ $t("common.learn-more")
             }}<heroicons-outline:external-link class="w-4 h-4"
@@ -225,11 +225,7 @@ const renderColorPicker = () => {
           }}
         ></div>
       )}
-      onUpdateValue={(color: string) => {
-        if (!hasEnvironmentPolicyFeature.value) {
-          missingFeature.value = "bb.feature.environment-tier-policy";
-          return;
-        }
+      onComplete={(color: string) => {
         if (color.toUpperCase() === "#FFFFFF") {
           pushNotification({
             module: "bytebase",
@@ -237,6 +233,13 @@ const renderColorPicker = () => {
             title: t("common.warning"),
             description: "Invalid color",
           });
+          state.value.environment.color = "#4f46e5";
+          return;
+        }
+      }}
+      onUpdateValue={(color: string) => {
+        if (!hasEnvironmentPolicyFeature.value) {
+          missingFeature.value = "bb.feature.environment-tier-policy";
           return;
         }
         state.value.environment.color = color;

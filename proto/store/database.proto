@@ -86,6 +86,25 @@ message SchemaMetadata {
   // The triggers is the list of triggers in a schema, triggers are sorted by
   // table_name, event, timing, action_order.
   repeated TriggerMetadata triggers = 13;
+
+  repeated EventMetadata events = 14;
+}
+
+message EventMetadata {
+  // The name of the event.
+  string name = 1;
+
+  // The schedule of the event.
+  string definition = 2;
+
+  // The time zone of the event.
+  string time_zone = 3;
+
+  string sql_mode = 4;
+
+  string character_set_client = 5;
+
+  string collation_connection = 6;
 }
 
 message SequenceMetadata {
@@ -96,7 +115,7 @@ message SequenceMetadata {
   string data_type = 2;
 
   // The start value of a sequence.
-  int64 start = 3;
+  string start = 3;
 
   // The minimum value of a sequence.
   string min_value = 4;

@@ -47,7 +47,7 @@ const treeStore = useSQLEditorTreeStore();
 const { events } = useSQLEditorContext();
 const { factorList } = storeToRefs(treeStore);
 
-const toggleDisabled = (factor: StatefulFactor, index: number) => {
+const toggleDisabled = (factor: StatefulFactor, _index: number) => {
   factor.disabled = !factor.disabled;
   treeStore.buildTree();
   events.emit("tree-ready");

@@ -1429,7 +1429,25 @@
     "create": "データベースの作成",
     "procedures": "ストアドプロシージャ",
     "partitions": "パーティション",
-    "packages": "パッケージ"
+    "packages": "パッケージ",
+    "sequences": "シーケンス",
+    "sequence": {
+      "data-type": "データ型",
+      "start": "開始値",
+      "min-value": "最小値",
+      "max-value": "最大値",
+      "increment": "インクリメント",
+      "cycle": "サイクル",
+      "cacheSize": "キャッシュサイズ",
+      "lastValue": "最後の値"
+    },
+    "triggers": "トリガー",
+    "trigger": {
+      "body": "体",
+      "timing": "タイミング",
+      "event": "イベント",
+      "table-name": "テーブル名"
+    }
   },
   "instance": {
     "select": "インスタンスの選択",
@@ -3358,7 +3376,7 @@
           "WORKSPACE_OWNER": "ワークスペース管理者",
           "WORKSPACE_DBA": "DBA",
           "PROJECT_OWNER": "プロジェクトオーナー",
-          "PROJECT_MEMBER": "プロジェクトメンバー"
+          "PROJECT_MEMBER": "プロジェクト開発者"
         },
         "add": "ノードの追加",
         "delete": "承認ノードの削除",

@@ -62,9 +62,8 @@
     <div class="w-full flex flex-col gap-y-2">
       <span>{{ $t("common.expiration") }}</span>
       <ExpirationSelector
+        v-model:timestamp-in-ms="state.expirationTimestampInMS"
         class="grid-cols-3 sm:grid-cols-4"
-        :value="state.expireDays"
-        @update="state.expireDays = $event"
       />
     </div>
   </div>
@@ -81,7 +80,6 @@ import QuerierDatabaseResourceForm from "@/components/GrantRequestPanel/Database
 import MaxRowCountSelect from "@/components/GrantRequestPanel/MaxRowCountSelect.vue";
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import { ProjectRoleSelect } from "@/components/v2/Select";
-import { useSettingV1Store } from "@/store";
 import type { ComposedProject, DatabaseResource } from "@/types";
 import { PresetRoleType } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
@@ -103,7 +101,7 @@ interface LocalState {
   memberList: string[];
   role?: string;
   reason: string;
-  expireDays: number;
+  expirationTimestampInMS?: number;
   // Querier and exporter options.
   databaseResources?: DatabaseResource[];
   // Exporter options.
@@ -116,26 +114,12 @@ const getInitialState = (): LocalState => {
     memberList: props.binding.members,
     reason: "",
     // Default to never expire.
-    expireDays: 0,
     maxRowCount: 1000,
   };
 
-  if (maximumRoleExpiration.value) {
-    defaultState.expireDays = maximumRoleExpiration.value;
-  }
   return defaultState;
 };
 
-const maximumRoleExpiration = computed(() => {
-  const seconds =
-    settingV1Store.workspaceProfileSetting?.maximumRoleExpiration?.seconds?.toNumber();
-  if (!seconds) {
-    return undefined;
-  }
-  return Math.floor(seconds / (60 * 60 * 24));
-});
-
-const settingV1Store = useSettingV1Store();
 const state = reactive<LocalState>(getInitialState());
 
 watch(
@@ -157,10 +141,10 @@ watch(
       props.binding.role = state.role;
     }
     const expression: string[] = [];
-    if (state.expireDays > 0) {
-      const now = dayjs();
-      const expiresAt = now.add(state.expireDays, "days");
-      expression.push(`request.time < timestamp("${expiresAt.toISOString()}")`);
+    if (state.expirationTimestampInMS && state.expirationTimestampInMS > 0) {
+      expression.push(
+        `request.time < timestamp("${dayjs(state.expirationTimestampInMS).toISOString()}")`
+      );
     }
     if (
       state.role === PresetRoleType.SQL_EDITOR_USER ||
@@ -214,10 +198,10 @@ const generateConditionTitle = () => {
     }
     title.push(conditionSuffix);
   }
-  if (state.expireDays > 0) {
-    const now = dayjs();
-    const expiresAt = now.add(state.expireDays, "days");
-    title.push(`${now.format("L")}-${expiresAt.format("L")}`);
+  if (state.expirationTimestampInMS && state.expirationTimestampInMS > 0) {
+    title.push(
+      `${dayjs().format("L")}-${dayjs(state.expirationTimestampInMS).format("L")}`
+    );
   }
 
   return title.join(" ");
@@ -245,7 +229,13 @@ defineExpose({
     if (state.memberList.length <= 0) {
       return false;
     }
-    if ((!state.expireDays && state.expireDays !== 0) || state.expireDays < 0) {
+    if (state.expirationTimestampInMS === undefined) {
+      return false;
+    }
+    if (
+      (!state.expirationTimestampInMS && state.expirationTimestampInMS !== 0) ||
+      state.expirationTimestampInMS < 0
+    ) {
       return false;
     }
     // undefined databaseResources means all databases

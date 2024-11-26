@@ -30,7 +30,7 @@ export const getFromClauses = (sql: string) => {
           break;
       }
     });
-  } catch (ex) {
+  } catch {
     // No valid from clauses found. Give up.
   }
   return { subQueries, incompleteSubQueries, fromTables };

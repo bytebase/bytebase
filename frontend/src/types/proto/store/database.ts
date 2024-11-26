@@ -85,6 +85,19 @@ export interface SchemaMetadata {
    * table_name, event, timing, action_order.
    */
   triggers: TriggerMetadata[];
+  events: EventMetadata[];
+}
+
+export interface EventMetadata {
+  /** The name of the event. */
+  name: string;
+  /** The schedule of the event. */
+  definition: string;
+  /** The time zone of the event. */
+  timeZone: string;
+  sqlMode: string;
+  characterSetClient: string;
+  collationConnection: string;
 }
 
 export interface SequenceMetadata {
@@ -93,7 +106,7 @@ export interface SequenceMetadata {
   /** The data type of a sequence. */
   dataType: string;
   /** The start value of a sequence. */
-  start: Long;
+  start: string;
   /** The minimum value of a sequence. */
   minValue: string;
   /** The maximum value of a sequence. */
@@ -1322,6 +1335,7 @@ function createBaseSchemaMetadata(): SchemaMetadata {
     packages: [],
     owner: "",
     triggers: [],
+    events: [],
   };
 }
 
@@ -1365,6 +1379,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     }
     for (const v of message.triggers) {
       TriggerMetadata.encode(v!, writer.uint32(106).fork()).join();
+    }
+    for (const v of message.events) {
+      EventMetadata.encode(v!, writer.uint32(114).fork()).join();
     }
     return writer;
   },
@@ -1467,6 +1484,13 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
 
           message.triggers.push(TriggerMetadata.decode(reader, reader.uint32()));
           continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.events.push(EventMetadata.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1506,6 +1530,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
       owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
       triggers: globalThis.Array.isArray(object?.triggers)
         ? object.triggers.map((e: any) => TriggerMetadata.fromJSON(e))
+        : [],
+      events: globalThis.Array.isArray(object?.events)
+        ? object.events.map((e: any) => EventMetadata.fromJSON(e))
         : [],
     };
   },
@@ -1551,6 +1578,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     if (message.triggers?.length) {
       obj.triggers = message.triggers.map((e) => TriggerMetadata.toJSON(e));
     }
+    if (message.events?.length) {
+      obj.events = message.events.map((e) => EventMetadata.toJSON(e));
+    }
     return obj;
   },
 
@@ -1572,6 +1602,141 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     message.packages = object.packages?.map((e) => PackageMetadata.fromPartial(e)) || [];
     message.owner = object.owner ?? "";
     message.triggers = object.triggers?.map((e) => TriggerMetadata.fromPartial(e)) || [];
+    message.events = object.events?.map((e) => EventMetadata.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseEventMetadata(): EventMetadata {
+  return { name: "", definition: "", timeZone: "", sqlMode: "", characterSetClient: "", collationConnection: "" };
+}
+
+export const EventMetadata: MessageFns<EventMetadata> = {
+  encode(message: EventMetadata, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.definition !== "") {
+      writer.uint32(18).string(message.definition);
+    }
+    if (message.timeZone !== "") {
+      writer.uint32(26).string(message.timeZone);
+    }
+    if (message.sqlMode !== "") {
+      writer.uint32(34).string(message.sqlMode);
+    }
+    if (message.characterSetClient !== "") {
+      writer.uint32(42).string(message.characterSetClient);
+    }
+    if (message.collationConnection !== "") {
+      writer.uint32(50).string(message.collationConnection);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EventMetadata {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEventMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.definition = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.timeZone = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.sqlMode = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.characterSetClient = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.collationConnection = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EventMetadata {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
+      timeZone: isSet(object.timeZone) ? globalThis.String(object.timeZone) : "",
+      sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
+      characterSetClient: isSet(object.characterSetClient) ? globalThis.String(object.characterSetClient) : "",
+      collationConnection: isSet(object.collationConnection) ? globalThis.String(object.collationConnection) : "",
+    };
+  },
+
+  toJSON(message: EventMetadata): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.definition !== "") {
+      obj.definition = message.definition;
+    }
+    if (message.timeZone !== "") {
+      obj.timeZone = message.timeZone;
+    }
+    if (message.sqlMode !== "") {
+      obj.sqlMode = message.sqlMode;
+    }
+    if (message.characterSetClient !== "") {
+      obj.characterSetClient = message.characterSetClient;
+    }
+    if (message.collationConnection !== "") {
+      obj.collationConnection = message.collationConnection;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<EventMetadata>): EventMetadata {
+    return EventMetadata.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<EventMetadata>): EventMetadata {
+    const message = createBaseEventMetadata();
+    message.name = object.name ?? "";
+    message.definition = object.definition ?? "";
+    message.timeZone = object.timeZone ?? "";
+    message.sqlMode = object.sqlMode ?? "";
+    message.characterSetClient = object.characterSetClient ?? "";
+    message.collationConnection = object.collationConnection ?? "";
     return message;
   },
 };
@@ -1580,7 +1745,7 @@ function createBaseSequenceMetadata(): SequenceMetadata {
   return {
     name: "",
     dataType: "",
-    start: Long.ZERO,
+    start: "",
     minValue: "",
     maxValue: "",
     increment: "",
@@ -1598,8 +1763,8 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     if (message.dataType !== "") {
       writer.uint32(18).string(message.dataType);
     }
-    if (!message.start.equals(Long.ZERO)) {
-      writer.uint32(24).int64(message.start.toString());
+    if (message.start !== "") {
+      writer.uint32(26).string(message.start);
     }
     if (message.minValue !== "") {
       writer.uint32(34).string(message.minValue);
@@ -1644,11 +1809,11 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
           message.dataType = reader.string();
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag !== 26) {
             break;
           }
 
-          message.start = Long.fromString(reader.int64().toString());
+          message.start = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
@@ -1705,7 +1870,7 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       dataType: isSet(object.dataType) ? globalThis.String(object.dataType) : "",
-      start: isSet(object.start) ? Long.fromValue(object.start) : Long.ZERO,
+      start: isSet(object.start) ? globalThis.String(object.start) : "",
       minValue: isSet(object.minValue) ? globalThis.String(object.minValue) : "",
       maxValue: isSet(object.maxValue) ? globalThis.String(object.maxValue) : "",
       increment: isSet(object.increment) ? globalThis.String(object.increment) : "",
@@ -1723,8 +1888,8 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     if (message.dataType !== "") {
       obj.dataType = message.dataType;
     }
-    if (!message.start.equals(Long.ZERO)) {
-      obj.start = (message.start || Long.ZERO).toString();
+    if (message.start !== "") {
+      obj.start = message.start;
     }
     if (message.minValue !== "") {
       obj.minValue = message.minValue;
@@ -1754,7 +1919,7 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     const message = createBaseSequenceMetadata();
     message.name = object.name ?? "";
     message.dataType = object.dataType ?? "";
-    message.start = (object.start !== undefined && object.start !== null) ? Long.fromValue(object.start) : Long.ZERO;
+    message.start = object.start ?? "";
     message.minValue = object.minValue ?? "";
     message.maxValue = object.maxValue ?? "";
     message.increment = object.increment ?? "";

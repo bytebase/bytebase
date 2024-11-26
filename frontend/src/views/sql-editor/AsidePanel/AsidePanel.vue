@@ -96,7 +96,7 @@ const allowCreateProject = computed(() => {
   return hasWorkspacePermissionV2("bb.projects.create");
 });
 
-watch([project, projectContextReady], ([project, ready]) => {
+watch([project, projectContextReady], ([, ready]) => {
   if (!ready) {
     treeStore.state = "LOADING";
   } else {

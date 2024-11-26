@@ -527,6 +527,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.EventMetadata"><span class="badge">M</span>EventMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ExtensionMetadata"><span class="badge">M</span>ExtensionMetadata</a>
                 </li>
               
@@ -6744,6 +6748,65 @@ instances/{instance}/databases/{database}/changeHistories/{changeHistory} </p></
 
         
       
+        <h3 id="bytebase.v1.EventMetadata">EventMetadata</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the event. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>definition</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The schedule of the event. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>time_zone</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The time zone of the event. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sql_mode</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>character_set_client</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>collation_connection</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ExtensionMetadata">ExtensionMetadata</h3>
         <p>ExtensionMetadata is the metadata for extensions.</p>
 
@@ -8472,6 +8535,13 @@ table_name, name, event, timing, action_order. </p></td>
                   <td><p>The sequences is the list of sequences in a schema, sorted by name. </p></td>
                 </tr>
               
+                <tr>
+                  <td>events</td>
+                  <td><a href="#bytebase.v1.EventMetadata">EventMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -8559,7 +8629,7 @@ instances/{instance}/databases/{database}/secrets/{secret} </p></td>
               
                 <tr>
                   <td>start</td>
-                  <td><a href="#int64">int64</a></td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The start value of a sequence. </p></td>
                 </tr>
@@ -30705,13 +30775,6 @@ Or it can be used to query a specific read-only data source. </p></td>
                   <td><a href="#bytebase.v1.QueryResult">QueryResult</a></td>
                   <td>repeated</td>
                   <td><p>The query results. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>advices</td>
-                  <td><a href="#bytebase.v1.Advice">Advice</a></td>
-                  <td>repeated</td>
-                  <td><p>The query advices. </p></td>
                 </tr>
               
                 <tr>

@@ -64,6 +64,8 @@
             v-model:value="state.expirationTimestamp"
             style="width: 100%"
             type="datetime"
+            :actions="null"
+            :update-value-on-close="true"
             :is-date-disabled="(date: number) => date < Date.now()"
             clearable
           />

@@ -126,7 +126,7 @@ export const provideIssueGhostContext = () => {
       (step) => step.specs
     );
     const sqlMap: Record<string, string> = {};
-    flattenSpecs.forEach((spec, i) => {
+    flattenSpecs.forEach((spec) => {
       const target = spec.changeDatabaseConfig!.target;
       const sheetName = sheetNameForSpec(spec);
       const sheet = getLocalSheetByName(sheetName);

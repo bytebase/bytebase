@@ -1429,7 +1429,25 @@
     "create": "创建数据库",
     "procedures": "存储过程",
     "partitions": "分区",
-    "packages": "包"
+    "packages": "包",
+    "sequences": "序列",
+    "sequence": {
+      "data-type": "数据类型",
+      "start": "起始值",
+      "min-value": "最小值",
+      "max-value": "最大值",
+      "increment": "增量",
+      "cycle": "循环",
+      "cacheSize": "缓存大小",
+      "lastValue": "最后值"
+    },
+    "triggers": "触发器",
+    "trigger": {
+      "body": "主体",
+      "timing": "时机",
+      "event": "事件",
+      "table-name": "表名"
+    }
   },
   "instance": {
     "select": "选择实例",
@@ -3358,7 +3376,7 @@
           "WORKSPACE_OWNER": "工作空间管理员",
           "WORKSPACE_DBA": "DBA",
           "PROJECT_OWNER": "项目所有者",
-          "PROJECT_MEMBER": "项目成员"
+          "PROJECT_MEMBER": "项目开发者"
         },
         "add": "增加节点",
         "delete": "删除审批节点",

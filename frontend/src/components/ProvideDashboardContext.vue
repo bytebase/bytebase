@@ -112,6 +112,8 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  unregisterBeforeEachHook && unregisterBeforeEachHook();
+  if (unregisterBeforeEachHook) {
+    unregisterBeforeEachHook();
+  }
 });
 </script>

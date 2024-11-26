@@ -206,7 +206,7 @@ const databaseAnomalySectionList = computed(
             .toLowerCase()
             .includes(state.searchText.toLowerCase())
         ) {
-          true;
+          return true;
         }
         return false;
       })
