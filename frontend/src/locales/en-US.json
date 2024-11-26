@@ -295,7 +295,8 @@
     "encoding": "Encoding",
     "finish": "Finish",
     "title": "Title",
-    "hide": "Hide"
+    "hide": "Hide",
+    "text-wrap": "Text wrap"
   },
   "error-page": {
     "go-back-home": "Go back home"

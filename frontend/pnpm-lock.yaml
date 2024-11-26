@@ -139,6 +139,9 @@ importers:
       pouchdb-find:
         specifier: ^9.0.0
         version: 9.0.0
+      pretty-print-json:
+        specifier: ^3.0.3
+        version: 3.0.3
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
@@ -3377,6 +3380,9 @@ packages:
     resolution: {integrity: sha512-i2tDNA0O5IrMO757lfrdQZCc2jPNDVntV0m/+4whiDfWaTKfMNgR7Qz0NAeGz/nRqF4m5/6CLzbP4/liHt12Ew==}
     engines: {node: '>=14'}
     hasBin: true
+
+  pretty-print-json@3.0.3:
+    resolution: {integrity: sha512-uIL9/fr5dGV80BDrbN9HWBegwyuN0hCOHA+3EsysnusuQDlhBu6w7dPNm+hBCRiL7Up0jwfGgPX3Ngu/iQ0a8A==}
 
   process-nextick-args@2.0.1:
     resolution: {integrity: sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==}
@@ -7584,6 +7590,8 @@ snapshots:
     optional: true
 
   prettier@3.3.3: {}
+
+  pretty-print-json@3.0.3: {}
 
   process-nextick-args@2.0.1: {}
 

@@ -295,7 +295,8 @@
     "encoding": "Codificación",
     "finish": "Finalizar",
     "title": "Título",
-    "hide": "Esconder"
+    "hide": "Esconder",
+    "text-wrap": "Ajuste de texto"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
