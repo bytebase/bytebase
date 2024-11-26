@@ -1,4 +1,5 @@
 export const WORKSPACE_ROOT_MODULE = "workspace.root";
+export const WORKSPACE_ROUTE_LANDING = "workspace.landing";
 export const WORKSPACE_ROUTE_MY_ISSUES = "workspace.my-issues";
 export const WORKSPACE_ROUTE_EXPORT_CENTER = "workspace.export-center";
 export const WORKSPACE_ROUTE_USER_PROFILE = "workspace.user-profile";

@@ -966,6 +966,7 @@
     },
     "release": {
       "new-version-available": "New version is available",
+      "new-version-available-with-tag": "New version {tag} is available",
       "new-version-content": "The new version {tag} is available now! Please check our docs for installation.",
       "not-show-till-next-release": "Don't show this till next version"
     },
@@ -3519,9 +3520,6 @@
       "search": "Search classification"
     }
   },
-  "principal": {
-    "select": "Select user"
-  },
   "role": {
     "self": "Role",
     "setting": {
@@ -3869,5 +3867,15 @@
   },
   "setup": {
     "self": "Setup"
+  },
+  "landing": {
+    "quick-link": {
+      "self": "Quick Link",
+      "manage": "Manage quick link",
+      "visit-prjects": "Visit Projects",
+      "visit-issues": "Visit Issues"
+    },
+    "last-visit": "Last visit",
+    "changelog-for-version": "Changelog for {version}"
   }
 }

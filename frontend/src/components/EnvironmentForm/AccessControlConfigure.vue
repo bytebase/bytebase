@@ -6,7 +6,7 @@
       </label>
       <FeatureBadge feature="bb.feature.access-control" />
     </div>
-    <div class="w-full flex flex-col gap-4">
+    <div>
       <div class="w-full inline-flex items-center gap-x-2">
         <Switch
           :value="disableCopyDataPolicy"
