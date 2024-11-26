@@ -352,6 +352,34 @@ type ExecuteOptions struct {
 	DeleteConnectionID func()
 }
 
+func (o *ExecuteOptions) LogDatabaseSyncStart() {
+	if o == nil || o.CreateTaskRunLog == nil {
+		return
+	}
+	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
+		Type:              storepb.TaskRunLog_DATABASE_SYNC_START,
+		DatabaseSyncStart: &storepb.TaskRunLog_DatabaseSyncStart{},
+	})
+	if err != nil {
+		slog.Warn("failed to log database sync start", log.BBError(err))
+	}
+}
+
+func (o *ExecuteOptions) LogDatabaseSyncEnd(e string) {
+	if o == nil || o.CreateTaskRunLog == nil {
+		return
+	}
+	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
+		Type: storepb.TaskRunLog_DATABASE_SYNC_END,
+		DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{
+			Error: e,
+		},
+	})
+	if err != nil {
+		slog.Warn("failed to log database sync start", log.BBError(err))
+	}
+}
+
 func (o *ExecuteOptions) LogSchemaDumpStart() {
 	if o == nil || o.CreateTaskRunLog == nil {
 		return
