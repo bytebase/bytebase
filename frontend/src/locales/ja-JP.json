@@ -295,7 +295,8 @@
     "encoding": "エンコーディング",
     "finish": "仕上げる",
     "title": "タイトル",
-    "hide": "隠れる"
+    "hide": "隠れる",
+    "text-wrap": "テキストの折り返し"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"

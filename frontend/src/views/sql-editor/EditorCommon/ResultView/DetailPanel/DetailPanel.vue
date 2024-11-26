@@ -55,7 +55,25 @@
           </div>
         </div>
 
-        <div>
+        <div class="flex items-center gap-1">
+          <NPopover v-if="guessedIsJSON">
+            <template #trigger>
+              <NButton
+                size="small"
+                style="--n-padding: 0 5px"
+                :type="format ? 'primary' : 'default'"
+                :secondary="format"
+                @click="format = !format"
+              >
+                <template #icon>
+                  <BracesIcon class="w-4 h-4" />
+                </template>
+              </NButton>
+            </template>
+            <template #default>
+              {{ $t("sql-editor.format") }}
+            </template>
+          </NPopover>
           <NButton v-if="!disallowCopyingData" size="small" @click="handleCopy">
             <template #icon>
               <ClipboardIcon class="w-4 h-4" />
@@ -64,33 +82,80 @@
           </NButton>
         </div>
       </div>
-      <!-- eslint-disable vue/no-v-html -->
-      <div
-        class="flex-1 overflow-auto whitespace-pre-wrap text-sm font-mono border p-2"
-        :class="disallowCopyingData && 'select-none'"
-        v-html="html"
-      ></div>
+      <NScrollbar
+        class="flex-1 overflow-hidden text-sm font-mono border p-2 relative"
+        :content-class="contentClass"
+        :x-scrollable="true"
+        trigger="none"
+      >
+        <template v-if="guessedIsJSON && format">
+          <div
+            class="absolute right-2 top-2 flex justify-end items-center gap-1"
+          >
+            <NPopover>
+              <template #trigger>
+                <NButton
+                  size="tiny"
+                  style="--n-padding: 0 4px"
+                  :type="wrap ? 'primary' : 'default'"
+                  :secondary="wrap"
+                  @click="wrap = !wrap"
+                >
+                  <template #icon>
+                    <WrapTextIcon class="w-3 h-3" />
+                  </template>
+                </NButton>
+              </template>
+              <template #default>
+                {{ $t("common.text-wrap") }}
+              </template>
+            </NPopover>
+          </div>
+          <PrettyJSON :content="content ?? ''" />
+        </template>
+        <template v-else>
+          <template v-if="content && content.length > 0">
+            {{ content }}
+          </template>
+          <br v-else style="min-width: 1rem; display: inline-flex" />
+        </template>
+      </NScrollbar>
     </div>
   </DrawerContent>
 </template>
 
 <script setup lang="ts">
-import { onKeyStroke, useClipboard } from "@vueuse/core";
-import { escape } from "lodash-es";
-import { ChevronDownIcon, ChevronUpIcon, ClipboardIcon } from "lucide-vue-next";
-import { NButton, NTooltip } from "naive-ui";
+import { onKeyStroke, useClipboard, useLocalStorage } from "@vueuse/core";
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ClipboardIcon,
+  BracesIcon,
+  WrapTextIcon,
+} from "lucide-vue-next";
+import { NButton, NPopover, NScrollbar, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { DrawerContent } from "@/components/v2";
 import { pushNotification } from "@/store";
 import type { RowValue } from "@/types/proto/v1/sql_service";
 import { extractSQLRowValue } from "@/utils";
-import { useSQLResultViewContext } from "./context";
+import { useSQLResultViewContext } from "../context";
+import PrettyJSON from "./PrettyJSON.vue";
 
 const { t } = useI18n();
 const { dark, detail, disallowCopyingData } = useSQLResultViewContext();
 
-const detailValueString = computed(() => {
+const format = useLocalStorage<boolean>(
+  "bb.sql-editor.detail-panel.format",
+  false
+);
+const wrap = useLocalStorage<boolean>(
+  "bb.sql-editor.detail-panel.line-wrap",
+  true
+);
+
+const content = computed(() => {
   const { row, col, table } = detail.value;
   if (!table) return undefined;
 
@@ -102,24 +167,38 @@ const detailValueString = computed(() => {
   return String(extractSQLRowValue(value).plain);
 });
 
+const guessedIsJSON = computed(() => {
+  if (!content.value || content.value.length === 0) return false;
+  const maybeJSON = content.value.trim();
+  return (
+    (maybeJSON.startsWith("{") && maybeJSON.endsWith("}")) ||
+    (maybeJSON.startsWith("[") && maybeJSON.endsWith("]"))
+  );
+});
+
 const totalCount = computed(() => {
   const { table } = detail.value;
   if (!table) return 0;
   return table.getPrePaginationRowModel().rows.length;
 });
 
-const html = computed(() => {
-  const str = detailValueString.value;
-  if (!str || str.length === 0) {
-    return `<br style="min-width: 1rem; display: inline-flex;" />`;
-  }
+const contentClass = computed(() => {
+  const classes: string[] = [];
 
-  return escape(str);
+  if (disallowCopyingData.value) {
+    classes.push("select-none");
+  }
+  if (guessedIsJSON.value && format.value && !wrap.value) {
+    classes.push("whitespace-pre");
+  } else {
+    classes.push("whitespace-pre-wrap");
+  }
+  return classes.join(" ");
 });
 
 const { copy, copied } = useClipboard({
   source: computed(() => {
-    return detailValueString.value ?? "";
+    return content.value ?? "";
   }),
   legacy: true,
 });
