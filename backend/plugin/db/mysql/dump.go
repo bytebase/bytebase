@@ -31,7 +31,7 @@ const (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer, dbSchema *storepb.DatabaseSchemaMetadata) error {
+func (_ *Driver) Dump(ctx context.Context, out io.Writer, dbSchema *storepb.DatabaseSchemaMetadata) error {
 	if len(dbSchema.Schemas) == 0 {
 		return nil
 	}
