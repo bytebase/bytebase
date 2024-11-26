@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // Dump and restore.
@@ -69,7 +70,7 @@ const (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer) error {
+func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
 	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
 
 	// We must use the same MySQL connection to lock and unlock tables.

@@ -429,7 +429,7 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 	// if oldDatabaseMetadata is nil and databaseMetadata is not, they are not equal resulting a sync.
 	if force || !common.EqualDatabaseSchemaMetadataFast(oldDatabaseMetadata, databaseMetadata) {
 		var schemaBuf bytes.Buffer
-		if err := driver.Dump(ctx, &schemaBuf); err != nil {
+		if err := driver.Dump(ctx, &schemaBuf, databaseMetadata); err != nil {
 			return 0, errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
 		}
 		rawDump = schemaBuf.Bytes()
@@ -548,7 +548,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	// if oldDatabaseMetadata is nil and databaseMetadata is not, they are not equal resulting a sync.
 	if force || !common.EqualDatabaseSchemaMetadataFast(oldDatabaseMetadata, databaseMetadata) {
 		var schemaBuf bytes.Buffer
-		if err := driver.Dump(ctx, &schemaBuf); err != nil {
+		if err := driver.Dump(ctx, &schemaBuf, databaseMetadata); err != nil {
 			return errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
 		}
 		rawDump = schemaBuf.Bytes()

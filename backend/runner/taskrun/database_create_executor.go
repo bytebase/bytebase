@@ -505,8 +505,16 @@ func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.
 		return nil, model.Version{}, "", errors.Wrapf(err, "failed to get migration history for database %q", similarDB.DatabaseName)
 	}
 
+	dbSchema := (*storepb.DatabaseSchemaMetadata)(nil)
+	if instance.Engine == storepb.Engine_MYSQL {
+		dbSchema, err = driver.SyncDBSchema(ctx)
+		if err != nil {
+			return nil, model.Version{}, "", errors.Wrapf(err, "failed to get schema for database %q", similarDB.DatabaseName)
+		}
+	}
+
 	var schemaBuf bytes.Buffer
-	if err := driver.Dump(ctx, &schemaBuf); err != nil {
+	if err := driver.Dump(ctx, &schemaBuf, dbSchema); err != nil {
 		return nil, model.Version{}, "", err
 	}
 	return similarDB, schemaVersion, schemaBuf.String(), nil

@@ -7,10 +7,12 @@ import (
 	"strings"
 
 	"github.com/cockroachdb/cockroach-go/v2/crdb"
+
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, w io.Writer) error {
+func (driver *Driver) Dump(ctx context.Context, w io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
 	sb := &strings.Builder{}
 	if err := crdb.ExecuteTx(ctx, driver.db, &sql.TxOptions{
 		ReadOnly: true,

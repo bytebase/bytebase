@@ -27,7 +27,7 @@ var (
 	dftSchema  = "default"
 )
 
-func (d *Driver) Dump(ctx context.Context, writer io.Writer) error {
+func (d *Driver) Dump(ctx context.Context, writer io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
 	catalogMap, err := d.listCatologTables(ctx, "")
 	if err != nil {
 		return err
