@@ -1354,6 +1354,8 @@ func (s *SQLService) SQLReviewCheck(
 		CurrentDatabase:          database.DatabaseName,
 		ClassificationConfig:     classificationConfig,
 		UsePostgresDatabaseOwner: useDatabaseOwner,
+		ListDatabaseNamesFunc:    BuildListDatabaseNamesFunc(s.store),
+		InstanceID:               instance.ResourceID,
 	}
 
 	reviewConfig, err := s.store.GetReviewConfigForDatabase(ctx, database)

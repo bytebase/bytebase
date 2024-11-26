@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -204,6 +205,8 @@ func (e *StatementAdviseExecutor) runReview(
 		PreUpdateBackupDetail:    preUpdateBackupDetail,
 		ClassificationConfig:     classificationConfig,
 		UsePostgresDatabaseOwner: useDatabaseOwner,
+		ListDatabaseNamesFunc:    e.buildListDatabaseNamesFunc(),
+		InstanceID:               instance.ResourceID,
 	})
 	if err != nil {
 		return nil, err
@@ -252,4 +255,20 @@ func (e *StatementAdviseExecutor) runReview(
 	}
 
 	return results, nil
+}
+
+func (e *StatementAdviseExecutor) buildListDatabaseNamesFunc() base.ListDatabaseNamesFunc {
+	return func(ctx context.Context, instanceID string) ([]string, error) {
+		databases, err := e.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+			InstanceID: &instanceID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		names := make([]string, 0, len(databases))
+		for _, database := range databases {
+			names = append(names, database.DatabaseName)
+		}
+		return names, nil
+	}
 }

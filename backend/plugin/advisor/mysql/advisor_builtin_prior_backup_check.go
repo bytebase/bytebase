@@ -1,8 +1,6 @@
 package mysql
 
 import (
-	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 
@@ -73,7 +71,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 	}
 
 	databaseName := extractDatabaseName(ctx.PreUpdateBackupDetail.Database)
-	if !databaseExists(ctx.Context, ctx.Driver, databaseName) {
+	if !advisor.DatabaseExists(ctx, databaseName) {
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:  level,
 			Title:   title,
@@ -142,15 +140,4 @@ func prepareTransformation(databaseName string, parseResult []*mysqlparser.Parse
 func extractDatabaseName(databaseUID string) string {
 	segments := strings.Split(databaseUID, "/")
 	return segments[len(segments)-1]
-}
-
-func databaseExists(ctx context.Context, driver *sql.DB, database string) bool {
-	if driver == nil {
-		return false
-	}
-	var count int
-	if err := driver.QueryRowContext(ctx, "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = ?", database).Scan(&count); err != nil {
-		return false
-	}
-	return count > 0
 }

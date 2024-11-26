@@ -4,10 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -140,4 +142,24 @@ func Query(ctx context.Context, qCtx QueryContext, connection *sql.DB, engine st
 	}
 
 	return []any{columnNames, columnTypeNames, data}, nil
+}
+
+func DatabaseExists(ctx Context, database string) bool {
+	if ctx.ListDatabaseNamesFunc == nil {
+		return false
+	}
+
+	names, err := ctx.ListDatabaseNamesFunc(ctx.Context, ctx.InstanceID)
+	if err != nil {
+		slog.Debug("failed to list databases", slog.String("instance", ctx.InstanceID), log.BBError(err))
+		return false
+	}
+
+	for _, name := range names {
+		if name == database {
+			return true
+		}
+	}
+
+	return false
 }
