@@ -307,7 +307,7 @@ type Driver interface {
 	// CheckSlowQueryLogEnabled checks if the slow query log is enabled.
 	CheckSlowQueryLogEnabled(ctx context.Context) error
 	// Dump dumps the schema of database.
-	Dump(ctx context.Context, out io.Writer) error
+	Dump(ctx context.Context, out io.Writer, dbSchema *storepb.DatabaseSchemaMetadata) error
 }
 
 // Register makes a database driver available by the provided type.
@@ -350,6 +350,34 @@ type ExecuteOptions struct {
 	// Record the connection id first before executing.
 	SetConnectionID    func(id string)
 	DeleteConnectionID func()
+}
+
+func (o *ExecuteOptions) LogDatabaseSyncStart() {
+	if o == nil || o.CreateTaskRunLog == nil {
+		return
+	}
+	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
+		Type:              storepb.TaskRunLog_DATABASE_SYNC_START,
+		DatabaseSyncStart: &storepb.TaskRunLog_DatabaseSyncStart{},
+	})
+	if err != nil {
+		slog.Warn("failed to log database sync start", log.BBError(err))
+	}
+}
+
+func (o *ExecuteOptions) LogDatabaseSyncEnd(e string) {
+	if o == nil || o.CreateTaskRunLog == nil {
+		return
+	}
+	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
+		Type: storepb.TaskRunLog_DATABASE_SYNC_END,
+		DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{
+			Error: e,
+		},
+	})
+	if err != nil {
+		slog.Warn("failed to log database sync start", log.BBError(err))
+	}
 }
 
 func (o *ExecuteOptions) LogSchemaDumpStart() {
