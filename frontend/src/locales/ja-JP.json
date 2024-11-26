@@ -275,7 +275,6 @@
     "permissions": "権限",
     "cutover": "スイッチ",
     "baseline": "ベースライン",
-    "project-member": "プロジェクトメンバー",
     "leave-without-saving": "変更を保存していませんか?",
     "configure-now": "今すぐ設定する",
     "connection": "接続する",
@@ -1006,9 +1005,6 @@
       "member-deactivate": "メンバーを無効にする",
       "project-repository-push": "リポジトリプッシュイベント",
       "project-database-transfer": "転送データベース",
-      "project-member-create": "プロジェクトメンバーを追加する",
-      "project-member-delete": "プロジェクトメンバーを削除する",
-      "project-member-role-update": "プロジェクトメンバーの役割を変更する",
       "pipeline-task-earliest-allowed-time-update": "許可される最も早い実行時間を更新する",
       "database-recovery-pitr-done": "データベースを指定した時点にリカバリする",
       "external-approval-rejected": "外部の承認を拒否する"
@@ -2126,7 +2122,6 @@
       "member-placeholder": "ユーザーの選択",
       "manage-member": "メンバーの管理",
       "owner": "@.upper:role.project-owner.self",
-      "developer": "@.upper:role.project-member.self",
       "archive": {
         "title": "アーカイブアイテム",
         "description": "アーカイブされたアイテムは表示されなくなります。",
@@ -2224,12 +2219,6 @@
     },
     "db-name-template": "テナントデータベース名のテンプレート",
     "select": "アイテムを選択",
-    "lgtm-check": {
-      "self": "LGTM検査",
-      "disabled": "LGTM チェックをスキップする",
-      "project-member": "プロジェクトメンバーにLGTMを要求",
-      "project-owner": "プロジェクトオーナーからのLGTMの要求"
-    },
     "successfully-updated-db-name-template": "データベース名のテンプレートが正常に更新されました。",
     "all": "全てのアイテム",
     "key-hint": "アイテムを識別するには、短く識別可能な英数字の組み合わせが使用されます。",

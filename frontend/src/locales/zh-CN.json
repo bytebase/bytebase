@@ -275,7 +275,6 @@
     "permissions": "权限",
     "cutover": "切换",
     "baseline": "基线",
-    "project-member": "项目成员",
     "leave-without-saving": "不保存变动？",
     "configure-now": "现在配置",
     "connection": "连接",
@@ -1006,9 +1005,6 @@
       "member-deactivate": "禁用成员",
       "project-repository-push": "仓库 push 事件",
       "project-database-transfer": "转移数据库",
-      "project-member-create": "添加项目成员",
-      "project-member-delete": "删除项目成员",
-      "project-member-role-update": "变更项目成员角色",
       "pipeline-task-earliest-allowed-time-update": "更新最早允许执行时间",
       "database-recovery-pitr-done": "将数据库恢复到指定时间点",
       "external-approval-rejected": "拒绝外部审批"
@@ -2126,7 +2122,6 @@
       "member-placeholder": "选择用户",
       "manage-member": "管理成员",
       "owner": "@.upper:role.project-owner.self",
-      "developer": "@.upper:role.project-member.self",
       "archive": {
         "title": "归档项目",
         "description": "已归档项目将不再显示。",
@@ -2224,12 +2219,6 @@
     },
     "db-name-template": "租户数据库名称模板",
     "select": "选择项目",
-    "lgtm-check": {
-      "self": "LGTM 检查",
-      "disabled": "跳过 LGTM 检查",
-      "project-member": "需要来自项目成员的 LGTM",
-      "project-owner": "需要来自项目所有者的 LGTM"
-    },
     "successfully-updated-db-name-template": "成功更新数据库名称模板。",
     "all": "所有项目",
     "key-hint": "简短且有辨识度的字母数字组合用于识别该项目。",
