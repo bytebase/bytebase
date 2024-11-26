@@ -3376,7 +3376,7 @@
           "WORKSPACE_OWNER": "ワークスペース管理者",
           "WORKSPACE_DBA": "DBA",
           "PROJECT_OWNER": "プロジェクトオーナー",
-          "PROJECT_MEMBER": "プロジェクトメンバー"
+          "PROJECT_MEMBER": "プロジェクト開発者"
         },
         "add": "ノードの追加",
         "delete": "承認ノードの削除",
