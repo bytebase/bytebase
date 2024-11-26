@@ -32,9 +32,14 @@
         </div>
         <div v-if="adminDataSourceQueruRestrictionEnabled" class="ml-12">
           <NRadioGroup
-            :value="adminDataSourceQueruRestriction"
+            :value="adminDataSourceQueryRestriction"
             :disabled="!allowUpdatePolicy || !hasAccessControlFeature"
-            @update:value="updateAdminDataSourceQueryRestrctionPolicy"
+            @update:value="
+              (value) =>
+                updateAdminDataSourceQueryRestrctionPolicy({
+                  adminDataSourceRestriction: value,
+                })
+            "
           >
             <NRadio
               class="w-full"
@@ -164,17 +169,17 @@ const dataSourceQueryPolicy = computed(() => {
   })?.dataSourceQueryPolicy;
 });
 
-const adminDataSourceQueruRestriction = computed(() => {
+const adminDataSourceQueryRestriction = computed(() => {
   return dataSourceQueryPolicy.value?.adminDataSourceRestriction;
 });
 
 const adminDataSourceQueruRestrictionEnabled = computed(() => {
   return (
-    adminDataSourceQueruRestriction.value &&
+    adminDataSourceQueryRestriction.value &&
     [
       DataSourceQueryPolicy_Restriction.DISALLOW,
       DataSourceQueryPolicy_Restriction.FALLBACK,
-    ].includes(adminDataSourceQueruRestriction.value)
+    ].includes(adminDataSourceQueryRestriction.value)
   );
 });
 
