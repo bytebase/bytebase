@@ -296,7 +296,8 @@
     "encoding": "编码",
     "finish": "完成",
     "title": "标题",
-    "hide": "隐藏"
+    "hide": "隐藏",
+    "text-wrap": "文本折行"
   },
   "error-page": {
     "go-back-home": "回到主页"
