@@ -275,7 +275,6 @@
     "permissions": "Permisos",
     "cutover": "transición",
     "baseline": "Base",
-    "project-member": "Miembro del proyecto",
     "leave-without-saving": "¿Salir sin ahorrar?",
     "configure-now": "Configurar ahora",
     "connection": "Conexión",
@@ -1006,9 +1005,6 @@
       "member-deactivate": "desactivar miembro",
       "project-repository-push": "evento de push del repositorio del proyecto",
       "project-database-transfer": "transferencia de base de datos",
-      "project-member-create": "agregar miembro del proyecto",
-      "project-member-delete": "eliminar miembro del proyecto",
-      "project-member-role-update": "cambiar el rol del miembro del proyecto",
       "pipeline-task-earliest-allowed-time-update": "actualizar tiempo de inicio temprano",
       "database-recovery-pitr-done": "restaurar base de datos a un punto en el tiempo",
       "external-approval-rejected": "rechazo de aprobación externa"
@@ -2126,7 +2122,6 @@
       "member-placeholder": "Seleccionar usuario",
       "manage-member": "Administrar miembros",
       "owner": "@.upper:role.project-owner.self",
-      "developer": "@.upper:role.project-member.self",
       "archive": {
         "title": "Archivar proyecto",
         "description": "Proyectos archivados no se mostrarán.",
@@ -2224,12 +2219,6 @@
     },
     "db-name-template": "Plantilla de nombre de base de datos del inquilino",
     "select": "Seleccionar Proyecto",
-    "lgtm-check": {
-      "self": "Revisión de LGTM",
-      "disabled": "Omitir revisión de LGTM",
-      "project-member": "Requerir LGTM de los miembros del proyecto",
-      "project-owner": "Requerir LGTM del propietario del proyecto"
-    },
     "successfully-updated-db-name-template": "Plantilla de nombre de base de datos actualizada con éxito.",
     "all": "Todos los proyectos",
     "key-hint": "Letras alfanuméricas descriptivas cortas para identificar este proyecto..",
