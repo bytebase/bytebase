@@ -3376,7 +3376,7 @@
           "WORKSPACE_OWNER": "Administrador del espacio de trabajo",
           "WORKSPACE_DBA": "DBA",
           "PROJECT_OWNER": "Propietario del proyecto",
-          "PROJECT_MEMBER": "Miembro del proyecto"
+          "PROJECT_MEMBER": "Desarrollador del proyecto"
         },
         "add": "Agregar nodo",
         "delete": "Eliminar nodo de aprobación",
