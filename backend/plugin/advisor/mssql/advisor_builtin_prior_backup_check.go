@@ -1,8 +1,6 @@
 package mssql
 
 import (
-	"context"
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -50,7 +48,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 	}
 	title := string(ctx.Rule.Type)
 
-	if !databaseExists(ctx.Context, ctx.Driver, extractDatabaseName(ctx.PreUpdateBackupDetail.Database)) {
+	if !advisor.DatabaseExists(ctx, extractDatabaseName(ctx.PreUpdateBackupDetail.Database)) {
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:  level,
 			Title:   title,
@@ -317,13 +315,4 @@ func (l *statementDisallowMixDMLChecker) EnterDelete_statement(ctx *tsql.Delete_
 func extractDatabaseName(databaseUID string) string {
 	segments := strings.Split(databaseUID, "/")
 	return segments[len(segments)-1]
-}
-
-func databaseExists(ctx context.Context, driver *sql.DB, databaseName string) bool {
-	var exists bool
-	err := driver.QueryRowContext(ctx, fmt.Sprintf("SELECT 1 FROM master.sys.databases WHERE name = '%s'", databaseName)).Scan(&exists)
-	if err != nil {
-		return false
-	}
-	return exists
 }
