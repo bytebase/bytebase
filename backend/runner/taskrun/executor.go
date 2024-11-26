@@ -454,11 +454,18 @@ func executeMigrationDefault(ctx context.Context, driverCtx context.Context, sto
 func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, driver db.Driver, mi *db.MigrationInfo, mc *migrateContext, statement string, execFunc func(ctx context.Context, execStatement string) error, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	if mi.Type.NeedDump() {
-		opts.LogSchemaDumpStart()
+		opts.LogDatabaseSyncStart()
+		dbSchema, err := driver.SyncDBSchema(ctx)
+		if err != nil {
+			opts.LogDatabaseSyncEnd(err.Error())
+			return "", "", errors.Wrapf(err, "failed to sync database schema")
+		}
+		opts.LogDatabaseSyncEnd("")
 		// Don't record schema if the database hasn't existed yet or is schemaless, e.g. MongoDB.
 		// For baseline migration, we also record the live schema to detect the schema drift.
 		// See https://bytebase.com/blog/what-is-database-schema-drift
-		if err := driver.Dump(ctx, &prevSchemaBuf); err != nil {
+		opts.LogSchemaDumpStart()
+		if err := driver.Dump(ctx, &prevSchemaBuf, dbSchema); err != nil {
 			opts.LogSchemaDumpEnd(err.Error())
 			return "", "", err
 		}
@@ -520,8 +527,15 @@ func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
 	if mi.Type.NeedDump() {
+		opts.LogDatabaseSyncStart()
+		dbSchema, err := driver.SyncDBSchema(ctx)
+		if err != nil {
+			opts.LogDatabaseSyncEnd(err.Error())
+			return "", "", errors.Wrapf(err, "failed to sync database schema")
+		}
+		opts.LogDatabaseSyncEnd("")
 		opts.LogSchemaDumpStart()
-		if err := driver.Dump(ctx, &afterSchemaBuf); err != nil {
+		if err := driver.Dump(ctx, &afterSchemaBuf, dbSchema); err != nil {
 			// We will ignore the dump error if the database is dropped.
 			if strings.Contains(err.Error(), "not found") {
 				return insertedID, "", nil

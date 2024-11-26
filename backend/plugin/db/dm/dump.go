@@ -8,10 +8,11 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer) error {
+func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err

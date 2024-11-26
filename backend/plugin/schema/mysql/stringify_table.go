@@ -315,7 +315,7 @@ func printForeignKeyClause(buf *strings.Builder, fk *storepb.ForeignKeyMetadata)
 		}
 	}
 
-	if _, err := fmt.Fprintf(buf, ") REFERENCES `%s`.`%s` (", fk.ReferencedSchema, fk.ReferencedTable); err != nil {
+	if _, err := fmt.Fprintf(buf, ") REFERENCES `%s` (", fk.ReferencedTable); err != nil {
 		return err
 	}
 

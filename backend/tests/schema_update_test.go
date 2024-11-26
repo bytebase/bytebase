@@ -152,14 +152,14 @@ func TestGetLatestSchema(t *testing.T) {
 				"-- Table structure for `book`\n" +
 				"--\n" +
 				"CREATE TABLE `book` (\n" +
-				"  `id` int DEFAULT NULL,\n" +
-				"  `name` text COLLATE utf8mb4_general_ci\n" +
+				"  `id` int NULL DEFAULT NULL,\n" +
+				"  `name` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL\n" +
 				") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;\n\n" +
 				"SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\n" +
 				"SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n",
 			wantSDL: "CREATE TABLE `book` (\n" +
-				"  `id` INT DEFAULT NULL,\n" +
-				"  `name` TEXT COLLATE utf8mb4_general_ci\n" +
+				"  `id` INT NULL DEFAULT NULL,\n" +
+				"  `name` TEXT CHARACTER SET UTF8MB4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL\n" +
 				") ENGINE=InnoDB DEFAULT CHARACTER SET=UTF8MB4 DEFAULT COLLATE=UTF8MB4_GENERAL_CI;\n\n",
 			wantDatabaseMetadata: &v1pb.DatabaseMetadata{
 				Name:         "instances/latest-schema-mysql/databases/latestSchema/metadata",

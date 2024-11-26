@@ -185,7 +185,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 }
 
 // Dump dumps the database.
-func (*Driver) Dump(_ context.Context, _ io.Writer) error {
+func (*Driver) Dump(_ context.Context, _ io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
 	return nil
 }
 
