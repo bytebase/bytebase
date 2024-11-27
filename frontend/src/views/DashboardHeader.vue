@@ -1,14 +1,29 @@
 <template>
   <div class="flex items-center justify-between h-10 px-4 my-1 space-x-3">
-    <div class="flex items-center">
-      <BytebaseLogo
-        class="block md:hidden"
-        :redirect="WORKSPACE_ROUTE_MY_ISSUES"
-      />
-      <ProjectSwitchPopover />
-    </div>
+    <BytebaseLogo
+      v-if="showLogo"
+      class="shrink-0"
+      :redirect="WORKSPACE_ROUTE_LANDING"
+    />
+    <ProjectSwitchPopover />
+    <router-link
+      :to="sqlEditorLink"
+      class="flex flex-row justify-center items-center"
+      exact-active-class=""
+      target="_blank"
+    >
+      <NButton size="small">
+        <SquareTerminalIcon class="w-4 h-auto mr-1" />
+        <span class="whitespace-nowrap">{{ $t("sql-editor.self") }}</span>
+      </NButton>
+    </router-link>
+
     <div class="flex-1 flex justify-end items-center space-x-3">
-      <NButton class="hidden md:flex" size="small" @click="onClickSearchButton">
+      <NButton
+        class="!hidden md:!flex"
+        size="small"
+        @click="onClickSearchButton"
+      >
         <SearchIcon class="w-4 h-auto mr-1" />
         <span class="text-control-placeholder text-sm mr-4">
           {{ $t("common.search") }}
@@ -34,35 +49,27 @@
         type="success"
         @click="handleWantHelp"
       >
-        <span class="hidden lg:block mr-2">{{ $t("common.want-help") }}</span>
-        <heroicons-outline:chat-bubble-left-right class="w-4 h-4" />
+        <MessagesSquareIcon class="w-4 h-4" />
+        <span class="hidden lg:block ml-2">{{ $t("common.want-help") }}</span>
       </NButton>
-      <router-link
-        :to="sqlEditorLink"
-        class="flex flex-row justify-center items-center"
-        exact-active-class=""
-        target="_blank"
-      >
-        <NButton size="small">
-          <SquareTerminalIcon class="w-4 h-auto mr-1" />
-          <span class="whitespace-nowrap">{{ $t("sql-editor.self") }}</span>
-        </NButton>
-      </router-link>
-      <NTooltip>
+
+      <NTooltip :disabled="windowWidth >= 640">
         <template #trigger>
-          <router-link :to="myIssueLink" exact-active-class="">
+          <router-link :to="myIssueLink" class="flex">
             <NButton size="small" @click="goToMyIssues">
-              <CircleDotIcon class="w-4 h-auto" />
+              <CircleDotIcon class="w-4" />
+              <span class="hidden sm:block ml-2">{{
+                $t("issue.my-issues")
+              }}</span>
             </NButton>
           </router-link>
         </template>
         {{ $t("issue.my-issues") }}
       </NTooltip>
-      <div class="ml-2">
-        <ProfileBrandingLogo>
-          <ProfileDropdown :link="true" />
-        </ProfileBrandingLogo>
-      </div>
+
+      <ProfileBrandingLogo>
+        <ProfileDropdown :link="true" />
+      </ProfileBrandingLogo>
     </div>
   </div>
 
@@ -76,24 +83,33 @@
 <script lang="ts" setup>
 import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useKBarHandler } from "@bytebase/vue-kbar";
-import { useLocalStorage } from "@vueuse/core";
-import { CircleDotIcon, SearchIcon, SquareTerminalIcon } from "lucide-vue-next";
+import { useLocalStorage, useWindowSize } from "@vueuse/core";
+import {
+  CircleDotIcon,
+  SearchIcon,
+  SquareTerminalIcon,
+  MessagesSquareIcon,
+} from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import ProjectSwitchPopover from "@/components/Project/ProjectSwitchPopover.vue";
+import ProjectSwitchPopover from "@/components/Project/ProjectSwitch/ProjectSwitchPopover.vue";
 import { useCurrentProject } from "@/components/Project/useCurrentProject";
 import WeChatQRModal from "@/components/WeChatQRModal.vue";
-import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
+import {
+  WORKSPACE_ROUTE_MY_ISSUES,
+  WORKSPACE_ROUTE_LANDING,
+} from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {
   SQL_EDITOR_DATABASE_MODULE,
   SQL_EDITOR_HOME_MODULE,
   SQL_EDITOR_PROJECT_MODULE,
 } from "@/router/sqlEditor";
+import { useRecentVisit } from "@/router/useRecentVisit";
 import { useSubscriptionV1Store } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import {
@@ -108,6 +124,10 @@ import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { useLanguage } from "../composables/useLanguage";
 import { isValidDatabaseName, isValidProjectName } from "../types";
 
+defineProps<{
+  showLogo: boolean;
+}>();
+
 interface LocalState {
   showQRCodeModal: boolean;
   showProjectModal: boolean;
@@ -117,6 +137,8 @@ const { t } = useI18n();
 const subscriptionStore = useSubscriptionV1Store();
 const router = useRouter();
 const { locale } = useLanguage();
+const { record } = useRecentVisit();
+const { width: windowWidth } = useWindowSize();
 
 const state = reactive<LocalState>({
   showQRCodeModal: false,
@@ -176,13 +198,13 @@ const sqlEditorLink = computed(() => {
 });
 
 const myIssueLink = computed(() => {
-  // Always redirect to my issues page in workspace level.
   return router.resolve({
     name: WORKSPACE_ROUTE_MY_ISSUES,
   });
 });
 
 const goToMyIssues = () => {
+  record(myIssueLink.value.fullPath);
   // Trigger page reload manually.
   useLocalStorage<string>(
     getComponentIdLocalStorageKey(WORKSPACE_ROUTE_MY_ISSUES),

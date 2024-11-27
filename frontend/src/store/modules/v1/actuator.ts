@@ -2,6 +2,7 @@ import type { RemovableRef } from "@vueuse/core";
 import { useLocalStorage } from "@vueuse/core";
 import axios from "axios";
 import { defineStore } from "pinia";
+import semver from "semver";
 import { computed } from "vue";
 import { actuatorServiceClient } from "@/grpcweb";
 import { useSilentRequest } from "@/plugins/silent-request";
@@ -45,6 +46,14 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
     appProfile: defaultAppProfile(),
   }),
   getters: {
+    changelogURL: (state) => {
+      // valid version should following semantic version like 3.1.0
+      const version = semver.valid(state.serverInfo?.version);
+      if (!version) {
+        return "";
+      }
+      return `https://bytebase.com/changelog/bytebase-${version.split(".").join("-")}/`;
+    },
     info: (state) => {
       return state.serverInfo;
     },
