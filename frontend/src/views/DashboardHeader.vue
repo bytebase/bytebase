@@ -45,24 +45,27 @@
         type="success"
         @click="handleWantHelp"
       >
-        <span class="hidden lg:block mr-2">{{ $t("common.want-help") }}</span>
-        <heroicons-outline:chat-bubble-left-right class="w-4 h-4" />
+        <MessagesSquareIcon class="w-4 h-4" />
+        <span class="hidden lg:block ml-2">{{ $t("common.want-help") }}</span>
       </NButton>
-      <NTooltip>
+
+      <NTooltip :disabled="windowWidth >= 1024">
         <template #trigger>
-          <router-link :to="myIssueLink" exact-active-class="">
+          <router-link :to="myIssueLink" class="flex">
             <NButton size="small" @click="goToMyIssues">
-              <CircleDotIcon class="w-4 h-auto" />
+              <CircleDotIcon class="w-4" />
+              <span class="hidden lg:block ml-2">{{
+                $t("issue.my-issues")
+              }}</span>
             </NButton>
           </router-link>
         </template>
         {{ $t("issue.my-issues") }}
       </NTooltip>
-      <div class="ml-2">
-        <ProfileBrandingLogo>
-          <ProfileDropdown :link="true" />
-        </ProfileBrandingLogo>
-      </div>
+
+      <ProfileBrandingLogo>
+        <ProfileDropdown :link="true" />
+      </ProfileBrandingLogo>
     </div>
   </div>
 
@@ -76,8 +79,13 @@
 <script lang="ts" setup>
 import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useKBarHandler } from "@bytebase/vue-kbar";
-import { useLocalStorage } from "@vueuse/core";
-import { CircleDotIcon, SearchIcon, SquareTerminalIcon } from "lucide-vue-next";
+import { useLocalStorage, useWindowSize } from "@vueuse/core";
+import {
+  CircleDotIcon,
+  SearchIcon,
+  SquareTerminalIcon,
+  MessagesSquareIcon,
+} from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { v4 as uuidv4 } from "uuid";
@@ -126,6 +134,7 @@ const subscriptionStore = useSubscriptionV1Store();
 const router = useRouter();
 const { locale } = useLanguage();
 const { record } = useRecentVisit();
+const { width: windowWidth } = useWindowSize();
 
 const state = reactive<LocalState>({
   showQRCodeModal: false,
@@ -185,7 +194,6 @@ const sqlEditorLink = computed(() => {
 });
 
 const myIssueLink = computed(() => {
-  // Always redirect to my issues page in workspace level.
   return router.resolve({
     name: WORKSPACE_ROUTE_MY_ISSUES,
   });
