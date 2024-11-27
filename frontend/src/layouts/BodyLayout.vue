@@ -82,7 +82,7 @@
           data-label="bb-dashboard-header"
         >
           <div class="max-w-full mx-auto">
-            <DashboardHeader />
+            <DashboardHeader :show-logo="false" />
           </div>
         </nav>
 

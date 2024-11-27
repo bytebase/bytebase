@@ -966,6 +966,7 @@
     },
     "release": {
       "new-version-available": "更新する新しいバージョンがあります",
+      "new-version-available-with-tag": "新しいバージョン {tag} が利用可能です",
       "new-version-content": "新しいバージョン {tag} が正式にリリースされました。新しいバージョンを入手するには、ドキュメントに従ってください。",
       "not-show-till-next-release": "次の更新までは通知しないでください"
     },
@@ -3519,9 +3520,6 @@
       "search": "カテゴリを検索する"
     }
   },
-  "principal": {
-    "select": "ユーザーの選択"
-  },
   "role": {
     "self": "役割",
     "setting": {
@@ -3869,5 +3867,15 @@
   },
   "setup": {
     "self": "設定"
+  },
+  "landing": {
+    "quick-link": {
+      "self": "クイックリンク",
+      "manage": "クイックリンクを管理する",
+      "visit-prjects": "プロジェクトを訪問",
+      "visit-issues": "訪問に関する問題"
+    },
+    "last-visit": "最終訪問",
+    "changelog-for-version": "{version} の変更履歴"
   }
 }
