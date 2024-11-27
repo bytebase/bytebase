@@ -18,18 +18,14 @@ import { ClipboardIcon } from "lucide-vue-next";
 import { computed, watchEffect } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { pushNotification, useSheetV1Store } from "@/store";
-import type { Task, TaskRun } from "@/types/proto/v1/rollout_service";
 import { getSheetStatement, sheetNameOfTaskV1, toClipboard } from "@/utils";
+import { useTaskDetailContext } from "../context";
 
-const props = defineProps<{
-  task: Task;
-  latestTaskRun?: TaskRun;
-}>();
-
+const { task } = useTaskDetailContext();
 const sheetStore = useSheetV1Store();
 
 const statement = computed(() => {
-  const sheet = sheetStore.getSheetByName(sheetNameOfTaskV1(props.task));
+  const sheet = sheetStore.getSheetByName(sheetNameOfTaskV1(task.value));
   if (sheet) {
     return getSheetStatement(sheet);
   }
@@ -48,7 +44,7 @@ const copyStatement = async () => {
 
 watchEffect(async () => {
   // Prepare the sheet for the task.
-  const sheet = sheetNameOfTaskV1(props.task);
+  const sheet = sheetNameOfTaskV1(task.value);
   if (sheet) {
     await sheetStore.getOrFetchSheetByName(sheet);
   }
