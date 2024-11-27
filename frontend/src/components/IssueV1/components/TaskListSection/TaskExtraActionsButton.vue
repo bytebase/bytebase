@@ -46,7 +46,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const { events, isCreating, activeTask, issue, releaserCandidates } =
+const { events, isCreating, selectedTask, issue, releaserCandidates } =
   useIssueContext();
 
 const actionList = computed(() => {
@@ -71,7 +71,7 @@ const options = computed((): ExtraTaskRolloutActionDropdownOption[] => {
     return [];
   }
   const { task } = props;
-  if (task.name !== activeTask.value.name) {
+  if (task.name !== selectedTask.value.name) {
     return [];
   }
   const SKIP = actionList.value.includes("SKIP");

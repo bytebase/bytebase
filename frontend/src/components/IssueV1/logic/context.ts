@@ -6,7 +6,7 @@ import { inject, provide } from "vue";
 import type { ComposedIssue, ReviewFlow } from "@/types";
 import { type User } from "@/types/proto/v1/auth_service";
 import type { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
-import type { Plan_Spec, PlanCheckRun } from "@/types/proto/v1/plan_service";
+import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
 import type { Stage, Task } from "@/types/proto/v1/rollout_service";
 import type {
   IssueReviewAction,
@@ -54,14 +54,9 @@ export type IssueContext = {
   // review status
   reviewContext: ReviewContext;
 
-  // rollout status
-  activeStage: Ref<Stage>;
-  activeTask: Ref<Task>;
-
   // UI status
   selectedStage: Ref<Stage>;
   selectedTask: Ref<Task>;
-  selectedSpec: Ref<Plan_Spec>;
   formatOnSave: Ref<boolean>;
 
   // UI events

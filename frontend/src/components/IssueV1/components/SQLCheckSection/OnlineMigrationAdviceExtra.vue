@@ -26,7 +26,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const { isCreating, issue, activeTask } = useIssueContext();
+const { isCreating, issue, selectedTask } = useIssueContext();
 
 const code = computed(() => {
   return props.row.checkResult.sqlReviewReport?.code;
@@ -39,10 +39,10 @@ const advise = computed(() => {
   if (!code.value) {
     return undefined;
   }
-  if (isGroupingChangeTaskV1(issue.value, activeTask.value)) {
+  if (isGroupingChangeTaskV1(issue.value, selectedTask.value)) {
     return undefined;
   }
-  if (!allowGhostForTask(issue.value, activeTask.value)) {
+  if (!allowGhostForTask(issue.value, selectedTask.value)) {
     return undefined;
   }
   if (code.value === 1801) {

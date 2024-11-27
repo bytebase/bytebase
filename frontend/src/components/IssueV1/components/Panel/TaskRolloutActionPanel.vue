@@ -177,7 +177,7 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   loading: false,
 });
-const { issue, activeTask, events, getPlanCheckRunsForTask } =
+const { issue, selectedTask, events, getPlanCheckRunsForTask } =
   useIssueContext();
 const comment = ref("");
 const performActionAnyway = ref(false);
@@ -185,14 +185,16 @@ const performActionAnyway = ref(false);
 const title = computed(() => {
   if (!props.action) return "";
 
-  const action = taskRolloutActionDisplayName(props.action, activeTask.value);
+  const action = taskRolloutActionDisplayName(props.action, selectedTask.value);
   if (props.taskList.length > 1) {
     return t("task.action-all-tasks-in-current-stage", { action });
   }
   return action;
 });
 
-const database = computed(() => databaseForTask(issue.value, activeTask.value));
+const database = computed(() =>
+  databaseForTask(issue.value, selectedTask.value)
+);
 
 const stage = computed(() => {
   const firstTask = head(props.taskList);

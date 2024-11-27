@@ -50,7 +50,7 @@ const currentUser = useCurrentUserV1();
 const hideIssueReviewActions = useAppFeature(
   "bb.feature.issue.hide-review-actions"
 );
-const { issue, phase, reviewContext, events, activeTask, activeStage } =
+const { issue, phase, reviewContext, events, selectedTask, selectedStage } =
   useIssueContext();
 const { ready, status, done } = reviewContext;
 
@@ -128,11 +128,11 @@ const forceRolloutActionList = computed((): ExtraActionOption[] => {
 
   const taskExtraActionOptions = getApplicableTaskRolloutActionList(
     issue.value,
-    activeTask.value
+    selectedTask.value
   ).map<ExtraActionOption>((action) => ({
     type: "TASK",
     action,
-    target: activeTask.value,
+    target: selectedTask.value,
     label: `${t("common.force-verb", {
       verb: taskRolloutActionDisplayName(action).toLowerCase(),
     })}`,
@@ -140,7 +140,7 @@ const forceRolloutActionList = computed((): ExtraActionOption[] => {
   }));
   const stageExtraActionOptions = getApplicableStageRolloutActionList(
     issue.value,
-    activeStage.value
+    selectedStage.value
   ).map<ExtraActionOption>(({ action, tasks }) => {
     const taskActionName = taskRolloutActionDisplayName(action);
     const stageActionName = t("issue.action-to-current-stage", {

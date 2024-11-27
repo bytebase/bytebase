@@ -6,28 +6,24 @@ import { useRoute, useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUIStateStore } from "@/store";
 import { emptyStage, emptyTask } from "@/types";
-import type { Plan_Spec, PlanCheckRun } from "@/types/proto/v1/plan_service";
+import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
 import { Task_Type, Stage, Task } from "@/types/proto/v1/rollout_service";
-import { emptyPlanSpec } from "@/types/v1/issue/plan";
 import {
   activeStageInRollout,
-  activeTaskInRollout,
   activeTaskInStageV1,
   flattenTaskV1List,
   uidFromSlug,
   indexOrUIDFromSlug,
   stageV1Slug,
   taskV1Slug,
-  flattenSpecList,
   extractTaskUID,
-  isValidTaskName,
   extractStageUID,
 } from "@/utils";
 import type { IssueContext, IssueEvents, IssuePhase } from "./context";
 import { planCheckRunListForTask } from "./plan-check";
 import { releaserCandidatesForIssue } from "./releaser";
 import { extractReviewContext } from "./review";
-import { specForTask, stageForTask } from "./utils";
+import { stageForTask } from "./utils";
 
 const state = {
   uid: -101,
@@ -47,44 +43,9 @@ export const useBaseIssueContext = (
 
   const events: IssueEvents = new Emittery();
 
-  const plan = computed(() => issue.value.planEntity);
   const rollout = computed(() => issue.value.rolloutEntity);
-  const specs = computed(() => flattenSpecList(plan.value));
   const tasks = computed(() => flattenTaskV1List(rollout.value));
 
-  const activeStage = computed((): Stage => {
-    return activeStageInRollout(rollout.value);
-  });
-  const activeTask = computed((): Task => {
-    return activeTaskInRollout(rollout.value);
-  });
-
-  const selectedSpec = computed((): Plan_Spec => {
-    // Check if spec is selected from URL. (Not use yet)
-    const specSlug = route.query.spec as string;
-    if (specSlug) {
-      const indexOrId = indexOrUIDFromSlug(specSlug);
-      if (isCreating.value) {
-        if (indexOrId < specs.value.length) {
-          return specs.value[indexOrId];
-        }
-      } else {
-        const specFound = specs.value.find(
-          (spec) => spec.id === String(indexOrId)
-        );
-        if (specFound) {
-          return specFound;
-        }
-      }
-    }
-
-    // Otherwise, fallback to selected task's spec.
-    if (selectedTask.value && isValidTaskName(selectedTask.value.name)) {
-      return specForTask(plan.value, selectedTask.value) || emptyPlanSpec();
-    }
-    // Fallback to first spec.
-    return first(specs.value) || emptyPlanSpec();
-  });
   const selectedStage = computed((): Stage => {
     const stageSlug = route.query.stage as string;
     const taskSlug = route.query.task as string;
@@ -116,11 +77,11 @@ export const useBaseIssueContext = (
         }
       }
     }
+
     // fallback
     if (isCreating.value) {
       return first(stageList) ?? emptyStage();
     }
-
     return activeStageInRollout(rollout.value);
   });
   const selectedTask = computed((): Task => {
@@ -230,11 +191,8 @@ export const useBaseIssueContext = (
     events,
     releaserCandidates,
     reviewContext,
-    activeStage,
-    activeTask,
     selectedStage,
     selectedTask,
-    selectedSpec,
     formatOnSave,
     dialog,
     getPlanCheckRunsForTask,
