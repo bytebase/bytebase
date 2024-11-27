@@ -29,7 +29,7 @@ type StageSelectOption = SelectOption & {
 };
 
 const { t } = useI18n();
-const { isCreating, issue, activeStage, selectedStage, events } =
+const { isCreating, issue, selectedStage, events } =
   useIssueContext();
 
 const stageList = computed(() => issue.value.rolloutEntity?.stages || []);
@@ -46,7 +46,7 @@ const renderLabel = (option: SelectOption) => {
   const { stage } = option as StageSelectOption;
 
   const text =
-    !isCreating.value && stage === activeStage.value
+    !isCreating.value && stage === selectedStage.value
       ? t("issue.stage-select.current", { name: stage.title })
       : stage.title;
   return h("div", { class: "flex items-center gap-x-1" }, [

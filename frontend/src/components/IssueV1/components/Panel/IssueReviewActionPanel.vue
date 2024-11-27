@@ -123,7 +123,7 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   loading: false,
 });
-const { events, issue, activeTask } = useIssueContext();
+const { events, issue, selectedTask } = useIssueContext();
 const comment = ref("");
 const performActionAnyway = ref(false);
 
@@ -140,7 +140,7 @@ const title = computed(() => {
 });
 
 const database = computed(() =>
-  databaseForTask(issue.value, activeTask.value)
+  databaseForTask(issue.value, selectedTask.value)
 );
 
 const planCheckErrors = computed(() => {
