@@ -275,7 +275,6 @@
     "permissions": "権限",
     "cutover": "スイッチ",
     "baseline": "ベースライン",
-    "project-member": "プロジェクトメンバー",
     "leave-without-saving": "変更を保存していませんか?",
     "configure-now": "今すぐ設定する",
     "connection": "接続する",
@@ -296,7 +295,8 @@
     "encoding": "エンコーディング",
     "finish": "仕上げる",
     "title": "タイトル",
-    "hide": "隠れる"
+    "hide": "隠れる",
+    "text-wrap": "テキストの折り返し"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -966,6 +966,7 @@
     },
     "release": {
       "new-version-available": "更新する新しいバージョンがあります",
+      "new-version-available-with-tag": "新しいバージョン {tag} が利用可能です",
       "new-version-content": "新しいバージョン {tag} が正式にリリースされました。新しいバージョンを入手するには、ドキュメントに従ってください。",
       "not-show-till-next-release": "次の更新までは通知しないでください"
     },
@@ -1006,9 +1007,6 @@
       "member-deactivate": "メンバーを無効にする",
       "project-repository-push": "リポジトリプッシュイベント",
       "project-database-transfer": "転送データベース",
-      "project-member-create": "プロジェクトメンバーを追加する",
-      "project-member-delete": "プロジェクトメンバーを削除する",
-      "project-member-role-update": "プロジェクトメンバーの役割を変更する",
       "pipeline-task-earliest-allowed-time-update": "許可される最も早い実行時間を更新する",
       "database-recovery-pitr-done": "データベースを指定した時点にリカバリする",
       "external-approval-rejected": "外部の承認を拒否する"
@@ -1429,7 +1427,28 @@
     "create": "データベースの作成",
     "procedures": "ストアドプロシージャ",
     "partitions": "パーティション",
-    "packages": "パッケージ"
+    "packages": "パッケージ",
+    "sequences": "シーケンス",
+    "sequence": {
+      "data-type": "データ型",
+      "start": "開始値",
+      "min-value": "最小値",
+      "max-value": "最大値",
+      "increment": "インクリメント",
+      "cycle": "サイクル",
+      "cacheSize": "キャッシュサイズ",
+      "lastValue": "最後の値"
+    },
+    "triggers": "トリガー",
+    "trigger": {
+      "body": "体",
+      "timing": "タイミング",
+      "event": "イベント",
+      "table-name": "テーブル名"
+    },
+    "schema": {
+      "default": "デフォルト"
+    }
   },
   "instance": {
     "select": "インスタンスの選択",
@@ -2108,7 +2127,6 @@
       "member-placeholder": "ユーザーの選択",
       "manage-member": "メンバーの管理",
       "owner": "@.upper:role.project-owner.self",
-      "developer": "@.upper:role.project-member.self",
       "archive": {
         "title": "アーカイブアイテム",
         "description": "アーカイブされたアイテムは表示されなくなります。",
@@ -2206,12 +2224,6 @@
     },
     "db-name-template": "テナントデータベース名のテンプレート",
     "select": "アイテムを選択",
-    "lgtm-check": {
-      "self": "LGTM検査",
-      "disabled": "LGTM チェックをスキップする",
-      "project-member": "プロジェクトメンバーにLGTMを要求",
-      "project-owner": "プロジェクトオーナーからのLGTMの要求"
-    },
     "successfully-updated-db-name-template": "データベース名のテンプレートが正常に更新されました。",
     "all": "全てのアイテム",
     "key-hint": "アイテムを識別するには、短く識別可能な英数字の組み合わせが使用されます。",
@@ -3358,7 +3370,7 @@
           "WORKSPACE_OWNER": "ワークスペース管理者",
           "WORKSPACE_DBA": "DBA",
           "PROJECT_OWNER": "プロジェクトオーナー",
-          "PROJECT_MEMBER": "プロジェクトメンバー"
+          "PROJECT_MEMBER": "プロジェクト開発者"
         },
         "add": "ノードの追加",
         "delete": "承認ノードの削除",
@@ -3510,9 +3522,6 @@
       "select": "カテゴリを選択してください",
       "search": "カテゴリを検索する"
     }
-  },
-  "principal": {
-    "select": "ユーザーの選択"
   },
   "role": {
     "self": "役割",
@@ -3861,5 +3870,15 @@
   },
   "setup": {
     "self": "設定"
+  },
+  "landing": {
+    "quick-link": {
+      "self": "クイックリンク",
+      "manage": "クイックリンクを管理する",
+      "visit-prjects": "プロジェクトを訪問",
+      "visit-issues": "訪問に関する問題"
+    },
+    "last-visit": "最終訪問",
+    "changelog-for-version": "{version} の変更履歴"
   }
 }

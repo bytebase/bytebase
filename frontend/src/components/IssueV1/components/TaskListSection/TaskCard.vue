@@ -10,7 +10,6 @@
         <div class="flex items-center flex-1 gap-x-1">
           <TaskStatusIcon
             :create="isCreating"
-            :active="active"
             :status="task.status"
             :task="task"
             class="transform scale-75"
@@ -18,7 +17,6 @@
           <div
             class="name flex-1 inline-flex gap-x-1 items-center flex-wrap overflow-x-hidden"
           >
-            <ArrowRightIcon v-if="active" class="w-4 h-4 inline-block" />
             <span>{{ databaseForTask(issue, task).databaseName }}</span>
             <NTag v-if="schemaVersion" class="font-normal" size="small" round>
               {{ schemaVersion }}
@@ -50,7 +48,6 @@
 </template>
 
 <script setup lang="ts">
-import { ArrowRightIcon } from "lucide-vue-next";
 import { NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
@@ -59,7 +56,7 @@ import { Workflow } from "@/types/proto/v1/project_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Type, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
 import { extractSchemaVersionFromTask, isDev } from "@/utils";
-import { databaseForTask, isTaskFinished, useIssueContext } from "../../logic";
+import { databaseForTask, useIssueContext } from "../../logic";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
 
@@ -70,15 +67,8 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const { isCreating, issue, activeTask, selectedTask, events } =
-  useIssueContext();
+const { isCreating, issue, selectedTask, events } = useIssueContext();
 const project = computed(() => issue.value.projectEntity);
-const active = computed(
-  () =>
-    !isCreating.value &&
-    props.task === activeTask.value &&
-    !isTaskFinished(props.task)
-);
 const selected = computed(() => props.task === selectedTask.value);
 
 const secondaryViewMode = computed((): SecondaryViewMode => {
@@ -116,7 +106,6 @@ const taskClass = computed(() => {
   const { task } = props;
   const classes: string[] = [];
   if (selected.value) classes.push("selected");
-  if (active.value) classes.push("active");
   if (isCreating.value) classes.push("create");
   classes.push(`status_${task_StatusToJSON(task.status).toLowerCase()}`);
   return classes;
@@ -145,19 +134,12 @@ const onClickTask = (task: Task) => {
 .task .name {
   @apply whitespace-pre-wrap break-all;
 }
-.task.active .name {
-  @apply font-bold;
-}
 .task.status_done .name {
   @apply text-control;
 }
 .task.status_pending .name,
 .task.status_not_started .name {
   @apply text-control;
-}
-.task.active.status_pending .name,
-.task.active.status_not_started .name {
-  @apply text-info;
 }
 .task.status_running .name {
   @apply text-info;

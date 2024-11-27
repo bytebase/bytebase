@@ -13,7 +13,7 @@
       >
         <slot name="icon" />
       </span>
-      <slot name="text">
+      <slot v-if="text" name="text">
         <HighlightLabelText
           v-if="highlight"
           :text="text"
@@ -22,6 +22,7 @@
         />
         <span v-else class="pl-[2px]">{{ text }}</span>
       </slot>
+      <slot v-else name="fallback-text" />
       <slot name="suffix" />
     </slot>
   </div>

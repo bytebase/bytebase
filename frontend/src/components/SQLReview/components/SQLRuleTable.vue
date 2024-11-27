@@ -185,7 +185,7 @@ const columns = computed(() => {
   const columns: (DataTableColumn<RuleTemplateV2> & { hide?: boolean })[] = [
     {
       type: "selection",
-      cellProps: (rule: RuleTemplateV2) => {
+      cellProps: () => {
         return {
           onClick: (e: MouseEvent) => {
             e.stopPropagation();
@@ -224,7 +224,7 @@ const columns = computed(() => {
           </div>
         );
       },
-      cellProps: (rule: RuleTemplateV2) => {
+      cellProps: () => {
         return {
           onClick: (e: MouseEvent) => {
             e.stopPropagation();
@@ -305,7 +305,7 @@ const columns = computed(() => {
 const rowProps = (rule: RuleTemplateV2) => {
   return {
     style: props.supportSelect ? "cursor: pointer;" : "",
-    onClick: (e: MouseEvent) => {
+    onClick: () => {
       if (props.supportSelect) {
         toggleRule(rule);
         return;

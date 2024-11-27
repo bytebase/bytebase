@@ -260,7 +260,7 @@ const selectedKeys = computed(() => {
   if (!isValidDatabaseName(db.name)) return [];
   const keys: string[] = [];
   const tab = currentTab.value;
-  if (tab && tab.connection.schema) {
+  if (tab && tab.connection.schema !== undefined) {
     keys.push(`${db.name}/schemas/${tab.connection.schema}`);
   }
   if (!panelViewState.value || panelViewState.value.view === "CODE") {
@@ -274,6 +274,8 @@ const selectedKeys = computed(() => {
       view,
       procedure,
       func,
+      sequence,
+      trigger,
       externalTable,
       package: pack,
       partition,
@@ -306,6 +308,10 @@ const selectedKeys = computed(() => {
     parts.push(`procedures/${procedure}`);
   } else if (func) {
     parts.push(`functions/${func}`);
+  } else if (sequence) {
+    parts.push(`sequences/${sequence}`);
+  } else if (trigger) {
+    parts.push(`triggers/${trigger}`);
   } else if (externalTable) {
     parts.push(`externalTables/${externalTable}`);
   } else if (pack) {
@@ -406,7 +412,7 @@ watch(
   }
 );
 
-useEventListener(treeContainerElRef, "keydown", (e) => {
+useEventListener(treeContainerElRef, "keydown", () => {
   searchBoxRef.value?.inputRef?.focus();
 });
 </script>

@@ -93,6 +93,7 @@
     - [DependentColumn](#bytebase-v1-DependentColumn)
     - [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest)
     - [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse)
+    - [EventMetadata](#bytebase-v1-EventMetadata)
     - [ExtensionMetadata](#bytebase-v1-ExtensionMetadata)
     - [ExternalTableMetadata](#bytebase-v1-ExternalTableMetadata)
     - [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata)
@@ -2114,6 +2115,26 @@ DependentColumn is the metadata for dependent columns.
 
 
 
+<a name="bytebase-v1-EventMetadata"></a>
+
+### EventMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the event. |
+| definition | [string](#string) |  | The schedule of the event. |
+| time_zone | [string](#string) |  | The time zone of the event. |
+| sql_mode | [string](#string) |  |  |
+| character_set_client | [string](#string) |  |  |
+| collation_connection | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-ExtensionMetadata"></a>
 
 ### ExtensionMetadata
@@ -2750,6 +2771,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | owner | [string](#string) |  |  |
 | triggers | [TriggerMetadata](#bytebase-v1-TriggerMetadata) | repeated | The triggers is the list of triggers in a schema, triggers are sorted by table_name, name, event, timing, action_order. |
 | sequences | [SequenceMetadata](#bytebase-v1-SequenceMetadata) | repeated | The sequences is the list of sequences in a schema, sorted by name. |
+| events | [EventMetadata](#bytebase-v1-EventMetadata) | repeated |  |
 
 
 

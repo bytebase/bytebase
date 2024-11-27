@@ -133,9 +133,9 @@ import {
 import { useSubscriptionV1Store } from "@/store";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
 import { usePreventBackAndForward } from "@/utils";
-import { useSQLResultViewContext } from "../context";
-import ColumnSortedIcon from "./ColumnSortedIcon.vue";
-import SensitiveDataIcon from "./SensitiveDataIcon.vue";
+import { useSQLResultViewContext } from "../../context";
+import ColumnSortedIcon from "../common/ColumnSortedIcon.vue";
+import SensitiveDataIcon from "../common/SensitiveDataIcon.vue";
 import TableCell from "./TableCell.vue";
 import useTableColumnWidthLogic from "./useTableResize";
 

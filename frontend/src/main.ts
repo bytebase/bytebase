@@ -8,7 +8,6 @@ import App from "./App.vue";
 import "./assets/css/github-markdown-style.css";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
-import { overrideAppProfile } from "./customAppProfile";
 import dayjs from "./plugins/dayjs";
 import highlight from "./plugins/highlight";
 import i18n from "./plugins/i18n";
@@ -131,21 +130,6 @@ app.config.globalProperties.isEmpty = isEmpty;
 
 app.use(VueQueryPlugin);
 app.use(pinia);
-
-const overrideLang = () => {
-  const query = new URLSearchParams(window.location.search);
-  const lang = query.get("lang");
-  if (lang) {
-    i18n.global.locale.value = lang;
-  }
-};
-
-const initSearchParams = () => {
-  overrideAppProfile();
-  overrideLang();
-};
-
-initSearchParams();
 
 app.use(router).use(highlight).use(i18n).use(NaiveUI);
 app.mount("#app");

@@ -53,8 +53,8 @@ import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import FeatureBadgeForInstanceLicense from "@/components/FeatureGuard/FeatureBadgeForInstanceLicense.vue";
 import { featureToRef } from "@/store";
 import type { QueryRow } from "@/types/proto/v1/sql_service";
-import ColumnSortedIcon from "./ColumnSortedIcon.vue";
-import SensitiveDataIcon from "./SensitiveDataIcon.vue";
+import ColumnSortedIcon from "../common/ColumnSortedIcon.vue";
+import SensitiveDataIcon from "../common/SensitiveDataIcon.vue";
 
 defineProps<{
   header: Header<QueryRow, any>;

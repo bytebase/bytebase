@@ -69,11 +69,16 @@ export const taskV1Slug = (task: Task): string => {
 };
 
 export const activeTaskInTaskList = (tasks: Task[]): Task => {
-  for (const task of tasks) {
-    if (
+  // Focus on the running task first.
+  const runningTask = tasks.find((task) => task.status === Task_Status.RUNNING);
+  if (runningTask) {
+    return runningTask;
+  }
+
+  const maybeActiveTask = tasks.find(
+    (task) =>
       task.status === Task_Status.NOT_STARTED ||
       task.status === Task_Status.PENDING ||
-      task.status === Task_Status.RUNNING ||
       // "FAILED" is also a transient task status, which requires user
       // to take further action (e.g. Skip, Retry)
       task.status === Task_Status.FAILED ||
@@ -81,11 +86,12 @@ export const activeTaskInTaskList = (tasks: Task[]): Task => {
       // So it should be an "active" task
       task.status === Task_Status.CANCELED ||
       task.status === Task_Status.STATUS_UNSPECIFIED // compatibility for preview phase
-    ) {
-      return task;
-    }
+  );
+  if (maybeActiveTask) {
+    return maybeActiveTask;
   }
 
+  // fallback
   return last(tasks) ?? emptyTask();
 };
 
@@ -189,18 +195,4 @@ export const buildIssueV1LinkWithTask = (
   const url = `/projects/${projectId}/issues/${issueSlug}?${querystring}`;
 
   return url;
-};
-
-export const isIssueActuallySucceedRolledout = (issue: ComposedIssue) => {
-  // Issues might be rolled out by "Force rollout" without reviewing.
-  const tasks = flattenTaskV1List(issue.rolloutEntity);
-  return tasks.some((task) =>
-    [
-      Task_Status.CANCELED,
-      Task_Status.DONE,
-      Task_Status.PENDING,
-      Task_Status.RUNNING,
-      Task_Status.SKIPPED,
-    ].includes(task.status)
-  );
 };

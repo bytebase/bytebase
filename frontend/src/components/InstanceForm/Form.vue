@@ -212,7 +212,7 @@
 
         <div
           v-if="basicInfo.engine === Engine.REDIS"
-          class="sm:col-span-4 sm:col-start-1"
+          class="sm:col-span-4 sm:col-start-1 space-y-2"
         >
           <label
             for="connectionStringSchema"

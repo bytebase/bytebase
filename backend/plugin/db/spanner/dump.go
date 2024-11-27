@@ -7,10 +7,12 @@ import (
 
 	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	"github.com/pkg/errors"
+
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // Dump dumps the database.
-func (d *Driver) Dump(ctx context.Context, out io.Writer) error {
+func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
 	instance, err := d.SyncInstance(ctx)
 	if err != nil {
 		return err

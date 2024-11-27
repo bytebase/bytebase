@@ -1,8 +1,6 @@
 package tidb
 
 import (
-	"context"
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -80,7 +78,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 		}
 	}
 
-	if !databaseExists(ctx.Context, ctx.Driver, extractDatabaseName(ctx.PreUpdateBackupDetail.Database)) {
+	if !advisor.DatabaseExists(ctx, extractDatabaseName(ctx.PreUpdateBackupDetail.Database)) {
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:  level,
 			Title:   title,
@@ -228,17 +226,6 @@ func equalTable(t1, t2 *table) bool {
 func extractDatabaseName(databaseUID string) string {
 	segments := strings.Split(databaseUID, "/")
 	return segments[len(segments)-1]
-}
-
-func databaseExists(ctx context.Context, driver *sql.DB, database string) bool {
-	if driver == nil {
-		return false
-	}
-	var count int
-	if err := driver.QueryRowContext(ctx, "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = ?", database).Scan(&count); err != nil {
-		return false
-	}
-	return count > 0
 }
 
 type table struct {

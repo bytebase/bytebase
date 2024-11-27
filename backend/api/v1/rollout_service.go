@@ -98,7 +98,7 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.Previ
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
 	if len(rollout.Stages) == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "plan has no stage created")
+		return nil, status.Errorf(codes.InvalidArgument, "plan has no stage created, hint: check deployment config setting")
 	}
 
 	rolloutV1, err := convertToRollout(ctx, s.store, project, rollout)

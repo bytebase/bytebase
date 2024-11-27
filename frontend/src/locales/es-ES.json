@@ -275,7 +275,6 @@
     "permissions": "Permisos",
     "cutover": "transición",
     "baseline": "Base",
-    "project-member": "Miembro del proyecto",
     "leave-without-saving": "¿Salir sin ahorrar?",
     "configure-now": "Configurar ahora",
     "connection": "Conexión",
@@ -296,7 +295,8 @@
     "encoding": "Codificación",
     "finish": "Finalizar",
     "title": "Título",
-    "hide": "Esconder"
+    "hide": "Esconder",
+    "text-wrap": "Ajuste de texto"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -966,6 +966,7 @@
     },
     "release": {
       "new-version-available": "Nueva versión disponible",
+      "new-version-available-with-tag": "La nueva versión {tag} está disponible",
       "new-version-content": "¡La nueva versión {tag} está disponible ahora! Consulte nuestra documentación para la instalación.",
       "not-show-till-next-release": "No mostrar esto hasta la próxima versión"
     },
@@ -1006,9 +1007,6 @@
       "member-deactivate": "desactivar miembro",
       "project-repository-push": "evento de push del repositorio del proyecto",
       "project-database-transfer": "transferencia de base de datos",
-      "project-member-create": "agregar miembro del proyecto",
-      "project-member-delete": "eliminar miembro del proyecto",
-      "project-member-role-update": "cambiar el rol del miembro del proyecto",
       "pipeline-task-earliest-allowed-time-update": "actualizar tiempo de inicio temprano",
       "database-recovery-pitr-done": "restaurar base de datos a un punto en el tiempo",
       "external-approval-rejected": "rechazo de aprobación externa"
@@ -1429,7 +1427,28 @@
     "create": "Crear base de datos",
     "procedures": "Trámites",
     "partitions": "Particiones",
-    "packages": "Paquetes"
+    "packages": "Paquetes",
+    "sequences": "Secuencias",
+    "sequence": {
+      "data-type": "tipo de datos",
+      "start": "Valor inicial",
+      "min-value": "valor mínimo",
+      "max-value": "valor máximo",
+      "increment": "Incremento",
+      "cycle": "Ciclo",
+      "cacheSize": "Tamaño de caché",
+      "lastValue": "Último valor"
+    },
+    "triggers": "Desencadenantes",
+    "trigger": {
+      "body": "Cuerpo",
+      "timing": "Momento",
+      "event": "Evento",
+      "table-name": "Nombre de la tabla"
+    },
+    "schema": {
+      "default": "Por defecto"
+    }
   },
   "instance": {
     "select": "Seleccionar instancia",
@@ -2108,7 +2127,6 @@
       "member-placeholder": "Seleccionar usuario",
       "manage-member": "Administrar miembros",
       "owner": "@.upper:role.project-owner.self",
-      "developer": "@.upper:role.project-member.self",
       "archive": {
         "title": "Archivar proyecto",
         "description": "Proyectos archivados no se mostrarán.",
@@ -2206,12 +2224,6 @@
     },
     "db-name-template": "Plantilla de nombre de base de datos del inquilino",
     "select": "Seleccionar Proyecto",
-    "lgtm-check": {
-      "self": "Revisión de LGTM",
-      "disabled": "Omitir revisión de LGTM",
-      "project-member": "Requerir LGTM de los miembros del proyecto",
-      "project-owner": "Requerir LGTM del propietario del proyecto"
-    },
     "successfully-updated-db-name-template": "Plantilla de nombre de base de datos actualizada con éxito.",
     "all": "Todos los proyectos",
     "key-hint": "Letras alfanuméricas descriptivas cortas para identificar este proyecto..",
@@ -3358,7 +3370,7 @@
           "WORKSPACE_OWNER": "Administrador del espacio de trabajo",
           "WORKSPACE_DBA": "DBA",
           "PROJECT_OWNER": "Propietario del proyecto",
-          "PROJECT_MEMBER": "Miembro del proyecto"
+          "PROJECT_MEMBER": "Desarrollador del proyecto"
         },
         "add": "Agregar nodo",
         "delete": "Eliminar nodo de aprobación",
@@ -3510,9 +3522,6 @@
       "select": "Seleccionar clasificación",
       "search": "Clasificación de búsqueda"
     }
-  },
-  "principal": {
-    "select": "Seleccionar usuario"
   },
   "role": {
     "self": "Rol",
@@ -3861,5 +3870,15 @@
   },
   "setup": {
     "self": "Configuración"
+  },
+  "landing": {
+    "quick-link": {
+      "self": "Enlace rápido",
+      "manage": "Administrar enlace rápido",
+      "visit-prjects": "Visitar Proyectos",
+      "visit-issues": "Problemas de visita"
+    },
+    "last-visit": "Última visita",
+    "changelog-for-version": "Registro de cambios para {version}"
   }
 }

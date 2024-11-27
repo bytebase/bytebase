@@ -11,11 +11,7 @@ import { useListCache } from "@/store/modules/v1/cache";
 import type { ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
-import {
-  extractIssueUID,
-  extractProjectResourceName,
-  isValidTaskName,
-} from "@/utils";
+import { extractIssueUID, extractProjectResourceName } from "@/utils";
 import { flattenTaskV1List } from "@/utils";
 import { useIssueContext } from "./context";
 
@@ -50,7 +46,7 @@ const clearCache = (issue: ComposedIssue) => {
 };
 
 export const usePollIssue = () => {
-  const { isCreating, ready, issue, events, activeTask } = useIssueContext();
+  const { isCreating, ready, issue, events } = useIssueContext();
 
   const refreshIssue = () => {
     if (isCreating.value || !ready.value) return;
@@ -96,13 +92,6 @@ export const usePollIssue = () => {
     if (eager) {
       refreshIssue();
       poller.restart();
-    }
-  });
-
-  watch(activeTask, (curr, prev) => {
-    if (!isValidTaskName(curr.name)) return;
-    if (curr.name !== prev.name) {
-      events.emit("select-task", { task: curr });
     }
   });
 };

@@ -27,7 +27,8 @@
     class="default-theme flex flex-row items-stretch flex-1 w-full overflow-hidden"
     @resized="handleAIPanelResize($event, 1)"
   >
-    <Pane>
+    <Pane class="flex flex-col h-full overflow-hidden">
+      <slot name="content-prefix" />
       <MonacoEditor
         :content="content"
         :readonly="true"
@@ -35,7 +36,7 @@
           disabled: format,
           callback: handleFormatContent,
         }"
-        class="w-full h-full relative"
+        class="flex-1 w-full h-full relative"
         @select-content="selectedStatement = $event"
         @ready="handleEditorReady"
       />

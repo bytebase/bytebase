@@ -52,7 +52,7 @@ const columns = computed(() => {
       },
     },
     {
-      key: "name",
+      key: "definition",
       title: t("common.definition"),
       render: (row) => {
         return <EllipsisSQLView sql={row.definition} />;
@@ -64,7 +64,7 @@ const columns = computed(() => {
 });
 
 const getPackageName = (packageName: string) => {
-  if (hasSchemaProperty(engine.value)) {
+  if (hasSchemaProperty(engine.value) && props.schemaName) {
     return `"${props.schemaName}"."${packageName}"`;
   }
   return packageName;

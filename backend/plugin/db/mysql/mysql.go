@@ -19,7 +19,6 @@ import (
 	"cloud.google.com/go/cloudsqlconn"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
-	"github.com/blang/semver/v4"
 	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -256,23 +255,6 @@ func (d *Driver) getVersion(ctx context.Context) (string, string, error) {
 	}
 
 	return parseVersion(version)
-}
-
-func (d *Driver) getReadOnly() bool {
-	if d.dbType == storepb.Engine_OCEANBASE {
-		return false
-	}
-	// MariaDB 5.5 doesn't support READ ONLY transactions.
-	// Error 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'READ ONLY' at line 1
-	v, err := semver.Make(d.connectionCtx.EngineVersion)
-	if err != nil {
-		slog.Debug("invalid version", slog.String("version", d.connectionCtx.EngineVersion))
-		return true
-	}
-	if v.GT(semver.Version{Major: 5, Minor: 5}) {
-		return true
-	}
-	return false
 }
 
 func parseVersion(version string) (string, string, error) {

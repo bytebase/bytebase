@@ -154,7 +154,7 @@ const allowEditPartition = (partition: TablePartitionMetadata) => {
   return status === "created";
 };
 
-const classesForRow = (item: FlattenTablePartitionMetadata, index: number) => {
+const classesForRow = (item: FlattenTablePartitionMetadata) => {
   return statusForPartition(item.partition);
 };
 

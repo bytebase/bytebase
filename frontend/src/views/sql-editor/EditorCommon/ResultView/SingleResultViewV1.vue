@@ -245,8 +245,7 @@ import {
   isNullOrUndefined,
 } from "@/utils";
 import DataBlock from "./DataBlock.vue";
-import DataTable from "./DataTable";
-import DataTableLite from "./DataTableLite";
+import { DataTable, DataTableLite } from "./DataTable";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView";
 import { useSQLResultViewContext } from "./context";

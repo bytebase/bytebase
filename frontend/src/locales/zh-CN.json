@@ -275,7 +275,6 @@
     "permissions": "权限",
     "cutover": "切换",
     "baseline": "基线",
-    "project-member": "项目成员",
     "leave-without-saving": "不保存变动？",
     "configure-now": "现在配置",
     "connection": "连接",
@@ -296,7 +295,8 @@
     "encoding": "编码",
     "finish": "完成",
     "title": "标题",
-    "hide": "隐藏"
+    "hide": "隐藏",
+    "text-wrap": "文本折行"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -966,6 +966,7 @@
     },
     "release": {
       "new-version-available": "有新版本可更新",
+      "new-version-available-with-tag": "新版本 {tag} 已推出",
       "new-version-content": "新版本 {tag} 正式发布！请根据我们的文档来获取新版本。",
       "not-show-till-next-release": "在下次更新前不要提醒我"
     },
@@ -1006,9 +1007,6 @@
       "member-deactivate": "禁用成员",
       "project-repository-push": "仓库 push 事件",
       "project-database-transfer": "转移数据库",
-      "project-member-create": "添加项目成员",
-      "project-member-delete": "删除项目成员",
-      "project-member-role-update": "变更项目成员角色",
       "pipeline-task-earliest-allowed-time-update": "更新最早允许执行时间",
       "database-recovery-pitr-done": "将数据库恢复到指定时间点",
       "external-approval-rejected": "拒绝外部审批"
@@ -1429,7 +1427,28 @@
     "create": "创建数据库",
     "procedures": "存储过程",
     "partitions": "分区",
-    "packages": "包"
+    "packages": "包",
+    "sequences": "序列",
+    "sequence": {
+      "data-type": "数据类型",
+      "start": "起始值",
+      "min-value": "最小值",
+      "max-value": "最大值",
+      "increment": "增量",
+      "cycle": "循环",
+      "cacheSize": "缓存大小",
+      "lastValue": "最后值"
+    },
+    "triggers": "触发器",
+    "trigger": {
+      "body": "主体",
+      "timing": "时机",
+      "event": "事件",
+      "table-name": "表名"
+    },
+    "schema": {
+      "default": "默认"
+    }
   },
   "instance": {
     "select": "选择实例",
@@ -2108,7 +2127,6 @@
       "member-placeholder": "选择用户",
       "manage-member": "管理成员",
       "owner": "@.upper:role.project-owner.self",
-      "developer": "@.upper:role.project-member.self",
       "archive": {
         "title": "归档项目",
         "description": "已归档项目将不再显示。",
@@ -2206,12 +2224,6 @@
     },
     "db-name-template": "租户数据库名称模板",
     "select": "选择项目",
-    "lgtm-check": {
-      "self": "LGTM 检查",
-      "disabled": "跳过 LGTM 检查",
-      "project-member": "需要来自项目成员的 LGTM",
-      "project-owner": "需要来自项目所有者的 LGTM"
-    },
     "successfully-updated-db-name-template": "成功更新数据库名称模板。",
     "all": "所有项目",
     "key-hint": "简短且有辨识度的字母数字组合用于识别该项目。",
@@ -3358,7 +3370,7 @@
           "WORKSPACE_OWNER": "工作空间管理员",
           "WORKSPACE_DBA": "DBA",
           "PROJECT_OWNER": "项目所有者",
-          "PROJECT_MEMBER": "项目成员"
+          "PROJECT_MEMBER": "项目开发者"
         },
         "add": "增加节点",
         "delete": "删除审批节点",
@@ -3510,9 +3522,6 @@
       "select": "选择分类",
       "search": "搜索分类"
     }
-  },
-  "principal": {
-    "select": "选择用户"
   },
   "role": {
     "self": "角色",
@@ -3861,5 +3870,15 @@
   },
   "setup": {
     "self": "设置"
+  },
+  "landing": {
+    "quick-link": {
+      "self": "快捷访问",
+      "manage": "管理快捷访问",
+      "visit-prjects": "访问项目",
+      "visit-issues": "访问工单"
+    },
+    "last-visit": "上次访问",
+    "changelog-for-version": "{version} 的更新日志"
   }
 }

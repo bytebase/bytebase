@@ -221,6 +221,10 @@ spec:
         {{- if .Values.bytebase.affinity }}
         {{ toYaml .Values.bytebase.affinity | nindent 8 }}
         {{- end }}
+      tolerations:
+        {{- if .Values.bytebase.tolerations }}
+        {{ toYaml .Values.bytebase.tolerations | nindent 8 }}
+        {{- end }}
 ---
 {{- if and $persistenceEnable (not $persistenceExistingClaim) }}
 apiVersion: v1

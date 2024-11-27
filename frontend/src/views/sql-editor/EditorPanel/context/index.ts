@@ -13,6 +13,8 @@ import type { SQLEditorTab } from "@/types";
 import {
   instanceV1SupportsExternalTable,
   instanceV1SupportsPackage,
+  instanceV1SupportsSequence,
+  instanceV1SupportsTrigger,
 } from "@/utils";
 import {
   defaultViewState,
@@ -46,6 +48,12 @@ export const provideEditorPanelContext = (base: {
       "FUNCTIONS",
       "PROCEDURES",
     ];
+    if (instanceV1SupportsSequence(instance.value)) {
+      views.push("SEQUENCES");
+    }
+    if (instanceV1SupportsTrigger(instance.value)) {
+      views.push("TRIGGERS");
+    }
     if (instanceV1SupportsExternalTable(instance.value)) {
       views.push("EXTERNAL_TABLES");
     }
@@ -100,7 +108,7 @@ export const provideEditorPanelContext = (base: {
   watch(
     () => tab.value?.connection.schema,
     (schema) => {
-      if (!schema) return;
+      if (schema === undefined) return;
       if (!viewState.value) return;
       if (viewState.value.schema === schema) return;
       viewState.value.schema = schema;
@@ -112,7 +120,7 @@ export const provideEditorPanelContext = (base: {
     (schema) => {
       if (!schema) return;
       if (!tab.value) return;
-      if (!tab.value.connection.schema) return; // if schema chooser is "ALL", don't sync
+      if (tab.value.connection.schema === undefined) return; // if schema chooser is "ALL", don't sync
       if (tab.value.connection.schema === schema) return;
       tab.value.connection.schema = schema;
     },

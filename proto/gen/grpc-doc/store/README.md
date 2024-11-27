@@ -53,6 +53,7 @@
     - [DatabaseMetadata.LabelsEntry](#bytebase-store-DatabaseMetadata-LabelsEntry)
     - [DatabaseSchemaMetadata](#bytebase-store-DatabaseSchemaMetadata)
     - [DependentColumn](#bytebase-store-DependentColumn)
+    - [EventMetadata](#bytebase-store-EventMetadata)
     - [ExtensionMetadata](#bytebase-store-ExtensionMetadata)
     - [ExternalTableMetadata](#bytebase-store-ExternalTableMetadata)
     - [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata)
@@ -1048,6 +1049,26 @@ DependentColumn is the metadata for dependent columns.
 
 
 
+<a name="bytebase-store-EventMetadata"></a>
+
+### EventMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the event. |
+| definition | [string](#string) |  | The schedule of the event. |
+| time_zone | [string](#string) |  | The time zone of the event. |
+| sql_mode | [string](#string) |  |  |
+| character_set_client | [string](#string) |  |  |
+| collation_connection | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-ExtensionMetadata"></a>
 
 ### ExtensionMetadata
@@ -1332,6 +1353,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | packages | [PackageMetadata](#bytebase-store-PackageMetadata) | repeated | The packages is the list of packages in a schema. |
 | owner | [string](#string) |  |  |
 | triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The triggers is the list of triggers in a schema, triggers are sorted by table_name, event, timing, action_order. |
+| events | [EventMetadata](#bytebase-store-EventMetadata) | repeated |  |
 
 
 
