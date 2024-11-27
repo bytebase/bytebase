@@ -3,6 +3,9 @@
     <template #icon>
       <SchemaIcon class="w-4 h-4" />
     </template>
+    <template #fallback-text>
+      {{ $t("db.schema.default") }}
+    </template>
   </CommonNode>
 </template>
 

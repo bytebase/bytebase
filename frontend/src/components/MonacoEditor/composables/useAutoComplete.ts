@@ -48,7 +48,7 @@ export const useAutoComplete = async (
       if (databaseName && databaseName !== String(UNKNOWN_ID)) {
         p.databaseName = databaseName;
       }
-      if (ctx.schema) {
+      if (ctx.schema !== undefined) {
         p.schema = ctx.schema;
       }
     }

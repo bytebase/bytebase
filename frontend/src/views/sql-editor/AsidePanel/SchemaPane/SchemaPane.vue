@@ -260,7 +260,7 @@ const selectedKeys = computed(() => {
   if (!isValidDatabaseName(db.name)) return [];
   const keys: string[] = [];
   const tab = currentTab.value;
-  if (tab && tab.connection.schema) {
+  if (tab && tab.connection.schema !== undefined) {
     keys.push(`${db.name}/schemas/${tab.connection.schema}`);
   }
   if (!panelViewState.value || panelViewState.value.view === "CODE") {

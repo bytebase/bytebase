@@ -31,6 +31,7 @@
 <script setup lang="ts">
 import { NSelect, type SelectOption } from "naive-ui";
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { SchemaIcon } from "@/components/Icon";
 import {
   useConnectionOfCurrentSQLEditorTab,
@@ -48,6 +49,7 @@ defineProps<{
   simple?: boolean;
 }>();
 
+const { t } = useI18n();
 const { database, instance } = useConnectionOfCurrentSQLEditorTab();
 const { selectedSchemaName } = useEditorPanelContext();
 const databaseMetadata = computed(() => {
@@ -58,10 +60,11 @@ const databaseMetadata = computed(() => {
 });
 const schemaSelectOptions = computed(() => {
   return databaseMetadata.value.schemas.map<SelectOption>((schema) => ({
-    label: schema.name,
+    label: schema.name || t("db.schema.default"),
     value: schema.name,
   }));
 });
+
 const showSchemaSelect = computed(() => {
   return hasSchemaProperty(instance.value.engine);
 });
