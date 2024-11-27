@@ -59,8 +59,8 @@ import type { RolloutAction } from "./common";
 const { t } = useI18n();
 const {
   issue,
-  activeStage,
-  activeTask,
+  selectedStage,
+  selectedTask,
   events,
   releaserCandidates,
   reviewContext,
@@ -74,13 +74,13 @@ const issueStatusActionList = computed(() => {
 });
 
 const taskRolloutActionList = computed(() => {
-  return getApplicableTaskRolloutActionList(issue.value, activeTask.value);
+  return getApplicableTaskRolloutActionList(issue.value, selectedTask.value);
 });
 
 const stageRolloutActionList = computed(() => {
   return getApplicableStageRolloutActionList(
     issue.value,
-    activeStage.value,
+    selectedStage.value,
     false /* !allowSkipPendingTasks */
   );
 });
@@ -141,7 +141,7 @@ const issueStatusButtonsDisplayMode = computed(() => {
 const performRolloutAction = async (params: RolloutAction) => {
   const { action, target } = params;
   if (target === "TASK") {
-    return performBatchTaskAction(action, [activeTask.value]);
+    return performBatchTaskAction(action, [selectedTask.value]);
   }
   if (target === "STAGE") {
     const actionItem = stageRolloutActionList.value.find(

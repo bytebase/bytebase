@@ -89,7 +89,7 @@ const props = defineProps<{
 const { t } = useI18n();
 const {
   isCreating,
-  activeTask,
+  selectedTask,
   selectedStage,
   events,
   getPlanCheckRunsForTask,
@@ -109,12 +109,11 @@ const isSelectedStage = computed(() => {
 
 const isActiveStage = computed(() => {
   if (isCreating.value) {
-    // In create mode we don't have an ActiveStage
     return false;
   }
 
   const taskFound = props.stage.tasks.find(
-    (t) => t.name === activeTask.value.name
+    (t) => t.name === selectedTask.value.name
   );
   if (taskFound && !isTaskFinished(taskFound)) {
     // A stage is "Active" if the ActiveTaskOfPipeline is inside this stage

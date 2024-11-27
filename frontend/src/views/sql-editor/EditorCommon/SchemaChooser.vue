@@ -33,17 +33,17 @@
         --n-color-focus: rgb(var(--color-accent) / 0.05);
       "
       :style="{
-        maxWidth: chosenSchema ? '12rem' : 'unset',
+        maxWidth: isChosen ? '12rem' : 'unset',
       }"
     >
       <template #icon>
         <SchemaIcon
           class="w-4 h-4"
-          :class="chosenSchema ? 'text-main' : 'text-control-placeholder'"
+          :class="isChosen ? 'text-main' : 'text-control-placeholder'"
         />
       </template>
-      <span v-if="chosenSchema" class="truncate text-main">
-        {{ chosenSchema }}
+      <span v-if="isChosen" class="truncate text-main">
+        {{ chosenSchema || $t("db.schema.default") }}
       </span>
       <span v-else class="text-control-placeholder whitespace-nowrap">
         {{ $t("database.schema.select") }}
@@ -66,6 +66,8 @@ import {
 } from "@/store";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { instanceAllowsSchemaScopedQuery } from "@/utils";
+
+const SchemaOptionValueUnspecified = "-1";
 
 const { t } = useI18n();
 const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
@@ -104,28 +106,35 @@ const options = computed(() => {
   const options = databaseMetadata.value.schemas.map<SelectOption>(
     (schema) => ({
       value: schema.name,
-      label: schema.name,
+      label: schema.name || t("db.schema.default"),
     })
   );
   options.unshift({
-    value: "",
+    value: SchemaOptionValueUnspecified,
     label: t("database.schema.unspecified"),
   });
   return options;
 });
 
-const chosenSchema = computed<string | undefined>({
+const chosenSchema = computed<string>({
   get() {
-    return tab.value?.connection.schema ?? "";
+    const schema = tab.value?.connection.schema;
+    if (schema === undefined) return SchemaOptionValueUnspecified;
+    return schema;
   },
   set(value) {
     if (!tab.value) return;
-    tab.value.connection.schema = value;
+    tab.value.connection.schema =
+      value === SchemaOptionValueUnspecified ? undefined : value;
   },
 });
 
+const isChosen = computed(() => {
+  return chosenSchema.value !== SchemaOptionValueUnspecified;
+});
+
 const handleSelect = async (value: string) => {
-  chosenSchema.value = value === "" ? undefined : value;
+  chosenSchema.value = value;
 };
 
 const handleToggleShow = async (show: boolean) => {

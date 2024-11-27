@@ -20,16 +20,7 @@
       <heroicons-outline:user class="w-4 h-4" />
     </template>
     <template v-else-if="status === Task_Status.PENDING">
-      <span
-        v-if="active"
-        class="h-2 w-2 bg-info rounded-full"
-        aria-hidden="true"
-      />
-      <span
-        v-else
-        class="h-1.5 w-1.5 bg-control rounded-full"
-        aria-hidden="true"
-      />
+      <span class="h-1.5 w-1.5 bg-control rounded-full" aria-hidden="true" />
     </template>
     <template v-else-if="status === Task_Status.RUNNING">
       <div class="flex h-2.5 w-2.5 relative overflow-visible">
@@ -74,7 +65,6 @@ import { Task_Status } from "@/types/proto/v1/rollout_service";
 import { planCheckStatusForTask, useIssueContext } from "../logic";
 
 const props = defineProps<{
-  active: boolean;
   status: Task_Status;
   task?: Task;
   ignorePlanCheckStatus?: boolean;
@@ -101,12 +91,12 @@ const classes = computed((): string => {
   switch (props.status) {
     case Task_Status.NOT_STARTED:
     case Task_Status.STATUS_UNSPECIFIED:
-      if (!isCreating.value && props.active) {
+      if (!isCreating.value) {
         return "bg-white border-2 border-info text-info";
       }
       return "bg-white border-2 border-control";
     case Task_Status.PENDING:
-      if (!isCreating.value && props.active) {
+      if (!isCreating.value) {
         return "bg-white border-2 border-info text-info ";
       }
       return "bg-white border-2 border-control";
