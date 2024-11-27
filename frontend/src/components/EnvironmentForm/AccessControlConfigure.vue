@@ -82,9 +82,7 @@
     <div>
       <div class="w-full inline-flex items-center gap-x-2">
         <Switch
-          :value="
-            hasAccessControlFeature ? !dataSourceQueryPolicy?.disallowDdl : true
-          "
+          :value="!dataSourceQueryPolicy?.disallowDdl"
           :text="true"
           :disabled="!allowUpdatePolicy || !hasAccessControlFeature"
           @update:value="
@@ -99,9 +97,7 @@
       </div>
       <div class="w-full inline-flex items-center gap-x-2">
         <Switch
-          :value="
-            hasAccessControlFeature ? !dataSourceQueryPolicy?.disallowDml : true
-          "
+          :value="!dataSourceQueryPolicy?.disallowDml"
           :text="true"
           :disabled="!allowUpdatePolicy || !hasAccessControlFeature"
           @update:value="
