@@ -67,6 +67,8 @@ export interface SQLEditorConnection {
   table?: string;
 }
 
+export const SQLEditorTabConnectionSchemaUnspecified = "-1";
+
 export type SQLEditorQueryParams = {
   connection: SQLEditorConnection; // the connection snapshot of the query
   statement: string; // the statement snapshot of the query
