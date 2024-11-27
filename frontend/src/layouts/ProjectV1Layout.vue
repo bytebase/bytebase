@@ -69,7 +69,7 @@ import {
   PROJECT_V1_ROUTE_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
 } from "@/router/dashboard/projectV1";
-import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
+import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
 import {
   hasFeature,
@@ -139,7 +139,7 @@ watchEffect(async () => {
     });
     removeVisit(projectRoute.fullPath);
     router.replace({
-      name: WORKSPACE_ROUTE_MY_ISSUES,
+      name: WORKSPACE_ROUTE_LANDING,
     });
   }
 });

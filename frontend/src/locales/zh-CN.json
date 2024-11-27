@@ -966,6 +966,7 @@
     },
     "release": {
       "new-version-available": "有新版本可更新",
+      "new-version-available-with-tag": "新版本 {tag} 已推出",
       "new-version-content": "新版本 {tag} 正式发布！请根据我们的文档来获取新版本。",
       "not-show-till-next-release": "在下次更新前不要提醒我"
     },
@@ -3519,9 +3520,6 @@
       "search": "搜索分类"
     }
   },
-  "principal": {
-    "select": "选择用户"
-  },
   "role": {
     "self": "角色",
     "setting": {
@@ -3869,5 +3867,15 @@
   },
   "setup": {
     "self": "设置"
+  },
+  "landing": {
+    "quick-link": {
+      "self": "快捷访问",
+      "manage": "管理快捷访问",
+      "visit-prjects": "访问项目",
+      "visit-issues": "访问工单"
+    },
+    "last-visit": "上次访问",
+    "changelog-for-version": "{version} 的更新日志"
   }
 }
