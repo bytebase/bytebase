@@ -43,7 +43,10 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { extractReviewContext } from "@/components/IssueV1";
 import { rolloutServiceClient } from "@/grpcweb";
-import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
+import {
+  Issue_Approver_Status,
+  IssueStatus,
+} from "@/types/proto/v1/issue_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 import { useRolloutDetailContext } from "../context";
 import { useTaskDetailContext } from "./context";
@@ -64,7 +67,7 @@ const { rollout, issue, emmiter } = useRolloutDetailContext();
 const { task, taskRuns } = useTaskDetailContext();
 
 const issueReviewDone = computed(() => {
-  if (issue.value) {
+  if (issue.value && issue.value.status === IssueStatus.OPEN) {
     const issueReviewContext = extractReviewContext(issue.value);
     if (issueReviewContext.status.value !== Issue_Approver_Status.APPROVED) {
       return false;
