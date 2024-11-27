@@ -18,10 +18,10 @@ import { isDatabaseDataExportIssue } from "@/utils";
 import { ExportArchiveDownloadButton } from "../request";
 
 const currentUser = useCurrentUserV1();
-const { issue, activeTask } = useIssueContext();
+const { issue, selectedTask } = useIssueContext();
 
 const taskRolloutActionList = computed(() => {
-  return getApplicableTaskRolloutActionList(issue.value, activeTask.value);
+  return getApplicableTaskRolloutActionList(issue.value, selectedTask.value);
 });
 
 const primaryTaskRolloutActionList = computed(() => {

@@ -48,14 +48,14 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { issue, activeTask, releaserCandidates } = useIssueContext();
+const { issue, selectedTask, releaserCandidates } = useIssueContext();
 
 const errors = asyncComputed(async () => {
   const errors: ErrorItem[] = [];
   if (
     !(await allowUserToApplyTaskRolloutAction(
       issue.value,
-      activeTask.value,
+      selectedTask.value,
       props.action,
       releaserCandidates.value
     ))
@@ -88,7 +88,7 @@ const errors = asyncComputed(async () => {
 const actionList = computed(() => {
   const { action } = props;
 
-  const text = taskRolloutActionDisplayName(action, activeTask.value);
+  const text = taskRolloutActionDisplayName(action, selectedTask.value);
   const actionProps: RolloutButtonAction["props"] = {
     ...taskRolloutActionButtonProps(action),
     tag: "div",
