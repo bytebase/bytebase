@@ -12,7 +12,6 @@ import { BBSpin } from "@/bbkit";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { unknownRollout } from "@/types";
 import { provideRolloutDetailContext } from "./context";
-import { usePollRollout } from "./poll";
 
 const route = useRoute();
 
@@ -21,6 +20,5 @@ const rolloutName = computed(
     `${projectNamePrefix}${route.params.projectId}/rollouts/${route.params.rolloutId}`
 );
 
-const { rollout, emmiter } = provideRolloutDetailContext(rolloutName.value);
-usePollRollout(rolloutName.value, emmiter);
+const { rollout } = provideRolloutDetailContext(rolloutName.value);
 </script>
