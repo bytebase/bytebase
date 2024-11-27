@@ -36,7 +36,7 @@
           :to="{
             name: access.route,
           }"
-          class="flex justify-center items-center gap-x-2 cursor-pointer border rounded px-4 py-6 bg-white hover:bg-gray-100"
+          class="flex justify-center items-center gap-x-2 cursor-pointer border rounded px-4 py-5 bg-white hover:bg-gray-100"
           @click="handleClick(access)"
         >
           <component :is="access.icon" class="w-5 h-5 text-gray-500" />
