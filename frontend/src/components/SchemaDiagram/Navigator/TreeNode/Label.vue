@@ -15,6 +15,7 @@
 <script lang="ts" setup>
 import { escape } from "lodash-es";
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { getHighlightHTMLByKeyWords } from "@/utils";
 import type { TreeNode } from "../types";
 import { isTypedNode } from "../utils";
@@ -23,6 +24,8 @@ const props = defineProps<{
   node: TreeNode;
   keyword: string;
 }>();
+
+const { t } = useI18n();
 
 // render an unique id for every node
 // for auto scroll to the node when tab switches
@@ -33,7 +36,7 @@ const id = computed(() => {
 
 const text = computed(() => {
   const { node } = props;
-  return node.data.name;
+  return node.data.name || t("db.schema.default");
 });
 
 const html = computed(() => {

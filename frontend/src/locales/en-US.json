@@ -1444,6 +1444,9 @@
       "timing": "Timing",
       "event": "Event",
       "table-name": "Table name"
+    },
+    "schema": {
+      "default": "Default"
     }
   },
   "instance": {

@@ -358,7 +358,7 @@ const shouldShowColumnTable = computed(() => {
 });
 
 const getTableName = (tableName: string) => {
-  if (hasSchemaProperty(instanceEngine.value)) {
+  if (hasSchemaProperty(instanceEngine.value) && props.schemaName) {
     return `"${props.schemaName}"."${tableName}"`;
   }
   return tableName;

@@ -1,4 +1,5 @@
 import { Engine } from "@/types/proto/v1/common";
+import { hasSchemaProperty } from "@/utils";
 
 export const engineSupportsEditIndexes = (engine: Engine) => {
   return [Engine.MYSQL, Engine.TIDB].includes(engine);
@@ -21,5 +22,5 @@ export const engineSupportsEditFunctions = (engine: Engine) => {
 };
 
 export const engineSupportsMultiSchema = (engine: Engine) => {
-  return [Engine.POSTGRES].includes(engine);
+  return hasSchemaProperty(engine);
 };

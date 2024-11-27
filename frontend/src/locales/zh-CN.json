@@ -1444,6 +1444,9 @@
       "timing": "时机",
       "event": "事件",
       "table-name": "表名"
+    },
+    "schema": {
+      "default": "默认"
     }
   },
   "instance": {

@@ -1444,6 +1444,9 @@
       "timing": "Momento",
       "event": "Evento",
       "table-name": "Nombre de la tabla"
+    },
+    "schema": {
+      "default": "Por defecto"
     }
   },
   "instance": {

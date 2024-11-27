@@ -135,7 +135,7 @@ const columns = computed(() => {
         tooltip: true,
       },
       render: () => {
-        return props.schemaName;
+        return props.schemaName || t("db.schema.default");
       },
     },
     {
