@@ -77,13 +77,14 @@
       <label>
         {{ $t("environment.statement-execution.title") }}
       </label>
+      <FeatureBadge feature="bb.feature.access-control" />
     </div>
     <div>
       <div class="w-full inline-flex items-center gap-x-2">
         <Switch
           :value="!dataSourceQueryPolicy?.disallowDdl"
           :text="true"
-          :disabled="!allowUpdatePolicy"
+          :disabled="!allowUpdatePolicy || !hasAccessControlFeature"
           @update:value="
             (on: boolean) => {
               updateAdminDataSourceQueryRestrctionPolicy({ disallowDdl: !on });
@@ -98,7 +99,7 @@
         <Switch
           :value="!dataSourceQueryPolicy?.disallowDml"
           :text="true"
-          :disabled="!allowUpdatePolicy"
+          :disabled="!allowUpdatePolicy || !hasAccessControlFeature"
           @update:value="
             (on: boolean) => {
               updateAdminDataSourceQueryRestrctionPolicy({ disallowDml: !on });
