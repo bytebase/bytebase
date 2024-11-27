@@ -1,6 +1,7 @@
 <template>
   <div
     class="flex-shrink-0 w-44 min-h-[4rem] flex items-center overflow-y-hidden"
+    @click="recordRedirect"
   >
     <component
       :is="component"
@@ -29,6 +30,8 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
+import { useRouter } from "vue-router";
+import { useRecentVisit } from "@/router/useRecentVisit";
 import { useActuatorV1Store } from "@/store/modules/v1/actuator";
 
 const props = withDefaults(
@@ -41,8 +44,20 @@ const props = withDefaults(
 );
 
 const component = computed(() => (props.redirect ? "router-link" : "span"));
+const { record } = useRecentVisit();
+const router = useRouter();
 
 const customBrandingLogo = computed((): string => {
   return useActuatorV1Store().brandingLogo;
 });
+
+const recordRedirect = () => {
+  if (!props.redirect) {
+    return;
+  }
+  const route = router.resolve({
+    name: props.redirect,
+  });
+  record(route.fullPath);
+};
 </script>
