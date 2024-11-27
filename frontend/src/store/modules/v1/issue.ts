@@ -117,8 +117,17 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     };
   };
 
+  const fetchIssueByName = async (
+    name: string,
+    composeIssueConfig?: ComposeIssueConfig
+  ) => {
+    const issue = await issueServiceClient.getIssue({ name });
+    return shallowComposeIssue(issue, composeIssueConfig);
+  };
+
   return {
     listIssues,
+    fetchIssueByName,
     regenerateReviewV1,
   };
 });

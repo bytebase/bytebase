@@ -15,13 +15,9 @@ import TaskRunLogTable from "@/components/IssueV1/components/TaskRunSection/Task
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { useSheetV1Store } from "@/store";
 import { getDateForPbTimestamp } from "@/types";
-import { type Task, type TaskRun } from "@/types/proto/v1/rollout_service";
 import { sheetNameOfTaskV1 } from "@/utils";
+import { useTaskDetailContext } from "../context";
 
-defineProps<{
-  task: Task;
-  taskRuns: TaskRun[];
-}>();
-
+const { task, taskRuns } = useTaskDetailContext();
 const sheetStore = useSheetV1Store();
 </script>
