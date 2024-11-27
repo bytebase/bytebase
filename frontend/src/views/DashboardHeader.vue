@@ -19,7 +19,11 @@
     </router-link>
 
     <div class="flex-1 flex justify-end items-center space-x-3">
-      <NButton class="hidden md:flex" size="small" @click="onClickSearchButton">
+      <NButton
+        class="!hidden md:!flex"
+        size="small"
+        @click="onClickSearchButton"
+      >
         <SearchIcon class="w-4 h-auto mr-1" />
         <span class="text-control-placeholder text-sm mr-4">
           {{ $t("common.search") }}
@@ -49,12 +53,12 @@
         <span class="hidden lg:block ml-2">{{ $t("common.want-help") }}</span>
       </NButton>
 
-      <NTooltip :disabled="windowWidth >= 1024">
+      <NTooltip :disabled="windowWidth >= 640">
         <template #trigger>
           <router-link :to="myIssueLink" class="flex">
             <NButton size="small" @click="goToMyIssues">
               <CircleDotIcon class="w-4" />
-              <span class="hidden lg:block ml-2">{{
+              <span class="hidden sm:block ml-2">{{
                 $t("issue.my-issues")
               }}</span>
             </NButton>
