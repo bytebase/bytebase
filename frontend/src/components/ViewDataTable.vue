@@ -68,7 +68,7 @@ const columns = computed(() => {
 });
 
 const getViewName = (viewName: string) => {
-  if (hasSchemaProperty(engine.value)) {
+  if (hasSchemaProperty(engine.value) && props.schemaName) {
     return `"${props.schemaName}"."${viewName}"`;
   }
   return viewName;

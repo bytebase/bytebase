@@ -1445,6 +1445,9 @@
       "timing": "タイミング",
       "event": "イベント",
       "table-name": "テーブル名"
+    },
+    "schema": {
+      "default": "デフォルト"
     }
   },
   "instance": {
