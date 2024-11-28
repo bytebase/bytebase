@@ -77,7 +77,6 @@
       <label>
         {{ $t("environment.statement-execution.title") }}
       </label>
-      <FeatureBadge feature="bb.feature.access-control" />
     </div>
     <div>
       <div class="w-full inline-flex items-center gap-x-2">
