@@ -2541,7 +2541,14 @@
     "create-a-worksheet": "Crear una hoja de trabajo",
     "select-a-database-to-start": "Seleccione una base de datos para comenzar",
     "select-encoding": "Seleccionar codificación",
+    "redis-command": {
+      "self": "Ejecute el comando redis en",
+      "all-nodes": "Todos los nodos",
+      "single-node": "Nodo único",
+      "only-for-cluster": "Sólo disponible para conexión de clúster"
+    },
     "result-limit": {
+      "self": "Límite de resultados",
       "n-rows": "{n} filas",
       "rows": "filas"
     },
