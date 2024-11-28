@@ -275,7 +275,7 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 		SheetSha256:   revision.Payload.SheetSha256,
 		Statement:     sheet.Statement,
 		StatementSize: sheet.Size,
-		Version:       revision.Payload.Version,
+		Version:       revision.Version,
 		File:          revision.Payload.File,
 		Issue:         issueName,
 		TaskRun:       taskRunName,
@@ -285,10 +285,10 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 func convertRevision(revision *v1pb.Revision, database *store.DatabaseMessage, sheet *store.SheetMessage) *store.RevisionMessage {
 	r := &store.RevisionMessage{
 		DatabaseUID: database.UID,
+		Version:     revision.Version,
 		Payload: &storepb.RevisionPayload{
 			Release:     revision.Release,
 			File:        revision.File,
-			Version:     revision.Version,
 			Sheet:       revision.Sheet,
 			SheetSha256: sheet.GetSha256Hex(),
 			TaskRun:     revision.TaskRun,
