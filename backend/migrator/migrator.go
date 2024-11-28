@@ -689,7 +689,10 @@ func BeginMigration(ctx context.Context, stores *store.Store, m *dbdriver.Migrat
 		migrationHistory := list[0]
 		switch migrationHistory.Status {
 		case dbdriver.Done:
-			return "", common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s, hint: the version might be duplicate, please check the version", m.Database, m.Version.Version)
+			err := common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s, hint: the version might be duplicate, please check the version", m.Database, m.Version.Version)
+			slog.Debug(err.Error())
+			// Force migration
+			return migrationHistory.UID, nil
 		case dbdriver.Pending:
 			err := errors.Errorf("database %q version %s migration is already in progress", m.Database, m.Version.Version)
 			slog.Debug(err.Error())
