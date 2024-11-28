@@ -1,6 +1,6 @@
 <template>
   <div v-if="subscriptionStore.currentPlan === PlanType.FREE" class="my-3">
-    <dt class="text-gray-400">
+    <dt class="text-main">
       {{ $t("subscription.max-instance-count") }}
     </dt>
     <dd class="mt-1 text-4xl flex items-center gap-x-2 cursor-pointer group">
@@ -10,7 +10,7 @@
     </dd>
   </div>
   <div v-else class="my-3">
-    <dt class="text-gray-400">
+    <dt class="text-main">
       {{ $t("subscription.instance-assignment.used-and-total-license") }}
     </dt>
     <dd
