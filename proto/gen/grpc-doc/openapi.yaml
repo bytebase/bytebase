@@ -2127,6 +2127,10 @@ paths:
                      match the call that provided the page token.
                   schema:
                     type: string
+                - name: showDeleted
+                  in: query
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     description: OK
@@ -13055,6 +13059,16 @@ components:
                 createTime:
                     readOnly: true
                     type: string
+                    format: date-time
+                deleter:
+                    type: string
+                    description: |-
+                        Format: users/hello@world.com
+                         Can be empty.
+                deleteTime:
+                    readOnly: true
+                    type: string
+                    description: Can be empty.
                     format: date-time
                 file:
                     type: string
