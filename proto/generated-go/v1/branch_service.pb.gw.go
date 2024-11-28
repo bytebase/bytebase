@@ -10,6 +10,7 @@ package v1
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 
@@ -24,226 +25,171 @@ import (
 )
 
 // Suppress "imported and not used" errors
-var _ codes.Code
-var _ io.Reader
-var _ status.Status
-var _ = runtime.String
-var _ = utilities.NewDoubleArray
-var _ = metadata.Join
+var (
+	_ codes.Code
+	_ io.Reader
+	_ status.Status
+	_ = errors.New
+	_ = runtime.String
+	_ = utilities.NewDoubleArray
+	_ = metadata.Join
+)
 
 func request_BranchService_GetBranch_0(ctx context.Context, marshaler runtime.Marshaler, client BranchServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetBranchRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq GetBranchRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["name"]
+	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := client.GetBranch(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_BranchService_GetBranch_0(ctx context.Context, marshaler runtime.Marshaler, server BranchServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetBranchRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq GetBranchRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["name"]
+	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := server.GetBranch(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
-var (
-	filter_BranchService_ListBranches_0 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
+var filter_BranchService_ListBranches_0 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 
 func request_BranchService_ListBranches_0(ctx context.Context, marshaler runtime.Marshaler, client BranchServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListBranchesRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq ListBranchesRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["parent"]
+	val, ok := pathParams["parent"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
-
 	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_BranchService_ListBranches_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := client.ListBranches(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_BranchService_ListBranches_0(ctx context.Context, marshaler runtime.Marshaler, server BranchServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListBranchesRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq ListBranchesRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["parent"]
+	val, ok := pathParams["parent"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
-
 	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_BranchService_ListBranches_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.ListBranches(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
-var (
-	filter_BranchService_CreateBranch_0 = &utilities.DoubleArray{Encoding: map[string]int{"branch": 0, "parent": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
-)
+var filter_BranchService_CreateBranch_0 = &utilities.DoubleArray{Encoding: map[string]int{"branch": 0, "parent": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 
 func request_BranchService_CreateBranch_0(ctx context.Context, marshaler runtime.Marshaler, client BranchServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CreateBranchRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Branch); err != nil && err != io.EOF {
+	var (
+		protoReq CreateBranchRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Branch); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["parent"]
+	val, ok := pathParams["parent"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
-
 	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_BranchService_CreateBranch_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := client.CreateBranch(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_BranchService_CreateBranch_0(ctx context.Context, marshaler runtime.Marshaler, server BranchServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CreateBranchRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Branch); err != nil && err != io.EOF {
+	var (
+		protoReq CreateBranchRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Branch); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["parent"]
+	val, ok := pathParams["parent"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
-
 	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_BranchService_CreateBranch_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.CreateBranch(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
-var (
-	filter_BranchService_UpdateBranch_0 = &utilities.DoubleArray{Encoding: map[string]int{"branch": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
-)
+var filter_BranchService_UpdateBranch_0 = &utilities.DoubleArray{Encoding: map[string]int{"branch": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 
 func request_BranchService_UpdateBranch_0(ctx context.Context, marshaler runtime.Marshaler, client BranchServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq UpdateBranchRequest
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq UpdateBranchRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
 	newReader, berr := utilities.IOReaderFactory(req.Body)
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Branch); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Branch); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
@@ -253,45 +199,35 @@ func request_BranchService_UpdateBranch_0(ctx context.Context, marshaler runtime
 			protoReq.UpdateMask = fieldMask
 		}
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["branch.name"]
+	val, ok := pathParams["branch.name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "branch.name")
 	}
-
 	err = runtime.PopulateFieldFromPath(&protoReq, "branch.name", val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "branch.name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_BranchService_UpdateBranch_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := client.UpdateBranch(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_BranchService_UpdateBranch_0(ctx context.Context, marshaler runtime.Marshaler, server BranchServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq UpdateBranchRequest
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq UpdateBranchRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
 	newReader, berr := utilities.IOReaderFactory(req.Body)
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Branch); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Branch); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
@@ -301,270 +237,196 @@ func local_request_BranchService_UpdateBranch_0(ctx context.Context, marshaler r
 			protoReq.UpdateMask = fieldMask
 		}
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["branch.name"]
+	val, ok := pathParams["branch.name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "branch.name")
 	}
-
 	err = runtime.PopulateFieldFromPath(&protoReq, "branch.name", val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "branch.name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_BranchService_UpdateBranch_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.UpdateBranch(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
-var (
-	filter_BranchService_MergeBranch_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
+var filter_BranchService_MergeBranch_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 
 func request_BranchService_MergeBranch_0(ctx context.Context, marshaler runtime.Marshaler, client BranchServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq MergeBranchRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq MergeBranchRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["name"]
+	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_BranchService_MergeBranch_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := client.MergeBranch(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_BranchService_MergeBranch_0(ctx context.Context, marshaler runtime.Marshaler, server BranchServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq MergeBranchRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq MergeBranchRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["name"]
+	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_BranchService_MergeBranch_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.MergeBranch(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
-var (
-	filter_BranchService_RebaseBranch_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
+var filter_BranchService_RebaseBranch_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 
 func request_BranchService_RebaseBranch_0(ctx context.Context, marshaler runtime.Marshaler, client BranchServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RebaseBranchRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq RebaseBranchRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["name"]
+	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_BranchService_RebaseBranch_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := client.RebaseBranch(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_BranchService_RebaseBranch_0(ctx context.Context, marshaler runtime.Marshaler, server BranchServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RebaseBranchRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq RebaseBranchRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["name"]
+	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_BranchService_RebaseBranch_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.RebaseBranch(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
-var (
-	filter_BranchService_DeleteBranch_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
+var filter_BranchService_DeleteBranch_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 
 func request_BranchService_DeleteBranch_0(ctx context.Context, marshaler runtime.Marshaler, client BranchServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq DeleteBranchRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq DeleteBranchRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["name"]
+	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_BranchService_DeleteBranch_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := client.DeleteBranch(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_BranchService_DeleteBranch_0(ctx context.Context, marshaler runtime.Marshaler, server BranchServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq DeleteBranchRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq DeleteBranchRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["name"]
+	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_BranchService_DeleteBranch_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.DeleteBranch(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_BranchService_DiffMetadata_0(ctx context.Context, marshaler runtime.Marshaler, client BranchServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq DiffMetadataRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq DiffMetadataRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := client.DiffMetadata(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_BranchService_DiffMetadata_0(ctx context.Context, marshaler runtime.Marshaler, server BranchServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq DiffMetadataRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq DiffMetadataRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.DiffMetadata(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 // RegisterBranchServiceHandlerServer registers the http handlers for service BranchService to "mux".
@@ -573,16 +435,13 @@ func local_request_BranchService_DiffMetadata_0(ctx context.Context, marshaler r
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterBranchServiceHandlerFromEndpoint instead.
 // GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterBranchServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server BranchServiceServer) error {
-
-	mux.Handle("GET", pattern_BranchService_GetBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_BranchService_GetBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.BranchService/GetBranch", runtime.WithHTTPPathPattern("/v1/{name=projects/*/branches/*}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.BranchService/GetBranch", runtime.WithHTTPPathPattern("/v1/{name=projects/*/branches/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -594,20 +453,15 @@ func RegisterBranchServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_BranchService_GetBranch_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_BranchService_ListBranches_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_BranchService_ListBranches_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.BranchService/ListBranches", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/branches"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.BranchService/ListBranches", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/branches"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -619,20 +473,15 @@ func RegisterBranchServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_BranchService_ListBranches_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_BranchService_CreateBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_BranchService_CreateBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.BranchService/CreateBranch", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/branch"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.BranchService/CreateBranch", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/branch"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -644,20 +493,15 @@ func RegisterBranchServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_BranchService_CreateBranch_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("PATCH", pattern_BranchService_UpdateBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPatch, pattern_BranchService_UpdateBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.BranchService/UpdateBranch", runtime.WithHTTPPathPattern("/v1/{branch.name=projects/*/branches/*}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.BranchService/UpdateBranch", runtime.WithHTTPPathPattern("/v1/{branch.name=projects/*/branches/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -669,20 +513,15 @@ func RegisterBranchServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_BranchService_UpdateBranch_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_BranchService_MergeBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_BranchService_MergeBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.BranchService/MergeBranch", runtime.WithHTTPPathPattern("/v1/{name=projects/*/branches/*}:merge"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.BranchService/MergeBranch", runtime.WithHTTPPathPattern("/v1/{name=projects/*/branches/*}:merge"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -694,20 +533,15 @@ func RegisterBranchServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_BranchService_MergeBranch_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_BranchService_RebaseBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_BranchService_RebaseBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.BranchService/RebaseBranch", runtime.WithHTTPPathPattern("/v1/{name=projects/*/branches/*}:rebase"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.BranchService/RebaseBranch", runtime.WithHTTPPathPattern("/v1/{name=projects/*/branches/*}:rebase"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -719,20 +553,15 @@ func RegisterBranchServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_BranchService_RebaseBranch_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("DELETE", pattern_BranchService_DeleteBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodDelete, pattern_BranchService_DeleteBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.BranchService/DeleteBranch", runtime.WithHTTPPathPattern("/v1/{name=projects/*/branches/*}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.BranchService/DeleteBranch", runtime.WithHTTPPathPattern("/v1/{name=projects/*/branches/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -744,20 +573,15 @@ func RegisterBranchServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_BranchService_DeleteBranch_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_BranchService_DiffMetadata_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_BranchService_DiffMetadata_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.BranchService/DiffMetadata", runtime.WithHTTPPathPattern("/v1/schemaDesign:diffMetadata"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.BranchService/DiffMetadata", runtime.WithHTTPPathPattern("/v1/schemaDesign:diffMetadata"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -769,9 +593,7 @@ func RegisterBranchServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_BranchService_DiffMetadata_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	return nil
@@ -798,7 +620,6 @@ func RegisterBranchServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.
 			}
 		}()
 	}()
-
 	return RegisterBranchServiceHandler(ctx, mux, conn)
 }
 
@@ -814,14 +635,11 @@ func RegisterBranchServiceHandler(ctx context.Context, mux *runtime.ServeMux, co
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
 // "BranchServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterBranchServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client BranchServiceClient) error {
-
-	mux.Handle("GET", pattern_BranchService_GetBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_BranchService_GetBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.BranchService/GetBranch", runtime.WithHTTPPathPattern("/v1/{name=projects/*/branches/*}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.BranchService/GetBranch", runtime.WithHTTPPathPattern("/v1/{name=projects/*/branches/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -832,18 +650,13 @@ func RegisterBranchServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_BranchService_GetBranch_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_BranchService_ListBranches_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_BranchService_ListBranches_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.BranchService/ListBranches", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/branches"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.BranchService/ListBranches", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/branches"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -854,18 +667,13 @@ func RegisterBranchServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_BranchService_ListBranches_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_BranchService_CreateBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_BranchService_CreateBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.BranchService/CreateBranch", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/branch"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.BranchService/CreateBranch", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/branch"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -876,18 +684,13 @@ func RegisterBranchServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_BranchService_CreateBranch_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("PATCH", pattern_BranchService_UpdateBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPatch, pattern_BranchService_UpdateBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.BranchService/UpdateBranch", runtime.WithHTTPPathPattern("/v1/{branch.name=projects/*/branches/*}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.BranchService/UpdateBranch", runtime.WithHTTPPathPattern("/v1/{branch.name=projects/*/branches/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -898,18 +701,13 @@ func RegisterBranchServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_BranchService_UpdateBranch_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_BranchService_MergeBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_BranchService_MergeBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.BranchService/MergeBranch", runtime.WithHTTPPathPattern("/v1/{name=projects/*/branches/*}:merge"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.BranchService/MergeBranch", runtime.WithHTTPPathPattern("/v1/{name=projects/*/branches/*}:merge"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -920,18 +718,13 @@ func RegisterBranchServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_BranchService_MergeBranch_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_BranchService_RebaseBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_BranchService_RebaseBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.BranchService/RebaseBranch", runtime.WithHTTPPathPattern("/v1/{name=projects/*/branches/*}:rebase"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.BranchService/RebaseBranch", runtime.WithHTTPPathPattern("/v1/{name=projects/*/branches/*}:rebase"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -942,18 +735,13 @@ func RegisterBranchServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_BranchService_RebaseBranch_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("DELETE", pattern_BranchService_DeleteBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodDelete, pattern_BranchService_DeleteBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.BranchService/DeleteBranch", runtime.WithHTTPPathPattern("/v1/{name=projects/*/branches/*}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.BranchService/DeleteBranch", runtime.WithHTTPPathPattern("/v1/{name=projects/*/branches/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -964,18 +752,13 @@ func RegisterBranchServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_BranchService_DeleteBranch_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_BranchService_DiffMetadata_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_BranchService_DiffMetadata_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.BranchService/DiffMetadata", runtime.WithHTTPPathPattern("/v1/schemaDesign:diffMetadata"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.BranchService/DiffMetadata", runtime.WithHTTPPathPattern("/v1/schemaDesign:diffMetadata"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -986,46 +769,29 @@ func RegisterBranchServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_BranchService_DiffMetadata_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
 	return nil
 }
 
 var (
-	pattern_BranchService_GetBranch_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "branches", "name"}, ""))
-
+	pattern_BranchService_GetBranch_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "branches", "name"}, ""))
 	pattern_BranchService_ListBranches_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "branches"}, ""))
-
 	pattern_BranchService_CreateBranch_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "branch"}, ""))
-
 	pattern_BranchService_UpdateBranch_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "branches", "branch.name"}, ""))
-
-	pattern_BranchService_MergeBranch_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "branches", "name"}, "merge"))
-
+	pattern_BranchService_MergeBranch_0  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "branches", "name"}, "merge"))
 	pattern_BranchService_RebaseBranch_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "branches", "name"}, "rebase"))
-
 	pattern_BranchService_DeleteBranch_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "branches", "name"}, ""))
-
 	pattern_BranchService_DiffMetadata_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "schemaDesign"}, "diffMetadata"))
 )
 
 var (
-	forward_BranchService_GetBranch_0 = runtime.ForwardResponseMessage
-
+	forward_BranchService_GetBranch_0    = runtime.ForwardResponseMessage
 	forward_BranchService_ListBranches_0 = runtime.ForwardResponseMessage
-
 	forward_BranchService_CreateBranch_0 = runtime.ForwardResponseMessage
-
 	forward_BranchService_UpdateBranch_0 = runtime.ForwardResponseMessage
-
-	forward_BranchService_MergeBranch_0 = runtime.ForwardResponseMessage
-
+	forward_BranchService_MergeBranch_0  = runtime.ForwardResponseMessage
 	forward_BranchService_RebaseBranch_0 = runtime.ForwardResponseMessage
-
 	forward_BranchService_DeleteBranch_0 = runtime.ForwardResponseMessage
-
 	forward_BranchService_DiffMetadata_0 = runtime.ForwardResponseMessage
 )

@@ -10,6 +10,7 @@ package v1
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 
@@ -24,216 +25,163 @@ import (
 )
 
 // Suppress "imported and not used" errors
-var _ codes.Code
-var _ io.Reader
-var _ status.Status
-var _ = runtime.String
-var _ = utilities.NewDoubleArray
-var _ = metadata.Join
+var (
+	_ codes.Code
+	_ io.Reader
+	_ status.Status
+	_ = errors.New
+	_ = runtime.String
+	_ = utilities.NewDoubleArray
+	_ = metadata.Join
+)
 
 func request_SheetService_CreateSheet_0(ctx context.Context, marshaler runtime.Marshaler, client SheetServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CreateSheetRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Sheet); err != nil && err != io.EOF {
+	var (
+		protoReq CreateSheetRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Sheet); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["parent"]
+	val, ok := pathParams["parent"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
-
 	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-
 	msg, err := client.CreateSheet(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_SheetService_CreateSheet_0(ctx context.Context, marshaler runtime.Marshaler, server SheetServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CreateSheetRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Sheet); err != nil && err != io.EOF {
+	var (
+		protoReq CreateSheetRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Sheet); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["parent"]
+	val, ok := pathParams["parent"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
-
 	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-
 	msg, err := server.CreateSheet(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_SheetService_BatchCreateSheet_0(ctx context.Context, marshaler runtime.Marshaler, client SheetServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq BatchCreateSheetRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq BatchCreateSheetRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["parent"]
+	val, ok := pathParams["parent"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
-
 	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-
 	msg, err := client.BatchCreateSheet(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_SheetService_BatchCreateSheet_0(ctx context.Context, marshaler runtime.Marshaler, server SheetServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq BatchCreateSheetRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq BatchCreateSheetRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["parent"]
+	val, ok := pathParams["parent"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
-
 	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-
 	msg, err := server.BatchCreateSheet(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
-var (
-	filter_SheetService_GetSheet_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
+var filter_SheetService_GetSheet_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 
 func request_SheetService_GetSheet_0(ctx context.Context, marshaler runtime.Marshaler, client SheetServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetSheetRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq GetSheetRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["name"]
+	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SheetService_GetSheet_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := client.GetSheet(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_SheetService_GetSheet_0(ctx context.Context, marshaler runtime.Marshaler, server SheetServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetSheetRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq GetSheetRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["name"]
+	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SheetService_GetSheet_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.GetSheet(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
-var (
-	filter_SheetService_UpdateSheet_0 = &utilities.DoubleArray{Encoding: map[string]int{"sheet": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
-)
+var filter_SheetService_UpdateSheet_0 = &utilities.DoubleArray{Encoding: map[string]int{"sheet": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 
 func request_SheetService_UpdateSheet_0(ctx context.Context, marshaler runtime.Marshaler, client SheetServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq UpdateSheetRequest
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq UpdateSheetRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
 	newReader, berr := utilities.IOReaderFactory(req.Body)
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Sheet); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Sheet); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
@@ -243,45 +191,35 @@ func request_SheetService_UpdateSheet_0(ctx context.Context, marshaler runtime.M
 			protoReq.UpdateMask = fieldMask
 		}
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["sheet.name"]
+	val, ok := pathParams["sheet.name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "sheet.name")
 	}
-
 	err = runtime.PopulateFieldFromPath(&protoReq, "sheet.name", val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "sheet.name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SheetService_UpdateSheet_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := client.UpdateSheet(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_SheetService_UpdateSheet_0(ctx context.Context, marshaler runtime.Marshaler, server SheetServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq UpdateSheetRequest
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq UpdateSheetRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
 	newReader, berr := utilities.IOReaderFactory(req.Body)
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Sheet); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Sheet); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
@@ -291,34 +229,22 @@ func local_request_SheetService_UpdateSheet_0(ctx context.Context, marshaler run
 			protoReq.UpdateMask = fieldMask
 		}
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["sheet.name"]
+	val, ok := pathParams["sheet.name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "sheet.name")
 	}
-
 	err = runtime.PopulateFieldFromPath(&protoReq, "sheet.name", val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "sheet.name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SheetService_UpdateSheet_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.UpdateSheet(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 // RegisterSheetServiceHandlerServer registers the http handlers for service SheetService to "mux".
@@ -327,16 +253,13 @@ func local_request_SheetService_UpdateSheet_0(ctx context.Context, marshaler run
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterSheetServiceHandlerFromEndpoint instead.
 // GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterSheetServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server SheetServiceServer) error {
-
-	mux.Handle("POST", pattern_SheetService_CreateSheet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_SheetService_CreateSheet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SheetService/CreateSheet", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/sheets"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SheetService/CreateSheet", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/sheets"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -348,20 +271,15 @@ func RegisterSheetServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_SheetService_CreateSheet_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_SheetService_BatchCreateSheet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_SheetService_BatchCreateSheet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SheetService/BatchCreateSheet", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/sheets:batchCreate"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SheetService/BatchCreateSheet", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/sheets:batchCreate"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -373,20 +291,15 @@ func RegisterSheetServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_SheetService_BatchCreateSheet_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_SheetService_GetSheet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_SheetService_GetSheet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SheetService/GetSheet", runtime.WithHTTPPathPattern("/v1/{name=projects/*/sheets/*}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SheetService/GetSheet", runtime.WithHTTPPathPattern("/v1/{name=projects/*/sheets/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -398,20 +311,15 @@ func RegisterSheetServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_SheetService_GetSheet_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("PATCH", pattern_SheetService_UpdateSheet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPatch, pattern_SheetService_UpdateSheet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SheetService/UpdateSheet", runtime.WithHTTPPathPattern("/v1/{sheet.name=projects/*/sheets/*}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SheetService/UpdateSheet", runtime.WithHTTPPathPattern("/v1/{sheet.name=projects/*/sheets/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -423,9 +331,7 @@ func RegisterSheetServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_SheetService_UpdateSheet_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	return nil
@@ -452,7 +358,6 @@ func RegisterSheetServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.S
 			}
 		}()
 	}()
-
 	return RegisterSheetServiceHandler(ctx, mux, conn)
 }
 
@@ -468,14 +373,11 @@ func RegisterSheetServiceHandler(ctx context.Context, mux *runtime.ServeMux, con
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
 // "SheetServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterSheetServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client SheetServiceClient) error {
-
-	mux.Handle("POST", pattern_SheetService_CreateSheet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_SheetService_CreateSheet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SheetService/CreateSheet", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/sheets"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SheetService/CreateSheet", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/sheets"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -486,18 +388,13 @@ func RegisterSheetServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_SheetService_CreateSheet_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_SheetService_BatchCreateSheet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_SheetService_BatchCreateSheet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SheetService/BatchCreateSheet", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/sheets:batchCreate"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SheetService/BatchCreateSheet", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/sheets:batchCreate"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -508,18 +405,13 @@ func RegisterSheetServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_SheetService_BatchCreateSheet_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_SheetService_GetSheet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_SheetService_GetSheet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SheetService/GetSheet", runtime.WithHTTPPathPattern("/v1/{name=projects/*/sheets/*}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SheetService/GetSheet", runtime.WithHTTPPathPattern("/v1/{name=projects/*/sheets/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -530,18 +422,13 @@ func RegisterSheetServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_SheetService_GetSheet_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("PATCH", pattern_SheetService_UpdateSheet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPatch, pattern_SheetService_UpdateSheet_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SheetService/UpdateSheet", runtime.WithHTTPPathPattern("/v1/{sheet.name=projects/*/sheets/*}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SheetService/UpdateSheet", runtime.WithHTTPPathPattern("/v1/{sheet.name=projects/*/sheets/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -552,30 +439,21 @@ func RegisterSheetServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_SheetService_UpdateSheet_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
 	return nil
 }
 
 var (
-	pattern_SheetService_CreateSheet_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "sheets"}, ""))
-
+	pattern_SheetService_CreateSheet_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "sheets"}, ""))
 	pattern_SheetService_BatchCreateSheet_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "sheets"}, "batchCreate"))
-
-	pattern_SheetService_GetSheet_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "sheets", "name"}, ""))
-
-	pattern_SheetService_UpdateSheet_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "sheets", "sheet.name"}, ""))
+	pattern_SheetService_GetSheet_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "sheets", "name"}, ""))
+	pattern_SheetService_UpdateSheet_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "sheets", "sheet.name"}, ""))
 )
 
 var (
-	forward_SheetService_CreateSheet_0 = runtime.ForwardResponseMessage
-
+	forward_SheetService_CreateSheet_0      = runtime.ForwardResponseMessage
 	forward_SheetService_BatchCreateSheet_0 = runtime.ForwardResponseMessage
-
-	forward_SheetService_GetSheet_0 = runtime.ForwardResponseMessage
-
-	forward_SheetService_UpdateSheet_0 = runtime.ForwardResponseMessage
+	forward_SheetService_GetSheet_0         = runtime.ForwardResponseMessage
+	forward_SheetService_UpdateSheet_0      = runtime.ForwardResponseMessage
 )
