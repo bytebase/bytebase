@@ -99,7 +99,6 @@ const overrideAppFeatures = (
       "bb.feature.hide-trial": true,
       "bb.feature.sql-editor.disallow-edit-schema": true,
       "bb.feature.sql-editor.sql-check-style": "PREFLIGHT",
-      "bb.feature.sql-editor.disallow-export-query-data": true,
       "bb.feature.sql-editor.disallow-request-query": true,
       "bb.feature.databases.operations": new Set([
         "SYNC-SCHEMA",
