@@ -2541,7 +2541,14 @@
     "create-a-worksheet": "Create a new worksheet",
     "select-a-database-to-start": "Select a database to start",
     "select-encoding": "Select encoding",
+    "redis-command": {
+      "self": "Run redis command on",
+      "all-nodes": "All nodes",
+      "single-node": "Single node",
+      "only-for-cluster": "Only available for cluster connection"
+    },
     "result-limit": {
+      "self": "Result limit",
       "n-rows": "{n} rows",
       "rows": "rows"
     },

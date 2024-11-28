@@ -322,7 +322,9 @@ const useExecuteSQL = () => {
             explain: params.explain,
             schema: params.connection.schema,
             timeout: undefined, // TODO: make this param configurable
-            queryOption: undefined, // TODO: allow users to set
+            queryOption: {
+              redisRunCommandsOn: sqlEditorStore.redisCommandOption,
+            },
           },
           abortController.signal
         );

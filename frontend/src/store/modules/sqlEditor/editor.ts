@@ -2,12 +2,17 @@ import { useLocalStorage } from "@vueuse/core";
 import { defineStore } from "pinia";
 import { computed, ref, watch } from "vue";
 import type { ComposedDatabase } from "@/types";
+import { QueryOption_RedisRunCommandsOn } from "@/types/proto/v1/sql_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 export const useSQLEditorStore = defineStore("sqlEditor", () => {
   const resultRowsLimit = useLocalStorage(
     "bb.sql-editor.result-rows-limit",
     1000
+  );
+  const redisCommandOption = useLocalStorage<QueryOption_RedisRunCommandsOn>(
+    "bb.sql-editor.redis-command-node",
+    QueryOption_RedisRunCommandsOn.SINGLE_NODE
   );
 
   // empty to "ALL" projects for high-privileged users
@@ -46,5 +51,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
     databaseList,
     isShowExecutingHint,
     executingHintDatabase,
+    redisCommandOption,
   };
 });
