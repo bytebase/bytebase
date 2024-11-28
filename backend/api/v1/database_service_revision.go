@@ -57,6 +57,7 @@ func (s *DatabaseService) ListRevisions(ctx context.Context, request *v1pb.ListR
 		DatabaseUID: &database.UID,
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
+		ShowDeleted: request.ShowDeleted,
 	}
 
 	revisions, err := s.store.ListRevisions(ctx, find)
@@ -239,6 +240,9 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get creator")
 	}
+	if creator == nil {
+		return nil, errors.Errorf("creator %v not found", revision.CreatorUID)
+	}
 	_, sheetUID, err := common.GetProjectResourceIDSheetUID(revision.Payload.Sheet)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheetUID from %q", revision.Payload.Sheet)
@@ -266,7 +270,7 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 		}
 	}
 
-	return &v1pb.Revision{
+	r := &v1pb.Revision{
 		Name:          fmt.Sprintf("%s/%s%d", parent, common.RevisionNamePrefix, revision.UID),
 		Release:       revision.Payload.Release,
 		CreateTime:    timestamppb.New(revision.CreatedTime),
@@ -279,7 +283,23 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 		File:          revision.Payload.File,
 		Issue:         issueName,
 		TaskRun:       taskRunName,
-	}, nil
+	}
+
+	if revision.DeleterUID != nil {
+		deleter, err := s.GetUserByID(ctx, *revision.DeleterUID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "faile to get deleter")
+		}
+		if deleter == nil {
+			return nil, errors.Errorf("deleter %v not found", *revision.DeleterUID)
+		}
+		r.Deleter = common.FormatUserEmail(deleter.Email)
+	}
+	if revision.DeletedTime != nil {
+		r.DeleteTime = timestamppb.New(*revision.DeletedTime)
+	}
+
+	return r, nil
 }
 
 func convertRevision(revision *v1pb.Revision, database *store.DatabaseMessage, sheet *store.SheetMessage) *store.RevisionMessage {

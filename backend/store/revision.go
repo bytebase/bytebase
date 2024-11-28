@@ -130,7 +130,7 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 }
 
 func (s *Store) GetRevision(ctx context.Context, uid int64) (*RevisionMessage, error) {
-	revisions, err := s.ListRevisions(ctx, &FindRevisionMessage{UID: &uid})
+	revisions, err := s.ListRevisions(ctx, &FindRevisionMessage{UID: &uid, ShowDeleted: true})
 	if err != nil {
 		return nil, err
 	}
