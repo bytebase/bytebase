@@ -299,15 +299,13 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 
 		err := cluster.ForEachShard(ctx, func(ctx context.Context, client *redis.Client) error {
 			var cmds []*redis.Cmd
-			if _, err := client.Pipelined(ctx, func(p redis.Pipeliner) error {
+			_, _ = client.Pipelined(ctx, func(p redis.Pipeliner) error {
 				for _, input := range inputs {
 					cmd := p.Do(ctx, input...)
 					cmds = append(cmds, cmd)
 				}
 				return nil
-			}); err != nil && err != redis.Nil {
-				return err
-			}
+			})
 			cmdsChan <- cmds
 			return nil
 		})
@@ -335,6 +333,15 @@ func setQueryResultRows(result *v1pb.QueryResult, cmd *redis.Cmd, limit int64) {
 			Values: []*v1pb.RowValue{
 				{Kind: &v1pb.RowValue_Int32Value{Int32Value: 1}},
 				{Kind: &v1pb.RowValue_NullValue{}},
+			},
+		})
+		return
+	}
+	if cmd.Err() != nil {
+		result.Rows = append(result.Rows, &v1pb.QueryRow{
+			Values: []*v1pb.RowValue{
+				{Kind: &v1pb.RowValue_Int32Value{Int32Value: 1}},
+				{Kind: &v1pb.RowValue_StringValue{StringValue: cmd.Err().Error()}},
 			},
 		})
 		return
