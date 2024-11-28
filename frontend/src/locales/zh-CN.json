@@ -1656,8 +1656,8 @@
     },
     "statement-execution": {
       "title": "语句执行",
-      "allow-ddl": "允许在 SQL 编辑器中运行 DDL 语句",
-      "allow-dml": "允许在 SQL 编辑器中运行修改数据的 DML 语句"
+      "disallow-ddl": "禁止在 SQL 编辑器中运行 DDL 语句",
+      "disallow-dml": "禁止在 SQL 编辑器中运行修改数据的 DML 语句"
     }
   },
   "quick-start": {
