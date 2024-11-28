@@ -92,12 +92,6 @@ export const isDatabaseV1Queryable = (
   schema?: string,
   table?: string
 ): boolean => {
-  if (!hasFeature("bb.feature.access-control")) {
-    // The current plan doesn't have access control feature.
-    // Fallback to true.
-    return true;
-  }
-
   if (permissions.some((permission) => hasWorkspacePermissionV2(permission))) {
     return true;
   }
