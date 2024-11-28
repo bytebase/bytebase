@@ -56,7 +56,7 @@ export default defineComponent({
         // Redirect to
         // - /sql-editor if defaultWorkspaceView == 'EDITOR'
         // - lastVisit.path if not empty
-        // - /issues as fallback
+        // - /landing as fallback
         if (!lastVisit.value) {
           return fallback();
         }
