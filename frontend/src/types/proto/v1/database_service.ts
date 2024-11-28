@@ -1942,6 +1942,7 @@ export interface ListRevisionsRequest {
    * match the call that provided the page token.
    */
   pageToken: string;
+  showDeleted: boolean;
 }
 
 export interface ListRevisionsResponse {
@@ -1987,6 +1988,15 @@ export interface Revision {
   /** Format: users/hello@world.com */
   creator: string;
   createTime:
+    | Timestamp
+    | undefined;
+  /**
+   * Format: users/hello@world.com
+   * Can be empty.
+   */
+  deleter: string;
+  /** Can be empty. */
+  deleteTime:
     | Timestamp
     | undefined;
   /**
@@ -10601,7 +10611,7 @@ export const GetChangeHistoryRequest: MessageFns<GetChangeHistoryRequest> = {
 };
 
 function createBaseListRevisionsRequest(): ListRevisionsRequest {
-  return { parent: "", pageSize: 0, pageToken: "" };
+  return { parent: "", pageSize: 0, pageToken: "", showDeleted: false };
 }
 
 export const ListRevisionsRequest: MessageFns<ListRevisionsRequest> = {
@@ -10614,6 +10624,9 @@ export const ListRevisionsRequest: MessageFns<ListRevisionsRequest> = {
     }
     if (message.pageToken !== "") {
       writer.uint32(26).string(message.pageToken);
+    }
+    if (message.showDeleted !== false) {
+      writer.uint32(32).bool(message.showDeleted);
     }
     return writer;
   },
@@ -10646,6 +10659,13 @@ export const ListRevisionsRequest: MessageFns<ListRevisionsRequest> = {
 
           message.pageToken = reader.string();
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.showDeleted = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -10660,6 +10680,7 @@ export const ListRevisionsRequest: MessageFns<ListRevisionsRequest> = {
       parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+      showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
     };
   },
 
@@ -10674,6 +10695,9 @@ export const ListRevisionsRequest: MessageFns<ListRevisionsRequest> = {
     if (message.pageToken !== "") {
       obj.pageToken = message.pageToken;
     }
+    if (message.showDeleted !== false) {
+      obj.showDeleted = message.showDeleted;
+    }
     return obj;
   },
 
@@ -10685,6 +10709,7 @@ export const ListRevisionsRequest: MessageFns<ListRevisionsRequest> = {
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
+    message.showDeleted = object.showDeleted ?? false;
     return message;
   },
 };
@@ -10961,6 +10986,8 @@ function createBaseRevision(): Revision {
     release: "",
     creator: "",
     createTime: undefined,
+    deleter: "",
+    deleteTime: undefined,
     file: "",
     version: "",
     sheet: "",
@@ -10986,29 +11013,35 @@ export const Revision: MessageFns<Revision> = {
     if (message.createTime !== undefined) {
       Timestamp.encode(message.createTime, writer.uint32(34).fork()).join();
     }
+    if (message.deleter !== "") {
+      writer.uint32(42).string(message.deleter);
+    }
+    if (message.deleteTime !== undefined) {
+      Timestamp.encode(message.deleteTime, writer.uint32(50).fork()).join();
+    }
     if (message.file !== "") {
-      writer.uint32(42).string(message.file);
+      writer.uint32(58).string(message.file);
     }
     if (message.version !== "") {
-      writer.uint32(50).string(message.version);
+      writer.uint32(66).string(message.version);
     }
     if (message.sheet !== "") {
-      writer.uint32(58).string(message.sheet);
+      writer.uint32(74).string(message.sheet);
     }
     if (message.sheetSha256 !== "") {
-      writer.uint32(66).string(message.sheetSha256);
+      writer.uint32(82).string(message.sheetSha256);
     }
     if (message.statement !== "") {
-      writer.uint32(74).string(message.statement);
+      writer.uint32(90).string(message.statement);
     }
     if (!message.statementSize.equals(Long.ZERO)) {
-      writer.uint32(80).int64(message.statementSize.toString());
+      writer.uint32(96).int64(message.statementSize.toString());
     }
     if (message.issue !== "") {
-      writer.uint32(90).string(message.issue);
+      writer.uint32(106).string(message.issue);
     }
     if (message.taskRun !== "") {
-      writer.uint32(98).string(message.taskRun);
+      writer.uint32(114).string(message.taskRun);
     }
     return writer;
   },
@@ -11053,52 +11086,66 @@ export const Revision: MessageFns<Revision> = {
             break;
           }
 
-          message.file = reader.string();
+          message.deleter = reader.string();
           continue;
         case 6:
           if (tag !== 50) {
             break;
           }
 
-          message.version = reader.string();
+          message.deleteTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 7:
           if (tag !== 58) {
             break;
           }
 
-          message.sheet = reader.string();
+          message.file = reader.string();
           continue;
         case 8:
           if (tag !== 66) {
             break;
           }
 
-          message.sheetSha256 = reader.string();
+          message.version = reader.string();
           continue;
         case 9:
           if (tag !== 74) {
             break;
           }
 
-          message.statement = reader.string();
+          message.sheet = reader.string();
           continue;
         case 10:
-          if (tag !== 80) {
+          if (tag !== 82) {
             break;
           }
 
-          message.statementSize = Long.fromString(reader.int64().toString());
+          message.sheetSha256 = reader.string();
           continue;
         case 11:
           if (tag !== 90) {
             break;
           }
 
-          message.issue = reader.string();
+          message.statement = reader.string();
           continue;
         case 12:
-          if (tag !== 98) {
+          if (tag !== 96) {
+            break;
+          }
+
+          message.statementSize = Long.fromString(reader.int64().toString());
+          continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.issue = reader.string();
+          continue;
+        case 14:
+          if (tag !== 114) {
             break;
           }
 
@@ -11119,6 +11166,8 @@ export const Revision: MessageFns<Revision> = {
       release: isSet(object.release) ? globalThis.String(object.release) : "",
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
+      deleter: isSet(object.deleter) ? globalThis.String(object.deleter) : "",
+      deleteTime: isSet(object.deleteTime) ? fromJsonTimestamp(object.deleteTime) : undefined,
       file: isSet(object.file) ? globalThis.String(object.file) : "",
       version: isSet(object.version) ? globalThis.String(object.version) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
@@ -11143,6 +11192,12 @@ export const Revision: MessageFns<Revision> = {
     }
     if (message.createTime !== undefined) {
       obj.createTime = fromTimestamp(message.createTime).toISOString();
+    }
+    if (message.deleter !== "") {
+      obj.deleter = message.deleter;
+    }
+    if (message.deleteTime !== undefined) {
+      obj.deleteTime = fromTimestamp(message.deleteTime).toISOString();
     }
     if (message.file !== "") {
       obj.file = message.file;
@@ -11181,6 +11236,10 @@ export const Revision: MessageFns<Revision> = {
     message.creator = object.creator ?? "";
     message.createTime = (object.createTime !== undefined && object.createTime !== null)
       ? Timestamp.fromPartial(object.createTime)
+      : undefined;
+    message.deleter = object.deleter ?? "";
+    message.deleteTime = (object.deleteTime !== undefined && object.deleteTime !== null)
+      ? Timestamp.fromPartial(object.deleteTime)
       : undefined;
     message.file = object.file ?? "";
     message.version = object.version ?? "";

@@ -3860,7 +3860,6 @@ SlowQueryPolicy is the policy configuration for slow query.
 | ----- | ---- | ----- | ----------- |
 | release | [string](#string) |  | Format: projects/{project}/releases/{release} Can be empty. |
 | file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{id} Can be empty. |
-| version | [string](#string) |  |  |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
 | task_run | [string](#string) |  | The task run associated with the revision. Can be empty. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |

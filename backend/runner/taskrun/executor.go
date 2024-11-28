@@ -658,13 +658,13 @@ func endMigration(ctx context.Context, storeInstance *store.Store, startedNs int
 			if mc.version != "" {
 				r := &store.RevisionMessage{
 					DatabaseUID: mc.database.UID,
+					Version:     mc.version,
 					Payload: &storepb.RevisionPayload{
 						Release:     mc.release.release,
 						File:        mc.release.file,
 						Sheet:       "",
 						SheetSha256: "",
 						TaskRun:     mc.taskRunName,
-						Version:     mc.version,
 					},
 				}
 				if mc.sheet != nil {
