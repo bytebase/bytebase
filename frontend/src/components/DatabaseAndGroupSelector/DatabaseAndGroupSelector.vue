@@ -1,13 +1,20 @@
 <template>
-  <NTabs v-model:value="state.changeSource" type="card">
+  <NTabs v-model:value="databaseSelectState.changeSource" type="card">
     <NTabPane name="DATABASE" :tab="$t('common.databases')">
+      <AdvancedSearch
+        v-model:params="searchParams"
+        class="w-full mb-2"
+        :autofocus="false"
+        :placeholder="$t('database.filter-database')"
+        :scope-options="scopeOptions"
+      />
       <DatabaseV1Table
         mode="PROJECT"
-        :database-list="databaseList"
+        :database-list="filteredDatabaseList"
         :show-selection="true"
-        :selected-database-names="state.selectedDatabaseNameList"
+        :selected-database-names="databaseSelectState.selectedDatabaseNameList"
         @update:selected-databases="
-          state.selectedDatabaseNameList = Array.from($event)
+          databaseSelectState.selectedDatabaseNameList = Array.from($event)
         "
       />
     </NTabPane>
@@ -17,10 +24,12 @@
         :show-selection="true"
         :single-selection="true"
         :selected-database-group-names="
-          state.selectedDatabaseGroup ? [state.selectedDatabaseGroup] : []
+          databaseSelectState.selectedDatabaseGroup
+            ? [databaseSelectState.selectedDatabaseGroup]
+            : []
         "
         @update:selected-database-groups="
-          state.selectedDatabaseGroup = head(Array.from($event))
+          databaseSelectState.selectedDatabaseGroup = head(Array.from($event))
         "
       />
     </NTabPane>
@@ -30,14 +39,27 @@
 <script lang="ts" setup>
 import { head } from "lodash-es";
 import { NTabs, NTabPane } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import DatabaseGroupDataTable from "@/components/DatabaseGroup/DatabaseGroupDataTable.vue";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table/DatabaseV1Table.vue";
 import { useDatabaseV1Store, useDBGroupListByProject } from "@/store";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
-import { DEFAULT_PROJECT_NAME, type ComposedProject } from "@/types";
+import {
+  DEFAULT_PROJECT_NAME,
+  UNKNOWN_ID,
+  type ComposedProject,
+} from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { sortDatabaseV1List } from "@/utils";
+import {
+  CommonFilterScopeIdList,
+  extractEnvironmentResourceName,
+  extractInstanceResourceName,
+  filterDatabaseV1ByKeyword,
+  sortDatabaseV1List,
+  type SearchParams,
+} from "@/utils";
+import AdvancedSearch from "../AdvancedSearch/AdvancedSearch.vue";
+import { useCommonSearchScopeOptions } from "../AdvancedSearch/useCommonSearchScopeOptions";
 import type { DatabaseSelectState } from "./types";
 
 const props = defineProps<{
@@ -52,7 +74,11 @@ const emit = defineEmits<{
 
 const databaseStore = useDatabaseV1Store();
 
-const state = reactive<DatabaseSelectState>(
+const searchParams = ref<SearchParams>({
+  query: "",
+  scopes: [],
+});
+const databaseSelectState = reactive<DatabaseSelectState>(
   props.databaseSelectState || {
     changeSource: "DATABASE",
     selectedDatabaseNameList: [],
@@ -72,10 +98,57 @@ const databaseList = computed(() => {
   return sortDatabaseV1List(list);
 });
 
+const selectedInstance = computed(() => {
+  return (
+    searchParams.value.scopes.find((scope) => scope.id === "instance")?.value ??
+    `${UNKNOWN_ID}`
+  );
+});
+
+const selectedEnvironment = computed(() => {
+  return (
+    searchParams.value.scopes.find((scope) => scope.id === "environment")
+      ?.value ?? `${UNKNOWN_ID}`
+  );
+});
+
+const filteredDatabaseList = computed(() => {
+  let list = databaseList.value;
+  if (selectedEnvironment.value !== `${UNKNOWN_ID}`) {
+    list = list.filter(
+      (db) =>
+        extractEnvironmentResourceName(db.effectiveEnvironment) ===
+        selectedEnvironment.value
+    );
+  }
+  if (selectedInstance.value !== `${UNKNOWN_ID}`) {
+    list = list.filter(
+      (db) =>
+        extractInstanceResourceName(db.instance) === selectedInstance.value
+    );
+  }
+  const keyword = searchParams.value.query.trim().toLowerCase();
+  if (keyword) {
+    list = list.filter((db) =>
+      filterDatabaseV1ByKeyword(db, keyword, [
+        "name",
+        "environment",
+        "instance",
+      ])
+    );
+  }
+  return list;
+});
+
+const scopeOptions = useCommonSearchScopeOptions(
+  computed(() => searchParams.value),
+  [...CommonFilterScopeIdList]
+);
+
 watch(
-  () => state,
+  () => databaseSelectState,
   () => {
-    emit("update", state);
+    emit("update", databaseSelectState);
   },
   { deep: true }
 );
