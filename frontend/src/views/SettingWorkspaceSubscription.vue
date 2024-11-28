@@ -16,9 +16,36 @@
         </span>
       </span>
     </div>
+    <div>
+      <label class="flex items-center gap-x-2">
+        <span class="text-main">
+          {{ $t("settings.general.workspace.id") }}
+        </span>
+      </label>
+      <div class="mb-3 text-sm text-gray-400">
+        {{ $t("settings.general.workspace.id-description") }}
+      </div>
+      <div class="mb-4 flex space-x-2">
+        <NInput
+          ref="workspaceIdField"
+          class="mb-4 w-full"
+          readonly
+          :value="workspaceId"
+          @click="selectWorkspaceId"
+        />
+        <NButton
+          v-if="isSupported"
+          :disabled="!workspaceId"
+          @click="handleCopyId"
+        >
+          <heroicons-outline:clipboard-document class="w-4 h-4" />
+        </NButton>
+      </div>
+    </div>
+    <NDivider />
     <dl class="text-left grid grid-cols-2 gap-x-6 my-4 xl:grid-cols-4">
       <div class="my-3">
-        <dt class="flex text-gray-400">
+        <dt class="flex text-main">
           {{ $t("subscription.current") }}
           <span
             v-if="isExpired"
@@ -41,13 +68,13 @@
       </div>
       <WorkspaceInstanceLicenseStats v-if="allowManageInstanceLicenses" />
       <div v-if="!subscriptionStore.isFreePlan" class="my-3">
-        <dt class="text-gray-400">
+        <dt class="text-main">
           {{ $t("subscription.expires-at") }}
         </dt>
         <dd class="mt-1 text-4xl">{{ expireAt || "n/a" }}</dd>
       </div>
       <div v-if="subscriptionStore.canTrial && allowEdit" class="my-3">
-        <dt class="text-gray-400">
+        <dt class="text-main">
           {{ $t("subscription.try-for-free") }}
         </dt>
 
@@ -68,7 +95,7 @@
         "
         class="my-3"
       >
-        <dt class="text-gray-400">
+        <dt class="text-main">
           {{ $t("subscription.inquire-enterprise-plan") }}
         </dt>
 
@@ -99,7 +126,8 @@
         </NButton>
       </div>
     </div>
-    <div class="sm:flex sm:flex-col sm:align-center pt-5 mt-4 border-t">
+    <NDivider />
+    <div class="sm:flex sm:flex-col sm:align-center">
       <div class="textinfolabel">
         {{ $t("subscription.plan-compare") }}
       </div>
@@ -119,15 +147,20 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton, NInput } from "naive-ui";
+import { useClipboard } from "@vueuse/core";
+import { NButton, NDivider, NInput } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, reactive } from "vue";
+import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import TrialModal from "@/components/TrialModal.vue";
 import WeChatQRModal from "@/components/WeChatQRModal.vue";
 import WorkspaceInstanceLicenseStats from "@/components/WorkspaceInstanceLicenseStats.vue";
 import { useLanguage } from "@/composables/useLanguage";
-import { pushNotification, useSubscriptionV1Store } from "@/store";
+import {
+  pushNotification,
+  useSubscriptionV1Store,
+  useSettingV1Store,
+} from "@/store";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -147,6 +180,7 @@ const props = defineProps<{
 const { t } = useI18n();
 const { locale } = useLanguage();
 const subscriptionStore = useSubscriptionV1Store();
+const settingV1Store = useSettingV1Store();
 
 const state = reactive<LocalState>({
   loading: false,
@@ -158,6 +192,33 @@ const state = reactive<LocalState>({
 const disabled = computed((): boolean => {
   return state.loading || !state.license;
 });
+
+const workspaceIdField = ref<HTMLInputElement | null>(null);
+
+const workspaceId = computed(() => {
+  return (
+    settingV1Store.getSettingByName("bb.workspace.id")?.value?.stringValue ?? ""
+  );
+});
+
+const selectWorkspaceId = () => {
+  workspaceIdField.value?.select();
+};
+
+const { copy: copyTextToClipboard, isSupported } = useClipboard({
+  legacy: true,
+});
+
+const handleCopyId = () => {
+  selectWorkspaceId();
+  copyTextToClipboard(workspaceId.value).then(() => {
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.copied"),
+    });
+  });
+};
 
 const uploadLicense = async () => {
   if (disabled.value) return;
