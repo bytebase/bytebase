@@ -2541,7 +2541,14 @@
     "create-a-worksheet": "新建工作表",
     "select-a-database-to-start": "选择数据库以开始",
     "select-encoding": "选择编码",
+    "redis-command": {
+      "self": "运行 redis 命令",
+      "all-nodes": "所有节点",
+      "single-node": "单节点",
+      "only-for-cluster": "仅适用于集群连接"
+    },
     "result-limit": {
+      "self": "结果限制",
       "n-rows": "{n} 行",
       "rows": "行"
     },
