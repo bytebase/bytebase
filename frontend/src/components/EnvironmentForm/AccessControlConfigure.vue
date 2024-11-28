@@ -81,32 +81,32 @@
     <div>
       <div class="w-full inline-flex items-center gap-x-2">
         <Switch
-          :value="!dataSourceQueryPolicy?.disallowDdl"
+          :value="dataSourceQueryPolicy?.disallowDdl ?? false"
           :text="true"
           :disabled="!allowUpdatePolicy"
           @update:value="
             (on: boolean) => {
-              updateAdminDataSourceQueryRestrctionPolicy({ disallowDdl: !on });
+              updateAdminDataSourceQueryRestrctionPolicy({ disallowDdl: on });
             }
           "
         />
         <span class="textlabel">
-          {{ $t("environment.statement-execution.allow-ddl") }}
+          {{ $t("environment.statement-execution.disallow-ddl") }}
         </span>
       </div>
       <div class="w-full inline-flex items-center gap-x-2">
         <Switch
-          :value="!dataSourceQueryPolicy?.disallowDml"
+          :value="dataSourceQueryPolicy?.disallowDml ?? false"
           :text="true"
           :disabled="!allowUpdatePolicy"
           @update:value="
             (on: boolean) => {
-              updateAdminDataSourceQueryRestrctionPolicy({ disallowDml: !on });
+              updateAdminDataSourceQueryRestrctionPolicy({ disallowDml: on });
             }
           "
         />
         <span class="textlabel">
-          {{ $t("environment.statement-execution.allow-dml") }}
+          {{ $t("environment.statement-execution.disallow-dml") }}
         </span>
       </div>
     </div>

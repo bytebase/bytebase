@@ -649,9 +649,6 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_DATA_SOURCE_QUERY:
-		if err := s.licenseService.IsFeatureEnabled(api.FeatureAccessControl); err != nil {
-			return "", status.Error(codes.PermissionDenied, err.Error())
-		}
 		payload, err := convertToDataSourceQueryPayload(policy.GetDataSourceQueryPolicy())
 		if err != nil {
 			return "", status.Error(codes.InvalidArgument, err.Error())
