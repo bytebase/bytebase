@@ -189,7 +189,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	if err != nil {
 		return nil, err
 	}
-	driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, database.DatabaseName, database.DataShare, true /* readOnly */, db.ConnectionContext{})
+	driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, database.DatabaseName, database.DataShare, dataSource.Type == api.RO /* readOnly */, db.ConnectionContext{})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get database driver: %v", err)
 	}
