@@ -25,7 +25,7 @@
       </span>
     </span>
     <RequestQueryButton
-      v-if="!disallowRequestQuery && !canQuery"
+      v-if="showRequestQueryButton"
       :database-resource="{
         databaseFullName: database.name,
       }"
@@ -38,7 +38,7 @@
 import { computed } from "vue";
 import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
-import { useAppFeature } from "@/store";
+import { hasFeature, useAppFeature } from "@/store";
 import type {
   SQLEditorTreeNode as TreeNode,
   SQLEditorTreeFactor as Factor,
@@ -64,7 +64,14 @@ const database = computed(
   () => (props.node as TreeNode<"database">).meta.target
 );
 
-const canQuery = computed(() => isDatabaseV1Queryable(database.value));
+const showRequestQueryButton = computed(() => {
+  // Developer self-helped request query is guarded by "Access Control" feature
+  return (
+    hasFeature("bb.feature.access-control") &&
+    !disallowRequestQuery &&
+    !isDatabaseV1Queryable(database.value)
+  );
+});
 
 const hasInstanceContext = computed(() => {
   return props.factors.includes("instance");
