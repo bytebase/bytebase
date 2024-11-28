@@ -228,6 +228,7 @@ import { isValidDatabaseName, isValidInstanceName } from "@/types";
 import { ExportFormat } from "@/types/proto/v1/common";
 import { Engine } from "@/types/proto/v1/common";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import type {
   QueryResult,
   QueryRow,
@@ -282,6 +283,10 @@ const { dark, keyword } = useSQLResultViewContext();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
 const { exportData } = useExportData();
+const appFeatureDisallowExport = useAppFeature(
+  "bb.feature.sql-editor.disallow-export-query-data"
+);
+const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 const currentTab = computed(() => tabStore.currentTab);
 const { instance: connectedInstance } = useConnectionOfCurrentSQLEditorTab();
 
@@ -295,10 +300,6 @@ const exportDataPolicy = usePolicyByParentAndType(
 const disallowExportQueryData = computed(() => {
   const disableDataExport =
     exportDataPolicy.value?.exportDataPolicy?.disable ?? false;
-
-  const appFeatureDisallowExport = useAppFeature(
-    "bb.feature.sql-editor.disallow-export-query-data"
-  );
 
   return disableDataExport || appFeatureDisallowExport.value;
 });
@@ -326,12 +327,6 @@ const showSearchFeature = computed(() => {
 });
 
 const allowToExportData = computed(() => {
-  // The current plan doesn't have access control feature.
-  // Fallback to true.
-  if (!featureToRef("bb.feature.access-control").value) {
-    return true;
-  }
-
   if (hasWorkspacePermissionV2("bb.policies.update")) {
     return true;
   }
@@ -344,6 +339,19 @@ const allowToRequestExportData = computed(() => {
   if (!database) {
     return false;
   }
+
+  // The current plan doesn't have access control feature.
+  // Developers can not self-helped to request export.
+  if (!featureToRef("bb.feature.access-control").value) {
+    return false;
+  }
+
+  // SQL Editor Mode has no issues
+  // So we cannot self-helped to request export either.
+  if (databaseChangeMode.value === DatabaseChangeMode.EDITOR) {
+    return false;
+  }
+
   if (!isValidDatabaseName(database.name)) {
     return false;
   }
