@@ -2541,7 +2541,14 @@
     "create-a-worksheet": "新しいワークシートを作成する",
     "select-a-database-to-start": "開始するにはデータベースを選択してください",
     "select-encoding": "エンコーディングの選択",
+    "redis-command": {
+      "self": "redisコマンドを実行する",
+      "all-nodes": "すべてのノード",
+      "single-node": "単一ノード",
+      "only-for-cluster": "クラスタ接続のみ使用可能"
+    },
     "result-limit": {
+      "self": "結果の制限",
       "n-rows": "{n} 行",
       "rows": "行"
     },
