@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="space-y-2">
     <div v-if="databaseList.length === 0" class="textinfolabel p-2">
       <i18n-t keypath="project.overview.no-db-prompt" tag="p">
         <template #newDb>
@@ -38,20 +38,18 @@
         {{ $t("quick-action.new-db") }}
       </NButton>
     </div>
-    <div class="space-y-2">
-      <DatabaseOperations
-        :project-name="project.name"
-        :databases="selectedDatabases"
-      />
-      <DatabaseV1Table
-        :key="`database-table.${project.name}`"
-        mode="PROJECT"
-        :database-list="filteredDatabaseList"
-        :custom-click="true"
-        @row-click="handleDatabaseClick"
-        @update:selected-databases="handleDatabasesSelectionChanged"
-      />
-    </div>
+    <DatabaseOperations
+      :project-name="project.name"
+      :databases="selectedDatabases"
+    />
+    <DatabaseV1Table
+      :key="`database-table.${project.name}`"
+      mode="PROJECT"
+      :database-list="filteredDatabaseList"
+      :custom-click="true"
+      @row-click="handleDatabaseClick"
+      @update:selected-databases="handleDatabasesSelectionChanged"
+    />
   </div>
   <Drawer
     :auto-focus="true"
