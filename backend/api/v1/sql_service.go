@@ -228,10 +228,9 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		return nil, status.Error(code, queryErr.Error())
 	}
 
-	allowExport := true
 	// AllowExport is a validate only check.
 	checkErr := s.accessCheck(ctx, instance, database, user, spans, queryContext.Limit, request.Explain, true /* isExport */)
-	allowExport = (checkErr == nil)
+	allowExport := (checkErr == nil)
 
 	response := &v1pb.QueryResponse{
 		Results:     results,
