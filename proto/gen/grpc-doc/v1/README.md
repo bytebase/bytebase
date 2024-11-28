@@ -2542,6 +2542,7 @@ When paginating, all other parameters provided to `ListInstanceDatabases` must m
 | page_token | [string](#string) |  | A page token, received from a previous `ListRevisions` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListRevisions` must match the call that provided the page token. |
+| show_deleted | [bool](#bool) |  |  |
 
 
 
@@ -2716,6 +2717,8 @@ ProcedureMetadata is the metadata for procedures.
 | release | [string](#string) |  | Format: projects/{project}/releases/{release} Can be empty. |
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| deleter | [string](#string) |  | Format: users/hello@world.com Can be empty. |
+| delete_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Can be empty. |
 | file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{id} Can be empty. |
 | version | [string](#string) |  |  |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
