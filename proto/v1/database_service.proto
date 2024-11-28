@@ -1595,6 +1595,8 @@ message ListRevisionsRequest {
   // When paginating, all other parameters provided to `ListRevisions` must
   // match the call that provided the page token.
   string page_token = 3;
+
+  bool show_deleted = 4;
 }
 
 message ListRevisionsResponse {
@@ -1652,31 +1654,38 @@ message Revision {
 
   google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // Format: users/hello@world.com
+  // Can be empty.
+  string deleter = 5;
+
+  // Can be empty.
+  google.protobuf.Timestamp delete_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   // Format: projects/{project}/releases/{release}/files/{id}
   // Can be empty.
-  string file = 5;
+  string file = 7;
 
-  string version = 6;
+  string version = 8;
 
   // The sheet that holds the content.
   // Format: projects/{project}/sheets/{sheet}
-  string sheet = 7 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
+  string sheet = 9 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
   // The SHA256 hash value of the sheet.
-  string sheet_sha256 = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string sheet_sha256 = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
   // The statement is used for preview purpose.
-  string statement = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
-  int64 statement_size = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string statement = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int64 statement_size = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The issue associated with the revision.
   // Can be empty.
   // Format: projects/{project}/issues/{issue}
-  string issue = 11 [(google.api.resource_reference) = {type: "bytebase.com/Issue"}];
+  string issue = 13 [(google.api.resource_reference) = {type: "bytebase.com/Issue"}];
 
   // The task run associated with the revision.
   // Can be empty.
   // Format:
   // projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-  string task_run = 12 [(google.api.resource_reference) = {type: "bytebase.com/TaskRun"}];
+  string task_run = 14 [(google.api.resource_reference) = {type: "bytebase.com/TaskRun"}];
 }
 
 enum ChangelogView {

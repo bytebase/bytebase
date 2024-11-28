@@ -16,13 +16,15 @@ import (
 
 type RevisionMessage struct {
 	DatabaseUID int
-
-	Payload *storepb.RevisionPayload
+	Version     string
+	Payload     *storepb.RevisionPayload
 
 	// output only
 	UID         int64
 	CreatorUID  int
 	CreatedTime time.Time
+	DeleterUID  *int
+	DeletedTime *time.Time
 }
 
 type FindRevisionMessage struct {
@@ -33,6 +35,8 @@ type FindRevisionMessage struct {
 
 	Limit  *int
 	Offset *int
+
+	ShowDeleted bool
 }
 
 func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([]*RevisionMessage, error) {
@@ -47,8 +51,11 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 		args = append(args, *v)
 	}
 	if v := find.Version; v != nil {
-		where = append(where, fmt.Sprintf("payload->>'version' = $%d", len(args)+1))
+		where = append(where, fmt.Sprintf("version = $%d", len(args)+1))
 		args = append(args, *v)
+	}
+	if !find.ShowDeleted {
+		where = append(where, "deleted_ts IS NULL")
 	}
 
 	limitOffsetClause := ""
@@ -65,10 +72,12 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 			database_id,
 			creator_id,
 			created_ts,
+			deleter_id,
+			deleted_ts,
 			payload
 		FROM revision
 		WHERE %s
-		ORDER BY payload->>'version' DESC
+		ORDER BY version DESC
 		%s
 	`, strings.Join(where, " AND "), limitOffsetClause)
 
@@ -95,6 +104,8 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 			&r.DatabaseUID,
 			&r.CreatorUID,
 			&r.CreatedTime,
+			&r.DeleterUID,
+			&r.DeletedTime,
 			&p,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")
@@ -119,7 +130,7 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 }
 
 func (s *Store) GetRevision(ctx context.Context, uid int64) (*RevisionMessage, error) {
-	revisions, err := s.ListRevisions(ctx, &FindRevisionMessage{UID: &uid})
+	revisions, err := s.ListRevisions(ctx, &FindRevisionMessage{UID: &uid, ShowDeleted: true})
 	if err != nil {
 		return nil, err
 	}
@@ -137,11 +148,13 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage, c
 		INSERT INTO revision (
 			database_id,
 			creator_id,
+			version,
 			payload
 		) VALUES (
 		 	$1,
 			$2,
-			$3
+			$3,
+			$4
 		)
 		RETURNING id, created_ts
 	`
@@ -162,6 +175,7 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage, c
 	if err := tx.QueryRowContext(ctx, query,
 		revision.DatabaseUID,
 		creatorUID,
+		revision.Version,
 		p,
 	).Scan(&id, &createdTime); err != nil {
 		return nil, errors.Wrapf(err, "failed to query and scan")
@@ -177,8 +191,11 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage, c
 	return revision, nil
 }
 
-func (s *Store) DeleteRevision(ctx context.Context, uid int64) error {
-	query := `DELETE FROM revision WHERE id = $1`
+func (s *Store) DeleteRevision(ctx context.Context, uid int64, deleterUID int) error {
+	query :=
+		`UPDATE revision
+		SET deleter_id = $1, deleted_ts = now()
+		WHERE id = $2`
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -186,7 +203,7 @@ func (s *Store) DeleteRevision(ctx context.Context, uid int64) error {
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, query, uid); err != nil {
+	if _, err := tx.ExecContext(ctx, query, deleterUID, uid); err != nil {
 		return errors.Wrapf(err, "failed to exec")
 	}
 

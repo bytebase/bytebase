@@ -15,16 +15,14 @@ message RevisionPayload {
   // Can be empty.
   string file = 2;
 
-  string version = 3;
-
   // The sheet that holds the content.
   // Format: projects/{project}/sheets/{sheet}
-  string sheet = 4 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
+  string sheet = 3 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
   // The SHA256 hash value of the sheet.
-  string sheet_sha256 = 5;
+  string sheet_sha256 = 4;
 
   // The task run associated with the revision.
   // Can be empty.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-  string task_run = 6 [(google.api.resource_reference) = {type: "bytebase.com/TaskRun"}];
+  string task_run = 5 [(google.api.resource_reference) = {type: "bytebase.com/TaskRun"}];
 }

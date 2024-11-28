@@ -57,6 +57,7 @@ func (s *DatabaseService) ListRevisions(ctx context.Context, request *v1pb.ListR
 		DatabaseUID: &database.UID,
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
+		ShowDeleted: request.ShowDeleted,
 	}
 
 	revisions, err := s.store.ListRevisions(ctx, find)
@@ -212,7 +213,11 @@ func (s *DatabaseService) DeleteRevision(ctx context.Context, request *v1pb.Dele
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get revision UID from %v, err: %v", request.Name, err)
 	}
-	if err := s.store.DeleteRevision(ctx, revisionUID); err != nil {
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+	if err := s.store.DeleteRevision(ctx, revisionUID, user.ID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete revision %v, err: %v", revisionUID, err)
 	}
 	return &emptypb.Empty{}, nil
@@ -234,6 +239,9 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 	creator, err := s.GetUserByID(ctx, revision.CreatorUID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get creator")
+	}
+	if creator == nil {
+		return nil, errors.Errorf("creator %v not found", revision.CreatorUID)
 	}
 	_, sheetUID, err := common.GetProjectResourceIDSheetUID(revision.Payload.Sheet)
 	if err != nil {
@@ -262,7 +270,7 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 		}
 	}
 
-	return &v1pb.Revision{
+	r := &v1pb.Revision{
 		Name:          fmt.Sprintf("%s/%s%d", parent, common.RevisionNamePrefix, revision.UID),
 		Release:       revision.Payload.Release,
 		CreateTime:    timestamppb.New(revision.CreatedTime),
@@ -271,20 +279,36 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 		SheetSha256:   revision.Payload.SheetSha256,
 		Statement:     sheet.Statement,
 		StatementSize: sheet.Size,
-		Version:       revision.Payload.Version,
+		Version:       revision.Version,
 		File:          revision.Payload.File,
 		Issue:         issueName,
 		TaskRun:       taskRunName,
-	}, nil
+	}
+
+	if revision.DeleterUID != nil {
+		deleter, err := s.GetUserByID(ctx, *revision.DeleterUID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "faile to get deleter")
+		}
+		if deleter == nil {
+			return nil, errors.Errorf("deleter %v not found", *revision.DeleterUID)
+		}
+		r.Deleter = common.FormatUserEmail(deleter.Email)
+	}
+	if revision.DeletedTime != nil {
+		r.DeleteTime = timestamppb.New(*revision.DeletedTime)
+	}
+
+	return r, nil
 }
 
 func convertRevision(revision *v1pb.Revision, database *store.DatabaseMessage, sheet *store.SheetMessage) *store.RevisionMessage {
 	r := &store.RevisionMessage{
 		DatabaseUID: database.UID,
+		Version:     revision.Version,
 		Payload: &storepb.RevisionPayload{
 			Release:     revision.Release,
 			File:        revision.File,
-			Version:     revision.Version,
 			Sheet:       revision.Sheet,
 			SheetSha256: sheet.GetSha256Hex(),
 			TaskRun:     revision.TaskRun,

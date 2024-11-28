@@ -10,6 +10,7 @@ package v1
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 
@@ -24,268 +25,199 @@ import (
 )
 
 // Suppress "imported and not used" errors
-var _ codes.Code
-var _ io.Reader
-var _ status.Status
-var _ = runtime.String
-var _ = utilities.NewDoubleArray
-var _ = metadata.Join
+var (
+	_ codes.Code
+	_ io.Reader
+	_ status.Status
+	_ = errors.New
+	_ = runtime.String
+	_ = utilities.NewDoubleArray
+	_ = metadata.Join
+)
 
 func request_PlanService_GetPlan_0(ctx context.Context, marshaler runtime.Marshaler, client PlanServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetPlanRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq GetPlanRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["name"]
+	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := client.GetPlan(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_PlanService_GetPlan_0(ctx context.Context, marshaler runtime.Marshaler, server PlanServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetPlanRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq GetPlanRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["name"]
+	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := server.GetPlan(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
-var (
-	filter_PlanService_ListPlans_0 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
+var filter_PlanService_ListPlans_0 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 
 func request_PlanService_ListPlans_0(ctx context.Context, marshaler runtime.Marshaler, client PlanServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListPlansRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq ListPlansRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["parent"]
+	val, ok := pathParams["parent"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
-
 	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PlanService_ListPlans_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := client.ListPlans(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_PlanService_ListPlans_0(ctx context.Context, marshaler runtime.Marshaler, server PlanServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListPlansRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq ListPlansRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["parent"]
+	val, ok := pathParams["parent"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
-
 	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PlanService_ListPlans_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.ListPlans(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_PlanService_SearchPlans_0(ctx context.Context, marshaler runtime.Marshaler, client PlanServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq SearchPlansRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq SearchPlansRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["parent"]
+	val, ok := pathParams["parent"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
-
 	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-
 	msg, err := client.SearchPlans(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_PlanService_SearchPlans_0(ctx context.Context, marshaler runtime.Marshaler, server PlanServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq SearchPlansRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq SearchPlansRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["parent"]
+	val, ok := pathParams["parent"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
-
 	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-
 	msg, err := server.SearchPlans(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_PlanService_CreatePlan_0(ctx context.Context, marshaler runtime.Marshaler, client PlanServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CreatePlanRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Plan); err != nil && err != io.EOF {
+	var (
+		protoReq CreatePlanRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Plan); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["parent"]
+	val, ok := pathParams["parent"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
-
 	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-
 	msg, err := client.CreatePlan(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_PlanService_CreatePlan_0(ctx context.Context, marshaler runtime.Marshaler, server PlanServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CreatePlanRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Plan); err != nil && err != io.EOF {
+	var (
+		protoReq CreatePlanRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Plan); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["parent"]
+	val, ok := pathParams["parent"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
-
 	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-
 	msg, err := server.CreatePlan(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
-var (
-	filter_PlanService_UpdatePlan_0 = &utilities.DoubleArray{Encoding: map[string]int{"plan": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
-)
+var filter_PlanService_UpdatePlan_0 = &utilities.DoubleArray{Encoding: map[string]int{"plan": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 
 func request_PlanService_UpdatePlan_0(ctx context.Context, marshaler runtime.Marshaler, client PlanServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq UpdatePlanRequest
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq UpdatePlanRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
 	newReader, berr := utilities.IOReaderFactory(req.Body)
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Plan); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Plan); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
@@ -295,45 +227,35 @@ func request_PlanService_UpdatePlan_0(ctx context.Context, marshaler runtime.Mar
 			protoReq.UpdateMask = fieldMask
 		}
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["plan.name"]
+	val, ok := pathParams["plan.name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "plan.name")
 	}
-
 	err = runtime.PopulateFieldFromPath(&protoReq, "plan.name", val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "plan.name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PlanService_UpdatePlan_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := client.UpdatePlan(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_PlanService_UpdatePlan_0(ctx context.Context, marshaler runtime.Marshaler, server PlanServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq UpdatePlanRequest
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq UpdatePlanRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
 	newReader, berr := utilities.IOReaderFactory(req.Body)
 	if berr != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
 	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Plan); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Plan); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
@@ -343,284 +265,198 @@ func local_request_PlanService_UpdatePlan_0(ctx context.Context, marshaler runti
 			protoReq.UpdateMask = fieldMask
 		}
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["plan.name"]
+	val, ok := pathParams["plan.name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "plan.name")
 	}
-
 	err = runtime.PopulateFieldFromPath(&protoReq, "plan.name", val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "plan.name", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PlanService_UpdatePlan_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.UpdatePlan(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
-var (
-	filter_PlanService_ListPlanCheckRuns_0 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
+var filter_PlanService_ListPlanCheckRuns_0 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 
 func request_PlanService_ListPlanCheckRuns_0(ctx context.Context, marshaler runtime.Marshaler, client PlanServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListPlanCheckRunsRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq ListPlanCheckRunsRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["parent"]
+	val, ok := pathParams["parent"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
-
 	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PlanService_ListPlanCheckRuns_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := client.ListPlanCheckRuns(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_PlanService_ListPlanCheckRuns_0(ctx context.Context, marshaler runtime.Marshaler, server PlanServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListPlanCheckRunsRequest
-	var metadata runtime.ServerMetadata
-
 	var (
-		val string
-		ok  bool
-		err error
-		_   = err
+		protoReq ListPlanCheckRunsRequest
+		metadata runtime.ServerMetadata
+		err      error
 	)
-
-	val, ok = pathParams["parent"]
+	val, ok := pathParams["parent"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
-
 	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_PlanService_ListPlanCheckRuns_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.ListPlanCheckRuns(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_PlanService_RunPlanChecks_0(ctx context.Context, marshaler runtime.Marshaler, client PlanServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RunPlanChecksRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq RunPlanChecksRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["name"]
+	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := client.RunPlanChecks(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_PlanService_RunPlanChecks_0(ctx context.Context, marshaler runtime.Marshaler, server PlanServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RunPlanChecksRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq RunPlanChecksRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["name"]
+	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
 	}
-
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
-
 	msg, err := server.RunPlanChecks(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_PlanService_BatchCancelPlanCheckRuns_0(ctx context.Context, marshaler runtime.Marshaler, client PlanServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq BatchCancelPlanCheckRunsRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq BatchCancelPlanCheckRunsRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["parent"]
+	val, ok := pathParams["parent"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
-
 	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-
 	msg, err := client.BatchCancelPlanCheckRuns(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_PlanService_BatchCancelPlanCheckRuns_0(ctx context.Context, marshaler runtime.Marshaler, server PlanServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq BatchCancelPlanCheckRunsRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq BatchCancelPlanCheckRunsRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["parent"]
+	val, ok := pathParams["parent"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
 	}
-
 	protoReq.Parent, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
-
 	msg, err := server.BatchCancelPlanCheckRuns(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_PlanService_PreviewPlan_0(ctx context.Context, marshaler runtime.Marshaler, client PlanServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PreviewPlanRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq PreviewPlanRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["project"]
+	val, ok := pathParams["project"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
 	}
-
 	protoReq.Project, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
 	}
-
 	msg, err := client.PreviewPlan(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_PlanService_PreviewPlan_0(ctx context.Context, marshaler runtime.Marshaler, server PlanServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq PreviewPlanRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq PreviewPlanRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["project"]
+	val, ok := pathParams["project"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
 	}
-
 	protoReq.Project, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
 	}
-
 	msg, err := server.PreviewPlan(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 // RegisterPlanServiceHandlerServer registers the http handlers for service PlanService to "mux".
@@ -629,16 +465,13 @@ func local_request_PlanService_PreviewPlan_0(ctx context.Context, marshaler runt
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterPlanServiceHandlerFromEndpoint instead.
 // GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterPlanServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server PlanServiceServer) error {
-
-	mux.Handle("GET", pattern_PlanService_GetPlan_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_PlanService_GetPlan_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.PlanService/GetPlan", runtime.WithHTTPPathPattern("/v1/{name=projects/*/plans/*}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.PlanService/GetPlan", runtime.WithHTTPPathPattern("/v1/{name=projects/*/plans/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -650,20 +483,15 @@ func RegisterPlanServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_PlanService_GetPlan_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_PlanService_ListPlans_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_PlanService_ListPlans_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.PlanService/ListPlans", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/plans"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.PlanService/ListPlans", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/plans"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -675,20 +503,15 @@ func RegisterPlanServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_PlanService_ListPlans_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_PlanService_SearchPlans_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_PlanService_SearchPlans_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.PlanService/SearchPlans", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/plans:search"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.PlanService/SearchPlans", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/plans:search"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -700,20 +523,15 @@ func RegisterPlanServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_PlanService_SearchPlans_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_PlanService_CreatePlan_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_PlanService_CreatePlan_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.PlanService/CreatePlan", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/plans"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.PlanService/CreatePlan", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/plans"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -725,20 +543,15 @@ func RegisterPlanServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_PlanService_CreatePlan_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("PATCH", pattern_PlanService_UpdatePlan_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPatch, pattern_PlanService_UpdatePlan_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.PlanService/UpdatePlan", runtime.WithHTTPPathPattern("/v1/{plan.name=projects/*/plans/*}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.PlanService/UpdatePlan", runtime.WithHTTPPathPattern("/v1/{plan.name=projects/*/plans/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -750,20 +563,15 @@ func RegisterPlanServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_PlanService_UpdatePlan_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_PlanService_ListPlanCheckRuns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_PlanService_ListPlanCheckRuns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.PlanService/ListPlanCheckRuns", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/plans/*}/planCheckRuns"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.PlanService/ListPlanCheckRuns", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/plans/*}/planCheckRuns"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -775,20 +583,15 @@ func RegisterPlanServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_PlanService_ListPlanCheckRuns_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_PlanService_RunPlanChecks_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_PlanService_RunPlanChecks_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.PlanService/RunPlanChecks", runtime.WithHTTPPathPattern("/v1/{name=projects/*/plans/*}:runPlanChecks"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.PlanService/RunPlanChecks", runtime.WithHTTPPathPattern("/v1/{name=projects/*/plans/*}:runPlanChecks"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -800,20 +603,15 @@ func RegisterPlanServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_PlanService_RunPlanChecks_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_PlanService_BatchCancelPlanCheckRuns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_PlanService_BatchCancelPlanCheckRuns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.PlanService/BatchCancelPlanCheckRuns", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/plans/*}/planCheckRuns:batchCancel"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.PlanService/BatchCancelPlanCheckRuns", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/plans/*}/planCheckRuns:batchCancel"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -825,20 +623,15 @@ func RegisterPlanServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_PlanService_BatchCancelPlanCheckRuns_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_PlanService_PreviewPlan_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_PlanService_PreviewPlan_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.PlanService/PreviewPlan", runtime.WithHTTPPathPattern("/v1/{project=projects/*}:previewPlan"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.PlanService/PreviewPlan", runtime.WithHTTPPathPattern("/v1/{project=projects/*}:previewPlan"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -850,9 +643,7 @@ func RegisterPlanServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_PlanService_PreviewPlan_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	return nil
@@ -879,7 +670,6 @@ func RegisterPlanServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.Se
 			}
 		}()
 	}()
-
 	return RegisterPlanServiceHandler(ctx, mux, conn)
 }
 
@@ -895,14 +685,11 @@ func RegisterPlanServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
 // "PlanServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterPlanServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client PlanServiceClient) error {
-
-	mux.Handle("GET", pattern_PlanService_GetPlan_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_PlanService_GetPlan_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.PlanService/GetPlan", runtime.WithHTTPPathPattern("/v1/{name=projects/*/plans/*}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.PlanService/GetPlan", runtime.WithHTTPPathPattern("/v1/{name=projects/*/plans/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -913,18 +700,13 @@ func RegisterPlanServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_PlanService_GetPlan_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_PlanService_ListPlans_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_PlanService_ListPlans_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.PlanService/ListPlans", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/plans"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.PlanService/ListPlans", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/plans"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -935,18 +717,13 @@ func RegisterPlanServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_PlanService_ListPlans_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_PlanService_SearchPlans_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_PlanService_SearchPlans_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.PlanService/SearchPlans", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/plans:search"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.PlanService/SearchPlans", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/plans:search"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -957,18 +734,13 @@ func RegisterPlanServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_PlanService_SearchPlans_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_PlanService_CreatePlan_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_PlanService_CreatePlan_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.PlanService/CreatePlan", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/plans"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.PlanService/CreatePlan", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/plans"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -979,18 +751,13 @@ func RegisterPlanServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_PlanService_CreatePlan_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("PATCH", pattern_PlanService_UpdatePlan_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPatch, pattern_PlanService_UpdatePlan_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.PlanService/UpdatePlan", runtime.WithHTTPPathPattern("/v1/{plan.name=projects/*/plans/*}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.PlanService/UpdatePlan", runtime.WithHTTPPathPattern("/v1/{plan.name=projects/*/plans/*}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1001,18 +768,13 @@ func RegisterPlanServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_PlanService_UpdatePlan_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_PlanService_ListPlanCheckRuns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_PlanService_ListPlanCheckRuns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.PlanService/ListPlanCheckRuns", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/plans/*}/planCheckRuns"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.PlanService/ListPlanCheckRuns", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/plans/*}/planCheckRuns"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1023,18 +785,13 @@ func RegisterPlanServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_PlanService_ListPlanCheckRuns_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_PlanService_RunPlanChecks_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_PlanService_RunPlanChecks_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.PlanService/RunPlanChecks", runtime.WithHTTPPathPattern("/v1/{name=projects/*/plans/*}:runPlanChecks"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.PlanService/RunPlanChecks", runtime.WithHTTPPathPattern("/v1/{name=projects/*/plans/*}:runPlanChecks"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1045,18 +802,13 @@ func RegisterPlanServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_PlanService_RunPlanChecks_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_PlanService_BatchCancelPlanCheckRuns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_PlanService_BatchCancelPlanCheckRuns_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.PlanService/BatchCancelPlanCheckRuns", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/plans/*}/planCheckRuns:batchCancel"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.PlanService/BatchCancelPlanCheckRuns", runtime.WithHTTPPathPattern("/v1/{parent=projects/*/plans/*}/planCheckRuns:batchCancel"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1067,18 +819,13 @@ func RegisterPlanServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_PlanService_BatchCancelPlanCheckRuns_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_PlanService_PreviewPlan_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_PlanService_PreviewPlan_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.PlanService/PreviewPlan", runtime.WithHTTPPathPattern("/v1/{project=projects/*}:previewPlan"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.PlanService/PreviewPlan", runtime.WithHTTPPathPattern("/v1/{project=projects/*}:previewPlan"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1089,50 +836,31 @@ func RegisterPlanServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_PlanService_PreviewPlan_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
 	return nil
 }
 
 var (
-	pattern_PlanService_GetPlan_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "plans", "name"}, ""))
-
-	pattern_PlanService_ListPlans_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "plans"}, ""))
-
-	pattern_PlanService_SearchPlans_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "plans"}, "search"))
-
-	pattern_PlanService_CreatePlan_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "plans"}, ""))
-
-	pattern_PlanService_UpdatePlan_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "plans", "plan.name"}, ""))
-
-	pattern_PlanService_ListPlanCheckRuns_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "projects", "plans", "parent", "planCheckRuns"}, ""))
-
-	pattern_PlanService_RunPlanChecks_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "plans", "name"}, "runPlanChecks"))
-
+	pattern_PlanService_GetPlan_0                  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "plans", "name"}, ""))
+	pattern_PlanService_ListPlans_0                = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "plans"}, ""))
+	pattern_PlanService_SearchPlans_0              = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "plans"}, "search"))
+	pattern_PlanService_CreatePlan_0               = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "plans"}, ""))
+	pattern_PlanService_UpdatePlan_0               = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "plans", "plan.name"}, ""))
+	pattern_PlanService_ListPlanCheckRuns_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "projects", "plans", "parent", "planCheckRuns"}, ""))
+	pattern_PlanService_RunPlanChecks_0            = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "plans", "name"}, "runPlanChecks"))
 	pattern_PlanService_BatchCancelPlanCheckRuns_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "projects", "plans", "parent", "planCheckRuns"}, "batchCancel"))
-
-	pattern_PlanService_PreviewPlan_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "projects", "project"}, "previewPlan"))
+	pattern_PlanService_PreviewPlan_0              = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2}, []string{"v1", "projects", "project"}, "previewPlan"))
 )
 
 var (
-	forward_PlanService_GetPlan_0 = runtime.ForwardResponseMessage
-
-	forward_PlanService_ListPlans_0 = runtime.ForwardResponseMessage
-
-	forward_PlanService_SearchPlans_0 = runtime.ForwardResponseMessage
-
-	forward_PlanService_CreatePlan_0 = runtime.ForwardResponseMessage
-
-	forward_PlanService_UpdatePlan_0 = runtime.ForwardResponseMessage
-
-	forward_PlanService_ListPlanCheckRuns_0 = runtime.ForwardResponseMessage
-
-	forward_PlanService_RunPlanChecks_0 = runtime.ForwardResponseMessage
-
+	forward_PlanService_GetPlan_0                  = runtime.ForwardResponseMessage
+	forward_PlanService_ListPlans_0                = runtime.ForwardResponseMessage
+	forward_PlanService_SearchPlans_0              = runtime.ForwardResponseMessage
+	forward_PlanService_CreatePlan_0               = runtime.ForwardResponseMessage
+	forward_PlanService_UpdatePlan_0               = runtime.ForwardResponseMessage
+	forward_PlanService_ListPlanCheckRuns_0        = runtime.ForwardResponseMessage
+	forward_PlanService_RunPlanChecks_0            = runtime.ForwardResponseMessage
 	forward_PlanService_BatchCancelPlanCheckRuns_0 = runtime.ForwardResponseMessage
-
-	forward_PlanService_PreviewPlan_0 = runtime.ForwardResponseMessage
+	forward_PlanService_PreviewPlan_0              = runtime.ForwardResponseMessage
 )
