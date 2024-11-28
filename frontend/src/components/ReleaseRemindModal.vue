@@ -1,7 +1,7 @@
 <template>
   <BBModal
     :title="$t('settings.release.new-version-available')"
-    @close="$emit('cancel')"
+    @close="onClose"
   >
     <div class="min-w-0 md:min-w-400">
       <div>
@@ -18,18 +18,9 @@
             </template>
           </i18n-t>
         </p>
-        <NCheckbox
-          class="mt-3 ml-1"
-          :label="$t('settings.release.not-show-till-next-release')"
-          :checked="actuatorStore.releaseInfo.ignoreRemindModalTillNextRelease"
-          @update:checked="
-            (on: boolean) =>
-              (actuatorStore.releaseInfo.ignoreRemindModalTillNextRelease = on)
-          "
-        />
       </div>
       <div class="mt-7 flex justify-end space-x-2">
-        <NButton @click="$emit('cancel')">
+        <NButton @click="onClose">
           {{ $t("common.dismiss") }}
         </NButton>
         <NButton type="primary" @click="onClick">
@@ -41,7 +32,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton, NCheckbox } from "naive-ui";
+import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { BBModal } from "@/bbkit";
 import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
@@ -60,6 +51,11 @@ const link = computed(() => {
 
 const onClick = () => {
   window.open(link.value, "_blank");
+  onClose();
+};
+
+const onClose = () => {
+  actuatorStore.releaseInfo.ignoreRemindModalTillNextRelease = true;
   emit("cancel");
 };
 </script>
