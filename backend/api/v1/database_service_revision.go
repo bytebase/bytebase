@@ -212,7 +212,11 @@ func (s *DatabaseService) DeleteRevision(ctx context.Context, request *v1pb.Dele
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get revision UID from %v, err: %v", request.Name, err)
 	}
-	if err := s.store.DeleteRevision(ctx, revisionUID); err != nil {
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+	if err := s.store.DeleteRevision(ctx, revisionUID, user.ID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete revision %v, err: %v", revisionUID, err)
 	}
 	return &emptypb.Empty{}, nil
