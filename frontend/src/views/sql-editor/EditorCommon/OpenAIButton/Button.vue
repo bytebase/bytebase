@@ -14,6 +14,7 @@
         viewBox="0 0 320 320"
         fill="currentColor"
         stroke="none"
+        class="w-4 h-4"
       >
         <path
           xmlns="http://www.w3.org/2000/svg"
