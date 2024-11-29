@@ -787,11 +787,11 @@
           "description": "Controla cómo los usuarios realizan migraciones de esquemas de bases de datos",
           "issue-mode": {
             "self": "Modo de emisión (Gobernado)",
-            "description": "Utilice issues para solicitar, revisar, implementar y versionar cambios en la base de datos."
+            "description": "Utilice el problema para solicitar, revisar, implementar y versionar cambios en la base de datos, adecuado para equipos con control de acceso y flujo de trabajo de CI y CD."
           },
           "sql-editor-mode": {
             "self": "Modo de edición SQL (Directo)",
-            "description": "Utilice el Editor SQL para ejecutar cambios en la base de datos directamente."
+            "description": "Utilice el Editor SQL para ejecutar cambios en la base de datos directamente, adecuado para uso de una sola persona o entornos que no requieren supervisión."
           },
           "can-be-changed-later": "Utilice el Editor SQL para ejecutar cambios en la base de datos directamente. Adecuado para particulares.",
           "default-view-changed-to-sql-editor": "La vista predeterminada del espacio de trabajo se ha cambiado al Editor SQL.",

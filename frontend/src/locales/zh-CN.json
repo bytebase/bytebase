@@ -787,11 +787,11 @@
           "description": "控制用户如何变更数据库",
           "issue-mode": {
             "self": "工单模式（管控）",
-            "description": "使用工单来提交，审核，发布，版本化数据库变更。"
+            "description": "使用工单来提交，审核，发布，版本化数据库变更，适合具有访问控制和 CI 和 CD 工作流的团队。"
           },
           "sql-editor-mode": {
             "self": "SQL 编辑器模式（直接）",
-            "description": "使用 SQL 编辑器直接执行数据库变更。适合单人使用或不需要管控的环境。"
+            "description": "使用 SQL 编辑器直接执行数据库变更，适合单人使用或不需要管控的环境。"
           },
           "can-be-changed-later": "此设置以后可以随时更改。",
           "default-view-changed-to-sql-editor": "工作空间的默认视图已更改为 SQL 编辑器。",
