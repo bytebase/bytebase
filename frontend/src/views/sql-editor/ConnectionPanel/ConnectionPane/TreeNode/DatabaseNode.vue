@@ -68,7 +68,7 @@ const showRequestQueryButton = computed(() => {
   // Developer self-helped request query is guarded by "Access Control" feature
   return (
     hasFeature("bb.feature.access-control") &&
-    !disallowRequestQuery &&
+    !disallowRequestQuery.value &&
     !isDatabaseV1Queryable(database.value)
   );
 });
