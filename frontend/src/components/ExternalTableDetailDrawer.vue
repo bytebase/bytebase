@@ -62,10 +62,10 @@
                   <DatabaseV1Name :database="database" />
                 </dd>
                 <SQLEditorButtonV1
+                  v-if="allowQuery"
                   class="text-sm md:mr-4"
                   :database="database"
                   :label="true"
-                  :disabled="!allowQuery"
                 />
               </dl>
             </div>

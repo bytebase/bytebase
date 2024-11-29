@@ -70,12 +70,12 @@
                   <DatabaseV1Name :database="database" />
                 </dd>
                 <SQLEditorButtonV1
+                  v-if="allowQuery"
                   class="text-sm md:mr-4"
                   :database="database"
                   :schema="schemaName"
                   :table="tableName"
                   :label="true"
-                  :disabled="!allowQuery"
                 />
                 <NPopover
                   trigger="click"
