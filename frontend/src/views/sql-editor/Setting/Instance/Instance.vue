@@ -62,14 +62,16 @@
         body-style="--n-body-padding: 16px 24px 0;"
       >
         <template #header>
-          <div class="flex items-center gap-x-2 h-[50px]">
-            <EngineIcon
-              :engine="state.detail.instance.engine"
-              custom-class="!h-6"
-            />
-            <span class="font-medium">{{
-              instanceV1Name(state.detail.instance)
-            }}</span>
+          <div class="h-[50px] flex">
+            <div class="flex items-center gap-x-2 h-[50px]">
+              <EngineIcon
+                :engine="state.detail.instance.engine"
+                custom-class="!h-6"
+              />
+              <span class="font-medium">{{
+                instanceV1Name(state.detail.instance)
+              }}</span>
+            </div>
           </div>
         </template>
         <InstanceDetail
