@@ -78,6 +78,7 @@ import {
   useSQLEditorTabStore,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import AdminModeButton from "./AdminModeButton.vue";
 
@@ -101,6 +102,7 @@ const tabStore = useSQLEditorTabStore();
 const disallowNavigateToConsole = useAppFeature(
   "bb.feature.disallow-navigate-to-console"
 );
+const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 const statement = computed(() => {
   const tab = tabStore.currentTab;
@@ -124,7 +126,10 @@ const actions = computed(() => {
   if (hasWorkspacePermissionV2("bb.sql.admin")) {
     actions.admin = true;
   }
-  if (!disallowNavigateToConsole.value) {
+  if (
+    !disallowNavigateToConsole.value &&
+    databaseChangeMode.value === DatabaseChangeMode.PIPELINE
+  ) {
     actions.issue = true;
   }
 
