@@ -67,10 +67,7 @@
     </div>
   </div>
   <div
-    v-if="
-      databaseChangeMode === 'PIPELINE' &&
-      resource.startsWith(environmentNamePrefix)
-    "
+    v-if="resource.startsWith(environmentNamePrefix)"
     class="flex flex-col gap-y-2"
   >
     <div class="textlabel flex items-center space-x-2">
@@ -117,12 +114,7 @@
 import { NRadioGroup, NRadio } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  hasFeature,
-  pushNotification,
-  usePolicyV1Store,
-  useAppFeature,
-} from "@/store";
+import { hasFeature, pushNotification, usePolicyV1Store } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import {
   DataSourceQueryPolicy,
@@ -140,7 +132,6 @@ const props = defineProps<{
 
 const policyStore = usePolicyV1Store();
 const { t } = useI18n();
-const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 watchEffect(async () => {
   await Promise.all([
