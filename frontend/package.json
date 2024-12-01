@@ -47,7 +47,7 @@
     "jszip": "^3.10.1",
     "lodash-es": "4.17.21",
     "lucide-static": "^0.447.0",
-    "lucide-vue-next": "^0.447.0",
+    "lucide-vue-next": "^0.462.0",
     "markdown-it": "^14.0.0",
     "match-sorter": "6.3.4",
     "monaco-editor": "0.45.0",
