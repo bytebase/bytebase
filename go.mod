@@ -34,7 +34,7 @@ require (
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/databricks/databricks-sdk-go v0.50.0
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
-	github.com/epiclabs-io/diff3 v0.0.0-20240325112732-ba77e92bf0e4
+	github.com/epiclabs-io/diff3 v0.0.0-20241115194849-280ec18688b6
 	github.com/github/gh-ost v1.1.6
 	github.com/go-ego/gse v0.80.3
 	github.com/go-ldap/ldap/v3 v3.4.8
