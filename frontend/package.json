@@ -75,7 +75,7 @@
     "sql-formatter": "15.4.2",
     "string-width": "^7.2.0",
     "tailwind-merge": "^2.5.4",
-    "uuid": "10.0.0",
+    "uuid": "11.0.3",
     "vdirs": "^0.1.8",
     "vscode": "npm:@codingame/monaco-vscode-api@1.85.6",
     "vscode-languageclient": "9.0.1",
