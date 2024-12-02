@@ -996,8 +996,8 @@ github.com/envoyproxy/protoc-gen-validate v0.9.1/go.mod h1:OKNgG7TCp5pF4d6XftA0+
 github.com/envoyproxy/protoc-gen-validate v0.10.1/go.mod h1:DRjgyB0I43LtJapqN6NiRwroiAU2PaFuvk/vjgh61ss=
 github.com/envoyproxy/protoc-gen-validate v1.1.0 h1:tntQDh69XqOCOZsDz0lVJQez/2L6Uu2PdjCQwWCJ3bM=
 github.com/envoyproxy/protoc-gen-validate v1.1.0/go.mod h1:sXRDRVmzEbkM7CVcM06s9shE/m23dg3wzjl0UWqJ2q4=
-github.com/epiclabs-io/diff3 v0.0.0-20240325112732-ba77e92bf0e4 h1:oFbNH4YgO1hHXqzPjHcEIAQYhD/NEdlyma+3Mm/JeFE=
-github.com/epiclabs-io/diff3 v0.0.0-20240325112732-ba77e92bf0e4/go.mod h1:tM499ZoH5jQRF3wlMnl59SJQwVYXIBdJRZa/K71p0IM=
+github.com/epiclabs-io/diff3 v0.0.0-20241115194849-280ec18688b6 h1:xo6+EhYIEBFAydeR6rEiww6Gn3fYek9ZG6V323aeb5w=
+github.com/epiclabs-io/diff3 v0.0.0-20241115194849-280ec18688b6/go.mod h1:PdN6OIagE78n5wNNOgGb3udE+GAGpST4iGc64ZZ2TFc=
 github.com/etcd-io/bbolt v1.3.3/go.mod h1:ZF2nL25h33cCyBtcyWeZ2/I3HQOfTP+0PIEvHjkjCrw=
 github.com/fanixk/geohash v0.0.0-20150324002647-c1f9b5fa157a h1:Fyfh/dsHFrC6nkX7H7+nFdTd1wROlX/FxEIWVpKYf1U=
 github.com/fanixk/geohash v0.0.0-20150324002647-c1f9b5fa157a/go.mod h1:UgNw+PTmmGN8rV7RvjvnBMsoTU8ZXXnaT3hYsDTBlgQ=
