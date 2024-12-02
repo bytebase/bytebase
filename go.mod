@@ -97,13 +97,13 @@ require (
 	google.golang.org/genproto v0.0.0-20241104194629-dd2ea8efbc28
 	google.golang.org/genproto/googleapis/api v0.0.0-20241104194629-dd2ea8efbc28
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241104194629-dd2ea8efbc28
-	google.golang.org/grpc v1.67.1
+	google.golang.org/grpc v1.68.0
 	google.golang.org/protobuf v1.35.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
-	cel.dev/expr v0.16.0 // indirect
+	cel.dev/expr v0.16.1 // indirect
 	cloud.google.com/go/auth v0.10.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.5 // indirect
 	cloud.google.com/go/monitoring v1.21.2 // indirect
@@ -124,7 +124,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.10.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.57.1 // indirect
-	github.com/bazelbuild/rules_go v0.46.0 // indirect
+	github.com/bazelbuild/rules_go v0.49.0 // indirect
 	github.com/beltran/gosasl v0.0.0-20240210185013-36d7ba6de436 // indirect
 	github.com/beltran/gssapi v0.0.0-20200324152954-d86554db4bab // indirect
 	github.com/biogo/store v0.0.0-20201120204734-aad293a2328f // indirect
@@ -248,7 +248,7 @@ require (
 	github.com/bytebase/tsql-parser v0.0.0-20241114064553-239d32311c0b
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/cncf/xds/go v0.0.0-20240822171458-6449f94b4d59 // indirect
+	github.com/cncf/xds/go v0.0.0-20240905190251-b4127c9b8d78 // indirect
 	github.com/cockroachdb/cockroach-go/v2 v2.3.8
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548 // indirect
 	github.com/danjacques/gofslock v0.0.0-20220131014315-6e321f4509c8 // indirect
