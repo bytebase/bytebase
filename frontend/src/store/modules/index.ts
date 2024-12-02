@@ -20,5 +20,6 @@ export * from "./branch";
 export * from "./release";
 export * from "./revision";
 export * from "./rollout";
+export * from "./quickLink";
 
 export * from "./v1";

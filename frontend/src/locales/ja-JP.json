@@ -787,11 +787,11 @@
           "description": "ユーザーがデータベース スキーマの移行を実行する方法を制御します",
           "issue-mode": {
             "self": "作業モード（ガバナンス）",
-            "description": "データベースの変更をリクエスト、レビュー、展開、バージョン管理するためにIssueを使用します。チームでの協力および本番環境に適しています。"
+            "description": "問題を使用して、データベースの変更をリクエスト、レビュー、ロールアウト、バージョン管理します。これは、アクセス制御と CI および CD ワークフローを備えたチームに適しています。"
           },
           "sql-editor-mode": {
             "self": "SQL エディター モード (直接)",
-            "description": "SQLエディターを使用してデータベースの変更を直接実行します。個人利用および非本番環境に適しています。"
+            "description": "SQL エディターを使用してデータベースの変更を直接実行します。これは、1 人で使用する場合や、監視を必要としない環境に適しています。"
           },
           "can-be-changed-later": "この設定は後でいつでも変更できます。",
           "default-view-changed-to-sql-editor": "ワークスペースのデフォルトのビューが SQL エディターに変更されました。",
@@ -966,6 +966,7 @@
     },
     "release": {
       "new-version-available": "更新する新しいバージョンがあります",
+      "new-version-available-with-tag": "新しいバージョン {tag} が利用可能です",
       "new-version-content": "新しいバージョン {tag} が正式にリリースされました。新しいバージョンを入手するには、ドキュメントに従ってください。",
       "not-show-till-next-release": "次の更新までは通知しないでください"
     },
@@ -1444,6 +1445,9 @@
       "timing": "タイミング",
       "event": "イベント",
       "table-name": "テーブル名"
+    },
+    "schema": {
+      "default": "デフォルト"
     }
   },
   "instance": {
@@ -1671,8 +1675,8 @@
     },
     "statement-execution": {
       "title": "ステートメントの実行",
-      "allow-ddl": "SQLエディタでDDL文を実行できるようにする",
-      "allow-dml": "SQL エディタでデータ変更 DML ステートメントを実行できるようにする"
+      "disallow-ddl": "SQL エディタで DDL ステートメントの実行を禁止する",
+      "disallow-dml": "SQL エディタでデータを変更する DML ステートメントの実行を禁止する"
     }
   },
   "quick-start": {
@@ -2537,7 +2541,14 @@
     "create-a-worksheet": "新しいワークシートを作成する",
     "select-a-database-to-start": "開始するにはデータベースを選択してください",
     "select-encoding": "エンコーディングの選択",
+    "redis-command": {
+      "self": "redisコマンドを実行する",
+      "all-nodes": "すべてのノード",
+      "single-node": "単一ノード",
+      "only-for-cluster": "クラスタ接続のみ使用可能"
+    },
     "result-limit": {
+      "self": "結果の制限",
       "n-rows": "{n} 行",
       "rows": "行"
     },
@@ -3519,9 +3530,6 @@
       "search": "カテゴリを検索する"
     }
   },
-  "principal": {
-    "select": "ユーザーの選択"
-  },
   "role": {
     "self": "役割",
     "setting": {
@@ -3869,5 +3877,15 @@
   },
   "setup": {
     "self": "設定"
+  },
+  "landing": {
+    "quick-link": {
+      "self": "クイックリンク",
+      "manage": "クイックリンクを管理する",
+      "visit-prjects": "プロジェクトを訪問",
+      "visit-issues": "訪問に関する問題"
+    },
+    "last-visit": "最終訪問",
+    "changelog-for-version": "{version} の変更履歴"
   }
 }

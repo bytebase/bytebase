@@ -64,7 +64,7 @@ const columns = computed(() => {
 });
 
 const getPackageName = (packageName: string) => {
-  if (hasSchemaProperty(engine.value)) {
+  if (hasSchemaProperty(engine.value) && props.schemaName) {
     return `"${props.schemaName}"."${packageName}"`;
   }
   return packageName;

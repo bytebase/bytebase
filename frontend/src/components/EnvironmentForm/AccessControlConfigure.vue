@@ -6,7 +6,7 @@
       </label>
       <FeatureBadge feature="bb.feature.access-control" />
     </div>
-    <div class="w-full flex flex-col gap-4">
+    <div>
       <div class="w-full inline-flex items-center gap-x-2">
         <Switch
           :value="disableCopyDataPolicy"
@@ -67,10 +67,7 @@
     </div>
   </div>
   <div
-    v-if="
-      databaseChangeMode === 'PIPELINE' &&
-      resource.startsWith(environmentNamePrefix)
-    "
+    v-if="resource.startsWith(environmentNamePrefix)"
     class="flex flex-col gap-y-2"
   >
     <div class="textlabel flex items-center space-x-2">
@@ -81,32 +78,32 @@
     <div>
       <div class="w-full inline-flex items-center gap-x-2">
         <Switch
-          :value="!dataSourceQueryPolicy?.disallowDdl"
+          :value="dataSourceQueryPolicy?.disallowDdl ?? false"
           :text="true"
           :disabled="!allowUpdatePolicy"
           @update:value="
             (on: boolean) => {
-              updateAdminDataSourceQueryRestrctionPolicy({ disallowDdl: !on });
+              updateAdminDataSourceQueryRestrctionPolicy({ disallowDdl: on });
             }
           "
         />
         <span class="textlabel">
-          {{ $t("environment.statement-execution.allow-ddl") }}
+          {{ $t("environment.statement-execution.disallow-ddl") }}
         </span>
       </div>
       <div class="w-full inline-flex items-center gap-x-2">
         <Switch
-          :value="!dataSourceQueryPolicy?.disallowDml"
+          :value="dataSourceQueryPolicy?.disallowDml ?? false"
           :text="true"
           :disabled="!allowUpdatePolicy"
           @update:value="
             (on: boolean) => {
-              updateAdminDataSourceQueryRestrctionPolicy({ disallowDml: !on });
+              updateAdminDataSourceQueryRestrctionPolicy({ disallowDml: on });
             }
           "
         />
         <span class="textlabel">
-          {{ $t("environment.statement-execution.allow-dml") }}
+          {{ $t("environment.statement-execution.disallow-dml") }}
         </span>
       </div>
     </div>
@@ -117,12 +114,7 @@
 import { NRadioGroup, NRadio } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  hasFeature,
-  pushNotification,
-  usePolicyV1Store,
-  useAppFeature,
-} from "@/store";
+import { hasFeature, pushNotification, usePolicyV1Store } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import {
   DataSourceQueryPolicy,
@@ -140,7 +132,6 @@ const props = defineProps<{
 
 const policyStore = usePolicyV1Store();
 const { t } = useI18n();
-const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 watchEffect(async () => {
   await Promise.all([

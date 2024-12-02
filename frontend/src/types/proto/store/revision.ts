@@ -21,7 +21,6 @@ export interface RevisionPayload {
    * Can be empty.
    */
   file: string;
-  version: string;
   /**
    * The sheet that holds the content.
    * Format: projects/{project}/sheets/{sheet}
@@ -38,7 +37,7 @@ export interface RevisionPayload {
 }
 
 function createBaseRevisionPayload(): RevisionPayload {
-  return { release: "", file: "", version: "", sheet: "", sheetSha256: "", taskRun: "" };
+  return { release: "", file: "", sheet: "", sheetSha256: "", taskRun: "" };
 }
 
 export const RevisionPayload: MessageFns<RevisionPayload> = {
@@ -49,17 +48,14 @@ export const RevisionPayload: MessageFns<RevisionPayload> = {
     if (message.file !== "") {
       writer.uint32(18).string(message.file);
     }
-    if (message.version !== "") {
-      writer.uint32(26).string(message.version);
-    }
     if (message.sheet !== "") {
-      writer.uint32(34).string(message.sheet);
+      writer.uint32(26).string(message.sheet);
     }
     if (message.sheetSha256 !== "") {
-      writer.uint32(42).string(message.sheetSha256);
+      writer.uint32(34).string(message.sheetSha256);
     }
     if (message.taskRun !== "") {
-      writer.uint32(50).string(message.taskRun);
+      writer.uint32(42).string(message.taskRun);
     }
     return writer;
   },
@@ -90,24 +86,17 @@ export const RevisionPayload: MessageFns<RevisionPayload> = {
             break;
           }
 
-          message.version = reader.string();
+          message.sheet = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
             break;
           }
 
-          message.sheet = reader.string();
+          message.sheetSha256 = reader.string();
           continue;
         case 5:
           if (tag !== 42) {
-            break;
-          }
-
-          message.sheetSha256 = reader.string();
-          continue;
-        case 6:
-          if (tag !== 50) {
             break;
           }
 
@@ -126,7 +115,6 @@ export const RevisionPayload: MessageFns<RevisionPayload> = {
     return {
       release: isSet(object.release) ? globalThis.String(object.release) : "",
       file: isSet(object.file) ? globalThis.String(object.file) : "",
-      version: isSet(object.version) ? globalThis.String(object.version) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
       sheetSha256: isSet(object.sheetSha256) ? globalThis.String(object.sheetSha256) : "",
       taskRun: isSet(object.taskRun) ? globalThis.String(object.taskRun) : "",
@@ -140,9 +128,6 @@ export const RevisionPayload: MessageFns<RevisionPayload> = {
     }
     if (message.file !== "") {
       obj.file = message.file;
-    }
-    if (message.version !== "") {
-      obj.version = message.version;
     }
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
@@ -163,7 +148,6 @@ export const RevisionPayload: MessageFns<RevisionPayload> = {
     const message = createBaseRevisionPayload();
     message.release = object.release ?? "";
     message.file = object.file ?? "";
-    message.version = object.version ?? "";
     message.sheet = object.sheet ?? "";
     message.sheetSha256 = object.sheetSha256 ?? "";
     message.taskRun = object.taskRun ?? "";

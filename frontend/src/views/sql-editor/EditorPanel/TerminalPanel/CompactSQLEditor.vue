@@ -18,7 +18,7 @@
       :auto-complete-context="{
         instance: instance.name,
         database: database.name,
-        schema: chosenSchema,
+        schema: currentTab?.connection.schema,
         scene: 'query',
       }"
       @update:content="handleChange"
@@ -87,12 +87,6 @@ const pendingFormatContentCommand = ref(false);
 const dialect = computed((): SQLDialect => {
   const engine = instance.value.engine;
   return dialectOfEngineV1(engine);
-});
-
-const chosenSchema = computed(() => {
-  const tab = currentTab.value;
-  if (!tab || tab.connection.schema === "") return undefined;
-  return tab.connection.schema;
 });
 
 const firstLinePrompt = computed(() => {

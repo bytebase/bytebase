@@ -3,11 +3,11 @@ import { useRouter } from "vue-router";
 import { getProjectName } from "@/store/modules/v1/common";
 import { PresetRoleType } from "@/types";
 import { PROJECT_V1_ROUTE_DETAIL } from "./router/dashboard/projectV1";
-import { WORKSPACE_ROUTE_MY_ISSUES } from "./router/dashboard/workspaceRoutes";
+import { WORKSPACE_ROUTE_LANDING } from "./router/dashboard/workspaceRoutes";
 import { SQL_EDITOR_HOME_MODULE } from "./router/sqlEditor";
 import { useRecentVisit } from "./router/useRecentVisit";
 import { useAppFeature, useProjectV1List } from "./store";
-import { isDev, hasWorkspaceLevelRole } from "./utils";
+import { hasWorkspaceLevelRole } from "./utils";
 
 export default defineComponent({
   name: "DummyRootView",
@@ -41,7 +41,7 @@ export default defineComponent({
         const fallback = () => {
           if (hasWorkspaceRole.value || projectList.value.length !== 1) {
             router.replace({
-              name: WORKSPACE_ROUTE_MY_ISSUES,
+              name: WORKSPACE_ROUTE_LANDING,
             });
           } else {
             router.replace({
@@ -56,12 +56,7 @@ export default defineComponent({
         // Redirect to
         // - /sql-editor if defaultWorkspaceView == 'EDITOR'
         // - lastVisit.path if not empty
-        // - /issues as fallback
-        // Only turned on when isDev() is true
-        if (!isDev()) {
-          return fallback();
-        }
-
+        // - /landing as fallback
         if (!lastVisit.value) {
           return fallback();
         }

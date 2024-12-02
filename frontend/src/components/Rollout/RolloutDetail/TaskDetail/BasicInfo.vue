@@ -20,6 +20,9 @@
           }}</span>
         </p>
       </div>
+      <div class="flex flex-row justify-end">
+        <TaskStatusActions v-if="showActionButtons" :task="task" />
+      </div>
     </div>
     <div class="mt-3 space-x-2">
       <NTooltip>
@@ -43,17 +46,21 @@
 <script lang="ts" setup>
 import { ChevronRightIcon } from "lucide-vue-next";
 import { NTag, NTooltip } from "naive-ui";
+import { computed } from "vue";
 import { semanticTaskType } from "@/components/IssueV1";
 import { InstanceV1EngineIcon } from "@/components/v2";
-import type { Task } from "@/types/proto/v1/rollout_service";
+import { Task_Status } from "@/types/proto/v1/rollout_service";
 import { extractSchemaVersionFromTask } from "@/utils";
 import TaskStatus from "../Panels/kits/TaskStatus.vue";
 import { useRolloutDetailContext } from "../context";
 import { databaseForTask } from "../utils";
-
-defineProps<{
-  task: Task;
-}>();
+import TaskStatusActions from "./TaskStatusActions.vue";
+import { useTaskDetailContext } from "./context";
 
 const { rollout } = useRolloutDetailContext();
+const { task } = useTaskDetailContext();
+
+const showActionButtons = computed(() => {
+  return task.value.status !== Task_Status.DONE;
+});
 </script>

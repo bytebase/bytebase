@@ -10,6 +10,7 @@ package v1
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 
@@ -24,73 +25,74 @@ import (
 )
 
 // Suppress "imported and not used" errors
-var _ codes.Code
-var _ io.Reader
-var _ status.Status
-var _ = runtime.String
-var _ = utilities.NewDoubleArray
-var _ = metadata.Join
+var (
+	_ codes.Code
+	_ io.Reader
+	_ status.Status
+	_ = errors.New
+	_ = runtime.String
+	_ = utilities.NewDoubleArray
+	_ = metadata.Join
+)
 
 func request_SubscriptionService_GetSubscription_0(ctx context.Context, marshaler runtime.Marshaler, client SubscriptionServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetSubscriptionRequest
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq GetSubscriptionRequest
+		metadata runtime.ServerMetadata
+	)
 	msg, err := client.GetSubscription(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_SubscriptionService_GetSubscription_0(ctx context.Context, marshaler runtime.Marshaler, server SubscriptionServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetSubscriptionRequest
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq GetSubscriptionRequest
+		metadata runtime.ServerMetadata
+	)
 	msg, err := server.GetSubscription(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_SubscriptionService_GetFeatureMatrix_0(ctx context.Context, marshaler runtime.Marshaler, client SubscriptionServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetFeatureMatrixRequest
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq GetFeatureMatrixRequest
+		metadata runtime.ServerMetadata
+	)
 	msg, err := client.GetFeatureMatrix(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_SubscriptionService_GetFeatureMatrix_0(ctx context.Context, marshaler runtime.Marshaler, server SubscriptionServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetFeatureMatrixRequest
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq GetFeatureMatrixRequest
+		metadata runtime.ServerMetadata
+	)
 	msg, err := server.GetFeatureMatrix(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_SubscriptionService_UpdateSubscription_0(ctx context.Context, marshaler runtime.Marshaler, client SubscriptionServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq UpdateSubscriptionRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Patch); err != nil && err != io.EOF {
+	var (
+		protoReq UpdateSubscriptionRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Patch); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := client.UpdateSubscription(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_SubscriptionService_UpdateSubscription_0(ctx context.Context, marshaler runtime.Marshaler, server SubscriptionServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq UpdateSubscriptionRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Patch); err != nil && err != io.EOF {
+	var (
+		protoReq UpdateSubscriptionRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Patch); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.UpdateSubscription(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 // RegisterSubscriptionServiceHandlerServer registers the http handlers for service SubscriptionService to "mux".
@@ -99,16 +101,13 @@ func local_request_SubscriptionService_UpdateSubscription_0(ctx context.Context,
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterSubscriptionServiceHandlerFromEndpoint instead.
 // GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterSubscriptionServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server SubscriptionServiceServer) error {
-
-	mux.Handle("GET", pattern_SubscriptionService_GetSubscription_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_SubscriptionService_GetSubscription_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SubscriptionService/GetSubscription", runtime.WithHTTPPathPattern("/v1/subscription"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SubscriptionService/GetSubscription", runtime.WithHTTPPathPattern("/v1/subscription"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -120,20 +119,15 @@ func RegisterSubscriptionServiceHandlerServer(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_SubscriptionService_GetSubscription_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_SubscriptionService_GetFeatureMatrix_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_SubscriptionService_GetFeatureMatrix_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SubscriptionService/GetFeatureMatrix", runtime.WithHTTPPathPattern("/v1/feature"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SubscriptionService/GetFeatureMatrix", runtime.WithHTTPPathPattern("/v1/feature"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -145,20 +139,15 @@ func RegisterSubscriptionServiceHandlerServer(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_SubscriptionService_GetFeatureMatrix_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("PATCH", pattern_SubscriptionService_UpdateSubscription_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPatch, pattern_SubscriptionService_UpdateSubscription_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SubscriptionService/UpdateSubscription", runtime.WithHTTPPathPattern("/v1/subscription"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.SubscriptionService/UpdateSubscription", runtime.WithHTTPPathPattern("/v1/subscription"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -170,9 +159,7 @@ func RegisterSubscriptionServiceHandlerServer(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_SubscriptionService_UpdateSubscription_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	return nil
@@ -199,7 +186,6 @@ func RegisterSubscriptionServiceHandlerFromEndpoint(ctx context.Context, mux *ru
 			}
 		}()
 	}()
-
 	return RegisterSubscriptionServiceHandler(ctx, mux, conn)
 }
 
@@ -215,14 +201,11 @@ func RegisterSubscriptionServiceHandler(ctx context.Context, mux *runtime.ServeM
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
 // "SubscriptionServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterSubscriptionServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client SubscriptionServiceClient) error {
-
-	mux.Handle("GET", pattern_SubscriptionService_GetSubscription_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_SubscriptionService_GetSubscription_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SubscriptionService/GetSubscription", runtime.WithHTTPPathPattern("/v1/subscription"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SubscriptionService/GetSubscription", runtime.WithHTTPPathPattern("/v1/subscription"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -233,18 +216,13 @@ func RegisterSubscriptionServiceHandlerClient(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_SubscriptionService_GetSubscription_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("GET", pattern_SubscriptionService_GetFeatureMatrix_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_SubscriptionService_GetFeatureMatrix_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SubscriptionService/GetFeatureMatrix", runtime.WithHTTPPathPattern("/v1/feature"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SubscriptionService/GetFeatureMatrix", runtime.WithHTTPPathPattern("/v1/feature"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -255,18 +233,13 @@ func RegisterSubscriptionServiceHandlerClient(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_SubscriptionService_GetFeatureMatrix_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("PATCH", pattern_SubscriptionService_UpdateSubscription_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPatch, pattern_SubscriptionService_UpdateSubscription_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SubscriptionService/UpdateSubscription", runtime.WithHTTPPathPattern("/v1/subscription"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.SubscriptionService/UpdateSubscription", runtime.WithHTTPPathPattern("/v1/subscription"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -277,26 +250,19 @@ func RegisterSubscriptionServiceHandlerClient(ctx context.Context, mux *runtime.
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_SubscriptionService_UpdateSubscription_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
 	return nil
 }
 
 var (
-	pattern_SubscriptionService_GetSubscription_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "subscription"}, ""))
-
-	pattern_SubscriptionService_GetFeatureMatrix_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "feature"}, ""))
-
+	pattern_SubscriptionService_GetSubscription_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "subscription"}, ""))
+	pattern_SubscriptionService_GetFeatureMatrix_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "feature"}, ""))
 	pattern_SubscriptionService_UpdateSubscription_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "subscription"}, ""))
 )
 
 var (
-	forward_SubscriptionService_GetSubscription_0 = runtime.ForwardResponseMessage
-
-	forward_SubscriptionService_GetFeatureMatrix_0 = runtime.ForwardResponseMessage
-
+	forward_SubscriptionService_GetSubscription_0    = runtime.ForwardResponseMessage
+	forward_SubscriptionService_GetFeatureMatrix_0   = runtime.ForwardResponseMessage
 	forward_SubscriptionService_UpdateSubscription_0 = runtime.ForwardResponseMessage
 )

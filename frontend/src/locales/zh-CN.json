@@ -787,11 +787,11 @@
           "description": "控制用户如何变更数据库",
           "issue-mode": {
             "self": "工单模式（管控）",
-            "description": "使用工单来提交，审核，发布，版本化数据库变更。"
+            "description": "使用工单来提交，审核，发布，版本化数据库变更，适合具有访问控制和 CI 和 CD 工作流的团队。"
           },
           "sql-editor-mode": {
             "self": "SQL 编辑器模式（直接）",
-            "description": "使用 SQL 编辑器直接执行数据库变更。适合单人使用或不需要管控的环境。"
+            "description": "使用 SQL 编辑器直接执行数据库变更，适合单人使用或不需要管控的环境。"
           },
           "can-be-changed-later": "此设置以后可以随时更改。",
           "default-view-changed-to-sql-editor": "工作空间的默认视图已更改为 SQL 编辑器。",
@@ -966,6 +966,7 @@
     },
     "release": {
       "new-version-available": "有新版本可更新",
+      "new-version-available-with-tag": "新版本 {tag} 已推出",
       "new-version-content": "新版本 {tag} 正式发布！请根据我们的文档来获取新版本。",
       "not-show-till-next-release": "在下次更新前不要提醒我"
     },
@@ -1444,6 +1445,9 @@
       "timing": "时机",
       "event": "事件",
       "table-name": "表名"
+    },
+    "schema": {
+      "default": "默认"
     }
   },
   "instance": {
@@ -1671,8 +1675,8 @@
     },
     "statement-execution": {
       "title": "语句执行",
-      "allow-ddl": "允许在 SQL 编辑器中运行 DDL 语句",
-      "allow-dml": "允许在 SQL 编辑器中运行修改数据的 DML 语句"
+      "disallow-ddl": "禁止在 SQL 编辑器中运行 DDL 语句",
+      "disallow-dml": "禁止在 SQL 编辑器中运行修改数据的 DML 语句"
     }
   },
   "quick-start": {
@@ -2537,7 +2541,14 @@
     "create-a-worksheet": "新建工作表",
     "select-a-database-to-start": "选择数据库以开始",
     "select-encoding": "选择编码",
+    "redis-command": {
+      "self": "运行 redis 命令",
+      "all-nodes": "所有节点",
+      "single-node": "单节点",
+      "only-for-cluster": "仅适用于集群连接"
+    },
     "result-limit": {
+      "self": "结果限制",
       "n-rows": "{n} 行",
       "rows": "行"
     },
@@ -3519,9 +3530,6 @@
       "search": "搜索分类"
     }
   },
-  "principal": {
-    "select": "选择用户"
-  },
   "role": {
     "self": "角色",
     "setting": {
@@ -3869,5 +3877,15 @@
   },
   "setup": {
     "self": "设置"
+  },
+  "landing": {
+    "quick-link": {
+      "self": "快捷访问",
+      "manage": "管理快捷访问",
+      "visit-prjects": "访问项目",
+      "visit-issues": "访问工单"
+    },
+    "last-visit": "上次访问",
+    "changelog-for-version": "{version} 的更新日志"
   }
 }

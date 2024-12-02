@@ -183,6 +183,7 @@ import { head } from "lodash-es";
 import { NSelect } from "naive-ui";
 import type { PropType } from "vue";
 import { computed, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import type { BBTableSectionDataSource } from "@/bbkit/types";
 import AnomalyTable from "@/components/AnomalyCenter/AnomalyTable.vue";
@@ -228,6 +229,8 @@ const props = defineProps({
     type: Object as PropType<Anomaly[]>,
   },
 });
+
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const state = reactive<LocalState>({
@@ -296,7 +299,7 @@ const schemaList = computed(() => {
 const schemaNameOptions = computed(() => {
   return schemaList.value.map((schema) => ({
     value: schema.name,
-    label: schema.name,
+    label: schema.name || t("db.schema.default"),
   }));
 });
 

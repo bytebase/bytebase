@@ -2,13 +2,12 @@ import { startCase } from "lodash-es";
 import type { RouteRecordRaw } from "vue-router";
 import DummyRootView from "@/DummyRootView";
 import { t } from "@/plugins/i18n";
-import MyIssues from "@/views/MyIssues.vue";
 import {
   PROJECT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   WORKSPACE_ROOT_MODULE,
-  WORKSPACE_ROUTE_MY_ISSUES,
+  WORKSPACE_ROUTE_LANDING,
   WORKSPACE_ROUTE_USER_PROFILE,
   WORKSPACE_ROUTE_SQL_REVIEW,
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
@@ -44,15 +43,11 @@ const rootRoute: RouteRecordRaw = {
 const workspaceRoutes: RouteRecordRaw[] = [
   rootRoute,
   {
-    path: "issues",
-    name: WORKSPACE_ROUTE_MY_ISSUES,
+    path: "landing",
+    name: WORKSPACE_ROUTE_LANDING,
     components: {
-      content: MyIssues,
+      content: () => import("@/views/DashboardLanding.vue"),
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
-    },
-    props: {
-      content: true,
-      leftSidebar: true,
     },
   },
   {

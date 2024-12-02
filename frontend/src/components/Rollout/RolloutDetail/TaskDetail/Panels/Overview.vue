@@ -1,9 +1,26 @@
 <template>
-  <p class="w-auto flex items-center text-base text-main mb-2">
-    {{ $t("common.statement") }}
-    <button tabindex="-1" class="btn-icon ml-1" @click.prevent="copyStatement">
-      <ClipboardIcon class="w-4 h-4" />
-    </button>
+  <NAlert
+    class="mb-3"
+    v-if="taskRun?.schedulerInfo?.waitingCause?.task"
+    type="warning"
+  >
+    <span>{{ $t("task-run.status.waiting-task") }}</span>
+    <router-link
+      class="inline-flex items-center normal-link shrink-0 ml-1"
+      :to="`/${taskRun.schedulerInfo.waitingCause.task?.task}`"
+      target="_blank"
+    >
+      {{ $t("common.blocking-task") }}
+      <ExternalLinkIcon class="ml-1" :size="16" />
+    </router-link>
+  </NAlert>
+  <p class="w-auto flex items-center mb-2">
+    <span class="text-base text-main">{{ $t("common.statement") }}</span>
+    <NButton class="ml-1" text @click.prevent="copyStatement">
+      <template #icon>
+        <ClipboardIcon class="w-4 h-4" />
+      </template>
+    </NButton>
   </p>
   <MonacoEditor
     class="h-auto max-h-[480px] min-h-[120px] border rounded-[3px] text-sm overflow-clip relative"
@@ -14,27 +31,28 @@
 </template>
 
 <script lang="ts" setup>
-import { ClipboardIcon } from "lucide-vue-next";
+import { head } from "lodash-es";
+import { ClipboardIcon, ExternalLinkIcon } from "lucide-vue-next";
+import { NAlert, NButton } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { pushNotification, useSheetV1Store } from "@/store";
-import type { Task, TaskRun } from "@/types/proto/v1/rollout_service";
 import { getSheetStatement, sheetNameOfTaskV1, toClipboard } from "@/utils";
+import { useTaskDetailContext } from "../context";
 
-const props = defineProps<{
-  task: Task;
-  latestTaskRun?: TaskRun;
-}>();
-
+const { task, taskRuns } = useTaskDetailContext();
 const sheetStore = useSheetV1Store();
 
 const statement = computed(() => {
-  const sheet = sheetStore.getSheetByName(sheetNameOfTaskV1(props.task));
+  const sheet = sheetStore.getSheetByName(sheetNameOfTaskV1(task.value));
   if (sheet) {
     return getSheetStatement(sheet);
   }
   return "";
 });
+
+// The latest task run of the task.
+const taskRun = computed(() => head(taskRuns.value));
 
 const copyStatement = async () => {
   toClipboard(statement.value).then(() => {
@@ -48,7 +66,7 @@ const copyStatement = async () => {
 
 watchEffect(async () => {
   // Prepare the sheet for the task.
-  const sheet = sheetNameOfTaskV1(props.task);
+  const sheet = sheetNameOfTaskV1(task.value);
   if (sheet) {
     await sheetStore.getOrFetchSheetByName(sheet);
   }

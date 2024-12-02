@@ -787,11 +787,11 @@
           "description": "Control how users perform database changes",
           "issue-mode": {
             "self": "Issue Mode (Governed)",
-            "description": "Use issue to request, review, roll out, and version database changes."
+            "description": "Use issue to request, review, roll out, and version database changes, suitable for teams with access control and CI & CD workflow."
           },
           "sql-editor-mode": {
             "self": "SQL Editor Mode (Direct)",
-            "description": "Use SQL Editor to execute database changes directly."
+            "description": "Use SQL Editor to execute database changes directly, suitable for single-person use or environments that do not require supervision."
           },
           "can-be-changed-later": "This setting can be changed anytime later.",
           "default-view-changed-to-sql-editor": "The workspace's default view has been changed to SQL Editor.",
@@ -966,6 +966,7 @@
     },
     "release": {
       "new-version-available": "New version is available",
+      "new-version-available-with-tag": "New version {tag} is available",
       "new-version-content": "The new version {tag} is available now! Please check our docs for installation.",
       "not-show-till-next-release": "Don't show this till next version"
     },
@@ -1444,6 +1445,9 @@
       "timing": "Timing",
       "event": "Event",
       "table-name": "Table name"
+    },
+    "schema": {
+      "default": "Default"
     }
   },
   "instance": {
@@ -1671,8 +1675,8 @@
     },
     "statement-execution": {
       "title": "Statement execution",
-      "allow-ddl": "Allow running DDL statements in the SQL editor",
-      "allow-dml": "Allow running data-modifying DML statements in the SQL Editor"
+      "disallow-ddl": "Disallow running DDL statements in the SQL editor",
+      "disallow-dml": "Disallow running data-modifying DML statements in the SQL Editor"
     }
   },
   "quick-start": {
@@ -2537,7 +2541,14 @@
     "create-a-worksheet": "Create a new worksheet",
     "select-a-database-to-start": "Select a database to start",
     "select-encoding": "Select encoding",
+    "redis-command": {
+      "self": "Run redis command on",
+      "all-nodes": "All nodes",
+      "single-node": "Single node",
+      "only-for-cluster": "Only available for cluster connection"
+    },
     "result-limit": {
+      "self": "Result limit",
       "n-rows": "{n} rows",
       "rows": "rows"
     },
@@ -3519,9 +3530,6 @@
       "search": "Search classification"
     }
   },
-  "principal": {
-    "select": "Select user"
-  },
   "role": {
     "self": "Role",
     "setting": {
@@ -3869,5 +3877,15 @@
   },
   "setup": {
     "self": "Setup"
+  },
+  "landing": {
+    "quick-link": {
+      "self": "Quick Link",
+      "manage": "Manage quick link",
+      "visit-prjects": "Visit Projects",
+      "visit-issues": "Visit Issues"
+    },
+    "last-visit": "Last visit",
+    "changelog-for-version": "Changelog for {version}"
   }
 }
