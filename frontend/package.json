@@ -25,7 +25,7 @@
     "@joe-re/sql-parser": "^1.7.0",
     "@markdoc/markdoc": "0.4.0",
     "@soerenmartius/vue3-clipboard": "0.1.2",
-    "@tanstack/vue-query": "^5.59.16",
+    "@tanstack/vue-query": "^5.62.0",
     "@tanstack/vue-table": "8.20.5",
     "@vueuse/core": "11.2.0",
     "axios": "1.7.7",
