@@ -368,6 +368,7 @@ func isMaskingSupported(e storepb.Engine) bool {
 		storepb.Engine_OCEANBASE: true,
 		storepb.Engine_TIDB:      true,
 		storepb.Engine_BIGQUERY:  true,
+		storepb.Engine_SPANNER:   true,
 	}
 
 	if _, ok := supportedEngines[e]; !ok {
