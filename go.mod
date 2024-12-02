@@ -10,7 +10,7 @@ require (
 	cloud.google.com/go/bigquery v1.64.0
 	cloud.google.com/go/cloudsqlconn v1.13.1
 	cloud.google.com/go/secretmanager v1.14.2
-	cloud.google.com/go/spanner v1.72.0
+	cloud.google.com/go/spanner v1.73.0
 	gitee.com/chunanyong/dm v1.8.16
 	github.com/ClickHouse/clickhouse-go/v2 v2.30.0
 	github.com/alexmullins/zip v0.0.0-20180717182244-4affb64b04d0
@@ -94,7 +94,7 @@ require (
 	golang.org/x/oauth2 v0.24.0
 	golang.org/x/text v0.20.0
 	google.golang.org/api v0.207.0
-	google.golang.org/genproto v0.0.0-20241113202542-65e8d215514f
+	google.golang.org/genproto v0.0.0-20241118233622-e639e219e697
 	google.golang.org/genproto/googleapis/api v0.0.0-20241118233622-e639e219e697
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241118233622-e639e219e697
 	google.golang.org/grpc v1.68.0
