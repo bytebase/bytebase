@@ -1,0 +1,938 @@
+- description: Named Schema
+  statement: SELECT * FROM MySchema.Customers JOIN Orders ON Customers.Id = Orders.CustomerId;
+  defaultDatabase: maskingdb
+  metadata: |-
+    {
+      "name":  "maskingdb",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "Orders",
+              "columns":  [
+                {
+                  "name":  "CustomerId"
+                }
+              ]
+            }
+          ]
+        },
+         {
+          "name": "MySchema",
+          "tables":  [
+            {
+              "name":  "Customers",
+              "columns":  [
+                {
+                  "name":  "Id"
+                },
+                {
+                  "name":  "Name"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 0
+    results:
+        - name: Id
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: MySchema
+              table: Customers
+              column: Id
+        - name: Name
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: MySchema
+              table: Customers
+              column: Name
+        - name: CustomerId
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: Orders
+              column: CustomerId
+    sourcecolumns:
+        - server: ""
+          database: maskingdb
+          schema: MySchema
+          table: Customers
+          column: ""
+        - server: ""
+          database: maskingdb
+          schema: ""
+          table: Orders
+          column: ""
+- description: Except and replace
+  statement: SELECT * EXCEPT (ID) REPLACE (ID/2 AS NAME) FROM people;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name":  "ds1",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "people",
+              "columns":  [
+                {
+                  "name":  "ID"
+                },
+                {
+                  "name":  "NAME"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 0
+    results:
+        - name: NAME
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: ID
+    sourcecolumns:
+        - server: ""
+          database: ds1
+          schema: ""
+          table: people
+          column: ""
+- description: Set operation
+  statement: WITH CTE_1 AS (SELECT * FROM people), CTE_2 AS (SELECT * FROM address) SELECT * FROM CTE_1 UNION ALL SELECT * FROM CTE_2;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name":  "ds1",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "PEOPLE",
+              "columns":  [
+                {
+                  "name":  "ID"
+                },
+                {
+                  "name":  "NAME"
+                }
+              ]
+            },
+            {
+              "name":  "ADDRESS",
+              "columns":  [
+                {
+                  "name":  "PEOPLE_ID"
+                },
+                {
+                  "name":  "ADDRESS"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 0
+    results:
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: address
+              column: PEOPLE_ID
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: ID
+        - name: NAME
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: address
+              column: ADDRESS
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: NAME
+    sourcecolumns:
+        - server: ""
+          database: ds1
+          schema: ""
+          table: CTE_1
+          column: ""
+        - server: ""
+          database: ds1
+          schema: ""
+          table: CTE_2
+          column: ""
+        - server: ""
+          database: ds1
+          schema: ""
+          table: address
+          column: ""
+        - server: ""
+          database: ds1
+          schema: ""
+          table: people
+          column: ""
+- description: Parenthesized join
+  statement: SELECT ID, NAME, ADDRESS FROM (people JOIN address ON people.ID = address.PEOPLE_ID USING (ID));
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name":  "ds1",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "PEOPLE",
+              "columns":  [
+                {
+                  "name":  "ID"
+                },
+                {
+                  "name":  "NAME"
+                }
+              ]
+            },
+            {
+              "name":  "ADDRESS",
+              "columns":  [
+                {
+                  "name": "ID"
+                },
+                {
+                  "name":  "PEOPLE_ID"
+                },
+                {
+                  "name":  "ADDRESS"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 0
+    results:
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: ID
+        - name: NAME
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: NAME
+        - name: ADDRESS
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: address
+              column: ADDRESS
+    sourcecolumns:
+        - server: ""
+          database: ds1
+          schema: ""
+          table: address
+          column: ""
+        - server: ""
+          database: ds1
+          schema: ""
+          table: people
+          column: ""
+- description: Join using
+  statement: SELECT ID, NAME, ADDRESS FROM people JOIN address ON people.ID = address.PEOPLE_ID USING (ID);
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name":  "ds1",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "PEOPLE",
+              "columns":  [
+                {
+                  "name":  "ID"
+                },
+                {
+                  "name":  "NAME"
+                }
+              ]
+            },
+            {
+              "name":  "ADDRESS",
+              "columns":  [
+                {
+                  "name": "ID"
+                },
+                {
+                  "name":  "PEOPLE_ID"
+                },
+                {
+                  "name":  "ADDRESS"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 0
+    results:
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: ID
+        - name: NAME
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: NAME
+        - name: ADDRESS
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: address
+              column: ADDRESS
+    sourcecolumns:
+        - server: ""
+          database: ds1
+          schema: ""
+          table: address
+          column: ""
+        - server: ""
+          database: ds1
+          schema: ""
+          table: people
+          column: ""
+- description: Simple join
+  statement: SELECT ID, NAME, ADDRESS FROM people JOIN address ON people.ID = address.PEOPLE_ID;
+  defaultDatabase: maskingdb
+  metadata: |-
+    {
+      "name":  "maskingdb",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "People",
+              "columns":  [
+                {
+                  "name":  "Id"
+                },
+                {
+                  "name":  "Name"
+                }
+              ]
+            },
+            {
+              "name":  "Address",
+              "columns":  [
+                {
+                  "name":  "PeopleId"
+                },
+                {
+                  "name":  "Address"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 0
+    results:
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: people
+              column: Id
+        - name: NAME
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: people
+              column: Name
+        - name: ADDRESS
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: address
+              column: Address
+    sourcecolumns:
+        - server: ""
+          database: maskingdb
+          schema: ""
+          table: address
+          column: ""
+        - server: ""
+          database: maskingdb
+          schema: ""
+          table: people
+          column: ""
+- description: Recursive cte
+  statement: |-
+    WITH RECURSIVE CTE_01 AS (
+      (SELECT a AS c1, b AS c2, c AS c3, 1 AS n FROM T1)
+      UNION ALL
+      SELECT c1 * c2, c2 + c1, c3 * c2, n + 1 FROM CTE_01 WHERE n < 5
+    )
+    SELECT * FROM CTE_01;
+  defaultDatabase: maskingdb
+  metadata: |-
+    {
+      "name":  "maskingdb",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 0
+    results:
+        - name: C1
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: T1
+              column: a
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: T1
+              column: b
+        - name: C2
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: T1
+              column: a
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: T1
+              column: b
+        - name: C3
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: T1
+              column: a
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: T1
+              column: b
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: T1
+              column: c
+        - name: "N"
+          sourcecolumns: []
+    sourcecolumns:
+        - server: ""
+          database: maskingdb
+          schema: ""
+          table: CTE_01
+          column: ""
+        - server: ""
+          database: maskingdb
+          schema: ""
+          table: T1
+          column: ""
+- description: Simple normal cte
+  statement: WITH CTE_1 AS (SELECT Id, Name FROM Customers) SELECT * FROM CTE_1;
+  defaultDatabase: maskingdb
+  metadata: |-
+    {
+      "name":  "maskingdb",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "Customers",
+              "columns":  [
+                {
+                  "name":  "Id"
+                },
+                {
+                  "name":  "Name"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 0
+    results:
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: Customers
+              column: Id
+        - name: NAME
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: Customers
+              column: Name
+    sourcecolumns:
+        - server: ""
+          database: maskingdb
+          schema: ""
+          table: CTE_1
+          column: ""
+        - server: ""
+          database: maskingdb
+          schema: ""
+          table: Customers
+          column: ""
+- description: Correlated subquery in the target field clause.
+  statement: SELECT city, (SELECT COUNT(*) FROM paintings p WHERE g.id = p.gallery_id) AS total_paintings FROM galleries g;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name":  "ds1",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "GALLERIES",
+              "columns":  [
+                {
+                  "name":  "ID"
+                },
+                {
+                  "name":  "CITY"
+                }
+              ]
+            },
+            {
+              "name":  "PAINTINGS",
+              "columns":  [
+                {
+                  "name":  "GALLERY_ID"
+                },
+                {
+                  "name":  "ARTIST_ID"
+                },
+                {
+                  "name":  "TITLE"
+                },
+                {
+                  "name":  "PRICE"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 0
+    results:
+        - name: CITY
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: galleries
+              column: CITY
+        - name: TOTAL_PAINTINGS
+          sourcecolumns: []
+    sourcecolumns:
+        - server: ""
+          database: ds1
+          schema: ""
+          table: galleries
+          column: ""
+        - server: ""
+          database: ds1
+          schema: ""
+          table: paintings
+          column: ""
+- description: FIXME(zp)Expression subquery
+  statement: SELECT (SELECT Name FROM Customers), ID FROM Customers;
+  defaultDatabase: maskingdb
+  metadata: |-
+    {
+      "name":  "maskingdb",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "Customers",
+              "columns":  [
+                {
+                  "name":  "Id"
+                },
+                {
+                  "name":  "Name"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 0
+    results:
+        - name: ""
+          sourcecolumns: []
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: Customers
+              column: Id
+    sourcecolumns:
+        - server: ""
+          database: maskingdb
+          schema: ""
+          table: Customers
+          column: ""
+- description: Table subquery
+  statement: WITH A AS (SELECT * FROM Customers) SELECT result.ID, * FROM (SELECT * FROM A) result;
+  defaultDatabase: maskingdb
+  metadata: |-
+    {
+      "name":  "maskingdb",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "Customers",
+              "columns":  [
+                {
+                  "name":  "Id"
+                },
+                {
+                  "name":  "Name"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 0
+    results:
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: Customers
+              column: Id
+        - name: Id
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: Customers
+              column: Id
+        - name: Name
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: Customers
+              column: Name
+    sourcecolumns:
+        - server: ""
+          database: maskingdb
+          schema: ""
+          table: A
+          column: ""
+        - server: ""
+          database: maskingdb
+          schema: ""
+          table: Customers
+          column: ""
+- description: Wild projecter
+  statement: SELECT s.* FROM Customers s;
+  defaultDatabase: maskingdb
+  metadata: |-
+    {
+      "name":  "maskingdb",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "Customers",
+              "columns":  [
+                {
+                  "name":  "Id"
+                },
+                {
+                  "name":  "Name"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 0
+    results:
+        - name: Id
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: Customers
+              column: Id
+        - name: Name
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: Customers
+              column: Name
+    sourcecolumns:
+        - server: ""
+          database: maskingdb
+          schema: ""
+          table: Customers
+          column: ""
+- description: Simple projecter
+  statement: SELECT Id, Name FROM Customers;
+  defaultDatabase: maskingdb
+  metadata: |-
+    {
+      "name":  "maskingdb",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "Customers",
+              "columns":  [
+                {
+                  "name":  "Id"
+                },
+                {
+                  "name":  "Name"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 0
+    results:
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: Customers
+              column: Id
+        - name: NAME
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: Customers
+              column: Name
+    sourcecolumns:
+        - server: ""
+          database: maskingdb
+          schema: ""
+          table: Customers
+          column: ""
+- description: Expression in target field
+  statement: SELECT Id+1, Id+Name, foo(bar(Id), Name) FROM Customers;
+  defaultDatabase: maskingdb
+  metadata: |-
+    {
+      "name":  "maskingdb",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "Customers",
+              "columns":  [
+                {
+                  "name":  "Id"
+                },
+                {
+                  "name":  "Name"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 0
+    results:
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: Customers
+              column: Id
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: Customers
+              column: Id
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: Customers
+              column: Name
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: Customers
+              column: Id
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: Customers
+              column: Name
+    sourcecolumns:
+        - server: ""
+          database: maskingdb
+          schema: ""
+          table: Customers
+          column: ""
+- description: Simple select asterisk statement
+  statement: SELECT * FROM Customers;
+  defaultDatabase: maskingdb
+  metadata: |-
+    {
+      "name":  "maskingdb",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "Customers",
+              "columns":  [
+                {
+                  "name":  "Id"
+                },
+                {
+                  "name":  "Name"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 0
+    results:
+        - name: Id
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: Customers
+              column: Id
+        - name: Name
+          sourcecolumns:
+            - server: ""
+              database: maskingdb
+              schema: ""
+              table: Customers
+              column: Name
+    sourcecolumns:
+        - server: ""
+          database: maskingdb
+          schema: ""
+          table: Customers
+          column: ""
