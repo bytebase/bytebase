@@ -760,8 +760,8 @@ github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.5 h1:wtpJ4zcwr
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.5/go.mod h1:qu/W9HXQbbQ4+1+JcZp0ZNPV31ym537ZJN+fiS7Ti8E=
 github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.17.13 h1:Eq2THzHt6P41mpjS2sUzz/3dJYFRqdWZ+vQaEMm98EM=
 github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.17.13/go.mod h1:FgwTca6puegxgCInYwGjmd4tB9195Dd6LCuA+8MjpWw=
-github.com/aws/aws-sdk-go-v2/service/licensemanager v1.29.3 h1:V+g6+3QHMg7mdJug1IVBtdvwm9fXTjnk+TzZfMwNwk4=
-github.com/aws/aws-sdk-go-v2/service/licensemanager v1.29.3/go.mod h1:sZCFsN1w88C1YpRaPPmFw39bMNcoRyv/0TFw2GUDyK0=
+github.com/aws/aws-sdk-go-v2/service/licensemanager v1.29.6 h1:lIBhjNuzuaHwAuziSpwd1pUPrOUGrHnQlg7cbcbLegM=
+github.com/aws/aws-sdk-go-v2/service/licensemanager v1.29.6/go.mod h1:G2ZGBJQHBfH6UXY9f0TUfx6kucCKJgQbLKftvjzpXls=
 github.com/aws/aws-sdk-go-v2/service/s3 v1.57.1 h1:aHPtNY87GZ214N4rShgIo+5JQz7ICrJ50i17JbueUTw=
 github.com/aws/aws-sdk-go-v2/service/s3 v1.57.1/go.mod h1:hdV0NTYd0RwV4FvNKhKUNbPLZoq9CTr/lke+3I7aCAI=
 github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.34.3 h1:CyA6J82ePPoh1Nj8ErOR2e/JRlzfFzWpGwGMFzFjwZg=
