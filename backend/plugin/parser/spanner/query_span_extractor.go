@@ -178,7 +178,7 @@ func (q *querySpanExtractor) recordCTE(withClause parser.IWith_clauseContext) er
 	allAliasedQuery := withClause.AllAliased_query()
 	recursive := withClause.RECURSIVE_SYMBOL() != nil
 	for _, aliasedQuery := range allAliasedQuery {
-		// TODO(zp): Actually, BigQuery do not rely on the RECURSIVE keyword, instead, it detects the recursive CTE
+		// TODO(zp): Actually, Spanner do not rely on the RECURSIVE keyword, instead, it detects the recursive CTE
 		// by the reference of the CTE itself in the CTE body. Also, check other engines.
 		if recursive {
 			if err := q.recordRecursiveCTE(aliasedQuery); err != nil {
@@ -1238,5 +1238,5 @@ func isMixedQuery(m base.SourceColumnSet) (bool, bool) {
 }
 
 func isSystemResource(resource base.ColumnResource) bool {
-	return strings.EqualFold(resource.Schema, "INFORMATION_SCHEMA")
+	return strings.EqualFold(resource.Schema, "INFORMATION_SCHEMA") || strings.EqualFold(resource.Schema, "SPANNER_SYS")
 }
