@@ -22,6 +22,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -155,7 +157,7 @@ func (exec *DataUpdateExecutor) shouldSkipBackupError(ctx context.Context, task 
 func (exec *DataUpdateExecutor) backupData(
 	ctx context.Context,
 	driverCtx context.Context,
-	statement string,
+	originStatement string,
 	payload *storepb.TaskDatabaseUpdatePayload,
 	task *store.TaskMessage,
 	issueN *store.IssueMessage,
@@ -219,14 +221,19 @@ func (exec *DataUpdateExecutor) backupData(
 		}
 	}
 
-	if len(statement) > common.MaxSheetCheckSize {
-		return nil, errors.Errorf("statement size %d exceeds the limit %d", len(statement), common.MaxSheetCheckSize)
+	if len(originStatement) > common.MaxSheetCheckSize {
+		return nil, errors.Errorf("statement size %d exceeds the limit %d", len(originStatement), common.MaxSheetCheckSize)
 	}
 
 	prefix := "_" + time.Now().Format("20060102150405")
-	statements, err := base.TransformDMLToSelect(ctx, instance.Engine, tc, statement, database.DatabaseName, backupDatabaseName, prefix)
+	statements, err := base.TransformDMLToSelect(ctx, instance.Engine, tc, originStatement, database.DatabaseName, backupDatabaseName, prefix)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to transform DML to select")
+	}
+
+	preAppendStatements, err := getPreAppendStatements(instance.Engine, originStatement)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get pre append statements")
 	}
 
 	priorBackupDetail := &storepb.PriorBackupDetail{}
@@ -235,8 +242,12 @@ func (exec *DataUpdateExecutor) backupData(
 		bbSource = fmt.Sprintf("issue %d", issueN.UID)
 	}
 	for _, statement := range statements {
-		if _, err := driver.Execute(driverCtx, statement.Statement, db.ExecuteOptions{}); err != nil {
-			return nil, errors.Wrapf(err, "failed to execute backup statement %q", statement.Statement)
+		backupStatement := statement.Statement
+		if preAppendStatements != "" {
+			backupStatement = preAppendStatements + backupStatement
+		}
+		if _, err := driver.Execute(driverCtx, backupStatement, db.ExecuteOptions{}); err != nil {
+			return nil, errors.Wrapf(err, "failed to execute backup statement %q", backupStatement)
 		}
 		switch instance.Engine {
 		case storepb.Engine_TIDB:
@@ -372,4 +383,25 @@ func BuildListDatabaseNamesFunc(storeInstance *store.Store) base.ListDatabaseNam
 		}
 		return names, nil
 	}
+}
+
+func getPreAppendStatements(engine storepb.Engine, statement string) (string, error) {
+	if engine != storepb.Engine_POSTGRES {
+		return "", nil
+	}
+
+	nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to parse statement")
+	}
+
+	for _, node := range nodes {
+		if n, ok := node.(*ast.VariableSetStmt); ok {
+			if n.Name == "role" {
+				return n.Text(), nil
+			}
+		}
+	}
+
+	return "", nil
 }
