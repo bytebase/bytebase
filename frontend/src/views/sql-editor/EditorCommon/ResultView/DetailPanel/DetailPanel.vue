@@ -198,7 +198,20 @@ const contentClass = computed(() => {
 
 const { copy, copied } = useClipboard({
   source: computed(() => {
-    return content.value ?? "";
+    const raw = content.value ?? "";
+    if (guessedIsJSON.value && format.value) {
+      try {
+        const obj = JSON.parse(raw);
+        return JSON.stringify(obj, null, "  ");
+      } catch {
+        console.warn(
+          "[DetailPanel]",
+          "failed to parse and format (maybe) JSON value"
+        );
+        return raw;
+      }
+    }
+    return raw;
   }),
   legacy: true,
 });
