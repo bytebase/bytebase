@@ -1,55 +1,75 @@
 - statement: |-
     CREATE TABLE t(a int);
     COMMENT ON TABLE t IS 'comments';
-- statement: |-
-    CREATE TABLE t(a int);
+  changeType: 0
+- statement: CREATE TABLE t(a int);
+  changeType: 0
   want:
     - status: 2
       code: 1032
       title: table.comment
       content: Comment is required for table `t`
+      detail: ""
       startposition:
         line: 1
+        column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     CREATE TABLE d(a int);
     COMMENT ON TABLE t IS 'comments';
+  changeType: 0
   want:
     - status: 2
       code: 1032
       title: table.comment
       content: Comment is required for table `d`
+      detail: ""
       startposition:
         line: 2
+        column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     COMMENT ON TABLE t IS 'comments';
     COMMENT ON TABLE t IS '';
+  changeType: 0
   want:
     - status: 2
       code: 1032
       title: table.comment
       content: Comment is required for table `t`
+      detail: ""
       startposition:
         line: 1
+        column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     COMMENT ON TABLE t IS 'comments';
     COMMENT ON TABLE t IS NULL;
+  changeType: 0
   want:
     - status: 2
       code: 1032
       title: table.comment
       content: Comment is required for table `t`
+      detail: ""
       startposition:
         line: 1
+        column: 0
+      endposition: null
 - statement: |-
     CREATE TABLE t(a int);
     COMMENT ON TABLE t IS 'looooooong comments';
+  changeType: 0
   want:
     - status: 2
       code: 1301
       title: table.comment
       content: Table `t` comment is too long. The length of comment should be within 10 characters
+      detail: ""
       startposition:
         line: 2
+        column: 0
+      endposition: null
