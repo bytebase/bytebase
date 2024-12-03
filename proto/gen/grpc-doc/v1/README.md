@@ -10982,6 +10982,9 @@ Type of the SheetPayload.
 | statement | [string](#string) |  |  |
 | metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The database metadata to check against. It can be used to check against an uncommitted metadata. If not provided, the database metadata will be fetched from the database. |
 | change_type | [CheckRequest.ChangeType](#bytebase-v1-CheckRequest-ChangeType) |  |  |
+| base_statement | [string](#string) | optional | The base_statement is an optional SQL statement used to establish additional database schema context before evaluating the current statement.
+
+For example, the following statement will pass checks even if the database doesn&#39;t have the table &#39;tbd&#39;: * statement: DROP TABLE tbd; * base_statement: CREATE TABLE tbd (id INT, name VARCHAR(255)); |
 
 
 

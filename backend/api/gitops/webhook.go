@@ -305,7 +305,8 @@ func (s *Service) sqlReviewWithPRInfo(ctx context.Context, project *store.Projec
 			changeType,
 			instance,
 			database,
-			nil, /* Override Metadata */
+			nil, /* Override metadata */
+			nil, /* Base statement */
 		)
 		if err != nil {
 			slog.Error("failed to exec sql review", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName), log.BBError(err))

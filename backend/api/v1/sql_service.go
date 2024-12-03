@@ -1254,7 +1254,7 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 			return nil, err
 		}
 	}
-	_, adviceList, err := s.SQLReviewCheck(ctx, request.Statement, request.ChangeType, instance, database, overideMetadata)
+	_, adviceList, err := s.SQLReviewCheck(ctx, request.Statement, request.ChangeType, instance, database, overideMetadata, request.BaseStatement)
 	if err != nil {
 		return nil, err
 	}
@@ -1296,6 +1296,7 @@ func (s *SQLService) SQLReviewCheck(
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
 	overrideMetadata *storepb.DatabaseSchemaMetadata,
+	baseStatement *string,
 ) (storepb.Advice_Status, []*v1pb.Advice, error) {
 	if !isSQLReviewSupported(instance.Engine) || database == nil {
 		return storepb.Advice_SUCCESS, nil, nil
@@ -1322,7 +1323,7 @@ func (s *SQLService) SQLReviewCheck(
 		dbMetadata = dbSchema.GetMetadata()
 	}
 
-	catalog, err := catalog.NewCatalog(ctx, s.store, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), overrideMetadata)
+	catalog, err := catalog.NewCatalog(ctx, s.store, s.sheetManager, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), overrideMetadata, baseStatement)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to create a catalog: %v", err)
 	}
