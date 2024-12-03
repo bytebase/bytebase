@@ -62,13 +62,3 @@
       endposition: null
 - statement: SET ROLE role1;DELETE FROM tech_book WHERE a > 1;
   changeType: 2
-  want:
-    - status: 2
-      code: 2001
-      title: builtin.prior-backup-check
-      content: Backup cannot deal with SET ROLE statement
-      detail: ""
-      startposition:
-        line: 1
-        column: 0
-      endposition: null

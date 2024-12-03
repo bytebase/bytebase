@@ -52,7 +52,7 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 	var needBackup []ast.Node
 
 	for _, stmt := range stmtList {
-		switch n := stmt.(type) {
+		switch stmt.(type) {
 		case ast.DDLNode:
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:  level,
@@ -65,18 +65,6 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 			})
 		case *ast.UpdateStmt, *ast.DeleteStmt:
 			needBackup = append(needBackup, stmt)
-		case *ast.VariableSetStmt:
-			if n.Name == "role" {
-				adviceList = append(adviceList, &storepb.Advice{
-					Status:  level,
-					Title:   title,
-					Content: "Backup cannot deal with SET ROLE statement",
-					Code:    advisor.BuiltinPriorBackupCheck.Int32(),
-					StartPosition: &storepb.Position{
-						Line: int32(stmt.LastLine()),
-					},
-				})
-			}
 		}
 	}
 
