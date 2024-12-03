@@ -107,7 +107,10 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 		return "", g.err
 	}
 
-	return fmt.Sprintf("%s\n/*\nOriginal SQL:\n%s\n*/\n%s", preAppendStatements, sqlForComment, g.result), nil
+	if len(preAppendStatements) > 0 {
+		return fmt.Sprintf("%s\n/*\nOriginal SQL:\n%s\n*/\n%s", preAppendStatements, sqlForComment, g.result), nil
+	}
+	return fmt.Sprintf("/*\nOriginal SQL:\n%s\n*/\n%s", sqlForComment, g.result), nil
 }
 
 type generator struct {
