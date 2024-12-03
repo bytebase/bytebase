@@ -1,5 +1,5 @@
 <template>
-  <Drawer v-bind="$attrs" @close="emit('close')">
+  <Drawer :show="show" v-bind="$attrs" @close="emit('close')">
     <DrawerContent class="w-176" :title="$t('release.actions.new-file')">
       <template #default>
         <div class="w-full flex flex-col gap-4">
@@ -98,6 +98,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
+  show: boolean;
   file?: FileToCreate;
 }>();
 
@@ -176,7 +177,7 @@ const onConfirm = () => {
 };
 
 watch(
-  () => props.file,
+  () => props.show,
   () => {
     state.files = [];
     if (props.file) {
