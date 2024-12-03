@@ -12,6 +12,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -43,10 +45,16 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 	if truncated {
 		sqlForComment += "..."
 	}
-	return doGenerate(ctx, rCtx, sqlForComment, tree, backupItem)
+
+	preAppendStatements, err := getPreAppendStatements(statement)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get pre-append statements")
+	}
+
+	return doGenerate(ctx, rCtx, sqlForComment, tree, backupItem, preAppendStatements)
 }
 
-func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, tree *ParseResult, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
+func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, tree *ParseResult, backupItem *storepb.PriorBackupDetail_Item, preAppendStatements string) (string, error) {
 	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
@@ -97,6 +105,10 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 	antlr.ParseTreeWalkerDefault.Walk(g, tree.Tree)
 	if g.err != nil {
 		return "", g.err
+	}
+
+	if len(preAppendStatements) > 0 {
+		return fmt.Sprintf("%s\n/*\nOriginal SQL:\n%s\n*/\n%s", preAppendStatements, sqlForComment, g.result), nil
 	}
 	return fmt.Sprintf("/*\nOriginal SQL:\n%s\n*/\n%s", sqlForComment, g.result), nil
 }
@@ -233,4 +245,21 @@ func inRange(start, end, targetStart, targetEnd *storepb.Position) bool {
 		return false
 	}
 	return true
+}
+
+func getPreAppendStatements(statement string) (string, error) {
+	nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to parse statement")
+	}
+
+	for _, node := range nodes {
+		if n, ok := node.(*ast.VariableSetStmt); ok {
+			if n.Name == "role" {
+				return n.Text(), nil
+			}
+		}
+	}
+
+	return "", nil
 }
