@@ -61,7 +61,7 @@ import {
   type DataTableColumn,
   type DropdownOption,
 } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useReleaseCreateContext, type FileToCreate } from "../context";
 import CreateReleaseFilesPanel from "./CreateReleaseFilesPanel.vue";
@@ -129,4 +129,20 @@ const rowProps = (row: FileToCreate) => {
     },
   };
 };
+
+watch(
+  files,
+  () => {
+    // Clear selected file if it's not in the list anymore.
+    if (
+      state.selectedFile &&
+      !files.value.find((file) => file.id === state.selectedFile?.id)
+    ) {
+      state.selectedFile = undefined;
+    }
+  },
+  {
+    immediate: true,
+  }
+);
 </script>
