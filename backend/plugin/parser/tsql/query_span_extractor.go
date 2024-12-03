@@ -130,6 +130,32 @@ type tsqlSelectOnlyListener struct {
 	err       error
 }
 
+func (listener *tsqlSelectOnlyListener) EnterDeclare_statement(ctx *parser.Declare_statementContext) {
+	if ctx.Table_type_definition() != nil {
+		tableName := ctx.LOCAL_ID().GetText()
+		table := &base.PhysicalTable{
+			Name: tableName,
+		}
+
+		l := &tempTableColumnDefinitionListener{
+			table: table,
+		}
+		antlr.ParseTreeWalkerDefault.Walk(l, ctx.Table_type_definition())
+		listener.extractor.gCtx.TempTables[tableName] = table
+	}
+}
+
+type tempTableColumnDefinitionListener struct {
+	*parser.BaseTSqlParserListener
+
+	table *base.PhysicalTable
+}
+
+func (listener *tempTableColumnDefinitionListener) EnterColumn_definition(ctx *parser.Column_definitionContext) {
+	columnName := ctx.Id_().GetText()
+	listener.table.Columns = append(listener.table.Columns, columnName)
+}
+
 // EnterSelect_statement_standalone is called when production select_statement_standalone is entered.
 func (listener *tsqlSelectOnlyListener) EnterDml_clause(ctx *parser.Dml_clauseContext) {
 	if ctx.Select_statement_standalone() == nil {
@@ -492,6 +518,15 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromTableSourceItem(ctx p
 		}
 	} else if ctx.Table_source() != nil {
 		return q.extractTSqlSensitiveFieldsFromTableSource(ctx.Table_source())
+	} else if ctx.LOCAL_ID() != nil {
+		tableName := ctx.LOCAL_ID().GetText()
+		if tempTable, ok := q.gCtx.TempTables[tableName]; ok {
+			return tempTable, nil
+		}
+		return nil, &parsererror.ResourceNotFoundError{
+			Table: &tableName,
+			Err:   errors.Errorf("temp table %s not found", tableName),
+		}
 	} else {
 		return nil, &parsererror.TypeNotSupportedError{
 			Err:  errors.Errorf("only full table name in table source item is supported"),
