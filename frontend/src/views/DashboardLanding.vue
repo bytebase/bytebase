@@ -92,7 +92,7 @@
         <Draggable v-model="quickLinkList" item-key="id" animation="300">
           <template #item="{ element }: { element: QuickLink }">
             <div
-              class="flex items-center justify-between p-2 hover:bg-gray-100 rounded-sm cursor-grab"
+              class="group flex items-center justify-between p-2 hover:bg-gray-100 rounded-sm cursor-grab"
             >
               <div :key="element.id" class="flex items-center gap-x-2">
                 <NCheckbox
@@ -103,7 +103,9 @@
                 <component :is="element.icon" class="w-5 h-5 text-gray-500" />
                 {{ element.title }}
               </div>
-              <ArrowDownUpIcon class="w-5 h-5 text-gray-500" />
+              <GripVerticalIcon
+                class="w-5 h-5 text-gray-500 hidden group-hover:block"
+              />
             </div>
           </template>
         </Draggable>
@@ -129,7 +131,7 @@
 
 <script lang="tsx" setup>
 import { Volume2Icon } from "lucide-vue-next";
-import { SettingsIcon, ArrowDownUpIcon } from "lucide-vue-next";
+import { SettingsIcon, GripVerticalIcon } from "lucide-vue-next";
 import { NButton, NCheckbox, NDivider } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
