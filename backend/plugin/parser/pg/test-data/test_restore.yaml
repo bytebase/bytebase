@@ -10,7 +10,7 @@
   backuptable: prefix_t_generated
   originaldatabase: db
   originaltable: t_generated
-  result: |-
+  result: |4-
     /*
     Original SQL:
     UPDATE t_generated as t SET t."a" = 1 WHERE b = 1;
@@ -34,7 +34,7 @@
   backuptable: prefix_t_generated
   originaldatabase: db
   originaltable: t_generated
-  result: |-
+  result: |4-
     /*
     Original SQL:
     UPDATE t_generated SET A = 1 WHERE b = 1;
@@ -51,7 +51,7 @@
   backuptable: prefix_1_t_generated
   originaldatabase: db
   originaltable: t_generated
-  result: |-
+  result: |4-
     /*
     Original SQL:
     DELETE FROM t_generated where a = 1
@@ -62,7 +62,7 @@
   backuptable: prefix_1_t_generated
   originaldatabase: db
   originaltable: t_generated
-  result: |-
+  result: |4-
     /*
     Original SQL:
     UPDATE t_generated SET a = 1 WHERE a = 2
@@ -73,7 +73,7 @@
   backuptable: prefix_1_test
   originaldatabase: db
   originaltable: test
-  result: |-
+  result: |4-
     /*
     Original SQL:
     UPDATE test x SET x.c = 1 WHERE x.a = 1
@@ -84,7 +84,7 @@
   backuptable: prefix_1_test
   originaldatabase: db
   originaltable: test
-  result: |-
+  result: |4-
     /*
     Original SQL:
     UPDATE test SET c = 1 WHERE a = 1
