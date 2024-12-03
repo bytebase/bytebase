@@ -308,6 +308,9 @@ type GetQuerySpanContext struct {
 	GetDatabaseMetadataFunc       GetDatabaseMetadataFunc
 	ListDatabaseNamesFunc         ListDatabaseNamesFunc
 	GetLinkedDatabaseMetadataFunc GetLinkedDatabaseMetadataFunc
+	// TempTables is the temporary tables created in the query span.
+	// It's used to store the temporary tables declared in one batch for SQL Server.
+	TempTables map[string]*PhysicalTable
 
 	// Adding the engine information here is a trade-off between the copy-pasted and shared code.
 	// For engines with more different, we implement the getQuerySpan separately.
