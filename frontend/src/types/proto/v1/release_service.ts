@@ -20,6 +20,7 @@ import {
   vCSTypeToJSON,
   vCSTypeToNumber,
 } from "./common";
+import { Advice } from "./sql_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -136,6 +137,33 @@ export interface UndeleteReleaseRequest {
   name: string;
 }
 
+export interface CheckReleaseRequest {
+  /** Format: projects/{project} */
+  parent: string;
+  /** The release to check. */
+  release:
+    | Release
+    | undefined;
+  /**
+   * The targets to dry-run the release.
+   * Can be database or databaseGroup.
+   * Format:
+   * projects/{project}/databaseGroups/{databaseGroup}
+   * instances/{instance}/databases/{database}
+   */
+  targets: string[];
+}
+
+export interface CheckReleaseResponse {
+  results: CheckReleaseResponse_CheckResult[];
+}
+
+export interface CheckReleaseResponse_CheckResult {
+  /** The file id that is being checked. */
+  file: string;
+  advices: Advice[];
+}
+
 export interface Release {
   /** Format: projects/{project}/releases/{release} */
   name: string;
@@ -164,7 +192,7 @@ export interface Release_File {
   sheetSha256: string;
   type: ReleaseFileType;
   version: string;
-  /** The statement is used for preview purpose. */
+  /** The statement is used for preview or check purpose. */
   statement: string;
   statementSize: Long;
 }
@@ -671,6 +699,232 @@ export const UndeleteReleaseRequest: MessageFns<UndeleteReleaseRequest> = {
   fromPartial(object: DeepPartial<UndeleteReleaseRequest>): UndeleteReleaseRequest {
     const message = createBaseUndeleteReleaseRequest();
     message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseCheckReleaseRequest(): CheckReleaseRequest {
+  return { parent: "", release: undefined, targets: [] };
+}
+
+export const CheckReleaseRequest: MessageFns<CheckReleaseRequest> = {
+  encode(message: CheckReleaseRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.release !== undefined) {
+      Release.encode(message.release, writer.uint32(18).fork()).join();
+    }
+    for (const v of message.targets) {
+      writer.uint32(26).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CheckReleaseRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCheckReleaseRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.release = Release.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.targets.push(reader.string());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CheckReleaseRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      release: isSet(object.release) ? Release.fromJSON(object.release) : undefined,
+      targets: globalThis.Array.isArray(object?.targets) ? object.targets.map((e: any) => globalThis.String(e)) : [],
+    };
+  },
+
+  toJSON(message: CheckReleaseRequest): unknown {
+    const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.release !== undefined) {
+      obj.release = Release.toJSON(message.release);
+    }
+    if (message.targets?.length) {
+      obj.targets = message.targets;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CheckReleaseRequest>): CheckReleaseRequest {
+    return CheckReleaseRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CheckReleaseRequest>): CheckReleaseRequest {
+    const message = createBaseCheckReleaseRequest();
+    message.parent = object.parent ?? "";
+    message.release = (object.release !== undefined && object.release !== null)
+      ? Release.fromPartial(object.release)
+      : undefined;
+    message.targets = object.targets?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseCheckReleaseResponse(): CheckReleaseResponse {
+  return { results: [] };
+}
+
+export const CheckReleaseResponse: MessageFns<CheckReleaseResponse> = {
+  encode(message: CheckReleaseResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.results) {
+      CheckReleaseResponse_CheckResult.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CheckReleaseResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCheckReleaseResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.results.push(CheckReleaseResponse_CheckResult.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CheckReleaseResponse {
+    return {
+      results: globalThis.Array.isArray(object?.results)
+        ? object.results.map((e: any) => CheckReleaseResponse_CheckResult.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: CheckReleaseResponse): unknown {
+    const obj: any = {};
+    if (message.results?.length) {
+      obj.results = message.results.map((e) => CheckReleaseResponse_CheckResult.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CheckReleaseResponse>): CheckReleaseResponse {
+    return CheckReleaseResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CheckReleaseResponse>): CheckReleaseResponse {
+    const message = createBaseCheckReleaseResponse();
+    message.results = object.results?.map((e) => CheckReleaseResponse_CheckResult.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseCheckReleaseResponse_CheckResult(): CheckReleaseResponse_CheckResult {
+  return { file: "", advices: [] };
+}
+
+export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_CheckResult> = {
+  encode(message: CheckReleaseResponse_CheckResult, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.file !== "") {
+      writer.uint32(10).string(message.file);
+    }
+    for (const v of message.advices) {
+      Advice.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CheckReleaseResponse_CheckResult {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCheckReleaseResponse_CheckResult();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.file = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.advices.push(Advice.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CheckReleaseResponse_CheckResult {
+    return {
+      file: isSet(object.file) ? globalThis.String(object.file) : "",
+      advices: globalThis.Array.isArray(object?.advices) ? object.advices.map((e: any) => Advice.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: CheckReleaseResponse_CheckResult): unknown {
+    const obj: any = {};
+    if (message.file !== "") {
+      obj.file = message.file;
+    }
+    if (message.advices?.length) {
+      obj.advices = message.advices.map((e) => Advice.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CheckReleaseResponse_CheckResult>): CheckReleaseResponse_CheckResult {
+    return CheckReleaseResponse_CheckResult.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CheckReleaseResponse_CheckResult>): CheckReleaseResponse_CheckResult {
+    const message = createBaseCheckReleaseResponse_CheckResult();
+    message.file = object.file ?? "";
+    message.advices = object.advices?.map((e) => Advice.fromPartial(e)) || [];
     return message;
   },
 };
@@ -1448,6 +1702,65 @@ export const ReleaseServiceDefinition = {
               101,
               116,
               101,
+            ]),
+          ],
+        },
+      },
+    },
+    checkRelease: {
+      name: "CheckRelease",
+      requestType: CheckReleaseRequest,
+      requestStream: false,
+      responseType: CheckReleaseResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              43,
+              58,
+              1,
+              42,
+              34,
+              38,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
+              47,
+              114,
+              101,
+              108,
+              101,
+              97,
+              115,
+              101,
+              115,
+              58,
+              99,
+              104,
+              101,
+              99,
+              107,
             ]),
           ],
         },
