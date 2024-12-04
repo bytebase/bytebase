@@ -10,6 +10,7 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/common.proto";
+import "v1/sql_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -42,6 +43,12 @@ service ReleaseService {
   }
   rpc UndeleteRelease(UndeleteReleaseRequest) returns (Release) {
     option (google.api.http) = {post: "/v1/{name=projects/*/releases/*}:undelete"};
+  }
+  rpc CheckRelease(CheckReleaseRequest) returns (CheckReleaseResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/releases:check"
+      body: "*"
+    };
   }
 }
 
@@ -122,6 +129,35 @@ message UndeleteReleaseRequest {
   ];
 }
 
+message CheckReleaseRequest {
+  // Format: projects/{project}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+
+  // The release to check.
+  Release release = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // The targets to dry-run the release.
+  // Can be database or databaseGroup.
+  // Format:
+  // projects/{project}/databaseGroups/{databaseGroup}
+  // instances/{instance}/databases/{database}
+  repeated string targets = 3;
+}
+
+message CheckReleaseResponse {
+  message CheckResult {
+    // The file id that is being checked.
+    string file = 1;
+
+    repeated Advice advices = 2;
+  }
+
+  repeated CheckResult results = 1;
+}
+
 message Release {
   option (google.api.resource) = {
     type: "bytebase.com/Release"
@@ -129,7 +165,7 @@ message Release {
   };
 
   // Format: projects/{project}/releases/{release}
-  string name = 1;
+  string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string title = 2;
 
@@ -142,11 +178,11 @@ message Release {
 
   google.protobuf.Timestamp create_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  State state = 7;
+  State state = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   message File {
     // The unique identifier for the file.
-    string id = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+    string id = 1;
     // The path of the file. e.g. `2.2/V0001_create_table.sql`.
     string path = 2;
     // The sheet that holds the content.
@@ -157,8 +193,8 @@ message Release {
     ReleaseFileType type = 5;
     string version = 6;
 
-    // The statement is used for preview purpose.
-    string statement = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+    // The statement is used for preview or check purpose.
+    string statement = 7;
     int64 statement_size = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
   }
 

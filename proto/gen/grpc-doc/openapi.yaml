@@ -5798,6 +5798,37 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/releases:check:
+        post:
+            tags:
+                - ReleaseService
+            operationId: ReleaseService_CheckRelease
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CheckReleaseRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CheckReleaseResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}/rollouts:
         get:
             tags:
@@ -9607,6 +9638,46 @@ components:
                     type: string
                     description: The expression is the expression of a check constraint.
             description: CheckConstraintMetadata is the metadata for check constraints.
+        CheckReleaseRequest:
+            required:
+                - parent
+                - release
+            type: object
+            properties:
+                parent:
+                    type: string
+                    description: 'Format: projects/{project}'
+                release:
+                    allOf:
+                        - $ref: '#/components/schemas/Release'
+                    description: The release to check.
+                targets:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        The targets to dry-run the release.
+                         Can be database or databaseGroup.
+                         Format:
+                         projects/{project}/databaseGroups/{databaseGroup}
+                         instances/{instance}/databases/{database}
+        CheckReleaseResponse:
+            type: object
+            properties:
+                results:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/CheckReleaseResponse_CheckResult'
+        CheckReleaseResponse_CheckResult:
+            type: object
+            properties:
+                file:
+                    type: string
+                    description: The file id that is being checked.
+                advices:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Advice'
         CheckRequest:
             required:
                 - name
@@ -12830,6 +12901,7 @@ components:
             type: object
             properties:
                 name:
+                    readOnly: true
                     type: string
                     description: 'Format: projects/{project}/releases/{release}'
                 title:
@@ -12849,6 +12921,7 @@ components:
                     type: string
                     format: date-time
                 state:
+                    readOnly: true
                     enum:
                         - STATE_UNSPECIFIED
                         - ACTIVE
@@ -12859,7 +12932,6 @@ components:
             type: object
             properties:
                 id:
-                    readOnly: true
                     type: string
                     description: The unique identifier for the file.
                 path:
@@ -12883,9 +12955,8 @@ components:
                 version:
                     type: string
                 statement:
-                    readOnly: true
                     type: string
-                    description: The statement is used for preview purpose.
+                    description: The statement is used for preview or check purpose.
                 statementSize:
                     readOnly: true
                     type: string
