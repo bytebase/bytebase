@@ -1,5 +1,5 @@
 import { useLocalStorage } from "@vueuse/core";
-import { createI18n } from "vue-i18n";
+import { createI18n, type Composer } from "vue-i18n";
 import { mergedLocalMessage } from "./i18n-messages";
 
 export interface LanguageStorage {
@@ -59,11 +59,9 @@ const i18n = createI18n({
   fallbackLocale: "en-US",
 });
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-export const t = i18n.global.t;
+export const t = i18n.global.t as Composer["t"];
 
-export const te = i18n.global.te;
+export const te = i18n.global.te as Composer["te"];
 
 export const locale = i18n.global.locale;
 
