@@ -387,15 +387,6 @@ export interface CheckRequest {
    */
   metadata: DatabaseMetadata | undefined;
   changeType: CheckRequest_ChangeType;
-  /**
-   * The base_statement is an optional SQL statement used to establish additional database schema
-   * context before evaluating the current statement.
-   *
-   * For example, the following statement will pass checks even if the database doesn't have the table 'tbd':
-   * * statement: DROP TABLE tbd;
-   * * base_statement: CREATE TABLE tbd (id INT, name VARCHAR(255));
-   */
-  baseStatement?: string | undefined;
 }
 
 export enum CheckRequest_ChangeType {
@@ -2646,13 +2637,7 @@ export const PrettyResponse: MessageFns<PrettyResponse> = {
 };
 
 function createBaseCheckRequest(): CheckRequest {
-  return {
-    name: "",
-    statement: "",
-    metadata: undefined,
-    changeType: CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED,
-    baseStatement: undefined,
-  };
+  return { name: "", statement: "", metadata: undefined, changeType: CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED };
 }
 
 export const CheckRequest: MessageFns<CheckRequest> = {
@@ -2668,9 +2653,6 @@ export const CheckRequest: MessageFns<CheckRequest> = {
     }
     if (message.changeType !== CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED) {
       writer.uint32(32).int32(checkRequest_ChangeTypeToNumber(message.changeType));
-    }
-    if (message.baseStatement !== undefined) {
-      writer.uint32(42).string(message.baseStatement);
     }
     return writer;
   },
@@ -2710,13 +2692,6 @@ export const CheckRequest: MessageFns<CheckRequest> = {
 
           message.changeType = checkRequest_ChangeTypeFromJSON(reader.int32());
           continue;
-        case 5:
-          if (tag !== 42) {
-            break;
-          }
-
-          message.baseStatement = reader.string();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2734,7 +2709,6 @@ export const CheckRequest: MessageFns<CheckRequest> = {
       changeType: isSet(object.changeType)
         ? checkRequest_ChangeTypeFromJSON(object.changeType)
         : CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED,
-      baseStatement: isSet(object.baseStatement) ? globalThis.String(object.baseStatement) : undefined,
     };
   },
 
@@ -2752,9 +2726,6 @@ export const CheckRequest: MessageFns<CheckRequest> = {
     if (message.changeType !== CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED) {
       obj.changeType = checkRequest_ChangeTypeToJSON(message.changeType);
     }
-    if (message.baseStatement !== undefined) {
-      obj.baseStatement = message.baseStatement;
-    }
     return obj;
   },
 
@@ -2769,7 +2740,6 @@ export const CheckRequest: MessageFns<CheckRequest> = {
       ? DatabaseMetadata.fromPartial(object.metadata)
       : undefined;
     message.changeType = object.changeType ?? CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED;
-    message.baseStatement = object.baseStatement ?? undefined;
     return message;
   },
 };

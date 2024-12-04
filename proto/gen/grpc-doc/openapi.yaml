@@ -9634,15 +9634,6 @@ components:
                         - SQL_EDITOR
                     type: string
                     format: enum
-                baseStatement:
-                    type: string
-                    description: |-
-                        The base_statement is an optional SQL statement used to establish additional database schema
-                         context before evaluating the current statement.
-
-                         For example, the following statement will pass checks even if the database doesn't have the table 'tbd':
-                         * statement: DROP TABLE tbd;
-                         * base_statement: CREATE TABLE tbd (id INT, name VARCHAR(255));
         CheckResponse:
             type: object
             properties:

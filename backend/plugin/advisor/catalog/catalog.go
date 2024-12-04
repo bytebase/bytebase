@@ -4,9 +4,6 @@ package catalog
 import (
 	"context"
 
-	"github.com/pkg/errors"
-
-	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -17,18 +14,7 @@ type Catalog struct {
 }
 
 // NewCatalog creates a new database catalog.
-func NewCatalog(
-	ctx context.Context,
-	s *store.Store,
-	sheetManager *sheet.Manager,
-	databaseID int,
-	engineType storepb.Engine,
-	ignoreCaseSensitive bool,
-	// overrideDatabaseMetadata is used to override the database metadata instead of fetching from the store.
-	overrideDatabaseMetadata *storepb.DatabaseSchemaMetadata,
-	// baseStatement is the base statement to used to establish additional database state by walking through its AST.
-	baseStatement *string,
-) (*Catalog, error) {
+func NewCatalog(ctx context.Context, s *store.Store, databaseID int, engineType storepb.Engine, ignoreCaseSensitive bool, overrideDatabaseMetadata *storepb.DatabaseSchemaMetadata) (*Catalog, error) {
 	c := &Catalog{}
 
 	dbMetadata := overrideDatabaseMetadata
@@ -43,13 +29,6 @@ func NewCatalog(
 		dbMetadata = databaseMeta.GetMetadata()
 	}
 	c.Finder = NewFinder(dbMetadata, &FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: ignoreCaseSensitive})
-	if baseStatement != nil {
-		asts, _ := sheetManager.GetASTsForChecks(engineType, *baseStatement)
-		// Walk through the base statement to establish additional database state.
-		if err := c.Finder.WalkThrough(asts); err != nil {
-			return nil, errors.Wrap(err, "failed to walk through base statement")
-		}
-	}
 	return c, nil
 }
 
