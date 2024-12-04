@@ -14,9 +14,21 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+type ChangelogStatus string
+
+const (
+	ChangelogStatusPending ChangelogStatus = "PENDING"
+	ChangelogStatusDone    ChangelogStatus = "DONE"
+	ChangelogStatusFailed  ChangelogStatus = "FAILED"
+)
+
 type ChangelogMessage struct {
 	DatabaseUID int
 	Payload     *storepb.ChangelogPayload
+
+	PrevSyncHistoryUID *int64
+	SyncHistoryUID     *int64
+	Status             ChangelogStatus
 
 	// output only
 	UID         int64
@@ -40,7 +52,7 @@ type UpdateChangelogMessage struct {
 
 	SyncHistoryUID *int64
 	RevisionUID    *int64
-	Status         *storepb.ChangelogTask_Status
+	Status         *ChangelogStatus
 }
 
 func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage, creatorUID int) (int64, error) {
@@ -48,11 +60,17 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage, c
 		INSERT INTO changelog (
 			creator_id,
 			database_id,
+			status,
+			prev_sync_history_id,
+			sync_history_id,
 			payload
 		) VALUES (
 		 	$1,
 			$2,
-			$3
+			$3,
+			$4,
+			$5,
+			$6
 		)
 		RETURNING id
 	`
@@ -69,7 +87,7 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage, c
 	}
 
 	var id int64
-	if err := tx.QueryRowContext(ctx, query, creatorUID, create.DatabaseUID, p).Scan(&id); err != nil {
+	if err := tx.QueryRowContext(ctx, query, creatorUID, create.DatabaseUID, create.Status, create.PrevSyncHistoryUID, create.SyncHistoryUID, p).Scan(&id); err != nil {
 		return 0, errors.Wrapf(err, "failed to insert")
 	}
 
@@ -82,30 +100,29 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage, c
 
 func (s *Store) UpdateChangelog(ctx context.Context, update *UpdateChangelogMessage) error {
 	args := []any{update.UID}
-	var payloadSet []string
+	var set []string
 
 	if v := update.SyncHistoryUID; v != nil {
-		payloadSet = append(payloadSet, fmt.Sprintf("jsonb_build_object('syncHistoryId', $%d::TEXT)", len(args)+1))
-		args = append(args, fmt.Sprintf("%d", *v))
+		set = append(set, fmt.Sprintf("sync_history_id = $%d", len(args)+1))
+		args = append(args, *v)
 	}
 	if v := update.RevisionUID; v != nil {
-		payloadSet = append(payloadSet, fmt.Sprintf("jsonb_build_object('revision', $%d::TEXT)", len(args)+1))
-		args = append(args, fmt.Sprintf("%d", *v))
+		set = append(set, fmt.Sprintf(`payload = payload || '{"revision": "%d"}'`, *v))
 	}
 	if v := update.Status; v != nil {
-		payloadSet = append(payloadSet, fmt.Sprintf("jsonb_build_object('status', $%d::TEXT)", len(args)+1))
-		args = append(args, v.String())
+		set = append(set, fmt.Sprintf("status = $%d", len(args)+1))
+		args = append(args, *v)
 	}
 
-	if len(payloadSet) == 0 {
+	if len(set) == 0 {
 		return errors.Errorf("update nothing")
 	}
 
 	query := fmt.Sprintf(`
 		UPDATE changelog
-		SET payload = jsonb_set(payload, '{task}', payload->'task' || %s)
+		SET %s
 		WHERE id = $1
-	`, strings.Join(payloadSet, " || "))
+	`, strings.Join(set, " , "))
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -152,6 +169,9 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 			changelog.creator_id,
 			changelog.created_ts,
 			changelog.database_id,
+			changelog.status,
+			changelog.prev_sync_history_id,
+			changelog.sync_history_id,
 			payload
 		FROM changelog
 		WHERE %s
@@ -182,6 +202,9 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 			&c.CreatorUID,
 			&c.CreatedTime,
 			&c.DatabaseUID,
+			&c.Status,
+			&c.PrevSyncHistoryUID,
+			&c.SyncHistoryUID,
 			&payload,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")
