@@ -148,6 +148,8 @@ message CheckReleaseResponse {
 
     repeated Advice advices = 2;
   }
+
+  repeated CheckResult results = 1;
 }
 
 message Release {
