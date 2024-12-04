@@ -9,6 +9,8 @@ import type {
   urlfy,
 } from "./utils";
 
+export {};
+
 declare module "vue" {
   export interface ComponentCustomProperties {
     window: Window & typeof globalThis;

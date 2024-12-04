@@ -1,10 +1,21 @@
 import { v1 as uuidv1 } from "uuid";
-import { computed, ref } from "vue";
+import { computed, ref, type Ref } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import type { CoreTabContext, TabContext } from "../types";
 import type { SchemaEditorEvents } from "./index";
 
-export const useTabs = (events: SchemaEditorEvents) => {
+export type TabsContext = {
+  tabMap: Ref<Map<string, TabContext>>;
+  tabList: Ref<TabContext[]>;
+  currentTabId: Ref<string>;
+  currentTab: Ref<TabContext | undefined>;
+  addTab: (coreTab: CoreTabContext, setAsCurrentTab?: boolean) => void;
+  setCurrentTab: (id: string) => void;
+  closeTab: (id: string) => void;
+  findTab: (target: CoreTabContext) => TabContext | undefined;
+};
+
+export const useTabs = (events: SchemaEditorEvents): TabsContext => {
   const tabMap = ref(new Map<string, TabContext>());
   const tabList = computed(() => {
     return Array.from(tabMap.value.values());
