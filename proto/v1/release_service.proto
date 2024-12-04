@@ -165,7 +165,7 @@ message Release {
   };
 
   // Format: projects/{project}/releases/{release}
-  string name = 1;
+  string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string title = 2;
 
@@ -178,11 +178,11 @@ message Release {
 
   google.protobuf.Timestamp create_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  State state = 7;
+  State state = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   message File {
     // The unique identifier for the file.
-    string id = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+    string id = 1;
     // The path of the file. e.g. `2.2/V0001_create_table.sql`.
     string path = 2;
     // The sheet that holds the content.
