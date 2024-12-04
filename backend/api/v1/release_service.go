@@ -364,11 +364,6 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 						Advices: advices,
 					})
 				}
-				asts, _ := s.sheetManager.GetASTsForChecks(instance.Engine, file.Statement)
-				// Walk through the statement to establish additional database state for next checks.
-				if err := catalog.Finder.WalkThrough(asts); err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to walk through the base statement %s, err %v", file.Statement, err)
-				}
 			}
 		}
 	}
