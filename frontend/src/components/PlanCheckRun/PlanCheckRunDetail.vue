@@ -220,7 +220,7 @@
       </div>
     </div>
 
-    <div v-if="showPlaceholder" class="py-3 px-2 first:pt-2 space-y-2">
+    <div v-if="showSuccessPlaceholder" class="py-3 px-2 first:pt-2 space-y-2">
       <div class="flex items-center space-x-3">
         <div
           class="relative w-5 h-5 flex flex-shrink-0 items-center justify-center rounded-full select-none"
@@ -487,8 +487,9 @@ const standardTableRows = computed(() => {
   return tableRows.value.filter((row) => !highlightRowFilter(row));
 });
 
-const showPlaceholder = computed(() => {
+const showSuccessPlaceholder = computed(() => {
   return (
+    props.planCheckRun.status === PlanCheckRun_Status.DONE &&
     highlightTableRows.value.length === 0 &&
     standardTableRows.value.length === 0
   );
