@@ -16,55 +16,204 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+const (
+	header = `
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+`
+
+	setDefaultTableSpace        = "SET default_tablespace = '';\n\n"
+	setDefaultTableAccessMethod = "SET default_table_access_method = heap;\n\n"
+)
+
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
-	// We don't support pg_dump for CloudSQL, because pg_dump not support IAM & instance name for authentication.
-	// To dump schema for CloudSQL, you need to run the cloud-sql-proxy with IAM to get the host and port.
-	// Learn more: https://linear.app/bytebase/issue/BYT-5401/support-iam-authentication-for-gcp-and-aws
-	if driver.config.AuthenticationType == storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM {
+func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.DatabaseSchemaMetadata) error {
+	if len(metadata.Schemas) == 0 {
 		return nil
 	}
-	// pg_dump -d dbName --schema-only+
 
-	// Find all dumpable databases
-	databases, err := driver.getDatabases(ctx)
-	if err != nil {
-		return errors.Wrap(err, "failed to get databases")
+	if _, err := io.WriteString(out, header); err != nil {
+		return err
 	}
 
-	var dumpableDbNames []string
-	if driver.databaseName != "" {
-		exist := false
-		for _, n := range databases {
-			if n.Name == driver.databaseName {
-				exist = true
-				break
-			}
-		}
-		if !exist {
-			return errors.Errorf("database %s not found", driver.databaseName)
-		}
-		dumpableDbNames = []string{driver.databaseName}
-	} else {
-		for _, n := range databases {
-			if pgparser.IsSystemDatabase(n.Name) {
-				continue
-			}
-			dumpableDbNames = append(dumpableDbNames, n.Name)
-		}
-	}
-
-	for _, dbName := range dumpableDbNames {
-		if err := driver.dumpOneDatabaseWithPgDump(ctx, dbName, out); err != nil {
+	// Construct schemas.
+	for _, schema := range metadata.Schemas {
+		if err := writeSchema(out, schema); err != nil {
 			return err
 		}
 	}
 
+	// Construct extensions.
+	for _, extension := range metadata.Extensions {
+		if err := writeExtension(out, extension); err != nil {
+			return err
+		}
+	}
+
+	// Construct functions.
+	for _, schema := range metadata.Schemas {
+		for _, function := range schema.Functions {
+			if err := writeFunction(out, function); err != nil {
+				return err
+			}
+		}
+	}
+
+	if _, err := io.WriteString(out, setDefaultTableSpace); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, setDefaultTableAccessMethod); err != nil {
+		return err
+	}
+
+	// Construct tables.
+	for _, schema := range metadata.Schemas {
+		for _, table := range schema.Tables {
+			if err := writeTable(out, schema.Name, table); err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
+}
+
+func writeTable(out io.Writer, schema string, table *storepb.TableMetadata) error {
+	if _, err := io.WriteString(out, `CREATE TABLE "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, table.Name); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" (`); err != nil {
+		return err
+	}
+
+	for i, column := range table.Columns {
+		if i > 0 {
+			if _, err := io.WriteString(out, ","); err != nil {
+				return err
+			}
+		}
+
+		if _, err := io.WriteString(out, "\n    "); err != nil {
+			return err
+		}
+
+		if _, err := io.WriteString(out, `"`); err != nil {
+			return err
+		}
+
+		if _, err := io.WriteString(out, column.Name); err != nil {
+			return err
+		}
+
+		if _, err := io.WriteString(out, `" `); err != nil {
+			return err
+		}
+
+		if _, err := io.WriteString(out, column.Type); err != nil {
+			return err
+		}
+
+		if !column.Nullable {
+			if _, err := io.WriteString(out, ` NOT NULL`); err != nil {
+				return err
+			}
+		}
+
+		if column.DefaultValue != nil {
+			if defaultValue, ok := column.DefaultValue.(*storepb.ColumnMetadata_DefaultExpression); ok {
+				if _, err := io.WriteString(out, ` DEFAULT `); err != nil {
+					return err
+				}
+				if _, err := io.WriteString(out, defaultValue.DefaultExpression); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	_, err := io.WriteString(out, "\n);\n\n")
+	return err
+}
+
+func writeFunction(out io.Writer, function *storepb.FunctionMetadata) error {
+	if _, err := io.WriteString(out, function.Definition); err != nil {
+		return err
+	}
+
+	_, err := io.WriteString(out, "\n\n")
+	return err
+}
+
+func writeExtension(out io.Writer, extension *storepb.ExtensionMetadata) error {
+	if _, err := io.WriteString(out, `CREATE EXTENSION IF NOT EXISTS "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, extension.Name); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" WITH SCHEMA "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, extension.Schema); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `";`); err != nil {
+		return err
+	}
+
+	_, err := io.WriteString(out, "\n\n")
+	return err
+}
+
+func writeSchema(out io.Writer, schema *storepb.SchemaMetadata) error {
+	if schema.Name == "public" {
+		return nil
+	}
+
+	if _, err := io.WriteString(out, `CREATE SCHEMA "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, schema.Name); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `";`); err != nil {
+		return err
+	}
+
+	_, err := io.WriteString(out, "\n\n")
+	return err
 }
 
 func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database string, out io.Writer) error {
