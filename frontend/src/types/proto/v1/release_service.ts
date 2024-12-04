@@ -192,9 +192,71 @@ export interface Release_File {
   sheetSha256: string;
   type: ReleaseFileType;
   version: string;
+  changeType: Release_File_ChangeType;
   /** The statement is used for preview or check purpose. */
   statement: string;
   statementSize: Long;
+}
+
+export enum Release_File_ChangeType {
+  CHANGE_TYPE_UNSPECIFIED = "CHANGE_TYPE_UNSPECIFIED",
+  DDL = "DDL",
+  DDL_GHOST = "DDL_GHOST",
+  DML = "DML",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function release_File_ChangeTypeFromJSON(object: any): Release_File_ChangeType {
+  switch (object) {
+    case 0:
+    case "CHANGE_TYPE_UNSPECIFIED":
+      return Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED;
+    case 1:
+    case "DDL":
+      return Release_File_ChangeType.DDL;
+    case 2:
+    case "DDL_GHOST":
+      return Release_File_ChangeType.DDL_GHOST;
+    case 3:
+    case "DML":
+      return Release_File_ChangeType.DML;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Release_File_ChangeType.UNRECOGNIZED;
+  }
+}
+
+export function release_File_ChangeTypeToJSON(object: Release_File_ChangeType): string {
+  switch (object) {
+    case Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED:
+      return "CHANGE_TYPE_UNSPECIFIED";
+    case Release_File_ChangeType.DDL:
+      return "DDL";
+    case Release_File_ChangeType.DDL_GHOST:
+      return "DDL_GHOST";
+    case Release_File_ChangeType.DML:
+      return "DML";
+    case Release_File_ChangeType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function release_File_ChangeTypeToNumber(object: Release_File_ChangeType): number {
+  switch (object) {
+    case Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED:
+      return 0;
+    case Release_File_ChangeType.DDL:
+      return 1;
+    case Release_File_ChangeType.DDL_GHOST:
+      return 2;
+    case Release_File_ChangeType.DML:
+      return 3;
+    case Release_File_ChangeType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
 }
 
 export interface Release_VCSSource {
@@ -1098,6 +1160,7 @@ function createBaseRelease_File(): Release_File {
     sheetSha256: "",
     type: ReleaseFileType.TYPE_UNSPECIFIED,
     version: "",
+    changeType: Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED,
     statement: "",
     statementSize: Long.ZERO,
   };
@@ -1122,6 +1185,9 @@ export const Release_File: MessageFns<Release_File> = {
     }
     if (message.version !== "") {
       writer.uint32(50).string(message.version);
+    }
+    if (message.changeType !== Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED) {
+      writer.uint32(72).int32(release_File_ChangeTypeToNumber(message.changeType));
     }
     if (message.statement !== "") {
       writer.uint32(58).string(message.statement);
@@ -1181,6 +1247,13 @@ export const Release_File: MessageFns<Release_File> = {
 
           message.version = reader.string();
           continue;
+        case 9:
+          if (tag !== 72) {
+            break;
+          }
+
+          message.changeType = release_File_ChangeTypeFromJSON(reader.int32());
+          continue;
         case 7:
           if (tag !== 58) {
             break;
@@ -1212,6 +1285,9 @@ export const Release_File: MessageFns<Release_File> = {
       sheetSha256: isSet(object.sheetSha256) ? globalThis.String(object.sheetSha256) : "",
       type: isSet(object.type) ? releaseFileTypeFromJSON(object.type) : ReleaseFileType.TYPE_UNSPECIFIED,
       version: isSet(object.version) ? globalThis.String(object.version) : "",
+      changeType: isSet(object.changeType)
+        ? release_File_ChangeTypeFromJSON(object.changeType)
+        : Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED,
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
       statementSize: isSet(object.statementSize) ? Long.fromValue(object.statementSize) : Long.ZERO,
     };
@@ -1237,6 +1313,9 @@ export const Release_File: MessageFns<Release_File> = {
     if (message.version !== "") {
       obj.version = message.version;
     }
+    if (message.changeType !== Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED) {
+      obj.changeType = release_File_ChangeTypeToJSON(message.changeType);
+    }
     if (message.statement !== "") {
       obj.statement = message.statement;
     }
@@ -1257,6 +1336,7 @@ export const Release_File: MessageFns<Release_File> = {
     message.sheetSha256 = object.sheetSha256 ?? "";
     message.type = object.type ?? ReleaseFileType.TYPE_UNSPECIFIED;
     message.version = object.version ?? "";
+    message.changeType = object.changeType ?? Release_File_ChangeType.CHANGE_TYPE_UNSPECIFIED;
     message.statement = object.statement ?? "";
     message.statementSize = (object.statementSize !== undefined && object.statementSize !== null)
       ? Long.fromValue(object.statementSize)

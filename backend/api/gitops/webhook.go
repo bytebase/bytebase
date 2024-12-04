@@ -292,12 +292,12 @@ func (s *Service) sqlReviewWithPRInfo(ctx context.Context, project *store.Projec
 	maximumCount := 30
 
 	for i, change := range prInfo.changes {
-		changeType := v1pb.CheckRequest_DDL
+		changeType := storepb.PlanCheckRunConfig_DDL
 		switch change.changeType {
 		case v1pb.Plan_ChangeDatabaseConfig_DATA:
-			changeType = v1pb.CheckRequest_DML
+			changeType = storepb.PlanCheckRunConfig_DML
 		case v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST:
-			changeType = v1pb.CheckRequest_DDL_GHOST
+			changeType = storepb.PlanCheckRunConfig_DDL_GHOST
 		}
 		adviceStatus, advices, err := s.sqlService.SQLReviewCheck(
 			ctx,
