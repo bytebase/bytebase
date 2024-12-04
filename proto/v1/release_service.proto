@@ -46,7 +46,7 @@ service ReleaseService {
   }
   rpc CheckRelease(CheckReleaseRequest) returns (CheckReleaseResponse) {
     option (google.api.http) = {
-      post: "/v1/projects/-/releases:check"
+      post: "/v1/{parent=projects/*}/releases:check"
       body: "*"
     };
   }
@@ -130,15 +130,21 @@ message UndeleteReleaseRequest {
 }
 
 message CheckReleaseRequest {
-  // The database to dry-run the release.
-  // Format: instances/{instance}/databases/{database}
-  string database = 1 [
+  // Format: projects/{project}
+  string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
   ];
 
   // The release to check.
   Release release = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // The targets to dry-run the release.
+  // Can be database or databaseGroup.
+  // Format:
+  // projects/{project}/databaseGroups/{databaseGroup}
+  // instances/{instance}/databases/{database}
+  repeated string targets = 3;
 }
 
 message CheckReleaseResponse {
