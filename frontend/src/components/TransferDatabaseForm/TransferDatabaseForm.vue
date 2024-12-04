@@ -261,19 +261,12 @@ const filterSourceProject = (project: ComposedProject) => {
 const transferDatabase = async () => {
   try {
     state.loading = true;
-    const updates = selectedDatabaseList.value.map((db) => {
-      const databasePatch = cloneDeep(db);
-      databasePatch.project = props.projectName;
-      const updateMask = ["project"];
-      return {
-        database: databasePatch,
-        updateMask,
-      } as UpdateDatabaseRequest;
-    });
-    const updated = await databaseStore.batchUpdateDatabases({
-      parent: "-",
-      requests: updates,
-    });
+
+    const updated = await useDatabaseV1Store().transferDatabases(
+      selectedDatabaseList.value,
+      props.projectName
+    );
+
     const displayDatabaseName =
       selectedDatabaseList.value.length > 1
         ? `${selectedDatabaseList.value.length} databases`

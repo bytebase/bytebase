@@ -36,12 +36,29 @@
       </NTabPane>
       <NTabPane name="DATABASES" :tab="$t('common.databases')">
         <div class="space-y-2">
+          <div
+            class="w-full flex flex-col sm:flex-row items-start sm:items-end justify-between gap-2"
+          >
+            <AdvancedSearch
+              v-model:params="state.params"
+              class="flex-1"
+              :autofocus="false"
+              :placeholder="$t('database.filter-database')"
+              :scope-options="scopeOptions"
+              :readonly-scopes="readonlyScopes"
+            />
+            <DatabaseLabelFilter
+              v-model:selected="state.selectedLabels"
+              :database-list="databaseList"
+              :placement="'left-start'"
+            />
+          </div>
           <DatabaseOperations :databases="selectedDatabases" />
           <DatabaseV1Table
             :key="`database-table.${instanceId}`"
             mode="INSTANCE"
             :show-selection="true"
-            :database-list="databaseList"
+            :database-list="filteredDatabaseList"
             :custom-click="true"
             @row-click="handleDatabaseClick"
             @update:selected-databases="handleDatabasesSelectionChanged"
@@ -73,6 +90,8 @@ import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import AdvancedSearch from "@/components/AdvancedSearch";
+import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import { EngineIcon } from "@/components/Icon";
@@ -85,6 +104,7 @@ import {
 import { InstanceRoleTable, Drawer } from "@/components/v2";
 import DatabaseV1Table, {
   DatabaseOperations,
+  DatabaseLabelFilter,
 } from "@/components/v2/Model/DatabaseV1Table";
 import { useBodyLayoutContext } from "@/layouts/common";
 import {
@@ -96,7 +116,7 @@ import {
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
-import type { ComposedDatabase } from "@/types";
+import { UNKNOWN_ID, type ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import {
@@ -105,13 +125,20 @@ import {
   hasWorkspaceLevelProjectPermissionInAnyProject,
   wrapRefAsPromise,
   autoDatabaseRoute,
+  CommonFilterScopeIdList,
+  filterDatabaseV1ByKeyword,
+  extractEnvironmentResourceName,
 } from "@/utils";
+import type { SearchParams, SearchScope } from "@/utils";
 
 interface LocalState {
   showCreateDatabaseModal: boolean;
   syncingSchema: boolean;
   selectedDatabaseNameList: Set<string>;
+  selectedLabels: { key: string; value: string }[];
+  params: SearchParams;
 }
+
 const props = defineProps<{
   instanceId: string;
   embedded?: boolean;
@@ -132,11 +159,25 @@ const router = useRouter();
 const instanceV1Store = useInstanceV1Store();
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
+const readonlyScopes = computed((): SearchScope[] => [
+  { id: "instance", value: props.instanceId },
+]);
+
 const state = reactive<LocalState>({
   showCreateDatabaseModal: false,
   syncingSchema: false,
   selectedDatabaseNameList: new Set(),
+  selectedLabels: [],
+  params: {
+    query: "",
+    scopes: [...readonlyScopes.value],
+  },
 });
+
+const scopeOptions = useCommonSearchScopeOptions(
+  computed(() => state.params),
+  [...CommonFilterScopeIdList]
+);
 
 const instance = computed(() => {
   return instanceV1Store.getInstanceByName(
@@ -153,6 +194,41 @@ const environment = computed(() => {
 const { databaseList, listCache, ready } = useDatabaseV1List(
   instance.value.name
 );
+
+const selectedEnvironment = computed(() => {
+  return (
+    state.params.scopes.find((scope) => scope.id === "environment")?.value ??
+    `${UNKNOWN_ID}`
+  );
+});
+
+const filteredDatabaseList = computed(() => {
+  let list = databaseList.value;
+  if (selectedEnvironment.value !== `${UNKNOWN_ID}`) {
+    list = list.filter(
+      (db) =>
+        extractEnvironmentResourceName(db.effectiveEnvironment) ===
+        selectedEnvironment.value
+    );
+  }
+  const keyword = state.params.query.trim().toLowerCase();
+  if (keyword) {
+    list = list.filter((db) =>
+      filterDatabaseV1ByKeyword(db, keyword, [
+        "name",
+        "environment",
+        "instance",
+      ])
+    );
+  }
+  const labels = state.selectedLabels;
+  if (labels.length > 0) {
+    list = list.filter((db) => {
+      return labels.some((kv) => db.labels[kv.key] === kv.value);
+    });
+  }
+  return list;
+});
 
 const instanceRoleList = computed(() => {
   return instance.value.roles;
