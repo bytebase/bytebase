@@ -1,6 +1,5 @@
 import type dayjs from "dayjs";
 import type { isEmpty } from "lodash-es";
-import type { Composer } from "vue-i18n";
 import type {
   humanizeTs,
   humanizeDuration,
@@ -26,9 +25,5 @@ declare module "vue" {
     sizeToFit: typeof sizeToFit;
     urlfy: typeof urlfy;
     isEmpty: typeof isEmpty;
-    // vue-i18n shims
-    $t: Composer["t"];
-    $tm: Composer["tm"];
-    $te: Composer["te"];
   }
 }
