@@ -10,6 +10,7 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/common.proto";
+import "v1/sql_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -42,6 +43,13 @@ service ReleaseService {
   }
   rpc UndeleteRelease(UndeleteReleaseRequest) returns (Release) {
     option (google.api.http) = {post: "/v1/{name=projects/*/releases/*}:undelete"};
+  }
+  rpc CheckRelease(CheckReleaseRequest) returns (CheckReleaseResponse) {
+    option (google.api.http) = {
+      post: "/v1/projects/-/releases:check"
+      body: "*"
+    };
+    option (google.api.method_signature) = "parent,release";
   }
 }
 
@@ -122,6 +130,27 @@ message UndeleteReleaseRequest {
   ];
 }
 
+message CheckReleaseRequest {
+  // The database to dry-run the release.
+  // Format: instances/{instance}/databases/{database}
+  string database = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+
+  // The release to check.
+  Release release = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message CheckReleaseResponse {
+  message CheckResult {
+    // The file id that is being checked.
+    string file = 1;
+
+    repeated Advice advices = 2;
+  }
+}
+
 message Release {
   option (google.api.resource) = {
     type: "bytebase.com/Release"
@@ -157,8 +186,8 @@ message Release {
     ReleaseFileType type = 5;
     string version = 6;
 
-    // The statement is used for preview purpose.
-    string statement = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+    // The statement is used for preview or check purpose.
+    string statement = 7;
     int64 statement_size = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
   }
 
