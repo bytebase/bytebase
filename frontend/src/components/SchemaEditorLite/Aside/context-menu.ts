@@ -1,6 +1,6 @@
 import Emittery from "emittery";
 import type { DropdownOption } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed, reactive, type Ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
@@ -49,7 +49,16 @@ type TreeContextMenuEvents = Emittery<{
   hide: undefined;
 }>;
 
-export const useContextMenu = () => {
+export type ContextMenuContext = {
+  menu: Ref<TreeContextMenu>;
+  options: Ref<DropdownOption[]>;
+  events: TreeContextMenuEvents;
+  handleShow: (e: MouseEvent, node: TreeNode) => void;
+  handleSelect: (key: string) => void;
+  handleClickOutside: (e: MouseEvent) => void;
+};
+
+export const useContextMenu = (): ContextMenuContext => {
   const menu = reactive<TreeContextMenu>({
     show: false,
     clientX: 0,
