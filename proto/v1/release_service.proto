@@ -49,7 +49,6 @@ service ReleaseService {
       post: "/v1/projects/-/releases:check"
       body: "*"
     };
-    option (google.api.method_signature) = "parent,release";
   }
 }
 
