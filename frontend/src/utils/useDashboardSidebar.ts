@@ -282,13 +282,13 @@ export const useDashboardSidebar = () => {
         hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
         children: [
           {
-            title: t("settings.sidebar.mail-delivery"),
-            name: WORKSPACE_ROUTE_MAIL_DELIVERY,
+            title: t("settings.sidebar.im-integration"),
+            name: WORKSPACE_ROUTE_IM,
             type: "route",
           },
           {
-            title: t("settings.sidebar.im-integration"),
-            name: WORKSPACE_ROUTE_IM,
+            title: t("settings.sidebar.mail-delivery"),
+            name: WORKSPACE_ROUTE_MAIL_DELIVERY,
             type: "route",
           },
         ],
