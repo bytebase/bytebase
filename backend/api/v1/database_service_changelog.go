@@ -199,7 +199,7 @@ func (s *DatabaseService) convertToChangelog(ctx context.Context, d *store.Datab
 		Name:             common.FormatChangelog(d.InstanceID, d.DatabaseName, c.UID),
 		Creator:          "",
 		CreateTime:       timestamppb.New(c.CreatedTime),
-		Status:           v1pb.Changelog_Status(c.Payload.GetTask().GetStatus()),
+		Status:           convertToChangelogStatus(c.Status),
 		Statement:        "",
 		StatementSize:    0,
 		StatementSheet:   "",
@@ -207,14 +207,14 @@ func (s *DatabaseService) convertToChangelog(ctx context.Context, d *store.Datab
 		SchemaSize:       0,
 		PrevSchema:       "",
 		PrevSchemaSize:   0,
-		Issue:            c.Payload.GetTask().GetIssue(),
-		TaskRun:          c.Payload.GetTask().GetTaskRun(),
-		Version:          c.Payload.GetTask().GetVersion(),
+		Issue:            c.Payload.GetIssue(),
+		TaskRun:          c.Payload.GetTaskRun(),
+		Version:          c.Payload.GetVersion(),
 		Revision:         "",
-		ChangedResources: convertToChangedResources(c.Payload.GetTask().GetChangedResources()),
+		ChangedResources: convertToChangedResources(c.Payload.GetChangedResources()),
 	}
 
-	if sheet := c.Payload.GetTask().GetSheet(); sheet != "" {
+	if sheet := c.Payload.GetSheet(); sheet != "" {
 		_, sheetUID, err := common.GetProjectResourceIDSheetUID(sheet)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheetUID from %q", sheet)
@@ -232,7 +232,7 @@ func (s *DatabaseService) convertToChangelog(ctx context.Context, d *store.Datab
 		cl.StatementSize = sheetM.Size
 	}
 
-	if id := c.Payload.GetTask().GetRevision(); id != 0 {
+	if id := c.Payload.GetRevision(); id != 0 {
 		cl.Revision = common.FormatRevision(d.InstanceID, d.DatabaseName, id)
 	}
 
@@ -242,7 +242,8 @@ func (s *DatabaseService) convertToChangelog(ctx context.Context, d *store.Datab
 	}
 	cl.Creator = common.FormatUserEmail(creator.Email)
 
-	if id := c.Payload.GetTask().GetPrevSyncHistoryId(); id != 0 {
+	if v := c.PrevSyncHistoryUID; v != nil {
+		id := *v
 		h, err := s.store.GetSyncHistoryByUID(ctx, id)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sync history %d", id)
@@ -251,14 +252,28 @@ func (s *DatabaseService) convertToChangelog(ctx context.Context, d *store.Datab
 		cl.PrevSchemaSize = int64(len(cl.PrevSchema))
 	}
 
-	if id := c.Payload.GetTask().GetSyncHistoryId(); id != 0 {
+	if v := c.SyncHistoryUID; v != nil {
+		id := *v
 		h, err := s.store.GetSyncHistoryByUID(ctx, id)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sync history %d", id)
 		}
 		cl.Schema = h.Schema
-		cl.SchemaSize = int64(len(cl.PrevSchema))
+		cl.SchemaSize = int64(len(cl.Schema))
 	}
 
 	return cl, nil
+}
+
+func convertToChangelogStatus(s store.ChangelogStatus) v1pb.Changelog_Status {
+	switch s {
+	case store.ChangelogStatusDone:
+		return v1pb.Changelog_DONE
+	case store.ChangelogStatusFailed:
+		return v1pb.Changelog_FAILED
+	case store.ChangelogStatusPending:
+		return v1pb.Changelog_PENDING
+	default:
+		return v1pb.Changelog_STATUS_UNSPECIFIED
+	}
 }
