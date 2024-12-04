@@ -879,6 +879,7 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 				Status:      "OPEN",
 				Type:        "bb.issue.database.create",
 				Description: "This is a test issue",
+				Creator:     s.store.GetSystemBotUser(ctx),
 			},
 
 			Project: &webhookplugin.Project{
