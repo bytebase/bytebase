@@ -320,7 +320,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 			if err != nil {
 				return nil, err
 			}
-			databases = matches
+			databases = append(databases, matches...)
 		}
 
 		for _, database := range databases {
