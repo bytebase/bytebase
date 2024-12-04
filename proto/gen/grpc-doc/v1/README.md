@@ -556,7 +556,45 @@
   
     - [ProjectService](#bytebase-v1-ProjectService)
   
+- [v1/sql_service.proto](#v1_sql_service-proto)
+    - [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest)
+    - [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse)
+    - [Advice](#bytebase-v1-Advice)
+    - [CheckRequest](#bytebase-v1-CheckRequest)
+    - [CheckResponse](#bytebase-v1-CheckResponse)
+    - [ExportRequest](#bytebase-v1-ExportRequest)
+    - [ExportResponse](#bytebase-v1-ExportResponse)
+    - [GenerateRestoreSQLRequest](#bytebase-v1-GenerateRestoreSQLRequest)
+    - [GenerateRestoreSQLResponse](#bytebase-v1-GenerateRestoreSQLResponse)
+    - [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest)
+    - [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse)
+    - [PrettyRequest](#bytebase-v1-PrettyRequest)
+    - [PrettyResponse](#bytebase-v1-PrettyResponse)
+    - [QueryHistory](#bytebase-v1-QueryHistory)
+    - [QueryOption](#bytebase-v1-QueryOption)
+    - [QueryRequest](#bytebase-v1-QueryRequest)
+    - [QueryResponse](#bytebase-v1-QueryResponse)
+    - [QueryResult](#bytebase-v1-QueryResult)
+    - [QueryResult.PostgresError](#bytebase-v1-QueryResult-PostgresError)
+    - [QueryRow](#bytebase-v1-QueryRow)
+    - [RowValue](#bytebase-v1-RowValue)
+    - [RowValue.TimestampTZ](#bytebase-v1-RowValue-TimestampTZ)
+    - [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest)
+    - [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse)
+    - [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest)
+    - [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse)
+  
+    - [Advice.Status](#bytebase-v1-Advice-Status)
+    - [CheckRequest.ChangeType](#bytebase-v1-CheckRequest-ChangeType)
+    - [QueryHistory.Type](#bytebase-v1-QueryHistory-Type)
+    - [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn)
+  
+    - [SQLService](#bytebase-v1-SQLService)
+  
 - [v1/release_service.proto](#v1_release_service-proto)
+    - [CheckReleaseRequest](#bytebase-v1-CheckReleaseRequest)
+    - [CheckReleaseResponse](#bytebase-v1-CheckReleaseResponse)
+    - [CheckReleaseResponse.CheckResult](#bytebase-v1-CheckReleaseResponse-CheckResult)
     - [CreateReleaseRequest](#bytebase-v1-CreateReleaseRequest)
     - [DeleteReleaseRequest](#bytebase-v1-DeleteReleaseRequest)
     - [GetReleaseRequest](#bytebase-v1-GetReleaseRequest)
@@ -676,41 +714,6 @@
     - [SheetPayload.Type](#bytebase-v1-SheetPayload-Type)
   
     - [SheetService](#bytebase-v1-SheetService)
-  
-- [v1/sql_service.proto](#v1_sql_service-proto)
-    - [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest)
-    - [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse)
-    - [Advice](#bytebase-v1-Advice)
-    - [CheckRequest](#bytebase-v1-CheckRequest)
-    - [CheckResponse](#bytebase-v1-CheckResponse)
-    - [ExportRequest](#bytebase-v1-ExportRequest)
-    - [ExportResponse](#bytebase-v1-ExportResponse)
-    - [GenerateRestoreSQLRequest](#bytebase-v1-GenerateRestoreSQLRequest)
-    - [GenerateRestoreSQLResponse](#bytebase-v1-GenerateRestoreSQLResponse)
-    - [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest)
-    - [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse)
-    - [PrettyRequest](#bytebase-v1-PrettyRequest)
-    - [PrettyResponse](#bytebase-v1-PrettyResponse)
-    - [QueryHistory](#bytebase-v1-QueryHistory)
-    - [QueryOption](#bytebase-v1-QueryOption)
-    - [QueryRequest](#bytebase-v1-QueryRequest)
-    - [QueryResponse](#bytebase-v1-QueryResponse)
-    - [QueryResult](#bytebase-v1-QueryResult)
-    - [QueryResult.PostgresError](#bytebase-v1-QueryResult-PostgresError)
-    - [QueryRow](#bytebase-v1-QueryRow)
-    - [RowValue](#bytebase-v1-RowValue)
-    - [RowValue.TimestampTZ](#bytebase-v1-RowValue-TimestampTZ)
-    - [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest)
-    - [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse)
-    - [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest)
-    - [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse)
-  
-    - [Advice.Status](#bytebase-v1-Advice-Status)
-    - [CheckRequest.ChangeType](#bytebase-v1-CheckRequest-ChangeType)
-    - [QueryHistory.Type](#bytebase-v1-QueryHistory-Type)
-    - [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn)
-  
-    - [SQLService](#bytebase-v1-SQLService)
   
 - [v1/vcs_connector_service.proto](#v1_vcs_connector_service-proto)
     - [CreateVCSConnectorRequest](#bytebase-v1-CreateVCSConnectorRequest)
@@ -9149,10 +9152,623 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 
 
 
+<a name="v1_sql_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/sql_service.proto
+
+
+
+<a name="bytebase-v1-AdminExecuteRequest"></a>
+
+### AdminExecuteRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance}/databases/{databaseName} |
+| statement | [string](#string) |  | The SQL statement to execute. |
+| limit | [int32](#int32) |  | The maximum number of rows to return. |
+| timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The timeout for the request. |
+| schema | [string](#string) | optional | The default schema to execute the statement. Equals to the current schema in Oracle and search path in Postgres. |
+
+
+
+
+
+
+<a name="bytebase-v1-AdminExecuteResponse"></a>
+
+### AdminExecuteResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| results | [QueryResult](#bytebase-v1-QueryResult) | repeated | The query results. |
+
+
+
+
+
+
+<a name="bytebase-v1-Advice"></a>
+
+### Advice
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [Advice.Status](#bytebase-v1-Advice-Status) |  | The advice status. |
+| code | [int32](#int32) |  | The advice code. |
+| title | [string](#string) |  | The advice title. |
+| content | [string](#string) |  | The advice content. |
+| line | [int32](#int32) |  | The advice line number in the SQL statement. |
+| column | [int32](#int32) |  | The advice column number in the SQL statement. |
+| detail | [string](#string) |  | The advice detail. |
+| start_position | [Position](#bytebase-v1-Position) |  | 1-based Position of the SQL statement. To supersede `line` and `column` above. |
+| end_position | [Position](#bytebase-v1-Position) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-CheckRequest"></a>
+
+### CheckRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The database name to check against. Format: instances/{instance}/databases/{database} |
+| statement | [string](#string) |  |  |
+| metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The database metadata to check against. It can be used to check against an uncommitted metadata. If not provided, the database metadata will be fetched from the database. |
+| change_type | [CheckRequest.ChangeType](#bytebase-v1-CheckRequest-ChangeType) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-CheckResponse"></a>
+
+### CheckResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| advices | [Advice](#bytebase-v1-Advice) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ExportRequest"></a>
+
+### ExportRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance}/databases/{databaseName} Format: projects/{project}/issues/{issue} for data export issue. |
+| statement | [string](#string) |  | The SQL statement to execute. |
+| limit | [int32](#int32) |  | The maximum number of rows to return. |
+| format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
+| admin | [bool](#bool) |  | The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode. The exported data is not masked. |
+| password | [string](#string) |  | The zip password provide by users. |
+| data_source_id | [string](#string) |  | The id of data source. It is used for querying admin data source even if the instance has read-only data sources. Or it can be used to query a specific read-only data source. |
+
+
+
+
+
+
+<a name="bytebase-v1-ExportResponse"></a>
+
+### ExportResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [bytes](#bytes) |  | The export file content. |
+
+
+
+
+
+
+<a name="bytebase-v1-GenerateRestoreSQLRequest"></a>
+
+### GenerateRestoreSQLRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The database name to execute the query against. Format: instances/{instance}/databases/{databaseName} |
+| sheet | [string](#string) |  | The resource name of the sheet. It is used to get the original statement. Format: projects/{project}/sheets/{sheet} |
+| backup_data_source | [string](#string) |  | The data source to restore from. Format: instances/{instance}/databases/{databaseName}, for general engines. Or instances/{instance}/databases/{databaseName}/schemas/{schemaName}, for PG only. |
+| backup_table | [string](#string) |  | The backup table name. |
+
+
+
+
+
+
+<a name="bytebase-v1-GenerateRestoreSQLResponse"></a>
+
+### GenerateRestoreSQLResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| statement | [string](#string) |  | The restore SQL statement. |
+
+
+
+
+
+
+<a name="bytebase-v1-ParseMyBatisMapperRequest"></a>
+
+### ParseMyBatisMapperRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [bytes](#bytes) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ParseMyBatisMapperResponse"></a>
+
+### ParseMyBatisMapperResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| statements | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-PrettyRequest"></a>
+
+### PrettyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| engine | [Engine](#bytebase-v1-Engine) |  |  |
+| current_schema | [string](#string) |  | The SDL format SQL schema information that was dumped from a database engine. This information will be sorted to match the order of statements in the userSchema. |
+| expected_schema | [string](#string) |  | The expected SDL schema. This schema will be checked for correctness and normalized. |
+
+
+
+
+
+
+<a name="bytebase-v1-PrettyResponse"></a>
+
+### PrettyResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| current_schema | [string](#string) |  | The pretty-formatted version of current schema. |
+| expected_schema | [string](#string) |  | The expected SDL schema after normalizing. |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryHistory"></a>
+
+### QueryHistory
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name for the query history. Format: queryHistories/{uid} |
+| database | [string](#string) |  | The database name to execute the query. Format: instances/{instance}/databases/{databaseName} |
+| creator | [string](#string) |  |  |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| statement | [string](#string) |  |  |
+| error | [string](#string) | optional |  |
+| duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
+| type | [QueryHistory.Type](#bytebase-v1-QueryHistory-Type) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryOption"></a>
+
+### QueryOption
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| redis_run_commands_on | [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryRequest"></a>
+
+### QueryRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance}/databases/{databaseName} |
+| statement | [string](#string) |  | The SQL statement to execute. |
+| limit | [int32](#int32) |  | The maximum number of rows to return. |
+| timeout | [google.protobuf.Duration](#google-protobuf-Duration) | optional | The timeout for the request. |
+| data_source_id | [string](#string) |  | The id of data source. It is used for querying admin data source even if the instance has read-only data sources. Or it can be used to query a specific read-only data source. |
+| explain | [bool](#bool) |  | Explain the statement. |
+| schema | [string](#string) | optional | The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres. |
+| query_option | [QueryOption](#bytebase-v1-QueryOption) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryResponse"></a>
+
+### QueryResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| results | [QueryResult](#bytebase-v1-QueryResult) | repeated | The query results. |
+| allow_export | [bool](#bool) |  | The query is allowed to be exported or not. |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryResult"></a>
+
+### QueryResult
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| column_names | [string](#string) | repeated | Column names of the query result. |
+| column_type_names | [string](#string) | repeated | Column types of the query result. The types come from the Golang SQL driver. |
+| rows | [QueryRow](#bytebase-v1-QueryRow) | repeated | Rows of the query result. |
+| masked | [bool](#bool) | repeated | Columns are masked or not. |
+| sensitive | [bool](#bool) | repeated | Columns are sensitive or not. |
+| error | [string](#string) |  | The error message if the query failed. |
+| latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The time it takes to execute the query. |
+| statement | [string](#string) |  | The query statement for the result. |
+| postgres_error | [QueryResult.PostgresError](#bytebase-v1-QueryResult-PostgresError) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryResult-PostgresError"></a>
+
+### QueryResult.PostgresError
+refer https://www.postgresql.org/docs/11/protocol-error-fields.html
+for field description.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| severity | [string](#string) |  |  |
+| code | [string](#string) |  |  |
+| message | [string](#string) |  |  |
+| detail | [string](#string) |  |  |
+| hint | [string](#string) |  |  |
+| position | [int32](#int32) |  |  |
+| internal_position | [int32](#int32) |  |  |
+| internal_query | [string](#string) |  |  |
+| where | [string](#string) |  |  |
+| schema_name | [string](#string) |  |  |
+| table_name | [string](#string) |  |  |
+| column_name | [string](#string) |  |  |
+| data_type_name | [string](#string) |  |  |
+| constraint_name | [string](#string) |  |  |
+| file | [string](#string) |  |  |
+| line | [int32](#int32) |  |  |
+| routine | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryRow"></a>
+
+### QueryRow
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| values | [RowValue](#bytebase-v1-RowValue) | repeated | Row values of the query result. |
+
+
+
+
+
+
+<a name="bytebase-v1-RowValue"></a>
+
+### RowValue
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| null_value | [google.protobuf.NullValue](#google-protobuf-NullValue) |  |  |
+| bool_value | [bool](#bool) |  |  |
+| bytes_value | [bytes](#bytes) |  |  |
+| double_value | [double](#double) |  |  |
+| float_value | [float](#float) |  |  |
+| int32_value | [int32](#int32) |  |  |
+| int64_value | [int64](#int64) |  |  |
+| string_value | [string](#string) |  |  |
+| uint32_value | [uint32](#uint32) |  |  |
+| uint64_value | [uint64](#uint64) |  |  |
+| value_value | [google.protobuf.Value](#google-protobuf-Value) |  | value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only. |
+| timestamp_value | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | timestamp_value is used for the timestamp without time zone data type, meaning it only includes the timestamp without any time zone or location info. Although it may be expressed as a UTC value, it should be seen as a timestamp missing location context. |
+| timestamp_tz_value | [RowValue.TimestampTZ](#bytebase-v1-RowValue-TimestampTZ) |  | timestamp_tz_value is used for the timestamptz data type, which accurately represents the timestamp with location information. |
+
+
+
+
+
+
+<a name="bytebase-v1-RowValue-TimestampTZ"></a>
+
+### RowValue.TimestampTZ
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| timestamp | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| zone | [string](#string) |  | Zone is the time zone abbreviations in timezone database such as &#34;PDT&#34;, &#34;PST&#34;. https://en.wikipedia.org/wiki/List_of_tz_database_time_zones We retrieve the time zone information from the timestamptz field in the database. A timestamp is in UTC or epoch time, and with zone info, we can convert it to a local time string. Zone and offset are returned by time.Time.Zone() |
+| offset | [int32](#int32) |  | The offset is in seconds east of UTC |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchQueryHistoriesRequest"></a>
+
+### SearchQueryHistoriesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| page_size | [int32](#int32) |  | The maximum number of histories to return. The service may return fewer than this value. If unspecified, at most 10 history entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListQueryHistory` call. Provide this to retrieve the subsequent page. |
+| filter | [string](#string) |  | filter is the filter to apply on the search query history, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Support filter by: - database, for example: database = &#34;instances/{instance}/databases/{database}&#34; - instance, for example: instance = &#34;instance/{instance}&#34; - type, for example: type = &#34;QUERY&#34; |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchQueryHistoriesResponse"></a>
+
+### SearchQueryHistoriesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| query_histories | [QueryHistory](#bytebase-v1-QueryHistory) | repeated | The list of history. |
+| next_page_token | [string](#string) |  | A token to retrieve next page of history. Pass this value in the page_token field in the subsequent call to `ListQueryHistory` method to retrieve the next page of history. |
+
+
+
+
+
+
+<a name="bytebase-v1-StringifyMetadataRequest"></a>
+
+### StringifyMetadataRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |  |
+| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema string. |
+| classification_from_config | [bool](#bool) |  | If false, we will build the raw common by classification in database config. |
+
+
+
+
+
+
+<a name="bytebase-v1-StringifyMetadataResponse"></a>
+
+### StringifyMetadataResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-Advice-Status"></a>
+
+### Advice.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 | Unspecified. |
+| SUCCESS | 1 |  |
+| WARNING | 2 |  |
+| ERROR | 3 |  |
+
+
+
+<a name="bytebase-v1-CheckRequest-ChangeType"></a>
+
+### CheckRequest.ChangeType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CHANGE_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 |  |
+| DDL_GHOST | 2 |  |
+| DML | 3 |  |
+| SQL_EDITOR | 4 |  |
+
+
+
+<a name="bytebase-v1-QueryHistory-Type"></a>
+
+### QueryHistory.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| QUERY | 1 |  |
+| EXPORT | 2 |  |
+
+
+
+<a name="bytebase-v1-QueryOption-RedisRunCommandsOn"></a>
+
+### QueryOption.RedisRunCommandsOn
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| REDIS_RUN_COMMANDS_ON_UNSPECIFIED | 0 | UNSPECIFIED defaults to SINGLE_NODE. |
+| SINGLE_NODE | 1 |  |
+| ALL_NODES | 2 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-SQLService"></a>
+
+### SQLService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) |  |
+| AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream |  |
+| SearchQueryHistories | [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest) | [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse) | SearchQueryHistories searches query histories for the caller. |
+| Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) |  |
+| Check | [CheckRequest](#bytebase-v1-CheckRequest) | [CheckResponse](#bytebase-v1-CheckResponse) |  |
+| ParseMyBatisMapper | [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest) | [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse) |  |
+| Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
+| StringifyMetadata | [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest) | [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse) |  |
+| GenerateRestoreSQL | [GenerateRestoreSQLRequest](#bytebase-v1-GenerateRestoreSQLRequest) | [GenerateRestoreSQLResponse](#bytebase-v1-GenerateRestoreSQLResponse) | Deprecated. |
+
+ 
+
+
+
 <a name="v1_release_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
 ## v1/release_service.proto
+
+
+
+<a name="bytebase-v1-CheckReleaseRequest"></a>
+
+### CheckReleaseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | Format: projects/{project} |
+| release | [Release](#bytebase-v1-Release) |  | The release to check. |
+| targets | [string](#string) | repeated | The targets to dry-run the release. Can be database or databaseGroup. Format: projects/{project}/databaseGroups/{databaseGroup} instances/{instance}/databases/{database} |
+
+
+
+
+
+
+<a name="bytebase-v1-CheckReleaseResponse"></a>
+
+### CheckReleaseResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| results | [CheckReleaseResponse.CheckResult](#bytebase-v1-CheckReleaseResponse-CheckResult) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-CheckReleaseResponse-CheckResult"></a>
+
+### CheckReleaseResponse.CheckResult
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| file | [string](#string) |  | The file id that is being checked. |
+| advices | [Advice](#bytebase-v1-Advice) | repeated |  |
+
+
+
 
 
 
@@ -9273,7 +9889,7 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
 | type | [ReleaseFileType](#bytebase-v1-ReleaseFileType) |  |  |
 | version | [string](#string) |  |  |
-| statement | [string](#string) |  | The statement is used for preview purpose. |
+| statement | [string](#string) |  | The statement is used for preview or check purpose. |
 | statement_size | [int64](#int64) |  |  |
 
 
@@ -9359,6 +9975,7 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 | UpdateRelease | [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest) | [Release](#bytebase-v1-Release) |  |
 | DeleteRelease | [DeleteReleaseRequest](#bytebase-v1-DeleteReleaseRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | UndeleteRelease | [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest) | [Release](#bytebase-v1-Release) |  |
+| CheckRelease | [CheckReleaseRequest](#bytebase-v1-CheckReleaseRequest) | [CheckReleaseResponse](#bytebase-v1-CheckReleaseResponse) |  |
 
  
 
@@ -10901,571 +11518,6 @@ Type of the SheetPayload.
 | BatchCreateSheet | [BatchCreateSheetRequest](#bytebase-v1-BatchCreateSheetRequest) | [BatchCreateSheetResponse](#bytebase-v1-BatchCreateSheetResponse) |  |
 | GetSheet | [GetSheetRequest](#bytebase-v1-GetSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 | UpdateSheet | [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
-
- 
-
-
-
-<a name="v1_sql_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/sql_service.proto
-
-
-
-<a name="bytebase-v1-AdminExecuteRequest"></a>
-
-### AdminExecuteRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance}/databases/{databaseName} |
-| statement | [string](#string) |  | The SQL statement to execute. |
-| limit | [int32](#int32) |  | The maximum number of rows to return. |
-| timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The timeout for the request. |
-| schema | [string](#string) | optional | The default schema to execute the statement. Equals to the current schema in Oracle and search path in Postgres. |
-
-
-
-
-
-
-<a name="bytebase-v1-AdminExecuteResponse"></a>
-
-### AdminExecuteResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| results | [QueryResult](#bytebase-v1-QueryResult) | repeated | The query results. |
-
-
-
-
-
-
-<a name="bytebase-v1-Advice"></a>
-
-### Advice
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| status | [Advice.Status](#bytebase-v1-Advice-Status) |  | The advice status. |
-| code | [int32](#int32) |  | The advice code. |
-| title | [string](#string) |  | The advice title. |
-| content | [string](#string) |  | The advice content. |
-| line | [int32](#int32) |  | The advice line number in the SQL statement. |
-| column | [int32](#int32) |  | The advice column number in the SQL statement. |
-| detail | [string](#string) |  | The advice detail. |
-| start_position | [Position](#bytebase-v1-Position) |  | 1-based Position of the SQL statement. To supersede `line` and `column` above. |
-| end_position | [Position](#bytebase-v1-Position) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-CheckRequest"></a>
-
-### CheckRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The database name to check against. Format: instances/{instance}/databases/{database} |
-| statement | [string](#string) |  |  |
-| metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The database metadata to check against. It can be used to check against an uncommitted metadata. If not provided, the database metadata will be fetched from the database. |
-| change_type | [CheckRequest.ChangeType](#bytebase-v1-CheckRequest-ChangeType) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-CheckResponse"></a>
-
-### CheckResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| advices | [Advice](#bytebase-v1-Advice) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ExportRequest"></a>
-
-### ExportRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance}/databases/{databaseName} Format: projects/{project}/issues/{issue} for data export issue. |
-| statement | [string](#string) |  | The SQL statement to execute. |
-| limit | [int32](#int32) |  | The maximum number of rows to return. |
-| format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
-| admin | [bool](#bool) |  | The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode. The exported data is not masked. |
-| password | [string](#string) |  | The zip password provide by users. |
-| data_source_id | [string](#string) |  | The id of data source. It is used for querying admin data source even if the instance has read-only data sources. Or it can be used to query a specific read-only data source. |
-
-
-
-
-
-
-<a name="bytebase-v1-ExportResponse"></a>
-
-### ExportResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| content | [bytes](#bytes) |  | The export file content. |
-
-
-
-
-
-
-<a name="bytebase-v1-GenerateRestoreSQLRequest"></a>
-
-### GenerateRestoreSQLRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The database name to execute the query against. Format: instances/{instance}/databases/{databaseName} |
-| sheet | [string](#string) |  | The resource name of the sheet. It is used to get the original statement. Format: projects/{project}/sheets/{sheet} |
-| backup_data_source | [string](#string) |  | The data source to restore from. Format: instances/{instance}/databases/{databaseName}, for general engines. Or instances/{instance}/databases/{databaseName}/schemas/{schemaName}, for PG only. |
-| backup_table | [string](#string) |  | The backup table name. |
-
-
-
-
-
-
-<a name="bytebase-v1-GenerateRestoreSQLResponse"></a>
-
-### GenerateRestoreSQLResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| statement | [string](#string) |  | The restore SQL statement. |
-
-
-
-
-
-
-<a name="bytebase-v1-ParseMyBatisMapperRequest"></a>
-
-### ParseMyBatisMapperRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| content | [bytes](#bytes) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ParseMyBatisMapperResponse"></a>
-
-### ParseMyBatisMapperResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| statements | [string](#string) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-PrettyRequest"></a>
-
-### PrettyRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
-| current_schema | [string](#string) |  | The SDL format SQL schema information that was dumped from a database engine. This information will be sorted to match the order of statements in the userSchema. |
-| expected_schema | [string](#string) |  | The expected SDL schema. This schema will be checked for correctness and normalized. |
-
-
-
-
-
-
-<a name="bytebase-v1-PrettyResponse"></a>
-
-### PrettyResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| current_schema | [string](#string) |  | The pretty-formatted version of current schema. |
-| expected_schema | [string](#string) |  | The expected SDL schema after normalizing. |
-
-
-
-
-
-
-<a name="bytebase-v1-QueryHistory"></a>
-
-### QueryHistory
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name for the query history. Format: queryHistories/{uid} |
-| database | [string](#string) |  | The database name to execute the query. Format: instances/{instance}/databases/{databaseName} |
-| creator | [string](#string) |  |  |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| statement | [string](#string) |  |  |
-| error | [string](#string) | optional |  |
-| duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
-| type | [QueryHistory.Type](#bytebase-v1-QueryHistory-Type) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-QueryOption"></a>
-
-### QueryOption
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| redis_run_commands_on | [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-QueryRequest"></a>
-
-### QueryRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance}/databases/{databaseName} |
-| statement | [string](#string) |  | The SQL statement to execute. |
-| limit | [int32](#int32) |  | The maximum number of rows to return. |
-| timeout | [google.protobuf.Duration](#google-protobuf-Duration) | optional | The timeout for the request. |
-| data_source_id | [string](#string) |  | The id of data source. It is used for querying admin data source even if the instance has read-only data sources. Or it can be used to query a specific read-only data source. |
-| explain | [bool](#bool) |  | Explain the statement. |
-| schema | [string](#string) | optional | The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres. |
-| query_option | [QueryOption](#bytebase-v1-QueryOption) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-QueryResponse"></a>
-
-### QueryResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| results | [QueryResult](#bytebase-v1-QueryResult) | repeated | The query results. |
-| allow_export | [bool](#bool) |  | The query is allowed to be exported or not. |
-
-
-
-
-
-
-<a name="bytebase-v1-QueryResult"></a>
-
-### QueryResult
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| column_names | [string](#string) | repeated | Column names of the query result. |
-| column_type_names | [string](#string) | repeated | Column types of the query result. The types come from the Golang SQL driver. |
-| rows | [QueryRow](#bytebase-v1-QueryRow) | repeated | Rows of the query result. |
-| masked | [bool](#bool) | repeated | Columns are masked or not. |
-| sensitive | [bool](#bool) | repeated | Columns are sensitive or not. |
-| error | [string](#string) |  | The error message if the query failed. |
-| latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The time it takes to execute the query. |
-| statement | [string](#string) |  | The query statement for the result. |
-| postgres_error | [QueryResult.PostgresError](#bytebase-v1-QueryResult-PostgresError) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-QueryResult-PostgresError"></a>
-
-### QueryResult.PostgresError
-refer https://www.postgresql.org/docs/11/protocol-error-fields.html
-for field description.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| severity | [string](#string) |  |  |
-| code | [string](#string) |  |  |
-| message | [string](#string) |  |  |
-| detail | [string](#string) |  |  |
-| hint | [string](#string) |  |  |
-| position | [int32](#int32) |  |  |
-| internal_position | [int32](#int32) |  |  |
-| internal_query | [string](#string) |  |  |
-| where | [string](#string) |  |  |
-| schema_name | [string](#string) |  |  |
-| table_name | [string](#string) |  |  |
-| column_name | [string](#string) |  |  |
-| data_type_name | [string](#string) |  |  |
-| constraint_name | [string](#string) |  |  |
-| file | [string](#string) |  |  |
-| line | [int32](#int32) |  |  |
-| routine | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-QueryRow"></a>
-
-### QueryRow
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| values | [RowValue](#bytebase-v1-RowValue) | repeated | Row values of the query result. |
-
-
-
-
-
-
-<a name="bytebase-v1-RowValue"></a>
-
-### RowValue
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| null_value | [google.protobuf.NullValue](#google-protobuf-NullValue) |  |  |
-| bool_value | [bool](#bool) |  |  |
-| bytes_value | [bytes](#bytes) |  |  |
-| double_value | [double](#double) |  |  |
-| float_value | [float](#float) |  |  |
-| int32_value | [int32](#int32) |  |  |
-| int64_value | [int64](#int64) |  |  |
-| string_value | [string](#string) |  |  |
-| uint32_value | [uint32](#uint32) |  |  |
-| uint64_value | [uint64](#uint64) |  |  |
-| value_value | [google.protobuf.Value](#google-protobuf-Value) |  | value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only. |
-| timestamp_value | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | timestamp_value is used for the timestamp without time zone data type, meaning it only includes the timestamp without any time zone or location info. Although it may be expressed as a UTC value, it should be seen as a timestamp missing location context. |
-| timestamp_tz_value | [RowValue.TimestampTZ](#bytebase-v1-RowValue-TimestampTZ) |  | timestamp_tz_value is used for the timestamptz data type, which accurately represents the timestamp with location information. |
-
-
-
-
-
-
-<a name="bytebase-v1-RowValue-TimestampTZ"></a>
-
-### RowValue.TimestampTZ
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| timestamp | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| zone | [string](#string) |  | Zone is the time zone abbreviations in timezone database such as &#34;PDT&#34;, &#34;PST&#34;. https://en.wikipedia.org/wiki/List_of_tz_database_time_zones We retrieve the time zone information from the timestamptz field in the database. A timestamp is in UTC or epoch time, and with zone info, we can convert it to a local time string. Zone and offset are returned by time.Time.Zone() |
-| offset | [int32](#int32) |  | The offset is in seconds east of UTC |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchQueryHistoriesRequest"></a>
-
-### SearchQueryHistoriesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | The maximum number of histories to return. The service may return fewer than this value. If unspecified, at most 10 history entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListQueryHistory` call. Provide this to retrieve the subsequent page. |
-| filter | [string](#string) |  | filter is the filter to apply on the search query history, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Support filter by: - database, for example: database = &#34;instances/{instance}/databases/{database}&#34; - instance, for example: instance = &#34;instance/{instance}&#34; - type, for example: type = &#34;QUERY&#34; |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchQueryHistoriesResponse"></a>
-
-### SearchQueryHistoriesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| query_histories | [QueryHistory](#bytebase-v1-QueryHistory) | repeated | The list of history. |
-| next_page_token | [string](#string) |  | A token to retrieve next page of history. Pass this value in the page_token field in the subsequent call to `ListQueryHistory` method to retrieve the next page of history. |
-
-
-
-
-
-
-<a name="bytebase-v1-StringifyMetadataRequest"></a>
-
-### StringifyMetadataRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |  |
-| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema string. |
-| classification_from_config | [bool](#bool) |  | If false, we will build the raw common by classification in database config. |
-
-
-
-
-
-
-<a name="bytebase-v1-StringifyMetadataResponse"></a>
-
-### StringifyMetadataResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  |  |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-Advice-Status"></a>
-
-### Advice.Status
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 | Unspecified. |
-| SUCCESS | 1 |  |
-| WARNING | 2 |  |
-| ERROR | 3 |  |
-
-
-
-<a name="bytebase-v1-CheckRequest-ChangeType"></a>
-
-### CheckRequest.ChangeType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| CHANGE_TYPE_UNSPECIFIED | 0 |  |
-| DDL | 1 |  |
-| DDL_GHOST | 2 |  |
-| DML | 3 |  |
-| SQL_EDITOR | 4 |  |
-
-
-
-<a name="bytebase-v1-QueryHistory-Type"></a>
-
-### QueryHistory.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| QUERY | 1 |  |
-| EXPORT | 2 |  |
-
-
-
-<a name="bytebase-v1-QueryOption-RedisRunCommandsOn"></a>
-
-### QueryOption.RedisRunCommandsOn
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| REDIS_RUN_COMMANDS_ON_UNSPECIFIED | 0 | UNSPECIFIED defaults to SINGLE_NODE. |
-| SINGLE_NODE | 1 |  |
-| ALL_NODES | 2 |  |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-SQLService"></a>
-
-### SQLService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| Query | [QueryRequest](#bytebase-v1-QueryRequest) | [QueryResponse](#bytebase-v1-QueryResponse) |  |
-| AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream |  |
-| SearchQueryHistories | [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest) | [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse) | SearchQueryHistories searches query histories for the caller. |
-| Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) |  |
-| Check | [CheckRequest](#bytebase-v1-CheckRequest) | [CheckResponse](#bytebase-v1-CheckResponse) |  |
-| ParseMyBatisMapper | [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest) | [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse) |  |
-| Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
-| StringifyMetadata | [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest) | [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse) |  |
-| GenerateRestoreSQL | [GenerateRestoreSQLRequest](#bytebase-v1-GenerateRestoreSQLRequest) | [GenerateRestoreSQLResponse](#bytebase-v1-GenerateRestoreSQLResponse) | Deprecated. |
 
  
 

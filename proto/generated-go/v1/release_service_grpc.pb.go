@@ -26,6 +26,7 @@ const (
 	ReleaseService_UpdateRelease_FullMethodName   = "/bytebase.v1.ReleaseService/UpdateRelease"
 	ReleaseService_DeleteRelease_FullMethodName   = "/bytebase.v1.ReleaseService/DeleteRelease"
 	ReleaseService_UndeleteRelease_FullMethodName = "/bytebase.v1.ReleaseService/UndeleteRelease"
+	ReleaseService_CheckRelease_FullMethodName    = "/bytebase.v1.ReleaseService/CheckRelease"
 )
 
 // ReleaseServiceClient is the client API for ReleaseService service.
@@ -38,6 +39,7 @@ type ReleaseServiceClient interface {
 	UpdateRelease(ctx context.Context, in *UpdateReleaseRequest, opts ...grpc.CallOption) (*Release, error)
 	DeleteRelease(ctx context.Context, in *DeleteReleaseRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	UndeleteRelease(ctx context.Context, in *UndeleteReleaseRequest, opts ...grpc.CallOption) (*Release, error)
+	CheckRelease(ctx context.Context, in *CheckReleaseRequest, opts ...grpc.CallOption) (*CheckReleaseResponse, error)
 }
 
 type releaseServiceClient struct {
@@ -108,6 +110,16 @@ func (c *releaseServiceClient) UndeleteRelease(ctx context.Context, in *Undelete
 	return out, nil
 }
 
+func (c *releaseServiceClient) CheckRelease(ctx context.Context, in *CheckReleaseRequest, opts ...grpc.CallOption) (*CheckReleaseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckReleaseResponse)
+	err := c.cc.Invoke(ctx, ReleaseService_CheckRelease_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ReleaseServiceServer is the server API for ReleaseService service.
 // All implementations must embed UnimplementedReleaseServiceServer
 // for forward compatibility.
@@ -118,6 +130,7 @@ type ReleaseServiceServer interface {
 	UpdateRelease(context.Context, *UpdateReleaseRequest) (*Release, error)
 	DeleteRelease(context.Context, *DeleteReleaseRequest) (*emptypb.Empty, error)
 	UndeleteRelease(context.Context, *UndeleteReleaseRequest) (*Release, error)
+	CheckRelease(context.Context, *CheckReleaseRequest) (*CheckReleaseResponse, error)
 	mustEmbedUnimplementedReleaseServiceServer()
 }
 
@@ -145,6 +158,9 @@ func (UnimplementedReleaseServiceServer) DeleteRelease(context.Context, *DeleteR
 }
 func (UnimplementedReleaseServiceServer) UndeleteRelease(context.Context, *UndeleteReleaseRequest) (*Release, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UndeleteRelease not implemented")
+}
+func (UnimplementedReleaseServiceServer) CheckRelease(context.Context, *CheckReleaseRequest) (*CheckReleaseResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckRelease not implemented")
 }
 func (UnimplementedReleaseServiceServer) mustEmbedUnimplementedReleaseServiceServer() {}
 func (UnimplementedReleaseServiceServer) testEmbeddedByValue()                        {}
@@ -275,6 +291,24 @@ func _ReleaseService_UndeleteRelease_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ReleaseService_CheckRelease_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckReleaseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReleaseServiceServer).CheckRelease(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReleaseService_CheckRelease_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReleaseServiceServer).CheckRelease(ctx, req.(*CheckReleaseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ReleaseService_ServiceDesc is the grpc.ServiceDesc for ReleaseService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -305,6 +339,10 @@ var ReleaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UndeleteRelease",
 			Handler:    _ReleaseService_UndeleteRelease_Handler,
+		},
+		{
+			MethodName: "CheckRelease",
+			Handler:    _ReleaseService_CheckRelease_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
