@@ -93,7 +93,6 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
 import { NButton, NTooltip } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import { toRef } from "vue";
@@ -110,7 +109,6 @@ import {
   defaultProject,
   isValidProjectName,
 } from "@/types";
-import type { UpdateDatabaseRequest } from "@/types/proto/v1/database_service";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import {

@@ -18,7 +18,6 @@ import type {
 } from "@/types/proto/v1/database_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
-import { useGracefulRequest } from "../utils";
 import { useEnvironmentV1Store } from "./environment";
 import { useProjectV1Store } from "./project";
 
