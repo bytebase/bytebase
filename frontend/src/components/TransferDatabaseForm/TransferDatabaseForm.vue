@@ -93,7 +93,6 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
 import { NButton, NTooltip } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import { toRef } from "vue";
@@ -110,7 +109,6 @@ import {
   defaultProject,
   isValidProjectName,
 } from "@/types";
-import type { UpdateDatabaseRequest } from "@/types/proto/v1/database_service";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import {
@@ -261,19 +259,12 @@ const filterSourceProject = (project: ComposedProject) => {
 const transferDatabase = async () => {
   try {
     state.loading = true;
-    const updates = selectedDatabaseList.value.map((db) => {
-      const databasePatch = cloneDeep(db);
-      databasePatch.project = props.projectName;
-      const updateMask = ["project"];
-      return {
-        database: databasePatch,
-        updateMask,
-      } as UpdateDatabaseRequest;
-    });
-    const updated = await databaseStore.batchUpdateDatabases({
-      parent: "-",
-      requests: updates,
-    });
+
+    const updated = await useDatabaseV1Store().transferDatabases(
+      selectedDatabaseList.value,
+      props.projectName
+    );
+
     const displayDatabaseName =
       selectedDatabaseList.value.length > 1
         ? `${selectedDatabaseList.value.length} databases`

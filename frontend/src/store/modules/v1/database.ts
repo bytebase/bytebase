@@ -18,7 +18,6 @@ import type {
 } from "@/types/proto/v1/database_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
-import { useGracefulRequest } from "../utils";
 import { useEnvironmentV1Store } from "./environment";
 import { useProjectV1Store } from "./project";
 
@@ -141,27 +140,27 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     return resp;
   };
 
-  const transferOneDatabase = async (database: Database, project: string) => {
-    const updated = await updateDatabase({
-      database: {
-        ...database,
-        project: project,
-      },
-      updateMask: ["project"],
-    });
-    return updated;
-  };
-
   const transferDatabases = async (
     databaseList: Database[],
     project: string
   ) => {
-    await useGracefulRequest(async () => {
-      const requests = databaseList.map((db) => {
-        transferOneDatabase(db, project);
-      });
-      await Promise.all(requests);
+    const updates = databaseList.map((db) => {
+      const databasePatch = {
+        ...db,
+      };
+      databasePatch.project = project;
+      const updateMask = ["project"];
+      return {
+        database: databasePatch,
+        updateMask,
+      } as UpdateDatabaseRequest;
     });
+
+    const response = await batchUpdateDatabases({
+      parent: "-",
+      requests: updates,
+    });
+    return response;
   };
 
   return {

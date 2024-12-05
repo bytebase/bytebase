@@ -581,20 +581,20 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 		mc.syncHistoryPrev = syncHistoryPrev
 
 		// changelog
-		changelogUID, err := stores.CreateChangelog(ctx, &store.ChangelogMessage{DatabaseUID: mc.database.UID, Payload: &storepb.ChangelogPayload{
-			Task: &storepb.ChangelogTask{
-				TaskRun:           mc.taskRunName,
-				Issue:             mc.issueName,
-				Revision:          0,
-				ChangedResources:  mi.Payload.ChangedResources,
-				Status:            storepb.ChangelogTask_PENDING,
-				PrevSyncHistoryId: syncHistoryPrev,
-				SyncHistoryId:     0,
-				Sheet:             mc.sheetName,
-				Version:           mc.version,
-				Type:              convertTaskType(mc.task.Type),
-			},
-		}}, api.SystemBotID)
+		changelogUID, err := stores.CreateChangelog(ctx, &store.ChangelogMessage{
+			DatabaseUID:        mc.database.UID,
+			Status:             store.ChangelogStatusPending,
+			PrevSyncHistoryUID: &syncHistoryPrev,
+			SyncHistoryUID:     nil,
+			Payload: &storepb.ChangelogPayload{
+				TaskRun:          mc.taskRunName,
+				Issue:            mc.issueName,
+				Revision:         0,
+				ChangedResources: mi.Payload.ChangedResources,
+				Sheet:            mc.sheetName,
+				Version:          mc.version,
+				Type:             convertTaskType(mc.task.Type),
+			}}, api.SystemBotID)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to create changelog")
 		}
@@ -678,10 +678,10 @@ func endMigration(ctx context.Context, storeInstance *store.Store, startedNs int
 				}
 				update.RevisionUID = &revision.UID
 			}
-			status := storepb.ChangelogTask_DONE
+			status := store.ChangelogStatusDone
 			update.Status = &status
 		} else {
-			status := storepb.ChangelogTask_FAILED
+			status := store.ChangelogStatusFailed
 			update.Status = &status
 		}
 
@@ -714,22 +714,22 @@ func endMigration(ctx context.Context, storeInstance *store.Store, startedNs int
 	return storeInstance.UpdateInstanceChangeHistory(ctx, update)
 }
 
-func convertTaskType(t api.TaskType) storepb.ChangelogTask_Type {
+func convertTaskType(t api.TaskType) storepb.ChangelogPayload_Type {
 	switch t {
 	case api.TaskDatabaseDataUpdate:
-		return storepb.ChangelogTask_DATA
+		return storepb.ChangelogPayload_DATA
 	case api.TaskDatabaseSchemaBaseline:
-		return storepb.ChangelogTask_BASELINE
+		return storepb.ChangelogPayload_BASELINE
 	case api.TaskDatabaseSchemaUpdate:
-		return storepb.ChangelogTask_MIGRATE
+		return storepb.ChangelogPayload_MIGRATE
 	case api.TaskDatabaseSchemaUpdateSDL:
-		return storepb.ChangelogTask_MIGRATE_SDL
+		return storepb.ChangelogPayload_MIGRATE_SDL
 	case api.TaskDatabaseSchemaUpdateGhostCutover, api.TaskDatabaseSchemaUpdateGhostSync:
-		return storepb.ChangelogTask_MIGRATE_GHOST
+		return storepb.ChangelogPayload_MIGRATE_GHOST
 
 	case api.TaskGeneral:
 	case api.TaskDatabaseCreate:
 	case api.TaskDatabaseDataExport:
 	}
-	return storepb.ChangelogTask_TYPE_UNSPECIFIED
+	return storepb.ChangelogPayload_TYPE_UNSPECIFIED
 }

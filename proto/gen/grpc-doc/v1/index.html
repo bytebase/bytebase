@@ -2492,6 +2492,10 @@
               
               
                 <li>
+                  <a href="#bytebase.v1.Release.File.ChangeType"><span class="badge">E</span>Release.File.ChangeType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ReleaseFileType"><span class="badge">E</span>ReleaseFileType</a>
                 </li>
               
@@ -4591,13 +4595,6 @@ Format: instances/{instance} </p></td>
                   <td></td>
                   <td><p>The environment resource.
 Format: environments/prod where prod is the environment resource ID. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>roles</td>
-                  <td><a href="#bytebase.v1.InstanceRole">InstanceRole</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -27562,6 +27559,13 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                 </tr>
               
                 <tr>
+                  <td>change_type</td>
+                  <td><a href="#bytebase.v1.Release.File.ChangeType">Release.File.ChangeType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>statement</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -27670,6 +27674,41 @@ Format: projects/{project}/releases/{release} </p></td>
         
       
 
+      
+        <h3 id="bytebase.v1.Release.File.ChangeType">Release.File.ChangeType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>CHANGE_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL_GHOST</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DML</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.v1.ReleaseFileType">ReleaseFileType</h3>
         <p></p>

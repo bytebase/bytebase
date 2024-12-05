@@ -597,25 +597,9 @@
                   <a href="#bytebase.store.ChangelogPayload"><span class="badge">M</span>ChangelogPayload</a>
                 </li>
               
-                <li>
-                  <a href="#bytebase.store.ChangelogRevision"><span class="badge">M</span>ChangelogRevision</a>
-                </li>
               
                 <li>
-                  <a href="#bytebase.store.ChangelogTask"><span class="badge">M</span>ChangelogTask</a>
-                </li>
-              
-              
-                <li>
-                  <a href="#bytebase.store.ChangelogRevision.Op"><span class="badge">E</span>ChangelogRevision.Op</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ChangelogTask.Status"><span class="badge">E</span>ChangelogTask.Status</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ChangelogTask.Type"><span class="badge">E</span>ChangelogTask.Type</a>
+                  <a href="#bytebase.store.ChangelogPayload.Type"><span class="badge">E</span>ChangelogPayload.Type</a>
                 </li>
               
               
@@ -5538,68 +5522,6 @@ Example: projects/project-id/branches/branch-id. </p></td>
             <tbody>
               
                 <tr>
-                  <td>task</td>
-                  <td><a href="#bytebase.store.ChangelogTask">ChangelogTask</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>revision</td>
-                  <td><a href="#bytebase.store.ChangelogRevision">ChangelogRevision</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.ChangelogRevision">ChangelogRevision</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>revision</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Marshalled revision for display </p></td>
-                </tr>
-              
-                <tr>
-                  <td>operation</td>
-                  <td><a href="#bytebase.store.ChangelogRevision.Op">ChangelogRevision.Op</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.ChangelogTask">ChangelogTask</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
                   <td>task_run</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -5629,27 +5551,6 @@ optional </p></td>
                 </tr>
               
                 <tr>
-                  <td>status</td>
-                  <td><a href="#bytebase.store.ChangelogTask.Status">ChangelogTask.Status</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>prev_sync_history_id</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sync_history_id</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>sheet</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -5666,7 +5567,7 @@ Format: projects/{project}/sheets/{sheet} </p></td>
               
                 <tr>
                   <td>type</td>
-                  <td><a href="#bytebase.store.ChangelogTask.Type">ChangelogTask.Type</a></td>
+                  <td><a href="#bytebase.store.ChangelogPayload.Type">ChangelogPayload.Type</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -5680,71 +5581,7 @@ Format: projects/{project}/sheets/{sheet} </p></td>
       
 
       
-        <h3 id="bytebase.store.ChangelogRevision.Op">ChangelogRevision.Op</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>OP_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>CREATE</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DELETE</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.ChangelogTask.Status">ChangelogTask.Status</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PENDING</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DONE</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>FAILED</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.ChangelogTask.Type">ChangelogTask.Type</h3>
+        <h3 id="bytebase.store.ChangelogPayload.Type">ChangelogPayload.Type</h3>
         <p></p>
         <table class="enum-table">
           <thead>
