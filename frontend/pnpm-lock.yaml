@@ -380,9 +380,6 @@ importers:
       ts-node:
         specifier: ^10.9.2
         version: 10.9.2(@types/node@22.10.1)(typescript@5.6.3)
-      ts-proto:
-        specifier: ^2.0.3
-        version: 2.4.1
       typescript:
         specifier: 5.6.3
         version: 5.6.3
@@ -2005,10 +2002,6 @@ packages:
   canvas-confetti@1.9.3:
     resolution: {integrity: sha512-rFfTURMvmVEX1gyXFgn5QMn81bYk70qa0HLzcIOSVEyl57n6o9ItHeBtUSWdvKAPY0xlvBHno4/v3QPrT83q9g==}
 
-  case-anything@2.1.13:
-    resolution: {integrity: sha512-zlOQ80VrQ2Ue+ymH5OuM/DlDq64mEm+B9UTdHULv5osUMD6HalNTblf2b1u/m6QecjsnOkBpqVZ+XPwIVsy7Ng==}
-    engines: {node: '>=12.13'}
-
   catering@2.1.1:
     resolution: {integrity: sha512-K7Qy8O9p76sL3/3m7/zLKbRkyOlSZAgzEaLhyj2mXS8PsCud2Eo4hAb8aLtZqHh0QGqLcb9dlJSu6lHRVENm1w==}
     engines: {node: '>=6'}
@@ -2391,9 +2384,6 @@ packages:
 
   downloadjs@1.4.7:
     resolution: {integrity: sha512-LN1gO7+u9xjU5oEScGFKvXhYf7Y/empUIIEAGBs1LzUq/rg5duiDrkuH5A2lQGd5jfMOb9X9usDa2oVXwJ0U/Q==}
-
-  dprint-node@1.0.8:
-    resolution: {integrity: sha512-iVKnUtYfGrYcW1ZAlfR/F59cUVL8QIhWoBJoSjkkdua/dkWIgjZfiLMeTjiB06X0ZLkQ0M2C1VbUj/CxkIf1zg==}
 
   eastasianwidth@0.2.0:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
@@ -4035,16 +4025,6 @@ packages:
         optional: true
       '@swc/wasm':
         optional: true
-
-  ts-poet@6.9.0:
-    resolution: {integrity: sha512-roe6W6MeZmCjRmppyfOURklO5tQFQ6Sg7swURKkwYJvV7dbGCrK28um5+51iW3twdPRKtwarqFAVMU6G1mvnuQ==}
-
-  ts-proto-descriptors@2.0.0:
-    resolution: {integrity: sha512-wHcTH3xIv11jxgkX5OyCSFfw27agpInAd6yh89hKG6zqIXnjW9SYqSER2CVQxdPj4czeOhGagNvZBEbJPy7qkw==}
-
-  ts-proto@2.4.1:
-    resolution: {integrity: sha512-0KC6+a4o/KVaF6qtJdhkaRmYCpsRLojTbqZ4Q7G7JIu5YVGBhyy39n/eINkZaHi94/2e9SeQOtt9AqVEYpHO5g==}
-    hasBin: true
 
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
@@ -6135,8 +6115,6 @@ snapshots:
 
   canvas-confetti@1.9.3: {}
 
-  case-anything@2.1.13: {}
-
   catering@2.1.1: {}
 
   ccount@2.0.1: {}
@@ -6495,7 +6473,8 @@ snapshots:
 
   dequal@2.0.3: {}
 
-  detect-libc@1.0.3: {}
+  detect-libc@1.0.3:
+    optional: true
 
   devlop@1.1.0:
     dependencies:
@@ -6518,10 +6497,6 @@ snapshots:
   double-ended-queue@2.1.0-0: {}
 
   downloadjs@1.4.7: {}
-
-  dprint-node@1.0.8:
-    dependencies:
-      detect-libc: 1.0.3
 
   eastasianwidth@0.2.0: {}
 
@@ -8449,21 +8424,6 @@ snapshots:
       typescript: 5.6.3
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
-
-  ts-poet@6.9.0:
-    dependencies:
-      dprint-node: 1.0.8
-
-  ts-proto-descriptors@2.0.0:
-    dependencies:
-      '@bufbuild/protobuf': 2.2.2
-
-  ts-proto@2.4.1:
-    dependencies:
-      '@bufbuild/protobuf': 2.2.2
-      case-anything: 2.1.13
-      ts-poet: 6.9.0
-      ts-proto-descriptors: 2.0.0
 
   tslib@2.8.1: {}
 
