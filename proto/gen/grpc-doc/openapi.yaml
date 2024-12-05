@@ -12954,6 +12954,14 @@ components:
                     format: enum
                 version:
                     type: string
+                changeType:
+                    enum:
+                        - CHANGE_TYPE_UNSPECIFIED
+                        - DDL
+                        - DDL_GHOST
+                        - DML
+                    type: string
+                    format: enum
                 statement:
                     type: string
                     description: The statement is used for preview or check purpose.
