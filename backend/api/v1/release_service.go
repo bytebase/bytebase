@@ -283,6 +283,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 			}
 			databases = append(databases, database)
 		}
+
 		// Handle database group target. Extract all matched databases in the database group.
 		if projectResourceID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
 			project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
@@ -307,16 +308,14 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 			if existedDatabaseGroup == nil {
 				return nil, status.Errorf(codes.NotFound, "database group %q not found", databaseGroupResourceID)
 			}
-
-			databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+			groupDatabases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
 				ProjectID: &projectResourceID,
 			})
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
-
 			// Filter out databases that are matched with the database group.
-			matches, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, existedDatabaseGroup, databases)
+			matches, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, existedDatabaseGroup, groupDatabases)
 			if err != nil {
 				return nil, err
 			}
