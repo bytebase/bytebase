@@ -192,10 +192,18 @@ message Release {
     string sheet_sha256 = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
     ReleaseFileType type = 5;
     string version = 6;
+    ChangeType change_type = 9;
 
     // The statement is used for preview or check purpose.
     string statement = 7;
     int64 statement_size = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+    enum ChangeType {
+      CHANGE_TYPE_UNSPECIFIED = 0;
+      DDL = 1;
+      DDL_GHOST = 2;
+      DML = 3;
+    }
   }
 
   message VCSSource {
