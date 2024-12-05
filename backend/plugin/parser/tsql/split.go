@@ -5,6 +5,7 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -14,6 +15,24 @@ func init() {
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.
 func SplitSQL(statement string) ([]base.SingleSQL, error) {
+	r, err := splitByParser(statement)
+	if err != nil {
+		// Fall back to semi split.
+		return splitBySemi(statement)
+	}
+	return r, err
+}
+
+func splitBySemi(statement string) ([]base.SingleSQL, error) {
+	t := tokenizer.NewTokenizer(statement)
+	list, err := t.SplitStandardMultiSQL()
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+func splitByParser(statement string) ([]base.SingleSQL, error) {
 	inputStream := antlr.NewInputStream(statement)
 	lexer := parser.NewTSqlLexer(inputStream)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
