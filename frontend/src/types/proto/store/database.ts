@@ -119,6 +119,10 @@ export interface SequenceMetadata {
   cacheSize: string;
   /** Last value of a sequence. */
   lastValue: string;
+  /** The owner table of the sequence. */
+  ownerTable: string;
+  /** The owner column of the sequence. */
+  ownerColumn: string;
 }
 
 export interface TriggerMetadata {
@@ -1786,6 +1790,8 @@ function createBaseSequenceMetadata(): SequenceMetadata {
     cycle: false,
     cacheSize: "",
     lastValue: "",
+    ownerTable: "",
+    ownerColumn: "",
   };
 }
 
@@ -1817,6 +1823,12 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     }
     if (message.lastValue !== "") {
       writer.uint32(74).string(message.lastValue);
+    }
+    if (message.ownerTable !== "") {
+      writer.uint32(82).string(message.ownerTable);
+    }
+    if (message.ownerColumn !== "") {
+      writer.uint32(90).string(message.ownerColumn);
     }
     return writer;
   },
@@ -1900,6 +1912,22 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
           message.lastValue = reader.string();
           continue;
         }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.ownerTable = reader.string();
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.ownerColumn = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1920,6 +1948,8 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
       cycle: isSet(object.cycle) ? globalThis.Boolean(object.cycle) : false,
       cacheSize: isSet(object.cacheSize) ? globalThis.String(object.cacheSize) : "",
       lastValue: isSet(object.lastValue) ? globalThis.String(object.lastValue) : "",
+      ownerTable: isSet(object.ownerTable) ? globalThis.String(object.ownerTable) : "",
+      ownerColumn: isSet(object.ownerColumn) ? globalThis.String(object.ownerColumn) : "",
     };
   },
 
@@ -1952,6 +1982,12 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     if (message.lastValue !== "") {
       obj.lastValue = message.lastValue;
     }
+    if (message.ownerTable !== "") {
+      obj.ownerTable = message.ownerTable;
+    }
+    if (message.ownerColumn !== "") {
+      obj.ownerColumn = message.ownerColumn;
+    }
     return obj;
   },
 
@@ -1969,6 +2005,8 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     message.cycle = object.cycle ?? false;
     message.cacheSize = object.cacheSize ?? "";
     message.lastValue = object.lastValue ?? "";
+    message.ownerTable = object.ownerTable ?? "";
+    message.ownerColumn = object.ownerColumn ?? "";
     return message;
   },
 };
