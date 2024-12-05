@@ -257,6 +257,13 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 		return nil, status.Errorf(codes.InvalidArgument, "targets cannot be empty")
 	}
 
+	// Validate and sanitize release files.
+	var err error
+	request.Release.Files, err = validateAndSanitizeReleaseFiles(request.Release.Files)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid release files, err: %v", err)
+	}
+
 	response := &v1pb.CheckReleaseResponse{}
 	for _, target := range request.Targets {
 		var databases []*store.DatabaseMessage
