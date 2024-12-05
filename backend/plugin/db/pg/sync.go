@@ -812,7 +812,50 @@ func getSequences(txn *sql.Tx) (map[string][]*storepb.SequenceMetadata, error) {
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+
+	for schemaName, list := range sequenceMap {
+		for _, sequence := range list {
+			ownerTable, ownerColumn, err := getSequenceOwner(txn, schemaName, sequence.Name)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get sequence %q owner", sequence.Name)
+			}
+			sequence.OwnerTable = ownerTable
+			sequence.OwnerColumn = ownerColumn
+		}
+	}
+
 	return sequenceMap, nil
+}
+
+func getSequenceOwner(txn *sql.Tx, schemaName, sequenceName string) (string, string, error) {
+	var ownerTable, ownerColumn string
+
+	query := fmt.Sprintf(`
+		SELECT tab.relname as table_name,
+			attr.attname as column_name
+		FROM pg_class as seq
+			JOIN pg_depend as dep ON (seq.relfilenode = dep.objid)
+			JOIN pg_class as tab ON (dep.refobjid = tab.relfilenode)
+			JOIN pg_attribute as attr ON (attr.attnum = dep.refobjsubid AND attr.attrelid = dep.refobjid)
+			JOIN pg_namespace as ns ON (tab.relnamespace = ns.oid)
+		WHERE ns.nspname = '%s' AND seq.relname = '%s';
+	`, schemaName, sequenceName)
+
+	rows, err := txn.Query(query)
+	if err != nil {
+		return "", "", err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		if err := rows.Scan(&ownerTable, &ownerColumn); err != nil {
+			return "", "", err
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return "", "", err
+	}
+	return ownerTable, ownerColumn, nil
 }
 
 var listIndexQuery = `
