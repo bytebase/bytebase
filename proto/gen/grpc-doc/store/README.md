@@ -1405,6 +1405,8 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | cycle | [bool](#bool) |  | Cycle is whether the sequence cycles. |
 | cache_size | [string](#string) |  | Cache size of a sequence. |
 | last_value | [string](#string) |  | Last value of a sequence. |
+| owner_table | [string](#string) |  | The owner table of the sequence. |
+| owner_column | [string](#string) |  | The owner column of the sequence. |
 
 
 
