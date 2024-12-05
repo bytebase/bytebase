@@ -28,7 +28,15 @@ func (*InstanceRoleService) GetInstanceRole(_ context.Context, _ *v1pb.GetInstan
 	return &v1pb.InstanceRole{}, nil
 }
 
-// ListInstanceRoles lists all roles in an instance.
-func (*InstanceRoleService) ListInstanceRoles(_ context.Context, _ *v1pb.ListInstanceRolesRequest) (*v1pb.ListInstanceRolesResponse, error) {
-	return &v1pb.ListInstanceRolesResponse{}, nil
+// ListInstanceRoles retrieves the list of roles for a given instance.
+// Note: Pagination is not implemented in this method as it is not required at the moment.
+func (s *InstanceRoleService) ListInstanceRoles(ctx context.Context, request *v1pb.ListInstanceRolesRequest) (*v1pb.ListInstanceRolesResponse, error) {
+	instance, err := getInstanceMessage(ctx, s.store, request.Parent)
+	if err != nil {
+		return nil, err
+	}
+	instanceRoles := convertToInstanceRoles(instance, instance.Metadata.GetRoles())
+	return &v1pb.ListInstanceRolesResponse{
+		Roles: instanceRoles,
+	}, nil
 }
