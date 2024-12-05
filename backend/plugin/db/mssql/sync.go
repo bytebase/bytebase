@@ -361,7 +361,7 @@ func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) 
 		view := &storepb.ViewMetadata{}
 		var schemaName string
 		var definition sql.NullString
-		if err := rows.Scan(&schemaName, &view.Name, &view.Definition); err != nil {
+		if err := rows.Scan(&schemaName, &view.Name, &definition); err != nil {
 			return nil, err
 		}
 
