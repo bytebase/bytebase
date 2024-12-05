@@ -46,6 +46,8 @@ const (
 	PermissionInstancesSync              Permission = "bb.instances.sync"
 	PermissionInstancesUndelete          Permission = "bb.instances.undelete"
 	PermissionInstancesUpdate            Permission = "bb.instances.update"
+	PermissionInstanceRolesGet           Permission = "bb.instanceRoles.get"
+	PermissionInstanceRolesList          Permission = "bb.instanceRoles.list"
 	PermissionIssueCommentsCreate        Permission = "bb.issueComments.create"
 	PermissionIssueCommentsList          Permission = "bb.issueComments.list"
 	PermissionIssueCommentsUpdate        Permission = "bb.issueComments.update"
@@ -174,6 +176,8 @@ var allPermissions = []Permission{
 	PermissionInstancesSync,
 	PermissionInstancesUndelete,
 	PermissionInstancesUpdate,
+	PermissionInstanceRolesGet,
+	PermissionInstanceRolesList,
 	PermissionIssueCommentsCreate,
 	PermissionIssueCommentsList,
 	PermissionIssueCommentsUpdate,

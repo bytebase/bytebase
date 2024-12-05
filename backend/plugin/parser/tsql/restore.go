@@ -271,7 +271,7 @@ func extractSingleSQL(statement string, backupItem *storepb.PriorBackupDetail_It
 	for i := start; i <= end; i++ {
 		result = append(result, list[i].Text)
 	}
-	return strings.Join(result, "\n"), nil
+	return strings.Join(result, ""), nil
 }
 
 func equalOrLess(a, b *storepb.Position) bool {

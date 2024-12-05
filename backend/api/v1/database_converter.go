@@ -176,15 +176,17 @@ func convertStoreDatabaseMetadata(ctx context.Context, metadata *storepb.Databas
 				continue
 			}
 			v1Sequence := &v1pb.SequenceMetadata{
-				Name:      sequence.Name,
-				DataType:  sequence.DataType,
-				Start:     sequence.Start,
-				MinValue:  sequence.MinValue,
-				MaxValue:  sequence.MaxValue,
-				Increment: sequence.Increment,
-				Cycle:     sequence.Cycle,
-				CacheSize: sequence.CacheSize,
-				LastValue: sequence.LastValue,
+				Name:        sequence.Name,
+				DataType:    sequence.DataType,
+				Start:       sequence.Start,
+				MinValue:    sequence.MinValue,
+				MaxValue:    sequence.MaxValue,
+				Increment:   sequence.Increment,
+				Cycle:       sequence.Cycle,
+				CacheSize:   sequence.CacheSize,
+				LastValue:   sequence.LastValue,
+				OwnerTable:  sequence.OwnerTable,
+				OwnerColumn: sequence.OwnerColumn,
 			}
 			s.Sequences = append(s.Sequences, v1Sequence)
 		}
@@ -654,6 +656,25 @@ func convertV1DatabaseMetadata(ctx context.Context, metadata *v1pb.DatabaseMetad
 				CollationConnection: event.CollationConnection,
 			}
 			s.Events = append(s.Events, storeEvent)
+		}
+		for _, sequence := range schema.Sequences {
+			if sequence == nil {
+				continue
+			}
+			storeSequence := &storepb.SequenceMetadata{
+				Name:        sequence.Name,
+				DataType:    sequence.DataType,
+				Start:       sequence.Start,
+				MinValue:    sequence.MinValue,
+				MaxValue:    sequence.MaxValue,
+				Increment:   sequence.Increment,
+				Cycle:       sequence.Cycle,
+				CacheSize:   sequence.CacheSize,
+				LastValue:   sequence.LastValue,
+				OwnerTable:  sequence.OwnerTable,
+				OwnerColumn: sequence.OwnerColumn,
+			}
+			s.Sequences = append(s.Sequences, storeSequence)
 		}
 		m.Schemas = append(m.Schemas, s)
 	}
