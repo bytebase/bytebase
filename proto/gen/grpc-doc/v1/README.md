@@ -606,6 +606,7 @@
     - [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest)
     - [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest)
   
+    - [Release.File.ChangeType](#bytebase-v1-Release-File-ChangeType)
     - [ReleaseFileType](#bytebase-v1-ReleaseFileType)
   
     - [ReleaseService](#bytebase-v1-ReleaseService)
@@ -1302,7 +1303,6 @@ InstanceOptions is the option for instances.
 | activation | [bool](#bool) |  |  |
 | name | [string](#string) |  | The name of the instance. Format: instances/{instance} |
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
-| roles | [InstanceRole](#bytebase-v1-InstanceRole) | repeated |  |
 
 
 
@@ -9889,6 +9889,7 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
 | type | [ReleaseFileType](#bytebase-v1-ReleaseFileType) |  |  |
 | version | [string](#string) |  |  |
+| change_type | [Release.File.ChangeType](#bytebase-v1-Release-File-ChangeType) |  |  |
 | statement | [string](#string) |  | The statement is used for preview or check purpose. |
 | statement_size | [int64](#int64) |  |  |
 
@@ -9944,6 +9945,20 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 
 
  
+
+
+<a name="bytebase-v1-Release-File-ChangeType"></a>
+
+### Release.File.ChangeType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CHANGE_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 |  |
+| DDL_GHOST | 2 |  |
+| DML | 3 |  |
+
 
 
 <a name="bytebase-v1-ReleaseFileType"></a>

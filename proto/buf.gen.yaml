@@ -9,7 +9,7 @@ plugins:
   - remote: buf.build/grpc-ecosystem/gateway
     out: generated-go
     opt: paths=source_relative
-  - remote: buf.build/community/stephenh-ts-proto:v2.2.0
+  - remote: buf.build/community/stephenh-ts-proto:v2.3.0
     out: ../frontend/src/types/proto
     opt:
       - env=browser

@@ -76,7 +76,7 @@ func configureGrpcRouters(
 	v1pb.RegisterSQLServiceServer(grpcServer, sqlService)
 	v1pb.RegisterVCSProviderServiceServer(grpcServer, apiv1.NewVCSProviderService(stores))
 	v1pb.RegisterRiskServiceServer(grpcServer, apiv1.NewRiskService(stores, licenseService))
-	releaseService := apiv1.NewReleaseService(stores)
+	releaseService := apiv1.NewReleaseService(stores, sheetManager, schemaSyncer, dbFactory)
 	v1pb.RegisterReleaseServiceServer(grpcServer, releaseService)
 	planService := apiv1.NewPlanService(stores, sheetManager, licenseService, dbFactory, stateCfg, profile, iamManager)
 	v1pb.RegisterPlanServiceServer(grpcServer, planService)
