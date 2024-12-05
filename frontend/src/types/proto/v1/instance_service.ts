@@ -700,7 +700,6 @@ export interface InstanceResource {
    * Format: environments/prod where prod is the environment resource ID.
    */
   environment: string;
-  roles: InstanceRole[];
 }
 
 export interface SASLConfig {
@@ -3157,7 +3156,6 @@ function createBaseInstanceResource(): InstanceResource {
     activation: false,
     name: "",
     environment: "",
-    roles: [],
   };
 }
 
@@ -3183,9 +3181,6 @@ export const InstanceResource: MessageFns<InstanceResource> = {
     }
     if (message.environment !== "") {
       writer.uint32(58).string(message.environment);
-    }
-    for (const v of message.roles) {
-      InstanceRole.encode(v!, writer.uint32(82).fork()).join();
     }
     return writer;
   },
@@ -3253,14 +3248,6 @@ export const InstanceResource: MessageFns<InstanceResource> = {
           message.environment = reader.string();
           continue;
         }
-        case 10: {
-          if (tag !== 82) {
-            break;
-          }
-
-          message.roles.push(InstanceRole.decode(reader, reader.uint32()));
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3281,7 +3268,6 @@ export const InstanceResource: MessageFns<InstanceResource> = {
       activation: isSet(object.activation) ? globalThis.Boolean(object.activation) : false,
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       environment: isSet(object.environment) ? globalThis.String(object.environment) : "",
-      roles: globalThis.Array.isArray(object?.roles) ? object.roles.map((e: any) => InstanceRole.fromJSON(e)) : [],
     };
   },
 
@@ -3308,9 +3294,6 @@ export const InstanceResource: MessageFns<InstanceResource> = {
     if (message.environment !== "") {
       obj.environment = message.environment;
     }
-    if (message.roles?.length) {
-      obj.roles = message.roles.map((e) => InstanceRole.toJSON(e));
-    }
     return obj;
   },
 
@@ -3326,7 +3309,6 @@ export const InstanceResource: MessageFns<InstanceResource> = {
     message.activation = object.activation ?? false;
     message.name = object.name ?? "";
     message.environment = object.environment ?? "";
-    message.roles = object.roles?.map((e) => InstanceRole.fromPartial(e)) || [];
     return message;
   },
 };

@@ -509,8 +509,6 @@ message InstanceResource {
   // The environment resource.
   // Format: environments/prod where prod is the environment resource ID.
   string environment = 7;
-
-  repeated InstanceRole roles = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message SASLConfig {
