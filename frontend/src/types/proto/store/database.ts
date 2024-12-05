@@ -119,6 +119,15 @@ export interface SequenceMetadata {
   cacheSize: string;
   /** Last value of a sequence. */
   lastValue: string;
+  /** The owner column of the sequence. */
+  ownerColumn: SequenceOwnerColumn | undefined;
+}
+
+export interface SequenceOwnerColumn {
+  /** The table name of the owner column. */
+  table: string;
+  /** The column name of the owner column. */
+  column: string;
 }
 
 export interface TriggerMetadata {
@@ -1786,6 +1795,7 @@ function createBaseSequenceMetadata(): SequenceMetadata {
     cycle: false,
     cacheSize: "",
     lastValue: "",
+    ownerColumn: undefined,
   };
 }
 
@@ -1817,6 +1827,9 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     }
     if (message.lastValue !== "") {
       writer.uint32(74).string(message.lastValue);
+    }
+    if (message.ownerColumn !== undefined) {
+      SequenceOwnerColumn.encode(message.ownerColumn, writer.uint32(82).fork()).join();
     }
     return writer;
   },
@@ -1900,6 +1913,14 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
           message.lastValue = reader.string();
           continue;
         }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.ownerColumn = SequenceOwnerColumn.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1920,6 +1941,7 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
       cycle: isSet(object.cycle) ? globalThis.Boolean(object.cycle) : false,
       cacheSize: isSet(object.cacheSize) ? globalThis.String(object.cacheSize) : "",
       lastValue: isSet(object.lastValue) ? globalThis.String(object.lastValue) : "",
+      ownerColumn: isSet(object.ownerColumn) ? SequenceOwnerColumn.fromJSON(object.ownerColumn) : undefined,
     };
   },
 
@@ -1952,6 +1974,9 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     if (message.lastValue !== "") {
       obj.lastValue = message.lastValue;
     }
+    if (message.ownerColumn !== undefined) {
+      obj.ownerColumn = SequenceOwnerColumn.toJSON(message.ownerColumn);
+    }
     return obj;
   },
 
@@ -1969,6 +1994,85 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     message.cycle = object.cycle ?? false;
     message.cacheSize = object.cacheSize ?? "";
     message.lastValue = object.lastValue ?? "";
+    message.ownerColumn = (object.ownerColumn !== undefined && object.ownerColumn !== null)
+      ? SequenceOwnerColumn.fromPartial(object.ownerColumn)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseSequenceOwnerColumn(): SequenceOwnerColumn {
+  return { table: "", column: "" };
+}
+
+export const SequenceOwnerColumn: MessageFns<SequenceOwnerColumn> = {
+  encode(message: SequenceOwnerColumn, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.table !== "") {
+      writer.uint32(10).string(message.table);
+    }
+    if (message.column !== "") {
+      writer.uint32(18).string(message.column);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SequenceOwnerColumn {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSequenceOwnerColumn();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.table = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.column = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SequenceOwnerColumn {
+    return {
+      table: isSet(object.table) ? globalThis.String(object.table) : "",
+      column: isSet(object.column) ? globalThis.String(object.column) : "",
+    };
+  },
+
+  toJSON(message: SequenceOwnerColumn): unknown {
+    const obj: any = {};
+    if (message.table !== "") {
+      obj.table = message.table;
+    }
+    if (message.column !== "") {
+      obj.column = message.column;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SequenceOwnerColumn>): SequenceOwnerColumn {
+    return SequenceOwnerColumn.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SequenceOwnerColumn>): SequenceOwnerColumn {
+    const message = createBaseSequenceOwnerColumn();
+    message.table = object.table ?? "";
+    message.column = object.column ?? "";
     return message;
   },
 };

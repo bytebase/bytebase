@@ -130,6 +130,7 @@
     - [SchemaMetadata](#bytebase-v1-SchemaMetadata)
     - [Secret](#bytebase-v1-Secret)
     - [SequenceMetadata](#bytebase-v1-SequenceMetadata)
+    - [SequenceOwnerColumn](#bytebase-v1-SequenceOwnerColumn)
     - [SlowQueryDetails](#bytebase-v1-SlowQueryDetails)
     - [SlowQueryLog](#bytebase-v1-SlowQueryLog)
     - [SlowQueryStatistics](#bytebase-v1-SlowQueryStatistics)
@@ -2820,6 +2821,23 @@ Secret is the secret of the database now.
 | cycle | [bool](#bool) |  | Cycle is whether the sequence cycles. |
 | cache_size | [string](#string) |  | Cache size of a sequence. |
 | last_value | [string](#string) |  | Last value of a sequence. |
+| owner_column | [SequenceOwnerColumn](#bytebase-v1-SequenceOwnerColumn) |  | The owner column of the sequence. |
+
+
+
+
+
+
+<a name="bytebase-v1-SequenceOwnerColumn"></a>
+
+### SequenceOwnerColumn
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| table | [string](#string) |  | The table name of the owner column. |
+| column | [string](#string) |  | The column name of the owner column. |
 
 
 

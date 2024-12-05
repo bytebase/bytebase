@@ -450,6 +450,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.SequenceOwnerColumn"><span class="badge">M</span>SequenceOwnerColumn</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.StreamMetadata"><span class="badge">M</span>StreamMetadata</a>
                 </li>
               
@@ -4254,6 +4258,44 @@ table_name, event, timing, action_order. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Last value of a sequence. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>owner_column</td>
+                  <td><a href="#bytebase.store.SequenceOwnerColumn">SequenceOwnerColumn</a></td>
+                  <td></td>
+                  <td><p>The owner column of the sequence. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.SequenceOwnerColumn">SequenceOwnerColumn</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>table</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The table name of the owner column. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>column</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The column name of the owner column. </p></td>
                 </tr>
               
             </tbody>

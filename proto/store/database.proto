@@ -134,6 +134,17 @@ message SequenceMetadata {
 
   // Last value of a sequence.
   string last_value = 9;
+
+  // The owner column of the sequence.
+  SequenceOwnerColumn owner_column = 10;
+}
+
+message SequenceOwnerColumn {
+  // The table name of the owner column.
+  string table = 1;
+
+  // The column name of the owner column.
+  string column = 2;
 }
 
 message TriggerMetadata {
