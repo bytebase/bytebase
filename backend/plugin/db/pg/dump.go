@@ -79,16 +79,65 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 		return err
 	}
 
+	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
+	for _, schema := range metadata.Schemas {
+		for _, sequence := range schema.Sequences {
+			tableID := getTableID(schema.Name, sequence.OwnerTable)
+			sequenceMap[tableID] = append(sequenceMap[tableID], sequence)
+		}
+	}
+
 	// Construct tables.
 	for _, schema := range metadata.Schemas {
 		for _, table := range schema.Tables {
 			if err := writeTable(out, schema.Name, table); err != nil {
 				return err
 			}
+
+			tableID := getTableID(schema.Name, table.Name)
+			if sequences, ok := sequenceMap[tableID]; ok && len(sequences) > 0 {
+				for _, sequence := range sequences {
+					if err := writeSequence(out, schema.Name, sequence); err != nil {
+						return err
+					}
+				}
+			}
 		}
 	}
 
 	return nil
+}
+
+func writeSequence(out io.Writer, schema string, sequence *storepb.SequenceMetadata) error {
+	if _, err := io.WriteString(out, `CREATE SEQUENCE "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, sequence.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "\"\n    "); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "AS "); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, sequence.DataType); err != nil {
+		return err
+	}
+}
+
+func getTableID(schema string, table string) string {
+	var buf strings.Builder
+	_, _ = buf.WriteString(schema)
+	_, _ = buf.WriteString(".")
+	_, _ = buf.WriteString(table)
+	return buf.String()
 }
 
 func writeTable(out io.Writer, schema string, table *storepb.TableMetadata) error {
