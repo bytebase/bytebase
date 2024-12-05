@@ -72,7 +72,7 @@
     - [SecretItem](#bytebase-store-SecretItem)
     - [Secrets](#bytebase-store-Secrets)
     - [SequenceMetadata](#bytebase-store-SequenceMetadata)
-    - [SequenceOwnerColumn](#bytebase-store-SequenceOwnerColumn)
+    - [SequenceMetadata.OwnerColumn](#bytebase-store-SequenceMetadata-OwnerColumn)
     - [StreamMetadata](#bytebase-store-StreamMetadata)
     - [TableConfig](#bytebase-store-TableConfig)
     - [TableMetadata](#bytebase-store-TableMetadata)
@@ -1406,16 +1406,16 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | cycle | [bool](#bool) |  | Cycle is whether the sequence cycles. |
 | cache_size | [string](#string) |  | Cache size of a sequence. |
 | last_value | [string](#string) |  | Last value of a sequence. |
-| owner_column | [SequenceOwnerColumn](#bytebase-store-SequenceOwnerColumn) |  | The owner column of the sequence. |
+| owner_column | [SequenceMetadata.OwnerColumn](#bytebase-store-SequenceMetadata-OwnerColumn) |  | The owner column of the sequence. |
 
 
 
 
 
 
-<a name="bytebase-store-SequenceOwnerColumn"></a>
+<a name="bytebase-store-SequenceMetadata-OwnerColumn"></a>
 
-### SequenceOwnerColumn
+### SequenceMetadata.OwnerColumn
 
 
 

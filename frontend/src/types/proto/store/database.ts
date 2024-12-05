@@ -120,10 +120,10 @@ export interface SequenceMetadata {
   /** Last value of a sequence. */
   lastValue: string;
   /** The owner column of the sequence. */
-  ownerColumn: SequenceOwnerColumn | undefined;
+  ownerColumn: SequenceMetadata_OwnerColumn | undefined;
 }
 
-export interface SequenceOwnerColumn {
+export interface SequenceMetadata_OwnerColumn {
   /** The table name of the owner column. */
   table: string;
   /** The column name of the owner column. */
@@ -1829,7 +1829,7 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
       writer.uint32(74).string(message.lastValue);
     }
     if (message.ownerColumn !== undefined) {
-      SequenceOwnerColumn.encode(message.ownerColumn, writer.uint32(82).fork()).join();
+      SequenceMetadata_OwnerColumn.encode(message.ownerColumn, writer.uint32(82).fork()).join();
     }
     return writer;
   },
@@ -1918,7 +1918,7 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
             break;
           }
 
-          message.ownerColumn = SequenceOwnerColumn.decode(reader, reader.uint32());
+          message.ownerColumn = SequenceMetadata_OwnerColumn.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -1941,7 +1941,7 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
       cycle: isSet(object.cycle) ? globalThis.Boolean(object.cycle) : false,
       cacheSize: isSet(object.cacheSize) ? globalThis.String(object.cacheSize) : "",
       lastValue: isSet(object.lastValue) ? globalThis.String(object.lastValue) : "",
-      ownerColumn: isSet(object.ownerColumn) ? SequenceOwnerColumn.fromJSON(object.ownerColumn) : undefined,
+      ownerColumn: isSet(object.ownerColumn) ? SequenceMetadata_OwnerColumn.fromJSON(object.ownerColumn) : undefined,
     };
   },
 
@@ -1975,7 +1975,7 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
       obj.lastValue = message.lastValue;
     }
     if (message.ownerColumn !== undefined) {
-      obj.ownerColumn = SequenceOwnerColumn.toJSON(message.ownerColumn);
+      obj.ownerColumn = SequenceMetadata_OwnerColumn.toJSON(message.ownerColumn);
     }
     return obj;
   },
@@ -1995,18 +1995,18 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     message.cacheSize = object.cacheSize ?? "";
     message.lastValue = object.lastValue ?? "";
     message.ownerColumn = (object.ownerColumn !== undefined && object.ownerColumn !== null)
-      ? SequenceOwnerColumn.fromPartial(object.ownerColumn)
+      ? SequenceMetadata_OwnerColumn.fromPartial(object.ownerColumn)
       : undefined;
     return message;
   },
 };
 
-function createBaseSequenceOwnerColumn(): SequenceOwnerColumn {
+function createBaseSequenceMetadata_OwnerColumn(): SequenceMetadata_OwnerColumn {
   return { table: "", column: "" };
 }
 
-export const SequenceOwnerColumn: MessageFns<SequenceOwnerColumn> = {
-  encode(message: SequenceOwnerColumn, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const SequenceMetadata_OwnerColumn: MessageFns<SequenceMetadata_OwnerColumn> = {
+  encode(message: SequenceMetadata_OwnerColumn, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.table !== "") {
       writer.uint32(10).string(message.table);
     }
@@ -2016,10 +2016,10 @@ export const SequenceOwnerColumn: MessageFns<SequenceOwnerColumn> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): SequenceOwnerColumn {
+  decode(input: BinaryReader | Uint8Array, length?: number): SequenceMetadata_OwnerColumn {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSequenceOwnerColumn();
+    const message = createBaseSequenceMetadata_OwnerColumn();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -2048,14 +2048,14 @@ export const SequenceOwnerColumn: MessageFns<SequenceOwnerColumn> = {
     return message;
   },
 
-  fromJSON(object: any): SequenceOwnerColumn {
+  fromJSON(object: any): SequenceMetadata_OwnerColumn {
     return {
       table: isSet(object.table) ? globalThis.String(object.table) : "",
       column: isSet(object.column) ? globalThis.String(object.column) : "",
     };
   },
 
-  toJSON(message: SequenceOwnerColumn): unknown {
+  toJSON(message: SequenceMetadata_OwnerColumn): unknown {
     const obj: any = {};
     if (message.table !== "") {
       obj.table = message.table;
@@ -2066,11 +2066,11 @@ export const SequenceOwnerColumn: MessageFns<SequenceOwnerColumn> = {
     return obj;
   },
 
-  create(base?: DeepPartial<SequenceOwnerColumn>): SequenceOwnerColumn {
-    return SequenceOwnerColumn.fromPartial(base ?? {});
+  create(base?: DeepPartial<SequenceMetadata_OwnerColumn>): SequenceMetadata_OwnerColumn {
+    return SequenceMetadata_OwnerColumn.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<SequenceOwnerColumn>): SequenceOwnerColumn {
-    const message = createBaseSequenceOwnerColumn();
+  fromPartial(object: DeepPartial<SequenceMetadata_OwnerColumn>): SequenceMetadata_OwnerColumn {
+    const message = createBaseSequenceMetadata_OwnerColumn();
     message.table = object.table ?? "";
     message.column = object.column ?? "";
     return message;
