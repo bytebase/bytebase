@@ -3,6 +3,9 @@ package v1
 import (
 	"context"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -33,7 +36,7 @@ func (*InstanceRoleService) GetInstanceRole(_ context.Context, _ *v1pb.GetInstan
 func (s *InstanceRoleService) ListInstanceRoles(ctx context.Context, request *v1pb.ListInstanceRolesRequest) (*v1pb.ListInstanceRolesResponse, error) {
 	instance, err := getInstanceMessage(ctx, s.store, request.Parent)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to get instance: %v", err)
 	}
 	instanceRoles := convertToInstanceRoles(instance, instance.Metadata.GetRoles())
 	return &v1pb.ListInstanceRolesResponse{
