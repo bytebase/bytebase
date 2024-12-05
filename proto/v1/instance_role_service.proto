@@ -14,14 +14,14 @@ service InstanceRoleService {
   rpc GetInstanceRole(GetInstanceRoleRequest) returns (InstanceRole) {
     option (google.api.http) = {get: "/v1/{name=instances/*/roles/*}"};
     option (google.api.method_signature) = "name";
-    option (bytebase.v1.permission) = "bb.instances.get";
+    option (bytebase.v1.permission) = "bb.instanceRoles.get";
     option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListInstanceRoles(ListInstanceRolesRequest) returns (ListInstanceRolesResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*}/roles"};
     option (google.api.method_signature) = "parent";
-    option (bytebase.v1.permission) = "bb.instances.get";
+    option (bytebase.v1.permission) = "bb.instanceRoles.get";
     option (bytebase.v1.auth_method) = IAM;
   }
 }

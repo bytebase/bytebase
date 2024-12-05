@@ -10970,11 +10970,6 @@ components:
                     description: |-
                         The environment resource.
                          Format: environments/prod where prod is the environment resource ID.
-                roles:
-                    readOnly: true
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/InstanceRole'
         InstanceRole:
             type: object
             properties:

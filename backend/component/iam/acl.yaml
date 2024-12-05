@@ -45,6 +45,8 @@ roles:
       - bb.instances.sync
       - bb.instances.undelete
       - bb.instances.update
+      - bb.instanceRoles.get
+      - bb.instanceRoles.list
       - bb.issueComments.create
       - bb.issueComments.list
       - bb.issueComments.update
@@ -173,6 +175,8 @@ roles:
       - bb.instances.sync
       - bb.instances.undelete
       - bb.instances.update
+      - bb.instanceRoles.get
+      - bb.instanceRoles.list
       - bb.issueComments.create
       - bb.issueComments.list
       - bb.issueComments.update
@@ -253,6 +257,8 @@ roles:
     permissions:
       - bb.environments.get
       - bb.environments.list
+      - bb.instanceRoles.get
+      - bb.instanceRoles.list
       - bb.policies.get
       - bb.policies.list
       - bb.reviewConfigs.get
