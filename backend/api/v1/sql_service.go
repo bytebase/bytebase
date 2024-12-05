@@ -1254,7 +1254,7 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 			return nil, err
 		}
 	}
-	_, adviceList, err := s.SQLReviewCheck(ctx, request.Statement, request.ChangeType, instance, database, overideMetadata)
+	_, adviceList, err := s.SQLReviewCheck(ctx, request.Statement, convertChangeType(request.ChangeType), instance, database, overideMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -1292,7 +1292,7 @@ func GetClassificationByProject(ctx context.Context, stores *store.Store, projec
 func (s *SQLService) SQLReviewCheck(
 	ctx context.Context,
 	statement string,
-	changeType v1pb.CheckRequest_ChangeType,
+	changeType storepb.PlanCheckRunConfig_ChangeDatabaseType,
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
 	overrideMetadata *storepb.DatabaseSchemaMetadata,
@@ -1342,7 +1342,7 @@ func (s *SQLService) SQLReviewCheck(
 	context := advisor.SQLReviewCheckContext{
 		Charset:                  dbMetadata.CharacterSet,
 		Collation:                dbMetadata.Collation,
-		ChangeType:               convertChangeType(changeType),
+		ChangeType:               changeType,
 		DBSchema:                 dbMetadata,
 		DbType:                   instance.Engine,
 		Catalog:                  catalog,
@@ -1390,8 +1390,8 @@ func (s *SQLService) SQLReviewCheck(
 	return adviceLevel, advices, nil
 }
 
-func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, changeType v1pb.CheckRequest_ChangeType) (bool, error) {
-	if instance.Engine != storepb.Engine_POSTGRES || changeType == v1pb.CheckRequest_SQL_EDITOR {
+func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) (bool, error) {
+	if instance.Engine != storepb.Engine_POSTGRES || changeType == storepb.PlanCheckRunConfig_SQL_EDITOR {
 		return false, nil
 	}
 
