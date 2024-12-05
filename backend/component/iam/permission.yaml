@@ -47,6 +47,8 @@ permissions:
   - bb.instances.sync
   - bb.instances.undelete
   - bb.instances.update
+  - bb.instanceRoles.get
+  - bb.instanceRoles.list
   - bb.issueComments.create
   - bb.issueComments.list
   - bb.issueComments.update

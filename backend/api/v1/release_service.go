@@ -12,19 +12,37 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/sheet"
+	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
+	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 type ReleaseService struct {
 	v1pb.UnimplementedReleaseServiceServer
-	store *store.Store
+	store        *store.Store
+	sheetManager *sheet.Manager
+	schemaSyncer *schemasync.Syncer
+	dbFactory    *dbfactory.DBFactory
 }
 
-func NewReleaseService(store *store.Store) *ReleaseService {
+func NewReleaseService(
+	store *store.Store,
+	sheetManager *sheet.Manager,
+	schemaSyncer *schemasync.Syncer,
+	dbFactory *dbfactory.DBFactory,
+) *ReleaseService {
 	return &ReleaseService{
-		store: store,
+		store:        store,
+		sheetManager: sheetManager,
+		schemaSyncer: schemaSyncer,
+		dbFactory:    dbFactory,
 	}
 }
 
@@ -232,6 +250,228 @@ func (s *ReleaseService) UndeleteRelease(ctx context.Context, request *v1pb.Unde
 		return nil, status.Errorf(codes.Internal, "failed to convert release, err: %v", err)
 	}
 	return release, nil
+}
+
+func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckReleaseRequest) (*v1pb.CheckReleaseResponse, error) {
+	if len(request.Targets) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "targets cannot be empty")
+	}
+
+	// Validate and sanitize release files.
+	var err error
+	request.Release.Files, err = validateAndSanitizeReleaseFiles(request.Release.Files)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid release files, err: %v", err)
+	}
+
+	response := &v1pb.CheckReleaseResponse{}
+	for _, target := range request.Targets {
+		var databases []*store.DatabaseMessage
+		// Handle database target.
+		if instanceID, databaseName, err := common.GetInstanceDatabaseID(target); err == nil {
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+				ResourceID: &instanceID,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
+			}
+			if instance == nil {
+				return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+			}
+			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				InstanceID:   &instanceID,
+				DatabaseName: &databaseName,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get database, error: %v", err)
+			}
+			if database == nil {
+				return nil, status.Errorf(codes.NotFound, "database %q not found", target)
+			}
+			databases = append(databases, database)
+		}
+
+		// Handle database group target. Extract all matched databases in the database group.
+		if projectResourceID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
+			project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+				ResourceID: &projectResourceID,
+			})
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			if project == nil {
+				return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
+			}
+			if project.Deleted {
+				return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectResourceID)
+			}
+			existedDatabaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+				ProjectUID: &project.UID,
+				ResourceID: &databaseGroupResourceID,
+			})
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			if existedDatabaseGroup == nil {
+				return nil, status.Errorf(codes.NotFound, "database group %q not found", databaseGroupResourceID)
+			}
+			groupDatabases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+				ProjectID: &projectResourceID,
+			})
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			// Filter out databases that are matched with the database group.
+			matches, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, existedDatabaseGroup, groupDatabases)
+			if err != nil {
+				return nil, err
+			}
+			databases = append(databases, matches...)
+		}
+
+		for _, database := range databases {
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+				ResourceID: &database.InstanceID,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
+			}
+			if instance == nil {
+				return nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
+			}
+
+			catalog, err := catalog.NewCatalog(ctx, s.store, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to create catalog: %v", err)
+			}
+			for _, file := range request.Release.Files {
+				// Check if file has been applied to database.
+				revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{
+					DatabaseUID: &database.UID,
+					Version:     &file.Version,
+					ShowDeleted: false,
+				})
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to list revisions: %v", err)
+				}
+				if len(revisions) > 0 {
+					// Skip the file if it has been applied to the database.
+					continue
+				}
+
+				adviceStatus, advices, err := s.runSQLReviewCheckForFile(ctx, catalog, instance, database, file)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to check SQL review: %v", err)
+				}
+				// If the advice status is not SUCCESS, we will add the file and advices to the response.
+				if adviceStatus != storepb.Advice_SUCCESS {
+					response.Results = append(response.Results, &v1pb.CheckReleaseResponse_CheckResult{
+						File:    file.Id,
+						Advices: advices,
+					})
+				}
+			}
+		}
+	}
+	return response, nil
+}
+
+func (s *ReleaseService) runSQLReviewCheckForFile(
+	ctx context.Context,
+	catalog *catalog.Catalog,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	file *v1pb.Release_File,
+) (storepb.Advice_Status, []*v1pb.Advice, error) {
+	if !isSQLReviewSupported(instance.Engine) || database == nil {
+		return storepb.Advice_SUCCESS, nil, nil
+	}
+
+	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+	if err != nil {
+		return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %v", database.UID)
+	}
+	if dbSchema == nil {
+		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to sync database schema for database %v", database.UID)
+		}
+		dbSchema, err = s.store.GetDBSchema(ctx, database.UID)
+		if err != nil {
+			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %v", database.UID)
+		}
+		if dbSchema == nil {
+			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "cannot found schema for database %v", database.UID)
+		}
+	}
+
+	dbMetadata := dbSchema.GetMetadata()
+	changeType := storepb.PlanCheckRunConfig_DDL
+	switch file.ChangeType {
+	case v1pb.Release_File_DDL_GHOST:
+		changeType = storepb.PlanCheckRunConfig_DDL_GHOST
+	case v1pb.Release_File_DML:
+		changeType = storepb.PlanCheckRunConfig_DML
+	}
+
+	useDatabaseOwner, err := getUseDatabaseOwner(ctx, s.store, instance, database, changeType)
+	if err != nil {
+		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to get use database owner: %v", err)
+	}
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+	if err != nil {
+		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to get database driver: %v", err)
+	}
+	defer driver.Close(ctx)
+	connection := driver.GetDB()
+
+	classificationConfig := GetClassificationByProject(ctx, s.store, database.ProjectID)
+	context := advisor.SQLReviewCheckContext{
+		Charset:                  dbMetadata.CharacterSet,
+		Collation:                dbMetadata.Collation,
+		ChangeType:               changeType,
+		DBSchema:                 dbMetadata,
+		DbType:                   instance.Engine,
+		Catalog:                  catalog,
+		Driver:                   connection,
+		Context:                  ctx,
+		CurrentDatabase:          database.DatabaseName,
+		ClassificationConfig:     classificationConfig,
+		UsePostgresDatabaseOwner: useDatabaseOwner,
+		ListDatabaseNamesFunc:    BuildListDatabaseNamesFunc(s.store),
+		InstanceID:               instance.ResourceID,
+	}
+
+	reviewConfig, err := s.store.GetReviewConfigForDatabase(ctx, database)
+	if err != nil {
+		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
+			// Continue to check the builtin rules.
+			reviewConfig = &storepb.ReviewConfigPayload{}
+		} else {
+			return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to get SQL review policy with error: %v", err)
+		}
+	}
+
+	res, err := advisor.SQLReviewCheck(s.sheetManager, file.Statement, reviewConfig.SqlReviewRules, context)
+	if err != nil {
+		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to exec SQL review with error: %v", err)
+	}
+
+	adviceLevel := storepb.Advice_SUCCESS
+	var advices []*v1pb.Advice
+	for _, advice := range res {
+		switch advice.Status {
+		case storepb.Advice_WARNING:
+			if adviceLevel != storepb.Advice_ERROR {
+				adviceLevel = storepb.Advice_WARNING
+			}
+		case storepb.Advice_ERROR:
+			adviceLevel = storepb.Advice_ERROR
+		case storepb.Advice_SUCCESS, storepb.Advice_STATUS_UNSPECIFIED:
+			continue
+		}
+		advices = append(advices, convertToV1Advice(advice))
+	}
+	return adviceLevel, advices, nil
 }
 
 func convertToReleases(ctx context.Context, s *store.Store, releases []*store.ReleaseMessage) ([]*v1pb.Release, error) {

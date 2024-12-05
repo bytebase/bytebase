@@ -10970,11 +10970,6 @@ components:
                     description: |-
                         The environment resource.
                          Format: environments/prod where prod is the environment resource ID.
-                roles:
-                    readOnly: true
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/InstanceRole'
         InstanceRole:
             type: object
             properties:
@@ -12954,6 +12949,14 @@ components:
                     format: enum
                 version:
                     type: string
+                changeType:
+                    enum:
+                        - CHANGE_TYPE_UNSPECIFIED
+                        - DDL
+                        - DDL_GHOST
+                        - DML
+                    type: string
+                    format: enum
                 statement:
                     type: string
                     description: The statement is used for preview or check purpose.
