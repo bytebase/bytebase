@@ -103,6 +103,7 @@ export type Permission =
   | "bb.roles.create"
   | "bb.roles.delete"
   | "bb.roles.list"
+  | "bb.roles.get"
   | "bb.roles.update"
   | "bb.groups.create"
   | "bb.groups.update"
@@ -129,9 +130,7 @@ export type QueryPermission = PickLiteral<
   | "bb.sql.admin"
 >;
 
-export const QueryPermissionQueryOnly: QueryPermission[] = [
-  "bb.sql.select",
-];
+export const QueryPermissionQueryOnly: QueryPermission[] = ["bb.sql.select"];
 export const QueryPermissionQueryAny: QueryPermission[] = [
   "bb.sql.select",
   "bb.sql.info",

@@ -87,6 +87,7 @@ permissions:
   - bb.roles.create
   - bb.roles.delete
   - bb.roles.list
+  - bb.roles.get
   - bb.roles.update
   - bb.rollouts.create
   - bb.rollouts.get
