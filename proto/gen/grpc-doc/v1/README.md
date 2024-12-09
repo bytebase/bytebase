@@ -10434,7 +10434,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
-| BUILD_IN | 1 |  |
+| BUILT_IN | 1 |  |
 | CUSTOM | 2 |  |
 
 

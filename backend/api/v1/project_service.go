@@ -1479,7 +1479,7 @@ func (s *ProjectService) validateIAMPolicy(ctx context.Context, policy *v1pb.Iam
 	}
 	roles := convertToRoles(roleMessages, v1pb.Role_CUSTOM)
 	for _, predefinedRole := range s.iamManager.PredefinedRoles {
-		roles = append(roles, convertToRole(predefinedRole, v1pb.Role_BUILD_IN))
+		roles = append(roles, convertToRole(predefinedRole, v1pb.Role_BUILT_IN))
 	}
 
 	return s.validateBindings(policy.Bindings, roles, maximumRoleExpiration)

@@ -42,7 +42,7 @@ func (s *RoleService) ListRoles(ctx context.Context, _ *v1pb.ListRolesRequest) (
 
 	roles := convertToRoles(roleMessages, v1pb.Role_CUSTOM)
 	for _, predefinedRole := range s.iamManager.PredefinedRoles {
-		roles = append(roles, convertToRole(predefinedRole, v1pb.Role_BUILD_IN))
+		roles = append(roles, convertToRole(predefinedRole, v1pb.Role_BUILT_IN))
 	}
 
 	return &v1pb.ListRolesResponse{
@@ -65,7 +65,7 @@ func (s *RoleService) GetRole(ctx context.Context, request *v1pb.GetRoleRequest)
 		return convertToRole(role, v1pb.Role_CUSTOM), nil
 	}
 	if predefinedRole := s.getBuildinRole(roleID); predefinedRole != nil {
-		return convertToRole(predefinedRole, v1pb.Role_BUILD_IN), nil
+		return convertToRole(predefinedRole, v1pb.Role_BUILT_IN), nil
 	}
 	return nil, status.Errorf(codes.NotFound, "role not found: %s", roleID)
 }
@@ -90,7 +90,7 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 	}
 
 	if predefinedRole := s.getBuildinRole(request.RoleId); predefinedRole != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "role %s is a build-in role", request.RoleId)
+		return nil, status.Errorf(codes.InvalidArgument, "role %s is a built-in role", request.RoleId)
 	}
 
 	if err := validateResourceID(request.RoleId); err != nil {

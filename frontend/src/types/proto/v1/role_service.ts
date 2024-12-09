@@ -88,7 +88,7 @@ export interface Role {
 
 export enum Role_Type {
   TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
-  BUILD_IN = "BUILD_IN",
+  BUILT_IN = "BUILT_IN",
   CUSTOM = "CUSTOM",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
@@ -99,8 +99,8 @@ export function role_TypeFromJSON(object: any): Role_Type {
     case "TYPE_UNSPECIFIED":
       return Role_Type.TYPE_UNSPECIFIED;
     case 1:
-    case "BUILD_IN":
-      return Role_Type.BUILD_IN;
+    case "BUILT_IN":
+      return Role_Type.BUILT_IN;
     case 2:
     case "CUSTOM":
       return Role_Type.CUSTOM;
@@ -115,8 +115,8 @@ export function role_TypeToJSON(object: Role_Type): string {
   switch (object) {
     case Role_Type.TYPE_UNSPECIFIED:
       return "TYPE_UNSPECIFIED";
-    case Role_Type.BUILD_IN:
-      return "BUILD_IN";
+    case Role_Type.BUILT_IN:
+      return "BUILT_IN";
     case Role_Type.CUSTOM:
       return "CUSTOM";
     case Role_Type.UNRECOGNIZED:
@@ -129,7 +129,7 @@ export function role_TypeToNumber(object: Role_Type): number {
   switch (object) {
     case Role_Type.TYPE_UNSPECIFIED:
       return 0;
-    case Role_Type.BUILD_IN:
+    case Role_Type.BUILT_IN:
       return 1;
     case Role_Type.CUSTOM:
       return 2;
