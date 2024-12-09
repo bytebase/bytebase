@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	RoleService_ListRoles_FullMethodName  = "/bytebase.v1.RoleService/ListRoles"
+	RoleService_GetRole_FullMethodName    = "/bytebase.v1.RoleService/GetRole"
 	RoleService_CreateRole_FullMethodName = "/bytebase.v1.RoleService/CreateRole"
 	RoleService_UpdateRole_FullMethodName = "/bytebase.v1.RoleService/UpdateRole"
 	RoleService_DeleteRole_FullMethodName = "/bytebase.v1.RoleService/DeleteRole"
@@ -31,6 +32,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RoleServiceClient interface {
 	ListRoles(ctx context.Context, in *ListRolesRequest, opts ...grpc.CallOption) (*ListRolesResponse, error)
+	GetRole(ctx context.Context, in *GetRoleRequest, opts ...grpc.CallOption) (*Role, error)
 	CreateRole(ctx context.Context, in *CreateRoleRequest, opts ...grpc.CallOption) (*Role, error)
 	UpdateRole(ctx context.Context, in *UpdateRoleRequest, opts ...grpc.CallOption) (*Role, error)
 	DeleteRole(ctx context.Context, in *DeleteRoleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -48,6 +50,16 @@ func (c *roleServiceClient) ListRoles(ctx context.Context, in *ListRolesRequest,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListRolesResponse)
 	err := c.cc.Invoke(ctx, RoleService_ListRoles_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *roleServiceClient) GetRole(ctx context.Context, in *GetRoleRequest, opts ...grpc.CallOption) (*Role, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Role)
+	err := c.cc.Invoke(ctx, RoleService_GetRole_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -89,6 +101,7 @@ func (c *roleServiceClient) DeleteRole(ctx context.Context, in *DeleteRoleReques
 // for forward compatibility.
 type RoleServiceServer interface {
 	ListRoles(context.Context, *ListRolesRequest) (*ListRolesResponse, error)
+	GetRole(context.Context, *GetRoleRequest) (*Role, error)
 	CreateRole(context.Context, *CreateRoleRequest) (*Role, error)
 	UpdateRole(context.Context, *UpdateRoleRequest) (*Role, error)
 	DeleteRole(context.Context, *DeleteRoleRequest) (*emptypb.Empty, error)
@@ -104,6 +117,9 @@ type UnimplementedRoleServiceServer struct{}
 
 func (UnimplementedRoleServiceServer) ListRoles(context.Context, *ListRolesRequest) (*ListRolesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRoles not implemented")
+}
+func (UnimplementedRoleServiceServer) GetRole(context.Context, *GetRoleRequest) (*Role, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRole not implemented")
 }
 func (UnimplementedRoleServiceServer) CreateRole(context.Context, *CreateRoleRequest) (*Role, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateRole not implemented")
@@ -149,6 +165,24 @@ func _RoleService_ListRoles_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RoleServiceServer).ListRoles(ctx, req.(*ListRolesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RoleService_GetRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoleServiceServer).GetRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RoleService_GetRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoleServiceServer).GetRole(ctx, req.(*GetRoleRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -217,6 +251,10 @@ var RoleService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListRoles",
 			Handler:    _RoleService_ListRoles_Handler,
+		},
+		{
+			MethodName: "GetRole",
+			Handler:    _RoleService_GetRole_Handler,
 		},
 		{
 			MethodName: "CreateRole",

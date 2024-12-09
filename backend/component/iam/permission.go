@@ -86,6 +86,7 @@ const (
 	PermissionRolesCreate                Permission = "bb.roles.create"
 	PermissionRolesDelete                Permission = "bb.roles.delete"
 	PermissionRolesList                  Permission = "bb.roles.list"
+	PermissionRolesGet                   Permission = "bb.roles.get"
 	PermissionRolesUpdate                Permission = "bb.roles.update"
 	PermissionRolloutsCreate             Permission = "bb.rollouts.create"
 	PermissionRolloutsGet                Permission = "bb.rollouts.get"
@@ -216,6 +217,7 @@ var allPermissions = []Permission{
 	PermissionRolesCreate,
 	PermissionRolesDelete,
 	PermissionRolesList,
+	PermissionRolesGet,
 	PermissionRolesUpdate,
 	PermissionRolloutsCreate,
 	PermissionRolloutsGet,
