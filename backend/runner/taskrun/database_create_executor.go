@@ -356,7 +356,13 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		return nil, model.Version{}, "", nil
 	}
 
-	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+	useDBOwner, err := getUseDatabaseOwner(ctx, exec.store, instance, database)
+	if err != nil {
+		return nil, model.Version{}, "", errors.Wrapf(err, "failed to check if we should use database owner")
+	}
+	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
+		UseDatabaseOwner: useDBOwner,
+	})
 	if err != nil {
 		return nil, model.Version{}, "", err
 	}
