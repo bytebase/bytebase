@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -394,8 +395,8 @@ func convertStoreVCSConnector(ctx context.Context, stores *store.Store, vcsConne
 
 	v1VCSConnector := &v1pb.VCSConnector{
 		Name:          fmt.Sprintf("%s/%s%s", common.FormatProject(vcsConnector.ProjectID), common.VCSConnectorPrefix, vcsConnector.ResourceID),
-		CreateTime:    timestamppb.New(vcsConnector.CreatedTime),
-		UpdateTime:    timestamppb.New(vcsConnector.UpdatedTime),
+		CreateTime:    timestamppb.New(time.Unix(vcsConnector.CreatedTs, 0)),
+		UpdateTime:    timestamppb.New(time.Unix(vcsConnector.UpdatedTs, 0)),
 		Creator:       fmt.Sprintf("users/%s", creator.Email),
 		Updater:       fmt.Sprintf("users/%s", updater.Email),
 		Title:         vcsConnector.Payload.Title,

@@ -25,11 +25,11 @@ type VCSConnectorMessage struct {
 	Payload *storepb.VCSConnector
 
 	// Output only fields
-	UID         int
-	CreatorID   int
-	UpdaterID   int
-	CreatedTime time.Time
-	UpdatedTime time.Time
+	UID       int
+	CreatorID int
+	UpdaterID int
+	CreatedTs int64
+	UpdatedTs int64
 }
 
 // FindVCSConnectorMessage is the API message for finding VCS connectors.
@@ -95,7 +95,9 @@ func (s *Store) ListVCSConnectors(ctx context.Context, find *FindVCSConnectorMes
 			vcs_connector.resource_id,
 			vcs_connector.creator_id,
 			vcs_connector.updater_id,
-			vcs_connector.payload
+			vcs_connector.payload,
+			vcs_connector.created_ts,
+			vcs_connector.updated_ts
 		FROM vcs_connector
 		LEFT JOIN project ON project.id = vcs_connector.project_id
 		LEFT JOIN vcs ON vcs.id = vcs_connector.vcs_id
@@ -120,6 +122,8 @@ func (s *Store) ListVCSConnectors(ctx context.Context, find *FindVCSConnectorMes
 			&vcsConnector.CreatorID,
 			&vcsConnector.UpdaterID,
 			&payloadStr,
+			&vcsConnector.CreatedTs,
+			&vcsConnector.UpdatedTs,
 		); err != nil {
 			return nil, err
 		}
@@ -169,7 +173,7 @@ func (s *Store) CreateVCSConnector(ctx context.Context, create *VCSConnectorMess
 			payload
 		)
 		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING id
+		RETURNING id, created_ts, updated_ts
 	`
 	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
@@ -180,6 +184,8 @@ func (s *Store) CreateVCSConnector(ctx context.Context, create *VCSConnectorMess
 		payload,
 	).Scan(
 		&create.UID,
+		&create.CreatedTs,
+		&create.UpdatedTs,
 	); err != nil {
 		return nil, err
 	}

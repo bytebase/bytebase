@@ -55,6 +55,14 @@ export interface CreateRoleRequest {
   roleId: string;
 }
 
+export interface GetRoleRequest {
+  /**
+   * The name of the role to retrieve.
+   * Format: roles/{role}
+   */
+  name: string;
+}
+
 export interface UpdateRoleRequest {
   role: Role | undefined;
   updateMask:
@@ -75,6 +83,60 @@ export interface Role {
   title: string;
   description: string;
   permissions: string[];
+  type: Role_Type;
+}
+
+export enum Role_Type {
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  BUILDIN = "BUILDIN",
+  CUSTOM = "CUSTOM",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function role_TypeFromJSON(object: any): Role_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return Role_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "BUILDIN":
+      return Role_Type.BUILDIN;
+    case 2:
+    case "CUSTOM":
+      return Role_Type.CUSTOM;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Role_Type.UNRECOGNIZED;
+  }
+}
+
+export function role_TypeToJSON(object: Role_Type): string {
+  switch (object) {
+    case Role_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case Role_Type.BUILDIN:
+      return "BUILDIN";
+    case Role_Type.CUSTOM:
+      return "CUSTOM";
+    case Role_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function role_TypeToNumber(object: Role_Type): number {
+  switch (object) {
+    case Role_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case Role_Type.BUILDIN:
+      return 1;
+    case Role_Type.CUSTOM:
+      return 2;
+    case Role_Type.UNRECOGNIZED:
+    default:
+      return -1;
+  }
 }
 
 function createBaseListRolesRequest(): ListRolesRequest {
@@ -305,6 +367,64 @@ export const CreateRoleRequest: MessageFns<CreateRoleRequest> = {
   },
 };
 
+function createBaseGetRoleRequest(): GetRoleRequest {
+  return { name: "" };
+}
+
+export const GetRoleRequest: MessageFns<GetRoleRequest> = {
+  encode(message: GetRoleRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetRoleRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetRoleRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetRoleRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+  },
+
+  toJSON(message: GetRoleRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetRoleRequest>): GetRoleRequest {
+    return GetRoleRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetRoleRequest>): GetRoleRequest {
+    const message = createBaseGetRoleRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
 function createBaseUpdateRoleRequest(): UpdateRoleRequest {
   return { role: undefined, updateMask: undefined, allowMissing: false };
 }
@@ -456,7 +576,7 @@ export const DeleteRoleRequest: MessageFns<DeleteRoleRequest> = {
 };
 
 function createBaseRole(): Role {
-  return { name: "", title: "", description: "", permissions: [] };
+  return { name: "", title: "", description: "", permissions: [], type: Role_Type.TYPE_UNSPECIFIED };
 }
 
 export const Role: MessageFns<Role> = {
@@ -472,6 +592,9 @@ export const Role: MessageFns<Role> = {
     }
     for (const v of message.permissions) {
       writer.uint32(34).string(v!);
+    }
+    if (message.type !== Role_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(40).int32(role_TypeToNumber(message.type));
     }
     return writer;
   },
@@ -515,6 +638,14 @@ export const Role: MessageFns<Role> = {
           message.permissions.push(reader.string());
           continue;
         }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.type = role_TypeFromJSON(reader.int32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -532,6 +663,7 @@ export const Role: MessageFns<Role> = {
       permissions: globalThis.Array.isArray(object?.permissions)
         ? object.permissions.map((e: any) => globalThis.String(e))
         : [],
+      type: isSet(object.type) ? role_TypeFromJSON(object.type) : Role_Type.TYPE_UNSPECIFIED,
     };
   },
 
@@ -549,6 +681,9 @@ export const Role: MessageFns<Role> = {
     if (message.permissions?.length) {
       obj.permissions = message.permissions;
     }
+    if (message.type !== Role_Type.TYPE_UNSPECIFIED) {
+      obj.type = role_TypeToJSON(message.type);
+    }
     return obj;
   },
 
@@ -561,6 +696,7 @@ export const Role: MessageFns<Role> = {
     message.title = object.title ?? "";
     message.description = object.description ?? "";
     message.permissions = object.permissions?.map((e) => e) || [];
+    message.type = object.type ?? Role_Type.TYPE_UNSPECIFIED;
     return message;
   },
 };
@@ -581,6 +717,45 @@ export const RoleServiceDefinition = {
           800010: [new Uint8Array([13, 98, 98, 46, 114, 111, 108, 101, 115, 46, 108, 105, 115, 116])],
           800016: [new Uint8Array([1])],
           578365826: [new Uint8Array([11, 18, 9, 47, 118, 49, 47, 114, 111, 108, 101, 115])],
+        },
+      },
+    },
+    getRole: {
+      name: "GetRole",
+      requestType: GetRoleRequest,
+      requestStream: false,
+      responseType: Role,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          800010: [new Uint8Array([12, 98, 98, 46, 114, 111, 108, 101, 115, 46, 103, 101, 116])],
+          800016: [new Uint8Array([1])],
+          578365826: [
+            new Uint8Array([
+              20,
+              18,
+              18,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              114,
+              111,
+              108,
+              101,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
         },
       },
     },

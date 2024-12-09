@@ -7446,6 +7446,30 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/roles/{role}:
+        get:
+            tags:
+                - RoleService
+            operationId: RoleService_GetRole
+            parameters:
+                - name: role
+                  in: path
+                  description: The role id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Role'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
         delete:
             tags:
                 - RoleService
@@ -13220,6 +13244,13 @@ components:
                     type: array
                     items:
                         type: string
+                type:
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - BUILDIN
+                        - CUSTOM
+                    type: string
+                    format: enum
         Rollout:
             required:
                 - plan
