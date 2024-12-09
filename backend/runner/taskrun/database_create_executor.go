@@ -414,7 +414,11 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		mi.IssueUID = &issue.UID
 	}
 
+	// TODO(p0ny): check here
 	mc := &migrateContext{
+		syncer:  exec.schemaSyncer,
+		profile: exec.profile,
+
 		instance:    instance,
 		database:    database,
 		sheet:       nil,
@@ -422,6 +426,14 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		taskRunUID:  taskRunUID,
 		taskRunName: common.FormatTaskRun(project.ResourceID, task.PipelineID, task.StageID, task.ID, taskRunUID),
 		version:     schemaVersion.Version,
+	}
+
+	if issue != nil {
+		mi.Description = fmt.Sprintf("%s - %s", issue.Title, task.Name)
+		mi.ProjectUID = &issue.Project.UID
+		mi.IssueUID = &issue.UID
+
+		mc.issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
 	}
 
 	if _, _, err := executeMigrationDefault(ctx, driverCtx, exec.store, exec.stateCfg, driver, mi, mc, schema, db.ExecuteOptions{}); err != nil {
