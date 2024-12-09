@@ -39,12 +39,44 @@ func (s *RoleService) ListRoles(ctx context.Context, _ *v1pb.ListRolesRequest) (
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list roles: %v", err)
 	}
-	roleMessages = append(roleMessages, s.iamManager.PredefinedRoles...)
-	roles := convertToRoles(roleMessages)
+
+	roles := convertToRoles(roleMessages, v1pb.Role_CUSTOM)
+	for _, predefinedRole := range s.iamManager.PredefinedRoles {
+		roles = append(roles, convertToRole(predefinedRole, v1pb.Role_BUILT_IN))
+	}
 
 	return &v1pb.ListRolesResponse{
 		Roles: roles,
 	}, nil
+}
+
+// GetRole gets a role.
+func (s *RoleService) GetRole(ctx context.Context, request *v1pb.GetRoleRequest) (*v1pb.Role, error) {
+	roleName := request.Name
+	roleID, err := common.GetRoleID(roleName)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	role, err := s.store.GetRole(ctx, roleID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get role: %v", err)
+	}
+	if role != nil {
+		return convertToRole(role, v1pb.Role_CUSTOM), nil
+	}
+	if predefinedRole := s.getBuildinRole(roleID); predefinedRole != nil {
+		return convertToRole(predefinedRole, v1pb.Role_BUILT_IN), nil
+	}
+	return nil, status.Errorf(codes.NotFound, "role not found: %s", roleID)
+}
+
+func (s *RoleService) getBuildinRole(roleID string) *store.RoleMessage {
+	for _, predefinedRole := range s.iamManager.PredefinedRoles {
+		if predefinedRole.ResourceID == roleID {
+			return predefinedRole
+		}
+	}
+	return nil
 }
 
 // CreateRole creates a new role.
@@ -55,6 +87,10 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+
+	if predefinedRole := s.getBuildinRole(request.RoleId); predefinedRole != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "role %s is a built-in role", request.RoleId)
 	}
 
 	if err := validateResourceID(request.RoleId); err != nil {
@@ -81,7 +117,7 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 	if err := s.iamManager.ReloadCache(ctx); err != nil {
 		return nil, err
 	}
-	return convertToRole(roleMessage), nil
+	return convertToRole(roleMessage, v1pb.Role_CUSTOM), nil
 }
 
 // UpdateRole updates an existing role.
@@ -99,6 +135,9 @@ func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRe
 	roleID, err := common.GetRoleID(request.Role.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if predefinedRole := s.getBuildinRole(roleID); predefinedRole != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "cannot change the build-in role %s", request.Role.Name)
 	}
 	role, err := s.store.GetRole(ctx, roleID)
 	if err != nil {
@@ -144,7 +183,7 @@ func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRe
 	if err := s.iamManager.ReloadCache(ctx); err != nil {
 		return nil, err
 	}
-	return convertToRole(roleMessage), nil
+	return convertToRole(roleMessage, v1pb.Role_CUSTOM), nil
 }
 
 // DeleteRole deletes an existing role.
@@ -152,6 +191,9 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 	roleID, err := common.GetRoleID(request.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if predefinedRole := s.getBuildinRole(roleID); predefinedRole != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "cannot delete the build-in role %s", request.Name)
 	}
 	role, err := s.store.GetRole(ctx, roleID)
 	if err != nil {
@@ -178,15 +220,15 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 	return &emptypb.Empty{}, nil
 }
 
-func convertToRoles(roleMessages []*store.RoleMessage) []*v1pb.Role {
+func convertToRoles(roleMessages []*store.RoleMessage, roleType v1pb.Role_Type) []*v1pb.Role {
 	var roles []*v1pb.Role
 	for _, roleMessage := range roleMessages {
-		roles = append(roles, convertToRole(roleMessage))
+		roles = append(roles, convertToRole(roleMessage, roleType))
 	}
 	return roles
 }
 
-func convertToRole(role *store.RoleMessage) *v1pb.Role {
+func convertToRole(role *store.RoleMessage, roleType v1pb.Role_Type) *v1pb.Role {
 	var permissions []string
 	for p := range role.Permissions {
 		permissions = append(permissions, p)
@@ -197,5 +239,6 @@ func convertToRole(role *store.RoleMessage) *v1pb.Role {
 		Title:       role.Name,
 		Description: role.Description,
 		Permissions: permissions,
+		Type:        roleType,
 	}
 }

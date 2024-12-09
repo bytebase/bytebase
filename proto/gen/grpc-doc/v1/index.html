@@ -2608,6 +2608,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.GetRoleRequest"><span class="badge">M</span>GetRoleRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ListRolesRequest"><span class="badge">M</span>ListRolesRequest</a>
                 </li>
               
@@ -2623,6 +2627,10 @@
                   <a href="#bytebase.v1.UpdateRoleRequest"><span class="badge">M</span>UpdateRoleRequest</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.v1.Role.Type"><span class="badge">E</span>Role.Type</a>
+                </li>
               
               
               
@@ -28736,6 +28744,31 @@ are /[a-z][A-Z][0-9]/. </p></td>
 
         
       
+        <h3 id="bytebase.v1.GetRoleRequest">GetRoleRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the role to retrieve.
+Format: roles/{role} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ListRolesRequest">ListRolesRequest</h3>
         <p></p>
 
@@ -28846,6 +28879,13 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.Role.Type">Role.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -28893,6 +28933,35 @@ If this field is omitted, there are no subsequent pages. </p></td>
       
 
       
+        <h3 id="bytebase.v1.Role.Type">Role.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>BUILT_IN</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CUSTOM</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
 
       
 
@@ -28909,6 +28978,13 @@ If this field is omitted, there are no subsequent pages. </p></td>
                 <td>ListRoles</td>
                 <td><a href="#bytebase.v1.ListRolesRequest">ListRolesRequest</a></td>
                 <td><a href="#bytebase.v1.ListRolesResponse">ListRolesResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GetRole</td>
+                <td><a href="#bytebase.v1.GetRoleRequest">GetRoleRequest</a></td>
+                <td><a href="#bytebase.v1.Role">Role</a></td>
                 <td><p></p></td>
               </tr>
             
@@ -28957,6 +29033,16 @@ If this field is omitted, there are no subsequent pages. </p></td>
                 <td>ListRoles</td>
                 <td>GET</td>
                 <td>/v1/roles</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetRole</td>
+                <td>GET</td>
+                <td>/v1/{name=roles/*}</td>
                 <td></td>
               </tr>
               

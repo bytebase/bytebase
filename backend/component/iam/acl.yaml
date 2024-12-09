@@ -85,6 +85,7 @@ roles:
       - bb.roles.create
       - bb.roles.delete
       - bb.roles.list
+      - bb.roles.get
       - bb.roles.update
       - bb.rollouts.create
       - bb.rollouts.get
@@ -215,6 +216,7 @@ roles:
       - bb.roles.create
       - bb.roles.delete
       - bb.roles.list
+      - bb.roles.get
       - bb.roles.update
       - bb.rollouts.create
       - bb.rollouts.get
@@ -265,6 +267,7 @@ roles:
       - bb.reviewConfigs.list
       - bb.risks.list
       - bb.roles.list
+      - bb.roles.get
       - bb.settings.get
       - bb.settings.list
       - bb.groups.create
