@@ -2,7 +2,7 @@
   <div class="space-y-4 h-full flex flex-col">
     <BBAttention
       v-if="!externalUrl"
-      class="mt-4 w-full border-none"
+      class="w-full border-none"
       type="error"
       :title="$t('banner.external-url')"
       :description="$t('settings.general.workspace.external-url.description')"
