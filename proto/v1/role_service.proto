@@ -126,7 +126,7 @@ message Role {
 
   enum Type {
     TYPE_UNSPECIFIED = 0;
-    BUILDIN = 1;
+    BUILD_IN = 1;
     CUSTOM = 2;
   }
 

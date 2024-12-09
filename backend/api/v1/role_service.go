@@ -42,7 +42,7 @@ func (s *RoleService) ListRoles(ctx context.Context, _ *v1pb.ListRolesRequest) (
 
 	roles := convertToRoles(roleMessages, v1pb.Role_CUSTOM)
 	for _, predefinedRole := range s.iamManager.PredefinedRoles {
-		roles = append(roles, convertToRole(predefinedRole, v1pb.Role_BUILDIN))
+		roles = append(roles, convertToRole(predefinedRole, v1pb.Role_BUILD_IN))
 	}
 
 	return &v1pb.ListRolesResponse{
@@ -65,7 +65,7 @@ func (s *RoleService) GetRole(ctx context.Context, request *v1pb.GetRoleRequest)
 		return convertToRole(role, v1pb.Role_CUSTOM), nil
 	}
 	if predefinedRole := s.getBuildinRole(roleID); predefinedRole != nil {
-		return convertToRole(predefinedRole, v1pb.Role_BUILDIN), nil
+		return convertToRole(predefinedRole, v1pb.Role_BUILD_IN), nil
 	}
 	return nil, status.Errorf(codes.NotFound, "role not found: %s", roleID)
 }

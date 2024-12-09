@@ -13247,7 +13247,7 @@ components:
                 type:
                     enum:
                         - TYPE_UNSPECIFIED
-                        - BUILDIN
+                        - BUILD_IN
                         - CUSTOM
                     type: string
                     format: enum
