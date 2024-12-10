@@ -345,7 +345,7 @@ func doMigration(
 		}
 	}
 
-	migrationID, schema, err := executeMigrationDefault(ctx, driverCtx, stores, stateCfg, driver, mi, mc, statement, opts)
+	migrationID, schema, err := executeMigrationDefault(ctx, driverCtx, stores, stateCfg, driver, mi, mc, statement, opts, dbFactory)
 	if err != nil {
 		return "", "", err
 	}
@@ -440,22 +440,27 @@ func runMigration(ctx context.Context, driverCtx context.Context, store *store.S
 }
 
 // executeMigrationDefault executes migration.
-func executeMigrationDefault(ctx context.Context, driverCtx context.Context, store *store.Store, _ *state.State, driver db.Driver, mi *db.MigrationInfo, mc *migrateContext, statement string, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
+func executeMigrationDefault(ctx context.Context, driverCtx context.Context, store *store.Store, _ *state.State, driver db.Driver, mi *db.MigrationInfo, mc *migrateContext, statement string, opts db.ExecuteOptions, dbFactory *dbfactory.DBFactory) (migrationHistoryID string, updatedSchema string, resErr error) {
 	execFunc := func(ctx context.Context, execStatement string) error {
 		if _, err := driver.Execute(ctx, execStatement, opts); err != nil {
 			return err
 		}
 		return nil
 	}
-	return executeMigrationWithFunc(ctx, driverCtx, store, driver, mi, mc, statement, execFunc, opts)
+	return executeMigrationWithFunc(ctx, driverCtx, store, driver, mi, mc, statement, execFunc, opts, dbFactory)
 }
 
 // executeMigrationWithFunc executes the migration with custom migration function.
-func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, driver db.Driver, mi *db.MigrationInfo, mc *migrateContext, statement string, execFunc func(ctx context.Context, execStatement string) error, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
+func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, driver db.Driver, mi *db.MigrationInfo, mc *migrateContext, statement string, execFunc func(ctx context.Context, execStatement string) error, opts db.ExecuteOptions, dbFactory *dbfactory.DBFactory) (migrationHistoryID string, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	if mi.Type.NeedDump() {
 		opts.LogDatabaseSyncStart()
-		dbSchema, err := driver.SyncDBSchema(ctx)
+		syncDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, mc.instance, mc.database, db.ConnectionContext{})
+		if err != nil {
+			return "", "", errors.Wrapf(err, "failed to get driver connection for instance %q", mc.instance.ResourceID)
+		}
+		defer syncDriver.Close(ctx)
+		dbSchema, err := syncDriver.SyncDBSchema(ctx)
 		if err != nil {
 			opts.LogDatabaseSyncEnd(err.Error())
 			return "", "", errors.Wrapf(err, "failed to sync database schema")
@@ -528,7 +533,12 @@ func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 	var afterSchemaBuf bytes.Buffer
 	if mi.Type.NeedDump() {
 		opts.LogDatabaseSyncStart()
-		dbSchema, err := driver.SyncDBSchema(ctx)
+		syncDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, mc.instance, mc.database, db.ConnectionContext{})
+		if err != nil {
+			return "", "", errors.Wrapf(err, "failed to get driver connection for instance %q", mc.instance.ResourceID)
+		}
+		defer syncDriver.Close(ctx)
+		dbSchema, err := syncDriver.SyncDBSchema(ctx)
 		if err != nil {
 			opts.LogDatabaseSyncEnd(err.Error())
 			return "", "", errors.Wrapf(err, "failed to sync database schema")

@@ -436,7 +436,7 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		mc.issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
 	}
 
-	if _, _, err := executeMigrationDefault(ctx, driverCtx, exec.store, exec.stateCfg, driver, mi, mc, schema, db.ExecuteOptions{}); err != nil {
+	if _, _, err := executeMigrationDefault(ctx, driverCtx, exec.store, exec.stateCfg, driver, mi, mc, schema, db.ExecuteOptions{}, exec.dbFactory); err != nil {
 		return nil, model.Version{}, "", err
 	}
 	return peerDatabase, schemaVersion, schema, nil
@@ -525,7 +525,12 @@ func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.
 
 	dbSchema := (*storepb.DatabaseSchemaMetadata)(nil)
 	if instance.Engine == storepb.Engine_MYSQL {
-		dbSchema, err = driver.SyncDBSchema(ctx)
+		syncDriver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+		if err != nil {
+			return nil, model.Version{}, "", errors.Wrapf(err, "failed to get driver for instance %q", instance.Title)
+		}
+		defer syncDriver.Close(ctx)
+		dbSchema, err = syncDriver.SyncDBSchema(ctx)
 		if err != nil {
 			return nil, model.Version{}, "", errors.Wrapf(err, "failed to get schema for database %q", similarDB.DatabaseName)
 		}
