@@ -1,23 +1,20 @@
 <template>
-  <div ref="tableRef">
-    <NDataTable
-      :columns="columnList"
-      :data="planList"
-      :striped="true"
-      :bordered="true"
-      :loading="loading"
-      :row-key="(plan: ComposedPlan) => plan.name"
-      :row-props="rowProps"
-      class="plan-data-table"
-    />
-  </div>
+  <NDataTable
+    :columns="columnList"
+    :data="planList"
+    :striped="true"
+    :bordered="true"
+    :loading="loading"
+    :row-key="(plan: ComposedPlan) => plan.name"
+    :row-props="rowProps"
+    class="plan-data-table"
+  />
 </template>
 
 <script lang="tsx" setup>
-import { useElementSize } from "@vueuse/core";
 import type { DataTableColumn } from "naive-ui";
 import { NPerformantEllipsis, NDataTable } from "naive-ui";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
@@ -32,6 +29,19 @@ import {
 } from "@/utils";
 import PlanCheckRunStatusIcon from "../PlanCheckRunStatusIcon.vue";
 
+const props = withDefaults(
+  defineProps<{
+    planList: ComposedPlan[];
+    loading?: boolean;
+    showProject: boolean;
+  }>(),
+  {
+    loading: true,
+    showProject: true,
+  }
+);
+
+const router = useRouter();
 const { t } = useI18n();
 
 const columnList = computed((): DataTableColumn<ComposedPlan>[] => {
@@ -82,33 +92,11 @@ const columnList = computed((): DataTableColumn<ComposedPlan>[] => {
       key: "updateTime",
       title: t("issue.table.updated"),
       width: 150,
-      resizable: true,
-      hide: !showExtendedColumns.value,
       render: (plan) =>
         humanizeTs(getTimeForPbTimestamp(plan.updateTime, 0) / 1000),
     },
   ];
   return columns.filter((column) => !column.hide);
-});
-
-const props = withDefaults(
-  defineProps<{
-    planList: ComposedPlan[];
-    loading?: boolean;
-    showProject: boolean;
-  }>(),
-  {
-    loading: true,
-    showProject: true,
-  }
-);
-
-const router = useRouter();
-
-const tableRef = ref<HTMLDivElement>();
-const { width: tableWidth } = useElementSize(tableRef);
-const showExtendedColumns = computed(() => {
-  return tableWidth.value > 800;
 });
 
 const rowProps = (plan: ComposedPlan) => {

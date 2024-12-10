@@ -1,8 +1,6 @@
-import { head } from "lodash-es";
 import {
   composeInstanceResourceForDatabase,
   useDatabaseV1Store,
-  useDBGroupStore,
   useEnvironmentV1Store,
 } from "@/store";
 import {
@@ -78,20 +76,6 @@ export const databaseEngineForSpec = async (
     );
     if (isValidDatabaseName(db.name)) {
       return db.instanceResource.engine;
-    }
-  }
-  if (extractDatabaseGroupName(target)) {
-    const dbGroup = await useDBGroupStore().getOrFetchDBGroupByName(target);
-    // Might be flaky: use the first database in the db group
-    const dbName = head(dbGroup.matchedDatabases)?.name;
-    if (dbName) {
-      const db = await useDatabaseV1Store().getOrFetchDatabaseByName(
-        dbName,
-        true /* silent */
-      );
-      if (isValidDatabaseName(db.name)) {
-        return db.instanceResource.engine;
-      }
     }
   }
 
