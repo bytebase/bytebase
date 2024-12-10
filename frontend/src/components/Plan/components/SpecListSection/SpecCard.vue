@@ -6,8 +6,10 @@
   >
     <NTooltip
       v-if="
-        planCheckStatus === PlanCheckRun_Result_Status.ERROR ||
-        planCheckStatus === PlanCheckRun_Result_Status.WARNING
+        [
+          PlanCheckRun_Result_Status.WARNING,
+          PlanCheckRun_Result_Status.ERROR,
+        ].includes(planCheckStatus)
       "
       trigger="hover"
       placement="top"
@@ -41,6 +43,7 @@
         databaseForSpec(plan, spec).databaseName
       }}</span>
     </div>
+    <!-- Fallback to show the database group name if the spec is a grouping change spec in old plans. -->
     <div
       v-else-if="isGroupingChangeSpec(spec) && relatedDatabaseGroup"
       class="flex items-center gap-2 truncate"

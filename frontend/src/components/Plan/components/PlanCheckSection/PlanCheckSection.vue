@@ -55,15 +55,10 @@ const allowRunChecks = computed(() => {
 
 const planCheckRunList = computed(() => {
   // If a spec is database change spec, show plan checks for the spec.
-  if (
-    selectedSpec.value &&
-    selectedSpec.value.id !== String(EMPTY_ID) &&
-    isDatabaseChangeSpec(selectedSpec.value)
-  ) {
+  if (selectedSpec.value && isDatabaseChangeSpec(selectedSpec.value)) {
     return planCheckRunListForSpec(plan.value, selectedSpec.value);
   }
-  // Otherwise, show plan checks for the plan.
-  // TODO(steven): update plan check runs display for db group and deployment config.
+  // Otherwise, show all plan checks in the plan.
   return plan.value.planCheckRunList;
 });
 </script>

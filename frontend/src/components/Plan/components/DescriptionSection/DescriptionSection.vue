@@ -104,14 +104,12 @@ const allowEdit = computed(() => {
   if (isCreating.value) {
     return true;
   }
-
+  // Allowed if current user is the creator.
   if (extractUserResourceName(plan.value.creator) === currentUser.value.email) {
-    // Allowed if current user is the creator.
     return true;
   }
-
+  // Allowed if current has plan update permission in the project
   if (hasProjectPermissionV2(plan.value.projectEntity, "bb.plans.update")) {
-    // Allowed if current has plan update permission in the project
     return true;
   }
   return false;
