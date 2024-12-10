@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -38,11 +39,15 @@ func NewIdentityProviderService(store *store.Store, licenseService enterprise.Li
 
 // GetIdentityProvider gets an identity provider.
 func (s *IdentityProviderService) GetIdentityProvider(ctx context.Context, request *v1pb.GetIdentityProviderRequest) (*v1pb.IdentityProvider, error) {
-	identityProvider, err := s.getIdentityProviderMessage(ctx, request.Name)
+	identityProviderMessage, err := s.getIdentityProviderMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
 	}
-	return convertToIdentityProvider(identityProvider), nil
+	identityProvider, err := convertToIdentityProvider(ctx, identityProviderMessage)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert identity provider: %v", err))
+	}
+	return identityProvider, nil
 }
 
 // ListIdentityProviders lists all identity providers.
@@ -52,8 +57,12 @@ func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, req
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	response := &v1pb.ListIdentityProvidersResponse{}
-	for _, identityProvider := range identityProviders {
-		response.IdentityProviders = append(response.IdentityProviders, convertToIdentityProvider(identityProvider))
+	for _, identityProviderMessage := range identityProviders {
+		identityProvider, err := convertToIdentityProvider(ctx, identityProviderMessage)
+		if err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert identity provider: %v", err))
+		}
+		response.IdentityProviders = append(response.IdentityProviders, identityProvider)
 	}
 	return response, nil
 }
@@ -85,18 +94,21 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 	if err := validIdentityProviderConfig(request.IdentityProvider.Type, request.IdentityProvider.Config); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	identityProviderMessage := store.IdentityProviderMessage{
+	identityProviderMessage, err := s.store.CreateIdentityProvider(ctx, &store.IdentityProviderMessage{
 		ResourceID: request.IdentityProviderId,
 		Title:      request.IdentityProvider.Title,
 		Domain:     request.IdentityProvider.Domain,
 		Type:       storepb.IdentityProviderType(request.IdentityProvider.Type),
 		Config:     convertIdentityProviderConfigToStore(request.IdentityProvider.GetConfig()),
-	}
-	identityProvider, err := s.store.CreateIdentityProvider(ctx, &identityProviderMessage)
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	return convertToIdentityProvider(identityProvider), nil
+	identityProvider, err := convertToIdentityProvider(ctx, identityProviderMessage)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert identity provider: %v", err))
+	}
+	return identityProvider, nil
 }
 
 // UpdateIdentityProvider updates an identity provider.
@@ -111,16 +123,16 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 		return nil, err
 	}
 
-	identityProvider, err := s.getIdentityProviderMessage(ctx, request.IdentityProvider.Name)
+	identityProviderMessage, err := s.getIdentityProviderMessage(ctx, request.IdentityProvider.Name)
 	if err != nil {
 		return nil, err
 	}
-	if identityProvider.Deleted {
+	if identityProviderMessage.Deleted {
 		return nil, status.Errorf(codes.NotFound, "identity provider %q has been deleted", request.IdentityProvider.Name)
 	}
 
 	patch := &store.UpdateIdentityProviderMessage{
-		ResourceID: identityProvider.ResourceID,
+		ResourceID: identityProviderMessage.ResourceID,
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
@@ -136,30 +148,34 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 		}
 	}
 	if patch.Config != nil {
-		if err := validIdentityProviderConfig(v1pb.IdentityProviderType(identityProvider.Type), request.IdentityProvider.Config); err != nil {
+		if err := validIdentityProviderConfig(v1pb.IdentityProviderType(identityProviderMessage.Type), request.IdentityProvider.Config); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		// Don't update client secret if it's empty string.
-		if identityProvider.Type == storepb.IdentityProviderType_OAUTH2 {
+		if identityProviderMessage.Type == storepb.IdentityProviderType_OAUTH2 {
 			if request.IdentityProvider.Config.GetOauth2Config().ClientSecret == "" {
-				patch.Config.GetOauth2Config().ClientSecret = identityProvider.Config.GetOauth2Config().ClientSecret
+				patch.Config.GetOauth2Config().ClientSecret = identityProviderMessage.Config.GetOauth2Config().ClientSecret
 			}
-		} else if identityProvider.Type == storepb.IdentityProviderType_OIDC {
+		} else if identityProviderMessage.Type == storepb.IdentityProviderType_OIDC {
 			if request.IdentityProvider.Config.GetOidcConfig().ClientSecret == "" {
-				patch.Config.GetOidcConfig().ClientSecret = identityProvider.Config.GetOidcConfig().ClientSecret
+				patch.Config.GetOidcConfig().ClientSecret = identityProviderMessage.Config.GetOidcConfig().ClientSecret
 			}
-		} else if identityProvider.Type == storepb.IdentityProviderType_LDAP {
+		} else if identityProviderMessage.Type == storepb.IdentityProviderType_LDAP {
 			if request.IdentityProvider.Config.GetLdapConfig().BindPassword == "" {
-				patch.Config.GetLdapConfig().BindPassword = identityProvider.Config.GetLdapConfig().BindPassword
+				patch.Config.GetLdapConfig().BindPassword = identityProviderMessage.Config.GetLdapConfig().BindPassword
 			}
 		}
 	}
 
-	identityProvider, err = s.store.UpdateIdentityProvider(ctx, patch)
+	identityProviderMessage, err = s.store.UpdateIdentityProvider(ctx, patch)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	return convertToIdentityProvider(identityProvider), nil
+	identityProvider, err := convertToIdentityProvider(ctx, identityProviderMessage)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert identity provider: %v", err))
+	}
+	return identityProvider, nil
 }
 
 // DeleteIdentityProvider deletes an identity provider.
@@ -184,26 +200,30 @@ func (s *IdentityProviderService) DeleteIdentityProvider(ctx context.Context, re
 
 // UndeleteIdentityProvider undeletes an identity provider.
 func (s *IdentityProviderService) UndeleteIdentityProvider(ctx context.Context, request *v1pb.UndeleteIdentityProviderRequest) (*v1pb.IdentityProvider, error) {
-	identityProvider, err := s.getIdentityProviderMessage(ctx, request.Name)
+	identityProviderMessage, err := s.getIdentityProviderMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
 	}
-	if !identityProvider.Deleted {
+	if !identityProviderMessage.Deleted {
 		return nil, status.Errorf(codes.InvalidArgument, "identity provider %q is active", request.Name)
 	}
-	if err := s.checkFeatureAvailable(v1pb.IdentityProviderType(identityProvider.Type)); err != nil {
+	if err := s.checkFeatureAvailable(v1pb.IdentityProviderType(identityProviderMessage.Type)); err != nil {
 		return nil, err
 	}
 
 	patch := &store.UpdateIdentityProviderMessage{
-		ResourceID: identityProvider.ResourceID,
+		ResourceID: identityProviderMessage.ResourceID,
 		Delete:     &undeletePatch,
 	}
-	identityProvider, err = s.store.UpdateIdentityProvider(ctx, patch)
+	identityProviderMessage, err = s.store.UpdateIdentityProvider(ctx, patch)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	return convertToIdentityProvider(identityProvider), nil
+	identityProvider, err := convertToIdentityProvider(ctx, identityProviderMessage)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert identity provider: %v", err))
+	}
+	return identityProvider, nil
 }
 
 func (s *IdentityProviderService) checkFeatureAvailable(ssoType v1pb.IdentityProviderType) error {
@@ -241,15 +261,15 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 
 	if identityProvider.Type == v1pb.IdentityProviderType_OAUTH2 {
 		// Find client secret for those existed identity providers.
-		if request.IdentityProvider.Config.GetOauth2Config().ClientSecret == "" {
-			storedIdentityProvider, err := s.getIdentityProviderMessage(ctx, request.IdentityProvider.Name)
+		if identityProvider.Config.GetOauth2Config().ClientSecret == "" {
+			storedIdentityProvider, err := s.getIdentityProviderMessage(ctx, identityProvider.Name)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to find identity provider, error: %s", err.Error())
 			}
 			if storedIdentityProvider == nil {
-				return nil, status.Errorf(codes.Internal, "identity provider %s not found", request.IdentityProvider.Name)
+				return nil, status.Errorf(codes.Internal, "identity provider %s not found", identityProvider.Name)
 			}
-			request.IdentityProvider.Config.GetOauth2Config().ClientSecret = storedIdentityProvider.Config.GetOauth2Config().ClientSecret
+			identityProvider.Config.GetOauth2Config().ClientSecret = storedIdentityProvider.Config.GetOauth2Config().ClientSecret
 		}
 		oauth2Context := request.GetOauth2Context()
 		if oauth2Context == nil {
@@ -271,15 +291,15 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 		}
 	} else if identityProvider.Type == v1pb.IdentityProviderType_OIDC {
 		// Find client secret for those existed identity providers.
-		if request.IdentityProvider.Config.GetOidcConfig().ClientSecret == "" {
-			storedIdentityProvider, err := s.getIdentityProviderMessage(ctx, request.IdentityProvider.Name)
+		if identityProvider.Config.GetOidcConfig().ClientSecret == "" {
+			storedIdentityProvider, err := s.getIdentityProviderMessage(ctx, identityProvider.Name)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to find identity provider, error: %s", err.Error())
 			}
 			if storedIdentityProvider == nil {
-				return nil, status.Errorf(codes.Internal, "identity provider %s not found", request.IdentityProvider.Name)
+				return nil, status.Errorf(codes.Internal, "identity provider %s not found", identityProvider.Name)
 			}
-			request.IdentityProvider.Config.GetOidcConfig().ClientSecret = storedIdentityProvider.Config.GetOidcConfig().ClientSecret
+			identityProvider.Config.GetOidcConfig().ClientSecret = storedIdentityProvider.Config.GetOidcConfig().ClientSecret
 		}
 		oauth2Context := request.GetOauth2Context()
 		if oauth2Context == nil {
@@ -310,15 +330,15 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 		}
 	} else if identityProvider.Type == v1pb.IdentityProviderType_LDAP {
 		// Retrieve bind password from stored identity provider if not provided.
-		if request.IdentityProvider.Config.GetLdapConfig().BindPassword == "" {
-			storedIdentityProvider, err := s.getIdentityProviderMessage(ctx, request.IdentityProvider.Name)
+		if identityProvider.Config.GetLdapConfig().BindPassword == "" {
+			storedIdentityProvider, err := s.getIdentityProviderMessage(ctx, identityProvider.Name)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to find identity provider, error: %s", err.Error())
 			}
 			if storedIdentityProvider == nil {
-				return nil, status.Errorf(codes.Internal, "identity provider %s not found", request.IdentityProvider.Name)
+				return nil, status.Errorf(codes.Internal, "identity provider %s not found", identityProvider.Name)
 			}
-			request.IdentityProvider.Config.GetLdapConfig().BindPassword = storedIdentityProvider.Config.GetLdapConfig().BindPassword
+			identityProvider.Config.GetLdapConfig().BindPassword = storedIdentityProvider.Config.GetLdapConfig().BindPassword
 		}
 		identityProviderConfig := convertIdentityProviderConfigToStore(identityProvider.Config).GetLdapConfig()
 		ldapIdentityProvider, err := ldap.NewIdentityProvider(
@@ -368,9 +388,12 @@ func (s *IdentityProviderService) getIdentityProviderMessage(ctx context.Context
 	return identityProvider, nil
 }
 
-func convertToIdentityProvider(identityProvider *store.IdentityProviderMessage) *v1pb.IdentityProvider {
+func convertToIdentityProvider(ctx context.Context, identityProvider *store.IdentityProviderMessage) (*v1pb.IdentityProvider, error) {
 	identityProviderType := v1pb.IdentityProviderType(identityProvider.Type)
-	config := convertIdentityProviderConfigFromStore(identityProvider.Config)
+	config, err := convertIdentityProviderConfigFromStore(ctx, identityProvider.Config)
+	if err != nil {
+		return nil, err
+	}
 	return &v1pb.IdentityProvider{
 		Name:   fmt.Sprintf("%s%s", common.IdentityProviderNamePrefix, identityProvider.ResourceID),
 		State:  convertDeletedToState(identityProvider.Deleted),
@@ -378,10 +401,10 @@ func convertToIdentityProvider(identityProvider *store.IdentityProviderMessage) 
 		Domain: identityProvider.Domain,
 		Type:   identityProviderType,
 		Config: config,
-	}
+	}, nil
 }
 
-func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.IdentityProviderConfig) *v1pb.IdentityProviderConfig {
+func convertIdentityProviderConfigFromStore(ctx context.Context, identityProviderConfig *storepb.IdentityProviderConfig) (*v1pb.IdentityProviderConfig, error) {
 	if v := identityProviderConfig.GetOauth2Config(); v != nil {
 		fieldMapping := v1pb.FieldMapping{
 			Identifier:  v.FieldMapping.Identifier,
@@ -403,8 +426,19 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 					AuthStyle:     v1pb.OAuth2AuthStyle(v.AuthStyle),
 				},
 			},
-		}
+		}, nil
 	} else if v := identityProviderConfig.GetOidcConfig(); v != nil {
+		// Fetch openid configuration to get the auth endpoint and supported scopes.
+		openidConfigration, err := oidc.GetOpenIDConfiguration(ctx, v.Issuer)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to fetch openid configuration")
+		}
+		scopes := oidc.DefaultScopes
+		// Some IdPs like authning.cn doesn't expose "username" as part of standard claims.
+		// We need to check if it's supported by the IdP and add it to the scopes.
+		if slices.Contains(openidConfigration.ScopesSupported, "username") {
+			scopes = append(scopes, "username")
+		}
 		fieldMapping := v1pb.FieldMapping{
 			Identifier:  v.FieldMapping.Identifier,
 			DisplayName: v.FieldMapping.DisplayName,
@@ -417,13 +451,14 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 					Issuer:        v.Issuer,
 					ClientId:      v.ClientId,
 					ClientSecret:  "", // SECURITY: We do not expose the client secret
-					Scopes:        oidc.DefaultScopes,
 					FieldMapping:  &fieldMapping,
 					SkipTlsVerify: v.SkipTlsVerify,
 					AuthStyle:     v1pb.OAuth2AuthStyle(v.AuthStyle),
+					Scopes:        scopes,
+					AuthEndpoint:  openidConfigration.AuthorizationEndpoint,
 				},
 			},
-		}
+		}, nil
 	} else if v := identityProviderConfig.GetLdapConfig(); v != nil {
 		fieldMapping := v1pb.FieldMapping{
 			Identifier:  v.FieldMapping.Identifier,
@@ -445,9 +480,9 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 					FieldMapping:     &fieldMapping,
 				},
 			},
-		}
+		}, nil
 	}
-	return nil
+	return nil, nil
 }
 
 func convertIdentityProviderConfigToStore(identityProviderConfig *v1pb.IdentityProviderConfig) *storepb.IdentityProviderConfig {
