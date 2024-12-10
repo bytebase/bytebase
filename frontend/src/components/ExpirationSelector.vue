@@ -112,7 +112,7 @@ const options = computed((): ExpirationOption[] => {
 });
 
 const onSelect = (value: number) => {
-  if (value >= 0) {
+  if (value > 0) {
     state.expirationTimestampInMS =
       new Date().getTime() + value * 24 * 60 * 60 * 1000;
   } else {
