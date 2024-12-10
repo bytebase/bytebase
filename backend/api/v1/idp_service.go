@@ -106,7 +106,7 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 	}
 	identityProvider, err := convertToIdentityProvider(identityProviderMessage)
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert identity provider: %v", err))
+		return nil, status.Errorf(codes.Internal, failed to convert identity provider: %v", err)
 	}
 	return identityProvider, nil
 }
