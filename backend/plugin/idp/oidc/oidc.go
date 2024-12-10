@@ -182,7 +182,7 @@ type OpenIDConfigurationResponse struct {
 var openidConfigResponseCache = make(map[string]*OpenIDConfigurationResponse)
 
 // GetOpenIDConfiguration fetches the OpenID Configuration from the given issuer.
-func GetOpenIDConfiguration(ctx context.Context, issuer string) (*OpenIDConfigurationResponse, error) {
+func GetOpenIDConfiguration(issuer string) (*OpenIDConfigurationResponse, error) {
 	if config, found := openidConfigResponseCache[issuer]; found {
 		return config, nil
 	}

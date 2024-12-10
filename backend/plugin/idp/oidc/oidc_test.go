@@ -301,7 +301,6 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 }
 
 func TestGetOpenIDConfigration(t *testing.T) {
-	ctx := context.Background()
 	tests := []struct {
 		issuer   string
 		response *OpenIDConfigurationResponse
@@ -317,7 +316,7 @@ func TestGetOpenIDConfigration(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.issuer, func(t *testing.T) {
-			response, err := GetOpenIDConfiguration(ctx, test.issuer)
+			response, err := GetOpenIDConfiguration(test.issuer)
 			require.NoError(t, err)
 			assert.Equal(t, test.response, response)
 		})
