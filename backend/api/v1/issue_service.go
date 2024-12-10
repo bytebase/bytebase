@@ -1070,6 +1070,31 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 	}
 
 	if err := func() error {
+		if len(payload.Approval.ApprovalTemplates) != 1 {
+			return nil
+		}
+		approvalStep := utils.FindNextPendingStep(payload.Approval.ApprovalTemplates[0], payload.Approval.Approvers)
+		if approvalStep == nil {
+			return nil
+		}
+
+		s.webhookManager.CreateEvent(ctx, &webhook.Event{
+			Actor:   s.store.GetSystemBotUser(ctx),
+			Type:    webhook.EventTypeIssueApprovalCreate,
+			Comment: "",
+			Issue:   webhook.NewIssue(issue),
+			Project: webhook.NewProject(issue.Project),
+			IssueApprovalCreate: &webhook.EventIssueApprovalCreate{
+				ApprovalStep: approvalStep,
+			},
+		})
+
+		return nil
+	}(); err != nil {
+		slog.Error("failed to create approval step pending activity after re-request issue review", log.BBError(err))
+	}
+
+	if err := func() error {
 		p := &storepb.IssueCommentPayload{
 			Comment: request.Comment,
 			Event: &storepb.IssueCommentPayload_Approval_{
