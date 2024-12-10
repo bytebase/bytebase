@@ -94,7 +94,7 @@ type migrateContext struct {
 	syncHistory     int64
 }
 
-func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int, taskRunUID int) (*db.MigrationInfo, *migrateContext, error) {
+func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int, taskRunUID int, dbFactory *dbfactory.DBFactory) (*db.MigrationInfo, *migrateContext, error) {
 	if !(common.IsDev() && profile.DevelopmentVersioned) {
 		if schemaVersion.Version == "" {
 			return nil, nil, errors.Errorf("empty schema version")
@@ -141,6 +141,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 	mc := &migrateContext{
 		syncer:      syncer,
 		profile:     profile,
+		dbFactory:   dbFactory,
 		instance:    instance,
 		database:    database,
 		task:        task,
@@ -427,12 +428,10 @@ func postMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInf
 }
 
 func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int) (terminated bool, result *storepb.TaskRunResult, err error) {
-	mi, mc, err := getMigrationInfo(ctx, store, profile, syncer, task, migrationType, statement, schemaVersion, sheetID, taskRunUID)
+	mi, mc, err := getMigrationInfo(ctx, store, profile, syncer, task, migrationType, statement, schemaVersion, sheetID, taskRunUID, dbFactory)
 	if err != nil {
 		return true, nil, err
 	}
-
-	mc.dbFactory = dbFactory
 
 	migrationID, _, err := doMigration(ctx, driverCtx, store, stateCfg, profile, statement, mi, mc)
 	if err != nil {
