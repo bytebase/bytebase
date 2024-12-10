@@ -4,8 +4,10 @@ package oidc
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/coreos/go-oidc"
 	"github.com/pkg/errors"
@@ -167,4 +169,42 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 		}
 	}
 	return userInfo, nil
+}
+
+// The common OIDC configuration response.
+// Refer to https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata.
+type OpenIDConfigurationResponse struct {
+	AuthorizationEndpoint string   `json:"authorization_endpoint"`
+	ScopesSupported       []string `json:"scopes_supported"`
+}
+
+// openidConfigResponseCache is a cache for the OpenID Configuration Response.
+var openidConfigResponseCache = make(map[string]*OpenIDConfigurationResponse)
+
+// GetOpenIDConfiguration fetches the OpenID Configuration from the given issuer.
+func GetOpenIDConfiguration(issuer string) (*OpenIDConfigurationResponse, error) {
+	if config, found := openidConfigResponseCache[issuer]; found {
+		return config, nil
+	}
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+	resp, err := client.Get(strings.TrimSuffix(issuer, "/") + "/.well-known/openid-configuration")
+	if err != nil {
+		return nil, errors.Wrap(err, "fetch openid configuration")
+	}
+	defer resp.Body.Close()
+
+	var config OpenIDConfigurationResponse
+	if err := json.NewDecoder(resp.Body).Decode(&config); err != nil {
+		return nil, errors.Wrap(err, "unmarshal openid configuration")
+	}
+
+	openidConfigResponseCache[issuer] = &config
+	return &config, nil
 }
