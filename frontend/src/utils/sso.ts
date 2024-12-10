@@ -1,14 +1,9 @@
-import axios from "axios";
-import { trimEnd, uniq } from "lodash-es";
 import { stringify } from "qs";
 import type { OAuthState } from "@/types";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
 import { IdentityProviderType } from "@/types/proto/v1/idp_service";
 
 export const SSOConfigSessionKey = "sso-config";
-
-// defaultOIDCScopes is a list of scopes that are part of OIDC standard claims. Same as backend.
-const defaultOIDCScopes = ["openid", "profile", "email"];
 
 export async function openWindowForSSO(
   identityProvider: IdentityProvider,
@@ -46,21 +41,7 @@ export async function openWindowForSSO(
     if (!oidcConfig) {
       return null;
     }
-
-    const openidConfig = (
-      await axios.get(
-        `${trimEnd(oidcConfig.issuer, "/")}/.well-known/openid-configuration`
-      )
-    ).data;
-
-    // Some IdPs like authning.cn doesn't expose "username" as part of standard claims,
-    // so we need to request the claim explicitly when possible.
-    if (openidConfig.scopes_supported.includes("username")) {
-      oidcConfig.scopes.push("username");
-    }
-    oidcConfig.scopes = uniq([...oidcConfig.scopes, ...defaultOIDCScopes]);
-
-    uri.basePath = openidConfig.authorization_endpoint;
+    uri.basePath = oidcConfig.authEndpoint;
     Object.assign(uri.query, {
       client_id: oidcConfig.clientId,
       scope: oidcConfig.scopes.join(" "),
