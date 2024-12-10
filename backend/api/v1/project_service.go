@@ -1299,8 +1299,12 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 
 func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.ProjectMessage, error) {
 	setting := &storepb.Project{
-		AllowModifyStatement: project.AllowModifyStatement,
-		AutoResolveIssue:     project.AutoResolveIssue,
+		AllowModifyStatement:       project.AllowModifyStatement,
+		AutoResolveIssue:           project.AutoResolveIssue,
+		EnforceIssueTitle:          project.EnforceIssueTitle,
+		AutoEnableBackup:           project.AutoEnableBackup,
+		SkipBackupErrors:           project.SkipBackupErrors,
+		PostgresDatabaseTenantMode: project.PostgresDatabaseTenantMode,
 	}
 	return &store.ProjectMessage{
 		ResourceID: resourceID,

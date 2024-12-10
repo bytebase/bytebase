@@ -229,12 +229,9 @@ defineExpose({
     if (state.memberList.length <= 0) {
       return false;
     }
-    if (state.expirationTimestampInMS === undefined) {
-      return false;
-    }
     if (
-      (!state.expirationTimestampInMS && state.expirationTimestampInMS !== 0) ||
-      state.expirationTimestampInMS < 0
+      state.expirationTimestampInMS != undefined &&
+      state.expirationTimestampInMS <= 0
     ) {
       return false;
     }
