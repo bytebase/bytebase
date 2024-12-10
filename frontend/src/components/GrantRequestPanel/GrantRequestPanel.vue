@@ -165,7 +165,10 @@ const allowCreate = computed(() => {
   ) {
     return false;
   }
-  if (state.expirationTimestampInMS === undefined) {
+  if (
+    state.expirationTimestampInMS !== undefined &&
+    state.expirationTimestampInMS <= 0
+  ) {
     return false;
   }
   return true;
