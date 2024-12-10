@@ -299,3 +299,26 @@ func TestIdentityProvider_SelfSigned(t *testing.T) {
 		assert.Equal(t, wantUserInfo, userInfo)
 	})
 }
+
+func TestGetOpenIDConfigration(t *testing.T) {
+	tests := []struct {
+		issuer   string
+		response *OpenIDConfigurationResponse
+	}{
+		{
+			issuer: "https://accounts.google.com",
+			response: &OpenIDConfigurationResponse{
+				AuthorizationEndpoint: "https://accounts.google.com/o/oauth2/v2/auth",
+				ScopesSupported:       []string{"openid", "email", "profile"},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.issuer, func(t *testing.T) {
+			response, err := GetOpenIDConfiguration(test.issuer)
+			require.NoError(t, err)
+			assert.Equal(t, test.response, response)
+		})
+	}
+}
