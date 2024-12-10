@@ -60,7 +60,7 @@ func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, req
 	for _, identityProviderMessage := range identityProviders {
 		identityProvider, err := convertToIdentityProvider(identityProviderMessage)
 		if err != nil {
-			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert identity provider: %v", err))
+			return nil, status.Errorf(codes.Internal, "failed to convert identity provider: %v", err)
 		}
 		response.IdentityProviders = append(response.IdentityProviders, identityProvider)
 	}
