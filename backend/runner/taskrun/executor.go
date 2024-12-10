@@ -60,8 +60,9 @@ func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Execut
 
 // Pointer fields are not nullable unless mentioned otherwise.
 type migrateContext struct {
-	syncer  *schemasync.Syncer
-	profile *config.Profile
+	syncer    *schemasync.Syncer
+	profile   *config.Profile
+	dbFactory *dbfactory.DBFactory
 
 	instance *store.InstanceMessage
 	database *store.DatabaseMessage
@@ -93,7 +94,7 @@ type migrateContext struct {
 	syncHistory     int64
 }
 
-func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int, taskRunUID int) (*db.MigrationInfo, *migrateContext, error) {
+func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int, taskRunUID int, dbFactory *dbfactory.DBFactory) (*db.MigrationInfo, *migrateContext, error) {
 	if !(common.IsDev() && profile.DevelopmentVersioned) {
 		if schemaVersion.Version == "" {
 			return nil, nil, errors.Errorf("empty schema version")
@@ -140,6 +141,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 	mc := &migrateContext{
 		syncer:      syncer,
 		profile:     profile,
+		dbFactory:   dbFactory,
 		instance:    instance,
 		database:    database,
 		task:        task,
@@ -288,7 +290,6 @@ func doMigration(
 	ctx context.Context,
 	driverCtx context.Context,
 	stores *store.Store,
-	dbFactory *dbfactory.DBFactory,
 	stateCfg *state.State,
 	profile *config.Profile,
 	statement string,
@@ -302,7 +303,7 @@ func doMigration(
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to check if we should use database owner")
 	}
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
+	driver, err := mc.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
 		UseDatabaseOwner: useDBOwner,
 	})
 	if err != nil {
@@ -427,12 +428,12 @@ func postMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInf
 }
 
 func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int) (terminated bool, result *storepb.TaskRunResult, err error) {
-	mi, mc, err := getMigrationInfo(ctx, store, profile, syncer, task, migrationType, statement, schemaVersion, sheetID, taskRunUID)
+	mi, mc, err := getMigrationInfo(ctx, store, profile, syncer, task, migrationType, statement, schemaVersion, sheetID, taskRunUID, dbFactory)
 	if err != nil {
 		return true, nil, err
 	}
 
-	migrationID, _, err := doMigration(ctx, driverCtx, store, dbFactory, stateCfg, profile, statement, mi, mc)
+	migrationID, _, err := doMigration(ctx, driverCtx, store, stateCfg, profile, statement, mi, mc)
 	if err != nil {
 		return true, nil, err
 	}
@@ -455,7 +456,13 @@ func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 	var prevSchemaBuf bytes.Buffer
 	if mi.Type.NeedDump() {
 		opts.LogDatabaseSyncStart()
-		dbSchema, err := driver.SyncDBSchema(ctx)
+		// Use new driver to sync the schema to avoid the session state change, such as SET ROLE in PostgreSQL.
+		syncDriver, err := mc.dbFactory.GetAdminDatabaseDriver(ctx, mc.instance, mc.database, db.ConnectionContext{})
+		if err != nil {
+			return "", "", errors.Wrapf(err, "failed to get driver connection for instance %q", mc.instance.ResourceID)
+		}
+		defer syncDriver.Close(ctx)
+		dbSchema, err := syncDriver.SyncDBSchema(ctx)
 		if err != nil {
 			opts.LogDatabaseSyncEnd(err.Error())
 			return "", "", errors.Wrapf(err, "failed to sync database schema")
@@ -528,7 +535,13 @@ func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 	var afterSchemaBuf bytes.Buffer
 	if mi.Type.NeedDump() {
 		opts.LogDatabaseSyncStart()
-		dbSchema, err := driver.SyncDBSchema(ctx)
+		// Use new driver to sync the schema to avoid the session state change, such as SET ROLE in PostgreSQL.
+		syncDriver, err := mc.dbFactory.GetAdminDatabaseDriver(ctx, mc.instance, mc.database, db.ConnectionContext{})
+		if err != nil {
+			return "", "", errors.Wrapf(err, "failed to get driver connection for instance %q", mc.instance.ResourceID)
+		}
+		defer syncDriver.Close(ctx)
+		dbSchema, err := syncDriver.SyncDBSchema(ctx)
 		if err != nil {
 			opts.LogDatabaseSyncEnd(err.Error())
 			return "", "", errors.Wrapf(err, "failed to sync database schema")
