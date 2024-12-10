@@ -416,8 +416,9 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 
 	// TODO(p0ny): check here
 	mc := &migrateContext{
-		syncer:  exec.schemaSyncer,
-		profile: exec.profile,
+		syncer:    exec.schemaSyncer,
+		profile:   exec.profile,
+		dbFactory: exec.dbFactory,
 
 		instance:    instance,
 		database:    database,
@@ -436,7 +437,7 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		mc.issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
 	}
 
-	if _, _, err := executeMigrationDefault(ctx, driverCtx, exec.store, exec.stateCfg, driver, mi, mc, schema, db.ExecuteOptions{}, exec.dbFactory); err != nil {
+	if _, _, err := executeMigrationDefault(ctx, driverCtx, exec.store, exec.stateCfg, driver, mi, mc, schema, db.ExecuteOptions{}); err != nil {
 		return nil, model.Version{}, "", err
 	}
 	return peerDatabase, schemaVersion, schema, nil
@@ -525,6 +526,7 @@ func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.
 
 	dbSchema := (*storepb.DatabaseSchemaMetadata)(nil)
 	if instance.Engine == storepb.Engine_MYSQL {
+		// Use new driver to sync the schema to avoid the session state change, such as SET ROLE in PostgreSQL.
 		syncDriver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 		if err != nil {
 			return nil, model.Version{}, "", errors.Wrapf(err, "failed to get driver for instance %q", instance.Title)

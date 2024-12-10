@@ -28,6 +28,7 @@ func ComputeDatabaseSchemaDiff(ctx context.Context, instance *store.InstanceMess
 		_ = driver.Close(ctx)
 	}()
 
+	// Use new driver to sync the schema to avoid the session state change, such as SET ROLE in PostgreSQL.
 	syncDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 	if err != nil {
 		return "", errors.Wrap(err, "get sync driver")

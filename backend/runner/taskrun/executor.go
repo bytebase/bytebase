@@ -60,8 +60,9 @@ func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Execut
 
 // Pointer fields are not nullable unless mentioned otherwise.
 type migrateContext struct {
-	syncer  *schemasync.Syncer
-	profile *config.Profile
+	syncer    *schemasync.Syncer
+	profile   *config.Profile
+	dbFactory *dbfactory.DBFactory
 
 	instance *store.InstanceMessage
 	database *store.DatabaseMessage
@@ -288,7 +289,6 @@ func doMigration(
 	ctx context.Context,
 	driverCtx context.Context,
 	stores *store.Store,
-	dbFactory *dbfactory.DBFactory,
 	stateCfg *state.State,
 	profile *config.Profile,
 	statement string,
@@ -302,7 +302,7 @@ func doMigration(
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to check if we should use database owner")
 	}
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
+	driver, err := mc.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
 		UseDatabaseOwner: useDBOwner,
 	})
 	if err != nil {
@@ -345,7 +345,7 @@ func doMigration(
 		}
 	}
 
-	migrationID, schema, err := executeMigrationDefault(ctx, driverCtx, stores, stateCfg, driver, mi, mc, statement, opts, dbFactory)
+	migrationID, schema, err := executeMigrationDefault(ctx, driverCtx, stores, stateCfg, driver, mi, mc, statement, opts)
 	if err != nil {
 		return "", "", err
 	}
@@ -432,7 +432,9 @@ func runMigration(ctx context.Context, driverCtx context.Context, store *store.S
 		return true, nil, err
 	}
 
-	migrationID, _, err := doMigration(ctx, driverCtx, store, dbFactory, stateCfg, profile, statement, mi, mc)
+	mc.dbFactory = dbFactory
+
+	migrationID, _, err := doMigration(ctx, driverCtx, store, stateCfg, profile, statement, mi, mc)
 	if err != nil {
 		return true, nil, err
 	}
@@ -440,22 +442,23 @@ func runMigration(ctx context.Context, driverCtx context.Context, store *store.S
 }
 
 // executeMigrationDefault executes migration.
-func executeMigrationDefault(ctx context.Context, driverCtx context.Context, store *store.Store, _ *state.State, driver db.Driver, mi *db.MigrationInfo, mc *migrateContext, statement string, opts db.ExecuteOptions, dbFactory *dbfactory.DBFactory) (migrationHistoryID string, updatedSchema string, resErr error) {
+func executeMigrationDefault(ctx context.Context, driverCtx context.Context, store *store.Store, _ *state.State, driver db.Driver, mi *db.MigrationInfo, mc *migrateContext, statement string, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
 	execFunc := func(ctx context.Context, execStatement string) error {
 		if _, err := driver.Execute(ctx, execStatement, opts); err != nil {
 			return err
 		}
 		return nil
 	}
-	return executeMigrationWithFunc(ctx, driverCtx, store, driver, mi, mc, statement, execFunc, opts, dbFactory)
+	return executeMigrationWithFunc(ctx, driverCtx, store, driver, mi, mc, statement, execFunc, opts)
 }
 
 // executeMigrationWithFunc executes the migration with custom migration function.
-func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, driver db.Driver, mi *db.MigrationInfo, mc *migrateContext, statement string, execFunc func(ctx context.Context, execStatement string) error, opts db.ExecuteOptions, dbFactory *dbfactory.DBFactory) (migrationHistoryID string, updatedSchema string, resErr error) {
+func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, driver db.Driver, mi *db.MigrationInfo, mc *migrateContext, statement string, execFunc func(ctx context.Context, execStatement string) error, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	if mi.Type.NeedDump() {
 		opts.LogDatabaseSyncStart()
-		syncDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, mc.instance, mc.database, db.ConnectionContext{})
+		// Use new driver to sync the schema to avoid the session state change, such as SET ROLE in PostgreSQL.
+		syncDriver, err := mc.dbFactory.GetAdminDatabaseDriver(ctx, mc.instance, mc.database, db.ConnectionContext{})
 		if err != nil {
 			return "", "", errors.Wrapf(err, "failed to get driver connection for instance %q", mc.instance.ResourceID)
 		}
@@ -533,7 +536,8 @@ func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 	var afterSchemaBuf bytes.Buffer
 	if mi.Type.NeedDump() {
 		opts.LogDatabaseSyncStart()
-		syncDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, mc.instance, mc.database, db.ConnectionContext{})
+		// Use new driver to sync the schema to avoid the session state change, such as SET ROLE in PostgreSQL.
+		syncDriver, err := mc.dbFactory.GetAdminDatabaseDriver(ctx, mc.instance, mc.database, db.ConnectionContext{})
 		if err != nil {
 			return "", "", errors.Wrapf(err, "failed to get driver connection for instance %q", mc.instance.ResourceID)
 		}

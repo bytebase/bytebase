@@ -136,6 +136,7 @@ func cutover(ctx context.Context, taskContext context.Context, stores *store.Sto
 	if err != nil {
 		return true, nil, err
 	}
+	mc.dbFactory = dbFactory
 
 	execFunc := func(_ context.Context, _ string) error {
 		if err := os.Remove(postponeFilename); err != nil {
@@ -151,7 +152,7 @@ func cutover(ctx context.Context, taskContext context.Context, stores *store.Sto
 		return true, nil, err
 	}
 	defer driver.Close(ctx)
-	migrationID, _, err := executeMigrationWithFunc(ctx, ctx, stores, driver, mi, mc, statement, execFunc, db.ExecuteOptions{}, dbFactory)
+	migrationID, _, err := executeMigrationWithFunc(ctx, ctx, stores, driver, mi, mc, statement, execFunc, db.ExecuteOptions{})
 	if err != nil {
 		return true, nil, err
 	}
