@@ -1245,6 +1245,7 @@
     },
     "waiting-to-rollout": "等待发布",
     "waiting-for-review": "等待审核",
+    "closed": "工单已关闭",
     "issue-name": "工单名称",
     "grant-request": {
       "export-rows": "最大导出行数",
