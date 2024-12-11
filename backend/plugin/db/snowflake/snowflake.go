@@ -261,9 +261,9 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	// TODO(rebelice): support multiple queries in a single statement.
-	singleSQLs := []base.SingleSQL{
-		{Text: statement},
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_SNOWFLAKE, statement)
+	if err != nil {
+		return nil, err
 	}
 
 	var results []*v1pb.QueryResult
