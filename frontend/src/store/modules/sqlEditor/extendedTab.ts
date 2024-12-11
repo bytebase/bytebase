@@ -38,7 +38,7 @@ export const useExtendedTabStore = defineStore("sqlEditorExtendedTab", () => {
     {
       // Remove unused and old data automatically.
       auto_compaction: true,
-      // Do not save and track old revisions, to save storage usage.
+      // Do not save and track old revisions, this is for saving storage usage.
       revs_limit: 1,
     }
   );
