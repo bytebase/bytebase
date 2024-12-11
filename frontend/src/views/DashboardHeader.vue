@@ -13,7 +13,9 @@
       target="_blank"
     >
       <NButton size="small">
-        <SquareTerminalIcon class="w-4 h-auto mr-1" />
+        <template #icon>
+          <SquareTerminalIcon class="w-4 h-auto" />
+        </template>
         <span class="whitespace-nowrap">{{ $t("sql-editor.self") }}</span>
       </NButton>
     </router-link>
@@ -24,7 +26,9 @@
         size="small"
         @click="onClickSearchButton"
       >
-        <SearchIcon class="w-4 h-auto mr-1" />
+        <template #icon>
+          <SearchIcon class="w-4 h-auto" />
+        </template>
         <span class="text-control-placeholder text-sm mr-4">
           {{ $t("common.search") }}
         </span>
@@ -49,18 +53,20 @@
         type="success"
         @click="handleWantHelp"
       >
-        <MessagesSquareIcon class="w-4 h-4" />
-        <span class="hidden lg:block ml-2">{{ $t("common.want-help") }}</span>
+        <template #icon>
+          <MessagesSquareIcon class="w-4 h-4" />
+        </template>
+        <span class="hidden lg:block">{{ $t("common.want-help") }}</span>
       </NButton>
 
       <NTooltip :disabled="windowWidth >= 640">
         <template #trigger>
           <router-link :to="myIssueLink" class="flex">
             <NButton size="small" @click="goToMyIssues">
-              <CircleDotIcon class="w-4" />
-              <span class="hidden sm:block ml-2">{{
-                $t("issue.my-issues")
-              }}</span>
+              <template #icon>
+                <CircleDotIcon class="w-4" />
+              </template>
+              <span class="hidden sm:block">{{ $t("issue.my-issues") }}</span>
             </NButton>
           </router-link>
         </template>
