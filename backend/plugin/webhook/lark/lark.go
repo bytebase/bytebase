@@ -111,11 +111,11 @@ func (*larkReceiver) Post(context webhook.Context) error {
 }
 
 func postDirectMessage(webhookCtx webhook.Context) {
-	feishu := webhookCtx.IMSetting.GetFeishu()
-	if feishu == nil {
+	lark := webhookCtx.IMSetting.GetLark()
+	if lark == nil {
 		return
 	}
-	p := newProvider(feishu.AppId, feishu.AppSecret)
+	p := newProvider(lark.AppId, lark.AppSecret)
 
 	ctx := context.Background()
 
@@ -154,7 +154,7 @@ func postDirectMessage(webhookCtx webhook.Context) {
 		}
 		return errs
 	}); err != nil {
-		slog.Warn("failed to send direct message to feishu user", log.BBError(err))
+		slog.Warn("failed to send direct message to lark user", log.BBError(err))
 	}
 }
 

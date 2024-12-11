@@ -15,7 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Response code definition in feishu response body.
+// Response code definition in lark response body.
 // https://open.larksuite.com/document/server-docs/getting-started/server-error-codes
 const (
 	emptyTokenRespCode   = 99991661
@@ -191,7 +191,7 @@ func (p *provider) getIDByEmail(ctx context.Context, emails []string) (map[strin
 	for _, email := range emails {
 		id, ok := userIDCache.Get(email)
 		if ok {
-			// user.UserID == "" means the user is not found on feishu.
+			// user.UserID == "" means the user is not found on lark.
 			if id != "" {
 				userID[email] = id
 			}
@@ -227,7 +227,7 @@ func (p *provider) getIDByEmail(ctx context.Context, emails []string) (map[strin
 		if user.UserID == "" {
 			continue
 		}
-		// user.UserID == "" means the user is not found on feishu.
+		// user.UserID == "" means the user is not found on lark.
 		// We store "" into the cache to prevent finding every time.
 		userID[user.Email] = user.UserID
 		userIDCache.Add(user.Email, user.UserID)
