@@ -637,10 +637,13 @@
 - [v1/role_service.proto](#v1_role_service-proto)
     - [CreateRoleRequest](#bytebase-v1-CreateRoleRequest)
     - [DeleteRoleRequest](#bytebase-v1-DeleteRoleRequest)
+    - [GetRoleRequest](#bytebase-v1-GetRoleRequest)
     - [ListRolesRequest](#bytebase-v1-ListRolesRequest)
     - [ListRolesResponse](#bytebase-v1-ListRolesResponse)
     - [Role](#bytebase-v1-Role)
     - [UpdateRoleRequest](#bytebase-v1-UpdateRoleRequest)
+  
+    - [Role.Type](#bytebase-v1-Role-Type)
   
     - [RoleService](#bytebase-v1-RoleService)
   
@@ -7282,10 +7285,11 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | issuer | [string](#string) |  |  |
 | client_id | [string](#string) |  |  |
 | client_secret | [string](#string) |  |  |
-| scopes | [string](#string) | repeated |  |
 | field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  |  |
 | skip_tls_verify | [bool](#bool) |  |  |
 | auth_style | [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle) |  |  |
+| scopes | [string](#string) | repeated | The scopes that the OIDC provider supports. Should be fetched from the well-known configuration file of the OIDC provider. |
+| auth_endpoint | [string](#string) |  | The authorization endpoint of the OIDC provider. Should be fetched from the well-known configuration file of the OIDC provider. |
 
 
 
@@ -10336,6 +10340,21 @@ This value should be 4-63 characters, and valid characters are /[a-z][A-Z][0-9]/
 
 
 
+<a name="bytebase-v1-GetRoleRequest"></a>
+
+### GetRoleRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the role to retrieve. Format: roles/{role} |
+
+
+
+
+
+
 <a name="bytebase-v1-ListRolesRequest"></a>
 
 ### ListRolesRequest
@@ -10382,6 +10401,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
 | permissions | [string](#string) | repeated |  |
+| type | [Role.Type](#bytebase-v1-Role-Type) |  |  |
 
 
 
@@ -10406,6 +10426,19 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 
  
 
+
+<a name="bytebase-v1-Role-Type"></a>
+
+### Role.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| BUILT_IN | 1 |  |
+| CUSTOM | 2 |  |
+
+
  
 
  
@@ -10419,6 +10452,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | ListRoles | [ListRolesRequest](#bytebase-v1-ListRolesRequest) | [ListRolesResponse](#bytebase-v1-ListRolesResponse) |  |
+| GetRole | [GetRoleRequest](#bytebase-v1-GetRoleRequest) | [Role](#bytebase-v1-Role) |  |
 | CreateRole | [CreateRoleRequest](#bytebase-v1-CreateRoleRequest) | [Role](#bytebase-v1-Role) |  |
 | UpdateRole | [UpdateRoleRequest](#bytebase-v1-UpdateRoleRequest) | [Role](#bytebase-v1-Role) |  |
 | DeleteRole | [DeleteRoleRequest](#bytebase-v1-DeleteRoleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |

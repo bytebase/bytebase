@@ -1299,8 +1299,12 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 
 func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.ProjectMessage, error) {
 	setting := &storepb.Project{
-		AllowModifyStatement: project.AllowModifyStatement,
-		AutoResolveIssue:     project.AutoResolveIssue,
+		AllowModifyStatement:       project.AllowModifyStatement,
+		AutoResolveIssue:           project.AutoResolveIssue,
+		EnforceIssueTitle:          project.EnforceIssueTitle,
+		AutoEnableBackup:           project.AutoEnableBackup,
+		SkipBackupErrors:           project.SkipBackupErrors,
+		PostgresDatabaseTenantMode: project.PostgresDatabaseTenantMode,
 	}
 	return &store.ProjectMessage{
 		ResourceID: resourceID,
@@ -1477,8 +1481,10 @@ func (s *ProjectService) validateIAMPolicy(ctx context.Context, policy *v1pb.Iam
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to list roles: %v", err)
 	}
-	roleMessages = append(roleMessages, s.iamManager.PredefinedRoles...)
-	roles := convertToRoles(roleMessages)
+	roles := convertToRoles(roleMessages, v1pb.Role_CUSTOM)
+	for _, predefinedRole := range s.iamManager.PredefinedRoles {
+		roles = append(roles, convertToRole(predefinedRole, v1pb.Role_BUILT_IN))
+	}
 
 	return s.validateBindings(policy.Bindings, roles, maximumRoleExpiration)
 }

@@ -132,7 +132,7 @@ func cutover(ctx context.Context, taskContext context.Context, stores *store.Sto
 		return true, nil, err
 	}
 
-	mi, mc, err := getMigrationInfo(ctx, stores, profile, syncer, task, db.Migrate, statement, schemaVersion, &sheetID, taskRunUID)
+	mi, mc, err := getMigrationInfo(ctx, stores, profile, syncer, task, db.Migrate, statement, schemaVersion, &sheetID, taskRunUID, dbFactory)
 	if err != nil {
 		return true, nil, err
 	}

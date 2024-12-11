@@ -356,7 +356,13 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		return nil, model.Version{}, "", nil
 	}
 
-	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+	useDBOwner, err := getUseDatabaseOwner(ctx, exec.store, instance, database)
+	if err != nil {
+		return nil, model.Version{}, "", errors.Wrapf(err, "failed to check if we should use database owner")
+	}
+	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
+		UseDatabaseOwner: useDBOwner,
+	})
 	if err != nil {
 		return nil, model.Version{}, "", err
 	}
@@ -408,7 +414,12 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		mi.IssueUID = &issue.UID
 	}
 
+	// TODO(p0ny): check here
 	mc := &migrateContext{
+		syncer:    exec.schemaSyncer,
+		profile:   exec.profile,
+		dbFactory: exec.dbFactory,
+
 		instance:    instance,
 		database:    database,
 		sheet:       nil,
@@ -416,6 +427,14 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		taskRunUID:  taskRunUID,
 		taskRunName: common.FormatTaskRun(project.ResourceID, task.PipelineID, task.StageID, task.ID, taskRunUID),
 		version:     schemaVersion.Version,
+	}
+
+	if issue != nil {
+		mi.Description = fmt.Sprintf("%s - %s", issue.Title, task.Name)
+		mi.ProjectUID = &issue.Project.UID
+		mi.IssueUID = &issue.UID
+
+		mc.issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
 	}
 
 	if _, _, err := executeMigrationDefault(ctx, driverCtx, exec.store, exec.stateCfg, driver, mi, mc, schema, db.ExecuteOptions{}); err != nil {
@@ -507,7 +526,13 @@ func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.
 
 	dbSchema := (*storepb.DatabaseSchemaMetadata)(nil)
 	if instance.Engine == storepb.Engine_MYSQL {
-		dbSchema, err = driver.SyncDBSchema(ctx)
+		// Use new driver to sync the schema to avoid the session state change, such as SET ROLE in PostgreSQL.
+		syncDriver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+		if err != nil {
+			return nil, model.Version{}, "", errors.Wrapf(err, "failed to get driver for instance %q", instance.Title)
+		}
+		defer syncDriver.Close(ctx)
+		dbSchema, err = syncDriver.SyncDBSchema(ctx)
 		if err != nil {
 			return nil, model.Version{}, "", errors.Wrapf(err, "failed to get schema for database %q", similarDB.DatabaseName)
 		}

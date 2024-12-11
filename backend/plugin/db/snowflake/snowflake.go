@@ -261,9 +261,9 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	// TODO(rebelice): support multiple queries in a single statement.
-	singleSQLs := []base.SingleSQL{
-		{Text: statement},
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_SNOWFLAKE, statement)
+	if err != nil {
+		return nil, err
 	}
 
 	var results []*v1pb.QueryResult
@@ -286,6 +286,12 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		if queryContext.Schema != "" {
 			if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE SCHEMA %s;", queryContext.Schema)); err != nil {
 				return nil, err
+			}
+		} else {
+			// If the queryContext.Schema is empty, we try to set the current schema to "PUBLIC" and ignore the error because
+			// the schema may not exist.
+			if _, err := conn.ExecContext(ctx, "USE SCHEMA PUBLIC;"); err != nil {
+				slog.Debug("failed to set schema to PUBLIC", log.BBError(err))
 			}
 		}
 

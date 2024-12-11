@@ -25,9 +25,9 @@ require (
 	github.com/buger/jsonparser v1.1.1
 	github.com/bytebase/google-sql-parser v0.0.0-20241030063241-f3a4e61b6aed
 	github.com/bytebase/mysql-parser v0.0.0-20240810145851-ab2c11629c24
-	github.com/bytebase/plsql-parser v0.0.0-20240929073008-6b57c2e2525d
+	github.com/bytebase/plsql-parser v0.0.0-20241210025428-898183660166
 	github.com/bytebase/postgresql-parser v0.0.0-20241108072816-e932f744004a
-	github.com/bytebase/snowsql-parser v0.0.0-20240304100801-bb357ccb5535
+	github.com/bytebase/snowsql-parser v0.0.0-20241211024554-093949951501
 	github.com/bytebase/tidb-parser v0.0.0-20240821091609-162fffe2a839
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/cockroachdb/cockroachdb-parser v0.23.2

@@ -18,6 +18,12 @@ service RoleService {
     option (bytebase.v1.permission) = "bb.roles.list";
     option (bytebase.v1.auth_method) = IAM;
   }
+  rpc GetRole(GetRoleRequest) returns (Role) {
+    option (google.api.http) = {get: "/v1/{name=roles/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.roles.get";
+    option (bytebase.v1.auth_method) = IAM;
+  }
   rpc CreateRole(CreateRoleRequest) returns (Role) {
     option (google.api.http) = {
       post: "/v1/roles"
@@ -82,6 +88,15 @@ message CreateRoleRequest {
   string role_id = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
+message GetRoleRequest {
+  // The name of the role to retrieve.
+  // Format: roles/{role}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Role"}
+  ];
+}
+
 message UpdateRoleRequest {
   Role role = 1;
   google.protobuf.FieldMask update_mask = 2;
@@ -108,4 +123,12 @@ message Role {
   string title = 2;
   string description = 3;
   repeated string permissions = 4;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    BUILT_IN = 1;
+    CUSTOM = 2;
+  }
+
+  Type type = 5;
 }
