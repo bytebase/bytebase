@@ -333,6 +333,8 @@ const imApp = computed(() => {
       return imSetting.value?.slack;
     case Webhook_Type.TYPE_FEISHU:
       return imSetting.value?.feishu;
+    case Webhook_Type.TYPE_LARK:
+      return imSetting.value?.lark;
     case Webhook_Type.TYPE_WECOM:
       return imSetting.value?.wecom;
   }

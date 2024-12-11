@@ -28,6 +28,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/mail"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/feishu"
+	"github.com/bytebase/bytebase/backend/plugin/webhook/lark"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/slack"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/wecom"
 	"github.com/bytebase/bytebase/backend/store"
@@ -432,6 +433,12 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				}
 				setting.Wecom = payload.Wecom
 
+			case "value.app_im_setting_value.lark":
+				if err := lark.Validate(ctx, payload.GetLark().GetAppId(), payload.GetLark().GetAppSecret(), user.Email); err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "validation failed, error: %v", err)
+				}
+				setting.Lark = payload.Lark
+
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path %v", path)
 			}
@@ -733,6 +740,9 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 						},
 						Wecom: &v1pb.AppIMSetting_Wecom{
 							Enabled: storeValue.Wecom != nil && storeValue.Wecom.Enabled,
+						},
+						Lark: &v1pb.AppIMSetting_Lark{
+							Enabled: storeValue.Lark != nil && storeValue.Lark.Enabled,
 						},
 					},
 				},

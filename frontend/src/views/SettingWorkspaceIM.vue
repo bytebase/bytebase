@@ -61,6 +61,7 @@ import {
   AppIMSetting,
   AppIMSetting_Feishu,
   AppIMSetting_Slack,
+  AppIMSetting_Lark,
   AppIMSetting_Wecom,
 } from "@/types/proto/v1/setting_service";
 
@@ -106,7 +107,7 @@ watch(
           state.setting.slack = AppIMSetting_Slack.fromPartial({});
         }
         break;
-      case Webhook_Type.TYPE_DINGTALK:
+      case Webhook_Type.TYPE_FEISHU:
         if (!state.setting.feishu) {
           state.setting.feishu = AppIMSetting_Feishu.fromPartial({});
         }
@@ -114,6 +115,11 @@ watch(
       case Webhook_Type.TYPE_WECOM:
         if (!state.setting.wecom) {
           state.setting.wecom = AppIMSetting_Wecom.fromPartial({});
+        }
+        break;
+      case Webhook_Type.TYPE_LARK:
+        if (!state.setting.lark) {
+          state.setting.lark = AppIMSetting_Lark.fromPartial({});
         }
         break;
     }
@@ -220,6 +226,39 @@ const imList = computed(() => {
         );
       },
     },
+    {
+      name: t("common.lark"),
+      type: Webhook_Type.TYPE_LARK,
+      enabled: state.setting.lark?.enabled,
+      render: () => {
+        return (
+          <div class="space-y-4">
+            <div>
+              <div class="textlabel">App ID</div>
+              <BBTextField
+                class="mt-2"
+                placeholder={t("common.write-only")}
+                value={state.setting.lark?.appId ?? ""}
+                onUpdate:value={(val: string) => {
+                  state.setting.lark!.appId = val;
+                }}
+              />
+            </div>
+            <div>
+              <div class="textlabel">App Secret</div>
+              <BBTextField
+                class="mt-2"
+                placeholder={t("common.write-only")}
+                value={state.setting.lark?.appSecret ?? ""}
+                onUpdate:value={(val: string) => {
+                  state.setting.lark!.appSecret = val;
+                }}
+              />
+            </div>
+          </div>
+        );
+      },
+    },
   ];
 });
 
@@ -230,7 +269,7 @@ const dataChanged = computed(() => {
         state.setting.slack,
         imSetting.value.slack ?? AppIMSetting_Slack.fromPartial({})
       );
-    case Webhook_Type.TYPE_DINGTALK:
+    case Webhook_Type.TYPE_FEISHU:
       return !isEqual(
         state.setting.feishu,
         imSetting.value.feishu ?? AppIMSetting_Feishu.fromPartial({})
@@ -239,6 +278,11 @@ const dataChanged = computed(() => {
       return !isEqual(
         state.setting.wecom,
         imSetting.value.wecom ?? AppIMSetting_Wecom.fromPartial({})
+      );
+    case Webhook_Type.TYPE_LARK:
+      return !isEqual(
+        state.setting.lark,
+        imSetting.value.lark?? AppIMSetting_Lark.fromPartial({})
       );
     default:
       return false;
@@ -249,7 +293,7 @@ const canSave = computed(() => {
   switch (state.selectedTab) {
     case Webhook_Type.TYPE_SLACK:
       return !!state.setting.slack?.token;
-    case Webhook_Type.TYPE_DINGTALK:
+    case Webhook_Type.TYPE_FEISHU:
       return !!state.setting.feishu?.appId && !!state.setting.feishu?.appSecret;
     case Webhook_Type.TYPE_WECOM:
       return (
@@ -257,6 +301,8 @@ const canSave = computed(() => {
         !!state.setting.wecom?.agentId &&
         !!state.setting.wecom?.secret
       );
+    case Webhook_Type.TYPE_LARK:
+      return !!state.setting.lark?.appId && !!state.setting.lark?.appSecret;
     default:
       return false;
   }
@@ -267,11 +313,14 @@ const discardChanges = () => {
     case Webhook_Type.TYPE_SLACK:
       state.setting.slack = AppIMSetting_Slack.fromPartial({});
       break;
-    case Webhook_Type.TYPE_DINGTALK:
+    case Webhook_Type.TYPE_FEISHU:
       state.setting.feishu = AppIMSetting_Feishu.fromPartial({});
       break;
     case Webhook_Type.TYPE_WECOM:
       state.setting.wecom = AppIMSetting_Wecom.fromPartial({});
+      break;
+    case Webhook_Type.TYPE_LARK:
+      state.setting.lark = AppIMSetting_Lark.fromPartial({});
       break;
   }
 };
@@ -286,13 +335,17 @@ const onSave = async () => {
       updateMask.push("value.app_im_setting_value.slack");
       data.slack!.enabled = true;
       break;
-    case Webhook_Type.TYPE_DINGTALK:
+    case Webhook_Type.TYPE_FEISHU:
       updateMask.push("value.app_im_setting_value.feishu");
       data.feishu!.enabled = true;
       break;
     case Webhook_Type.TYPE_WECOM:
       updateMask.push("value.app_im_setting_value.wecom");
       data.wecom!.enabled = true;
+      break;
+    case Webhook_Type.TYPE_LARK:
+      updateMask.push("value.app_im_setting_value.lark");
+      data.lark!.enabled = true;
       break;
   }
 
@@ -311,7 +364,7 @@ const onSave = async () => {
           setting.value?.appImSettingValue?.slack ??
           AppIMSetting_Slack.fromPartial({});
         break;
-      case Webhook_Type.TYPE_DINGTALK:
+      case Webhook_Type.TYPE_FEISHU:
         state.setting.feishu =
           setting.value?.appImSettingValue?.feishu ??
           AppIMSetting_Feishu.fromPartial({});
@@ -320,6 +373,11 @@ const onSave = async () => {
         state.setting.wecom =
           setting.value?.appImSettingValue?.wecom ??
           AppIMSetting_Wecom.fromPartial({});
+        break;
+      case Webhook_Type.TYPE_LARK:
+        state.setting.lark =
+          setting.value?.appImSettingValue?.lark ??
+          AppIMSetting_Lark.fromPartial({});
         break;
     }
 
