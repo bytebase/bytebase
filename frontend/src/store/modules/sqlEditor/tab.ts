@@ -94,7 +94,13 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       tab.mode = DEFAULT_SQL_EDITOR_TAB_MODE;
     }
 
-    fetchExtendedTab(tab);
+    fetchExtendedTab(tab, () => {
+      // fallback
+      const { statement } = stored as any;
+      if (statement) {
+        tab.statement = statement;
+      }
+    });
 
     watchTab(tab, false /* !immediate */);
     tabsById.set(id, tab);

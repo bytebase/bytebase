@@ -51,7 +51,7 @@ export const useExtendedTabStore = defineStore("sqlEditorExtendedTab", () => {
     }),
   ]);
 
-  const fetchExtendedTab = async (tab: SQLEditorTab) => {
+  const fetchExtendedTab = async (tab: SQLEditorTab, fallback?: () => void) => {
     try {
       await ready;
       const doc = await extendedTabDB.get(tab.id);
@@ -62,6 +62,10 @@ export const useExtendedTabStore = defineStore("sqlEditorExtendedTab", () => {
         ...pick(doc, EXTENDED_TAB_FIELDS),
       });
     } catch (err) {
+      if (fallback) {
+        fallback();
+      }
+
       if ((err as any)?.status === 404) return;
       console.debug("[SQLEditorExtendedTabStore] fetchExtendedTab", err);
     }
