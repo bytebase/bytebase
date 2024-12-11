@@ -20,6 +20,7 @@
           "
           :on-click-user="onClickUser"
           @update-binding="selectMember"
+          @revoke-binding="revokeMember"
           @update-selected-bindings="state.selectedMembers = $event"
         />
       </NTabPane>
@@ -34,6 +35,7 @@
           :bindings-by-role="memberBindingsByRole"
           :on-click-user="onClickUser"
           @update-binding="selectMember"
+          @revoke-binding="revokeMember"
         />
       </NTabPane>
 
@@ -172,6 +174,20 @@ const handleRevokeSelectedMembers = () => {
 const selectMember = (binding: MemberBinding) => {
   state.editingMember = binding;
   state.showAddMemberPanel = true;
+};
+
+const revokeMember = async (binding: MemberBinding) => {
+  await workspaceStore.patchIamPolicy([
+    {
+      member: binding.binding,
+      roles: [],
+    },
+  ]);
+  pushNotification({
+    module: "bytebase",
+    style: "INFO",
+    title: t("settings.members.revoked"),
+  });
 };
 
 const memberBindingsByRole = computed(() => {
