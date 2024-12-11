@@ -54,7 +54,7 @@ func (l *queryTypeListener) getQueryTypeForDmlCommand(dmlCommand parser.IDml_com
 	}
 }
 
-func (l *queryTypeListener) getQueryTypeForOtherCommand(otherCommand parser.IOther_commandContext) (base.QueryType, error) {
+func (*queryTypeListener) getQueryTypeForOtherCommand(otherCommand parser.IOther_commandContext) (base.QueryType, error) {
 	switch {
 	case otherCommand.Copy_into_table() != nil:
 		return base.DML, nil
