@@ -105,10 +105,112 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 		}
 	}
 
+	graph := NewGraph()
+	viewMap := make(map[string]*storepb.ViewMetadata)
+	materializedViewMap := make(map[string]*storepb.MaterializedViewMetadata)
+
+	// Build the graph for topological sort.
+	for _, schema := range metadata.Schemas {
+		for _, view := range schema.Views {
+			viewID := getTableID(schema.Name, view.Name)
+			viewMap[viewID] = view
+			graph.AddNode(viewID)
+			for _, dependency := range view.DependentColumns {
+				dependencyID := getTableID(dependency.Schema, dependency.Table)
+				graph.AddEdge(dependencyID, viewID)
+			}
+		}
+		for _, view := range schema.MaterializedViews {
+			viewID := getTableID(schema.Name, view.Name)
+			materializedViewMap[viewID] = view
+			graph.AddNode(viewID)
+			for _, dependency := range view.DependentColumns {
+				dependencyID := getTableID(dependency.Schema, dependency.Table)
+				graph.AddEdge(dependencyID, viewID)
+			}
+		}
+	}
+
+	orderedList, err := graph.GetTopoSort()
+	if err != nil {
+		return errors.Wrap(err, "failed to get topological sort")
+	}
+
+	for _, viewID := range orderedList {
+		if view, ok := viewMap[viewID]; ok {
+			if err := writeView(out, getSchemaNameFromID(viewID), view); err != nil {
+				return err
+			}
+			delete(viewMap, viewID)
+			continue
+		}
+		if view, ok := materializedViewMap[viewID]; ok {
+			if err := writeMaterializedView(out, getSchemaNameFromID(viewID), view); err != nil {
+				return err
+			}
+			delete(materializedViewMap, viewID)
+		}
+	}
+
 	return nil
 }
 
+func writeMaterializedView(out io.Writer, schema string, view *storepb.MaterializedViewMetadata) error {
+	if _, err := io.WriteString(out, `CREATE MATERIALIZED VIEW "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, view.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "\" AS \n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, view.Definition); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, "\n  WITH NO DATA;\n\n")
+	return err
+}
+
+func writeView(out io.Writer, schema string, view *storepb.ViewMetadata) error {
+	if _, err := io.WriteString(out, `CREATE VIEW "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, view.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "\" AS \n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, view.Definition); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, ";\n\n")
+	return err
+}
+
+func getSchemaNameFromID(id string) string {
+	parts := strings.Split(id, ".")
+	if len(parts) != 2 {
+		return ""
+	}
+	return parts[0]
+}
+
 func writeSequence(out io.Writer, schema string, sequence *storepb.SequenceMetadata) error {
+	// CREATE SEQUENCE sequence_name;
 	if _, err := io.WriteString(out, `CREATE SEQUENCE "`); err != nil {
 		return err
 	}
@@ -130,6 +232,76 @@ func writeSequence(out io.Writer, schema string, sequence *storepb.SequenceMetad
 	if _, err := io.WriteString(out, sequence.DataType); err != nil {
 		return err
 	}
+	if _, err := io.WriteString(out, "\n	START WITH "); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, sequence.Start); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "\n	INCREMENT BY "); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, sequence.Increment); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "\n	MINVALUE "); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, sequence.MinValue); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "\n	MAXVALUE "); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, sequence.MaxValue); err != nil {
+		return err
+	}
+	if sequence.Cycle {
+		if _, err := io.WriteString(out, "\n	CYCLE"); err != nil {
+			return err
+		}
+	} else {
+		if _, err := io.WriteString(out, "\n	NO CYCLE"); err != nil {
+			return err
+		}
+	}
+	if _, err := io.WriteString(out, ";\n\n"); err != nil {
+		return err
+	}
+
+	// ALTER SEQUENCE sequence_name OWNED BY table_name.column_name;
+	if _, err := io.WriteString(out, `ALTER SEQUENCE "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, sequence.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "\" OWNED BY \""); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, sequence.OwnerTable); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, sequence.OwnerColumn); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, "\";\n\n")
+	return err
 }
 
 func getTableID(schema string, table string) string {
@@ -140,7 +312,7 @@ func getTableID(schema string, table string) string {
 	return buf.String()
 }
 
-func writeTable(out io.Writer, schema string, table *storepb.TableMetadata) error {
+func writeCreateTable(out io.Writer, schema string, tableName string, columns []*storepb.ColumnMetadata) error {
 	if _, err := io.WriteString(out, `CREATE TABLE "`); err != nil {
 		return err
 	}
@@ -153,7 +325,7 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata) erro
 		return err
 	}
 
-	if _, err := io.WriteString(out, table.Name); err != nil {
+	if _, err := io.WriteString(out, tableName); err != nil {
 		return err
 	}
 
@@ -161,7 +333,7 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata) erro
 		return err
 	}
 
-	for i, column := range table.Columns {
+	for i, column := range columns {
 		if i > 0 {
 			if _, err := io.WriteString(out, ","); err != nil {
 				return err
@@ -206,8 +378,113 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata) erro
 		}
 	}
 
-	_, err := io.WriteString(out, "\n);\n\n")
+	_, err := io.WriteString(out, "\n)")
 	return err
+}
+
+func writeTable(out io.Writer, schema string, table *storepb.TableMetadata) error {
+	if err := writeCreateTable(out, schema, table.Name, table.Columns); err != nil {
+		return err
+	}
+
+	if len(table.Partitions) > 0 {
+		if err := writePartitionClause(out, table.Partitions[0]); err != nil {
+			return err
+		}
+	}
+
+	if _, err := io.WriteString(out, ";\n\n"); err != nil {
+		return err
+	}
+
+	// Construct partition tables.
+	for _, partition := range table.Partitions {
+		if err := writePartitionTable(out, schema, table, partition); err != nil {
+			return err
+		}
+	}
+
+	for _, partition := range table.Partitions {
+		if err := writeAttachPartition(out, schema, table, partition); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func writePartitionClause(out io.Writer, partition *storepb.TablePartitionMetadata) error {
+	if _, err := io.WriteString(out, " PARTITION BY "); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, partition.Expression)
+	return err
+}
+
+func writeAttachPartition(out io.Writer, schema string, table *storepb.TableMetadata, partition *storepb.TablePartitionMetadata) error {
+	if _, err := io.WriteString(out, `ALTER TABLE ONLY "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, table.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" ATTACH PARTITION "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, partition.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, " "); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, partition.Value); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, ";\n\n")
+	return err
+}
+
+func writePartitionTable(out io.Writer, schema string, table *storepb.TableMetadata, partition *storepb.TablePartitionMetadata) error {
+	if err := writeCreateTable(out, schema, partition.Name, table.Columns); err != nil {
+		return err
+	}
+
+	if len(partition.Subpartitions) > 0 {
+		if err := writePartitionClause(out, partition.Subpartitions[0]); err != nil {
+			return err
+		}
+	}
+
+	if _, err := io.WriteString(out, ";\n\n"); err != nil {
+		return err
+	}
+
+	// Construct subpartition tables.
+	for _, subpartition := range partition.Subpartitions {
+		if err := writePartitionTable(out, schema, table, subpartition); err != nil {
+			return err
+		}
+	}
+
+	for _, subpartition := range partition.Subpartitions {
+		if err := writeAttachPartition(out, schema, table, subpartition); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func writeFunction(out io.Writer, function *storepb.FunctionMetadata) error {
