@@ -287,6 +287,12 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 			if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE SCHEMA %s;", queryContext.Schema)); err != nil {
 				return nil, err
 			}
+		} else {
+			// If the queryContext.Schema is empty, we try to set the current schema to "PUBLIC" and ignore the error because
+			// the schema may not exist.
+			if _, err := conn.ExecContext(ctx, "USE SCHEMA PUBLIC;"); err != nil {
+				slog.Debug("failed to set schema to PUBLIC", log.BBError(err))
+			}
 		}
 
 		startTime := time.Now()
