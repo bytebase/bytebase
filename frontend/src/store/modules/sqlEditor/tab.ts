@@ -95,7 +95,12 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     }
 
     fetchExtendedTab(tab, () => {
-      // fallback
+      // When the first time of migration, the extended doc in IndexedDB is not
+      // found.
+      // Fallback to the original PersistentTab in LocalStorage if possible.
+      // This might happen only once to each user, since the second time when a
+      // tab is saved, extended fields will be migrated, and won't be saved to
+      // LocalStorage, so the fallback routine won't be hit.
       const { statement } = stored as any;
       if (statement) {
         tab.statement = statement;
