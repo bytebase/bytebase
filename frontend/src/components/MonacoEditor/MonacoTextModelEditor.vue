@@ -14,7 +14,7 @@
     </div>
 
     <div
-      class="absolute top-[3px] right-[18px] flex gap-1 items-center justify-end z-50"
+      class="absolute top-[3px] right-[18px] flex gap-1 items-center justify-end z-30"
     >
       <slot name="corner-prefix" />
 
