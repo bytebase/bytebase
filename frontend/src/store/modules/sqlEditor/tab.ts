@@ -1,6 +1,6 @@
 import type { MaybeRef } from "@vueuse/core";
 import { watchThrottled } from "@vueuse/core";
-import { head, pick, uniqBy } from "lodash-es";
+import { head, omit, pick, uniqBy } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
 import { computed, nextTick, reactive, ref, unref, watch } from "vue";
 import type {
@@ -26,6 +26,11 @@ import {
   useInstanceResourceByName,
 } from "../v1";
 import { useSQLEditorStore } from "./editor";
+import {
+  EXTENDED_TAB_FIELDS,
+  useExtendedTabStore,
+  type ExtendedTab,
+} from "./extendedTab";
 import { useWebTerminalStore } from "./webTerminal";
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor-tab";
@@ -36,12 +41,9 @@ const PERSISTENT_TAB_FIELDS = [
   "id",
   "title",
   "connection",
-  "statement",
   "mode",
   "worksheet",
   "status",
-  "batchQueryContext",
-  "treeState",
 ] as const;
 type PersistentTab = Pick<SQLEditorTab, (typeof PERSISTENT_TAB_FIELDS)[number]>;
 
@@ -53,6 +55,12 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   const { project } = storeToRefs(useSQLEditorStore());
 
   // states
+  const {
+    fetchExtendedTab,
+    saveExtendedTab,
+    deleteExtendedTab,
+    cleanupExtendedTabs,
+  } = useExtendedTabStore();
   const me = useCurrentUserV1();
   const userUID = computed(() => extractUserUID(me.value.name));
   const keyNamespace = computed(
@@ -75,13 +83,19 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     }
     const tab = reactive<SQLEditorTab>({
       ...defaultSQLEditorTab(),
-      ...stored,
+      // ignore extended fields stored in localStorage
+      // they are migrated to extendedTabStore
+      // for legacy support
+      ...omit(stored, EXTENDED_TAB_FIELDS),
       id,
     });
     if (tab.mode !== DEFAULT_SQL_EDITOR_TAB_MODE) {
       // Do not enter ADMIN mode initially
       tab.mode = DEFAULT_SQL_EDITOR_TAB_MODE;
     }
+
+    fetchExtendedTab(tab);
+
     watchTab(tab, false /* !immediate */);
     tabsById.set(id, tab);
     return tab;
@@ -205,6 +219,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     tabIdList.value.splice(position, 1);
     tabsById.delete(id);
     getStorage().remove(keyForTab(id));
+    deleteExtendedTab(tab);
 
     if (tab.mode === "ADMIN") {
       useWebTerminalStore().clearQueryStateByTab(id);
@@ -261,7 +276,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   };
   // clean persistent tabs that are not in the `tabIdList` anymore
   const _cleanup = () => {
-    const prefix = `${LOCAL_STORAGE_KEY_PREFIX}.tab.`;
+    const prefix = `${keyNamespace.value}.tab.`;
     const keys = getStorage()
       .keys()
       .filter((key) => key.startsWith(prefix));
@@ -276,6 +291,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
         getStorage().remove(keyForTab(id));
       }
     });
+    cleanupExtendedTabs(userUID.value, Array.from(flattenTabIdSet));
   };
   // watch the field changes of a tab, store it to localStorage
   // when needed, but not to frequently (for performance consideration)
@@ -288,6 +304,13 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
           keyForTab(persistentTab.id),
           persistentTab
         );
+      },
+      { deep: true, immediate, throttle: 100, trailing: true }
+    );
+    watchThrottled(
+      () => pick(tab, EXTENDED_TAB_FIELDS) as ExtendedTab,
+      (extended) => {
+        saveExtendedTab(tab, extended);
       },
       { deep: true, immediate, throttle: 100, trailing: true }
     );
