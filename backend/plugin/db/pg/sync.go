@@ -450,7 +450,8 @@ SELECT
 	i2.nspname AS inh_schema_name,
 	i2.relname AS inh_table_name,
 	i2.partstrat AS partition_type,
-	pg_get_expr(c.relpartbound, c.oid) AS rel_part_bound
+	pg_get_expr(c.relpartbound, c.oid) AS rel_part_bound,
+	pg_get_partkeydef(i2.inhparent) AS part_key_def
 FROM
 	pg_catalog.pg_class c
 	LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
@@ -475,8 +476,8 @@ func getTablePartitions(txn *sql.Tx) (map[db.TableKey][]*storepb.TablePartitionM
 	defer rows.Close()
 
 	for rows.Next() {
-		var schemaName, tableName, inhSchemaName, inhTableName, partitionType, relPartBound string
-		if err := rows.Scan(&schemaName, &tableName, &inhSchemaName, &inhTableName, &partitionType, &relPartBound); err != nil {
+		var schemaName, tableName, inhSchemaName, inhTableName, partitionType, relPartBound, partKeyDef string
+		if err := rows.Scan(&schemaName, &tableName, &inhSchemaName, &inhTableName, &partitionType, &relPartBound, &partKeyDef); err != nil {
 			return nil, err
 		}
 		if pgparser.IsSystemTable(tableName) || pgparser.IsSystemTable(inhTableName) {
@@ -485,7 +486,8 @@ func getTablePartitions(txn *sql.Tx) (map[db.TableKey][]*storepb.TablePartitionM
 		key := db.TableKey{Schema: inhSchemaName, Table: inhTableName}
 		metadata := &storepb.TablePartitionMetadata{
 			Name:       tableName,
-			Expression: relPartBound,
+			Expression: partKeyDef,
+			Value:      relPartBound,
 		}
 		switch strings.ToLower(partitionType) {
 		case "l":
