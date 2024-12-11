@@ -54,6 +54,7 @@
             (member: MemberBinding) => member.projectRoleBindings.length === 0
           "
           @update-binding="selectMember"
+          @revoke-binding="revokeMember"
           @update-selected-bindings="state.selectedMembers = $event"
         />
       </NTabPane>
@@ -67,6 +68,7 @@
           :allow-edit="allowEdit"
           :bindings-by-role="memberBindingsByRole"
           @update-binding="selectMember"
+          @revoke-binding="revokeMember"
         />
       </NTabPane>
     </NTabs>
@@ -82,6 +84,7 @@
     v-if="state.editingMember"
     :project="project"
     :binding="state.editingMember"
+    @revoke-binding="revokeMember"
     @close="state.editingMember = undefined"
   />
 </template>
@@ -132,6 +135,7 @@ const props = defineProps<{
 const { t } = useI18n();
 const dialog = useDialog();
 const currentUserV1 = useCurrentUserV1();
+const projectIamPolicyStore = useProjectIamPolicyStore();
 
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
@@ -177,6 +181,28 @@ const selectMember = (binding: MemberBinding) => {
   state.editingMember = binding;
 };
 
+const revokeMember = async (binding: MemberBinding) => {
+  const policy = cloneDeep(iamPolicy.value);
+  for (const b of policy.bindings) {
+    b.members = b.members.filter((member) => {
+      return member !== binding.binding;
+    });
+  }
+  policy.bindings = policy.bindings.filter(
+    (binding) => binding.members.length > 0
+  );
+  await projectIamPolicyStore.updateProjectIamPolicy(
+    projectResourceName.value,
+    policy
+  );
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.deleted"),
+  });
+  state.editingMember = undefined;
+};
+
 const selectedUserEmails = computed(() => {
   return state.selectedMembers
     .filter((member) => !member.startsWith(groupBindingPrefix))
@@ -211,7 +237,7 @@ const handleRevokeSelectedMembers = () => {
       policy.bindings = policy.bindings.filter(
         (binding) => binding.members.length > 0
       );
-      await useProjectIamPolicyStore().updateProjectIamPolicy(
+      projectIamPolicyStore.updateProjectIamPolicy(
         projectResourceName.value,
         policy
       );
