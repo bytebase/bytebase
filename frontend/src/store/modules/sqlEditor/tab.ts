@@ -83,9 +83,8 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     }
     const tab = reactive<SQLEditorTab>({
       ...defaultSQLEditorTab(),
-      // ignore extended fields stored in localStorage
-      // they are migrated to extendedTabStore
-      // for legacy support
+      // Ignore extended fields stored in localStorage since they are migrated
+      // to extendedTabStore.
       ...omit(stored, EXTENDED_TAB_FIELDS),
       id,
     });
