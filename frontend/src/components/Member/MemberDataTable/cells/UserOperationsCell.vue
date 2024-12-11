@@ -1,6 +1,6 @@
 <template>
   <div v-if="allowEdit" class="flex justify-end">
-    <NPopconfirm v-if="allowUpdate" @positive-click="handleRevoke">
+    <NPopconfirm v-if="allowUpdate" @positive-click="$emit('revoke-binding')">
       <template #trigger>
         <NButton quaternary circle @click.stop>
           <template #icon>
@@ -33,8 +33,6 @@
 import { PencilIcon, Trash2Icon } from "lucide-vue-next";
 import { NButton, NPopconfirm } from "naive-ui";
 import { computed } from "vue";
-import { useI18n } from "vue-i18n";
-import { useWorkspaceV1Store, pushNotification } from "@/store";
 import { unknownUser } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
@@ -47,10 +45,8 @@ const props = defineProps<{
 
 defineEmits<{
   (event: "update-binding"): void;
+  (event: "revoke-binding"): void;
 }>();
-
-const workspaceStore = useWorkspaceV1Store();
-const { t } = useI18n();
 
 const allowUpdate = computed(() => {
   if (props.binding.type === "groups") {
@@ -63,18 +59,4 @@ const allowUpdate = computed(() => {
   }
   return user.state === State.ACTIVE;
 });
-
-const handleRevoke = async () => {
-  await workspaceStore.patchIamPolicy([
-    {
-      member: props.binding.binding,
-      roles: [],
-    },
-  ]);
-  pushNotification({
-    module: "bytebase",
-    style: "INFO",
-    title: t("settings.members.revoked"),
-  });
-};
 </script>

@@ -170,7 +170,7 @@
               :ok-text="$t('settings.members.revoke-access')"
               :button-text="$t('settings.members.revoke-access')"
               :require-confirm="true"
-              @confirm="handleDeleteMember"
+              @confirm="$emit('revoke-binding', binding)"
             />
           </div>
           <div class="flex items-center justify-end gap-x-2">
@@ -261,8 +261,9 @@ const props = defineProps<{
   binding: MemberBinding;
 }>();
 
-const emit = defineEmits<{
+defineEmits<{
   (event: "close"): void;
+  (event: "revoke-binding", binding: MemberBinding): void;
 }>();
 
 const { t } = useI18n();
@@ -501,28 +502,6 @@ const handleDeleteCondition = async (singleBinding: SingleBinding) => {
       });
     },
   });
-};
-
-const handleDeleteMember = async () => {
-  const policy = cloneDeep(iamPolicy.value);
-  for (const binding of policy.bindings) {
-    binding.members = binding.members.filter((member) => {
-      return member !== props.binding.binding;
-    });
-  }
-  policy.bindings = policy.bindings.filter(
-    (binding) => binding.members.length > 0
-  );
-  await projectIamPolicyStore.updateProjectIamPolicy(
-    projectResourceName.value,
-    policy
-  );
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("common.deleted"),
-  });
-  emit("close");
 };
 
 const extractDatabaseName = (databaseResource?: DatabaseResource) => {
