@@ -400,8 +400,8 @@ const handleKeyDown = (e: KeyboardEvent) => {
     } else {
       e.stopPropagation();
       e.preventDefault();
-      // Otherwise mark the last tag as 'focusedTag'
-      const id = last(props.params.scopes)?.id;
+      // Otherwise mark the last editable scope as focused.
+      const id = last(editableScopes.value)?.id;
       if (id) {
         focusedTagId.value = id;
         scrollScopeTagIntoViewIfNeeded(id);
