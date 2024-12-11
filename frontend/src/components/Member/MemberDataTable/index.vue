@@ -38,6 +38,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: "update-binding", binding: MemberBinding): void;
+  (event: "revoke-binding", binding: MemberBinding): void;
   (event: "update-selected-bindings", bindings: string[]): void;
 }>();
 
@@ -115,6 +116,9 @@ const columns = computed(
             binding: memberBinding,
             "onUpdate-binding": () => {
               emit("update-binding", memberBinding);
+            },
+            "onRevoke-binding": () => {
+              emit("revoke-binding", memberBinding);
             },
           });
         },

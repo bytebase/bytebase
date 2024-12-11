@@ -44,6 +44,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: "update-binding", binding: MemberBinding): void;
+  (event: "revoke-binding", binding: MemberBinding): void;
 }>();
 
 const { t } = useI18n();
@@ -102,6 +103,9 @@ const columns = computed(() => {
             binding: row.member,
             "onUpdate-binding": () => {
               emit("update-binding", row.member);
+            },
+            "onRevoke-binding": () => {
+              emit("revoke-binding", row.member);
             },
           });
         }
