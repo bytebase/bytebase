@@ -59,6 +59,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: X
           sourcecolumns:
@@ -155,6 +156,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: A
           sourcecolumns:
@@ -303,6 +305,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: A
           sourcecolumns:
@@ -374,6 +377,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: A
           sourcecolumns:
@@ -428,6 +432,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: A
           sourcecolumns:
