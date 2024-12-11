@@ -833,8 +833,8 @@ github.com/bytebase/plsql-parser v0.0.0-20241210025428-898183660166 h1:pyzqyVNEm
 github.com/bytebase/plsql-parser v0.0.0-20241210025428-898183660166/go.mod h1:sEtLYOfHyi8zz5vo5gKT//A8c4P8FnDZLNVSLtVPxj0=
 github.com/bytebase/postgresql-parser v0.0.0-20241108072816-e932f744004a h1:u7LD9Knqu6zR45XF23KfNA2FhI9YnBwqnPRvTKzxiE0=
 github.com/bytebase/postgresql-parser v0.0.0-20241108072816-e932f744004a/go.mod h1:Jft7oabwuwD+t5BYiUfTjcNVaihZ8F5KT8TsROG0EaE=
-github.com/bytebase/snowsql-parser v0.0.0-20240304100801-bb357ccb5535 h1:sgEzM1Y8WUAR8n8fOjVtx62Cz7HuUILtONkPQ8IvFNk=
-github.com/bytebase/snowsql-parser v0.0.0-20240304100801-bb357ccb5535/go.mod h1:gJ1aclz1e9xLArQTbCpDjL+A79Jt3Ro9+/QEw8A6vMM=
+github.com/bytebase/snowsql-parser v0.0.0-20241211024554-093949951501 h1:cYd4t0Jory7JiYdypoyNOkO679sNG3YoLrJ1gag6sqc=
+github.com/bytebase/snowsql-parser v0.0.0-20241211024554-093949951501/go.mod h1:gJ1aclz1e9xLArQTbCpDjL+A79Jt3Ro9+/QEw8A6vMM=
 github.com/bytebase/tidb-parser v0.0.0-20240821091609-162fffe2a839 h1:OLOEfNV20wqC4nPHQllr4mrMhchAhPrgXlKn0URgum8=
 github.com/bytebase/tidb-parser v0.0.0-20240821091609-162fffe2a839/go.mod h1:gXD6h/Ne+FKdUotqCqoI3/WBhyf/B6FIxnu4Ysptnr8=
 github.com/bytebase/tidb2 v0.0.0-20231129002249-5bbb6bb83940 h1:EgmWx2TWEnHySUhiRrwmihFOcRIMfPGQLUtzmoblaTs=
