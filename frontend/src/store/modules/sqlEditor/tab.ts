@@ -186,7 +186,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     });
   });
   const currentTab = computed(() => {
-    // _maybeInitProject(project.value);
     const currId = currentTabId.value;
     if (!currId) return undefined;
     return tabById(currId);
