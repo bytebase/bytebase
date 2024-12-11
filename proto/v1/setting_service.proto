@@ -198,10 +198,16 @@ message AppIMSetting {
     string agent_id = 3 [(google.api.field_behavior) = INPUT_ONLY];
     string secret = 4 [(google.api.field_behavior) = INPUT_ONLY];
   }
+  message Lark {
+    bool enabled = 1;
+    string app_id = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    string app_secret = 3 [(google.api.field_behavior) = INPUT_ONLY];
+  }
 
   Slack slack = 1;
   Feishu feishu = 2;
   Wecom wecom = 3;
+  Lark lark = 4;
 }
 
 message AgentPluginSetting {

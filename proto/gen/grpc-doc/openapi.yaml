@@ -8909,7 +8909,18 @@ components:
                     $ref: '#/components/schemas/AppIMSetting_Feishu'
                 wecom:
                     $ref: '#/components/schemas/AppIMSetting_Wecom'
+                lark:
+                    $ref: '#/components/schemas/AppIMSetting_Lark'
         AppIMSetting_Feishu:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                appId:
+                    type: string
+                appSecret:
+                    type: string
+        AppIMSetting_Lark:
             type: object
             properties:
                 enabled:

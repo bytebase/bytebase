@@ -226,6 +226,7 @@
     - [Announcement](#bytebase-v1-Announcement)
     - [AppIMSetting](#bytebase-v1-AppIMSetting)
     - [AppIMSetting.Feishu](#bytebase-v1-AppIMSetting-Feishu)
+    - [AppIMSetting.Lark](#bytebase-v1-AppIMSetting-Lark)
     - [AppIMSetting.Slack](#bytebase-v1-AppIMSetting-Slack)
     - [AppIMSetting.Wecom](#bytebase-v1-AppIMSetting-Wecom)
     - [DataClassificationSetting](#bytebase-v1-DataClassificationSetting)
@@ -4299,6 +4300,7 @@ ANY means approving any node will proceed.
 | slack | [AppIMSetting.Slack](#bytebase-v1-AppIMSetting-Slack) |  |  |
 | feishu | [AppIMSetting.Feishu](#bytebase-v1-AppIMSetting-Feishu) |  |  |
 | wecom | [AppIMSetting.Wecom](#bytebase-v1-AppIMSetting-Wecom) |  |  |
+| lark | [AppIMSetting.Lark](#bytebase-v1-AppIMSetting-Lark) |  |  |
 
 
 
@@ -4308,6 +4310,23 @@ ANY means approving any node will proceed.
 <a name="bytebase-v1-AppIMSetting-Feishu"></a>
 
 ### AppIMSetting.Feishu
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
+| app_id | [string](#string) |  |  |
+| app_secret | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-AppIMSetting-Lark"></a>
+
+### AppIMSetting.Lark
 
 
 
