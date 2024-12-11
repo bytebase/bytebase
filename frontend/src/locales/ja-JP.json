@@ -1245,7 +1245,6 @@
     },
     "waiting-to-rollout": "リリース待ち",
     "waiting-for-review": "モデレート済み",
-    "closed": "問題は解決しました",
     "issue-name": "イシュー名",
     "grant-request": {
       "export-rows": "エクスポート行の最大数",

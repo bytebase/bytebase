@@ -1245,7 +1245,6 @@
     },
     "waiting-to-rollout": "Esperando para implementar",
     "waiting-for-review": "Esperando revisión",
-    "closed": "Problema cerrado",
     "issue-name": "Nombre de la incidencia",
     "grant-request": {
       "export-rows": "número máximo de filas",

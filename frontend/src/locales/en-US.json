@@ -1245,7 +1245,6 @@
     },
     "waiting-to-rollout": "Waiting to roll out",
     "waiting-for-review": "Waiting for review",
-    "closed": "Issue closed",
     "issue-name": "Issue name",
     "grant-request": {
       "export-rows": "Max export rows",

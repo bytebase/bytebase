@@ -5,7 +5,7 @@
     class="shrink-0"
     target="_blank"
   >
-    <NButton quaternary type="primary" size="large">
+    <NButton quaternary size="large">
       {{ disallowRolloutReason }}
       <ExternalLinkIcon class="ml-1" :size="16" />
     </NButton>
@@ -69,7 +69,7 @@ const { task, taskRuns } = useTaskDetailContext();
 const disallowRolloutReason = computed(() => {
   if (issue.value) {
     if (issue.value.status !== IssueStatus.OPEN) {
-      return t("issue.closed");
+      return t("issue.error.issue-is-not-open");
     }
     const issueReviewContext = extractReviewContext(issue.value);
     if (issueReviewContext.status.value !== Issue_Approver_Status.APPROVED) {
