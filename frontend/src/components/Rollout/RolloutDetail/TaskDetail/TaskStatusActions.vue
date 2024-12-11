@@ -1,12 +1,12 @@
 <template>
   <router-link
-    v-if="issue && !issueReviewDone"
+    v-if="issue && disallowRolloutReason"
     :to="`/${issue.name}`"
     class="shrink-0"
     target="_blank"
   >
-    <NButton quaternary type="primary" size="large">
-      {{ $t("issue.waiting-for-review") }}
+    <NButton quaternary size="large">
+      {{ disallowRolloutReason }}
       <ExternalLinkIcon class="ml-1" :size="16" />
     </NButton>
   </router-link>
@@ -66,14 +66,17 @@ const { t } = useI18n();
 const { rollout, issue, emmiter } = useRolloutDetailContext();
 const { task, taskRuns } = useTaskDetailContext();
 
-const issueReviewDone = computed(() => {
-  if (issue.value && issue.value.status === IssueStatus.OPEN) {
+const disallowRolloutReason = computed(() => {
+  if (issue.value) {
+    if (issue.value.status !== IssueStatus.OPEN) {
+      return t("issue.error.issue-is-not-open");
+    }
     const issueReviewContext = extractReviewContext(issue.value);
     if (issueReviewContext.status.value !== Issue_Approver_Status.APPROVED) {
-      return false;
+      return t("issue.waiting-for-review");
     }
   }
-  return true;
+  return "";
 });
 
 const primaryAction = computed((): TaskStatusAction | null => {
