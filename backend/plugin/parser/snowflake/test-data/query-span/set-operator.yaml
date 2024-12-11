@@ -53,6 +53,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: A
           sourcecolumns:

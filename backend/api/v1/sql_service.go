@@ -53,10 +53,12 @@ const (
 
 var (
 	queryNewACLSupportEngines = map[storepb.Engine]bool{
-		storepb.Engine_MYSQL:    true,
-		storepb.Engine_POSTGRES: true,
-		storepb.Engine_ORACLE:   true,
-		storepb.Engine_MSSQL:    true,
+		storepb.Engine_MYSQL:     true,
+		storepb.Engine_POSTGRES:  true,
+		storepb.Engine_ORACLE:    true,
+		storepb.Engine_MSSQL:     true,
+		storepb.Engine_TIDB:      true,
+		storepb.Engine_SNOWFLAKE: true,
 	}
 )
 
