@@ -15349,6 +15349,7 @@ components:
                         - TYPE_FEISHU
                         - TYPE_WECOM
                         - TYPE_CUSTOM
+                        - TYPE_LARK
                     type: string
                     description: type is the type of the webhook.
                     format: enum

@@ -9110,6 +9110,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | TYPE_FEISHU | 5 |  |
 | TYPE_WECOM | 6 |  |
 | TYPE_CUSTOM | 7 |  |
+| TYPE_LARK | 8 |  |
 
 
 
