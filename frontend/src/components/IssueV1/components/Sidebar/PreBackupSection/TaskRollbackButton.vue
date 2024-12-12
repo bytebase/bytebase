@@ -19,7 +19,7 @@ import {
 } from "@/components/IssueV1/logic";
 import { rolloutServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification, useSheetV1Store } from "@/store";
+import { pushNotification, useSheetV1Store, useStorageStore } from "@/store";
 import {
   extractIssueUID,
   extractProjectResourceName,
@@ -63,7 +63,7 @@ const createRestoreIssue = async () => {
   isLoading.value = false;
 
   const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
-  localStorage.setItem(sqlStorageKey, statement);
+  useStorageStore().put(sqlStorageKey, statement);
   const query: Record<string, any> = {
     template: "bb.issue.database.data.update",
     name: `Rollback ${selectedTask.value.title} in issue#${extractIssueUID(issue.value.name)}`,

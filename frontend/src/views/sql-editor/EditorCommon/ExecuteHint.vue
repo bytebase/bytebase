@@ -76,6 +76,7 @@ import {
   useAppFeature,
   useDatabaseV1Store,
   useSQLEditorTabStore,
+  useStorageStore,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
@@ -176,7 +177,7 @@ const gotoCreateIssue = () => {
 
   const db = useDatabaseV1Store().getDatabaseByName(database);
   const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
-  localStorage.setItem(sqlStorageKey, statement.value);
+  useStorageStore().put(sqlStorageKey, statement.value);
   const route = router.resolve({
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {

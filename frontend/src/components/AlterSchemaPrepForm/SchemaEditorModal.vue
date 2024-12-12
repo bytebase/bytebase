@@ -154,6 +154,7 @@ import {
   useNotificationStore,
   useDBSchemaV1Store,
   useAppFeature,
+  useStorageStore,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { dialectOfEngineV1, isValidProjectName, unknownProject } from "@/types";
@@ -454,7 +455,7 @@ const handlePreviewIssue = async () => {
     );
 
     const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
-    localStorage.setItem(sqlStorageKey, state.editStatement);
+    useStorageStore().put(sqlStorageKey, state.editStatement);
     query.sqlStorageKey = sqlStorageKey;
   } else {
     query.name = generateIssueTitle(
@@ -493,7 +494,7 @@ const handlePreviewIssue = async () => {
       sqlMap[db.name] = sql;
     });
     const sqlMapStorageKey = `bb.issues.sql-map.${uuidv4()}`;
-    localStorage.setItem(sqlMapStorageKey, JSON.stringify(sqlMap));
+    useStorageStore().put(sqlMapStorageKey, JSON.stringify(sqlMap));
     query.sqlMapStorageKey = sqlMapStorageKey;
     const databaseNameList = databaseList.value.map((db) => db.databaseName);
     query.name = generateIssueTitle(
