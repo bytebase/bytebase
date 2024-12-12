@@ -64,7 +64,7 @@ import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import { databaseServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
-import { featureToRef, hasFeature } from "@/store";
+import { featureToRef, hasFeature, useStorageStore } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import type { ComposedSlowQueryLog } from "@/types";
 import { extractProjectResourceName, generateIssueTitle } from "@/utils";
@@ -115,7 +115,7 @@ const showIndexAdvisor = computed(() => {
 
 const handleCreateIndex = () => {
   const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
-  localStorage.setItem(sqlStorageKey, state.createIndexStatement);
+  useStorageStore().put(sqlStorageKey, state.createIndexStatement);
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
     name: generateIssueTitle("bb.issue.database.schema.update", [
