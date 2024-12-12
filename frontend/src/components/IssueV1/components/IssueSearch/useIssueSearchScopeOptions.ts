@@ -19,8 +19,8 @@ import type { SearchParams, SearchScopeId } from "@/utils";
 export type ScopeOption = {
   id: SearchScopeId;
   title: string;
-  description: string;
   options: ValueOption[];
+  description?: string;
 };
 
 export type ValueOption = {
