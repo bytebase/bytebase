@@ -252,6 +252,7 @@
     - [Announcement](#bytebase-store-Announcement)
     - [AppIMSetting](#bytebase-store-AppIMSetting)
     - [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu)
+    - [AppIMSetting.Lark](#bytebase-store-AppIMSetting-Lark)
     - [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack)
     - [AppIMSetting.Wecom](#bytebase-store-AppIMSetting-Wecom)
     - [DataClassificationSetting](#bytebase-store-DataClassificationSetting)
@@ -3896,6 +3897,7 @@ SlowQueryPolicy is the policy configuration for slow query.
 | slack | [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack) |  |  |
 | feishu | [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu) |  |  |
 | wecom | [AppIMSetting.Wecom](#bytebase-store-AppIMSetting-Wecom) |  |  |
+| lark | [AppIMSetting.Lark](#bytebase-store-AppIMSetting-Lark) |  |  |
 
 
 
@@ -3905,6 +3907,23 @@ SlowQueryPolicy is the policy configuration for slow query.
 <a name="bytebase-store-AppIMSetting-Feishu"></a>
 
 ### AppIMSetting.Feishu
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
+| app_id | [string](#string) |  |  |
+| app_secret | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-AppIMSetting-Lark"></a>
+
+### AppIMSetting.Lark
 
 
 

@@ -72,6 +72,15 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       supportDirectMessage: true,
     },
     {
+      type: Webhook_Type.TYPE_LARK,
+      name: t("common.lark"),
+      urlPrefix: "https://open.larksuite.com",
+      urlPlaceholder: "https://open.larksuite.com/open-apis/bot/v2/hook/...",
+      docUrl:
+        "https://open.larksuite.com/document/client-docs/bot-v3/add-custom-bot",
+      supportDirectMessage: true,
+    },
+    {
       type: Webhook_Type.TYPE_WECOM,
       name: t("common.wecom"),
       urlPrefix: "https://qyapi.weixin.qq.com",
