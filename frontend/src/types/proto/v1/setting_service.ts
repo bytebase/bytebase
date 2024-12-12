@@ -335,6 +335,7 @@ export interface AppIMSetting {
   slack: AppIMSetting_Slack | undefined;
   feishu: AppIMSetting_Feishu | undefined;
   wecom: AppIMSetting_Wecom | undefined;
+  lark: AppIMSetting_Lark | undefined;
 }
 
 export interface AppIMSetting_Slack {
@@ -353,6 +354,12 @@ export interface AppIMSetting_Wecom {
   corpId: string;
   agentId: string;
   secret: string;
+}
+
+export interface AppIMSetting_Lark {
+  enabled: boolean;
+  appId: string;
+  appSecret: string;
 }
 
 export interface AgentPluginSetting {
@@ -1804,7 +1811,7 @@ export const SMTPMailDeliverySettingValue: MessageFns<SMTPMailDeliverySettingVal
 };
 
 function createBaseAppIMSetting(): AppIMSetting {
-  return { slack: undefined, feishu: undefined, wecom: undefined };
+  return { slack: undefined, feishu: undefined, wecom: undefined, lark: undefined };
 }
 
 export const AppIMSetting: MessageFns<AppIMSetting> = {
@@ -1817,6 +1824,9 @@ export const AppIMSetting: MessageFns<AppIMSetting> = {
     }
     if (message.wecom !== undefined) {
       AppIMSetting_Wecom.encode(message.wecom, writer.uint32(26).fork()).join();
+    }
+    if (message.lark !== undefined) {
+      AppIMSetting_Lark.encode(message.lark, writer.uint32(34).fork()).join();
     }
     return writer;
   },
@@ -1852,6 +1862,14 @@ export const AppIMSetting: MessageFns<AppIMSetting> = {
           message.wecom = AppIMSetting_Wecom.decode(reader, reader.uint32());
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.lark = AppIMSetting_Lark.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1866,6 +1884,7 @@ export const AppIMSetting: MessageFns<AppIMSetting> = {
       slack: isSet(object.slack) ? AppIMSetting_Slack.fromJSON(object.slack) : undefined,
       feishu: isSet(object.feishu) ? AppIMSetting_Feishu.fromJSON(object.feishu) : undefined,
       wecom: isSet(object.wecom) ? AppIMSetting_Wecom.fromJSON(object.wecom) : undefined,
+      lark: isSet(object.lark) ? AppIMSetting_Lark.fromJSON(object.lark) : undefined,
     };
   },
 
@@ -1879,6 +1898,9 @@ export const AppIMSetting: MessageFns<AppIMSetting> = {
     }
     if (message.wecom !== undefined) {
       obj.wecom = AppIMSetting_Wecom.toJSON(message.wecom);
+    }
+    if (message.lark !== undefined) {
+      obj.lark = AppIMSetting_Lark.toJSON(message.lark);
     }
     return obj;
   },
@@ -1896,6 +1918,9 @@ export const AppIMSetting: MessageFns<AppIMSetting> = {
       : undefined;
     message.wecom = (object.wecom !== undefined && object.wecom !== null)
       ? AppIMSetting_Wecom.fromPartial(object.wecom)
+      : undefined;
+    message.lark = (object.lark !== undefined && object.lark !== null)
+      ? AppIMSetting_Lark.fromPartial(object.lark)
       : undefined;
     return message;
   },
@@ -2173,6 +2198,98 @@ export const AppIMSetting_Wecom: MessageFns<AppIMSetting_Wecom> = {
     message.corpId = object.corpId ?? "";
     message.agentId = object.agentId ?? "";
     message.secret = object.secret ?? "";
+    return message;
+  },
+};
+
+function createBaseAppIMSetting_Lark(): AppIMSetting_Lark {
+  return { enabled: false, appId: "", appSecret: "" };
+}
+
+export const AppIMSetting_Lark: MessageFns<AppIMSetting_Lark> = {
+  encode(message: AppIMSetting_Lark, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.enabled !== false) {
+      writer.uint32(8).bool(message.enabled);
+    }
+    if (message.appId !== "") {
+      writer.uint32(18).string(message.appId);
+    }
+    if (message.appSecret !== "") {
+      writer.uint32(26).string(message.appSecret);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AppIMSetting_Lark {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAppIMSetting_Lark();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.enabled = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.appId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.appSecret = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AppIMSetting_Lark {
+    return {
+      enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
+      appId: isSet(object.appId) ? globalThis.String(object.appId) : "",
+      appSecret: isSet(object.appSecret) ? globalThis.String(object.appSecret) : "",
+    };
+  },
+
+  toJSON(message: AppIMSetting_Lark): unknown {
+    const obj: any = {};
+    if (message.enabled !== false) {
+      obj.enabled = message.enabled;
+    }
+    if (message.appId !== "") {
+      obj.appId = message.appId;
+    }
+    if (message.appSecret !== "") {
+      obj.appSecret = message.appSecret;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AppIMSetting_Lark>): AppIMSetting_Lark {
+    return AppIMSetting_Lark.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AppIMSetting_Lark>): AppIMSetting_Lark {
+    const message = createBaseAppIMSetting_Lark();
+    message.enabled = object.enabled ?? false;
+    message.appId = object.appId ?? "";
+    message.appSecret = object.appSecret ?? "";
     return message;
   },
 };

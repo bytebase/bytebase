@@ -8909,7 +8909,18 @@ components:
                     $ref: '#/components/schemas/AppIMSetting_Feishu'
                 wecom:
                     $ref: '#/components/schemas/AppIMSetting_Wecom'
+                lark:
+                    $ref: '#/components/schemas/AppIMSetting_Lark'
         AppIMSetting_Feishu:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                appId:
+                    type: string
+                appSecret:
+                    type: string
+        AppIMSetting_Lark:
             type: object
             properties:
                 enabled:
@@ -15349,6 +15360,7 @@ components:
                         - TYPE_FEISHU
                         - TYPE_WECOM
                         - TYPE_CUSTOM
+                        - TYPE_LARK
                     type: string
                     description: type is the type of the webhook.
                     format: enum

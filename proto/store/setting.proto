@@ -329,10 +329,16 @@ message AppIMSetting {
     string agent_id = 3;
     string secret = 4;
   }
+  message Lark {
+    bool enabled = 1;
+    string app_id = 2;
+    string app_secret = 3;
+  }
 
   Slack slack = 1;
   Feishu feishu = 2;
   Wecom wecom = 3;
+  Lark lark = 4;
 }
 
 enum DatabaseChangeMode {
