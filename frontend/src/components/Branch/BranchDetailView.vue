@@ -140,6 +140,7 @@ import {
   pushNotification,
   useDatabaseV1Store,
   useCurrentUserV1,
+  useStorageStore,
 } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
 import { getProjectAndBranchId } from "@/store/modules/v1/common";
@@ -451,7 +452,7 @@ const handleApplyToDatabase = async (databaseNameList: string[]) => {
     databaseStore.getDatabaseByName(name)
   );
   const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
-  localStorage.setItem(sqlStorageKey, result.statement);
+  useStorageStore().put(sqlStorageKey, result.statement);
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
     mode: "normal",
