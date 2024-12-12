@@ -356,7 +356,11 @@
       "canceled": "Cancelado",
       "success": "Éxito",
       "warn": "Advertencia",
-      "error": "Error"
+      "error": "Error",
+      "skipped": "Omitido",
+      "done": "Hecho",
+      "pending": "Pendiente",
+      "not-started": "No iniciado"
     },
     "type": {
       "bb-task-database-schema-update-ghost-sync": "Sincronizar datos",
