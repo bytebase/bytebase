@@ -26,7 +26,9 @@
           @mouseenter.prevent.stop="$emit('hover-item', index)"
           @mousedown.prevent.stop="$emit('select-scope', option.id)"
         >
-          <span class="text-accent">{{ option.id }}:</span>
+          <span class="text-accent">
+            {{ option.id }}{{ Boolean(option.description) ? ":" : "" }}
+          </span>
           <span class="text-control-light">{{ option.description }}</span>
         </div>
       </template>

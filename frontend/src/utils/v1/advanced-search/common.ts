@@ -18,6 +18,7 @@ type CommonFilterScopeId = (typeof CommonFilterScopeIdList)[number];
 export const AllSearchScopeIdList = [
   // common search scopes.
   "project",
+  "environment",
   "instance",
   "database",
   "creator",
@@ -33,6 +34,8 @@ export const AllSearchScopeIdList = [
   "actor",
   // instance related search scopes.
   "address",
+  // rollout related search scopes.
+  "stage",
 ] as const;
 export const useSearchScopeIdList = () => {
   const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
