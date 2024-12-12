@@ -376,6 +376,7 @@ export enum Webhook_Type {
   TYPE_FEISHU = "TYPE_FEISHU",
   TYPE_WECOM = "TYPE_WECOM",
   TYPE_CUSTOM = "TYPE_CUSTOM",
+  TYPE_LARK = "TYPE_LARK",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -405,6 +406,9 @@ export function webhook_TypeFromJSON(object: any): Webhook_Type {
     case 7:
     case "TYPE_CUSTOM":
       return Webhook_Type.TYPE_CUSTOM;
+    case 8:
+    case "TYPE_LARK":
+      return Webhook_Type.TYPE_LARK;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -430,6 +434,8 @@ export function webhook_TypeToJSON(object: Webhook_Type): string {
       return "TYPE_WECOM";
     case Webhook_Type.TYPE_CUSTOM:
       return "TYPE_CUSTOM";
+    case Webhook_Type.TYPE_LARK:
+      return "TYPE_LARK";
     case Webhook_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -454,6 +460,8 @@ export function webhook_TypeToNumber(object: Webhook_Type): number {
       return 6;
     case Webhook_Type.TYPE_CUSTOM:
       return 7;
+    case Webhook_Type.TYPE_LARK:
+      return 8;
     case Webhook_Type.UNRECOGNIZED:
     default:
       return -1;

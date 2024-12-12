@@ -8,6 +8,7 @@
     "teams": "Teams",
     "dingtalk": "DingTalk",
     "feishu": "Feishu",
+    "lark": "Lark",
     "wecom": "WeCom",
     "system": "System",
     "custom": "Custom",
@@ -356,7 +357,11 @@
       "canceled": "Canceled",
       "success": "Success",
       "warn": "Warning",
-      "error": "Error"
+      "error": "Error",
+      "skipped": "Skipped",
+      "done": "Done",
+      "pending": "Pending",
+      "not-started": "Not started"
     },
     "type": {
       "bb-task-database-schema-update-ghost-sync": "Sync data",
