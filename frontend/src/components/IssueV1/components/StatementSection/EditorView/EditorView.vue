@@ -203,7 +203,7 @@
 
 <script setup lang="ts">
 import { useElementSize } from "@vueuse/core";
-import { cloneDeep, head, uniq } from "lodash-es";
+import { cloneDeep, head, isEmpty, uniq } from "lodash-es";
 import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { computed, h, reactive, ref, toRef, watch } from "vue";
