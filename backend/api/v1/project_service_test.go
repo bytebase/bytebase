@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
+	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/store"
@@ -402,7 +403,12 @@ func TestValidateAndConvertToStoreDeploymentSchedule(t *testing.T) {
 			require.Error(t, err)
 		} else {
 			require.NoError(t, err)
-			require.Equal(t, tc.wantCfg, cfg)
+			require.True(
+				t,
+				cmp.Equal(tc.wantCfg, cfg, protocmp.Transform(), protocmp.IgnoreFields(&storepb.ScheduleDeployment{}, "id")),
+				tc.wantErr,
+				cfg,
+			)
 		}
 	}
 }
