@@ -256,22 +256,24 @@ func TestValidateAndConvertToStoreDeploymentSchedule(t *testing.T) {
 			},
 			wantCfg: &store.DeploymentConfigMessage{
 				Name: "DeploymentConfig1",
-				Schedule: &store.Schedule{
-					Deployments: []*store.Deployment{
-						{
-							Name: "Deployment1",
-							Spec: &store.DeploymentSpec{
-								Selector: &store.LabelSelector{
-									MatchExpressions: []*store.LabelSelectorRequirement{
-										{
-											Key:      "environment",
-											Operator: store.InOperatorType,
-											Values:   []string{"prod"},
-										},
-										{
-											Key:      "location",
-											Operator: store.ExistsOperatorType,
-											Values:   []string{},
+				Config: &storepb.DeploymentConfig{
+					Schedule: &storepb.Schedule{
+						Deployments: []*storepb.ScheduleDeployment{
+							{
+								Title: "Deployment1",
+								Spec: &storepb.DeploymentSpec{
+									Selector: &storepb.LabelSelector{
+										MatchExpressions: []*storepb.LabelSelectorRequirement{
+											{
+												Key:      "environment",
+												Operator: storepb.LabelSelectorRequirement_IN,
+												Values:   []string{"prod"},
+											},
+											{
+												Key:      "location",
+												Operator: storepb.LabelSelectorRequirement_EXISTS,
+												Values:   []string{},
+											},
 										},
 									},
 								},
