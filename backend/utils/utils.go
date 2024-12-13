@@ -43,13 +43,13 @@ func DataSourceFromInstanceWithType(instance *store.InstanceMessage, dataSourceT
 
 // isMatchExpression checks whether a databases matches the query.
 // labels is a mapping from database label key to value.
-func isMatchExpression(labels map[string]string, expression *store.LabelSelectorRequirement) bool {
+func isMatchExpression(labels map[string]string, expression *storepb.LabelSelectorRequirement) bool {
 	switch expression.Operator {
-	case store.InOperatorType:
+	case storepb.LabelSelectorRequirement_IN:
 		return checkLabelIn(labels, expression)
-	case store.NotInOperatorType:
+	case storepb.LabelSelectorRequirement_NOT_IN:
 		return !checkLabelIn(labels, expression)
-	case store.ExistsOperatorType:
+	case storepb.LabelSelectorRequirement_EXISTS:
 		_, ok := labels[expression.Key]
 		return ok
 	default:
@@ -57,7 +57,7 @@ func isMatchExpression(labels map[string]string, expression *store.LabelSelector
 	}
 }
 
-func checkLabelIn(labels map[string]string, expression *store.LabelSelectorRequirement) bool {
+func checkLabelIn(labels map[string]string, expression *storepb.LabelSelectorRequirement) bool {
 	value, ok := labels[expression.Key]
 	if !ok {
 		return false
@@ -71,7 +71,7 @@ func checkLabelIn(labels map[string]string, expression *store.LabelSelectorRequi
 	return false
 }
 
-func isMatchExpressions(labels map[string]string, expressionList []*store.LabelSelectorRequirement) bool {
+func isMatchExpressions(labels map[string]string, expressionList []*storepb.LabelSelectorRequirement) bool {
 	// Empty expression list matches no databases.
 	if len(expressionList) == 0 {
 		return false
@@ -87,19 +87,19 @@ func isMatchExpressions(labels map[string]string, expressionList []*store.LabelS
 
 // ValidateAndGetDeploymentSchedule validates and returns the deployment schedule.
 // Note: this validation only checks whether the payloads is a valid json, however, invalid field name errors are ignored.
-func ValidateDeploymentSchedule(schedule *store.Schedule) error {
+func ValidateDeploymentSchedule(schedule *storepb.Schedule) error {
 	for _, d := range schedule.Deployments {
-		if d.Name == "" {
-			return common.Errorf(common.Invalid, "Deployment name must not be empty")
+		if d.Title == "" {
+			return common.Errorf(common.Invalid, "Deployment title must not be empty")
 		}
 		hasEnv := false
 		for _, e := range d.Spec.Selector.MatchExpressions {
 			switch e.Operator {
-			case store.InOperatorType, store.NotInOperatorType:
+			case storepb.LabelSelectorRequirement_IN, storepb.LabelSelectorRequirement_NOT_IN:
 				if len(e.Values) == 0 {
 					return common.Errorf(common.Invalid, "expression key %q with %q operator should have at least one value", e.Key, e.Operator)
 				}
-			case store.ExistsOperatorType:
+			case storepb.LabelSelectorRequirement_EXISTS:
 				if len(e.Values) > 0 {
 					return common.Errorf(common.Invalid, "expression key %q with %q operator shouldn't have values", e.Key, e.Operator)
 				}
@@ -108,8 +108,8 @@ func ValidateDeploymentSchedule(schedule *store.Schedule) error {
 			}
 			if e.Key == api.EnvironmentLabelKey {
 				hasEnv = true
-				if e.Operator != store.InOperatorType || len(e.Values) != 1 {
-					return common.Errorf(common.Invalid, "label %q should must use operator %q with exactly one value", api.EnvironmentLabelKey, store.InOperatorType)
+				if e.Operator != storepb.LabelSelectorRequirement_IN || len(e.Values) != 1 {
+					return common.Errorf(common.Invalid, "label %q should must use operator %q with exactly one value", api.EnvironmentLabelKey, storepb.LabelSelectorRequirement_IN)
 				}
 			}
 		}
@@ -122,7 +122,7 @@ func ValidateDeploymentSchedule(schedule *store.Schedule) error {
 
 // GetDatabaseMatrixFromDeploymentSchedule gets a pipeline based on deployment schedule.
 // The matrix will include the stage even if the stage has no database.
-func GetDatabaseMatrixFromDeploymentSchedule(schedule *store.Schedule, databaseList []*store.DatabaseMessage) ([][]*store.DatabaseMessage, error) {
+func GetDatabaseMatrixFromDeploymentSchedule(schedule *storepb.Schedule, databaseList []*store.DatabaseMessage) ([][]*store.DatabaseMessage, error) {
 	var matrix [][]*store.DatabaseMessage
 
 	// idToLabels maps databaseID -> label key -> label value

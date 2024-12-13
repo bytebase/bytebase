@@ -197,6 +197,7 @@ const addStage = () => {
 
   state.deployment.schedule?.deployments.push({
     title: "New Stage",
+    id: "",
     spec: {
       labelSelector: {
         matchExpressions: [rule],

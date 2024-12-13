@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
+	"github.com/google/uuid"
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -1323,7 +1324,7 @@ func convertToDeploymentConfig(projectID string, deploymentConfig *store.Deploym
 	return &v1pb.DeploymentConfig{
 		Name:     resourceName,
 		Title:    deploymentConfig.Name,
-		Schedule: convertToSchedule(deploymentConfig.Schedule),
+		Schedule: convertToSchedule(deploymentConfig.Config.GetSchedule()),
 	}
 }
 
@@ -1334,12 +1335,17 @@ func convertToStoreDeploymentConfig(deploymentConfig *v1pb.DeploymentConfig) (*s
 	}
 
 	return &store.DeploymentConfigMessage{
-		Name:     deploymentConfig.Title,
-		Schedule: schedule,
+		Name: deploymentConfig.Title,
+		Config: &storepb.DeploymentConfig{
+			Schedule: schedule,
+		},
 	}, nil
 }
 
-func convertToSchedule(schedule *store.Schedule) *v1pb.Schedule {
+func convertToSchedule(schedule *storepb.Schedule) *v1pb.Schedule {
+	if schedule == nil {
+		return nil
+	}
 	var ds []*v1pb.ScheduleDeployment
 	for _, d := range schedule.Deployments {
 		ds = append(ds, convertToDeployment(d))
@@ -1349,8 +1355,8 @@ func convertToSchedule(schedule *store.Schedule) *v1pb.Schedule {
 	}
 }
 
-func convertToStoreSchedule(schedule *v1pb.Schedule) (*store.Schedule, error) {
-	var ds []*store.Deployment
+func convertToStoreSchedule(schedule *v1pb.Schedule) (*storepb.Schedule, error) {
+	var ds []*storepb.ScheduleDeployment
 	for _, d := range schedule.Deployments {
 		deployment, err := convertToStoreDeployment(d)
 		if err != nil {
@@ -1358,47 +1364,49 @@ func convertToStoreSchedule(schedule *v1pb.Schedule) (*store.Schedule, error) {
 		}
 		ds = append(ds, deployment)
 	}
-	return &store.Schedule{
+	return &storepb.Schedule{
 		Deployments: ds,
 	}, nil
 }
 
-func convertToDeployment(deployment *store.Deployment) *v1pb.ScheduleDeployment {
+func convertToDeployment(deployment *storepb.ScheduleDeployment) *v1pb.ScheduleDeployment {
 	return &v1pb.ScheduleDeployment{
-		Title: deployment.Name,
+		Title: deployment.Title,
+		Id:    deployment.Id,
 		Spec:  convertToSpec(deployment.Spec),
 	}
 }
 
-func convertToStoreDeployment(deployment *v1pb.ScheduleDeployment) (*store.Deployment, error) {
+func convertToStoreDeployment(deployment *v1pb.ScheduleDeployment) (*storepb.ScheduleDeployment, error) {
 	spec, err := convertToStoreSpec(deployment.Spec)
 	if err != nil {
 		return nil, err
 	}
 
-	return &store.Deployment{
-		Name: deployment.Title,
-		Spec: spec,
+	return &storepb.ScheduleDeployment{
+		Title: deployment.Title,
+		Id:    uuid.NewString(),
+		Spec:  spec,
 	}, nil
 }
 
-func convertToSpec(spec *store.DeploymentSpec) *v1pb.DeploymentSpec {
+func convertToSpec(spec *storepb.DeploymentSpec) *v1pb.DeploymentSpec {
 	return &v1pb.DeploymentSpec{
 		LabelSelector: convertToLabelSelector(spec.Selector),
 	}
 }
 
-func convertToStoreSpec(spec *v1pb.DeploymentSpec) (*store.DeploymentSpec, error) {
+func convertToStoreSpec(spec *v1pb.DeploymentSpec) (*storepb.DeploymentSpec, error) {
 	selector, err := convertToStoreLabelSelector(spec.LabelSelector)
 	if err != nil {
 		return nil, err
 	}
-	return &store.DeploymentSpec{
+	return &storepb.DeploymentSpec{
 		Selector: selector,
 	}, nil
 }
 
-func convertToLabelSelector(selector *store.LabelSelector) *v1pb.LabelSelector {
+func convertToLabelSelector(selector *storepb.LabelSelector) *v1pb.LabelSelector {
 	var exprs []*v1pb.LabelSelectorRequirement
 	for _, expr := range selector.MatchExpressions {
 		exprs = append(exprs, convertToLabelSelectorRequirement(expr))
@@ -1409,8 +1417,8 @@ func convertToLabelSelector(selector *store.LabelSelector) *v1pb.LabelSelector {
 	}
 }
 
-func convertToStoreLabelSelector(selector *v1pb.LabelSelector) (*store.LabelSelector, error) {
-	var exprs []*store.LabelSelectorRequirement
+func convertToStoreLabelSelector(selector *v1pb.LabelSelector) (*storepb.LabelSelector, error) {
+	var exprs []*storepb.LabelSelectorRequirement
 	for _, expr := range selector.MatchExpressions {
 		requirement, err := convertToStoreLabelSelectorRequirement(expr)
 		if err != nil {
@@ -1418,12 +1426,12 @@ func convertToStoreLabelSelector(selector *v1pb.LabelSelector) (*store.LabelSele
 		}
 		exprs = append(exprs, requirement)
 	}
-	return &store.LabelSelector{
+	return &storepb.LabelSelector{
 		MatchExpressions: exprs,
 	}, nil
 }
 
-func convertToLabelSelectorRequirement(requirements *store.LabelSelectorRequirement) *v1pb.LabelSelectorRequirement {
+func convertToLabelSelectorRequirement(requirements *storepb.LabelSelectorRequirement) *v1pb.LabelSelectorRequirement {
 	return &v1pb.LabelSelectorRequirement{
 		Key:      requirements.Key,
 		Operator: convertToLabelSelectorOperator(requirements.Operator),
@@ -1431,40 +1439,40 @@ func convertToLabelSelectorRequirement(requirements *store.LabelSelectorRequirem
 	}
 }
 
-func convertToStoreLabelSelectorRequirement(requirements *v1pb.LabelSelectorRequirement) (*store.LabelSelectorRequirement, error) {
+func convertToStoreLabelSelectorRequirement(requirements *v1pb.LabelSelectorRequirement) (*storepb.LabelSelectorRequirement, error) {
 	op, err := convertToStoreLabelSelectorOperator(requirements.Operator)
 	if err != nil {
 		return nil, err
 	}
-	return &store.LabelSelectorRequirement{
+	return &storepb.LabelSelectorRequirement{
 		Key:      requirements.Key,
 		Operator: op,
 		Values:   requirements.Values,
 	}, nil
 }
 
-func convertToLabelSelectorOperator(operator store.OperatorType) v1pb.OperatorType {
+func convertToLabelSelectorOperator(operator storepb.LabelSelectorRequirement_OperatorType) v1pb.OperatorType {
 	switch operator {
-	case store.InOperatorType:
+	case storepb.LabelSelectorRequirement_IN:
 		return v1pb.OperatorType_OPERATOR_TYPE_IN
-	case store.NotInOperatorType:
+	case storepb.LabelSelectorRequirement_NOT_IN:
 		return v1pb.OperatorType_OPERATOR_TYPE_NOT_IN
-	case store.ExistsOperatorType:
+	case storepb.LabelSelectorRequirement_EXISTS:
 		return v1pb.OperatorType_OPERATOR_TYPE_EXISTS
 	}
 	return v1pb.OperatorType_OPERATOR_TYPE_UNSPECIFIED
 }
 
-func convertToStoreLabelSelectorOperator(operator v1pb.OperatorType) (store.OperatorType, error) {
+func convertToStoreLabelSelectorOperator(operator v1pb.OperatorType) (storepb.LabelSelectorRequirement_OperatorType, error) {
 	switch operator {
 	case v1pb.OperatorType_OPERATOR_TYPE_IN:
-		return store.InOperatorType, nil
+		return storepb.LabelSelectorRequirement_IN, nil
 	case v1pb.OperatorType_OPERATOR_TYPE_NOT_IN:
-		return store.NotInOperatorType, nil
+		return storepb.LabelSelectorRequirement_NOT_IN, nil
 	case v1pb.OperatorType_OPERATOR_TYPE_EXISTS:
-		return store.ExistsOperatorType, nil
+		return storepb.LabelSelectorRequirement_EXISTS, nil
 	}
-	return store.OperatorType(""), errors.Errorf("invalid operator type: %v", operator)
+	return storepb.LabelSelectorRequirement_OPERATOR_TYPE_UNSPECIFIED, errors.Errorf("invalid operator type: %v", operator)
 }
 
 func (s *ProjectService) validateIAMPolicy(ctx context.Context, policy *v1pb.IamPolicy) error {
