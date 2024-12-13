@@ -389,18 +389,9 @@ const extractInitialSQLFromQuery = async (
   }
   const sqlMapStorageKey = query.sqlMapStorageKey;
   if (sqlMapStorageKey && typeof sqlMapStorageKey === "string") {
-    const sqlMapJSON = (await storageStore.get(sqlStorageKey)) || "{}";
-    try {
-      const sqlMap = JSON.parse(sqlMapJSON) as Record<string, string>;
-      const keys = Object.keys(sqlMap);
-      if (keys.every((key) => typeof sqlMap[key] === "string")) {
-        return {
-          sqlMap,
-        };
-      }
-    } catch {
-      // Nothing
-    }
+    const sqlMap =
+      (await storageStore.get<Record<string, string>>(sqlMapStorageKey)) || {};
+    return { sqlMap };
   }
   return {};
 };
