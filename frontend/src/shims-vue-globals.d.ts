@@ -1,12 +1,6 @@
 import type dayjs from "dayjs";
-import type { isEmpty } from "lodash-es";
-import type {
-  humanizeTs,
-  humanizeDurationV1,
-  humanizeDate,
-  sizeToFit,
-  urlfy,
-} from "./utils";
+import type { Composer } from "vue-i18n";
+import type { humanizeTs, humanizeDurationV1, humanizeDate } from "./utils";
 
 export {};
 
@@ -20,9 +14,8 @@ declare module "vue" {
     humanizeDate: typeof humanizeDate;
     isDev: boolean;
     isRelease: boolean;
-    sizeToFit: typeof sizeToFit;
-    urlfy: typeof urlfy;
-    isEmpty: typeof isEmpty;
-    $t: (key: string, values?: Record<string, string>) => string;
+    $t: Composer["t"];
+    $te: Composer["te"];
+    $tm: Composer["tm"];
   }
 }

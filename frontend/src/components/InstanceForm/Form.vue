@@ -482,6 +482,7 @@ import {
   extractInstanceResourceName,
   onlyAllowNumber,
   autoSubscriptionRoute,
+  urlfy,
 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 import LearnMoreLink from "../LearnMoreLink.vue";
