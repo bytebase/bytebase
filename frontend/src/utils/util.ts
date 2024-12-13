@@ -35,11 +35,6 @@ export function humanizeTs(ts: number): string {
   return time.local().format("MMM D YYYY");
 }
 
-export function humanizeDuration(seconds: number): string {
-  if (seconds <= 1) return "Less than 1s";
-  return `${seconds}s`;
-}
-
 export const humanizeDurationV1 = (
   duration: Duration | undefined,
   brief = true
