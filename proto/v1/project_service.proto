@@ -443,6 +443,7 @@ message Schedule {
 message ScheduleDeployment {
   // The title of the deployment (stage) in a schedule.
   string title = 1;
+  string id = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
   DeploymentSpec spec = 2;
 }
 

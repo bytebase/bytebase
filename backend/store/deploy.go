@@ -3,72 +3,27 @@ package store
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
+
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/bytebase/bytebase/backend/common"
 )
 
 // DeploymentConfigMessage is the message for deployment config.
 type DeploymentConfigMessage struct {
-	Name     string
-	Schedule *Schedule
+	Name   string
+	Config *storepb.DeploymentConfig
 
 	// Output only fields.
 	// ID is the ID of the deployment config.
 	UID int
-}
-
-// Schedule is the message for deployment schedule.
-type Schedule struct {
-	Deployments []*Deployment `json:"deployments"`
-}
-
-// Deployment is the message for deployment.
-type Deployment struct {
-	Name string          `json:"name"`
-	Spec *DeploymentSpec `json:"spec"`
-}
-
-// DeploymentSpec is the message for deployment specification.
-type DeploymentSpec struct {
-	Selector *LabelSelector `json:"selector"`
-}
-
-// LabelSelector is the message for label selector.
-type LabelSelector struct {
-	// MatchExpressions is a list of label selector requirements. The requirements are ANDed.
-	MatchExpressions []*LabelSelectorRequirement `json:"matchExpressions"`
-}
-
-// OperatorType is the type of label selector requirement operator.
-// Valid operators are In, Exists.
-// Note: NotIn and DoesNotExist are not supported initially.
-type OperatorType string
-
-const (
-	// InOperatorType is the operator type for In.
-	InOperatorType OperatorType = "In"
-	// NotInOperatorType is the operator type for Not In.
-	NotInOperatorType OperatorType = "Not_In"
-	// ExistsOperatorType is the operator type for Exists.
-	ExistsOperatorType OperatorType = "Exists"
-)
-
-// LabelSelectorRequirement is the message for label selector.
-type LabelSelectorRequirement struct {
-	// Key is the label key that the selector applies to.
-	Key string `json:"key"`
-
-	// Operator represents a key's relationship to a set of values.
-	Operator OperatorType `json:"operator"`
-
-	// Values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
-	Values []string `json:"values"`
 }
 
 // GetDeploymentConfigV2 returns the deployment config.
@@ -79,8 +34,10 @@ func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectUID int) (*Dep
 	where, args := []string{"TRUE"}, []any{}
 	where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, projectUID)
 
-	var deploymentConfig DeploymentConfigMessage
-	var payload string
+	deploymentConfig := DeploymentConfigMessage{
+		Config: &storepb.DeploymentConfig{},
+	}
+	var configB []byte
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
@@ -96,23 +53,21 @@ func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectUID int) (*Dep
 		FROM deployment_config
 		WHERE `+strings.Join(where, " AND "),
 		args...,
-	).Scan(&deploymentConfig.UID, &deploymentConfig.Name, &payload); err != nil {
+	).Scan(&deploymentConfig.UID, &deploymentConfig.Name, &configB); err != nil {
 		if err == sql.ErrNoRows {
 			// Return default deployment config.
 			return s.getDefaultDeploymentConfigV2(ctx)
 		}
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to scan")
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	var schedule Schedule
-	if err := json.Unmarshal([]byte(payload), &schedule); err != nil {
-		return nil, err
+	if err := common.ProtojsonUnmarshaler.Unmarshal(configB, deploymentConfig.Config); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal")
 	}
-	deploymentConfig.Schedule = &schedule
 
 	s.projectDeploymentCache.Add(projectUID, &deploymentConfig)
 	return &deploymentConfig, nil
@@ -120,9 +75,9 @@ func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectUID int) (*Dep
 
 // UpsertDeploymentConfigV2 upserts the deployment config.
 func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, projectUID, principalUID int, upsert *DeploymentConfigMessage) (*DeploymentConfigMessage, error) {
-	payload, err := json.Marshal(upsert.Schedule)
+	configB, err := protojson.Marshal(upsert.Config)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal deployment config")
+		return nil, errors.Wrapf(err, "failed to marshal deployment config")
 	}
 
 	query := `
@@ -142,7 +97,10 @@ func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, projectUID, princi
 			config = excluded.config
 		RETURNING id, name, config
 	`
-	var deploymentConfig DeploymentConfigMessage
+	deploymentConfig := DeploymentConfigMessage{
+		Config: &storepb.DeploymentConfig{},
+	}
+	var newConfigB []byte
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -156,8 +114,8 @@ func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, projectUID, princi
 		time.Now().Unix(),
 		projectUID,
 		upsert.Name,
-		payload,
-	).Scan(&deploymentConfig.UID, &deploymentConfig.Name, &payload); err != nil {
+		configB,
+	).Scan(&deploymentConfig.UID, &deploymentConfig.Name, &newConfigB); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
@@ -167,8 +125,8 @@ func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, projectUID, princi
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	if err := json.Unmarshal([]byte(payload), &deploymentConfig.Schedule); err != nil {
-		return nil, err
+	if err := common.ProtojsonUnmarshaler.Unmarshal(newConfigB, deploymentConfig.Config); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal")
 	}
 
 	s.projectDeploymentCache.Add(projectUID, &deploymentConfig)
@@ -180,21 +138,26 @@ func (s *Store) getDefaultDeploymentConfigV2(ctx context.Context) (*DeploymentCo
 	if err != nil {
 		return nil, err
 	}
-	scheduleList := &Schedule{}
+	var deployments []*storepb.ScheduleDeployment
 	for _, environment := range environmentList {
-		scheduleList.Deployments = append(scheduleList.Deployments, &Deployment{
-			Name: fmt.Sprintf("%s Stage", environment.Title),
-			Spec: &DeploymentSpec{
-				Selector: &LabelSelector{
-					MatchExpressions: []*LabelSelectorRequirement{
-						{Key: "environment", Operator: InOperatorType, Values: []string{environment.ResourceID}},
+		deployments = append(deployments, &storepb.ScheduleDeployment{
+			Title: fmt.Sprintf("%s Stage", environment.Title),
+			Id:    uuid.NewString(),
+			Spec: &storepb.DeploymentSpec{
+				Selector: &storepb.LabelSelector{
+					MatchExpressions: []*storepb.LabelSelectorRequirement{
+						{Key: "environment", Operator: storepb.LabelSelectorRequirement_IN, Values: []string{environment.ResourceID}},
 					},
 				},
 			},
 		})
 	}
 	return &DeploymentConfigMessage{
-		UID:      0,
-		Schedule: scheduleList,
+		UID: 0,
+		Config: &storepb.DeploymentConfig{
+			Schedule: &storepb.Schedule{
+				Deployments: deployments,
+			},
+		},
 	}, nil
 }

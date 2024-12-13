@@ -49,7 +49,7 @@ func getPlanCheckRunsFromPlanSpecs(ctx context.Context, s *store.Store, plan *st
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get deployment config")
 	}
-	if err := utils.ValidateDeploymentSchedule(deploymentConfig.Schedule); err != nil {
+	if err := utils.ValidateDeploymentSchedule(deploymentConfig.Config.GetSchedule()); err != nil {
 		return nil, errors.Wrapf(err, "failed to validate and get deployment schedule")
 	}
 
@@ -57,7 +57,7 @@ func getPlanCheckRunsFromPlanSpecs(ctx context.Context, s *store.Store, plan *st
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
 	}
-	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.Schedule, allDatabases)
+	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.Config.GetSchedule(), allDatabases)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database matrix from deployment schedule")
 	}
