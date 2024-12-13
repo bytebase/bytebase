@@ -71,6 +71,22 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 		}
 	}
 
+	// Mapping from table ID to sequence metadata.
+	// Construct none owner column sequences first.
+	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
+	for _, schema := range metadata.Schemas {
+		for _, sequence := range schema.Sequences {
+			if sequence.OwnerTable == "" || sequence.OwnerColumn == "" {
+				if err := writeCreateSequence(out, schema.Name, sequence); err != nil {
+					return err
+				}
+				continue
+			}
+			tableID := getTableID(schema.Name, sequence.OwnerTable)
+			sequenceMap[tableID] = append(sequenceMap[tableID], sequence)
+		}
+	}
+
 	if _, err := io.WriteString(out, setDefaultTableSpace); err != nil {
 		return err
 	}
@@ -79,28 +95,11 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 		return err
 	}
 
-	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
-	for _, schema := range metadata.Schemas {
-		for _, sequence := range schema.Sequences {
-			tableID := getTableID(schema.Name, sequence.OwnerTable)
-			sequenceMap[tableID] = append(sequenceMap[tableID], sequence)
-		}
-	}
-
 	// Construct tables.
 	for _, schema := range metadata.Schemas {
 		for _, table := range schema.Tables {
-			if err := writeTable(out, schema.Name, table); err != nil {
+			if err := writeTable(out, schema.Name, table, sequenceMap[getTableID(schema.Name, table.Name)]); err != nil {
 				return err
-			}
-
-			tableID := getTableID(schema.Name, table.Name)
-			if sequences, ok := sequenceMap[tableID]; ok && len(sequences) > 0 {
-				for _, sequence := range sequences {
-					if err := writeSequence(out, schema.Name, sequence); err != nil {
-						return err
-					}
-				}
 			}
 		}
 	}
@@ -209,8 +208,7 @@ func getSchemaNameFromID(id string) string {
 	return parts[0]
 }
 
-func writeSequence(out io.Writer, schema string, sequence *storepb.SequenceMetadata) error {
-	// CREATE SEQUENCE sequence_name;
+func writeCreateSequence(out io.Writer, schema string, sequence *storepb.SequenceMetadata) error {
 	if _, err := io.WriteString(out, `CREATE SEQUENCE "`); err != nil {
 		return err
 	}
@@ -265,11 +263,11 @@ func writeSequence(out io.Writer, schema string, sequence *storepb.SequenceMetad
 			return err
 		}
 	}
-	if _, err := io.WriteString(out, ";\n\n"); err != nil {
-		return err
-	}
+	_, err := io.WriteString(out, ";\n\n")
+	return err
+}
 
-	// ALTER SEQUENCE sequence_name OWNED BY table_name.column_name;
+func writeAlterSequenceOwnedBy(out io.Writer, schema string, sequence *storepb.SequenceMetadata) error {
 	if _, err := io.WriteString(out, `ALTER SEQUENCE "`); err != nil {
 		return err
 	}
@@ -382,7 +380,13 @@ func writeCreateTable(out io.Writer, schema string, tableName string, columns []
 	return err
 }
 
-func writeTable(out io.Writer, schema string, table *storepb.TableMetadata) error {
+func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) error {
+	for _, sequence := range sequences {
+		if err := writeCreateSequence(out, schema, sequence); err != nil {
+			return err
+		}
+	}
+
 	if err := writeCreateTable(out, schema, table.Name, table.Columns); err != nil {
 		return err
 	}
@@ -395,6 +399,27 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata) erro
 
 	if _, err := io.WriteString(out, ";\n\n"); err != nil {
 		return err
+	}
+
+	for _, sequence := range sequences {
+		if err := writeAlterSequenceOwnedBy(out, schema, sequence); err != nil {
+			return err
+		}
+	}
+
+	// Construct comments.
+	if len(table.Comment) > 0 {
+		if err := writeTableComment(out, schema, table); err != nil {
+			return err
+		}
+	}
+
+	for _, column := range table.Columns {
+		if len(column.Comment) > 0 {
+			if err := writeColumnComment(out, schema, table.Name, column); err != nil {
+				return err
+			}
+		}
 	}
 
 	// Construct partition tables.
@@ -411,6 +436,59 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata) erro
 	}
 
 	return nil
+}
+
+func writeColumnComment(out io.Writer, schema string, table string, column *storepb.ColumnMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON COLUMN "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, table); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, column.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, column.Comment); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, "';\n\n")
+	return err
+
+}
+
+func writeTableComment(out io.Writer, schema string, table *storepb.TableMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON TABLE "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, table.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, table.Comment); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, "';\n\n")
+	return err
 }
 
 func writePartitionClause(out io.Writer, partition *storepb.TablePartitionMetadata) error {
