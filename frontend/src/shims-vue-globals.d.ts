@@ -2,7 +2,6 @@ import type dayjs from "dayjs";
 import type { isEmpty } from "lodash-es";
 import type {
   humanizeTs,
-  humanizeDuration,
   humanizeDurationV1,
   humanizeDate,
   sizeToFit,
@@ -17,7 +16,6 @@ declare module "vue" {
     console: Console;
     dayjs: typeof dayjs;
     humanizeTs: typeof humanizeTs;
-    humanizeDuration: typeof humanizeDuration;
     humanizeDurationV1: typeof humanizeDurationV1;
     humanizeDate: typeof humanizeDate;
     isDev: boolean;
@@ -25,5 +23,6 @@ declare module "vue" {
     sizeToFit: typeof sizeToFit;
     urlfy: typeof urlfy;
     isEmpty: typeof isEmpty;
+    $t: (key: string, values?: Record<string, string>) => string;
   }
 }
