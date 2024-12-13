@@ -17,7 +17,6 @@ import { router } from "./router";
 import { pinia, pushNotification, useAuthStore } from "./store";
 import {
   humanizeTs,
-  humanizeDuration,
   humanizeDurationV1,
   humanizeDate,
   isDev,
@@ -119,7 +118,6 @@ app.config.globalProperties.window = window;
 app.config.globalProperties.console = console;
 app.config.globalProperties.dayjs = dayjs;
 app.config.globalProperties.humanizeTs = humanizeTs;
-app.config.globalProperties.humanizeDuration = humanizeDuration;
 app.config.globalProperties.humanizeDurationV1 = humanizeDurationV1;
 app.config.globalProperties.humanizeDate = humanizeDate;
 app.config.globalProperties.isDev = isDev();
