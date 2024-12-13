@@ -16,7 +16,7 @@ export const useStorageStore = defineStore("storageStore", () => {
     revs_limit: 1,
   });
 
-  const put = async (key: string, value: any) => {
+  const put = async <T = any>(key: string, value: T) => {
     await db.put(
       {
         _id: key,
@@ -25,11 +25,12 @@ export const useStorageStore = defineStore("storageStore", () => {
       { force: true }
     );
   };
-  const get = async (key: string) => {
+  const get = async <T = any>(key: string) => {
     try {
       const doc = await db.get(key);
-      return doc.value;
+      return doc.value as T;
     } catch {
+      // Data not found or error occurred.
       return undefined;
     }
   };
