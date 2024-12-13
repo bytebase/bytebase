@@ -494,7 +494,7 @@ const handlePreviewIssue = async () => {
       sqlMap[db.name] = sql;
     });
     const sqlMapStorageKey = `bb.issues.sql-map.${uuidv4()}`;
-    useStorageStore().put(sqlMapStorageKey, JSON.stringify(sqlMap));
+    useStorageStore().put(sqlMapStorageKey, sqlMap);
     query.sqlMapStorageKey = sqlMapStorageKey;
     const databaseNameList = databaseList.value.map((db) => db.databaseName);
     query.name = generateIssueTitle(
