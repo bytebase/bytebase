@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
+	"github.com/google/uuid"
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -1371,6 +1372,7 @@ func convertToStoreSchedule(schedule *v1pb.Schedule) (*storepb.Schedule, error) 
 func convertToDeployment(deployment *storepb.ScheduleDeployment) *v1pb.ScheduleDeployment {
 	return &v1pb.ScheduleDeployment{
 		Title: deployment.Title,
+		Id:    deployment.Id,
 		Spec:  convertToSpec(deployment.Spec),
 	}
 }
@@ -1383,6 +1385,7 @@ func convertToStoreDeployment(deployment *v1pb.ScheduleDeployment) (*storepb.Sch
 
 	return &storepb.ScheduleDeployment{
 		Title: deployment.Title,
+		Id:    uuid.NewString(),
 		Spec:  spec,
 	}, nil
 }
