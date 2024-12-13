@@ -257,7 +257,7 @@ const tryFinishSetup = async () => {
   });
   query.databaseList = Object.keys(sqlMap).join(",");
   const sqlMapStorageKey = `bb.issues.sql-map.${uuidv4()}`;
-  useStorageStore().put(sqlMapStorageKey, JSON.stringify(sqlMap));
+  useStorageStore().put(sqlMapStorageKey, sqlMap);
   query.sqlMapStorageKey = sqlMapStorageKey;
   query.name = generateIssueTitle(
     "bb.issue.database.schema.update",

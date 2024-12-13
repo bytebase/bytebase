@@ -137,7 +137,7 @@ export const provideIssueGhostContext = () => {
       sqlMap[target] = getSheetStatement(sheet);
     });
     const sqlMapStorageKey = `bb.issues.sql-map.${uuidv4()}`;
-    useStorageStore().put(sqlMapStorageKey, JSON.stringify(sqlMap));
+    useStorageStore().put(sqlMapStorageKey, sqlMap);
     overrides["sqlMapStorageKey"] = sqlMapStorageKey;
 
     await reInitialize(overrides);
