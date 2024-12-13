@@ -8906,6 +8906,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | title | [string](#string) |  | The title of the deployment (stage) in a schedule. |
+| id | [string](#string) |  |  |
 | spec | [DeploymentSpec](#bytebase-v1-DeploymentSpec) |  |  |
 
 
