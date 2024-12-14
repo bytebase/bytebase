@@ -68,6 +68,7 @@ var whitelistSettings = []api.SettingName{
 	api.SettingWatermark,
 	api.SettingPluginOpenAIKey,
 	api.SettingPluginOpenAIEndpoint,
+	api.SettingPluginOpenAIModel,
 	api.SettingWorkspaceApproval,
 	api.SettingWorkspaceMailDelivery,
 	api.SettingWorkspaceProfile,

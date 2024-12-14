@@ -34,10 +34,16 @@ const openAIKeySetting = settingV1Store.getSettingByName(
 const openAIEndpointSetting = settingV1Store.getSettingByName(
   "bb.plugin.openai.endpoint"
 );
+const openAIModelSetting = settingV1Store.getSettingByName(
+  "bb.plugin.openai.model"
+);
 const openAIKey = computed(() => openAIKeySetting?.value?.stringValue ?? "");
 const openAIEndpoint = computed(
   () => openAIEndpointSetting?.value?.stringValue ?? ""
 );
+const openAIModel = computed(
+  () => openAIModelSetting?.value?.stringValue ?? ""
+)
 const { instance, database } = useConnectionOfCurrentSQLEditorTab();
 
 const databaseMetadata = useMetadata(
@@ -59,6 +65,7 @@ const store = useConversationStore();
 const context: AIContext = {
   openAIKey,
   openAIEndpoint,
+  openAIModel,
   engine: computed(() => instance.value.engine),
   databaseMetadata,
   schema,

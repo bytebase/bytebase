@@ -758,6 +758,10 @@
           "openai-endpoint": {
             "self": "OpenAI API Endpoint",
             "description": "提供私有化部署的 OpenAI API Endpoint。"
+          },
+          "openai-model": {
+            "self": "OpenAI Model Name",
+            "description": "提供私有化部署的 OpenAI 模型名字。"
           }
         },
         "announcement": {

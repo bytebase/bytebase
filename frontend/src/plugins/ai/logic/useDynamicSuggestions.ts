@@ -42,8 +42,12 @@ export const useDynamicSuggestions = () => {
 
   const requestAI = async (messages: OpenAIMessage[]) => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
+    const modelName =
+      context.openAIModel.value === ""
+      ? "gpt-3.5-turbo"
+      : context.openAIModel.value
     const body = {
-      model: "gpt-3.5-turbo",
+      model: modelName,
       messages,
       temperature: 0,
       stop: ["#", ";"],

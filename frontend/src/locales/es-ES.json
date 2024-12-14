@@ -758,6 +758,10 @@
           "openai-endpoint": {
             "self": "Punto de conexión de API de OpenAI",
             "description": "Proporcione una implementación privada del Punto de conexión de API de OpenAI."
+          },
+          "openai-model": {
+            "self": "Nombre del modelo de OpenAI",
+            "description": "Suministro de implementación privada del nombre del modelo de OpenAI."
           }
         },
         "announcement": {
