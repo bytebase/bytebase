@@ -275,7 +275,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         }
         nextTick().then(() => {
           // Find the node element and put the database panel to the bottom
-          // of the node
+          // of the node, near the cursor
           const wrapper = findAncestor(e.target as HTMLElement, ".n-tree-node");
           if (!wrapper) {
             updateHoverState(undefined, "after", 0 /* overrideDelay */);
