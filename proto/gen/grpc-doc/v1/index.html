@@ -1919,10 +1919,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.MaskingPolicy"><span class="badge">M</span>MaskingPolicy</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.MaskingRulePolicy"><span class="badge">M</span>MaskingRulePolicy</a>
                 </li>
               
@@ -6158,6 +6154,27 @@ Or present but not found if deleted </p></td>
               
                 <tr>
                   <td>classification_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>masking_level</td>
+                  <td><a href="#bytebase.v1.MaskingLevel">MaskingLevel</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>full_masking_algorithm_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>partial_masking_algorithm_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -21392,30 +21409,6 @@ If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
-        <h3 id="bytebase.v1.MaskingPolicy">MaskingPolicy</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>mask_data</td>
-                  <td><a href="#bytebase.v1.MaskData">MaskData</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.MaskingRulePolicy">MaskingRulePolicy</h3>
         <p></p>
 
@@ -21517,13 +21510,6 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                 <tr>
                   <td>rollout_policy</td>
                   <td><a href="#bytebase.v1.RolloutPolicy">RolloutPolicy</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>masking_policy</td>
-                  <td><a href="#bytebase.v1.MaskingPolicy">MaskingPolicy</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -21977,12 +21963,6 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>ROLLOUT_POLICY</td>
                 <td>11</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MASKING</td>
-                <td>5</td>
                 <td><p></p></td>
               </tr>
             

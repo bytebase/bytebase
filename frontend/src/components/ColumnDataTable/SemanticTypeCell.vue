@@ -93,12 +93,12 @@ const openSemanticTypeDrawer = () => {
 };
 
 const onSemanticTypeApply = async (semanticTypeId: string) => {
-  await updateColumnConfig(
-    props.database.name,
-    props.schema,
-    props.table.name,
-    props.column.name,
-    { semanticTypeId }
-  );
+  await updateColumnConfig({
+    database: props.database.name,
+    schema: props.schema,
+    table: props.table.name,
+    column: props.column.name,
+    config: { semanticTypeId },
+  });
 };
 </script>

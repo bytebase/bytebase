@@ -179,7 +179,6 @@ const handleDeleteGroup = async () => {
             $dialog,
             (_) => ({
               name: WORKSPACE_ROUTE_DATA_MASKING,
-              hash: "#sensitive-column-list",
             })
           )}
           <p>{t("bbkit.confirm-button.sure-to-delete")}</p>

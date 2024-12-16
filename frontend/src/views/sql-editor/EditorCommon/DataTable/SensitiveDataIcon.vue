@@ -34,7 +34,6 @@ const handleClick = () => {
   }
   const url = router.resolve({
     name: WORKSPACE_ROUTE_DATA_MASKING,
-    hash: "#sensitive-column-list",
   });
   window.open(url.href, "_BLANK");
 };

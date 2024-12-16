@@ -231,10 +231,13 @@ func (d *DatabaseConfig) BuildDatabaseConfig() *storepb.DatabaseConfig {
 
 			for colName, colConfig := range tConfig.internal {
 				tableConfig.ColumnConfigs = append(tableConfig.ColumnConfigs, &storepb.ColumnConfig{
-					Name:             colName,
-					SemanticTypeId:   colConfig.SemanticTypeId,
-					Labels:           colConfig.Labels,
-					ClassificationId: colConfig.ClassificationId,
+					Name:                      colName,
+					SemanticTypeId:            colConfig.SemanticTypeId,
+					Labels:                    colConfig.Labels,
+					ClassificationId:          colConfig.ClassificationId,
+					MaskingLevel:              colConfig.MaskingLevel,
+					FullMaskingAlgorithmId:    colConfig.FullMaskingAlgorithmId,
+					PartialMaskingAlgorithmId: colConfig.PartialMaskingAlgorithmId,
 				})
 			}
 			schemaConfig.TableConfigs = append(schemaConfig.TableConfigs, tableConfig)
@@ -283,7 +286,8 @@ func (t *TableConfig) CreateOrGetColumnConfig(name string) *storepb.ColumnConfig
 		return config
 	}
 	t.internal[name] = &storepb.ColumnConfig{
-		Name: name,
+		Name:         name,
+		MaskingLevel: storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED,
 	}
 	return t.internal[name]
 }
