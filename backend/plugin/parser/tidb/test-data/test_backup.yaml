@@ -8,8 +8,8 @@
     UPDATE test SET test.c1 = 7 WHERE test.b1 = 7;
   result:
     - statement: |-
-        CREATE TABLE `backupDB`.`_rollback_test` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test`  SELECT `test`.* FROM test WHERE test.b1 = 1
+        CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
+        INSERT INTO `backupDB`.`_rollback_test_db`  SELECT `test`.* FROM test WHERE test.b1 = 1
           UNION ALL
           SELECT `test`.* FROM test WHERE test.b1 = 2
           UNION ALL
@@ -24,7 +24,7 @@
           SELECT `test`.* FROM test WHERE test.b1 = 7;
       sourceschema: ""
       sourcetablename: test
-      targettablename: _rollback_test
+      targettablename: _rollback_test_db
       startposition:
         line: 1
         column: 0

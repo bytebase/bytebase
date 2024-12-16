@@ -378,6 +378,8 @@ message TablePartitionMetadata {
 
   // The subpartitions is the list of subpartitions in a table partition.
   repeated TablePartitionMetadata subpartitions = 6;
+
+  repeated IndexMetadata indexes = 7;
 }
 
 // ColumnMetadata is the metadata for columns.

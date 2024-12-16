@@ -671,6 +671,7 @@ export interface TablePartitionMetadata {
   useDefault: string;
   /** The subpartitions is the list of subpartitions in a table partition. */
   subpartitions: TablePartitionMetadata[];
+  indexes: IndexMetadata[];
 }
 
 /**
@@ -5257,6 +5258,7 @@ function createBaseTablePartitionMetadata(): TablePartitionMetadata {
     value: "",
     useDefault: "",
     subpartitions: [],
+    indexes: [],
   };
 }
 
@@ -5279,6 +5281,9 @@ export const TablePartitionMetadata: MessageFns<TablePartitionMetadata> = {
     }
     for (const v of message.subpartitions) {
       TablePartitionMetadata.encode(v!, writer.uint32(50).fork()).join();
+    }
+    for (const v of message.indexes) {
+      IndexMetadata.encode(v!, writer.uint32(58).fork()).join();
     }
     return writer;
   },
@@ -5338,6 +5343,14 @@ export const TablePartitionMetadata: MessageFns<TablePartitionMetadata> = {
           message.subpartitions.push(TablePartitionMetadata.decode(reader, reader.uint32()));
           continue;
         }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.indexes.push(IndexMetadata.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5358,6 +5371,9 @@ export const TablePartitionMetadata: MessageFns<TablePartitionMetadata> = {
       useDefault: isSet(object.useDefault) ? globalThis.String(object.useDefault) : "",
       subpartitions: globalThis.Array.isArray(object?.subpartitions)
         ? object.subpartitions.map((e: any) => TablePartitionMetadata.fromJSON(e))
+        : [],
+      indexes: globalThis.Array.isArray(object?.indexes)
+        ? object.indexes.map((e: any) => IndexMetadata.fromJSON(e))
         : [],
     };
   },
@@ -5382,6 +5398,9 @@ export const TablePartitionMetadata: MessageFns<TablePartitionMetadata> = {
     if (message.subpartitions?.length) {
       obj.subpartitions = message.subpartitions.map((e) => TablePartitionMetadata.toJSON(e));
     }
+    if (message.indexes?.length) {
+      obj.indexes = message.indexes.map((e) => IndexMetadata.toJSON(e));
+    }
     return obj;
   },
 
@@ -5396,6 +5415,7 @@ export const TablePartitionMetadata: MessageFns<TablePartitionMetadata> = {
     message.value = object.value ?? "";
     message.useDefault = object.useDefault ?? "";
     message.subpartitions = object.subpartitions?.map((e) => TablePartitionMetadata.fromPartial(e)) || [];
+    message.indexes = object.indexes?.map((e) => IndexMetadata.fromPartial(e)) || [];
     return message;
   },
 };
