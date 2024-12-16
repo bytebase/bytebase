@@ -216,6 +216,7 @@
               :database="database"
               :schema="schemaName"
               :table="table"
+              :is-external-table="false"
               :column-list="table.columns"
               :classification-config="classificationConfig"
               :search="state.columnNameSearchKeyword"
