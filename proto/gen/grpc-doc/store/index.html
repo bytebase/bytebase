@@ -963,6 +963,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.PlanConfig.DeploymentSnapshot"><span class="badge">M</span>PlanConfig.DeploymentSnapshot</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlanConfig.DeploymentSnapshot.DatabaseGroupSnapshot"><span class="badge">M</span>PlanConfig.DeploymentSnapshot.DatabaseGroupSnapshot</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.PlanConfig.ExportDataConfig"><span class="badge">M</span>PlanConfig.ExportDataConfig</a>
                 </li>
               
@@ -8300,6 +8308,13 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>deployment_snapshot</td>
+                  <td><a href="#bytebase.store.PlanConfig.DeploymentSnapshot">PlanConfig.DeploymentSnapshot</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -8514,6 +8529,68 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlanConfig.DeploymentSnapshot">PlanConfig.DeploymentSnapshot</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>deployment_config</td>
+                  <td><a href="#bytebase.store.DeploymentConfig">DeploymentConfig</a></td>
+                  <td></td>
+                  <td><p>The snapshot of the project deployment config at the time of creation. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database_group_snapshots</td>
+                  <td><a href="#bytebase.store.PlanConfig.DeploymentSnapshot.DatabaseGroupSnapshot">PlanConfig.DeploymentSnapshot.DatabaseGroupSnapshot</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlanConfig.DeploymentSnapshot.DatabaseGroupSnapshot">PlanConfig.DeploymentSnapshot.DatabaseGroupSnapshot</h3>
+        <p>The snapshot of the database group at the time of creation.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>database_group</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/databaseGroups/{databaseGroup}. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>databases</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Format: instances/{instance-id}/databases/{database-name}. </p></td>
                 </tr>
               
             </tbody>
