@@ -40,33 +40,35 @@
   querySpan:
     type: 1
     results:
-        - name: product_info
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: products
-              column: product_info
-        - name: |-
-            JSON_ARRAYAGG(
-                REPLACE(
-                  JSON_UNQUTED(product_name),
-                  'G',
-                  'GN'
-                )
+      - name: product_info
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: products
+            column: product_info
+        isplainfield: true
+      - name: |-
+          JSON_ARRAYAGG(
+              REPLACE(
+                JSON_UNQUTED(product_name),
+                'G',
+                'GN'
               )
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: products
-              column: product_info
+            )
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: products
+            column: product_info
+        isplainfield: true
     sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: products
-          column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: products
+        column: ""
 - description: Test For json table
   statement: |-
     SELECT *
@@ -101,40 +103,44 @@
   querySpan:
     type: 1
     results:
-        - name: product_info
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: products
-              column: product_info
-        - name: product_id
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: products
-              column: product_info
-        - name: product_name
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: products
-              column: product_info
-        - name: product_price
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: products
-              column: product_info
+      - name: product_info
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: products
+            column: product_info
+        isplainfield: true
+      - name: product_id
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: products
+            column: product_info
+        isplainfield: true
+      - name: product_name
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: products
+            column: product_info
+        isplainfield: true
+      - name: product_price
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: products
+            column: product_info
+        isplainfield: true
     sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: products
-          column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: products
+        column: ""
 - description: Test For alias.* with join
   statement: SELECT t1.*, t2.* FROM t t1 JOIN (select * from t) t2 ON t1.a = t2.a;
   defaultDatabase: db
@@ -160,26 +166,28 @@
   querySpan:
     type: 1
     results:
-        - name: a
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-        - name: a
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
+      - name: a
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: a
+        isplainfield: true
+      - name: a
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: a
+        isplainfield: true
     sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: t
-          column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: t
+        column: ""
 - description: Test For Explain statements
   statement: EXPLAIN SELECT 1;
   defaultDatabase: db
@@ -231,8 +239,9 @@
   querySpan:
     type: 1
     results:
-        - name: "1"
-          sourcecolumns: []
+      - name: "1"
+        sourcecolumns: []
+        isplainfield: true
     sourcecolumns: []
 - description: Test asterisk and column
   statement: SELECT *, a FROM t;
@@ -268,47 +277,52 @@
   querySpan:
     type: 1
     results:
-        - name: a
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-        - name: b
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: b
-        - name: c
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: c
-        - name: d
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: d
-        - name: a
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
+      - name: a
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: a
+        isplainfield: true
+      - name: b
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: b
+        isplainfield: true
+      - name: c
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: c
+        isplainfield: true
+      - name: d
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: d
+        isplainfield: true
+      - name: a
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: a
+        isplainfield: true
     sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: t
-          column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: t
+        column: ""
 - description: Happy path for a simple select statement
   statement: SELECT * FROM t
   defaultDatabase: db
@@ -343,40 +357,44 @@
   querySpan:
     type: 1
     results:
-        - name: a
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-        - name: b
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: b
-        - name: c
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: c
-        - name: d
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: d
+      - name: a
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: a
+        isplainfield: true
+      - name: b
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: b
+        isplainfield: true
+      - name: c
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: c
+        isplainfield: true
+      - name: d
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: d
+        isplainfield: true
     sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: t
-          column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: t
+        column: ""
 - description: Referenced table fields by different format
   statement: SELECT a, t.b, t.c, db.t.d FROM t;
   defaultDatabase: db
@@ -411,40 +429,44 @@
   querySpan:
     type: 1
     results:
-        - name: a
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-        - name: b
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: b
-        - name: c
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: c
-        - name: d
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: d
+      - name: a
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: a
+        isplainfield: true
+      - name: b
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: b
+        isplainfield: true
+      - name: c
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: c
+        isplainfield: true
+      - name: d
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: d
+        isplainfield: true
     sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: t
-          column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: t
+        column: ""
 - description: Scalar subquery in select fields
   statement: SELECT 1 AS col_1, (SELECT(2)) AS col_2, (SELECT AVG(a + b * c) FROM t) AS avg_a_b_c FROM t;
   defaultDatabase: db
@@ -479,33 +501,36 @@
   querySpan:
     type: 1
     results:
-        - name: col_1
-          sourcecolumns: []
-        - name: col_2
-          sourcecolumns: []
-        - name: avg_a_b_c
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: b
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: c
+      - name: col_1
+        sourcecolumns: []
+        isplainfield: true
+      - name: col_2
+        sourcecolumns: []
+        isplainfield: true
+      - name: avg_a_b_c
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: a
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: b
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: c
+        isplainfield: true
     sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: t
-          column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: t
+        column: ""
 - description: Multiple-Row subquery in where clause
   statement: SELECT 1 FROM t WHERE a IN (SELECT a FROM t);
   defaultDatabase: db
@@ -540,14 +565,15 @@
   querySpan:
     type: 1
     results:
-        - name: "1"
-          sourcecolumns: []
+      - name: "1"
+        sourcecolumns: []
+        isplainfield: true
     sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: t
-          column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: t
+        column: ""
 - description: Correlated subquery in the target field clause.
   statement: SELECT city, (SELECT COUNT(*) FROM paintings p WHERE g.id = p.gallery_id) AS total_paintings FROM galleries g;
   defaultDatabase: db
@@ -593,26 +619,28 @@
   querySpan:
     type: 1
     results:
-        - name: city
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: galleries
-              column: city
-        - name: total_paintings
-          sourcecolumns: []
+      - name: city
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: galleries
+            column: city
+        isplainfield: true
+      - name: total_paintings
+        sourcecolumns: []
+        isplainfield: true
     sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: galleries
-          column: ""
-        - server: ""
-          database: db
-          schema: ""
-          table: paintings
-          column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: galleries
+        column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: paintings
+        column: ""
 - description: Test for functions
   statement: SELECT max(a), a-b AS c1, a=b AS c2, a>b, b in (a, c, d) from (SELECT * FROM t) result;
   defaultDatabase: db
@@ -647,77 +675,82 @@
   querySpan:
     type: 1
     results:
-        - name: max(a)
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-        - name: c1
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: b
-        - name: c2
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: b
-        - name: a>b
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: b
-        - name: b in (a, c, d)
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: b
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: c
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: d
+      - name: max(a)
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: a
+        isplainfield: true
+      - name: c1
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: a
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: b
+        isplainfield: true
+      - name: c2
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: a
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: b
+        isplainfield: true
+      - name: a>b
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: a
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: b
+        isplainfield: true
+      - name: b in (a, c, d)
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: a
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: b
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: c
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: d
+        isplainfield: true
     sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: t
-          column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: t
+        column: ""
 - description: Test for SELECT partial FROM JOIN clause
   statement: SELECT t1.*, t2.c, 0 FROM t1 JOIN t2 ON 1 = 1;
   defaultDatabase: db
@@ -757,40 +790,44 @@
   querySpan:
     type: 1
     results:
-        - name: a
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t1
-              column: a
-        - name: b
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t1
-              column: b
-        - name: c
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t2
-              column: c
-        - name: "0"
-          sourcecolumns: []
+      - name: a
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t1
+            column: a
+        isplainfield: true
+      - name: b
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t1
+            column: b
+        isplainfield: true
+      - name: c
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t2
+            column: c
+        isplainfield: true
+      - name: "0"
+        sourcecolumns: []
+        isplainfield: true
     sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: t1
-          column: ""
-        - server: ""
-          database: db
-          schema: ""
-          table: t2
-          column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: t1
+        column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: t2
+        column: ""
 - description: Test for JOIN with USING clause
   statement: SELECT * FROM t AS t1 JOIN t AS t2 USING(a);
   defaultDatabase: db
@@ -825,61 +862,68 @@
   querySpan:
     type: 1
     results:
-        - name: a
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-        - name: b
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: b
-        - name: c
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: c
-        - name: d
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: d
-        - name: b
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: b
-        - name: c
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: c
-        - name: d
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: d
+      - name: a
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: a
+        isplainfield: true
+      - name: b
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: b
+        isplainfield: true
+      - name: c
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: c
+        isplainfield: true
+      - name: d
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: d
+        isplainfield: true
+      - name: b
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: b
+        isplainfield: true
+      - name: c
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: c
+        isplainfield: true
+      - name: d
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: d
+        isplainfield: true
     sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: t
-          column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: t
+        column: ""
 - description: Simple CTE
   statement: WITH t1 AS (SELECT * FROM t) SELECT * FROM t1;
   defaultDatabase: db
@@ -914,45 +958,49 @@
   querySpan:
     type: 1
     results:
-        - name: a
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-        - name: b
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: b
-        - name: c
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: c
-        - name: d
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: d
+      - name: a
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: a
+        isplainfield: true
+      - name: b
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: b
+        isplainfield: true
+      - name: c
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: c
+        isplainfield: true
+      - name: d
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: d
+        isplainfield: true
     sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: t
-          column: ""
-        - server: ""
-          database: db
-          schema: ""
-          table: t1
-          column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: t
+        column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: t1
+        column: ""
 - description: Multi-level CTE
   statement: WITH tt2 AS (WITH tt2 AS (SELECT * FROM t) SELECT MAX(a) FROM tt2) SELECT * FROM tt2;
   defaultDatabase: db
@@ -987,24 +1035,25 @@
   querySpan:
     type: 1
     results:
-        - name: MAX(a)
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
+      - name: MAX(a)
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: a
+        isplainfield: true
     sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: t
-          column: ""
-        - server: ""
-          database: db
-          schema: ""
-          table: tt2
-          column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: t
+        column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: tt2
+        column: ""
 - description: Test for CTE rename fields name
   statement: WITH t1(d, c, b, a) AS (SELECT * FROM t) SELECT * FROM t1;
   defaultDatabase: db
@@ -1039,45 +1088,49 @@
   querySpan:
     type: 1
     results:
-        - name: d
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-        - name: c
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: b
-        - name: b
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: c
-        - name: a
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: d
+      - name: d
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: a
+        isplainfield: true
+      - name: c
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: b
+        isplainfield: true
+      - name: b
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: c
+        isplainfield: true
+      - name: a
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: d
+        isplainfield: true
     sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: t
-          column: ""
-        - server: ""
-          database: db
-          schema: ""
-          table: t1
-          column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: t
+        column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: t1
+        column: ""
 - description: Test for Recursive Common Table Expression dependent closures
   statement: WITH RECURSIVE t1(cc1, cc2, cc3, n) AS (SELECT a AS c1, b AS c2, c AS c3, 1 AS n FROM t UNION SELECT cc1*cc2, cc2 + cc1, cc3 * cc2, n+1 FROM t1 WHERE n < 10) SELECT * FROM t1;
   defaultDatabase: db
@@ -1112,60 +1165,64 @@
   querySpan:
     type: 1
     results:
-        - name: cc1
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: b
-        - name: cc2
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: b
-        - name: cc3
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: b
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: c
-        - name: "n"
-          sourcecolumns: []
+      - name: cc1
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: a
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: b
+        isplainfield: false
+      - name: cc2
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: a
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: b
+        isplainfield: false
+      - name: cc3
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: a
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: b
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: c
+        isplainfield: false
+      - name: "n"
+        sourcecolumns: []
+        isplainfield: false
     sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: t
-          column: ""
-        - server: ""
-          database: db
-          schema: ""
-          table: t1
-          column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: t
+        column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: t1
+        column: ""
 - description: Test for Non-Recursive Common Table Expression with RECURSIVE key words
   statement: WITH RECURSIVE t1 AS (SELECT 1 AS c1, 2 AS c2, 3 AS c3, 4 AS c4 UNION SELECT a, b, d, c FROM t) SELECT * FROM t1;
   defaultDatabase: db
@@ -1200,42 +1257,46 @@
   querySpan:
     type: 1
     results:
-        - name: c1
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-        - name: c2
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: b
-        - name: c3
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: d
-        - name: c4
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: c
+      - name: c1
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: a
+        isplainfield: false
+      - name: c2
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: b
+        isplainfield: false
+      - name: c3
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: d
+        isplainfield: false
+      - name: c4
+        sourcecolumns:
+          - server: ""
+            database: db
+            schema: ""
+            table: t
+            column: c
+        isplainfield: false
     sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: t
-          column: ""
-        - server: ""
-          database: db
-          schema: ""
-          table: t1
-          column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: t
+        column: ""
+      - server: ""
+        database: db
+        schema: ""
+        table: t1
+        column: ""

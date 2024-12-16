@@ -40,6 +40,7 @@
               schema: ""
               table: products
               column: product_info
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -84,6 +85,7 @@
               schema: ""
               table: products
               column: product_info
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
