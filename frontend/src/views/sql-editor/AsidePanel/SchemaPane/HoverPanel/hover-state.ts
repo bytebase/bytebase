@@ -3,8 +3,6 @@ import type {
   ColumnMetadata,
   DatabaseMetadata,
   ExternalTableMetadata,
-  FunctionMetadata,
-  ProcedureMetadata,
   SchemaMetadata,
   TableMetadata,
   TablePartitionMetadata,
@@ -26,8 +24,6 @@ export type HoverState = {
   view?: ViewMetadata;
   column?: ColumnMetadata;
   partition?: TablePartitionMetadata;
-  procedure?: ProcedureMetadata;
-  function?: FunctionMetadata;
 };
 
 export const useHoverStateContext = () => {

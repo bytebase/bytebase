@@ -68,6 +68,8 @@
         v-bind="schemaViewer"
       />
     </BBModal>
+
+    <HoverPanel :offset-x="8" :offset-y="0" :margin="4" />
   </div>
 </template>
 
@@ -102,9 +104,15 @@ import {
 } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { allEqual, extractDatabaseResourceName, isDescendantOf } from "@/utils";
+import {
+  allEqual,
+  extractDatabaseResourceName,
+  findAncestor,
+  isDescendantOf,
+} from "@/utils";
 import { useEditorPanelContext } from "../../EditorPanel";
 import { useSQLEditorContext } from "../../context";
+import HoverPanel, { provideHoverStateContext } from "./HoverPanel";
 import SyncSchemaButton from "./SyncSchemaButton.vue";
 import { Label } from "./TreeNode";
 import { useDropdown, useActions } from "./actions";
@@ -170,6 +178,11 @@ const metadata = computedAsync(
 );
 const { events: nodeClickEvents, handleClick: handleNodeClick } =
   useClickEvents();
+const {
+  state: hoverState,
+  position: hoverPosition,
+  update: updateHoverState,
+} = provideHoverStateContext();
 const tree = ref<TreeNode[]>();
 
 const expandedKeys = computed({
@@ -241,6 +254,41 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         dropdownPosition.value.x = e.clientX;
         dropdownPosition.value.y = e.clientY;
       });
+    },
+
+    onmouseenter(e: MouseEvent) {
+      const { type } = node.meta;
+      if (
+        type === "table" ||
+        type === "external-table" ||
+        type === "column" ||
+        type === "view" ||
+        type === "partition-table"
+      ) {
+        const target = node.meta.target as NodeTarget<
+          "table" | "external-table" | "column" | "view"
+        >;
+        if (hoverState.value) {
+          updateHoverState(target, "before", 0 /* overrideDelay */);
+        } else {
+          updateHoverState(target, "before");
+        }
+        nextTick().then(() => {
+          // Find the node element and put the database panel to the bottom
+          // of the node, near the cursor
+          const wrapper = findAncestor(e.target as HTMLElement, ".n-tree-node");
+          if (!wrapper) {
+            updateHoverState(undefined, "after", 0 /* overrideDelay */);
+            return;
+          }
+          const bounding = wrapper.getBoundingClientRect();
+          hoverPosition.value.x = e.clientX;
+          hoverPosition.value.y = bounding.bottom;
+        });
+      }
+    },
+    onmouseleave() {
+      updateHoverState(undefined, "after");
     },
     // attrs below for trouble-shooting
     "data-node-meta-type": node.meta.type,
