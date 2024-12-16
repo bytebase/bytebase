@@ -8,7 +8,7 @@
     UPDATE test SET test.c1 = 7 WHERE test.b1 = 7;
   result:
     - statement: |-
-        CREATE TABLE "backupDB"."rollback_TEST" AS
+        CREATE TABLE "backupDB"."rollback_TEST_DB" AS
           SELECT "TEST".* FROM test WHERE test.b1 = 1
           UNION ALL
           SELECT "TEST".* FROM test WHERE test.b1 = 2
@@ -24,7 +24,7 @@
           SELECT "TEST".* FROM test WHERE test.b1 = 7;
       sourceschema: DB
       sourcetablename: TEST
-      targettablename: rollback_TEST
+      targettablename: rollback_TEST_DB
       startposition:
         line: 1
         column: 0
