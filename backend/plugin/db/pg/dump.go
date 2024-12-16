@@ -451,7 +451,76 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequ
 		}
 	}
 
+	// Construct Unique Key.
+	for _, index := range table.Indexes {
+		if index.Unique && !index.Primary {
+			if err := writeUniqueKey(out, schema, table.Name, index); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Construct Partition table unique key.
+	for _, partition := range table.Partitions {
+		if err := writePartitionUniqueKey(out, schema, partition); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func writePartitionUniqueKey(out io.Writer, schema string, partition *storepb.TablePartitionMetadata) error {
+	for _, index := range partition.Indexes {
+		if index.Unique {
+			if err := writeUniqueKey(out, schema, partition.Name, index); err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, subpartition := range partition.Subpartitions {
+		if err := writePartitionUniqueKey(out, schema, subpartition); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func writeUniqueKey(out io.Writer, schema string, table string, index *storepb.IndexMetadata) error {
+	if _, err := io.WriteString(out, `ALTER TABLE ONLY "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, table); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" ADD CONSTRAINT "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, index.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" UNIQUE (`); err != nil {
+		return err
+	}
+	for i, expression := range index.Expressions {
+		if i > 0 {
+			if _, err := io.WriteString(out, ", "); err != nil {
+				return err
+			}
+		}
+		if _, err := io.WriteString(out, expression); err != nil {
+			return err
+		}
+	}
+	_, err := io.WriteString(out, ");\n\n")
+	return err
 }
 
 func writePartitionPrimaryKey(out io.Writer, schema string, partition *storepb.TablePartitionMetadata) error {
