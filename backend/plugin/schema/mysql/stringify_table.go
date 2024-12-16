@@ -382,14 +382,16 @@ func printIndexClause(buf *strings.Builder, index *storepb.IndexMetadata) error 
 				return err
 			}
 		}
-		if _, err := fmt.Fprintf(buf, "%s", expr); err != nil {
-			return err
+		keyLength := int64(-1)
+		descending := false
+		if len(index.KeyLength) > i {
+			keyLength = index.KeyLength[i]
 		}
-
-		if len(index.Descending) > i && index.Descending[i] {
-			if _, err := fmt.Fprintf(buf, " DESC"); err != nil {
-				return err
-			}
+		if len(index.Descending) > i {
+			descending = index.Descending[i]
+		}
+		if err := printIndexKeyPart(buf, expr, keyLength, descending); err != nil {
+			return err
 		}
 	}
 
@@ -397,6 +399,44 @@ func printIndexClause(buf *strings.Builder, index *storepb.IndexMetadata) error 
 		return err
 	}
 
+	return nil
+}
+
+func printIndexKeyPart(buf *strings.Builder, expr string, length int64, descending bool) error {
+	if len(expr) == 0 {
+		return errors.New("index key part expression is empty")
+	}
+	if expr[0] == '(' && expr[len(expr)-1] == ')' {
+		if _, err := buf.WriteString(expr); err != nil {
+			return err
+		}
+	} else {
+		if _, err := buf.WriteString("`"); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(expr); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString("`"); err != nil {
+			return err
+		}
+	}
+	if length > 0 {
+		if _, err := buf.WriteString("("); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(strconv.FormatInt(length, 10)); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(")"); err != nil {
+			return err
+		}
+	}
+	if descending {
+		if _, err := buf.WriteString(" DESC"); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -412,13 +452,16 @@ func printPrimaryKeyClause(buf *strings.Builder, indexes []*storepb.IndexMetadat
 						return err
 					}
 				}
-				if _, err := fmt.Fprintf(buf, "`%s`", column); err != nil {
-					return err
+				keyLength := int64(-1)
+				descending := false
+				if len(index.KeyLength) > i {
+					keyLength = index.KeyLength[i]
 				}
-				if len(index.Descending) > i && index.Descending[i] {
-					if _, err := fmt.Fprintf(buf, " DESC"); err != nil {
-						return err
-					}
+				if len(index.Descending) > i {
+					descending = index.Descending[i]
+				}
+				if err := printIndexKeyPart(buf, column, keyLength, descending); err != nil {
+					return err
 				}
 			}
 			if _, err := fmt.Fprintf(buf, ")"); err != nil {
