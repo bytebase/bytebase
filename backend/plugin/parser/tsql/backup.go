@@ -77,7 +77,7 @@ func generateSQLForSingleTable(statementInfoList []statementInfo, targetDatabase
 		}
 	}
 
-	targetTable := fmt.Sprintf("%s_%s", tablePrefix, table.Table)
+	targetTable := fmt.Sprintf("%s_%s_%s", tablePrefix, table.Table, table.Database)
 	targetTable, _ = common.TruncateString(targetTable, maxTableNameLength)
 	var buf strings.Builder
 	if _, err := buf.WriteString(fmt.Sprintf(`SELECT * INTO "%s"."%s"."%s" FROM (`+"\n", targetDatabase, defaultSchema, targetTable)); err != nil {
