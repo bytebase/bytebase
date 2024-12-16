@@ -18,6 +18,9 @@
     <InfoItem v-if="collation" :title="$t('db.collation')">
       {{ collation }}
     </InfoItem>
+    <InfoItem v-if="comment" :title="$t('database.comment')">
+      {{ comment }}
+    </InfoItem>
   </div>
 </template>
 
@@ -73,5 +76,9 @@ const collation = computed(() => {
     return "";
   }
   return props.table.collation;
+});
+
+const comment = computed(() => {
+  return props.table.userComment;
 });
 </script>
