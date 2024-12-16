@@ -217,6 +217,7 @@ import {
   useAppFeature,
   pushNotification,
   usePolicyByParentAndType,
+  useStorageStore,
 } from "@/store";
 import { useExportData } from "@/store/modules/export";
 import type {
@@ -515,7 +516,7 @@ const handleRequestExport = async () => {
   const project = database.projectEntity;
   const issueType = "bb.issue.database.data.export";
   const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
-  localStorage.setItem(sqlStorageKey, props.result.statement);
+  useStorageStore().put(sqlStorageKey, props.result.statement);
   const query: Record<string, any> = {
     template: issueType,
     name: generateIssueTitle(issueType, [database.databaseName]),

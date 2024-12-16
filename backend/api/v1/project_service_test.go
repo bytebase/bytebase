@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
+	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/store"
@@ -256,22 +257,24 @@ func TestValidateAndConvertToStoreDeploymentSchedule(t *testing.T) {
 			},
 			wantCfg: &store.DeploymentConfigMessage{
 				Name: "DeploymentConfig1",
-				Schedule: &store.Schedule{
-					Deployments: []*store.Deployment{
-						{
-							Name: "Deployment1",
-							Spec: &store.DeploymentSpec{
-								Selector: &store.LabelSelector{
-									MatchExpressions: []*store.LabelSelectorRequirement{
-										{
-											Key:      "environment",
-											Operator: store.InOperatorType,
-											Values:   []string{"prod"},
-										},
-										{
-											Key:      "location",
-											Operator: store.ExistsOperatorType,
-											Values:   []string{},
+				Config: &storepb.DeploymentConfig{
+					Schedule: &storepb.Schedule{
+						Deployments: []*storepb.ScheduleDeployment{
+							{
+								Title: "Deployment1",
+								Spec: &storepb.DeploymentSpec{
+									Selector: &storepb.LabelSelector{
+										MatchExpressions: []*storepb.LabelSelectorRequirement{
+											{
+												Key:      "environment",
+												Operator: storepb.LabelSelectorRequirement_IN,
+												Values:   []string{"prod"},
+											},
+											{
+												Key:      "location",
+												Operator: storepb.LabelSelectorRequirement_EXISTS,
+												Values:   []string{},
+											},
 										},
 									},
 								},
@@ -400,7 +403,12 @@ func TestValidateAndConvertToStoreDeploymentSchedule(t *testing.T) {
 			require.Error(t, err)
 		} else {
 			require.NoError(t, err)
-			require.Equal(t, tc.wantCfg, cfg)
+			require.True(
+				t,
+				cmp.Equal(tc.wantCfg, cfg, protocmp.Transform(), protocmp.IgnoreFields(&storepb.ScheduleDeployment{}, "id")),
+				tc.wantErr,
+				cfg,
+			)
 		}
 	}
 }

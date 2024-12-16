@@ -226,6 +226,7 @@
     - [Announcement](#bytebase-v1-Announcement)
     - [AppIMSetting](#bytebase-v1-AppIMSetting)
     - [AppIMSetting.Feishu](#bytebase-v1-AppIMSetting-Feishu)
+    - [AppIMSetting.Lark](#bytebase-v1-AppIMSetting-Lark)
     - [AppIMSetting.Slack](#bytebase-v1-AppIMSetting-Slack)
     - [AppIMSetting.Wecom](#bytebase-v1-AppIMSetting-Wecom)
     - [DataClassificationSetting](#bytebase-v1-DataClassificationSetting)
@@ -3006,6 +3007,7 @@ TablePartitionMetadata is the metadata for table partitions.
 | value | [string](#string) |  | The value is the value of a table partition. For MySQL, the value is for RANGE and LIST partition types, - For a RANGE partition, it contains the value set in the partition&#39;s VALUES LESS THAN clause, which can be either an integer or MAXVALUE. - For a LIST partition, this column contains the values defined in the partition&#39;s VALUES IN clause, which is a list of comma-separated integer values. - For others, it&#39;s an empty string. |
 | use_default | [string](#string) |  | The use_default is whether the users use the default partition, it stores the different value for different database engines. For MySQL, it&#39;s [INT] type, 0 means not use default partition, otherwise, it&#39;s equals to number in syntax [SUB]PARTITION {number}. |
 | subpartitions | [TablePartitionMetadata](#bytebase-v1-TablePartitionMetadata) | repeated | The subpartitions is the list of subpartitions in a table partition. |
+| indexes | [IndexMetadata](#bytebase-v1-IndexMetadata) | repeated |  |
 
 
 
@@ -4299,6 +4301,7 @@ ANY means approving any node will proceed.
 | slack | [AppIMSetting.Slack](#bytebase-v1-AppIMSetting-Slack) |  |  |
 | feishu | [AppIMSetting.Feishu](#bytebase-v1-AppIMSetting-Feishu) |  |  |
 | wecom | [AppIMSetting.Wecom](#bytebase-v1-AppIMSetting-Wecom) |  |  |
+| lark | [AppIMSetting.Lark](#bytebase-v1-AppIMSetting-Lark) |  |  |
 
 
 
@@ -4308,6 +4311,23 @@ ANY means approving any node will proceed.
 <a name="bytebase-v1-AppIMSetting-Feishu"></a>
 
 ### AppIMSetting.Feishu
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| enabled | [bool](#bool) |  |  |
+| app_id | [string](#string) |  |  |
+| app_secret | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-AppIMSetting-Lark"></a>
+
+### AppIMSetting.Lark
 
 
 
@@ -8887,6 +8907,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | title | [string](#string) |  | The title of the deployment (stage) in a schedule. |
+| id | [string](#string) |  |  |
 | spec | [DeploymentSpec](#bytebase-v1-DeploymentSpec) |  |  |
 
 
@@ -9110,6 +9131,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | TYPE_FEISHU | 5 |  |
 | TYPE_WECOM | 6 |  |
 | TYPE_CUSTOM | 7 |  |
+| TYPE_LARK | 8 |  |
 
 
 

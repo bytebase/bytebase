@@ -8,6 +8,7 @@
     "teams": "Teams",
     "dingtalk": "DingTalk",
     "feishu": "Feishu",
+    "lark": "Lark",
     "wecom": "WeCom",
     "system": "システム",
     "custom": "カスタマイズ",
@@ -356,7 +357,11 @@
       "canceled": "キャンセル",
       "success": "成功",
       "warn": "警告する",
-      "error": "間違い"
+      "error": "間違い",
+      "skipped": "スキップ",
+      "done": "終わり",
+      "pending": "保留中",
+      "not-started": "開始されていません"
     },
     "type": {
       "bb-task-database-schema-update-ghost-sync": "同期データ",

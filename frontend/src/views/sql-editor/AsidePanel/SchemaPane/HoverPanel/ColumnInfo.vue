@@ -10,7 +10,10 @@
       {{ getColumnDefaultValuePlaceholder(column) }}
     </InfoItem>
     <InfoItem :title="$t('database.nullable')">
-      {{ column.nullable }}
+      <div class="inline-flex items-center justify-end">
+        <CheckIcon v-if="column.nullable" class="w-4 h-4" />
+        <XIcon v-else class="w-4 h-4" />
+      </div>
     </InfoItem>
     <InfoItem v-if="characterSet" :title="$t('db.character-set')">
       {{ characterSet }}
@@ -25,6 +28,7 @@
 </template>
 
 <script setup lang="ts">
+import { CheckIcon, XIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite";
 import type { ComposedDatabase } from "@/types";

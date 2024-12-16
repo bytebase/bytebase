@@ -376,6 +376,7 @@ export enum Webhook_Type {
   TYPE_FEISHU = "TYPE_FEISHU",
   TYPE_WECOM = "TYPE_WECOM",
   TYPE_CUSTOM = "TYPE_CUSTOM",
+  TYPE_LARK = "TYPE_LARK",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -405,6 +406,9 @@ export function webhook_TypeFromJSON(object: any): Webhook_Type {
     case 7:
     case "TYPE_CUSTOM":
       return Webhook_Type.TYPE_CUSTOM;
+    case 8:
+    case "TYPE_LARK":
+      return Webhook_Type.TYPE_LARK;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -430,6 +434,8 @@ export function webhook_TypeToJSON(object: Webhook_Type): string {
       return "TYPE_WECOM";
     case Webhook_Type.TYPE_CUSTOM:
       return "TYPE_CUSTOM";
+    case Webhook_Type.TYPE_LARK:
+      return "TYPE_LARK";
     case Webhook_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -454,6 +460,8 @@ export function webhook_TypeToNumber(object: Webhook_Type): number {
       return 6;
     case Webhook_Type.TYPE_CUSTOM:
       return 7;
+    case Webhook_Type.TYPE_LARK:
+      return 8;
     case Webhook_Type.UNRECOGNIZED:
     default:
       return -1;
@@ -478,6 +486,7 @@ export interface Schedule {
 export interface ScheduleDeployment {
   /** The title of the deployment (stage) in a schedule. */
   title: string;
+  id: string;
   spec: DeploymentSpec | undefined;
 }
 
@@ -2785,13 +2794,16 @@ export const Schedule: MessageFns<Schedule> = {
 };
 
 function createBaseScheduleDeployment(): ScheduleDeployment {
-  return { title: "", spec: undefined };
+  return { title: "", id: "", spec: undefined };
 }
 
 export const ScheduleDeployment: MessageFns<ScheduleDeployment> = {
   encode(message: ScheduleDeployment, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.title !== "") {
       writer.uint32(10).string(message.title);
+    }
+    if (message.id !== "") {
+      writer.uint32(26).string(message.id);
     }
     if (message.spec !== undefined) {
       DeploymentSpec.encode(message.spec, writer.uint32(18).fork()).join();
@@ -2814,6 +2826,14 @@ export const ScheduleDeployment: MessageFns<ScheduleDeployment> = {
           message.title = reader.string();
           continue;
         }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        }
         case 2: {
           if (tag !== 18) {
             break;
@@ -2834,6 +2854,7 @@ export const ScheduleDeployment: MessageFns<ScheduleDeployment> = {
   fromJSON(object: any): ScheduleDeployment {
     return {
       title: isSet(object.title) ? globalThis.String(object.title) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
       spec: isSet(object.spec) ? DeploymentSpec.fromJSON(object.spec) : undefined,
     };
   },
@@ -2842,6 +2863,9 @@ export const ScheduleDeployment: MessageFns<ScheduleDeployment> = {
     const obj: any = {};
     if (message.title !== "") {
       obj.title = message.title;
+    }
+    if (message.id !== "") {
+      obj.id = message.id;
     }
     if (message.spec !== undefined) {
       obj.spec = DeploymentSpec.toJSON(message.spec);
@@ -2855,6 +2879,7 @@ export const ScheduleDeployment: MessageFns<ScheduleDeployment> = {
   fromPartial(object: DeepPartial<ScheduleDeployment>): ScheduleDeployment {
     const message = createBaseScheduleDeployment();
     message.title = object.title ?? "";
+    message.id = object.id ?? "";
     message.spec = (object.spec !== undefined && object.spec !== null)
       ? DeploymentSpec.fromPartial(object.spec)
       : undefined;

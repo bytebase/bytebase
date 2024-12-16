@@ -192,7 +192,7 @@
 
 <script setup lang="ts">
 import { useElementSize } from "@vueuse/core";
-import { cloneDeep, head } from "lodash-es";
+import { cloneDeep, head, isEmpty } from "lodash-es";
 import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";

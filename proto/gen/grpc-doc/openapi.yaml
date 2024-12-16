@@ -8909,7 +8909,18 @@ components:
                     $ref: '#/components/schemas/AppIMSetting_Feishu'
                 wecom:
                     $ref: '#/components/schemas/AppIMSetting_Wecom'
+                lark:
+                    $ref: '#/components/schemas/AppIMSetting_Lark'
         AppIMSetting_Feishu:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                appId:
+                    type: string
+                appSecret:
+                    type: string
+        AppIMSetting_Lark:
             type: object
             properties:
                 enabled:
@@ -10214,20 +10225,12 @@ components:
         DeploymentConfig:
             type: object
             properties:
-                name:
-                    type: string
-                    description: |-
-                        The name of the resource.
-                         Format: projects/{project}/deploymentConfigs/default.
-                title:
-                    type: string
-                    description: The title of the deployment config.
                 schedule:
                     $ref: '#/components/schemas/Schedule'
         DeploymentSpec:
             type: object
             properties:
-                labelSelector:
+                selector:
                     $ref: '#/components/schemas/LabelSelector'
         DiffMetadataRequest:
             required:
@@ -11368,6 +11371,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/LabelSelectorRequirement'
+                    description: match_expressions is a list of label selector requirements. The requirements are ANDed.
         LabelSelectorRequirement:
             type: object
             properties:
@@ -11376,15 +11380,16 @@ components:
                 operator:
                     enum:
                         - OPERATOR_TYPE_UNSPECIFIED
-                        - OPERATOR_TYPE_IN
-                        - OPERATOR_TYPE_EXISTS
-                        - OPERATOR_TYPE_NOT_IN
+                        - IN
+                        - EXISTS
+                        - NOT_IN
                     type: string
                     format: enum
                 values:
                     type: array
                     items:
                         type: string
+                    description: Values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
         ListBranchesResponse:
             type: object
             properties:
@@ -13509,12 +13514,15 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ScheduleDeployment'
+            description: Schedule is the message for deployment schedule.
         ScheduleDeployment:
             type: object
             properties:
                 title:
                     type: string
                     description: The title of the deployment (stage) in a schedule.
+                id:
+                    type: string
                 spec:
                     $ref: '#/components/schemas/DeploymentSpec'
         SchedulerInfo_WaitingCause:
@@ -14596,6 +14604,10 @@ components:
                     items:
                         $ref: '#/components/schemas/TablePartitionMetadata'
                     description: The subpartitions is the list of subpartitions in a table partition.
+                indexes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/IndexMetadata'
             description: TablePartitionMetadata is the metadata for table partitions.
         TagPolicy:
             type: object
@@ -15349,6 +15361,7 @@ components:
                         - TYPE_FEISHU
                         - TYPE_WECOM
                         - TYPE_CUSTOM
+                        - TYPE_LARK
                     type: string
                     description: type is the type of the webhook.
                     format: enum

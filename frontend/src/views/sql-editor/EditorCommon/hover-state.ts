@@ -18,8 +18,8 @@ export const useHoverStateContext = <S>(key: string) => {
 
 export const provideHoverStateContext = <S>(key: string) => {
   const { value: state, update } = useDelayedValue<S | undefined>(undefined, {
-    delayBefore: 500,
-    delayAfter: 500,
+    delayBefore: 1000,
+    delayAfter: 350,
   });
   const position = ref<Position>({
     x: 0,

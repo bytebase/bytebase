@@ -8,6 +8,7 @@
     "teams": "Teams",
     "dingtalk": "钉钉",
     "feishu": "飞书",
+    "lark": "Lark",
     "wecom": "企业微信",
     "system": "系统",
     "custom": "自定义",
@@ -356,7 +357,11 @@
       "canceled": "取消",
       "success": "成功",
       "warn": "警告",
-      "error": "错误"
+      "error": "错误",
+      "skipped": "已跳过",
+      "done": "完成",
+      "pending": "待执行",
+      "not-started": "未开始"
     },
     "type": {
       "bb-task-database-schema-update-ghost-sync": "同步数据",

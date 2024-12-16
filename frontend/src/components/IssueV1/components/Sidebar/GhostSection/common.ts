@@ -11,7 +11,11 @@ import {
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
+import {
+  useCurrentUserV1,
+  useStorageStore,
+  useSubscriptionV1Store,
+} from "@/store";
 import type { ComposedDatabase, ComposedIssue } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
@@ -133,7 +137,7 @@ export const provideIssueGhostContext = () => {
       sqlMap[target] = getSheetStatement(sheet);
     });
     const sqlMapStorageKey = `bb.issues.sql-map.${uuidv4()}`;
-    localStorage.setItem(sqlMapStorageKey, JSON.stringify(sqlMap));
+    useStorageStore().put(sqlMapStorageKey, sqlMap);
     overrides["sqlMapStorageKey"] = sqlMapStorageKey;
 
     await reInitialize(overrides);

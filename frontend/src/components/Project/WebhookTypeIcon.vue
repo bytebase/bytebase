@@ -17,6 +17,9 @@
     <template v-else-if="type === Webhook_Type.TYPE_FEISHU">
       <img src="../../assets/feishu-logo.webp" />
     </template>
+    <template v-else-if="type === Webhook_Type.TYPE_LARK">
+      <img src="../../assets/feishu-logo.webp" />
+    </template>
     <template v-else-if="type === Webhook_Type.TYPE_WECOM">
       <img src="../../assets/wecom-logo.png" />
     </template>

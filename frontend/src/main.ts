@@ -1,6 +1,5 @@
 import { VueQueryPlugin } from "@tanstack/vue-query";
 import axios from "axios";
-import isEmpty from "lodash-es/isEmpty";
 import Long from "long";
 import protobufjs from "protobufjs";
 import { createApp } from "vue";
@@ -17,13 +16,10 @@ import { router } from "./router";
 import { pinia, pushNotification, useAuthStore } from "./store";
 import {
   humanizeTs,
-  humanizeDuration,
   humanizeDurationV1,
   humanizeDate,
   isDev,
   isRelease,
-  sizeToFit,
-  urlfy,
 } from "./utils";
 
 protobufjs.util.Long = Long;
@@ -119,14 +115,10 @@ app.config.globalProperties.window = window;
 app.config.globalProperties.console = console;
 app.config.globalProperties.dayjs = dayjs;
 app.config.globalProperties.humanizeTs = humanizeTs;
-app.config.globalProperties.humanizeDuration = humanizeDuration;
 app.config.globalProperties.humanizeDurationV1 = humanizeDurationV1;
 app.config.globalProperties.humanizeDate = humanizeDate;
 app.config.globalProperties.isDev = isDev();
 app.config.globalProperties.isRelease = isRelease();
-app.config.globalProperties.sizeToFit = sizeToFit;
-app.config.globalProperties.urlfy = urlfy;
-app.config.globalProperties.isEmpty = isEmpty;
 
 app.use(VueQueryPlugin);
 app.use(pinia);

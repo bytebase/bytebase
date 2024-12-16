@@ -73,7 +73,7 @@ import { useRouter } from "vue-router";
 import { StepTab } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
-import { useProjectV1Store } from "@/store";
+import { useProjectV1Store, useStorageStore } from "@/store";
 import type { ComposedProject } from "@/types";
 import {
   isValidDatabaseName,
@@ -257,7 +257,7 @@ const tryFinishSetup = async () => {
   });
   query.databaseList = Object.keys(sqlMap).join(",");
   const sqlMapStorageKey = `bb.issues.sql-map.${uuidv4()}`;
-  localStorage.setItem(sqlMapStorageKey, JSON.stringify(sqlMap));
+  useStorageStore().put(sqlMapStorageKey, sqlMap);
   query.sqlMapStorageKey = sqlMapStorageKey;
   query.name = generateIssueTitle(
     "bb.issue.database.schema.update",

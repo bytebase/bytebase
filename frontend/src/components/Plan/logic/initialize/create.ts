@@ -9,6 +9,7 @@ import {
   useEnvironmentV1Store,
   useProjectV1Store,
   useSheetV1Store,
+  useStorageStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
@@ -69,7 +70,7 @@ export const createPlanSkeleton = async (
     databaseNameList,
     project,
     query,
-    initialSQL: extractInitialSQLFromQuery(query),
+    initialSQL: await extractInitialSQLFromQuery(query),
   };
 
   // Prepare params context for building plan.
@@ -369,9 +370,10 @@ const maybeSetInitialDatabaseConfigForSpec = async (
   }
 };
 
-const extractInitialSQLFromQuery = (
+const extractInitialSQLFromQuery = async (
   query: Record<string, string>
-): InitialSQL => {
+): Promise<InitialSQL> => {
+  const storageStore = useStorageStore();
   const sql = query.sql;
   if (sql && typeof sql === "string") {
     return {
@@ -380,25 +382,16 @@ const extractInitialSQLFromQuery = (
   }
   const sqlStorageKey = query.sqlStorageKey;
   if (sqlStorageKey && typeof sqlStorageKey === "string") {
-    const sql = localStorage.getItem(sqlStorageKey) ?? "";
+    const sql = (await storageStore.get(sqlStorageKey)) || "";
     return {
       sql,
     };
   }
   const sqlMapStorageKey = query.sqlMapStorageKey;
   if (sqlMapStorageKey && typeof sqlMapStorageKey === "string") {
-    const sqlMapJSON = localStorage.getItem(sqlMapStorageKey) ?? "{}";
-    try {
-      const sqlMap = JSON.parse(sqlMapJSON) as Record<string, string>;
-      const keys = Object.keys(sqlMap);
-      if (keys.every((key) => typeof sqlMap[key] === "string")) {
-        return {
-          sqlMap,
-        };
-      }
-    } catch {
-      // Nothing
-    }
+    const sqlMap =
+      (await storageStore.get<Record<string, string>>(sqlMapStorageKey)) || {};
+    return { sqlMap };
   }
   return {};
 };

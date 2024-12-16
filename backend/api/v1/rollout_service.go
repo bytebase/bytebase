@@ -1101,7 +1101,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get deployment config")
 		}
-		if err := utils.ValidateDeploymentSchedule(deploymentConfig.Schedule); err != nil {
+		if err := utils.ValidateDeploymentSchedule(deploymentConfig.Config.GetSchedule()); err != nil {
 			return nil, errors.Wrapf(err, "failed to validate and get deployment schedule")
 		}
 		// Get all databases from specs.
@@ -1126,7 +1126,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 			}
 		}
 		// Calculate the matrix of databases based on the deployment schedule.
-		matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.Schedule, databases)
+		matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.Config.GetSchedule(), databases)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database matrix from deployment schedule")
 		}
@@ -1148,7 +1148,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 			}
 
 			step := &storepb.PlanConfig_Step{
-				Title: deploymentConfig.Schedule.Deployments[i].Name,
+				Title: deploymentConfig.Config.GetSchedule().Deployments[i].Title,
 			}
 			for _, database := range databases {
 				name := common.FormatDatabase(database.InstanceID, database.DatabaseName)
