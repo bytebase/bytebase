@@ -85,7 +85,7 @@ func generateSQLForSingleTable(ctx base.TransformContext, statementInfoList []st
 		}
 	}
 
-	targetTable := fmt.Sprintf("%s_%s", tablePrefix, table.Table)
+	targetTable := fmt.Sprintf("%s_%s_%s", tablePrefix, table.Table, table.Schema)
 	if version.GTE(&Version{First: 12, Second: 2}) {
 		targetTable, _ = common.TruncateString(targetTable, maxTableNameLengthAfter12_2)
 	} else {
