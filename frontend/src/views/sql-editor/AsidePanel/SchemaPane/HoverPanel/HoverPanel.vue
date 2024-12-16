@@ -39,26 +39,11 @@
         :schema="state.schema"
         :external-table="state.externalTable"
       />
-      <ViewInfo
+      <CommonText
         v-else-if="state.view"
         :db="state.db"
         :database="state.database"
-        :schema="state.schema"
-        :view="state.view"
-      />
-      <ProcedureInfo
-        v-else-if="state.procedure"
-        :db="state.db"
-        :database="state.database"
-        :schema="state.schema"
-        :procedure="state.procedure"
-      />
-      <FunctionInfo
-        v-else-if="state.function"
-        :db="state.db"
-        :database="state.database"
-        :schema="state.schema"
-        :function="state.function"
+        :content="state.view.comment"
       />
     </template>
   </div>
@@ -71,12 +56,10 @@ import { computed, ref } from "vue";
 import type { Position } from "@/types";
 import { minmax } from "@/utils";
 import ColumnInfo from "./ColumnInfo.vue";
+import CommonText from "./CommonText.vue";
 import ExternalTableInfo from "./ExternalTableInfo.vue";
-import FunctionInfo from "./FunctionInfo.vue";
-import ProcedureInfo from "./ProcedureInfo.vue";
 import TableInfo from "./TableInfo.vue";
 import TablePartitionInfo from "./TablePartitionInfo.vue";
-import ViewInfo from "./ViewInfo.vue";
 import { useHoverStateContext } from "./hover-state";
 
 const props = defineProps<{
@@ -99,12 +82,17 @@ const { height: popoverHeight } = useElementSize(popoverRef, undefined, {
   box: "border-box",
 });
 
-const show = computed(
-  () =>
+const show = computed(() => {
+  const show =
     state.value !== undefined &&
     position.value.x !== 0 &&
-    position.value.y !== 0
-);
+    position.value.y !== 0;
+  if (show && state.value?.view) {
+    const comment = state.value.view.comment;
+    if (!comment) return false;
+  }
+  return show;
+});
 
 const displayPosition = computed(() => {
   const p: Position = {

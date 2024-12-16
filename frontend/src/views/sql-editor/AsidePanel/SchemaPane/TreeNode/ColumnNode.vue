@@ -19,13 +19,6 @@
           class="text-size-adjust-none"
           style="--n-height: 16px; --n-padding: 0 3px; --n-font-size: 10px"
         >
-          {{ target.column.nullable ? "NULL" : "NOT NULL" }}
-        </NTag>
-        <NTag
-          size="small"
-          class="text-size-adjust-none"
-          style="--n-height: 16px; --n-padding: 0 3px; --n-font-size: 10px"
-        >
           {{ target.column.type }}
         </NTag>
       </div>
