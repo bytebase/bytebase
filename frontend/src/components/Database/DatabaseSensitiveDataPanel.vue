@@ -127,6 +127,7 @@ import GrantAccessDrawer from "@/components/SensitiveData/GrantAccessDrawer.vue"
 import SensitiveColumnDrawer from "@/components/SensitiveData/SensitiveColumnDrawer.vue";
 import MaskingLevelDropdown from "@/components/SensitiveData/components/MaskingLevelDropdown.vue";
 import SensitiveColumnTable from "@/components/SensitiveData/components/SensitiveColumnTable.vue";
+import type { MaskData } from "@/components/SensitiveData/types";
 import { isCurrentColumnException } from "@/components/SensitiveData/utils";
 import { SearchBox } from "@/components/v2";
 import {
@@ -139,7 +140,6 @@ import {
 import { type ComposedDatabase } from "@/types";
 import { MaskingLevel } from "@/types/proto/v1/common";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import type { MaskData } from "@/types/proto/v1/org_policy_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { autoDatabaseRoute, hasProjectPermissionV2 } from "@/utils";
 import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";

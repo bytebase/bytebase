@@ -454,7 +454,6 @@
     - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
     - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
     - [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse)
-    - [MaskData](#bytebase-v1-MaskData)
     - [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy)
     - [MaskingExceptionPolicy.MaskingException](#bytebase-v1-MaskingExceptionPolicy-MaskingException)
     - [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy)
@@ -7561,26 +7560,6 @@ When paginating, all other parameters provided to `ListPolicies` must match the 
 | ----- | ---- | ----- | ----------- |
 | policies | [Policy](#bytebase-v1-Policy) | repeated | The policies from the specified request. |
 | next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-MaskData"></a>
-
-### MaskData
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  |  |
-| table | [string](#string) |  |  |
-| column | [string](#string) |  |  |
-| masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
-| full_masking_algorithm_id | [string](#string) |  |  |
-| partial_masking_algorithm_id | [string](#string) |  |  |
 
 
 

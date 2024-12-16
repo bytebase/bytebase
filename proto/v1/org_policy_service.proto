@@ -298,15 +298,6 @@ message ExportDataPolicy {
   bool disable = 1;
 }
 
-message MaskData {
-  string schema = 1;
-  string table = 2;
-  string column = 3;
-  MaskingLevel masking_level = 4;
-  string full_masking_algorithm_id = 5;
-  string partial_masking_algorithm_id = 6;
-}
-
 message SQLReviewRule {
   string type = 1;
   SQLReviewRuleLevel level = 2;

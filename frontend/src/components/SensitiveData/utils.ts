@@ -1,8 +1,6 @@
+import type { MaskData } from "@/components/SensitiveData/types";
 import type { DatabaseResource } from "@/types";
-import type {
-  MaskData,
-  MaskingExceptionPolicy_MaskingException,
-} from "@/types/proto/v1/org_policy_service";
+import type { MaskingExceptionPolicy_MaskingException } from "@/types/proto/v1/org_policy_service";
 import { extractDatabaseResourceName } from "@/utils";
 import type { SensitiveColumn } from "./types";
 

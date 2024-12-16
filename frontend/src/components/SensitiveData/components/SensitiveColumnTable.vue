@@ -18,10 +18,10 @@ import { NDataTable, NPopconfirm, type DataTableColumn } from "naive-ui";
 import { computed, h, ref, watch } from "vue";
 import { withModifiers } from "vue";
 import { useI18n } from "vue-i18n";
+import type { MaskData } from "@/components/SensitiveData/types";
 import { MiniActionButton } from "@/components/v2";
 import type { MaskingLevel } from "@/types/proto/v1/common";
 import { maskingLevelToJSON } from "@/types/proto/v1/common";
-import type { MaskData } from "@/types/proto/v1/org_policy_service";
 
 const props = defineProps<{
   showOperation: boolean;
