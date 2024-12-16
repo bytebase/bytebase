@@ -435,7 +435,76 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequ
 		}
 	}
 
+	// Construct Primary Key.
+	for _, index := range table.Indexes {
+		if index.Primary {
+			if err := writePrimaryKey(out, schema, table.Name, index); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Construct Partition table primary key.
+	for _, partition := range table.Partitions {
+		if err := writePartitionPrimaryKey(out, schema, partition); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func writePartitionPrimaryKey(out io.Writer, schema string, partition *storepb.TablePartitionMetadata) error {
+	for _, index := range partition.Indexes {
+		if index.Primary {
+			if err := writePrimaryKey(out, schema, partition.Name, index); err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, subpartition := range partition.Subpartitions {
+		if err := writePartitionPrimaryKey(out, schema, subpartition); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func writePrimaryKey(out io.Writer, schema string, table string, index *storepb.IndexMetadata) error {
+	if _, err := io.WriteString(out, `ALTER TABLE ONLY "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, table); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" ADD CONSTRAINT "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, index.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" PRIMARY KEY (`); err != nil {
+		return err
+	}
+	for i, expression := range index.Expressions {
+		if i > 0 {
+			if _, err := io.WriteString(out, ", "); err != nil {
+				return err
+			}
+		}
+		if _, err := io.WriteString(out, expression); err != nil {
+			return err
+		}
+	}
+	_, err := io.WriteString(out, ");\n\n")
+	return err
 }
 
 func writeColumnComment(out io.Writer, schema string, table string, column *storepb.ColumnMetadata) error {
