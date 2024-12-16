@@ -69,7 +69,7 @@
       />
     </BBModal>
 
-    <HoverPanel :offset-x="4" :offset-y="0" :margin="4" />
+    <HoverPanel :offset-x="8" :offset-y="0" :margin="4" />
   </div>
 </template>
 
@@ -263,18 +263,10 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         type === "external-table" ||
         type === "column" ||
         type === "view" ||
-        type === "partition-table" ||
-        type === "procedure" ||
-        type === "function"
+        type === "partition-table"
       ) {
         const target = node.meta.target as NodeTarget<
-          | "table"
-          | "external-table"
-          | "column"
-          | "view"
-          | "partition-table"
-          | "procedure"
-          | "function"
+          "table" | "external-table" | "column" | "view"
         >;
         if (hoverState.value) {
           updateHoverState(target, "before", 0 /* overrideDelay */);
@@ -282,7 +274,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
           updateHoverState(target, "before");
         }
         nextTick().then(() => {
-          // Find the node element and put the database panel to the right corner
+          // Find the node element and put the database panel to the bottom
           // of the node
           const wrapper = findAncestor(e.target as HTMLElement, ".n-tree-node");
           if (!wrapper) {
@@ -290,8 +282,8 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
             return;
           }
           const bounding = wrapper.getBoundingClientRect();
-          hoverPosition.value.x = bounding.right;
-          hoverPosition.value.y = bounding.top;
+          hoverPosition.value.x = e.clientX;
+          hoverPosition.value.y = bounding.bottom;
         });
       }
     },
