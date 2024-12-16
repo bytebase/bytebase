@@ -158,7 +158,7 @@ func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statem
 		return nil, errors.Wrap(err, "failed to classify columns")
 	}
 
-	targetTable := fmt.Sprintf("%s_%s", tablePrefix, table.Table)
+	targetTable := fmt.Sprintf("%s_%s_%s", tablePrefix, table.Table, table.Database)
 	targetTable, _ = common.TruncateString(targetTable, maxTableNameLength)
 	var buf strings.Builder
 	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s`.`%s` LIKE `%s`.`%s`;\n", databaseName, targetTable, table.Database, table.Table)); err != nil {

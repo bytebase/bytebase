@@ -8,7 +8,7 @@
     UPDATE test SET test.c1 = 7 WHERE test.b1 = 7;
   result:
     - statement: |-
-        SELECT * INTO "backupDB"."dbo"."rollback_test" FROM (
+        SELECT * INTO "backupDB"."dbo"."rollback_test_db" FROM (
           SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 1
           UNION ALL
           SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 2
@@ -24,7 +24,7 @@
           SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 7) AS backup_table;
       sourceschema: dbo
       sourcetablename: test
-      targettablename: rollback_test
+      targettablename: rollback_test_db
       startposition:
         line: 1
         column: 0
