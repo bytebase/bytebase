@@ -18,6 +18,7 @@ import {
   vCSTypeToJSON,
   vCSTypeToNumber,
 } from "./common";
+import { DeploymentConfig } from "./deployment_config";
 import { PreUpdateBackupDetail } from "./plan_check_run";
 
 export const protobufPackage = "bytebase.store";
@@ -26,6 +27,7 @@ export interface PlanConfig {
   steps: PlanConfig_Step[];
   vcsSource: PlanConfig_VCSSource | undefined;
   releaseSource: PlanConfig_ReleaseSource | undefined;
+  deploymentSnapshot: PlanConfig_DeploymentSnapshot | undefined;
 }
 
 export interface PlanConfig_Step {
@@ -263,8 +265,22 @@ export interface PlanConfig_SpecReleaseSource {
   file: string;
 }
 
+export interface PlanConfig_DeploymentSnapshot {
+  /** The snapshot of the project deployment config at the time of creation. */
+  deploymentConfig: DeploymentConfig | undefined;
+  databaseGroupSnapshots: PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot[];
+}
+
+/** The snapshot of the database group at the time of creation. */
+export interface PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot {
+  /** Format: projects/{project}/databaseGroups/{databaseGroup}. */
+  databaseGroup: string;
+  /** Format: instances/{instance-id}/databases/{database-name}. */
+  databases: string[];
+}
+
 function createBasePlanConfig(): PlanConfig {
-  return { steps: [], vcsSource: undefined, releaseSource: undefined };
+  return { steps: [], vcsSource: undefined, releaseSource: undefined, deploymentSnapshot: undefined };
 }
 
 export const PlanConfig: MessageFns<PlanConfig> = {
@@ -273,10 +289,13 @@ export const PlanConfig: MessageFns<PlanConfig> = {
       PlanConfig_Step.encode(v!, writer.uint32(10).fork()).join();
     }
     if (message.vcsSource !== undefined) {
-      PlanConfig_VCSSource.encode(message.vcsSource, writer.uint32(66).fork()).join();
+      PlanConfig_VCSSource.encode(message.vcsSource, writer.uint32(18).fork()).join();
     }
     if (message.releaseSource !== undefined) {
-      PlanConfig_ReleaseSource.encode(message.releaseSource, writer.uint32(74).fork()).join();
+      PlanConfig_ReleaseSource.encode(message.releaseSource, writer.uint32(26).fork()).join();
+    }
+    if (message.deploymentSnapshot !== undefined) {
+      PlanConfig_DeploymentSnapshot.encode(message.deploymentSnapshot, writer.uint32(34).fork()).join();
     }
     return writer;
   },
@@ -296,20 +315,28 @@ export const PlanConfig: MessageFns<PlanConfig> = {
           message.steps.push(PlanConfig_Step.decode(reader, reader.uint32()));
           continue;
         }
-        case 8: {
-          if (tag !== 66) {
+        case 2: {
+          if (tag !== 18) {
             break;
           }
 
           message.vcsSource = PlanConfig_VCSSource.decode(reader, reader.uint32());
           continue;
         }
-        case 9: {
-          if (tag !== 74) {
+        case 3: {
+          if (tag !== 26) {
             break;
           }
 
           message.releaseSource = PlanConfig_ReleaseSource.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.deploymentSnapshot = PlanConfig_DeploymentSnapshot.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -326,6 +353,9 @@ export const PlanConfig: MessageFns<PlanConfig> = {
       steps: globalThis.Array.isArray(object?.steps) ? object.steps.map((e: any) => PlanConfig_Step.fromJSON(e)) : [],
       vcsSource: isSet(object.vcsSource) ? PlanConfig_VCSSource.fromJSON(object.vcsSource) : undefined,
       releaseSource: isSet(object.releaseSource) ? PlanConfig_ReleaseSource.fromJSON(object.releaseSource) : undefined,
+      deploymentSnapshot: isSet(object.deploymentSnapshot)
+        ? PlanConfig_DeploymentSnapshot.fromJSON(object.deploymentSnapshot)
+        : undefined,
     };
   },
 
@@ -339,6 +369,9 @@ export const PlanConfig: MessageFns<PlanConfig> = {
     }
     if (message.releaseSource !== undefined) {
       obj.releaseSource = PlanConfig_ReleaseSource.toJSON(message.releaseSource);
+    }
+    if (message.deploymentSnapshot !== undefined) {
+      obj.deploymentSnapshot = PlanConfig_DeploymentSnapshot.toJSON(message.deploymentSnapshot);
     }
     return obj;
   },
@@ -354,6 +387,9 @@ export const PlanConfig: MessageFns<PlanConfig> = {
       : undefined;
     message.releaseSource = (object.releaseSource !== undefined && object.releaseSource !== null)
       ? PlanConfig_ReleaseSource.fromPartial(object.releaseSource)
+      : undefined;
+    message.deploymentSnapshot = (object.deploymentSnapshot !== undefined && object.deploymentSnapshot !== null)
+      ? PlanConfig_DeploymentSnapshot.fromPartial(object.deploymentSnapshot)
       : undefined;
     return message;
   },
@@ -1510,6 +1546,179 @@ export const PlanConfig_SpecReleaseSource: MessageFns<PlanConfig_SpecReleaseSour
   fromPartial(object: DeepPartial<PlanConfig_SpecReleaseSource>): PlanConfig_SpecReleaseSource {
     const message = createBasePlanConfig_SpecReleaseSource();
     message.file = object.file ?? "";
+    return message;
+  },
+};
+
+function createBasePlanConfig_DeploymentSnapshot(): PlanConfig_DeploymentSnapshot {
+  return { deploymentConfig: undefined, databaseGroupSnapshots: [] };
+}
+
+export const PlanConfig_DeploymentSnapshot: MessageFns<PlanConfig_DeploymentSnapshot> = {
+  encode(message: PlanConfig_DeploymentSnapshot, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.deploymentConfig !== undefined) {
+      DeploymentConfig.encode(message.deploymentConfig, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.databaseGroupSnapshots) {
+      PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PlanConfig_DeploymentSnapshot {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlanConfig_DeploymentSnapshot();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.deploymentConfig = DeploymentConfig.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.databaseGroupSnapshots.push(
+            PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot.decode(reader, reader.uint32()),
+          );
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PlanConfig_DeploymentSnapshot {
+    return {
+      deploymentConfig: isSet(object.deploymentConfig) ? DeploymentConfig.fromJSON(object.deploymentConfig) : undefined,
+      databaseGroupSnapshots: globalThis.Array.isArray(object?.databaseGroupSnapshots)
+        ? object.databaseGroupSnapshots.map((e: any) => PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: PlanConfig_DeploymentSnapshot): unknown {
+    const obj: any = {};
+    if (message.deploymentConfig !== undefined) {
+      obj.deploymentConfig = DeploymentConfig.toJSON(message.deploymentConfig);
+    }
+    if (message.databaseGroupSnapshots?.length) {
+      obj.databaseGroupSnapshots = message.databaseGroupSnapshots.map((e) =>
+        PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot.toJSON(e)
+      );
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PlanConfig_DeploymentSnapshot>): PlanConfig_DeploymentSnapshot {
+    return PlanConfig_DeploymentSnapshot.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PlanConfig_DeploymentSnapshot>): PlanConfig_DeploymentSnapshot {
+    const message = createBasePlanConfig_DeploymentSnapshot();
+    message.deploymentConfig = (object.deploymentConfig !== undefined && object.deploymentConfig !== null)
+      ? DeploymentConfig.fromPartial(object.deploymentConfig)
+      : undefined;
+    message.databaseGroupSnapshots =
+      object.databaseGroupSnapshots?.map((e) => PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot.fromPartial(e)) ||
+      [];
+    return message;
+  },
+};
+
+function createBasePlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot(): PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot {
+  return { databaseGroup: "", databases: [] };
+}
+
+export const PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot: MessageFns<
+  PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot
+> = {
+  encode(
+    message: PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
+    if (message.databaseGroup !== "") {
+      writer.uint32(10).string(message.databaseGroup);
+    }
+    for (const v of message.databases) {
+      writer.uint32(18).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.databaseGroup = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.databases.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot {
+    return {
+      databaseGroup: isSet(object.databaseGroup) ? globalThis.String(object.databaseGroup) : "",
+      databases: globalThis.Array.isArray(object?.databases)
+        ? object.databases.map((e: any) => globalThis.String(e))
+        : [],
+    };
+  },
+
+  toJSON(message: PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot): unknown {
+    const obj: any = {};
+    if (message.databaseGroup !== "") {
+      obj.databaseGroup = message.databaseGroup;
+    }
+    if (message.databases?.length) {
+      obj.databases = message.databases;
+    }
+    return obj;
+  },
+
+  create(
+    base?: DeepPartial<PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot>,
+  ): PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot {
+    return PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot.fromPartial(base ?? {});
+  },
+  fromPartial(
+    object: DeepPartial<PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot>,
+  ): PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot {
+    const message = createBasePlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot();
+    message.databaseGroup = object.databaseGroup ?? "";
+    message.databases = object.databases?.map((e) => e) || [];
     return message;
   },
 };
