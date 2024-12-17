@@ -47,6 +47,7 @@
               schema: ""
               table: products
               column: product_info
+          isplainfield: true
         - name: |-
             JSON_ARRAYAGG(
                 REPLACE(
@@ -61,6 +62,7 @@
               schema: ""
               table: products
               column: product_info
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: db
@@ -108,6 +110,7 @@
               schema: ""
               table: products
               column: product_info
+          isplainfield: true
         - name: product_id
           sourcecolumns:
             - server: ""
@@ -115,6 +118,7 @@
               schema: ""
               table: products
               column: product_info
+          isplainfield: true
         - name: product_name
           sourcecolumns:
             - server: ""
@@ -122,6 +126,7 @@
               schema: ""
               table: products
               column: product_info
+          isplainfield: true
         - name: product_price
           sourcecolumns:
             - server: ""
@@ -129,6 +134,7 @@
               schema: ""
               table: products
               column: product_info
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -167,6 +173,7 @@
               schema: ""
               table: t
               column: a
+          isplainfield: true
         - name: a
           sourcecolumns:
             - server: ""
@@ -174,6 +181,7 @@
               schema: ""
               table: t
               column: a
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -233,6 +241,7 @@
     results:
         - name: "1"
           sourcecolumns: []
+          isplainfield: true
     sourcecolumns: []
 - description: Test asterisk and column
   statement: SELECT *, a FROM t;
@@ -275,6 +284,7 @@
               schema: ""
               table: t
               column: a
+          isplainfield: true
         - name: b
           sourcecolumns:
             - server: ""
@@ -282,6 +292,7 @@
               schema: ""
               table: t
               column: b
+          isplainfield: true
         - name: c
           sourcecolumns:
             - server: ""
@@ -289,6 +300,7 @@
               schema: ""
               table: t
               column: c
+          isplainfield: true
         - name: d
           sourcecolumns:
             - server: ""
@@ -296,6 +308,7 @@
               schema: ""
               table: t
               column: d
+          isplainfield: true
         - name: a
           sourcecolumns:
             - server: ""
@@ -303,6 +316,7 @@
               schema: ""
               table: t
               column: a
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -350,6 +364,7 @@
               schema: ""
               table: t
               column: a
+          isplainfield: true
         - name: b
           sourcecolumns:
             - server: ""
@@ -357,6 +372,7 @@
               schema: ""
               table: t
               column: b
+          isplainfield: true
         - name: c
           sourcecolumns:
             - server: ""
@@ -364,6 +380,7 @@
               schema: ""
               table: t
               column: c
+          isplainfield: true
         - name: d
           sourcecolumns:
             - server: ""
@@ -371,6 +388,7 @@
               schema: ""
               table: t
               column: d
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -418,6 +436,7 @@
               schema: ""
               table: t
               column: a
+          isplainfield: true
         - name: b
           sourcecolumns:
             - server: ""
@@ -425,6 +444,7 @@
               schema: ""
               table: t
               column: b
+          isplainfield: true
         - name: c
           sourcecolumns:
             - server: ""
@@ -432,6 +452,7 @@
               schema: ""
               table: t
               column: c
+          isplainfield: true
         - name: d
           sourcecolumns:
             - server: ""
@@ -439,6 +460,7 @@
               schema: ""
               table: t
               column: d
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -481,8 +503,10 @@
     results:
         - name: col_1
           sourcecolumns: []
+          isplainfield: true
         - name: col_2
           sourcecolumns: []
+          isplainfield: false
         - name: avg_a_b_c
           sourcecolumns:
             - server: ""
@@ -500,6 +524,7 @@
               schema: ""
               table: t
               column: c
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: db
@@ -542,6 +567,7 @@
     results:
         - name: "1"
           sourcecolumns: []
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -600,8 +626,10 @@
               schema: ""
               table: galleries
               column: city
+          isplainfield: true
         - name: total_paintings
           sourcecolumns: []
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: db
@@ -654,6 +682,7 @@
               schema: ""
               table: t
               column: a
+          isplainfield: false
         - name: c1
           sourcecolumns:
             - server: ""
@@ -666,6 +695,7 @@
               schema: ""
               table: t
               column: b
+          isplainfield: false
         - name: c2
           sourcecolumns:
             - server: ""
@@ -678,6 +708,7 @@
               schema: ""
               table: t
               column: b
+          isplainfield: false
         - name: a>b
           sourcecolumns:
             - server: ""
@@ -690,6 +721,7 @@
               schema: ""
               table: t
               column: b
+          isplainfield: false
         - name: b in (a, c, d)
           sourcecolumns:
             - server: ""
@@ -712,6 +744,7 @@
               schema: ""
               table: t
               column: d
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: db
@@ -764,6 +797,7 @@
               schema: ""
               table: t1
               column: a
+          isplainfield: true
         - name: b
           sourcecolumns:
             - server: ""
@@ -771,6 +805,7 @@
               schema: ""
               table: t1
               column: b
+          isplainfield: true
         - name: c
           sourcecolumns:
             - server: ""
@@ -778,8 +813,10 @@
               schema: ""
               table: t2
               column: c
+          isplainfield: true
         - name: "0"
           sourcecolumns: []
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -832,6 +869,7 @@
               schema: ""
               table: t
               column: a
+          isplainfield: true
         - name: b
           sourcecolumns:
             - server: ""
@@ -839,6 +877,7 @@
               schema: ""
               table: t
               column: b
+          isplainfield: true
         - name: c
           sourcecolumns:
             - server: ""
@@ -846,6 +885,7 @@
               schema: ""
               table: t
               column: c
+          isplainfield: true
         - name: d
           sourcecolumns:
             - server: ""
@@ -853,6 +893,7 @@
               schema: ""
               table: t
               column: d
+          isplainfield: true
         - name: b
           sourcecolumns:
             - server: ""
@@ -860,6 +901,7 @@
               schema: ""
               table: t
               column: b
+          isplainfield: true
         - name: c
           sourcecolumns:
             - server: ""
@@ -867,6 +909,7 @@
               schema: ""
               table: t
               column: c
+          isplainfield: true
         - name: d
           sourcecolumns:
             - server: ""
@@ -874,6 +917,7 @@
               schema: ""
               table: t
               column: d
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -921,6 +965,7 @@
               schema: ""
               table: t
               column: a
+          isplainfield: true
         - name: b
           sourcecolumns:
             - server: ""
@@ -928,6 +973,7 @@
               schema: ""
               table: t
               column: b
+          isplainfield: true
         - name: c
           sourcecolumns:
             - server: ""
@@ -935,6 +981,7 @@
               schema: ""
               table: t
               column: c
+          isplainfield: true
         - name: d
           sourcecolumns:
             - server: ""
@@ -942,6 +989,7 @@
               schema: ""
               table: t
               column: d
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -994,6 +1042,7 @@
               schema: ""
               table: t
               column: a
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: db
@@ -1046,6 +1095,7 @@
               schema: ""
               table: t
               column: a
+          isplainfield: true
         - name: c
           sourcecolumns:
             - server: ""
@@ -1053,6 +1103,7 @@
               schema: ""
               table: t
               column: b
+          isplainfield: true
         - name: b
           sourcecolumns:
             - server: ""
@@ -1060,6 +1111,7 @@
               schema: ""
               table: t
               column: c
+          isplainfield: true
         - name: a
           sourcecolumns:
             - server: ""
@@ -1067,6 +1119,7 @@
               schema: ""
               table: t
               column: d
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -1124,6 +1177,7 @@
               schema: ""
               table: t
               column: b
+          isplainfield: false
         - name: cc2
           sourcecolumns:
             - server: ""
@@ -1136,6 +1190,7 @@
               schema: ""
               table: t
               column: b
+          isplainfield: false
         - name: cc3
           sourcecolumns:
             - server: ""
@@ -1153,8 +1208,10 @@
               schema: ""
               table: t
               column: c
+          isplainfield: false
         - name: "n"
           sourcecolumns: []
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: db
@@ -1207,6 +1264,7 @@
               schema: ""
               table: t
               column: a
+          isplainfield: false
         - name: c2
           sourcecolumns:
             - server: ""
@@ -1214,6 +1272,7 @@
               schema: ""
               table: t
               column: b
+          isplainfield: false
         - name: c3
           sourcecolumns:
             - server: ""
@@ -1221,6 +1280,7 @@
               schema: ""
               table: t
               column: d
+          isplainfield: false
         - name: c4
           sourcecolumns:
             - server: ""
@@ -1228,6 +1288,7 @@
               schema: ""
               table: t
               column: c
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: db
