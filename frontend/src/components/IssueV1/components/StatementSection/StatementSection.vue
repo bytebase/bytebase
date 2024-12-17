@@ -10,7 +10,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, onMounted, onUnmounted } from "vue";
+import { useEventListener } from "@vueuse/core";
+import { computed, nextTick, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { onBeforeRouteLeave } from "vue-router";
 import { useRouter } from "vue-router";
 import { TaskTypeListWithStatement } from "@/types";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
@@ -28,6 +31,7 @@ const { isCreating, selectedTask } = useIssueContext();
 
 const editorViewRef = ref<InstanceType<typeof EditorView>>();
 const router = useRouter();
+const { t } = useI18n();
 
 type ViewMode = "NONE" | "EDITOR" | "SDL";
 
@@ -74,14 +78,18 @@ const beforeUnloadHandler = (e: BeforeUnloadEvent) => {
   // For creating issues or editing task statement, prompt to confirm leaving.
   e.preventDefault();
   // Included for legacy support, e.g. Chrome/Edge < 119
-  e.returnValue = true;
+  e.returnValue = t("common.leave-without-saving");
+  return e.returnValue;
 };
 
-onMounted(() => {
-  window.addEventListener("beforeunload", beforeUnloadHandler);
-});
+useEventListener("beforeunload", beforeUnloadHandler);
 
-onUnmounted(() => {
-  window.removeEventListener("beforeunload", beforeUnloadHandler);
+onBeforeRouteLeave((to, from, next) => {
+  if (isCreating.value || editorViewRef.value?.isEditing) {
+    if (!window.confirm(t("common.leave-without-saving"))) {
+      return;
+    }
+  }
+  next();
 });
 </script>
