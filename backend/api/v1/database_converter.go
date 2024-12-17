@@ -505,7 +505,7 @@ func convertStoreColumnConfig(column *storepb.ColumnConfig) *v1pb.ColumnConfig {
 	}
 }
 
-func convertV1DatabaseMetadata(ctx context.Context, metadata *v1pb.DatabaseMetadata, optionalStores *store.Store) (*storepb.DatabaseSchemaMetadata, *storepb.DatabaseConfig, error) {
+func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.DatabaseSchemaMetadata, error) {
 	m := &storepb.DatabaseSchemaMetadata{
 		Name:         metadata.Name,
 		CharacterSet: metadata.CharacterSet,
@@ -697,16 +697,7 @@ func convertV1DatabaseMetadata(ctx context.Context, metadata *v1pb.DatabaseMetad
 			Description: extension.Description,
 		})
 	}
-
-	databaseConfig := convertV1DatabaseConfig(
-		ctx,
-		&v1pb.DatabaseConfig{
-			Name:          metadata.Name,
-			SchemaConfigs: metadata.SchemaConfigs,
-		},
-		optionalStores,
-	)
-	return m, databaseConfig, nil
+	return m, nil
 }
 
 func convertV1IndexMetadata(index *v1pb.IndexMetadata) *storepb.IndexMetadata {
