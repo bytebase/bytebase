@@ -995,7 +995,7 @@ func validateTableMetadata(ctx context.Context, engine v1pb.Engine, tableMetadat
 		Name:    "temp_database",
 		Schemas: []*v1pb.SchemaMetadata{tempSchema},
 	}
-	tempStoreSchemaMetadata, _, err := convertV1DatabaseMetadata(ctx, tempMetadata, nil /* optionalStores */)
+	tempStoreSchemaMetadata, err := convertV1DatabaseMetadata(tempMetadata)
 	if err != nil {
 		return err
 	}
