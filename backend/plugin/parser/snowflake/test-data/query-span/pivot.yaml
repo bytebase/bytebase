@@ -62,8 +62,10 @@
               schema: PUBLIC
               table: T1
               column: A
+          isplainfield: true
         - name: F
           sourcecolumns: []
+          isplainfield: false
         - name: E
           sourcecolumns:
             - server: ""
@@ -81,6 +83,7 @@
               schema: PUBLIC
               table: T1
               column: D
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: SNOWFLAKE
@@ -151,6 +154,7 @@
               schema: PUBLIC
               table: T1
               column: C
+          isplainfield: true
         - name: D
           sourcecolumns:
             - server: ""
@@ -158,6 +162,7 @@
               schema: PUBLIC
               table: T1
               column: D
+          isplainfield: true
         - name: '''a'''
           sourcecolumns:
             - server: ""
@@ -165,6 +170,7 @@
               schema: PUBLIC
               table: T1
               column: A
+          isplainfield: false
         - name: '''b'''
           sourcecolumns:
             - server: ""
@@ -172,6 +178,7 @@
               schema: PUBLIC
               table: T1
               column: A
+          isplainfield: false
         - name: '''c'''
           sourcecolumns:
             - server: ""
@@ -179,6 +186,7 @@
               schema: PUBLIC
               table: T1
               column: A
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: SNOWFLAKE

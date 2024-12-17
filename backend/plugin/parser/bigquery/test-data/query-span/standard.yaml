@@ -33,6 +33,7 @@
               schema: ""
               table: people
               column: ID
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -90,6 +91,7 @@
               schema: ""
               table: people
               column: ID
+          isplainfield: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -102,6 +104,7 @@
               schema: ""
               table: people
               column: NAME
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -177,6 +180,7 @@
               schema: ""
               table: people
               column: ID
+          isplainfield: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -184,6 +188,7 @@
               schema: ""
               table: people
               column: NAME
+          isplainfield: false
         - name: ADDRESS
           sourcecolumns:
             - server: ""
@@ -191,6 +196,7 @@
               schema: ""
               table: address
               column: ADDRESS
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -256,6 +262,7 @@
               schema: ""
               table: people
               column: ID
+          isplainfield: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -263,6 +270,7 @@
               schema: ""
               table: people
               column: NAME
+          isplainfield: false
         - name: ADDRESS
           sourcecolumns:
             - server: ""
@@ -270,6 +278,7 @@
               schema: ""
               table: address
               column: ADDRESS
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -327,6 +336,7 @@
               schema: ""
               table: people
               column: ID
+          isplainfield: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -334,6 +344,7 @@
               schema: ""
               table: people
               column: NAME
+          isplainfield: false
         - name: ADDRESS
           sourcecolumns:
             - server: ""
@@ -341,6 +352,7 @@
               schema: ""
               table: address
               column: ADDRESS
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -401,6 +413,7 @@
               schema: ""
               table: T1
               column: b
+          isplainfield: false
         - name: C2
           sourcecolumns:
             - server: ""
@@ -413,6 +426,7 @@
               schema: ""
               table: T1
               column: b
+          isplainfield: false
         - name: C3
           sourcecolumns:
             - server: ""
@@ -430,8 +444,10 @@
               schema: ""
               table: T1
               column: c
+          isplainfield: false
         - name: "N"
           sourcecolumns: []
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -478,6 +494,7 @@
               schema: ""
               table: people
               column: ID
+          isplainfield: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -485,6 +502,7 @@
               schema: ""
               table: people
               column: NAME
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -548,8 +566,10 @@
               schema: ""
               table: galleries
               column: CITY
+          isplainfield: false
         - name: TOTAL_PAINTINGS
           sourcecolumns: []
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -591,6 +611,7 @@
     results:
         - name: ""
           sourcecolumns: []
+          isplainfield: false
         - name: ID
           sourcecolumns:
             - server: ""
@@ -598,6 +619,7 @@
               schema: ""
               table: people
               column: ID
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -639,6 +661,7 @@
               schema: ""
               table: people
               column: ID
+          isplainfield: false
         - name: ID
           sourcecolumns:
             - server: ""
@@ -646,6 +669,7 @@
               schema: ""
               table: people
               column: ID
+          isplainfield: true
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -653,6 +677,7 @@
               schema: ""
               table: people
               column: NAME
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: ds1
@@ -699,6 +724,7 @@
               schema: ""
               table: people
               column: ID
+          isplainfield: true
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -706,6 +732,7 @@
               schema: ""
               table: people
               column: NAME
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: ds1
@@ -747,6 +774,7 @@
               schema: ""
               table: people
               column: ID
+          isplainfield: false
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -754,6 +782,7 @@
               schema: ""
               table: people
               column: NAME
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -795,6 +824,7 @@
               schema: ""
               table: people
               column: ID
+          isplainfield: false
         - name: ID
           sourcecolumns:
             - server: ""
@@ -807,6 +837,7 @@
               schema: ""
               table: people
               column: NAME
+          isplainfield: false
         - name: ID
           sourcecolumns:
             - server: ""
@@ -819,6 +850,7 @@
               schema: ""
               table: people
               column: NAME
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: ds1
@@ -860,6 +892,7 @@
               schema: ""
               table: people
               column: ID
+          isplainfield: true
         - name: NAME
           sourcecolumns:
             - server: ""
@@ -867,6 +900,7 @@
               schema: ""
               table: people
               column: NAME
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: ds1
