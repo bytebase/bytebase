@@ -922,15 +922,24 @@ func (s *BranchService) convertBranchToBranch(ctx context.Context, project *stor
 	}
 
 	v1Branch.Schema = string(branch.HeadSchema)
-	sm, err := convertStoreDatabaseMetadata(ctx, branch.Head.Metadata, branch.Head.DatabaseConfig, nil /* filter */, s.store)
+	sm, err := convertStoreDatabaseMetadata(branch.Head.Metadata, nil /* filter */)
 	if err != nil {
 		return nil, err
 	}
+	smc := convertStoreDatabaseConfig(ctx, branch.Head.DatabaseConfig, nil /* filter */, s.store)
+	if smc != nil {
+		sm.SchemaConfigs = smc.SchemaConfigs
+	}
+
 	v1Branch.SchemaMetadata = sm
 	v1Branch.BaselineSchema = string(branch.BaseSchema)
-	bsm, err := convertStoreDatabaseMetadata(ctx, branch.Base.Metadata, branch.Base.DatabaseConfig, nil /* filter */, s.store)
+	bsm, err := convertStoreDatabaseMetadata(branch.Base.Metadata, nil /* filter */)
 	if err != nil {
 		return nil, err
+	}
+	bsmc := convertStoreDatabaseConfig(ctx, branch.Base.DatabaseConfig, nil /* filter */, s.store)
+	if bsmc != nil {
+		bsm.SchemaConfigs = bsmc.SchemaConfigs
 	}
 	v1Branch.BaselineSchemaMetadata = bsm
 	return v1Branch, nil
