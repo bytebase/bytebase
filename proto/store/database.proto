@@ -43,6 +43,14 @@ message DatabaseSchemaMetadata {
   string owner = 9;
 }
 
+message LinkedDatabaseMetadata {
+  string name = 1;
+
+  string username = 2;
+
+  string host = 3;
+}
+
 // SchemaMetadata is the metadata for schemas.
 // This is the concept of schema in Postgres, but it's a no-op for MySQL.
 message SchemaMetadata {
@@ -752,12 +760,4 @@ message ColumnConfig {
   string full_masking_algorithm_id = 6;
 
   string partial_masking_algorithm_id = 7;
-}
-
-message LinkedDatabaseMetadata {
-  string name = 1;
-
-  string username = 2;
-
-  string host = 3;
 }
