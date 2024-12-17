@@ -10,12 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -93,7 +91,7 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.Previ
 
 	serializeTasks := request.Plan.GetVcsSource() != nil
 
-	rollout, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, steps, project, serializeTasks)
+	rollout, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, steps, nil /* snapshot */, project, serializeTasks)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
@@ -239,7 +237,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 
 	serializeTasks := plan.Config.GetVcsSource() != nil
 
-	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, plan.Config.Steps, project, serializeTasks)
+	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, plan.Config.GetSteps(), plan.Config.GetDeploymentSnapshot(), project, serializeTasks)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
@@ -958,118 +956,9 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, request *v1
 	}, nil
 }
 
-// diffSpecs check if there are any specs removed, added or updated in the new plan.
-// Only updating sheet is taken into account.
-func diffSpecs(oldSteps []*v1pb.Plan_Step, newSteps []*v1pb.Plan_Step) ([]*v1pb.Plan_Spec, []*v1pb.Plan_Spec, []*v1pb.Plan_Spec) {
-	oldSpecs := make(map[string]*v1pb.Plan_Spec)
-	newSpecs := make(map[string]*v1pb.Plan_Spec)
-	var removed, added, updated []*v1pb.Plan_Spec
-	for _, step := range oldSteps {
-		for _, spec := range step.Specs {
-			oldSpecs[spec.Id] = spec
-		}
-	}
-	for _, step := range newSteps {
-		for _, spec := range step.Specs {
-			newSpecs[spec.Id] = spec
-		}
-	}
-	for _, step := range oldSteps {
-		for _, spec := range step.Specs {
-			if _, ok := newSpecs[spec.Id]; !ok {
-				removed = append(removed, spec)
-			}
-		}
-	}
-	for _, step := range newSteps {
-		for _, spec := range step.Specs {
-			if _, ok := oldSpecs[spec.Id]; !ok {
-				added = append(added, spec)
-			}
-		}
-	}
-	for _, step := range newSteps {
-		for _, spec := range step.Specs {
-			if oldSpec, ok := oldSpecs[spec.Id]; ok {
-				if !cmp.Equal(oldSpec, spec, protocmp.Transform()) {
-					updated = append(updated, spec)
-				}
-			}
-		}
-	}
-	return removed, added, updated
-}
-
-func validateSteps(steps []*v1pb.Plan_Step) error {
-	if len(steps) == 0 {
-		return errors.Errorf("the plan has zero step")
-	}
-	var databaseTarget, databaseGroupTarget int
-	configTypeCount := map[string]int{}
-	seenID := map[string]bool{}
-	for _, step := range steps {
-		if len(step.Specs) == 0 {
-			return errors.Errorf("the plan step has zero spec")
-		}
-		seenIDInStep := map[string]bool{}
-		for _, spec := range step.Specs {
-			id := spec.GetId()
-			if id == "" {
-				return errors.Errorf("spec id cannot be empty")
-			}
-			if seenID[id] {
-				return errors.Errorf("found duplicate spec id %q", spec.GetId())
-			}
-			seenID[id] = true
-			seenIDInStep[id] = true
-			switch config := spec.Config.(type) {
-			case *v1pb.Plan_Spec_ChangeDatabaseConfig:
-				configTypeCount["ChangeDatabaseConfig"]++
-				c := config.ChangeDatabaseConfig
-				if _, _, err := common.GetInstanceDatabaseID(c.Target); err == nil {
-					databaseTarget++
-				} else if _, _, err := common.GetProjectIDDatabaseGroupID(c.Target); err == nil {
-					databaseGroupTarget++
-				} else {
-					return errors.Errorf("unknown target %q", c.Target)
-				}
-			case *v1pb.Plan_Spec_CreateDatabaseConfig:
-				configTypeCount["CreateDatabaseConfig"]++
-			case *v1pb.Plan_Spec_ExportDataConfig:
-				configTypeCount["ExportDataConfig"]++
-			default:
-				return errors.Errorf("unexpected config type %T", spec.Config)
-			}
-		}
-		for _, spec := range step.Specs {
-			for _, dependOnSpec := range spec.DependsOnSpecs {
-				if !seenIDInStep[dependOnSpec] {
-					return errors.Errorf("spec %q depends on spec %q, but spec %q is not found in the step", spec.Id, dependOnSpec, dependOnSpec)
-				}
-				if dependOnSpec == spec.Id {
-					return errors.Errorf("spec %q depends on itself", spec.Id)
-				}
-			}
-		}
-	}
-
-	if len(configTypeCount) > 1 {
-		msg := "expect one kind of config, found"
-		for k, v := range configTypeCount {
-			msg += fmt.Sprintf(" %v %v", v, k)
-		}
-		return errors.New(msg)
-	}
-
-	if databaseGroupTarget > 0 && databaseTarget > 0 {
-		return errors.Errorf("found databaseGroupTarget and databaseTarget, expect only one kind")
-	}
-	return nil
-}
-
 // GetPipelineCreate gets a pipeline create message from a plan.
 // serializeTasks serialize tasks on the same database using taskDAG.
-func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage, serializeTasks bool) (*store.PipelineMessage, error) {
+func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, snapshot *storepb.PlanConfig_DeploymentSnapshot /* nullable */, project *store.ProjectMessage, serializeTasks bool) (*store.PipelineMessage, error) {
 	// Flatten all specs from steps.
 	var specs []*storepb.PlanConfig_Spec
 	for _, step := range steps {
@@ -1078,7 +967,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 
 	// Step 1 - transform database group specs.
 	// Others are untouched.
-	transformSpecs, err := transformDatabaseGroupSpecs(ctx, s, project, specs)
+	transformSpecs, err := transformDatabaseGroupSpecs(ctx, s, project, specs, snapshot)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to transform database group specs")
 	}
@@ -1097,11 +986,15 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 
 	// For ChangeDatabase specs, we will try to rebuild the steps based on the deployment config.
 	if filterByDeploymentConfig {
-		deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.UID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get deployment config")
+		deploymentConfig := snapshot.GetDeploymentConfig()
+		if deploymentConfig == nil {
+			deploymentConfigMessage, err := s.GetDeploymentConfigV2(ctx, project.UID)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get deployment config")
+			}
+			deploymentConfig = deploymentConfigMessage.Config
 		}
-		if err := utils.ValidateDeploymentSchedule(deploymentConfig.Config.GetSchedule()); err != nil {
+		if err := utils.ValidateDeploymentSchedule(deploymentConfig.Schedule); err != nil {
 			return nil, errors.Wrapf(err, "failed to validate and get deployment schedule")
 		}
 		// Get all databases from specs.
@@ -1126,7 +1019,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 			}
 		}
 		// Calculate the matrix of databases based on the deployment schedule.
-		matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.Config.GetSchedule(), databases)
+		matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.GetSchedule(), databases)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database matrix from deployment schedule")
 		}
@@ -1148,7 +1041,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 			}
 
 			step := &storepb.PlanConfig_Step{
-				Title: deploymentConfig.Config.GetSchedule().Deployments[i].Title,
+				Title: deploymentConfig.GetSchedule().Deployments[i].Title,
 			}
 			for _, database := range databases {
 				name := common.FormatDatabase(database.InstanceID, database.DatabaseName)
