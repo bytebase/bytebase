@@ -4,6 +4,7 @@ import { computed, reactive, ref } from "vue";
 import { hashCode } from "@/bbkit/BBUtil";
 import { WebStorageHelper } from "@/utils";
 import type { OpenAIMessage, OpenAIResponse } from "../types";
+import { OPENAI_DEFAULT_MODEL } from "@/types";
 import { useAIContext } from "./context";
 import * as promptUtils from "./prompt";
 
@@ -44,7 +45,7 @@ export const useDynamicSuggestions = () => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const modelName =
       context.openAIModel.value === ""
-      ? "gpt-3.5-turbo"
+      ? OPENAI_DEFAULT_MODEL
       : context.openAIModel.value
     const body = {
       model: modelName,

@@ -37,6 +37,7 @@ import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
 import * as promptUtils from "../logic/prompt";
 import { useConversationStore } from "../store";
 import type { OpenAIMessage, OpenAIResponse } from "../types";
+import { OPENAI_DEFAULT_MODEL } from "@/types";
 import ActionBar from "./ActionBar.vue";
 import ChatView from "./ChatView";
 import DynamicSuggestions from "./DynamicSuggestions.vue";
@@ -116,7 +117,7 @@ const requestAI = async (query: string) => {
   const messages: OpenAIMessage[] = [];
   const model =
     openAIModel.value === ""
-      ? "gpt-3.5-turbo"
+      ? OPENAI_DEFAULT_MODEL
       : openAIModel.value;
   conversation.messageList.forEach((message) => {
     const { author, prompt } = message;
