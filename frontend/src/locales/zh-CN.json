@@ -761,7 +761,7 @@
           },
           "openai-model": {
             "self": "OpenAI Model Name",
-            "description": "提供私有化部署的 OpenAI 模型名字。"
+            "description": "提供私有化部署的 OpenAI 模型名称。"
           }
         },
         "announcement": {
