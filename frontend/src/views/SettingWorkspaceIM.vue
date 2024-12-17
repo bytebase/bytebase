@@ -183,6 +183,39 @@ const imList = computed(() => {
       },
     },
     {
+      name: t("common.lark"),
+      type: Webhook_Type.TYPE_LARK,
+      enabled: state.setting.lark?.enabled,
+      render: () => {
+        return (
+          <div class="space-y-4">
+            <div>
+              <div class="textlabel">App ID</div>
+              <BBTextField
+                class="mt-2"
+                placeholder={t("common.write-only")}
+                value={state.setting.lark?.appId ?? ""}
+                onUpdate:value={(val: string) => {
+                  state.setting.lark!.appId = val;
+                }}
+              />
+            </div>
+            <div>
+              <div class="textlabel">App Secret</div>
+              <BBTextField
+                class="mt-2"
+                placeholder={t("common.write-only")}
+                value={state.setting.lark?.appSecret ?? ""}
+                onUpdate:value={(val: string) => {
+                  state.setting.lark!.appSecret = val;
+                }}
+              />
+            </div>
+          </div>
+        );
+      },
+    },
+    {
       name: t("common.wecom"),
       type: Webhook_Type.TYPE_WECOM,
       enabled: state.setting.wecom?.enabled,
@@ -219,39 +252,6 @@ const imList = computed(() => {
                 value={state.setting.wecom?.secret ?? ""}
                 onUpdate:value={(val: string) => {
                   state.setting.wecom!.secret = val;
-                }}
-              />
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      name: t("common.lark"),
-      type: Webhook_Type.TYPE_LARK,
-      enabled: state.setting.lark?.enabled,
-      render: () => {
-        return (
-          <div class="space-y-4">
-            <div>
-              <div class="textlabel">App ID</div>
-              <BBTextField
-                class="mt-2"
-                placeholder={t("common.write-only")}
-                value={state.setting.lark?.appId ?? ""}
-                onUpdate:value={(val: string) => {
-                  state.setting.lark!.appId = val;
-                }}
-              />
-            </div>
-            <div>
-              <div class="textlabel">App Secret</div>
-              <BBTextField
-                class="mt-2"
-                placeholder={t("common.write-only")}
-                value={state.setting.lark?.appSecret ?? ""}
-                onUpdate:value={(val: string) => {
-                  state.setting.lark!.appSecret = val;
                 }}
               />
             </div>

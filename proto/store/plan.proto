@@ -6,12 +6,19 @@ import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "store/common.proto";
+import "store/deployment_config.proto";
 import "store/plan_check_run.proto";
 
 option go_package = "generated-go/store";
 
 message PlanConfig {
   repeated Step steps = 1;
+
+  VCSSource vcs_source = 2;
+
+  ReleaseSource release_source = 3;
+
+  DeploymentSnapshot deployment_snapshot = 4;
 
   message Step {
     // Use the title if set.
@@ -36,10 +43,6 @@ message PlanConfig {
       ExportDataConfig export_data_config = 7;
     }
   }
-
-  VCSSource vcs_source = 8;
-
-  ReleaseSource release_source = 9;
 
   message CreateDatabaseConfig {
     // The resource name of the instance on which the database is created.
@@ -139,5 +142,19 @@ message PlanConfig {
   message SpecReleaseSource {
     // Format: projects/{project}/releases/{release}/files/{id}
     string file = 1;
+  }
+
+  message DeploymentSnapshot {
+    // The snapshot of the project deployment config at the time of creation.
+    DeploymentConfig deployment_config = 1;
+    repeated DatabaseGroupSnapshot database_group_snapshots = 2;
+
+    // The snapshot of the database group at the time of creation.
+    message DatabaseGroupSnapshot {
+      // Format: projects/{project}/databaseGroups/{databaseGroup}.
+      string database_group = 1;
+      // Format: instances/{instance-id}/databases/{database-name}.
+      repeated string databases = 2;
+    }
   }
 }
