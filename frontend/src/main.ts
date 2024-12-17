@@ -13,7 +13,7 @@ import i18n from "./plugins/i18n";
 import NaiveUI from "./plugins/naive-ui";
 import { isSilent } from "./plugins/silent-request";
 import { router } from "./router";
-import { pinia, pushNotification, useAuthStore } from "./store";
+import { pinia, pushNotification } from "./store";
 import {
   humanizeTs,
   humanizeDurationV1,
