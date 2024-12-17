@@ -3282,18 +3282,13 @@ type ColumnConfig struct {
 	Name           string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	SemanticTypeId string `protobuf:"bytes,2,opt,name=semantic_type_id,json=semanticTypeId,proto3" json:"semantic_type_id,omitempty"`
 	// The user labels for a column.
-<<<<<<< HEAD
-	Labels           map[string]string `protobuf:"bytes,3,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	ClassificationId string            `protobuf:"bytes,4,opt,name=classification_id,json=classificationId,proto3" json:"classification_id,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-=======
-	Labels                    map[string]string `protobuf:"bytes,3,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Labels                    map[string]string `protobuf:"bytes,3,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	ClassificationId          string            `protobuf:"bytes,4,opt,name=classification_id,json=classificationId,proto3" json:"classification_id,omitempty"`
 	MaskingLevel              MaskingLevel      `protobuf:"varint,5,opt,name=masking_level,json=maskingLevel,proto3,enum=bytebase.store.MaskingLevel" json:"masking_level,omitempty"`
 	FullMaskingAlgorithmId    string            `protobuf:"bytes,6,opt,name=full_masking_algorithm_id,json=fullMaskingAlgorithmId,proto3" json:"full_masking_algorithm_id,omitempty"`
 	PartialMaskingAlgorithmId string            `protobuf:"bytes,7,opt,name=partial_masking_algorithm_id,json=partialMaskingAlgorithmId,proto3" json:"partial_masking_algorithm_id,omitempty"`
->>>>>>> upstream/main
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
 }
 
 func (x *ColumnConfig) Reset() {
