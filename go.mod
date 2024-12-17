@@ -25,7 +25,7 @@ require (
 	github.com/buger/jsonparser v1.1.1
 	github.com/bytebase/google-sql-parser v0.0.0-20241030063241-f3a4e61b6aed
 	github.com/bytebase/mysql-parser v0.0.0-20240810145851-ab2c11629c24
-	github.com/bytebase/plsql-parser v0.0.0-20241210025428-898183660166
+	github.com/bytebase/plsql-parser v0.0.0-20241216090448-b31aac361cca
 	github.com/bytebase/postgresql-parser v0.0.0-20241108072816-e932f744004a
 	github.com/bytebase/snowsql-parser v0.0.0-20241211024554-093949951501
 	github.com/bytebase/tidb-parser v0.0.0-20240821091609-162fffe2a839
@@ -90,7 +90,7 @@ require (
 	go.mongodb.org/mongo-driver v1.17.1
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.31.0
-	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f
+	golang.org/x/exp v0.0.0-20241215155358-4a5509556b9e
 	golang.org/x/oauth2 v0.24.0
 	golang.org/x/text v0.21.0
 	google.golang.org/api v0.207.0
@@ -330,10 +330,10 @@ require (
 	go.opentelemetry.io/otel v1.29.0 // indirect
 	go.opentelemetry.io/otel/trace v1.29.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/net v0.31.0 // indirect
+	golang.org/x/net v0.32.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
-	golang.org/x/tools v0.27.0 // indirect
+	golang.org/x/tools v0.28.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	nhooyr.io/websocket v1.8.10 // indirect

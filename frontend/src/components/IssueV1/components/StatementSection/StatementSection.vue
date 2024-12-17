@@ -10,9 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import { ref } from "vue";
-import { nextTick } from "vue";
+import { computed, nextTick, ref, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { TaskTypeListWithStatement } from "@/types";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
@@ -66,4 +64,24 @@ const scrollToLineByHash = (hash: string) => {
     );
   });
 };
+
+const beforeUnloadHandler = (e: BeforeUnloadEvent) => {
+  // For created issues and not editing, no need to prompt.
+  if (!isCreating.value && !editorViewRef.value?.isEditing) {
+    return;
+  }
+
+  // For creating issues or editing task statement, prompt to confirm leaving.
+  e.preventDefault();
+  // Included for legacy support, e.g. Chrome/Edge < 119
+  e.returnValue = true;
+};
+
+onMounted(() => {
+  window.addEventListener("beforeunload", beforeUnloadHandler);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("beforeunload", beforeUnloadHandler);
+});
 </script>

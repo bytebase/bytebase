@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/tests/fake"
@@ -180,27 +181,90 @@ func TestSensitiveData(t *testing.T) {
 	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 	a.NoError(err)
 
-	// Create sensitive data policy.
-	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, &v1pb.CreatePolicyRequest{
-		Parent: database.Name,
-		Policy: &v1pb.Policy{
-			Type: v1pb.PolicyType_MASKING,
-			Policy: &v1pb.Policy_MaskingPolicy{
-				MaskingPolicy: &v1pb.MaskingPolicy{
-					MaskData: []*v1pb.MaskData{
+	// Create sensitive data in the database config.
+	dbMetadata, err := ctl.databaseServiceClient.GetDatabaseMetadata(ctx, &v1pb.GetDatabaseMetadataRequest{
+		Name: fmt.Sprintf("%s/metadata", database.Name),
+	})
+	a.NoError(err)
+
+	foundSchemaConfig := false
+	for _, schemaConfig := range dbMetadata.GetSchemaConfigs() {
+		if schemaConfig.Name != "" {
+			continue
+		}
+		foundSchemaConfig = true
+		foundTableConfig := false
+		for _, tableConfig := range schemaConfig.TableConfigs {
+			if tableConfig.Name != tableName {
+				continue
+			}
+			foundTableConfig = true
+			foundColumnConfigForID := false
+			foundColumnConfigForAuthor := false
+			for _, columnConfig := range tableConfig.ColumnConfigs {
+				if columnConfig.Name == "id" {
+					foundColumnConfigForID = true
+					columnConfig.MaskingLevel = v1pb.MaskingLevel_FULL
+				}
+				if columnConfig.Name == "author" {
+					foundColumnConfigForAuthor = true
+					columnConfig.MaskingLevel = v1pb.MaskingLevel_FULL
+				}
+			}
+			if !foundColumnConfigForID {
+				tableConfig.ColumnConfigs = append(tableConfig.ColumnConfigs, &v1pb.ColumnConfig{
+					Name:         "id",
+					MaskingLevel: v1pb.MaskingLevel_FULL,
+				})
+			}
+			if !foundColumnConfigForAuthor {
+				tableConfig.ColumnConfigs = append(tableConfig.ColumnConfigs, &v1pb.ColumnConfig{
+					Name:         "author",
+					MaskingLevel: v1pb.MaskingLevel_FULL,
+				})
+			}
+		}
+		if !foundTableConfig {
+			schemaConfig.TableConfigs = append(schemaConfig.TableConfigs, &v1pb.TableConfig{
+				Name: tableName,
+				ColumnConfigs: []*v1pb.ColumnConfig{
+					{
+						Name:         "id",
+						MaskingLevel: v1pb.MaskingLevel_FULL,
+					},
+					{
+						Name:         "author",
+						MaskingLevel: v1pb.MaskingLevel_FULL,
+					},
+				},
+			})
+		}
+	}
+	if !foundSchemaConfig {
+		dbMetadata.SchemaConfigs = append(dbMetadata.SchemaConfigs, &v1pb.SchemaConfig{
+			Name: "",
+			TableConfigs: []*v1pb.TableConfig{
+				{
+					Name: tableName,
+					ColumnConfigs: []*v1pb.ColumnConfig{
 						{
-							Table:        tableName,
-							Column:       "id",
+							Name:         "id",
 							MaskingLevel: v1pb.MaskingLevel_FULL,
 						},
 						{
-							Table:        tableName,
-							Column:       "author",
+							Name:         "author",
 							MaskingLevel: v1pb.MaskingLevel_FULL,
 						},
 					},
 				},
 			},
+		})
+	}
+
+	_, err = ctl.databaseServiceClient.UpdateDatabaseMetadata(ctx, &v1pb.UpdateDatabaseMetadataRequest{
+		DatabaseMetadata: dbMetadata,
+		UpdateMask: &fieldmaskpb.FieldMask{
+			Paths: []string{"schema_configs"},
 		},
 	})
 	a.NoError(err)

@@ -22,23 +22,17 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
 import { computed } from "vue";
 import { reactive } from "vue";
-import { useI18n } from "vue-i18n";
 import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
-import { pushNotification, useDBSchemaV1Store } from "@/store";
+import { useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import {
-  ColumnConfig,
-  SchemaConfig,
-  TableConfig,
-} from "@/types/proto/v1/database_service";
 import LabelEditorDrawer from "../LabelEditorDrawer.vue";
+import { updateColumnConfig } from "./utils";
 
 type LocalState = {
   showLabelsDrawer: boolean;
@@ -52,108 +46,33 @@ const props = defineProps<{
   readonly?: boolean;
 }>();
 
-const { t } = useI18n();
 const dbSchemaV1Store = useDBSchemaV1Store();
 const state = reactive<LocalState>({
   showLabelsDrawer: false,
 });
 
-const databaseMetadata = computed(() => {
-  return dbSchemaV1Store.getDatabaseMetadata(props.database.name);
-});
+const columnConfig = computed(() =>
+  dbSchemaV1Store.getColumnConfig({
+    database: props.database.name,
+    schema: props.schema,
+    table: props.table.name,
+    column: props.column.name,
+  })
+);
 
-const schemaConfig = computed(() => {
-  return (
-    databaseMetadata.value.schemaConfigs.find(
-      (config) => config.name === props.schema
-    ) ??
-    SchemaConfig.fromPartial({
-      name: props.schema,
-      tableConfigs: [],
-    })
-  );
-});
-
-const tableConfig = computed(() => {
-  return (
-    schemaConfig.value.tableConfigs.find(
-      (config) => config.name === props.table.name
-    ) ??
-    TableConfig.fromPartial({
-      name: props.table.name,
-      columnConfigs: [],
-    })
-  );
-});
-
-const labels = computed(() => {
-  return (
-    tableConfig.value.columnConfigs.find(
-      (config) => config.name === props.column.name
-    ) ?? ColumnConfig.fromPartial({})
-  ).labels;
-});
+const labels = computed(() => columnConfig.value?.labels ?? {});
 
 const openLabelsDrawer = () => {
   state.showLabelsDrawer = true;
 };
 
 const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
-  await updateColumnConfig(props.column.name, { labels: labelsList[0] });
-};
-
-const updateColumnConfig = async (
-  column: string,
-  config: Partial<ColumnConfig>
-) => {
-  const index = tableConfig.value.columnConfigs.findIndex(
-    (config) => config.name === column
-  );
-
-  const pendingUpdateTableConfig = cloneDeep(tableConfig.value);
-  if (index < 0) {
-    pendingUpdateTableConfig.columnConfigs.push(
-      ColumnConfig.fromPartial({
-        name: column,
-        ...config,
-      })
-    );
-  } else {
-    pendingUpdateTableConfig.columnConfigs[index] = {
-      ...pendingUpdateTableConfig.columnConfigs[index],
-      ...config,
-    };
-  }
-
-  const pendingUpdateSchemaConfig = cloneDeep(schemaConfig.value);
-  const tableIndex = pendingUpdateSchemaConfig.tableConfigs.findIndex(
-    (config) => config.name === pendingUpdateTableConfig.name
-  );
-  if (tableIndex < 0) {
-    pendingUpdateSchemaConfig.tableConfigs.push(pendingUpdateTableConfig);
-  } else {
-    pendingUpdateSchemaConfig.tableConfigs[tableIndex] =
-      pendingUpdateTableConfig;
-  }
-
-  const pendingUpdateDatabaseConfig = cloneDeep(databaseMetadata.value);
-  const schemaIndex = pendingUpdateDatabaseConfig.schemaConfigs.findIndex(
-    (config) => config.name === pendingUpdateSchemaConfig.name
-  );
-  if (schemaIndex < 0) {
-    pendingUpdateDatabaseConfig.schemaConfigs.push(pendingUpdateSchemaConfig);
-  } else {
-    pendingUpdateDatabaseConfig.schemaConfigs[schemaIndex] =
-      pendingUpdateSchemaConfig;
-  }
-
-  await dbSchemaV1Store.updateDatabaseSchemaConfigs(
-    pendingUpdateDatabaseConfig
-  );
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("common.updated"),
+  await updateColumnConfig({
+    database: props.database.name,
+    schema: props.schema,
+    table: props.table.name,
+    column: props.column.name,
+    config: { labels: labelsList[0] },
   });
 };
 </script>

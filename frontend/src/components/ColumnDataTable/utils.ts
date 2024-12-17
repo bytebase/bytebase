@@ -24,13 +24,19 @@ export const supportSetClassificationFromComment = (
   return !classificationFromConfig;
 };
 
-export const updateColumnConfig = async (
-  database: string,
-  schema: string,
-  table: string,
-  column: string,
-  config: Partial<ColumnConfig>
-) => {
+export const updateColumnConfig = async ({
+  database,
+  schema,
+  table,
+  column,
+  config,
+}: {
+  database: string;
+  schema: string;
+  table: string;
+  column: string;
+  config: Partial<ColumnConfig>;
+}) => {
   const dbSchemaV1Store = useDBSchemaV1Store();
   const databaseMetadata = dbSchemaV1Store.getDatabaseMetadata(
     database,

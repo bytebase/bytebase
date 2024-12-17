@@ -95,13 +95,17 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get columns from database %q", driver.databaseName)
 	}
-	tableMap, externalTableMap, err := getTables(txn, isAtLeastPG10, columnMap)
+	indexMap, err := getIndexes(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get indexes from database %q", driver.databaseName)
+	}
+	tableMap, externalTableMap, err := getTables(txn, isAtLeastPG10, columnMap, indexMap)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
 	}
 	var tablePartitionMap map[db.TableKey][]*storepb.TablePartitionMetadata
 	if isAtLeastPG10 {
-		tablePartitionMap, err = getTablePartitions(txn)
+		tablePartitionMap, err = getTablePartitions(txn, indexMap)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get table partitions from database %q", driver.databaseName)
 		}
@@ -357,11 +361,7 @@ func getListTableQuery(isAtLeastPG10 bool) string {
 }
 
 // getTables gets all tables of a database.
-func getTables(txn *sql.Tx, isAtLeastPG10 bool, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ExternalTableMetadata, error) {
-	indexMap, err := getIndexes(txn)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get indexes")
-	}
+func getTables(txn *sql.Tx, isAtLeastPG10 bool, columnMap map[db.TableKey][]*storepb.ColumnMetadata, indexMap map[db.TableKey][]*storepb.IndexMetadata) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ExternalTableMetadata, error) {
 	foreignKeysMap, err := getForeignKeys(txn)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get foreign keys")
@@ -467,7 +467,7 @@ WHERE
 	AND n.nspname NOT IN (%s)
 ORDER BY c.oid;`, pgparser.SystemSchemaWhereClause)
 
-func getTablePartitions(txn *sql.Tx) (map[db.TableKey][]*storepb.TablePartitionMetadata, error) {
+func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMetadata) (map[db.TableKey][]*storepb.TablePartitionMetadata, error) {
 	result := make(map[db.TableKey][]*storepb.TablePartitionMetadata)
 	rows, err := txn.Query(listTablePartitionQuery)
 	if err != nil {
@@ -488,6 +488,7 @@ func getTablePartitions(txn *sql.Tx) (map[db.TableKey][]*storepb.TablePartitionM
 			Name:       tableName,
 			Expression: partKeyDef,
 			Value:      relPartBound,
+			Indexes:    indexMap[key],
 		}
 		switch strings.ToLower(partitionType) {
 		case "l":

@@ -225,6 +225,21 @@ func convertStoreDatabaseMetadata(ctx context.Context, metadata *storepb.Databas
 	return m, nil
 }
 
+func convertStoreIndexMetadata(index *storepb.IndexMetadata) *v1pb.IndexMetadata {
+	return &v1pb.IndexMetadata{
+		Name:        index.Name,
+		Expressions: index.Expressions,
+		KeyLength:   index.KeyLength,
+		Descending:  index.Descending,
+		Type:        index.Type,
+		Unique:      index.Unique,
+		Primary:     index.Primary,
+		Visible:     index.Visible,
+		Comment:     index.Comment,
+		Definition:  index.Definition,
+	}
+}
+
 func convertStoreTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata {
 	t := &v1pb.TableMetadata{
 		Name:          table.Name,
@@ -257,18 +272,7 @@ func convertStoreTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata
 		if index == nil {
 			continue
 		}
-		t.Indexes = append(t.Indexes, &v1pb.IndexMetadata{
-			Name:        index.Name,
-			Expressions: index.Expressions,
-			KeyLength:   index.KeyLength,
-			Descending:  index.Descending,
-			Type:        index.Type,
-			Unique:      index.Unique,
-			Primary:     index.Primary,
-			Visible:     index.Visible,
-			Comment:     index.Comment,
-			Definition:  index.Definition,
-		})
+		t.Indexes = append(t.Indexes, convertStoreIndexMetadata(index))
 	}
 	for _, foreignKey := range table.ForeignKeys {
 		if foreignKey == nil {
@@ -339,6 +343,12 @@ func convertStoreTablePartitionMetadata(partition *storepb.TablePartitionMetadat
 		metadata.Type = v1pb.TablePartitionMetadata_LINEAR_KEY
 	default:
 		metadata.Type = v1pb.TablePartitionMetadata_TYPE_UNSPECIFIED
+	}
+	for _, index := range partition.Indexes {
+		if index == nil {
+			continue
+		}
+		metadata.Indexes = append(metadata.Indexes, convertStoreIndexMetadata(index))
 	}
 	for _, subpartition := range partition.Subpartitions {
 		if subpartition == nil {
@@ -490,10 +500,13 @@ func convertStoreTableConfig(ctx context.Context, table *storepb.TableConfig, op
 
 func convertStoreColumnConfig(column *storepb.ColumnConfig) *v1pb.ColumnConfig {
 	return &v1pb.ColumnConfig{
-		Name:             column.Name,
-		SemanticTypeId:   column.SemanticTypeId,
-		Labels:           column.Labels,
-		ClassificationId: column.ClassificationId,
+		Name:                      column.Name,
+		SemanticTypeId:            column.SemanticTypeId,
+		Labels:                    column.Labels,
+		ClassificationId:          column.ClassificationId,
+		MaskingLevel:              convertToV1PBMaskingLevel(column.MaskingLevel),
+		FullMaskingAlgorithmId:    column.FullMaskingAlgorithmId,
+		PartialMaskingAlgorithmId: column.PartialMaskingAlgorithmId,
 	}
 }
 
@@ -701,6 +714,21 @@ func convertV1DatabaseMetadata(ctx context.Context, metadata *v1pb.DatabaseMetad
 	return m, databaseConfig, nil
 }
 
+func convertV1IndexMetadata(index *v1pb.IndexMetadata) *storepb.IndexMetadata {
+	return &storepb.IndexMetadata{
+		Name:        index.Name,
+		Expressions: index.Expressions,
+		KeyLength:   index.KeyLength,
+		Descending:  index.Descending,
+		Type:        index.Type,
+		Unique:      index.Unique,
+		Primary:     index.Primary,
+		Visible:     index.Visible,
+		Comment:     index.Comment,
+		Definition:  index.Definition,
+	}
+}
+
 func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 	t := &storepb.TableMetadata{
 		Name:          table.Name,
@@ -726,18 +754,7 @@ func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 		if index == nil {
 			continue
 		}
-		t.Indexes = append(t.Indexes, &storepb.IndexMetadata{
-			Name:        index.Name,
-			Expressions: index.Expressions,
-			KeyLength:   index.KeyLength,
-			Descending:  index.Descending,
-			Type:        index.Type,
-			Unique:      index.Unique,
-			Primary:     index.Primary,
-			Visible:     index.Visible,
-			Comment:     index.Comment,
-			Definition:  index.Definition,
-		})
+		t.Indexes = append(t.Indexes, convertV1IndexMetadata(index))
 	}
 	for _, foreignKey := range table.ForeignKeys {
 		if foreignKey == nil {
@@ -798,6 +815,12 @@ func convertV1TablePartitionMetadata(tablePartition *v1pb.TablePartitionMetadata
 		metadata.Type = storepb.TablePartitionMetadata_LINEAR_KEY
 	default:
 		metadata.Type = storepb.TablePartitionMetadata_TYPE_UNSPECIFIED
+	}
+	for _, index := range tablePartition.Indexes {
+		if index == nil {
+			continue
+		}
+		metadata.Indexes = append(metadata.Indexes, convertV1IndexMetadata(index))
 	}
 	for _, subpartition := range tablePartition.Subpartitions {
 		if subpartition == nil {
@@ -940,10 +963,13 @@ func convertV1TableConfig(ctx context.Context, table *v1pb.TableConfig, optional
 
 func convertV1ColumnConfig(column *v1pb.ColumnConfig) *storepb.ColumnConfig {
 	return &storepb.ColumnConfig{
-		Name:             column.Name,
-		SemanticTypeId:   column.SemanticTypeId,
-		Labels:           column.Labels,
-		ClassificationId: column.ClassificationId,
+		Name:                      column.Name,
+		SemanticTypeId:            column.SemanticTypeId,
+		Labels:                    column.Labels,
+		ClassificationId:          column.ClassificationId,
+		MaskingLevel:              convertToStorePBMaskingLevel(column.MaskingLevel),
+		FullMaskingAlgorithmId:    column.FullMaskingAlgorithmId,
+		PartialMaskingAlgorithmId: column.PartialMaskingAlgorithmId,
 	}
 }
 

@@ -18,29 +18,23 @@ import { NDataTable, NPopconfirm, type DataTableColumn } from "naive-ui";
 import { computed, h, ref, watch } from "vue";
 import { withModifiers } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  DatabaseV1Name,
-  EnvironmentV1Name,
-  InstanceV1Name,
-  MiniActionButton,
-  ProjectV1Name,
-} from "@/components/v2";
+import type { MaskData } from "@/components/SensitiveData/types";
+import { MiniActionButton } from "@/components/v2";
 import type { MaskingLevel } from "@/types/proto/v1/common";
 import { maskingLevelToJSON } from "@/types/proto/v1/common";
-import type { SensitiveColumn } from "../types";
 
 const props = defineProps<{
   showOperation: boolean;
   rowClickable: boolean;
   rowSelectable: boolean;
-  columnList: SensitiveColumn[];
+  columnList: MaskData[];
   checkedColumnIndexList: number[];
 }>();
 
 const emit = defineEmits<{
   (
     event: "click",
-    item: SensitiveColumn,
+    item: MaskData,
     row: number,
     action: "VIEW" | "DELETE" | "EDIT"
   ): void;
@@ -63,9 +57,9 @@ watch(
   { deep: true }
 );
 
-const itemKey = (item: SensitiveColumn) => {
-  const parts = [item.database.name];
-  const { schema, table, column } = item.maskData;
+const itemKey = (item: MaskData) => {
+  const parts = [];
+  const { schema, table, column } = item;
   if (schema) {
     parts.push(schema);
   }
@@ -90,65 +84,30 @@ const checkedItemKeys = computed(() => {
 });
 
 const dataTableColumns = computed(() => {
-  const columns: DataTableColumn<SensitiveColumn>[] = [
+  const columns: DataTableColumn<MaskData>[] = [
     {
       key: "masking-level",
       title: t("settings.sensitive-data.masking-level.self"),
+      width: "12rem",
+      resizable: true,
       render(item) {
-        return getMaskingLevelText(item.maskData.maskingLevel);
-      },
-    },
-    {
-      key: "column",
-      title: t("database.column"),
-      render(item) {
-        return item.maskData.column;
+        return getMaskingLevelText(item.maskingLevel);
       },
     },
     {
       key: "table",
       title: t("common.table"),
+      resizable: true,
       render(item) {
-        return item.maskData.schema
-          ? `${item.maskData.schema}.${item.maskData.table}`
-          : item.maskData.table;
+        return item.schema ? `${item.schema}.${item.table}` : item.table;
       },
     },
     {
-      key: "database",
-      title: t("common.database"),
+      key: "column",
+      title: t("database.column"),
+      resizable: true,
       render(item) {
-        return h(DatabaseV1Name, { database: item.database, link: false });
-      },
-    },
-    {
-      key: "instance",
-      title: t("common.instance"),
-      render(item) {
-        return h(InstanceV1Name, {
-          instance: item.database.instanceResource,
-          link: false,
-        });
-      },
-    },
-    {
-      key: "environment",
-      title: t("common.environment"),
-      render(item) {
-        return h(EnvironmentV1Name, {
-          environment: item.database.effectiveEnvironmentEntity,
-          link: false,
-        });
-      },
-    },
-    {
-      key: "project",
-      title: t("common.project"),
-      render(item) {
-        return h(ProjectV1Name, {
-          project: item.database.projectEntity,
-          link: false,
-        });
+        return item.column;
       },
     },
   ];
@@ -156,6 +115,7 @@ const dataTableColumns = computed(() => {
     columns.push({
       key: "operation",
       title: t("common.operation"),
+      width: "6rem",
       render(item, index) {
         const editButton = h(
           MiniActionButton,
@@ -230,7 +190,7 @@ const handleUpdateCheckedRowKeys = (keys: string[]) => {
   emit("checked:update", checkedIndexList);
 };
 
-const rowProps = (item: SensitiveColumn, index: number) => {
+const rowProps = (item: MaskData, index: number) => {
   return {
     style: props.rowClickable ? "cursor: pointer;" : "",
     onClick: () => {

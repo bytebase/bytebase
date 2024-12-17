@@ -1618,10 +1618,13 @@ func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *store
 					})
 				} else {
 					columnConfig := &storepb.ColumnConfig{
-						Name:             columnName,
-						ClassificationId: columnConfig.ClassificationId,
-						SemanticTypeId:   columnConfig.SemanticTypeId,
-						Labels:           columnConfig.Labels,
+						Name:                      columnName,
+						ClassificationId:          columnConfig.ClassificationId,
+						SemanticTypeId:            columnConfig.SemanticTypeId,
+						Labels:                    columnConfig.Labels,
+						MaskingLevel:              columnConfig.MaskingLevel,
+						FullMaskingAlgorithmId:    columnConfig.FullMaskingAlgorithmId,
+						PartialMaskingAlgorithmId: columnConfig.PartialMaskingAlgorithmId,
 					}
 					tableConfig.ColumnConfigs = append(tableConfig.ColumnConfigs, columnConfig)
 				}
