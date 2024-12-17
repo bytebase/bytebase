@@ -140,6 +140,12 @@
         <DatabaseSlowQueryPanel class="mt-2" :database="database" />
       </NTabPane>
       <NTabPane
+        name="sensitive-data"
+        :tab="$t('settings.sensitive-data.sensitive-column-list')"
+      >
+        <DatabaseSensitiveDataPanel class="mt-2" :database="database" />
+      </NTabPane>
+      <NTabPane
         v-if="allowUpdateDatabase"
         name="setting"
         :tab="$t('common.settings')"
@@ -206,6 +212,7 @@ import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModa
 import DatabaseChangeHistoryPanel from "@/components/Database/DatabaseChangeHistoryPanel.vue";
 import DatabaseOverviewPanel from "@/components/Database/DatabaseOverviewPanel.vue";
 import DatabaseRevisionPanel from "@/components/Database/DatabaseRevisionPanel.vue";
+import DatabaseSensitiveDataPanel from "@/components/Database/DatabaseSensitiveDataPanel.vue";
 import DatabaseSlowQueryPanel from "@/components/Database/DatabaseSlowQueryPanel.vue";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import {
@@ -251,6 +258,7 @@ const databaseHashList = [
   "revision",
   "slow-query",
   "setting",
+  "sensitive-data",
 ] as const;
 export type DatabaseHash = (typeof databaseHashList)[number];
 const isDatabaseHash = (x: any): x is DatabaseHash =>

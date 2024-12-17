@@ -787,7 +787,12 @@ func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchema
 }
 
 func isEmptyColumnConfig(config *storepb.ColumnConfig) bool {
-	return len(config.Labels) == 0 && config.ClassificationId == "" && config.SemanticTypeId == ""
+	return config == nil || (len(config.Labels) == 0 &&
+		config.ClassificationId == "" &&
+		config.SemanticTypeId == "" &&
+		config.MaskingLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED &&
+		config.FullMaskingAlgorithmId == "" &&
+		config.PartialMaskingAlgorithmId == "")
 }
 
 func setUserCommentFromComment(dbSchema *storepb.DatabaseSchemaMetadata) {

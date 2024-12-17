@@ -237,7 +237,6 @@ message Policy {
 
   oneof policy {
     RolloutPolicy rollout_policy = 19;
-    MaskingPolicy masking_policy = 9;
     SlowQueryPolicy slow_query_policy = 12;
     DisableCopyDataPolicy disable_copy_data_policy = 16;
     MaskingRulePolicy masking_rule_policy = 17;
@@ -255,11 +254,10 @@ message Policy {
 }
 
 enum PolicyType {
-  reserved 2, 4, 6;
+  reserved 2, 4, 6, 5;
 
   POLICY_TYPE_UNSPECIFIED = 0;
   ROLLOUT_POLICY = 11;
-  MASKING = 5;
   SLOW_QUERY = 7;
   DISABLE_COPY_DATA = 8;
   MASKING_RULE = 9;
@@ -298,19 +296,6 @@ message DisableCopyDataPolicy {
 
 message ExportDataPolicy {
   bool disable = 1;
-}
-
-message MaskingPolicy {
-  repeated MaskData mask_data = 1;
-}
-
-message MaskData {
-  string schema = 1;
-  string table = 2;
-  string column = 3;
-  MaskingLevel masking_level = 4;
-  string full_masking_algorithm_id = 5;
-  string partial_masking_algorithm_id = 6;
 }
 
 message SQLReviewRule {
