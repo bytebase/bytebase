@@ -2544,44 +2544,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/instances/{instance}/databases/{database}:generateRestoreSQL:
-        post:
-            tags:
-                - SQLService
-            description: Deprecated.
-            operationId: SQLService_GenerateRestoreSQL
-            parameters:
-                - name: instance
-                  in: path
-                  description: The instance id.
-                  required: true
-                  schema:
-                    type: string
-                - name: database
-                  in: path
-                  description: The database id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/GenerateRestoreSQLRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GenerateRestoreSQLResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}/databases/{database}:query:
         post:
             tags:
@@ -10643,36 +10605,6 @@ components:
                     type: string
                     description: The timestamp when the function is updated in branch.
                     format: date-time
-        GenerateRestoreSQLRequest:
-            required:
-                - name
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: |-
-                        The database name to execute the query against.
-                         Format: instances/{instance}/databases/{databaseName}
-                sheet:
-                    type: string
-                    description: |-
-                        The resource name of the sheet. It is used to get the original statement.
-                         Format: projects/{project}/sheets/{sheet}
-                backupDataSource:
-                    type: string
-                    description: |-
-                        The data source to restore from.
-                         Format: instances/{instance}/databases/{databaseName}, for general engines.
-                         Or instances/{instance}/databases/{databaseName}/schemas/{schemaName}, for PG only.
-                backupTable:
-                    type: string
-                    description: The backup table name.
-        GenerateRestoreSQLResponse:
-            type: object
-            properties:
-                statement:
-                    type: string
-                    description: The restore SQL statement.
         GenerationMetadata:
             type: object
             properties:

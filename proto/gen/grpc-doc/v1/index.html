@@ -2336,14 +2336,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.GenerateRestoreSQLRequest"><span class="badge">M</span>GenerateRestoreSQLRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.GenerateRestoreSQLResponse"><span class="badge">M</span>GenerateRestoreSQLResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.ParseMyBatisMapperRequest"><span class="badge">M</span>ParseMyBatisMapperRequest</a>
                 </li>
               
@@ -25992,79 +25984,6 @@ Or it can be used to query a specific read-only data source. </p></td>
 
         
       
-        <h3 id="bytebase.v1.GenerateRestoreSQLRequest">GenerateRestoreSQLRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The database name to execute the query against.
-Format: instances/{instance}/databases/{databaseName} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource name of the sheet. It is used to get the original statement.
-Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>backup_data_source</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The data source to restore from.
-Format: instances/{instance}/databases/{databaseName}, for general engines.
-Or instances/{instance}/databases/{databaseName}/schemas/{schemaName}, for PG only. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>backup_table</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The backup table name. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.GenerateRestoreSQLResponse">GenerateRestoreSQLResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>statement</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The restore SQL statement. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.ParseMyBatisMapperRequest">ParseMyBatisMapperRequest</h3>
         <p></p>
 
@@ -27130,13 +27049,6 @@ to retrieve the next page of history. </p></td>
                 <td><p></p></td>
               </tr>
             
-              <tr>
-                <td>GenerateRestoreSQL</td>
-                <td><a href="#bytebase.v1.GenerateRestoreSQLRequest">GenerateRestoreSQLRequest</a></td>
-                <td><a href="#bytebase.v1.GenerateRestoreSQLResponse">GenerateRestoreSQLResponse</a></td>
-                <td><p>Deprecated.</p></td>
-              </tr>
-            
           </tbody>
         </table>
 
@@ -27252,16 +27164,6 @@ to retrieve the next page of history. </p></td>
                 <td>StringifyMetadata</td>
                 <td>POST</td>
                 <td>/v1/schemaDesign:stringifyMetadata</td>
-                <td>*</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>GenerateRestoreSQL</td>
-                <td>POST</td>
-                <td>/v1/{name=instances/*/databases/*}:generateRestoreSQL</td>
                 <td>*</td>
               </tr>
               

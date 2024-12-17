@@ -565,8 +565,6 @@
     - [CheckResponse](#bytebase-v1-CheckResponse)
     - [ExportRequest](#bytebase-v1-ExportRequest)
     - [ExportResponse](#bytebase-v1-ExportResponse)
-    - [GenerateRestoreSQLRequest](#bytebase-v1-GenerateRestoreSQLRequest)
-    - [GenerateRestoreSQLResponse](#bytebase-v1-GenerateRestoreSQLResponse)
     - [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest)
     - [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse)
     - [PrettyRequest](#bytebase-v1-PrettyRequest)
@@ -9313,39 +9311,6 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 
 
 
-<a name="bytebase-v1-GenerateRestoreSQLRequest"></a>
-
-### GenerateRestoreSQLRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The database name to execute the query against. Format: instances/{instance}/databases/{databaseName} |
-| sheet | [string](#string) |  | The resource name of the sheet. It is used to get the original statement. Format: projects/{project}/sheets/{sheet} |
-| backup_data_source | [string](#string) |  | The data source to restore from. Format: instances/{instance}/databases/{databaseName}, for general engines. Or instances/{instance}/databases/{databaseName}/schemas/{schemaName}, for PG only. |
-| backup_table | [string](#string) |  | The backup table name. |
-
-
-
-
-
-
-<a name="bytebase-v1-GenerateRestoreSQLResponse"></a>
-
-### GenerateRestoreSQLResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| statement | [string](#string) |  | The restore SQL statement. |
-
-
-
-
-
-
 <a name="bytebase-v1-ParseMyBatisMapperRequest"></a>
 
 ### ParseMyBatisMapperRequest
@@ -9739,7 +9704,6 @@ for field description.
 | ParseMyBatisMapper | [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest) | [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse) |  |
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
 | StringifyMetadata | [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest) | [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse) |  |
-| GenerateRestoreSQL | [GenerateRestoreSQLRequest](#bytebase-v1-GenerateRestoreSQLRequest) | [GenerateRestoreSQLResponse](#bytebase-v1-GenerateRestoreSQLResponse) | Deprecated. |
 
  
 

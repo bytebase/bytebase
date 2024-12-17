@@ -27,7 +27,6 @@ const (
 	SQLService_ParseMyBatisMapper_FullMethodName   = "/bytebase.v1.SQLService/ParseMyBatisMapper"
 	SQLService_Pretty_FullMethodName               = "/bytebase.v1.SQLService/Pretty"
 	SQLService_StringifyMetadata_FullMethodName    = "/bytebase.v1.SQLService/StringifyMetadata"
-	SQLService_GenerateRestoreSQL_FullMethodName   = "/bytebase.v1.SQLService/GenerateRestoreSQL"
 )
 
 // SQLServiceClient is the client API for SQLService service.
@@ -43,8 +42,6 @@ type SQLServiceClient interface {
 	ParseMyBatisMapper(ctx context.Context, in *ParseMyBatisMapperRequest, opts ...grpc.CallOption) (*ParseMyBatisMapperResponse, error)
 	Pretty(ctx context.Context, in *PrettyRequest, opts ...grpc.CallOption) (*PrettyResponse, error)
 	StringifyMetadata(ctx context.Context, in *StringifyMetadataRequest, opts ...grpc.CallOption) (*StringifyMetadataResponse, error)
-	// Deprecated.
-	GenerateRestoreSQL(ctx context.Context, in *GenerateRestoreSQLRequest, opts ...grpc.CallOption) (*GenerateRestoreSQLResponse, error)
 }
 
 type sQLServiceClient struct {
@@ -138,16 +135,6 @@ func (c *sQLServiceClient) StringifyMetadata(ctx context.Context, in *StringifyM
 	return out, nil
 }
 
-func (c *sQLServiceClient) GenerateRestoreSQL(ctx context.Context, in *GenerateRestoreSQLRequest, opts ...grpc.CallOption) (*GenerateRestoreSQLResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GenerateRestoreSQLResponse)
-	err := c.cc.Invoke(ctx, SQLService_GenerateRestoreSQL_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // SQLServiceServer is the server API for SQLService service.
 // All implementations must embed UnimplementedSQLServiceServer
 // for forward compatibility.
@@ -161,8 +148,6 @@ type SQLServiceServer interface {
 	ParseMyBatisMapper(context.Context, *ParseMyBatisMapperRequest) (*ParseMyBatisMapperResponse, error)
 	Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error)
 	StringifyMetadata(context.Context, *StringifyMetadataRequest) (*StringifyMetadataResponse, error)
-	// Deprecated.
-	GenerateRestoreSQL(context.Context, *GenerateRestoreSQLRequest) (*GenerateRestoreSQLResponse, error)
 	mustEmbedUnimplementedSQLServiceServer()
 }
 
@@ -196,9 +181,6 @@ func (UnimplementedSQLServiceServer) Pretty(context.Context, *PrettyRequest) (*P
 }
 func (UnimplementedSQLServiceServer) StringifyMetadata(context.Context, *StringifyMetadataRequest) (*StringifyMetadataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StringifyMetadata not implemented")
-}
-func (UnimplementedSQLServiceServer) GenerateRestoreSQL(context.Context, *GenerateRestoreSQLRequest) (*GenerateRestoreSQLResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GenerateRestoreSQL not implemented")
 }
 func (UnimplementedSQLServiceServer) mustEmbedUnimplementedSQLServiceServer() {}
 func (UnimplementedSQLServiceServer) testEmbeddedByValue()                    {}
@@ -354,24 +336,6 @@ func _SQLService_StringifyMetadata_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SQLService_GenerateRestoreSQL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GenerateRestoreSQLRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SQLServiceServer).GenerateRestoreSQL(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SQLService_GenerateRestoreSQL_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SQLServiceServer).GenerateRestoreSQL(ctx, req.(*GenerateRestoreSQLRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // SQLService_ServiceDesc is the grpc.ServiceDesc for SQLService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -406,10 +370,6 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StringifyMetadata",
 			Handler:    _SQLService_StringifyMetadata_Handler,
-		},
-		{
-			MethodName: "GenerateRestoreSQL",
-			Handler:    _SQLService_GenerateRestoreSQL_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

@@ -98,15 +98,6 @@ service SQLService {
     };
     option (bytebase.v1.allow_without_credential) = true;
   }
-
-  // Deprecated.
-  rpc GenerateRestoreSQL(GenerateRestoreSQLRequest) returns (GenerateRestoreSQLResponse) {
-    option (google.api.http) = {
-      post: "/v1/{name=instances/*/databases/*}:generateRestoreSQL"
-      body: "*"
-    };
-    option (bytebase.v1.auth_method) = CUSTOM;
-  }
 }
 
 message AdminExecuteRequest {
@@ -481,27 +472,4 @@ message QueryHistory {
   }
 
   Type type = 8;
-}
-
-message GenerateRestoreSQLRequest {
-  // The database name to execute the query against.
-  // Format: instances/{instance}/databases/{databaseName}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The resource name of the sheet. It is used to get the original statement.
-  // Format: projects/{project}/sheets/{sheet}
-  string sheet = 2;
-
-  // The data source to restore from.
-  // Format: instances/{instance}/databases/{databaseName}, for general engines.
-  // Or instances/{instance}/databases/{databaseName}/schemas/{schemaName}, for PG only.
-  string backup_data_source = 3;
-
-  // The backup table name.
-  string backup_table = 4;
-}
-
-message GenerateRestoreSQLResponse {
-  // The restore SQL statement.
-  string statement = 1;
 }
