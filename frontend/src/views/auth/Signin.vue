@@ -38,7 +38,7 @@
                       {{ $t("auth.sign-in.new-user") }}
                     </span>
                     <router-link
-                      :to="{ name: AUTH_SIGNUP_MODULE, query: $route.query }"
+                      :to="{ name: AUTH_SIGNUP_MODULE, query: route.query }"
                       class="accent-link px-2"
                     >
                       {{ $t("common.sign-up") }}
@@ -162,7 +162,9 @@
         </template>
       </div>
     </div>
-    <AuthFooter />
+    <slot name="footer">
+      <AuthFooter />
+    </slot>
   </template>
   <template v-else>
     <div class="inset-0 absolute flex flex-row justify-center items-center">
@@ -193,6 +195,15 @@ import { IdentityProviderType } from "@/types/proto/v1/idp_service";
 import { openWindowForSSO } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
 
+const props = withDefaults(
+  defineProps<{
+    allowSignup?: boolean;
+  }>(),
+  {
+    allowSignup: true,
+  }
+);
+
 interface LocalState {
   email: string;
   password: string;
@@ -213,8 +224,11 @@ const state = reactive<LocalState>({
   isLoading: false,
 });
 const initialized = ref(false);
-const { isDemo, disallowSignup, disallowPasswordSignin } =
-  storeToRefs(actuatorStore);
+const { isDemo, disallowPasswordSignin } = storeToRefs(actuatorStore);
+
+const disallowSignup = computed(
+  () => !props.allowSignup || actuatorStore.disallowSignup
+);
 
 const separatedIdentityProviderList = computed(() =>
   identityProviderStore.identityProviderList.filter(

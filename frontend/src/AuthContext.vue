@@ -1,14 +1,16 @@
 <template>
   <slot></slot>
+  <SigninModal />
 </template>
 
 <script setup lang="ts">
 import { useDialog, type DialogReactive } from "naive-ui";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import SigninModal from "@/views/auth/SigninModal.vue";
 import { t } from "./plugins/i18n";
 import { WORKSPACE_ROOT_MODULE } from "./router/dashboard/workspaceRoutes";
-import { useActuatorV1Store, useAuthStore } from "./store";
+import { useActuatorV1Store, useAuthStore, pushNotification } from "./store";
 
 // Check expiration every 15 sec and:
 // 1. logout if expired.
@@ -31,10 +33,18 @@ onMounted(() => {
     }
 
     const loggedIn = authStore.isLoggedIn();
+
     if (prevLoggedIn.value != loggedIn) {
       prevLoggedIn.value = loggedIn;
       if (!loggedIn) {
-        authStore.logout();
+        authStore.showLoginModal = true;
+        pushNotification({
+          module: "bytebase",
+          style: "WARN",
+          title: t("auth.token-expired-title"),
+          description: t("auth.token-expired-description"),
+        });
+        return;
       }
     }
     if (
