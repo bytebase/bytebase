@@ -10,12 +10,7 @@ import {
   type RouteLocationNormalizedLoadedGeneric,
 } from "vue-router";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
-import {
-  usePolicyV1Store,
-  useRoleStore,
-  useSettingV1Store,
-  useAuthStore,
-} from "@/store";
+import { usePolicyV1Store, useRoleStore, useSettingV1Store } from "@/store";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -50,7 +45,10 @@ onMounted(async () => {
     (route) => {
       if (!checkPermissions(route)) {
         ready.value = false;
-        return useAuthStore().logout();
+        router.push({
+          name: "error.403",
+        });
+        return;
       }
       ready.value = true;
     },
