@@ -91,7 +91,7 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.Previ
 
 	serializeTasks := request.Plan.GetVcsSource() != nil
 
-	rollout, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, steps, nil, project, serializeTasks)
+	rollout, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, steps, nil /* snapshot */, project, serializeTasks)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
