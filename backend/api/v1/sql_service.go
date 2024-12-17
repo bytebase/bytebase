@@ -1251,7 +1251,7 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 
 	var overideMetadata *storepb.DatabaseSchemaMetadata
 	if request.Metadata != nil {
-		overideMetadata, _, err = convertV1DatabaseMetadata(ctx, request.Metadata, nil /* optionalStores */)
+		overideMetadata, err = convertV1DatabaseMetadata(request.Metadata)
 		if err != nil {
 			return nil, err
 		}
@@ -1482,10 +1482,18 @@ func (*SQLService) StringifyMetadata(ctx context.Context, request *v1pb.Stringif
 	if request.Metadata == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "metadata is required")
 	}
-	storeSchemaMetadata, config, err := convertV1DatabaseMetadata(ctx, request.Metadata, nil /* optionalStores */)
+	storeSchemaMetadata, err := convertV1DatabaseMetadata(request.Metadata)
 	if err != nil {
 		return nil, err
 	}
+	config := convertV1DatabaseConfig(
+		ctx,
+		&v1pb.DatabaseConfig{
+			Name:          request.Metadata.Name,
+			SchemaConfigs: request.Metadata.SchemaConfigs,
+		},
+		nil, /* optionalStores */
+	)
 
 	if !request.ClassificationFromConfig {
 		sanitizeCommentForSchemaMetadata(storeSchemaMetadata, model.NewDatabaseConfig(config), request.ClassificationFromConfig)
