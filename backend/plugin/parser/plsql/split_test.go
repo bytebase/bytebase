@@ -58,9 +58,9 @@ ONLINE;`,
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:          "ALTER TABLE DATA.TEST\nMODIFY PARTITION BY RANGE (TXN_DATE)\nINTERVAL (NUMTODSINTERVAL(1, 'DAY'))\n(\n\t\tPARTITION TEST_PO VALUES LESS THAN (\n\t\t\t\tTO_DATE('2000-01-01 00:00:00', 'SYYYY-MM-DD HH24:MI:SS', 'NLS_CALENDAR=GREGORIAN')\n\t\t)\n)\nONLINE",
+						Text:          "ALTER TABLE DATA.TEST\nMODIFY PARTITION BY RANGE (TXN_DATE)\nINTERVAL (NUMTODSINTERVAL(1, 'DAY'))\n(\n\tPARTITION TEST_PO VALUES LESS THAN (\n\t\tTO_DATE('2000-01-01 00:00:00', 'SYYYY-MM-DD HH24:MI:SS', 'NLS_CALENDAR=GREGORIAN')\n\t)\n)\nONLINE",
 						LastLine:      9,
-						ByteOffsetEnd: 237,
+						ByteOffsetEnd: 233,
 					},
 				},
 			},
