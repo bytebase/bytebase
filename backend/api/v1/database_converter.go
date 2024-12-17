@@ -11,7 +11,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func convertStoreDatabaseMetadata(ctx context.Context, metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, filter *metadataFilter, optionalStores *store.Store) (*v1pb.DatabaseMetadata, error) {
+func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filter *metadataFilter) (*v1pb.DatabaseMetadata, error) {
 	m := &v1pb.DatabaseMetadata{
 		CharacterSet: metadata.CharacterSet,
 		Collation:    metadata.Collation,
@@ -216,11 +216,6 @@ func convertStoreDatabaseMetadata(ctx context.Context, metadata *storepb.Databas
 			Version:     extension.Version,
 			Description: extension.Description,
 		})
-	}
-
-	databaseConfig := convertStoreDatabaseConfig(ctx, config, filter, optionalStores)
-	if databaseConfig != nil {
-		m.SchemaConfigs = databaseConfig.SchemaConfigs
 	}
 	return m, nil
 }
