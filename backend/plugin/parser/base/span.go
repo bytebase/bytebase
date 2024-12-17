@@ -69,6 +69,8 @@ type QuerySpanResult struct {
 	Name string
 	// SourceColumns are the source columns contributing to the span result.
 	SourceColumns SourceColumnSet
+	// IsPlainField indicates whether the field is a plain column reference (true) or an expression (false).
+	IsPlainField bool
 }
 
 // ColumnResource is the resource key for a column.
@@ -247,6 +249,7 @@ func (p *PhysicalTable) GetQuerySpanResult() []QuerySpanResult {
 		result = append(result, QuerySpanResult{
 			Name:          column,
 			SourceColumns: sourceColumnSet,
+			IsPlainField:  true,
 		})
 	}
 	return result
@@ -339,6 +342,7 @@ func (s *QuerySpan) ToYaml() *YamlQuerySpan {
 		yamlResult := &YamlQuerySpanResult{
 			Name:          result.Name,
 			SourceColumns: []ColumnResource{},
+			IsPlainField:  result.IsPlainField,
 		}
 		for k := range result.SourceColumns {
 			yamlResult.SourceColumns = append(yamlResult.SourceColumns, k)
@@ -368,4 +372,5 @@ type YamlQuerySpan struct {
 type YamlQuerySpanResult struct {
 	Name          string
 	SourceColumns []ColumnResource
+	IsPlainField  bool
 }

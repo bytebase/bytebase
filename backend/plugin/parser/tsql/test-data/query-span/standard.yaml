@@ -43,6 +43,7 @@
               schema: ""
               table: '@temp'
               column: a
+          isplainfield: true
     sourcecolumns: []
 - description: Test for builtin functions
   statement: SELECT NEWID() as uuid;
@@ -81,6 +82,7 @@
     results:
         - name: uuid
           sourcecolumns: []
+          isplainfield: false
     sourcecolumns: []
 - description: Test for view
   statement: SELECT * FROM MyView1;
@@ -124,6 +126,7 @@
               schema: dbo
               table: MyTable1
               column: a
+          isplainfield: true
         - name: b
           sourcecolumns:
             - server: ""
@@ -131,6 +134,7 @@
               schema: dbo
               table: MyTable1
               column: b
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -173,6 +177,7 @@
               schema: dbo
               table: MyTable1
               column: a
+          isplainfield: true
         - name: b
           sourcecolumns:
             - server: ""
@@ -180,6 +185,7 @@
               schema: dbo
               table: MyTable1
               column: b
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -222,6 +228,7 @@
               schema: dbo
               table: MyTable1
               column: a
+          isplainfield: true
         - name: b
           sourcecolumns:
             - server: ""
@@ -229,6 +236,7 @@
               schema: dbo
               table: MyTable1
               column: b
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -282,6 +290,7 @@
               schema: dbo
               table: MyTable2
               column: d
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: db
@@ -345,6 +354,7 @@
               schema: dbo
               table: MyTable2
               column: c
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -403,6 +413,7 @@
               schema: dbo
               table: MyTable1
               column: a
+          isplainfield: true
         - name: b
           sourcecolumns:
             - server: ""
@@ -410,6 +421,7 @@
               schema: dbo
               table: MyTable1
               column: b
+          isplainfield: true
         - name: c
           sourcecolumns:
             - server: ""
@@ -417,6 +429,7 @@
               schema: dbo
               table: MyTable2
               column: c
+          isplainfield: true
         - name: d
           sourcecolumns:
             - server: ""
@@ -424,6 +437,7 @@
               schema: dbo
               table: MyTable2
               column: d
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -482,6 +496,7 @@
               schema: dbo
               table: MyTable1
               column: a
+          isplainfield: true
         - name: b
           sourcecolumns:
             - server: ""
@@ -489,6 +504,7 @@
               schema: dbo
               table: MyTable1
               column: b
+          isplainfield: true
         - name: c
           sourcecolumns:
             - server: ""
@@ -496,6 +512,7 @@
               schema: dbo
               table: MyTable2
               column: c
+          isplainfield: true
         - name: d
           sourcecolumns:
             - server: ""
@@ -503,6 +520,7 @@
               schema: dbo
               table: MyTable2
               column: d
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -561,6 +579,7 @@
               schema: dbo
               table: MyTable1
               column: a
+          isplainfield: true
         - name: b
           sourcecolumns:
             - server: ""
@@ -568,6 +587,7 @@
               schema: dbo
               table: MyTable1
               column: b
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -621,6 +641,7 @@
               schema: dbo
               table: MyTable1
               column: a
+          isplainfield: true
         - name: bb
           sourcecolumns:
             - server: ""
@@ -628,6 +649,7 @@
               schema: dbo
               table: MyTable1
               column: b
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -693,6 +715,7 @@
               schema: dbo
               table: MyTable1
               column: a
+          isplainfield: true
         - name: bb
           sourcecolumns:
             - server: ""
@@ -700,6 +723,7 @@
               schema: dbo
               table: MyTable1
               column: b
+          isplainfield: true
         - name: cc
           sourcecolumns:
             - server: ""
@@ -707,6 +731,7 @@
               schema: dbo
               table: MyTable2
               column: c
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -778,6 +803,7 @@
               schema: dbo
               table: MyTable1
               column: b
+          isplainfield: true
         - name: c2
           sourcecolumns:
             - server: ""
@@ -790,6 +816,7 @@
               schema: dbo
               table: MyTable1
               column: b
+          isplainfield: true
         - name: c3
           sourcecolumns:
             - server: ""
@@ -807,8 +834,10 @@
               schema: dbo
               table: MyTable1
               column: c
+          isplainfield: true
         - name: "n"
           sourcecolumns: []
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: db

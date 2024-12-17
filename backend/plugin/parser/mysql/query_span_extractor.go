@@ -322,19 +322,21 @@ func (q *querySpanExtractor) extractTableValueConstructor(ctx mysql.ITableValueC
 	for _, child := range values.GetChildren() {
 		switch child := child.(type) {
 		case *mysql.ExprContext:
-			_, sourceColumns, err := q.extractSourceColumnSetFromExpr(child)
+			_, sourceColumns, isPlain, err := q.extractSourceColumnSetFromExpr(child)
 			if err != nil {
 				return nil, err
 			}
 			columns = append(columns, base.QuerySpanResult{
 				Name:          child.GetParser().GetTokenStream().GetTextFromRuleContext(child),
 				SourceColumns: sourceColumns,
+				IsPlainField:  isPlain,
 			})
 		case antlr.TerminalNode:
 			if child.GetSymbol().GetTokenType() == mysql.MySQLParserDEFAULT_SYMBOL {
 				columns = append(columns, base.QuerySpanResult{
 					Name:          "DEFAULT",
 					SourceColumns: make(base.SourceColumnSet),
+					IsPlainField:  true,
 				})
 			}
 		}
@@ -408,7 +410,7 @@ func (q *querySpanExtractor) extractSelectItem(ctx mysql.ISelectItemContext) ([]
 	case ctx.TableWild() != nil:
 		return q.extractTableWild(ctx.TableWild())
 	case ctx.Expr() != nil:
-		fieldName, sourceColumns, err := q.extractSourceColumnSetFromExpr(ctx.Expr())
+		fieldName, sourceColumns, isPlain, err := q.extractSourceColumnSetFromExpr(ctx.Expr())
 		if err != nil {
 			return nil, err
 		}
@@ -422,6 +424,7 @@ func (q *querySpanExtractor) extractSelectItem(ctx mysql.ISelectItemContext) ([]
 			{
 				Name:          fieldName,
 				SourceColumns: sourceColumns,
+				IsPlainField:  isPlain,
 			},
 		}, nil
 	}
@@ -429,9 +432,9 @@ func (q *querySpanExtractor) extractSelectItem(ctx mysql.ISelectItemContext) ([]
 	panic("unreachable")
 }
 
-func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRuleContext) (string, base.SourceColumnSet, error) {
+func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRuleContext) (string, base.SourceColumnSet, bool, error) {
 	if ctx == nil {
-		return "", make(base.SourceColumnSet), nil
+		return "", make(base.SourceColumnSet), true, nil
 	}
 
 	// The closure of expr rules.
@@ -454,20 +457,24 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRule
 		}
 		tableSource, err := subqueryExtractor.extractSubquery(ctx)
 		if err != nil {
-			return "", nil, err
+			return "", nil, false, err
 		}
 		spanResult := tableSource.GetQuerySpanResult()
+		isPlain := false
+		if len(spanResult) == 1 {
+			isPlain = spanResult[0].IsPlainField
+		}
 		for _, field := range spanResult {
 			baseSet, _ = base.MergeSourceColumnSet(field.SourceColumns, field.SourceColumns)
 		}
-		return "", baseSet, nil
+		return "", baseSet, isPlain, nil
 	case mysql.IColumnRefContext:
 		databaseName, tableName, fieldName := NormalizeMySQLFieldIdentifier(ctx.FieldIdentifier())
 		sourceColumnSet, err := q.getFieldColumnSource(databaseName, tableName, fieldName)
 		if err != nil {
-			return "", nil, err
+			return "", nil, false, err
 		}
-		return fieldName, sourceColumnSet, nil
+		return fieldName, sourceColumnSet, true, nil
 	}
 
 	var list []antlr.ParserRuleContext
@@ -477,30 +484,33 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRule
 		}
 	}
 
-	fieldName, sourceColumnSet, err := q.extractSourceColumnSetFromExprList(list)
+	fieldName, sourceColumnSet, plain, err := q.extractSourceColumnSetFromExprList(list)
 	if err != nil {
-		return "", nil, err
+		return "", nil, false, err
 	}
 	if len(ctx.GetChildren()) > 1 {
 		fieldName = ""
 	}
-	return fieldName, sourceColumnSet, nil
+	return fieldName, sourceColumnSet, plain && len(ctx.GetChildren()) < 2, nil
 }
 
-func (q *querySpanExtractor) extractSourceColumnSetFromExprList(ctxs []antlr.ParserRuleContext) (string, base.SourceColumnSet, error) {
+func (q *querySpanExtractor) extractSourceColumnSetFromExprList(ctxs []antlr.ParserRuleContext) (string, base.SourceColumnSet, bool, error) {
 	baseSet := make(base.SourceColumnSet)
 	var fieldName string
 	var set base.SourceColumnSet
 	var err error
+	plain := true
 	for _, ctx := range ctxs {
-		fieldName, set, err = q.extractSourceColumnSetFromExpr(ctx)
+		var isPlain bool
+		fieldName, set, isPlain, err = q.extractSourceColumnSetFromExpr(ctx)
 		if err != nil {
-			return "", nil, err
+			return "", nil, false, err
 		}
+		plain = plain && isPlain
 		baseSet, _ = base.MergeSourceColumnSet(baseSet, set)
 	}
 
-	return fieldName, baseSet, nil
+	return fieldName, baseSet, plain, nil
 }
 
 func (q *querySpanExtractor) extractTableWild(ctx mysql.ITableWildContext) ([]base.QuerySpanResult, error) {
@@ -746,7 +756,7 @@ func (q *querySpanExtractor) extractTableFunction(ctx mysql.ITableFunctionContex
 		return nil, nil
 	}
 
-	name, sourceColumnSet, err := q.extractSourceColumnSetFromExpr(ctx.Expr())
+	name, sourceColumnSet, isPlain, err := q.extractSourceColumnSetFromExpr(ctx.Expr())
 	if err != nil {
 		return nil, err
 	}
@@ -764,6 +774,7 @@ func (q *querySpanExtractor) extractTableFunction(ctx mysql.ITableFunctionContex
 		result = append(result, base.QuerySpanResult{
 			Name:          column,
 			SourceColumns: sourceColumnSet,
+			IsPlainField:  isPlain,
 		})
 	}
 
