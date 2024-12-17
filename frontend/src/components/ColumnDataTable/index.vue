@@ -12,7 +12,6 @@
 <script lang="ts" setup>
 import type { DataTableColumn } from "naive-ui";
 import { NCheckbox, NDataTable } from "naive-ui";
-import type { PropType } from "vue";
 import { computed } from "vue";
 import { h } from "vue";
 import { useI18n } from "vue-i18n";
@@ -28,10 +27,9 @@ import type {
   ColumnMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import type { MaskData } from "@/types/proto/v1/org_policy_service";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 import ClassificationCell from "./ClassificationCell.vue";
 import LabelsCell from "./LabelsCell.vue";
 import MaskingLevelCell from "./MaskingLevelCell.vue";
@@ -45,47 +43,22 @@ defineOptions({
   name: "ColumnDataTable",
 });
 
-const props = defineProps({
-  database: {
-    required: true,
-    type: Object as PropType<ComposedDatabase>,
-  },
-  schema: {
-    required: true,
-    type: String,
-  },
-  table: {
-    required: true,
-    type: Object as PropType<TableMetadata>,
-  },
-  columnList: {
-    required: true,
-    type: Object as PropType<ColumnMetadata[]>,
-  },
-  maskDataList: {
-    required: true,
-    type: Array as PropType<MaskData[]>,
-  },
-  classificationConfig: {
-    required: false,
-    default: undefined,
-    type: Object as PropType<
-      DataClassificationSetting_DataClassificationConfig | undefined
-    >,
-  },
-  search: {
-    required: false,
-    default: "",
-    type: String,
-  },
-  // isExternalTable shows whether the table is an external table or not.
-  // Mainly used to determine whether to show sensitive column and labels column.
-  isExternalTable: {
-    required: false,
-    default: false,
-    type: Boolean,
-  },
-});
+const props = withDefaults(
+  defineProps<{
+    database: ComposedDatabase;
+    schema: string;
+    table: TableMetadata;
+    columnList: ColumnMetadata[];
+    classificationConfig?: DataClassificationSetting_DataClassificationConfig;
+    search?: string;
+    isExternalTable: boolean;
+  }>(),
+  {
+    classificationConfig: undefined,
+    search: "",
+    isExternalTable: false,
+  }
+);
 
 const { t } = useI18n();
 const engine = computed(() => {
@@ -144,14 +117,11 @@ const showCollationColumn = computed(() => {
 });
 
 const hasSensitiveDataPermission = computed(() => {
-  if (hasWorkspacePermissionV2("bb.policies.update")) {
-    // True if the currentUser has workspace level sensitive data
-    // R+W privileges. AKA DBA or Workspace owner
-    return true;
-  }
-
-  // False otherwise
-  return false;
+  // TODO(ed): the permission and subscription check for db config update
+  return hasProjectPermissionV2(
+    props.database.projectEntity,
+    "bb.databases.update"
+  );
 });
 
 const columns = computed(() => {
@@ -178,7 +148,6 @@ const columns = computed(() => {
           schema: props.schema,
           table: props.table,
           column: column,
-          maskDataList: props.maskDataList,
           readonly: !hasSensitiveDataPermission.value,
         });
       },
@@ -320,12 +289,12 @@ const onClassificationIdApply = async (
   column: string,
   classificationId: string
 ) => {
-  await updateColumnConfig(
-    props.database.name,
-    props.schema,
-    props.table.name,
+  await updateColumnConfig({
+    database: props.database.name,
+    schema: props.schema,
+    table: props.table.name,
     column,
-    { classificationId }
-  );
+    config: { classificationId },
+  });
 };
 </script>

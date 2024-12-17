@@ -1148,6 +1148,12 @@ message ColumnConfig {
   map<string, string> labels = 3;
 
   string classification_id = 4;
+
+  MaskingLevel masking_level = 5;
+
+  string full_masking_algorithm_id = 6;
+
+  string partial_masking_algorithm_id = 7;
 }
 
 // DatabaseSchema is the metadata for databases.

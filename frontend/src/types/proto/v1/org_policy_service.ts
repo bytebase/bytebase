@@ -26,7 +26,6 @@ export const protobufPackage = "bytebase.v1";
 export enum PolicyType {
   POLICY_TYPE_UNSPECIFIED = "POLICY_TYPE_UNSPECIFIED",
   ROLLOUT_POLICY = "ROLLOUT_POLICY",
-  MASKING = "MASKING",
   SLOW_QUERY = "SLOW_QUERY",
   DISABLE_COPY_DATA = "DISABLE_COPY_DATA",
   MASKING_RULE = "MASKING_RULE",
@@ -46,9 +45,6 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case 11:
     case "ROLLOUT_POLICY":
       return PolicyType.ROLLOUT_POLICY;
-    case 5:
-    case "MASKING":
-      return PolicyType.MASKING;
     case 7:
     case "SLOW_QUERY":
       return PolicyType.SLOW_QUERY;
@@ -86,8 +82,6 @@ export function policyTypeToJSON(object: PolicyType): string {
       return "POLICY_TYPE_UNSPECIFIED";
     case PolicyType.ROLLOUT_POLICY:
       return "ROLLOUT_POLICY";
-    case PolicyType.MASKING:
-      return "MASKING";
     case PolicyType.SLOW_QUERY:
       return "SLOW_QUERY";
     case PolicyType.DISABLE_COPY_DATA:
@@ -116,8 +110,6 @@ export function policyTypeToNumber(object: PolicyType): number {
       return 0;
     case PolicyType.ROLLOUT_POLICY:
       return 11;
-    case PolicyType.MASKING:
-      return 5;
     case PolicyType.SLOW_QUERY:
       return 7;
     case PolicyType.DISABLE_COPY_DATA:
@@ -390,7 +382,6 @@ export interface Policy {
   inheritFromParent: boolean;
   type: PolicyType;
   rolloutPolicy?: RolloutPolicy | undefined;
-  maskingPolicy?: MaskingPolicy | undefined;
   slowQueryPolicy?: SlowQueryPolicy | undefined;
   disableCopyDataPolicy?: DisableCopyDataPolicy | undefined;
   maskingRulePolicy?: MaskingRulePolicy | undefined;
@@ -425,19 +416,6 @@ export interface DisableCopyDataPolicy {
 
 export interface ExportDataPolicy {
   disable: boolean;
-}
-
-export interface MaskingPolicy {
-  maskData: MaskData[];
-}
-
-export interface MaskData {
-  schema: string;
-  table: string;
-  column: string;
-  maskingLevel: MaskingLevel;
-  fullMaskingAlgorithmId: string;
-  partialMaskingAlgorithmId: string;
 }
 
 export interface SQLReviewRule {
@@ -1130,7 +1108,6 @@ function createBasePolicy(): Policy {
     inheritFromParent: false,
     type: PolicyType.POLICY_TYPE_UNSPECIFIED,
     rolloutPolicy: undefined,
-    maskingPolicy: undefined,
     slowQueryPolicy: undefined,
     disableCopyDataPolicy: undefined,
     maskingRulePolicy: undefined,
@@ -1157,9 +1134,6 @@ export const Policy: MessageFns<Policy> = {
     }
     if (message.rolloutPolicy !== undefined) {
       RolloutPolicy.encode(message.rolloutPolicy, writer.uint32(154).fork()).join();
-    }
-    if (message.maskingPolicy !== undefined) {
-      MaskingPolicy.encode(message.maskingPolicy, writer.uint32(74).fork()).join();
     }
     if (message.slowQueryPolicy !== undefined) {
       SlowQueryPolicy.encode(message.slowQueryPolicy, writer.uint32(98).fork()).join();
@@ -1234,14 +1208,6 @@ export const Policy: MessageFns<Policy> = {
           }
 
           message.rolloutPolicy = RolloutPolicy.decode(reader, reader.uint32());
-          continue;
-        }
-        case 9: {
-          if (tag !== 74) {
-            break;
-          }
-
-          message.maskingPolicy = MaskingPolicy.decode(reader, reader.uint32());
           continue;
         }
         case 12: {
@@ -1342,7 +1308,6 @@ export const Policy: MessageFns<Policy> = {
       inheritFromParent: isSet(object.inheritFromParent) ? globalThis.Boolean(object.inheritFromParent) : false,
       type: isSet(object.type) ? policyTypeFromJSON(object.type) : PolicyType.POLICY_TYPE_UNSPECIFIED,
       rolloutPolicy: isSet(object.rolloutPolicy) ? RolloutPolicy.fromJSON(object.rolloutPolicy) : undefined,
-      maskingPolicy: isSet(object.maskingPolicy) ? MaskingPolicy.fromJSON(object.maskingPolicy) : undefined,
       slowQueryPolicy: isSet(object.slowQueryPolicy) ? SlowQueryPolicy.fromJSON(object.slowQueryPolicy) : undefined,
       disableCopyDataPolicy: isSet(object.disableCopyDataPolicy)
         ? DisableCopyDataPolicy.fromJSON(object.disableCopyDataPolicy)
@@ -1381,9 +1346,6 @@ export const Policy: MessageFns<Policy> = {
     }
     if (message.rolloutPolicy !== undefined) {
       obj.rolloutPolicy = RolloutPolicy.toJSON(message.rolloutPolicy);
-    }
-    if (message.maskingPolicy !== undefined) {
-      obj.maskingPolicy = MaskingPolicy.toJSON(message.maskingPolicy);
     }
     if (message.slowQueryPolicy !== undefined) {
       obj.slowQueryPolicy = SlowQueryPolicy.toJSON(message.slowQueryPolicy);
@@ -1430,9 +1392,6 @@ export const Policy: MessageFns<Policy> = {
     message.type = object.type ?? PolicyType.POLICY_TYPE_UNSPECIFIED;
     message.rolloutPolicy = (object.rolloutPolicy !== undefined && object.rolloutPolicy !== null)
       ? RolloutPolicy.fromPartial(object.rolloutPolicy)
-      : undefined;
-    message.maskingPolicy = (object.maskingPolicy !== undefined && object.maskingPolicy !== null)
-      ? MaskingPolicy.fromPartial(object.maskingPolicy)
       : undefined;
     message.slowQueryPolicy = (object.slowQueryPolicy !== undefined && object.slowQueryPolicy !== null)
       ? SlowQueryPolicy.fromPartial(object.slowQueryPolicy)
@@ -1753,219 +1712,6 @@ export const ExportDataPolicy: MessageFns<ExportDataPolicy> = {
   fromPartial(object: DeepPartial<ExportDataPolicy>): ExportDataPolicy {
     const message = createBaseExportDataPolicy();
     message.disable = object.disable ?? false;
-    return message;
-  },
-};
-
-function createBaseMaskingPolicy(): MaskingPolicy {
-  return { maskData: [] };
-}
-
-export const MaskingPolicy: MessageFns<MaskingPolicy> = {
-  encode(message: MaskingPolicy, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.maskData) {
-      MaskData.encode(v!, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): MaskingPolicy {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMaskingPolicy();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.maskData.push(MaskData.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): MaskingPolicy {
-    return {
-      maskData: globalThis.Array.isArray(object?.maskData) ? object.maskData.map((e: any) => MaskData.fromJSON(e)) : [],
-    };
-  },
-
-  toJSON(message: MaskingPolicy): unknown {
-    const obj: any = {};
-    if (message.maskData?.length) {
-      obj.maskData = message.maskData.map((e) => MaskData.toJSON(e));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<MaskingPolicy>): MaskingPolicy {
-    return MaskingPolicy.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<MaskingPolicy>): MaskingPolicy {
-    const message = createBaseMaskingPolicy();
-    message.maskData = object.maskData?.map((e) => MaskData.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseMaskData(): MaskData {
-  return {
-    schema: "",
-    table: "",
-    column: "",
-    maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
-    fullMaskingAlgorithmId: "",
-    partialMaskingAlgorithmId: "",
-  };
-}
-
-export const MaskData: MessageFns<MaskData> = {
-  encode(message: MaskData, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.schema !== "") {
-      writer.uint32(10).string(message.schema);
-    }
-    if (message.table !== "") {
-      writer.uint32(18).string(message.table);
-    }
-    if (message.column !== "") {
-      writer.uint32(26).string(message.column);
-    }
-    if (message.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
-      writer.uint32(32).int32(maskingLevelToNumber(message.maskingLevel));
-    }
-    if (message.fullMaskingAlgorithmId !== "") {
-      writer.uint32(42).string(message.fullMaskingAlgorithmId);
-    }
-    if (message.partialMaskingAlgorithmId !== "") {
-      writer.uint32(50).string(message.partialMaskingAlgorithmId);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): MaskData {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMaskData();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.schema = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.table = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.column = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.maskingLevel = maskingLevelFromJSON(reader.int32());
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.fullMaskingAlgorithmId = reader.string();
-          continue;
-        }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.partialMaskingAlgorithmId = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): MaskData {
-    return {
-      schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
-      table: isSet(object.table) ? globalThis.String(object.table) : "",
-      column: isSet(object.column) ? globalThis.String(object.column) : "",
-      maskingLevel: isSet(object.maskingLevel)
-        ? maskingLevelFromJSON(object.maskingLevel)
-        : MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
-      fullMaskingAlgorithmId: isSet(object.fullMaskingAlgorithmId)
-        ? globalThis.String(object.fullMaskingAlgorithmId)
-        : "",
-      partialMaskingAlgorithmId: isSet(object.partialMaskingAlgorithmId)
-        ? globalThis.String(object.partialMaskingAlgorithmId)
-        : "",
-    };
-  },
-
-  toJSON(message: MaskData): unknown {
-    const obj: any = {};
-    if (message.schema !== "") {
-      obj.schema = message.schema;
-    }
-    if (message.table !== "") {
-      obj.table = message.table;
-    }
-    if (message.column !== "") {
-      obj.column = message.column;
-    }
-    if (message.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
-      obj.maskingLevel = maskingLevelToJSON(message.maskingLevel);
-    }
-    if (message.fullMaskingAlgorithmId !== "") {
-      obj.fullMaskingAlgorithmId = message.fullMaskingAlgorithmId;
-    }
-    if (message.partialMaskingAlgorithmId !== "") {
-      obj.partialMaskingAlgorithmId = message.partialMaskingAlgorithmId;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<MaskData>): MaskData {
-    return MaskData.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<MaskData>): MaskData {
-    const message = createBaseMaskData();
-    message.schema = object.schema ?? "";
-    message.table = object.table ?? "";
-    message.column = object.column ?? "";
-    message.maskingLevel = object.maskingLevel ?? MaskingLevel.MASKING_LEVEL_UNSPECIFIED;
-    message.fullMaskingAlgorithmId = object.fullMaskingAlgorithmId ?? "";
-    message.partialMaskingAlgorithmId = object.partialMaskingAlgorithmId ?? "";
     return message;
   },
 };

@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -308,32 +308,21 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	// Add a sensitive data policy to pair it with the sample query below. So that user can
 	// experience the sensitive data masking feature from SQL Editor.
-	maskingPolicy := &storepb.MaskingPolicy{
-		MaskData: []*storepb.MaskData{
-			{
-				Schema:       "public",
-				Table:        "salary",
-				Column:       "amount",
-				MaskingLevel: storepb.MaskingLevel_FULL,
-			},
-		},
-	}
-	policyPayload, err = json.Marshal(maskingPolicy)
+	dbSchema, err := s.store.GetDBSchema(ctx, prodDatabase.UID)
 	if err != nil {
-		return errors.Wrapf(err, "failed to marshal onboarding sensitive data policy")
+		return errors.Wrapf(err, "failed to get db schema for database %v", prodDatabase.UID)
 	}
+	dbModelConfig := model.NewDatabaseConfig(nil)
+	if dbSchema != nil {
+		dbModelConfig = dbSchema.GetInternalConfig()
+	}
+	schemaConfig := dbModelConfig.CreateOrGetSchemaConfig("public")
+	tableConfig := schemaConfig.CreateOrGetTableConfig("salary")
+	columnConfig := tableConfig.CreateOrGetColumnConfig("amount")
+	columnConfig.MaskingLevel = storepb.MaskingLevel_FULL
 
-	_, err = s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
-		ResourceUID:       prodDatabase.UID,
-		ResourceType:      api.PolicyResourceTypeDatabase,
-		Payload:           string(policyPayload),
-		Type:              api.PolicyTypeMasking,
-		InheritFromParent: true,
-		// Enforce cannot be false while creating a policy.
-		Enforce: true,
-	}, userID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create onboarding sensitive data policy")
+	if err := s.store.UpdateDBSchema(ctx, prodDatabase.UID, &store.UpdateDBSchemaMessage{Config: dbModelConfig.BuildDatabaseConfig()}, userID); err != nil {
+		return errors.Wrapf(err, "failed to update db config for database %v", prodDatabase.UID)
 	}
 
 	return nil

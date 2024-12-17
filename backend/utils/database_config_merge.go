@@ -227,6 +227,15 @@ func mergeColumnConfig(target, baseline, current *storepb.ColumnConfig) *storepb
 	if target.ClassificationId != baseline.ClassificationId {
 		current.ClassificationId = target.ClassificationId
 	}
+	if target.MaskingLevel != baseline.MaskingLevel {
+		current.MaskingLevel = target.MaskingLevel
+	}
+	if target.FullMaskingAlgorithmId != baseline.FullMaskingAlgorithmId {
+		current.FullMaskingAlgorithmId = target.FullMaskingAlgorithmId
+	}
+	if target.PartialMaskingAlgorithmId != baseline.PartialMaskingAlgorithmId {
+		current.PartialMaskingAlgorithmId = target.PartialMaskingAlgorithmId
+	}
 
 	if !reflect.DeepEqual(target.Labels, baseline.Labels) {
 		current.Labels = target.Labels
