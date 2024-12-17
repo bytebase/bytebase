@@ -512,9 +512,13 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		}
 		filter = &metadataFilter{schema: schema, table: table}
 	}
-	v1pbMetadata, err := convertStoreDatabaseMetadata(ctx, dbSchema.GetMetadata(), dbSchema.GetConfig(), filter, nil /* optionalStores */)
+	v1pbMetadata, err := convertStoreDatabaseMetadata(dbSchema.GetMetadata(), filter)
 	if err != nil {
 		return nil, err
+	}
+	dbConfig := convertStoreDatabaseConfig(ctx, dbSchema.GetConfig(), filter, nil /* optionalStores */)
+	if dbConfig != nil {
+		v1pbMetadata.SchemaConfigs = dbConfig.SchemaConfigs
 	}
 	v1pbMetadata.Name = fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix)
 
@@ -649,9 +653,13 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 		return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
 	}
 
-	v1pbMetadata, err := convertStoreDatabaseMetadata(ctx, dbSchema.GetMetadata(), dbSchema.GetConfig(), nil /* filter */, nil /* optionalStores */)
+	v1pbMetadata, err := convertStoreDatabaseMetadata(dbSchema.GetMetadata(), nil /* filter */)
 	if err != nil {
 		return nil, err
+	}
+	dbConfig := convertStoreDatabaseConfig(ctx, dbSchema.GetConfig(), nil /* filter */, nil /* optionalStores */)
+	if dbConfig != nil {
+		v1pbMetadata.SchemaConfigs = dbConfig.SchemaConfigs
 	}
 	v1pbMetadata.Name = fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix)
 	return v1pbMetadata, nil
