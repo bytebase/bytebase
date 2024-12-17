@@ -478,19 +478,6 @@ func validatePolicyType(policyType api.PolicyType, policyResourceType api.Policy
 
 func validatePolicyPayload(policyType api.PolicyType, policy *v1pb.Policy) error {
 	switch policyType {
-	case api.PolicyTypeMasking:
-		maskingPolicy, ok := policy.Policy.(*v1pb.Policy_MaskingPolicy)
-		if !ok {
-			return status.Errorf(codes.InvalidArgument, "unmatched policy type %v and policy %v", policyType, policy.Policy)
-		}
-		if maskingPolicy.MaskingPolicy == nil {
-			return status.Errorf(codes.InvalidArgument, "masking policy must be set")
-		}
-		for _, maskData := range maskingPolicy.MaskingPolicy.MaskData {
-			if maskData.Column == "" || maskData.Table == "" {
-				return status.Errorf(codes.InvalidArgument, "masking column and table must be set")
-			}
-		}
 	case api.PolicyTypeMaskingRule:
 		maskingRulePolicy, ok := policy.Policy.(*v1pb.Policy_MaskingRulePolicy)
 		if !ok {
@@ -558,19 +545,6 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		payloadBytes, err := protojson.Marshal(tagPolicy)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal tag policy")
-		}
-		return string(payloadBytes), nil
-	case v1pb.PolicyType_MASKING:
-		if err := s.licenseService.IsFeatureEnabled(api.FeatureSensitiveData); err != nil {
-			return "", status.Error(codes.PermissionDenied, err.Error())
-		}
-		payload, err := convertToStorePBMaskingPolicyPayload(policy.GetMaskingPolicy())
-		if err != nil {
-			return "", status.Error(codes.InvalidArgument, err.Error())
-		}
-		payloadBytes, err := protojson.Marshal(payload)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to marshal masking policy")
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_SLOW_QUERY:
@@ -701,13 +675,6 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, parentPath strin
 		policy.Policy = &v1pb.Policy_TagPolicy{
 			TagPolicy: p,
 		}
-	case api.PolicyTypeMasking:
-		pType = v1pb.PolicyType_MASKING
-		payload, err := convertToV1PBMaskingPolicy(policyMessage.Payload)
-		if err != nil {
-			return nil, err
-		}
-		policy.Policy = payload
 	case api.PolicyTypeSlowQuery:
 		pType = v1pb.PolicyType_SLOW_QUERY
 		payload, err := convertToV1PBSlowQueryPolicy(policyMessage.Payload)
@@ -828,50 +795,6 @@ func convertToSQLReviewRules(rules []*v1pb.SQLReviewRule) ([]*storepb.SQLReviewR
 	}
 
 	return ruleList, nil
-}
-
-func convertToV1PBMaskingPolicy(payloadStr string) (*v1pb.Policy_MaskingPolicy, error) {
-	var maskingPolicy storepb.MaskingPolicy
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), &maskingPolicy); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal masking policy")
-	}
-
-	var maskDataList []*v1pb.MaskData
-	for _, data := range maskingPolicy.MaskData {
-		maskDataList = append(maskDataList, &v1pb.MaskData{
-			Schema:                    data.Schema,
-			Table:                     data.Table,
-			Column:                    data.Column,
-			MaskingLevel:              convertToV1PBMaskingLevel(data.MaskingLevel),
-			FullMaskingAlgorithmId:    data.FullMaskingAlgorithmId,
-			PartialMaskingAlgorithmId: data.PartialMaskingAlgorithmId,
-		})
-	}
-
-	return &v1pb.Policy_MaskingPolicy{
-		MaskingPolicy: &v1pb.MaskingPolicy{
-			MaskData: maskDataList,
-		},
-	}, nil
-}
-
-func convertToStorePBMaskingPolicyPayload(policy *v1pb.MaskingPolicy) (*storepb.MaskingPolicy, error) {
-	var maskData []*storepb.MaskData
-
-	for _, data := range policy.MaskData {
-		maskData = append(maskData, &storepb.MaskData{
-			Schema:                    data.Schema,
-			Table:                     data.Table,
-			Column:                    data.Column,
-			MaskingLevel:              convertToStorePBMaskingLevel(data.MaskingLevel),
-			FullMaskingAlgorithmId:    data.FullMaskingAlgorithmId,
-			PartialMaskingAlgorithmId: data.PartialMaskingAlgorithmId,
-		})
-	}
-
-	return &storepb.MaskingPolicy{
-		MaskData: maskData,
-	}, nil
 }
 
 func convertToV1PBAction(action storepb.MaskingExceptionPolicy_MaskingException_Action) v1pb.MaskingExceptionPolicy_MaskingException_Action {
@@ -1140,8 +1063,6 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 		return api.PolicyTypeRollout, nil
 	case v1pb.PolicyType_TAG.String():
 		return api.PolicyTypeTag, nil
-	case v1pb.PolicyType_MASKING.String():
-		return api.PolicyTypeMasking, nil
 	case v1pb.PolicyType_MASKING_RULE.String():
 		return api.PolicyTypeMaskingRule, nil
 	case v1pb.PolicyType_MASKING_EXCEPTION.String():

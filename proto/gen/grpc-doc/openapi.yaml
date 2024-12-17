@@ -464,7 +464,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
@@ -532,7 +531,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
@@ -1861,7 +1859,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
@@ -1935,7 +1932,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
@@ -2667,7 +2663,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
@@ -2735,7 +2730,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
@@ -3243,7 +3237,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
@@ -3315,7 +3308,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
@@ -5344,7 +5336,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
@@ -5412,7 +5403,6 @@ paths:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
@@ -9724,6 +9714,18 @@ components:
                     description: The user labels for a column.
                 classificationId:
                     type: string
+                maskingLevel:
+                    enum:
+                        - MASKING_LEVEL_UNSPECIFIED
+                        - NONE
+                        - PARTIAL
+                        - FULL
+                    type: string
+                    format: enum
+                fullMaskingAlgorithmId:
+                    type: string
+                partialMaskingAlgorithmId:
+                    type: string
         ColumnMetadata:
             type: object
             properties:
@@ -11768,27 +11770,6 @@ components:
         LogoutRequest:
             type: object
             properties: {}
-        MaskData:
-            type: object
-            properties:
-                schema:
-                    type: string
-                table:
-                    type: string
-                column:
-                    type: string
-                maskingLevel:
-                    enum:
-                        - MASKING_LEVEL_UNSPECIFIED
-                        - NONE
-                        - PARTIAL
-                        - FULL
-                    type: string
-                    format: enum
-                fullMaskingAlgorithmId:
-                    type: string
-                partialMaskingAlgorithmId:
-                    type: string
         MaskingAlgorithmSetting:
             type: object
             properties:
@@ -11862,13 +11843,6 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/Expr'
                     description: The condition that is associated with this exception policy instance.
-        MaskingPolicy:
-            type: object
-            properties:
-                maskData:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/MaskData'
         MaskingRulePolicy:
             type: object
             properties:
@@ -12330,7 +12304,6 @@ components:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
-                        - MASKING
                         - SLOW_QUERY
                         - DISABLE_COPY_DATA
                         - MASKING_RULE
@@ -12343,8 +12316,6 @@ components:
                     format: enum
                 rolloutPolicy:
                     $ref: '#/components/schemas/RolloutPolicy'
-                maskingPolicy:
-                    $ref: '#/components/schemas/MaskingPolicy'
                 slowQueryPolicy:
                     $ref: '#/components/schemas/SlowQueryPolicy'
                 disableCopyDataPolicy:

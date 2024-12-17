@@ -722,5 +722,8 @@ defineExpose({
   get editor() {
     return monacoEditorRef.value;
   },
+  get isEditing() {
+    return state.isEditing;
+  },
 });
 </script>
