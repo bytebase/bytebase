@@ -501,7 +501,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExprList(ctxs []antlr.Par
 	var err error
 	plain := true
 	for _, ctx := range ctxs {
-		isPlain := true
+		var isPlain bool
 		fieldName, set, isPlain, err = q.extractSourceColumnSetFromExpr(ctx)
 		if err != nil {
 			return "", nil, false, err
