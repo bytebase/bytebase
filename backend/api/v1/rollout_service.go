@@ -93,7 +93,7 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.Previ
 
 	serializeTasks := request.Plan.GetVcsSource() != nil
 
-	rollout, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, steps, project, serializeTasks)
+	rollout, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, steps, nil, project, serializeTasks)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
@@ -239,7 +239,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 
 	serializeTasks := plan.Config.GetVcsSource() != nil
 
-	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, plan.Config.Steps, project, serializeTasks)
+	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, plan.Config.GetSteps(), plan.Config.GetDeploymentSnapshot(), project, serializeTasks)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
@@ -1067,9 +1067,77 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 	return nil
 }
 
+func getPlanSpecDatabaseGroups(steps []*storepb.PlanConfig_Step) []string {
+	var databaseGroups []string
+	for _, step := range steps {
+		for _, spec := range step.Specs {
+			if target := spec.GetChangeDatabaseConfig().GetTarget(); target != "" {
+				if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
+					databaseGroups = append(databaseGroups, target)
+				}
+			}
+		}
+	}
+	return databaseGroups
+}
+
+func getPlanSnapshot(ctx context.Context, s *store.Store, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*storepb.PlanConfig_DeploymentSnapshot, error) {
+	snapshot := &storepb.PlanConfig_DeploymentSnapshot{}
+
+	deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.UID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get deployment config")
+	}
+	if err := utils.ValidateDeploymentSchedule(deploymentConfig.Config.GetSchedule()); err != nil {
+		return nil, errors.Wrapf(err, "failed to validate and get deployment schedule")
+	}
+	snapshot.DeploymentConfig = deploymentConfig.Config
+
+	databaseGroups := getPlanSpecDatabaseGroups(steps)
+
+	allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
+	}
+
+	for _, name := range databaseGroups {
+		projectID, id, err := common.GetProjectIDDatabaseGroupID(name)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database group id")
+		}
+		if projectID != project.ResourceID {
+			return nil, errors.Errorf("%s does not belong to project %s", name, project.ResourceID)
+		}
+		databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+			ResourceID: &id,
+			ProjectUID: &project.UID,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database group")
+		}
+
+		matchedDatabases, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get matched and unmatched databases in database group %q", id)
+		}
+
+		var databases []string
+		for _, db := range matchedDatabases {
+			databases = append(databases, common.FormatDatabase(db.InstanceID, db.DatabaseName))
+		}
+
+		snapshot.DatabaseGroupSnapshots = append(snapshot.DatabaseGroupSnapshots, &storepb.PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot{
+			DatabaseGroup: name,
+			Databases:     databases,
+		})
+	}
+
+	return snapshot, nil
+}
+
 // GetPipelineCreate gets a pipeline create message from a plan.
 // serializeTasks serialize tasks on the same database using taskDAG.
-func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage, serializeTasks bool) (*store.PipelineMessage, error) {
+func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, snapshot *storepb.PlanConfig_DeploymentSnapshot /* nullable */, project *store.ProjectMessage, serializeTasks bool) (*store.PipelineMessage, error) {
 	// Flatten all specs from steps.
 	var specs []*storepb.PlanConfig_Spec
 	for _, step := range steps {
@@ -1078,7 +1146,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 
 	// Step 1 - transform database group specs.
 	// Others are untouched.
-	transformSpecs, err := transformDatabaseGroupSpecs(ctx, s, project, specs)
+	transformSpecs, err := transformDatabaseGroupSpecs(ctx, s, project, specs, snapshot)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to transform database group specs")
 	}
@@ -1097,11 +1165,15 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 
 	// For ChangeDatabase specs, we will try to rebuild the steps based on the deployment config.
 	if filterByDeploymentConfig {
-		deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.UID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get deployment config")
+		deploymentConfig := snapshot.GetDeploymentConfig()
+		if deploymentConfig == nil {
+			deploymentConfigMessage, err := s.GetDeploymentConfigV2(ctx, project.UID)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get deployment config")
+			}
+			deploymentConfig = deploymentConfigMessage.Config
 		}
-		if err := utils.ValidateDeploymentSchedule(deploymentConfig.Config.GetSchedule()); err != nil {
+		if err := utils.ValidateDeploymentSchedule(deploymentConfig.Schedule); err != nil {
 			return nil, errors.Wrapf(err, "failed to validate and get deployment schedule")
 		}
 		// Get all databases from specs.
@@ -1126,7 +1198,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 			}
 		}
 		// Calculate the matrix of databases based on the deployment schedule.
-		matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.Config.GetSchedule(), databases)
+		matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.GetSchedule(), databases)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database matrix from deployment schedule")
 		}
@@ -1148,7 +1220,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 			}
 
 			step := &storepb.PlanConfig_Step{
-				Title: deploymentConfig.Config.GetSchedule().Deployments[i].Title,
+				Title: deploymentConfig.GetSchedule().Deployments[i].Title,
 			}
 			for _, database := range databases {
 				name := common.FormatDatabase(database.InstanceID, database.DatabaseName)
