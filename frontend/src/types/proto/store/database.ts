@@ -44,6 +44,12 @@ export interface DatabaseSchemaMetadata {
   owner: string;
 }
 
+export interface LinkedDatabaseMetadata {
+  name: string;
+  username: string;
+  host: string;
+}
+
 /**
  * SchemaMetadata is the metadata for schemas.
  * This is the concept of schema in Postgres, but it's a no-op for MySQL.
@@ -944,12 +950,6 @@ export interface ColumnConfig_LabelsEntry {
   value: string;
 }
 
-export interface LinkedDatabaseMetadata {
-  name: string;
-  username: string;
-  host: string;
-}
-
 function createBaseDatabaseMetadata(): DatabaseMetadata {
   return { labels: {}, lastSyncTime: undefined, backupAvailable: false };
 }
@@ -1339,6 +1339,98 @@ export const DatabaseSchemaMetadata: MessageFns<DatabaseSchemaMetadata> = {
     message.serviceName = object.serviceName ?? "";
     message.linkedDatabases = object.linkedDatabases?.map((e) => LinkedDatabaseMetadata.fromPartial(e)) || [];
     message.owner = object.owner ?? "";
+    return message;
+  },
+};
+
+function createBaseLinkedDatabaseMetadata(): LinkedDatabaseMetadata {
+  return { name: "", username: "", host: "" };
+}
+
+export const LinkedDatabaseMetadata: MessageFns<LinkedDatabaseMetadata> = {
+  encode(message: LinkedDatabaseMetadata, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.username !== "") {
+      writer.uint32(18).string(message.username);
+    }
+    if (message.host !== "") {
+      writer.uint32(26).string(message.host);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LinkedDatabaseMetadata {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLinkedDatabaseMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.username = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.host = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LinkedDatabaseMetadata {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      host: isSet(object.host) ? globalThis.String(object.host) : "",
+    };
+  },
+
+  toJSON(message: LinkedDatabaseMetadata): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.host !== "") {
+      obj.host = message.host;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<LinkedDatabaseMetadata>): LinkedDatabaseMetadata {
+    return LinkedDatabaseMetadata.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<LinkedDatabaseMetadata>): LinkedDatabaseMetadata {
+    const message = createBaseLinkedDatabaseMetadata();
+    message.name = object.name ?? "";
+    message.username = object.username ?? "";
+    message.host = object.host ?? "";
     return message;
   },
 };
@@ -6090,98 +6182,6 @@ export const ColumnConfig_LabelsEntry: MessageFns<ColumnConfig_LabelsEntry> = {
     const message = createBaseColumnConfig_LabelsEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
-    return message;
-  },
-};
-
-function createBaseLinkedDatabaseMetadata(): LinkedDatabaseMetadata {
-  return { name: "", username: "", host: "" };
-}
-
-export const LinkedDatabaseMetadata: MessageFns<LinkedDatabaseMetadata> = {
-  encode(message: LinkedDatabaseMetadata, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    if (message.username !== "") {
-      writer.uint32(18).string(message.username);
-    }
-    if (message.host !== "") {
-      writer.uint32(26).string(message.host);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): LinkedDatabaseMetadata {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseLinkedDatabaseMetadata();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.username = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.host = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): LinkedDatabaseMetadata {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      username: isSet(object.username) ? globalThis.String(object.username) : "",
-      host: isSet(object.host) ? globalThis.String(object.host) : "",
-    };
-  },
-
-  toJSON(message: LinkedDatabaseMetadata): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.username !== "") {
-      obj.username = message.username;
-    }
-    if (message.host !== "") {
-      obj.host = message.host;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<LinkedDatabaseMetadata>): LinkedDatabaseMetadata {
-    return LinkedDatabaseMetadata.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<LinkedDatabaseMetadata>): LinkedDatabaseMetadata {
-    const message = createBaseLinkedDatabaseMetadata();
-    message.name = object.name ?? "";
-    message.username = object.username ?? "";
-    message.host = object.host ?? "";
     return message;
   },
 };
