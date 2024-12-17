@@ -21,6 +21,7 @@ import { getIntCookie } from "@/utils";
 export const useAuthStore = defineStore("auth_v1", () => {
   const userStore = useUserStore();
   const currentUserId = ref<number | undefined>();
+  const showLoginModal = ref<boolean>(false);
 
   const currentUser = computed(() => {
     if (currentUserId.value) {
@@ -86,26 +87,30 @@ export const useAuthStore = defineStore("auth_v1", () => {
       "bb.workspace.profile",
       /* silent */ true
     );
-    const mode = useAppFeature("bb.feature.database-change-mode");
 
-    let nextPage = redirectUrl || "/";
-    if (mode.value === DatabaseChangeMode.EDITOR) {
-      const route = router.resolve({
-        name: SQL_EDITOR_HOME_MODULE,
-      });
-      nextPage = route.fullPath;
+    if (!showLoginModal.value) {
+      let nextPage = redirectUrl || "/";
+      const mode = useAppFeature("bb.feature.database-change-mode");
+
+      if (mode.value === DatabaseChangeMode.EDITOR) {
+        const route = router.resolve({
+          name: SQL_EDITOR_HOME_MODULE,
+        });
+        nextPage = route.fullPath;
+      }
+
+      if (data.requireResetPassword) {
+        return router.push({
+          name: AUTH_PASSWORD_RESET_MODULE,
+          query: {
+            redirect: nextPage,
+          },
+        });
+      }
+
+      return router.replace(nextPage);
     }
-
-    if (data.requireResetPassword) {
-      return router.push({
-        name: AUTH_PASSWORD_RESET_MODULE,
-        query: {
-          redirect: nextPage,
-        },
-      });
-    }
-
-    return router.replace(nextPage);
+    showLoginModal.value = false;
   };
 
   const signup = async (request: Partial<User>) => {
@@ -127,6 +132,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
   const logout = async () => {
     try {
       await axios.post("/v1/auth/logout");
+      showLoginModal.value = false;
     } catch {
       // nothing
     } finally {
@@ -174,6 +180,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
     refreshUserIfNeeded,
     requireResetPassword,
     setRequireResetPassword,
+    showLoginModal,
   };
 });
 

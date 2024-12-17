@@ -55,38 +55,6 @@ axios.interceptors.response.use(
   },
   async (error) => {
     if (error.response) {
-      // When receiving 401 and is returned by our server, it means the current
-      // login user's token becomes invalid. Thus we force a logout.
-      // We could receive 401 when calling external service such as VCS provider,
-      // in such case, we shouldn't logout.
-      if (error.response.status == 401) {
-        const origin = location.origin;
-        const pathname = location.pathname;
-        if (
-          !pathname.startsWith("/auth") &&
-          error.response.request.responseURL.startsWith(origin)
-        ) {
-          // If the request URL starts with the browser's location origin
-          // e.g. http://localhost:3000/
-          // we know this is a request to Bytebase API endpoint (not an external service).
-          // Means that the auth session is error or expired.
-          // So we need to "kick out" here.
-          await useAuthStore().logout();
-        }
-      }
-
-      // in such case, we shouldn't logout.
-      if (error.response.status == 403) {
-        const origin = location.origin;
-        if (error.response.request.responseURL.startsWith(origin)) {
-          // If the request URL starts with the browser's location origin
-          // e.g. http://localhost:3000/
-          // we know this is a request to Bytebase API endpoint (not an external service).
-          // Means that the API request is denied by authorization reasons.
-          router.push({ name: "error.403" });
-        }
-      }
-
       if (error.response.data?.message && !isSilent()) {
         pushNotification({
           module: "bytebase",
@@ -109,6 +77,7 @@ axios.interceptors.response.use(
     throw error;
   }
 );
+
 const app = createApp(App);
 // Allow template to access various function
 app.config.globalProperties.window = window;
