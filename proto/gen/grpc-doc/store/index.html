@@ -513,11 +513,43 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.store.BranchColumnConfig"><span class="badge">M</span>BranchColumnConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchColumnConfig.LabelsEntry"><span class="badge">M</span>BranchColumnConfig.LabelsEntry</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.BranchConfig"><span class="badge">M</span>BranchConfig</a>
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.BranchDatabaseConfig"><span class="badge">M</span>BranchDatabaseConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchFunctionConfig"><span class="badge">M</span>BranchFunctionConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchProcedureConfig"><span class="badge">M</span>BranchProcedureConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchSchemaConfig"><span class="badge">M</span>BranchSchemaConfig</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.BranchSnapshot"><span class="badge">M</span>BranchSnapshot</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchTableConfig"><span class="badge">M</span>BranchTableConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.BranchViewConfig"><span class="badge">M</span>BranchViewConfig</a>
                 </li>
               
               
@@ -5162,6 +5194,103 @@ Format: projcets/{project}/branches/{branch} </p></td>
       <p></p>
 
       
+        <h3 id="bytebase.store.BranchColumnConfig">BranchColumnConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a column. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>semantic_type_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>labels</td>
+                  <td><a href="#bytebase.store.BranchColumnConfig.LabelsEntry">BranchColumnConfig.LabelsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>The user labels for a column. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>classification_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>masking_level</td>
+                  <td><a href="#bytebase.store.MaskingLevel">MaskingLevel</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>full_masking_algorithm_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>partial_masking_algorithm_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.BranchColumnConfig.LabelsEntry">BranchColumnConfig.LabelsEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.BranchConfig">BranchConfig</h3>
         <p></p>
 
@@ -5197,6 +5326,184 @@ Example: projects/project-id/branches/branch-id. </p></td>
 
         
       
+        <h3 id="bytebase.store.BranchDatabaseConfig">BranchDatabaseConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schema_configs</td>
+                  <td><a href="#bytebase.store.BranchSchemaConfig">BranchSchemaConfig</a></td>
+                  <td>repeated</td>
+                  <td><p>The schema_configs is the list of configs for schemas in a database. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.BranchFunctionConfig">BranchFunctionConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a function. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>updater</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last updater of the function in branch.
+Format: users/{userUID}. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>source_branch</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last change come from branch.
+Format: projcets/{project}/branches/{branch} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The timestamp when the function is updated in branch. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.BranchProcedureConfig">BranchProcedureConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a procedure. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>updater</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last updater of the procedure in branch.
+Format: users/{userUID}. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>source_branch</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last change come from branch.
+Format: projcets/{project}/branches/{branch} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The timestamp when the procedure is updated in branch. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.BranchSchemaConfig">BranchSchemaConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the schema name.
+It is an empty string for databases without such concept such as MySQL. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>table_configs</td>
+                  <td><a href="#bytebase.store.BranchTableConfig">BranchTableConfig</a></td>
+                  <td>repeated</td>
+                  <td><p>The table_configs is the list of configs for tables in a schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>function_configs</td>
+                  <td><a href="#bytebase.store.BranchFunctionConfig">BranchFunctionConfig</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>procedure_configs</td>
+                  <td><a href="#bytebase.store.BranchProcedureConfig">BranchProcedureConfig</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>view_configs</td>
+                  <td><a href="#bytebase.store.BranchViewConfig">BranchViewConfig</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.BranchSnapshot">BranchSnapshot</h3>
         <p></p>
 
@@ -5219,6 +5526,114 @@ Example: projects/project-id/branches/branch-id. </p></td>
                   <td><a href="#bytebase.store.DatabaseConfig">DatabaseConfig</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.BranchTableConfig">BranchTableConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>column_configs</td>
+                  <td><a href="#bytebase.store.BranchColumnConfig">BranchColumnConfig</a></td>
+                  <td>repeated</td>
+                  <td><p>The column_configs is the ordered list of configs for columns in a table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>classification_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>updater</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last updater of the table in branch.
+Format: users/{userUID}. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>source_branch</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last change come from branch.
+Format: projcets/{project}/branches/{branch} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The timestamp when the table is updated in branch. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.BranchViewConfig">BranchViewConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a view. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>updater</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last updater of the view in branch.
+Format: users/{userUID}. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>source_branch</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last change come from branch.
+Format: projcets/{project}/branches/{branch} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The timestamp when the view is updated in branch. </p></td>
                 </tr>
               
             </tbody>

@@ -2,6 +2,9 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "store/common.proto";
 import "store/database.proto";
 
 option go_package = "generated-go/store";
@@ -20,4 +23,115 @@ message BranchConfig {
   // Optional.
   // Example: projects/project-id/branches/branch-id.
   string source_branch = 2;
+}
+
+message BranchDatabaseConfig {
+  reserved 3;
+
+  string name = 1;
+
+  // The schema_configs is the list of configs for schemas in a database.
+  repeated BranchSchemaConfig schema_configs = 2;
+}
+
+message BranchSchemaConfig {
+  // The name is the schema name.
+  // It is an empty string for databases without such concept such as MySQL.
+  string name = 1;
+
+  // The table_configs is the list of configs for tables in a schema.
+  repeated BranchTableConfig table_configs = 2;
+
+  repeated BranchFunctionConfig function_configs = 3;
+
+  repeated BranchProcedureConfig procedure_configs = 4;
+
+  repeated BranchViewConfig view_configs = 5;
+}
+
+message BranchTableConfig {
+  // The name is the name of a table.
+  string name = 1;
+
+  // The column_configs is the ordered list of configs for columns in a table.
+  repeated BranchColumnConfig column_configs = 2;
+
+  string classification_id = 3;
+
+  // The last updater of the table in branch.
+  // Format: users/{userUID}.
+  string updater = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The last change come from branch.
+  // Format: projcets/{project}/branches/{branch}
+  string source_branch = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The timestamp when the table is updated in branch.
+  google.protobuf.Timestamp update_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message BranchFunctionConfig {
+  // The name is the name of a function.
+  string name = 1;
+
+  // The last updater of the function in branch.
+  // Format: users/{userUID}.
+  string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The last change come from branch.
+  // Format: projcets/{project}/branches/{branch}
+  string source_branch = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The timestamp when the function is updated in branch.
+  google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message BranchProcedureConfig {
+  // The name is the name of a procedure.
+  string name = 1;
+
+  // The last updater of the procedure in branch.
+  // Format: users/{userUID}.
+  string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The last change come from branch.
+  // Format: projcets/{project}/branches/{branch}
+  string source_branch = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The timestamp when the procedure is updated in branch.
+  google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message BranchViewConfig {
+  // The name is the name of a view.
+  string name = 1;
+
+  // The last updater of the view in branch.
+  // Format: users/{userUID}.
+  string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The last change come from branch.
+  // Format: projcets/{project}/branches/{branch}
+  string source_branch = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The timestamp when the view is updated in branch.
+  google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message BranchColumnConfig {
+  // The name is the name of a column.
+  string name = 1;
+
+  string semantic_type_id = 2;
+
+  // The user labels for a column.
+  map<string, string> labels = 3;
+
+  string classification_id = 4;
+
+  MaskingLevel masking_level = 5;
+
+  string full_masking_algorithm_id = 6;
+
+  string partial_masking_algorithm_id = 7;
 }
