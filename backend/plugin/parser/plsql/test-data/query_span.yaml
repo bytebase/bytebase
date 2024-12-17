@@ -177,6 +177,7 @@
               schema: ""
               table: T
               column: A
+          isplainfield: false
         - name: B
           sourcecolumns:
             - server: ""
@@ -184,6 +185,7 @@
               schema: ""
               table: T
               column: B
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: SCHEMA1
@@ -225,6 +227,7 @@
               schema: ""
               table: T1
               column: A
+          isplainfield: true
         - name: B
           sourcecolumns:
             - server: ""
@@ -232,6 +235,7 @@
               schema: ""
               table: T1
               column: B
+          isplainfield: true
         - name: A
           sourcecolumns:
             - server: ""
@@ -239,6 +243,7 @@
               schema: ""
               table: T1
               column: A
+          isplainfield: true
         - name: B
           sourcecolumns:
             - server: ""
@@ -246,6 +251,7 @@
               schema: ""
               table: T1
               column: B
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: PUBLIC
@@ -295,6 +301,7 @@
               schema: ""
               table: T1
               column: A
+          isplainfield: true
         - name: B
           sourcecolumns:
             - server: ""
@@ -302,6 +309,7 @@
               schema: ""
               table: T1
               column: B
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: PUBLIC
@@ -351,6 +359,7 @@
               schema: ""
               table: LT2
               column: LC1
+          isplainfield: false
         - name: LC2
           sourcecolumns:
             - server: ""
@@ -358,6 +367,7 @@
               schema: ""
               table: LT2
               column: LC2
+          isplainfield: false
     sourcecolumns: []
 - description: Test For Database Link
   statement: SELECT * FROM SCHEMA1.LT1@REMOTE;
@@ -397,6 +407,7 @@
               schema: ""
               table: LT1
               column: LC1
+          isplainfield: true
     sourcecolumns: []
 - description: Test For Explain statements
   statement: EXPLAIN PLAN for SELECT 1 FROM DUAL;
@@ -451,6 +462,7 @@
     results:
         - name: "1"
           sourcecolumns: []
+          isplainfield: false
     sourcecolumns: []
 - description: Test asterisk and column
   statement: SELECT A, T.* FROM T;
@@ -493,6 +505,7 @@
               schema: ""
               table: T
               column: A
+          isplainfield: false
         - name: A
           sourcecolumns:
             - server: ""
@@ -500,6 +513,7 @@
               schema: ""
               table: T
               column: A
+          isplainfield: true
         - name: B
           sourcecolumns:
             - server: ""
@@ -507,6 +521,7 @@
               schema: ""
               table: T
               column: B
+          isplainfield: true
         - name: C
           sourcecolumns:
             - server: ""
@@ -514,6 +529,7 @@
               schema: ""
               table: T
               column: C
+          isplainfield: true
         - name: D
           sourcecolumns:
             - server: ""
@@ -521,6 +537,7 @@
               schema: ""
               table: T
               column: D
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: PUBLIC
@@ -568,6 +585,7 @@
               schema: ""
               table: T
               column: A
+          isplainfield: true
         - name: B
           sourcecolumns:
             - server: ""
@@ -575,6 +593,7 @@
               schema: ""
               table: T
               column: B
+          isplainfield: true
         - name: C
           sourcecolumns:
             - server: ""
@@ -582,6 +601,7 @@
               schema: ""
               table: T
               column: C
+          isplainfield: true
         - name: D
           sourcecolumns:
             - server: ""
@@ -589,6 +609,7 @@
               schema: ""
               table: T
               column: D
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: PUBLIC
@@ -636,6 +657,7 @@
               schema: ""
               table: T
               column: A
+          isplainfield: false
         - name: B
           sourcecolumns:
             - server: ""
@@ -643,6 +665,7 @@
               schema: ""
               table: T
               column: B
+          isplainfield: false
         - name: C
           sourcecolumns:
             - server: ""
@@ -650,6 +673,7 @@
               schema: ""
               table: T
               column: C
+          isplainfield: false
         - name: D
           sourcecolumns:
             - server: ""
@@ -657,6 +681,7 @@
               schema: ""
               table: T
               column: D
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: PUBLIC
@@ -699,8 +724,10 @@
     results:
         - name: COL_1
           sourcecolumns: []
+          isplainfield: false
         - name: COL_2
           sourcecolumns: []
+          isplainfield: false
         - name: AVG_A_B_C
           sourcecolumns:
             - server: ""
@@ -718,6 +745,7 @@
               schema: ""
               table: T
               column: C
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: PUBLIC
@@ -760,6 +788,7 @@
     results:
         - name: "1"
           sourcecolumns: []
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: PUBLIC
@@ -818,8 +847,10 @@
               schema: ""
               table: GALLERIES
               column: CITY
+          isplainfield: false
         - name: TOTAL_PAINTINGS
           sourcecolumns: []
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: PUBLIC
@@ -872,6 +903,7 @@
               schema: ""
               table: T
               column: A
+          isplainfield: false
         - name: C1
           sourcecolumns:
             - server: ""
@@ -884,6 +916,7 @@
               schema: ""
               table: T
               column: B
+          isplainfield: false
         - name: C2
           sourcecolumns:
             - server: ""
@@ -896,6 +929,7 @@
               schema: ""
               table: T
               column: B
+          isplainfield: false
         - name: A>B
           sourcecolumns:
             - server: ""
@@ -908,6 +942,7 @@
               schema: ""
               table: T
               column: B
+          isplainfield: false
         - name: Bin(A,C,D)
           sourcecolumns:
             - server: ""
@@ -930,6 +965,7 @@
               schema: ""
               table: T
               column: D
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: PUBLIC
@@ -982,6 +1018,7 @@
               schema: ""
               table: T1
               column: A
+          isplainfield: true
         - name: B
           sourcecolumns:
             - server: ""
@@ -989,6 +1026,7 @@
               schema: ""
               table: T1
               column: B
+          isplainfield: true
         - name: C
           sourcecolumns:
             - server: ""
@@ -996,8 +1034,10 @@
               schema: ""
               table: T2
               column: C
+          isplainfield: false
         - name: "0"
           sourcecolumns: []
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: PUBLIC
@@ -1050,6 +1090,7 @@
               schema: ""
               table: T
               column: A
+          isplainfield: true
         - name: B
           sourcecolumns:
             - server: ""
@@ -1057,6 +1098,7 @@
               schema: ""
               table: T
               column: B
+          isplainfield: true
         - name: C
           sourcecolumns:
             - server: ""
@@ -1064,6 +1106,7 @@
               schema: ""
               table: T
               column: C
+          isplainfield: true
         - name: D
           sourcecolumns:
             - server: ""
@@ -1071,6 +1114,7 @@
               schema: ""
               table: T
               column: D
+          isplainfield: true
         - name: B
           sourcecolumns:
             - server: ""
@@ -1078,6 +1122,7 @@
               schema: ""
               table: T
               column: B
+          isplainfield: true
         - name: C
           sourcecolumns:
             - server: ""
@@ -1085,6 +1130,7 @@
               schema: ""
               table: T
               column: C
+          isplainfield: true
         - name: D
           sourcecolumns:
             - server: ""
@@ -1092,6 +1138,7 @@
               schema: ""
               table: T
               column: D
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: PUBLIC
@@ -1139,6 +1186,7 @@
               schema: ""
               table: T
               column: A
+          isplainfield: true
         - name: B
           sourcecolumns:
             - server: ""
@@ -1146,6 +1194,7 @@
               schema: ""
               table: T
               column: B
+          isplainfield: true
         - name: C
           sourcecolumns:
             - server: ""
@@ -1153,6 +1202,7 @@
               schema: ""
               table: T
               column: C
+          isplainfield: true
         - name: D
           sourcecolumns:
             - server: ""
@@ -1160,6 +1210,7 @@
               schema: ""
               table: T
               column: D
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: PUBLIC
@@ -1207,6 +1258,7 @@
               schema: ""
               table: T
               column: A
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: PUBLIC
@@ -1254,6 +1306,7 @@
               schema: ""
               table: T
               column: A
+          isplainfield: true
         - name: C
           sourcecolumns:
             - server: ""
@@ -1261,6 +1314,7 @@
               schema: ""
               table: T
               column: B
+          isplainfield: true
         - name: B
           sourcecolumns:
             - server: ""
@@ -1268,6 +1322,7 @@
               schema: ""
               table: T
               column: C
+          isplainfield: true
         - name: A
           sourcecolumns:
             - server: ""
@@ -1275,6 +1330,7 @@
               schema: ""
               table: T
               column: D
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: PUBLIC
@@ -1327,6 +1383,7 @@
               schema: ""
               table: T
               column: B
+          isplainfield: false
         - name: CC2
           sourcecolumns:
             - server: ""
@@ -1339,6 +1396,7 @@
               schema: ""
               table: T
               column: B
+          isplainfield: false
         - name: CC3
           sourcecolumns:
             - server: ""
@@ -1356,8 +1414,10 @@
               schema: ""
               table: T
               column: C
+          isplainfield: false
         - name: "N"
           sourcecolumns: []
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: PUBLIC
@@ -1405,6 +1465,7 @@
               schema: ""
               table: T
               column: A
+          isplainfield: false
         - name: C2
           sourcecolumns:
             - server: ""
@@ -1412,6 +1473,7 @@
               schema: ""
               table: T
               column: B
+          isplainfield: false
         - name: C3
           sourcecolumns:
             - server: ""
@@ -1419,6 +1481,7 @@
               schema: ""
               table: T
               column: D
+          isplainfield: false
         - name: C4
           sourcecolumns:
             - server: ""
@@ -1426,6 +1489,7 @@
               schema: ""
               table: T
               column: C
+          isplainfield: false
     sourcecolumns:
         - server: ""
           database: PUBLIC
