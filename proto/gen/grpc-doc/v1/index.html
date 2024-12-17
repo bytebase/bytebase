@@ -1907,19 +1907,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.MaskData"><span class="badge">M</span>MaskData</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.MaskingExceptionPolicy"><span class="badge">M</span>MaskingExceptionPolicy</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.v1.MaskingExceptionPolicy.MaskingException"><span class="badge">M</span>MaskingExceptionPolicy.MaskingException</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.MaskingPolicy"><span class="badge">M</span>MaskingPolicy</a>
                 </li>
               
                 <li>
@@ -6158,6 +6150,27 @@ Or present but not found if deleted </p></td>
               
                 <tr>
                   <td>classification_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>masking_level</td>
+                  <td><a href="#bytebase.v1.MaskingLevel">MaskingLevel</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>full_masking_algorithm_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>partial_masking_algorithm_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -21268,65 +21281,6 @@ If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
-        <h3 id="bytebase.v1.MaskData">MaskData</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>table</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>column</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>masking_level</td>
-                  <td><a href="#bytebase.v1.MaskingLevel">MaskingLevel</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>full_masking_algorithm_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>partial_masking_algorithm_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.MaskingExceptionPolicy">MaskingExceptionPolicy</h3>
         <p>MaskingExceptionPolicy is the allowlist of users who can access sensitive data.</p>
 
@@ -21390,30 +21344,6 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#google.type.Expr">google.type.Expr</a></td>
                   <td></td>
                   <td><p>The condition that is associated with this exception policy instance. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.MaskingPolicy">MaskingPolicy</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>mask_data</td>
-                  <td><a href="#bytebase.v1.MaskData">MaskData</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -21524,13 +21454,6 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                 <tr>
                   <td>rollout_policy</td>
                   <td><a href="#bytebase.v1.RolloutPolicy">RolloutPolicy</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>masking_policy</td>
-                  <td><a href="#bytebase.v1.MaskingPolicy">MaskingPolicy</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -21984,12 +21907,6 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>ROLLOUT_POLICY</td>
                 <td>11</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MASKING</td>
-                <td>5</td>
                 <td><p></p></td>
               </tr>
             

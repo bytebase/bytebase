@@ -5,6 +5,7 @@ package bytebase.store;
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
+import "store/common.proto";
 
 option go_package = "generated-go/store";
 
@@ -745,6 +746,12 @@ message ColumnConfig {
   map<string, string> labels = 3;
 
   string classification_id = 4;
+
+  MaskingLevel masking_level = 5;
+
+  string full_masking_algorithm_id = 6;
+
+  string partial_masking_algorithm_id = 7;
 }
 
 message LinkedDatabaseMetadata {
