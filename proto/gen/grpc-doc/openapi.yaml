@@ -5829,12 +5829,22 @@ paths:
         post:
             tags:
                 - RolloutService
+            description: CreateRollout can be called multiple times with the same rollout.plan but different stage_id to promote rollout stages.
             operationId: RolloutService_CreateRollout
             parameters:
                 - name: project
                   in: path
                   description: The project id.
                   required: true
+                  schema:
+                    type: string
+                - name: stageId
+                  in: query
+                  description: |-
+                    stage_id is the id in the plan deployment_config_snapshot.
+                     The rollout is created according to the plan and the
+                     stages are created up to the stage_id.
+                     If unspecified, all stages are created.
                   schema:
                     type: string
             requestBody:

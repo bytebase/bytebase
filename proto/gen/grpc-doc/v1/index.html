@@ -29175,6 +29175,16 @@ Format: projects/{project} </p></td>
                   <td><p>The rollout to create. </p></td>
                 </tr>
               
+                <tr>
+                  <td>stage_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>stage_id is the id in the plan deployment_config_snapshot.
+The rollout is created according to the plan and the
+stages are created up to the stage_id.
+If unspecified, all stages are created. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -31210,7 +31220,7 @@ Format: instances/{instance}/databases/{database} </p></td>
                 <td>CreateRollout</td>
                 <td><a href="#bytebase.v1.CreateRolloutRequest">CreateRolloutRequest</a></td>
                 <td><a href="#bytebase.v1.Rollout">Rollout</a></td>
-                <td><p></p></td>
+                <td><p>CreateRollout can be called multiple times with the same rollout.plan but different stage_id to promote rollout stages.</p></td>
               </tr>
             
               <tr>
