@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
+	"strings"
 	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -642,6 +643,10 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 	if normalizedLinkedServer != "" {
 		// TODO(zp): How do we handle the linked server?
 		return nil, errors.Errorf("linked server is not supported yet, but found %q", fullTableName.GetText())
+	}
+	if strings.HasPrefix(normalizedTableName, "#") {
+		// TODO(masking): Considering SELECT * INTO #temp FROM dbo.t1; SELECT * FROM #temp. We should mask the #temp.
+		return &base.PseudoTable{}, nil
 	}
 
 	// For SQL Server, the cte will shadow the physical tables, so we check the ctes first,

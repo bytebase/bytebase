@@ -365,6 +365,7 @@ func (driver *Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch stri
 			// for SELECT statement for now.
 			if skipRowsAffected {
 				skipRowsAffected = false
+				nextAffectedRowsIdx = getNextAffectedRowsIdx(stmtTypes, nextAffectedRowsIdx+1)
 				continue
 			}
 			queryResult = util.BuildAffectedRowsResult(m.Count)
@@ -424,7 +425,7 @@ func isExitError(err error) error {
 
 func getNextAffectedRowsIdx(s []stmtType, beginIdx int) int {
 	for i := beginIdx; i < len(s); i++ {
-		if s[i] == stmtTypeResultSetRowCountGenerating {
+		if s[i]&stmtTypeRowCountGenerating != 0 {
 			return i
 		}
 	}
@@ -433,7 +434,7 @@ func getNextAffectedRowsIdx(s []stmtType, beginIdx int) int {
 
 func getNextResultSetIdx(s []stmtType, beginIdx int) int {
 	for i := beginIdx; i < len(s); i++ {
-		if s[i] == stmtTypeResultSetGenerating {
+		if s[i]&stmtTypeResultSetGenerating != 0 {
 			return i
 		}
 	}
