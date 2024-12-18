@@ -150,6 +150,7 @@ export interface QueryResult {
   columnTypeNames: string[];
   /** Rows of the query result. */
   rows: QueryRow[];
+  rowsCount: Long;
   /** Columns are masked or not. */
   masked: boolean[];
   /** Columns are sensitive or not. */
@@ -1109,6 +1110,7 @@ function createBaseQueryResult(): QueryResult {
     columnNames: [],
     columnTypeNames: [],
     rows: [],
+    rowsCount: Long.ZERO,
     masked: [],
     sensitive: [],
     error: "",
@@ -1128,6 +1130,9 @@ export const QueryResult: MessageFns<QueryResult> = {
     }
     for (const v of message.rows) {
       QueryRow.encode(v!, writer.uint32(26).fork()).join();
+    }
+    if (!message.rowsCount.equals(Long.ZERO)) {
+      writer.uint32(80).int64(message.rowsCount.toString());
     }
     writer.uint32(34).fork();
     for (const v of message.masked) {
@@ -1183,6 +1188,14 @@ export const QueryResult: MessageFns<QueryResult> = {
           }
 
           message.rows.push(QueryRow.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.rowsCount = Long.fromString(reader.int64().toString());
           continue;
         }
         case 4: {
@@ -1271,6 +1284,7 @@ export const QueryResult: MessageFns<QueryResult> = {
         ? object.columnTypeNames.map((e: any) => globalThis.String(e))
         : [],
       rows: globalThis.Array.isArray(object?.rows) ? object.rows.map((e: any) => QueryRow.fromJSON(e)) : [],
+      rowsCount: isSet(object.rowsCount) ? Long.fromValue(object.rowsCount) : Long.ZERO,
       masked: globalThis.Array.isArray(object?.masked) ? object.masked.map((e: any) => globalThis.Boolean(e)) : [],
       sensitive: globalThis.Array.isArray(object?.sensitive)
         ? object.sensitive.map((e: any) => globalThis.Boolean(e))
@@ -1292,6 +1306,9 @@ export const QueryResult: MessageFns<QueryResult> = {
     }
     if (message.rows?.length) {
       obj.rows = message.rows.map((e) => QueryRow.toJSON(e));
+    }
+    if (!message.rowsCount.equals(Long.ZERO)) {
+      obj.rowsCount = (message.rowsCount || Long.ZERO).toString();
     }
     if (message.masked?.length) {
       obj.masked = message.masked;
@@ -1322,6 +1339,9 @@ export const QueryResult: MessageFns<QueryResult> = {
     message.columnNames = object.columnNames?.map((e) => e) || [];
     message.columnTypeNames = object.columnTypeNames?.map((e) => e) || [];
     message.rows = object.rows?.map((e) => QueryRow.fromPartial(e)) || [];
+    message.rowsCount = (object.rowsCount !== undefined && object.rowsCount !== null)
+      ? Long.fromValue(object.rowsCount)
+      : Long.ZERO;
     message.masked = object.masked?.map((e) => e) || [];
     message.sensitive = object.sensitive?.map((e) => e) || [];
     message.error = object.error ?? "";
