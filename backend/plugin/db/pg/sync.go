@@ -490,7 +490,8 @@ func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMe
 		if pgparser.IsSystemTable(tableName) || pgparser.IsSystemTable(inhTableName) {
 			continue
 		}
-		key := db.TableKey{Schema: inhSchemaName, Table: inhTableName}
+		key := db.TableKey{Schema: schemaName, Table: tableName}
+		inhKey := db.TableKey{Schema: inhSchemaName, Table: inhTableName}
 		metadata := &storepb.TablePartitionMetadata{
 			Name:       tableName,
 			Expression: partKeyDef,
@@ -507,7 +508,7 @@ func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMe
 		default:
 			return nil, errors.Errorf("invalid partition type %q", partitionType)
 		}
-		result[key] = append(result[key], metadata)
+		result[inhKey] = append(result[inhKey], metadata)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
