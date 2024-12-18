@@ -1907,19 +1907,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.MaskData"><span class="badge">M</span>MaskData</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.MaskingExceptionPolicy"><span class="badge">M</span>MaskingExceptionPolicy</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.v1.MaskingExceptionPolicy.MaskingException"><span class="badge">M</span>MaskingExceptionPolicy.MaskingException</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.MaskingPolicy"><span class="badge">M</span>MaskingPolicy</a>
                 </li>
               
                 <li>
@@ -2333,14 +2325,6 @@
               
                 <li>
                   <a href="#bytebase.v1.ExportResponse"><span class="badge">M</span>ExportResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.GenerateRestoreSQLRequest"><span class="badge">M</span>GenerateRestoreSQLRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.GenerateRestoreSQLResponse"><span class="badge">M</span>GenerateRestoreSQLResponse</a>
                 </li>
               
                 <li>
@@ -6163,6 +6147,27 @@ Or present but not found if deleted </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>masking_level</td>
+                  <td><a href="#bytebase.v1.MaskingLevel">MaskingLevel</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>full_masking_algorithm_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>partial_masking_algorithm_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7449,6 +7454,20 @@ If the key length is not specified, it&#39;s -1. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The definition of an index. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>parent_index_schema</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The schema name of the parent index. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>parent_index_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The index name of the parent index. </p></td>
                 </tr>
               
             </tbody>
@@ -21268,65 +21287,6 @@ If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
-        <h3 id="bytebase.v1.MaskData">MaskData</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>table</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>column</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>masking_level</td>
-                  <td><a href="#bytebase.v1.MaskingLevel">MaskingLevel</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>full_masking_algorithm_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>partial_masking_algorithm_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.MaskingExceptionPolicy">MaskingExceptionPolicy</h3>
         <p>MaskingExceptionPolicy is the allowlist of users who can access sensitive data.</p>
 
@@ -21390,30 +21350,6 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#google.type.Expr">google.type.Expr</a></td>
                   <td></td>
                   <td><p>The condition that is associated with this exception policy instance. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.MaskingPolicy">MaskingPolicy</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>mask_data</td>
-                  <td><a href="#bytebase.v1.MaskData">MaskData</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -21524,13 +21460,6 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                 <tr>
                   <td>rollout_policy</td>
                   <td><a href="#bytebase.v1.RolloutPolicy">RolloutPolicy</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>masking_policy</td>
-                  <td><a href="#bytebase.v1.MaskingPolicy">MaskingPolicy</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -21984,12 +21913,6 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>ROLLOUT_POLICY</td>
                 <td>11</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MASKING</td>
-                <td>5</td>
                 <td><p></p></td>
               </tr>
             
@@ -25992,79 +25915,6 @@ Or it can be used to query a specific read-only data source. </p></td>
 
         
       
-        <h3 id="bytebase.v1.GenerateRestoreSQLRequest">GenerateRestoreSQLRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The database name to execute the query against.
-Format: instances/{instance}/databases/{databaseName} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource name of the sheet. It is used to get the original statement.
-Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>backup_data_source</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The data source to restore from.
-Format: instances/{instance}/databases/{databaseName}, for general engines.
-Or instances/{instance}/databases/{databaseName}/schemas/{schemaName}, for PG only. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>backup_table</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The backup table name. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.GenerateRestoreSQLResponse">GenerateRestoreSQLResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>statement</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The restore SQL statement. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.ParseMyBatisMapperRequest">ParseMyBatisMapperRequest</h3>
         <p></p>
 
@@ -27130,13 +26980,6 @@ to retrieve the next page of history. </p></td>
                 <td><p></p></td>
               </tr>
             
-              <tr>
-                <td>GenerateRestoreSQL</td>
-                <td><a href="#bytebase.v1.GenerateRestoreSQLRequest">GenerateRestoreSQLRequest</a></td>
-                <td><a href="#bytebase.v1.GenerateRestoreSQLResponse">GenerateRestoreSQLResponse</a></td>
-                <td><p>Deprecated.</p></td>
-              </tr>
-            
           </tbody>
         </table>
 
@@ -27252,16 +27095,6 @@ to retrieve the next page of history. </p></td>
                 <td>StringifyMetadata</td>
                 <td>POST</td>
                 <td>/v1/schemaDesign:stringifyMetadata</td>
-                <td>*</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>GenerateRestoreSQL</td>
-                <td>POST</td>
-                <td>/v1/{name=instances/*/databases/*}:generateRestoreSQL</td>
                 <td>*</td>
               </tr>
               

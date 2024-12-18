@@ -10,9 +10,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import { ref } from "vue";
-import { nextTick } from "vue";
+import { useEventListener } from "@vueuse/core";
+import { computed, nextTick, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { onBeforeRouteLeave } from "vue-router";
 import { useRouter } from "vue-router";
 import { TaskTypeListWithStatement } from "@/types";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
@@ -30,6 +31,7 @@ const { isCreating, selectedTask } = useIssueContext();
 
 const editorViewRef = ref<InstanceType<typeof EditorView>>();
 const router = useRouter();
+const { t } = useI18n();
 
 type ViewMode = "NONE" | "EDITOR" | "SDL";
 
@@ -66,4 +68,28 @@ const scrollToLineByHash = (hash: string) => {
     );
   });
 };
+
+const beforeUnloadHandler = (e: BeforeUnloadEvent) => {
+  // For created issues and not editing, no need to prompt.
+  if (!isCreating.value && !editorViewRef.value?.isEditing) {
+    return;
+  }
+
+  // For creating issues or editing task statement, prompt to confirm leaving.
+  e.preventDefault();
+  // Included for legacy support, e.g. Chrome/Edge < 119
+  e.returnValue = t("common.leave-without-saving");
+  return e.returnValue;
+};
+
+useEventListener("beforeunload", beforeUnloadHandler);
+
+onBeforeRouteLeave((to, from, next) => {
+  if (isCreating.value || editorViewRef.value?.isEditing) {
+    if (!window.confirm(t("common.leave-without-saving"))) {
+      return;
+    }
+  }
+  next();
+});
 </script>

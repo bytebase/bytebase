@@ -25,14 +25,14 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func transformDatabaseGroupSpecs(ctx context.Context, s *store.Store, project *store.ProjectMessage, specs []*storepb.PlanConfig_Spec) ([]*storepb.PlanConfig_Spec, error) {
+func transformDatabaseGroupSpecs(ctx context.Context, s *store.Store, project *store.ProjectMessage, specs []*storepb.PlanConfig_Spec, snapshot *storepb.PlanConfig_DeploymentSnapshot) ([]*storepb.PlanConfig_Spec, error) {
 	var rspecs []*storepb.PlanConfig_Spec
 
 	for _, spec := range specs {
 		if config := spec.GetChangeDatabaseConfig(); config != nil {
 			// transform database group.
 			if _, _, err := common.GetProjectIDDatabaseGroupID(config.Target); err == nil {
-				specsFromDatabaseGroup, err := transformDatabaseGroupTargetToSpecs(ctx, s, spec, config, project)
+				specsFromDatabaseGroup, err := transformDatabaseGroupTargetToSpecs(ctx, s, spec, config, project, snapshot)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to transform databaseGroup target to steps")
 				}
@@ -46,7 +46,29 @@ func transformDatabaseGroupSpecs(ctx context.Context, s *store.Store, project *s
 	return rspecs, nil
 }
 
-func transformDatabaseGroupTargetToSpecs(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage) ([]*storepb.PlanConfig_Spec, error) {
+func transformDatabaseGroupTargetToSpecs(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage, snapshot *storepb.PlanConfig_DeploymentSnapshot) ([]*storepb.PlanConfig_Spec, error) {
+	// Use snapshot result if it's present.
+	for _, s := range snapshot.GetDatabaseGroupSnapshots() {
+		if s.DatabaseGroup == c.Target {
+			var specs []*storepb.PlanConfig_Spec
+			for _, database := range s.Databases {
+				s, ok := proto.Clone(spec).(*storepb.PlanConfig_Spec)
+				if !ok {
+					return nil, errors.Errorf("failed to clone, got %T", s)
+				}
+				proto.Merge(s, &storepb.PlanConfig_Spec{
+					Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+							Target: database,
+						},
+					},
+				})
+				specs = append(specs, s)
+			}
+			return specs, nil
+		}
+	}
+
 	projectID, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(c.Target)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get project and deployment id from target %q", c.Target)

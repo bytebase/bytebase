@@ -36,8 +36,9 @@ export const authInterceptorMiddleware: ClientMiddleware<IgnoreErrorsOptions> =
           // omit specified errors
         } else {
           if (code === Status.UNAUTHENTICATED) {
-            // "Kick out" sign in status if access token expires.
-            await useAuthStore().logout();
+            // When receiving 401 and is returned by our server, it means the current
+            // login user's token becomes invalid. Thus we force the user to login again.
+            useAuthStore().showLoginModal = true;
           } else if (code === Status.PERMISSION_DENIED) {
             // Jump to 403 page
             router.push({ name: "error.403" });

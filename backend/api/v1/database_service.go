@@ -512,9 +512,13 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		}
 		filter = &metadataFilter{schema: schema, table: table}
 	}
-	v1pbMetadata, err := convertStoreDatabaseMetadata(ctx, dbSchema.GetMetadata(), dbSchema.GetConfig(), filter, nil /* optionalStores */)
+	v1pbMetadata, err := convertStoreDatabaseMetadata(dbSchema.GetMetadata(), filter)
 	if err != nil {
 		return nil, err
+	}
+	dbConfig := convertStoreDatabaseConfig(ctx, dbSchema.GetConfig(), filter, nil /* optionalStores */)
+	if dbConfig != nil {
+		v1pbMetadata.SchemaConfigs = dbConfig.SchemaConfigs
 	}
 	v1pbMetadata.Name = fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix)
 
@@ -528,19 +532,28 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get masking rule policy, error: %v", err)
 		}
+
 		// Convert the maskingPolicy to a map to reduce the time complexity of searching.
-		maskingPolicy, err := s.store.GetMaskingPolicyByDatabaseUID(ctx, database.UID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find masking policy for database %q", databaseName)
-		}
 		maskingPolicyMap := make(map[maskingPolicyKey]*storepb.MaskData)
-		if maskingPolicy != nil {
-			for _, maskData := range maskingPolicy.MaskData {
-				maskingPolicyMap[maskingPolicyKey{
-					schema: maskData.Schema,
-					table:  maskData.Table,
-					column: maskData.Column,
-				}] = maskData
+		for _, schemaConfig := range dbSchema.GetConfig().SchemaConfigs {
+			for _, tableConfig := range schemaConfig.GetTableConfigs() {
+				for _, columnConfig := range tableConfig.GetColumnConfigs() {
+					if columnConfig.MaskingLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED {
+						continue
+					}
+					maskingPolicyMap[maskingPolicyKey{
+						schema: schemaConfig.Name,
+						table:  tableConfig.Name,
+						column: columnConfig.Name,
+					}] = &storepb.MaskData{
+						Schema:                    schemaConfig.Name,
+						Table:                     tableConfig.Name,
+						Column:                    columnConfig.Name,
+						MaskingLevel:              columnConfig.MaskingLevel,
+						FullMaskingAlgorithmId:    columnConfig.FullMaskingAlgorithmId,
+						PartialMaskingAlgorithmId: columnConfig.PartialMaskingAlgorithmId,
+					}
+				}
 			}
 		}
 
@@ -574,6 +587,7 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 
 // UpdateDatabaseMetadata updates the metadata config of a database.
 func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v1pb.UpdateDatabaseMetadataRequest) (*v1pb.DatabaseMetadata, error) {
+	// TODO(ed): check subscripion? FeatureSensitiveData etc
 	if request.DatabaseMetadata == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty database config")
 	}
@@ -639,9 +653,13 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 		return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
 	}
 
-	v1pbMetadata, err := convertStoreDatabaseMetadata(ctx, dbSchema.GetMetadata(), dbSchema.GetConfig(), nil /* filter */, nil /* optionalStores */)
+	v1pbMetadata, err := convertStoreDatabaseMetadata(dbSchema.GetMetadata(), nil /* filter */)
 	if err != nil {
 		return nil, err
+	}
+	dbConfig := convertStoreDatabaseConfig(ctx, dbSchema.GetConfig(), nil /* filter */, nil /* optionalStores */)
+	if dbConfig != nil {
+		v1pbMetadata.SchemaConfigs = dbConfig.SchemaConfigs
 	}
 	v1pbMetadata.Name = fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix)
 	return v1pbMetadata, nil

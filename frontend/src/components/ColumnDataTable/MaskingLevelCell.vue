@@ -2,11 +2,7 @@
   <div class="flex items-center">
     <span class="mr-2">
       {{ maskingLevelText }}
-      <span
-        v-if="
-          columnMasking.maskingLevel === MaskingLevel.MASKING_LEVEL_UNSPECIFIED
-        "
-      >
+      <span v-if="maskingLevel === MaskingLevel.MASKING_LEVEL_UNSPECIFIED">
         ({{
           $t(
             `settings.sensitive-data.masking-level.${maskingLevelToJSON(
@@ -56,10 +52,15 @@
 
   <SensitiveColumnDrawer
     v-if="state.showSensitiveDataDrawer"
-    :column="{
-      maskData: columnMasking,
-      database: props.database,
+    :mask="{
+      schema,
+      table: table.name,
+      column: column.name,
+      maskingLevel,
+      fullMaskingAlgorithmId: fullMaskingAlgorithm?.id ?? '',
+      partialMaskingAlgorithmId: partialMaskingAlgorithm?.id ?? '',
     }"
+    :database="database"
     @dismiss="state.showSensitiveDataDrawer = false"
   />
 </template>
@@ -69,6 +70,7 @@ import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { useColumnMasking } from "@/components/SensitiveData/useColumnMasking";
 import { WORKSPACE_ROUTE_DATA_MASKING } from "@/router/dashboard/workspaceRoutes";
 import { useSubscriptionV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
@@ -77,7 +79,6 @@ import type {
   ColumnMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import type { MaskData } from "@/types/proto/v1/org_policy_service";
 import FeatureModal from "../FeatureGuard/FeatureModal.vue";
 import SensitiveColumnDrawer from "../SensitiveData/SensitiveColumnDrawer.vue";
 
@@ -91,7 +92,6 @@ const props = defineProps<{
   schema: string;
   table: TableMetadata;
   column: ColumnMetadata;
-  maskDataList: MaskData[];
   readonly?: boolean;
 }>();
 
@@ -101,6 +101,13 @@ const state = reactive<LocalState>({
   showSensitiveDataDrawer: false,
 });
 const subscriptionV1Store = useSubscriptionV1Store();
+const { maskingLevel, fullMaskingAlgorithm, partialMaskingAlgorithm } =
+  useColumnMasking({
+    database: props.database.name,
+    schema: props.schema,
+    table: props.table.name,
+    column: props.column.name,
+  });
 
 const hasSensitiveDataFeature = computed(() => {
   return subscriptionV1Store.hasFeature("bb.feature.sensitive-data");
@@ -114,33 +121,12 @@ const instanceMissingLicense = computed(() => {
 });
 
 const maskingLevelText = computed(() => {
-  const level = maskingLevelToJSON(columnMasking.value.maskingLevel);
+  const level = maskingLevelToJSON(maskingLevel.value);
   return t(`settings.sensitive-data.masking-level.${level.toLowerCase()}`);
 });
 
-const columnMasking = computed(() => {
-  return (
-    props.maskDataList.find((sensitiveData) => {
-      return (
-        sensitiveData.table === props.table.name &&
-        sensitiveData.column === props.column.name &&
-        sensitiveData.schema === props.schema
-      );
-    }) ?? {
-      schema: props.schema,
-      table: props.table.name,
-      column: props.column.name,
-      maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
-      fullMaskingAlgorithmId: "",
-      partialMaskingAlgorithmId: "",
-    }
-  );
-});
-
 const isColumnConfigMasking = computed(() => {
-  return (
-    columnMasking.value.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED
-  );
+  return maskingLevel.value !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED;
 });
 
 const openSensitiveDrawer = () => {

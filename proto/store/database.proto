@@ -5,6 +5,7 @@ package bytebase.store;
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
+import "store/common.proto";
 
 option go_package = "generated-go/store";
 
@@ -40,6 +41,14 @@ message DatabaseSchemaMetadata {
   repeated LinkedDatabaseMetadata linked_databases = 8;
 
   string owner = 9;
+}
+
+message LinkedDatabaseMetadata {
+  string name = 1;
+
+  string username = 2;
+
+  string host = 3;
 }
 
 // SchemaMetadata is the metadata for schemas.
@@ -568,6 +577,12 @@ message IndexMetadata {
 
   // The definition of an index.
   string definition = 8;
+
+  // The schema name of the parent index.
+  string parent_index_schema = 11;
+
+  // The index name of the parent index.
+  string parent_index_name = 12;
 }
 
 // ExtensionMetadata is the metadata for extensions.
@@ -745,12 +760,10 @@ message ColumnConfig {
   map<string, string> labels = 3;
 
   string classification_id = 4;
-}
 
-message LinkedDatabaseMetadata {
-  string name = 1;
+  MaskingLevel masking_level = 5;
 
-  string username = 2;
+  string full_masking_algorithm_id = 6;
 
-  string host = 3;
+  string partial_masking_algorithm_id = 7;
 }

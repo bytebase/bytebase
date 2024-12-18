@@ -960,7 +960,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 			Name:    "temp_table",
 			Columns: []*v1pb.ColumnMetadata{template.Column},
 		}
-		if err := validateTableMetadata(ctx, template.Engine, tableMetadata); err != nil {
+		if err := validateTableMetadata(template.Engine, tableMetadata); err != nil {
 			return err
 		}
 	}
@@ -975,7 +975,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 		if ok && cmp.Equal(oldTemplate, template, protocmp.Transform()) {
 			continue
 		}
-		if err := validateTableMetadata(ctx, template.Engine, template.Table); err != nil {
+		if err := validateTableMetadata(template.Engine, template.Table); err != nil {
 			return err
 		}
 	}
@@ -983,7 +983,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 	return nil
 }
 
-func validateTableMetadata(ctx context.Context, engine v1pb.Engine, tableMetadata *v1pb.TableMetadata) error {
+func validateTableMetadata(engine v1pb.Engine, tableMetadata *v1pb.TableMetadata) error {
 	tempSchema := &v1pb.SchemaMetadata{
 		Name:   "",
 		Tables: []*v1pb.TableMetadata{tableMetadata},
@@ -995,7 +995,7 @@ func validateTableMetadata(ctx context.Context, engine v1pb.Engine, tableMetadat
 		Name:    "temp_database",
 		Schemas: []*v1pb.SchemaMetadata{tempSchema},
 	}
-	tempStoreSchemaMetadata, _, err := convertV1DatabaseMetadata(ctx, tempMetadata, nil /* optionalStores */)
+	tempStoreSchemaMetadata, err := convertV1DatabaseMetadata(tempMetadata)
 	if err != nil {
 		return err
 	}

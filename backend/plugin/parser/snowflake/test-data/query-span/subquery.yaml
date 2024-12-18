@@ -40,6 +40,7 @@
               schema: PUBLIC
               table: T1
               column: A
+          isplainfield: true
         - name: B
           sourcecolumns:
             - server: ""
@@ -47,6 +48,7 @@
               schema: PUBLIC
               table: T1
               column: B
+          isplainfield: true
         - name: C
           sourcecolumns:
             - server: ""
@@ -54,6 +56,7 @@
               schema: PUBLIC
               table: T1
               column: C
+          isplainfield: true
         - name: D
           sourcecolumns:
             - server: ""
@@ -61,6 +64,7 @@
               schema: PUBLIC
               table: T1
               column: D
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: SNOWFLAKE

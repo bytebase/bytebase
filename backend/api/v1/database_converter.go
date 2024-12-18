@@ -11,7 +11,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func convertStoreDatabaseMetadata(ctx context.Context, metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, filter *metadataFilter, optionalStores *store.Store) (*v1pb.DatabaseMetadata, error) {
+func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filter *metadataFilter) (*v1pb.DatabaseMetadata, error) {
 	m := &v1pb.DatabaseMetadata{
 		CharacterSet: metadata.CharacterSet,
 		Collation:    metadata.Collation,
@@ -217,26 +217,23 @@ func convertStoreDatabaseMetadata(ctx context.Context, metadata *storepb.Databas
 			Description: extension.Description,
 		})
 	}
-
-	databaseConfig := convertStoreDatabaseConfig(ctx, config, filter, optionalStores)
-	if databaseConfig != nil {
-		m.SchemaConfigs = databaseConfig.SchemaConfigs
-	}
 	return m, nil
 }
 
 func convertStoreIndexMetadata(index *storepb.IndexMetadata) *v1pb.IndexMetadata {
 	return &v1pb.IndexMetadata{
-		Name:        index.Name,
-		Expressions: index.Expressions,
-		KeyLength:   index.KeyLength,
-		Descending:  index.Descending,
-		Type:        index.Type,
-		Unique:      index.Unique,
-		Primary:     index.Primary,
-		Visible:     index.Visible,
-		Comment:     index.Comment,
-		Definition:  index.Definition,
+		Name:              index.Name,
+		Expressions:       index.Expressions,
+		KeyLength:         index.KeyLength,
+		Descending:        index.Descending,
+		Type:              index.Type,
+		Unique:            index.Unique,
+		Primary:           index.Primary,
+		Visible:           index.Visible,
+		Comment:           index.Comment,
+		Definition:        index.Definition,
+		ParentIndexSchema: index.ParentIndexSchema,
+		ParentIndexName:   index.ParentIndexName,
 	}
 }
 
@@ -500,14 +497,17 @@ func convertStoreTableConfig(ctx context.Context, table *storepb.TableConfig, op
 
 func convertStoreColumnConfig(column *storepb.ColumnConfig) *v1pb.ColumnConfig {
 	return &v1pb.ColumnConfig{
-		Name:             column.Name,
-		SemanticTypeId:   column.SemanticTypeId,
-		Labels:           column.Labels,
-		ClassificationId: column.ClassificationId,
+		Name:                      column.Name,
+		SemanticTypeId:            column.SemanticTypeId,
+		Labels:                    column.Labels,
+		ClassificationId:          column.ClassificationId,
+		MaskingLevel:              convertToV1PBMaskingLevel(column.MaskingLevel),
+		FullMaskingAlgorithmId:    column.FullMaskingAlgorithmId,
+		PartialMaskingAlgorithmId: column.PartialMaskingAlgorithmId,
 	}
 }
 
-func convertV1DatabaseMetadata(ctx context.Context, metadata *v1pb.DatabaseMetadata, optionalStores *store.Store) (*storepb.DatabaseSchemaMetadata, *storepb.DatabaseConfig, error) {
+func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.DatabaseSchemaMetadata, error) {
 	m := &storepb.DatabaseSchemaMetadata{
 		Name:         metadata.Name,
 		CharacterSet: metadata.CharacterSet,
@@ -699,30 +699,23 @@ func convertV1DatabaseMetadata(ctx context.Context, metadata *v1pb.DatabaseMetad
 			Description: extension.Description,
 		})
 	}
-
-	databaseConfig := convertV1DatabaseConfig(
-		ctx,
-		&v1pb.DatabaseConfig{
-			Name:          metadata.Name,
-			SchemaConfigs: metadata.SchemaConfigs,
-		},
-		optionalStores,
-	)
-	return m, databaseConfig, nil
+	return m, nil
 }
 
 func convertV1IndexMetadata(index *v1pb.IndexMetadata) *storepb.IndexMetadata {
 	return &storepb.IndexMetadata{
-		Name:        index.Name,
-		Expressions: index.Expressions,
-		KeyLength:   index.KeyLength,
-		Descending:  index.Descending,
-		Type:        index.Type,
-		Unique:      index.Unique,
-		Primary:     index.Primary,
-		Visible:     index.Visible,
-		Comment:     index.Comment,
-		Definition:  index.Definition,
+		Name:              index.Name,
+		Expressions:       index.Expressions,
+		KeyLength:         index.KeyLength,
+		Descending:        index.Descending,
+		Type:              index.Type,
+		Unique:            index.Unique,
+		Primary:           index.Primary,
+		Visible:           index.Visible,
+		Comment:           index.Comment,
+		Definition:        index.Definition,
+		ParentIndexSchema: index.ParentIndexSchema,
+		ParentIndexName:   index.ParentIndexName,
 	}
 }
 
@@ -960,10 +953,13 @@ func convertV1TableConfig(ctx context.Context, table *v1pb.TableConfig, optional
 
 func convertV1ColumnConfig(column *v1pb.ColumnConfig) *storepb.ColumnConfig {
 	return &storepb.ColumnConfig{
-		Name:             column.Name,
-		SemanticTypeId:   column.SemanticTypeId,
-		Labels:           column.Labels,
-		ClassificationId: column.ClassificationId,
+		Name:                      column.Name,
+		SemanticTypeId:            column.SemanticTypeId,
+		Labels:                    column.Labels,
+		ClassificationId:          column.ClassificationId,
+		MaskingLevel:              convertToStorePBMaskingLevel(column.MaskingLevel),
+		FullMaskingAlgorithmId:    column.FullMaskingAlgorithmId,
+		PartialMaskingAlgorithmId: column.PartialMaskingAlgorithmId,
 	}
 }
 

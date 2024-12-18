@@ -242,11 +242,11 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 			Engine:     instance.Engine,
 			Base: &storepb.BranchSnapshot{
 				Metadata:       filteredBaseSchemaMetadata,
-				DatabaseConfig: config,
+				DatabaseConfig: convertDatabaseConfig(config),
 			},
 			Head: &storepb.BranchSnapshot{
 				Metadata:       filteredBaseSchemaMetadata,
-				DatabaseConfig: config,
+				DatabaseConfig: convertDatabaseConfig(config),
 			},
 			BaseSchema: []byte(baseSchema),
 			HeadSchema: []byte(baseSchema),
@@ -326,10 +326,18 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 	}
 
 	if slices.Contains(request.UpdateMask.Paths, "schema_metadata") {
-		metadata, config, err := convertV1DatabaseMetadata(ctx, request.Branch.GetSchemaMetadata(), s.store)
+		metadata, err := convertV1DatabaseMetadata(request.Branch.GetSchemaMetadata())
 		if err != nil {
 			return nil, err
 		}
+		config := convertV1DatabaseConfig(
+			ctx,
+			&v1pb.DatabaseConfig{
+				Name:          metadata.Name,
+				SchemaConfigs: request.Branch.GetSchemaMetadata().SchemaConfigs,
+			},
+			s.store,
+		)
 
 		classificationConfig, err := s.store.GetDataClassificationConfigByID(ctx, project.DataClassificationConfigID)
 		if err != nil {
@@ -348,7 +356,7 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 		schemaBytes := []byte(schema)
 		headUpdate := &storepb.BranchSnapshot{
 			Metadata:       filteredMetadata,
-			DatabaseConfig: config,
+			DatabaseConfig: convertDatabaseConfig(config),
 		}
 		updateBranchMessage := &store.UpdateBranchMessage{ProjectID: project.ResourceID, ResourceID: branchID, UpdaterID: user.ID}
 		updateBranchMessage.Head = headUpdate
@@ -458,16 +466,32 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	}
 
 	// The first crazy night in 2024.
-	sanitizeCommentForSchemaMetadata(headBranch.Base.Metadata, model.NewDatabaseConfig(headBranch.Base.DatabaseConfig), classificationConfig.ClassificationFromConfig)
-	sanitizeCommentForSchemaMetadata(headBranch.Head.Metadata, model.NewDatabaseConfig(headBranch.Head.DatabaseConfig), classificationConfig.ClassificationFromConfig)
-	sanitizeCommentForSchemaMetadata(baseBranch.Head.Metadata, model.NewDatabaseConfig(baseBranch.Head.DatabaseConfig), classificationConfig.ClassificationFromConfig)
+	sanitizeCommentForSchemaMetadata(headBranch.Base.Metadata, model.NewDatabaseConfig(convertBranchDatabaseConfig(headBranch.Base.DatabaseConfig)), classificationConfig.ClassificationFromConfig)
+	sanitizeCommentForSchemaMetadata(headBranch.Head.Metadata, model.NewDatabaseConfig(convertBranchDatabaseConfig(headBranch.Head.DatabaseConfig)), classificationConfig.ClassificationFromConfig)
+	sanitizeCommentForSchemaMetadata(baseBranch.Head.Metadata, model.NewDatabaseConfig(convertBranchDatabaseConfig(baseBranch.Head.DatabaseConfig)), classificationConfig.ClassificationFromConfig)
 
-	adHead, adConfig, err := tryMerge(headBranch.Base.Metadata, headBranch.Head.Metadata, baseBranch.Head.Metadata, headBranch.Base.DatabaseConfig, headBranch.Head.DatabaseConfig, baseBranch.Head.DatabaseConfig, baseBranch.Engine)
+	adHead, adConfig, err := tryMerge(
+		headBranch.Base.Metadata,
+		headBranch.Head.Metadata,
+		baseBranch.Head.Metadata,
+		convertBranchDatabaseConfig(headBranch.Base.DatabaseConfig),
+		convertBranchDatabaseConfig(headBranch.Head.DatabaseConfig),
+		convertBranchDatabaseConfig(baseBranch.Head.DatabaseConfig),
+		baseBranch.Engine,
+	)
 	if err != nil {
 		slog.Info("cannot merge branches", log.BBError(err))
 		return nil, status.Errorf(codes.Aborted, "cannot merge branches without conflict, error: %v", err)
 	}
-	mergedMetadata, mergedConfig, err := tryMerge(baseBranch.Head.Metadata, adHead, baseBranch.Head.Metadata, baseBranch.Head.DatabaseConfig, adConfig, baseBranch.Head.DatabaseConfig, baseBranch.Engine)
+	mergedMetadata, mergedConfig, err := tryMerge(
+		baseBranch.Head.Metadata,
+		adHead,
+		baseBranch.Head.Metadata,
+		convertBranchDatabaseConfig(baseBranch.Head.DatabaseConfig),
+		adConfig,
+		convertBranchDatabaseConfig(baseBranch.Head.DatabaseConfig),
+		baseBranch.Engine,
+	)
 	if err != nil {
 		slog.Info("cannot merge branches", log.BBError(err))
 		return nil, status.Errorf(codes.Aborted, "cannot merge branches without conflict, error: %v", err)
@@ -482,7 +506,11 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	}
 	// XXX(zp): We only try to merge the schema config while the schema could be merged successfully. Otherwise, users manually merge the
 	// metadata in the frontend, and config would be ignored.
-	classificationIDSource := utils.MergeDatabaseConfig(baseBranch.Head.GetDatabaseConfig(), headBranch.Base.GetDatabaseConfig(), headBranch.Head.GetDatabaseConfig())
+	classificationIDSource := utils.MergeDatabaseConfig(
+		convertBranchDatabaseConfig(baseBranch.Head.GetDatabaseConfig()),
+		convertBranchDatabaseConfig(headBranch.Base.GetDatabaseConfig()),
+		convertBranchDatabaseConfig(headBranch.Head.GetDatabaseConfig()),
+	)
 	setClassificationIDToConfig(classificationIDSource, mergedConfig)
 
 	mergedSchemaBytes := []byte(mergedSchema)
@@ -491,7 +519,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	filteredMergedMetadata := filterDatabaseMetadataByEngine(mergedMetadata, baseBranch.Engine)
 	baseBranchNewHead := &storepb.BranchSnapshot{
 		Metadata:       filteredMergedMetadata,
-		DatabaseConfig: mergedConfig,
+		DatabaseConfig: convertDatabaseConfig(mergedConfig),
 	}
 	baseBranchNewHeadSchema := mergedSchemaBytes
 
@@ -582,7 +610,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 			return nil, status.Errorf(codes.InvalidArgument, "failed to convert merged schema to metadata, %v", err)
 		}
 		newHeadMetadata = filterDatabaseMetadataByEngine(newHeadMetadata, baseBranch.Engine)
-		newHeadConfig = baseBranch.Head.GetDatabaseConfig()
+		newHeadConfig = convertBranchDatabaseConfig(baseBranch.Head.GetDatabaseConfig())
 		// While users manually merge the metadata in the frontend, the config is stale.
 		// We should align the config with the merged metadata.
 		classificationConfig, err := s.store.GetDataClassificationConfigByID(ctx, baseProject.DataClassificationConfigID)
@@ -600,7 +628,15 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		newHeadConfig = updateConfigBranchUpdateInfoForUpdate(baseBranch.Head.Metadata, newHeadMetadata, newHeadConfig, common.FormatUserUID(user.ID), common.FormatBranchResourceID(baseProjectID, baseBranchID))
 		newHeadConfig = alignDatabaseConfig(newHeadMetadata, newHeadConfig)
 	} else {
-		newHeadMetadata, newHeadConfig, err = tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, filteredNewBaseMetadata, baseBranch.Base.DatabaseConfig, baseBranch.Head.DatabaseConfig, newBaseConfig, baseBranch.Engine)
+		newHeadMetadata, newHeadConfig, err = tryMerge(
+			baseBranch.Base.Metadata,
+			baseBranch.Head.Metadata,
+			filteredNewBaseMetadata,
+			convertBranchDatabaseConfig(baseBranch.Base.DatabaseConfig),
+			convertBranchDatabaseConfig(baseBranch.Head.DatabaseConfig),
+			newBaseConfig,
+			baseBranch.Engine,
+		)
 		if err != nil {
 			slog.Info("cannot rebase branches", log.BBError(err))
 			conflictSchema, err := diff3.Merge(
@@ -630,7 +666,11 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		alignDatabaseConfig(newHeadMetadata, newHeadConfig)
 		// XXX(zp): We only try to merge the schema config while the schema could be merged successfully. Otherwise, users manually merge the
 		// metadata in the frontend, and config would be ignored.
-		classificationIDSource := utils.MergeDatabaseConfig(newBaseConfig, baseBranch.Base.GetDatabaseConfig(), baseBranch.Head.GetDatabaseConfig())
+		classificationIDSource := utils.MergeDatabaseConfig(
+			newBaseConfig,
+			convertBranchDatabaseConfig(baseBranch.Base.GetDatabaseConfig()),
+			convertBranchDatabaseConfig(baseBranch.Head.GetDatabaseConfig()),
+		)
 		setClassificationIDToConfig(classificationIDSource, newHeadConfig)
 	}
 
@@ -646,12 +686,12 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 	if request.ValidateOnly {
 		baseBranch.Base = &storepb.BranchSnapshot{
 			Metadata:       filteredNewBaseMetadata,
-			DatabaseConfig: newBaseConfig,
+			DatabaseConfig: convertDatabaseConfig(newBaseConfig),
 		}
 		baseBranch.BaseSchema = newBaseSchemaBytes
 		baseBranch.Head = &storepb.BranchSnapshot{
 			Metadata:       filteredNewHeadMetadata,
-			DatabaseConfig: newHeadConfig,
+			DatabaseConfig: convertDatabaseConfig(newHeadConfig),
 		}
 		baseBranch.HeadSchema = newHeadSchemaBytes
 	} else {
@@ -661,13 +701,13 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 			UpdaterID:  user.ID,
 			Base: &storepb.BranchSnapshot{
 				Metadata:       filteredNewBaseMetadata,
-				DatabaseConfig: newBaseConfig,
+				DatabaseConfig: convertDatabaseConfig(newBaseConfig),
 			},
 			BaseSchema: &newBaseSchemaBytes,
 			Head: &storepb.BranchSnapshot{
 				Metadata: filteredNewHeadMetadata,
 				// TODO(d): handle config.
-				DatabaseConfig: newHeadConfig,
+				DatabaseConfig: convertDatabaseConfig(newHeadConfig),
 			},
 			HeadSchema: &newHeadSchemaBytes,
 		}); err != nil {
@@ -740,7 +780,7 @@ func (s *BranchService) getFilteredNewBaseFromRebaseRequest(ctx context.Context,
 		if sourceBranch == nil {
 			return nil, "", nil, status.Errorf(codes.NotFound, "branch %q not found", sourceBranchID)
 		}
-		return sourceBranch.Head.GetMetadata(), string(sourceBranch.HeadSchema), sourceBranch.Head.GetDatabaseConfig(), nil
+		return sourceBranch.Head.GetMetadata(), string(sourceBranch.HeadSchema), convertBranchDatabaseConfig(sourceBranch.Head.GetDatabaseConfig()), nil
 	}
 
 	return nil, "", nil, status.Errorf(codes.InvalidArgument, "either source_database or source_branch should be specified")
@@ -820,16 +860,32 @@ func (*BranchService) DiffMetadata(ctx context.Context, request *v1pb.DiffMetada
 	if request.SourceMetadata == nil || request.TargetMetadata == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "source_metadata and target_metadata are required")
 	}
-	storeSourceMetadata, sourceConfig, err := convertV1DatabaseMetadata(ctx, request.SourceMetadata, nil /* optionalStores */)
+	storeSourceMetadata, err := convertV1DatabaseMetadata(request.SourceMetadata)
 	if err != nil {
 		return nil, err
 	}
+	sourceConfig := convertV1DatabaseConfig(
+		ctx,
+		&v1pb.DatabaseConfig{
+			Name:          request.SourceMetadata.Name,
+			SchemaConfigs: request.SourceMetadata.SchemaConfigs,
+		},
+		nil, /* optionalStores */
+	)
 	sanitizeCommentForSchemaMetadata(storeSourceMetadata, model.NewDatabaseConfig(sourceConfig), request.ClassificationFromConfig)
 
-	storeTargetMetadata, targetConfig, err := convertV1DatabaseMetadata(ctx, request.TargetMetadata, nil /* optionalStores */)
+	storeTargetMetadata, err := convertV1DatabaseMetadata(request.TargetMetadata)
 	if err != nil {
 		return nil, err
 	}
+	targetConfig := convertV1DatabaseConfig(
+		ctx,
+		&v1pb.DatabaseConfig{
+			Name:          request.TargetMetadata.Name,
+			SchemaConfigs: request.TargetMetadata.SchemaConfigs,
+		},
+		nil, /* optionalStores */
+	)
 	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid target metadata: %v", err)
 	}
@@ -922,15 +978,24 @@ func (s *BranchService) convertBranchToBranch(ctx context.Context, project *stor
 	}
 
 	v1Branch.Schema = string(branch.HeadSchema)
-	sm, err := convertStoreDatabaseMetadata(ctx, branch.Head.Metadata, branch.Head.DatabaseConfig, nil /* filter */, s.store)
+	sm, err := convertStoreDatabaseMetadata(branch.Head.Metadata, nil /* filter */)
 	if err != nil {
 		return nil, err
 	}
+	smc := convertStoreDatabaseConfig(ctx, convertBranchDatabaseConfig(branch.Head.DatabaseConfig), nil /* filter */, s.store)
+	if smc != nil {
+		sm.SchemaConfigs = smc.SchemaConfigs
+	}
+
 	v1Branch.SchemaMetadata = sm
 	v1Branch.BaselineSchema = string(branch.BaseSchema)
-	bsm, err := convertStoreDatabaseMetadata(ctx, branch.Base.Metadata, branch.Base.DatabaseConfig, nil /* filter */, s.store)
+	bsm, err := convertStoreDatabaseMetadata(branch.Base.Metadata, nil /* filter */)
 	if err != nil {
 		return nil, err
+	}
+	bsmc := convertStoreDatabaseConfig(ctx, convertBranchDatabaseConfig(branch.Base.DatabaseConfig), nil /* filter */, s.store)
+	if bsmc != nil {
+		bsm.SchemaConfigs = bsmc.SchemaConfigs
 	}
 	v1Branch.BaselineSchemaMetadata = bsm
 	return v1Branch, nil
@@ -1618,10 +1683,13 @@ func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *store
 					})
 				} else {
 					columnConfig := &storepb.ColumnConfig{
-						Name:             columnName,
-						ClassificationId: columnConfig.ClassificationId,
-						SemanticTypeId:   columnConfig.SemanticTypeId,
-						Labels:           columnConfig.Labels,
+						Name:                      columnName,
+						ClassificationId:          columnConfig.ClassificationId,
+						SemanticTypeId:            columnConfig.SemanticTypeId,
+						Labels:                    columnConfig.Labels,
+						MaskingLevel:              columnConfig.MaskingLevel,
+						FullMaskingAlgorithmId:    columnConfig.FullMaskingAlgorithmId,
+						PartialMaskingAlgorithmId: columnConfig.PartialMaskingAlgorithmId,
 					}
 					tableConfig.ColumnConfigs = append(tableConfig.ColumnConfigs, columnConfig)
 				}
@@ -1730,4 +1798,120 @@ func setClassificationIDToConfig(a, b *storepb.DatabaseConfig) {
 			}
 		}
 	}
+}
+
+func convertDatabaseConfig(cfg *storepb.DatabaseConfig) *storepb.BranchDatabaseConfig {
+	c := &storepb.BranchDatabaseConfig{
+		Name: cfg.Name,
+	}
+	for _, s := range cfg.SchemaConfigs {
+		sc := &storepb.BranchSchemaConfig{
+			Name: s.Name,
+		}
+		for _, t := range s.TableConfigs {
+			tc := &storepb.BranchTableConfig{
+				Name:             t.Name,
+				ClassificationId: t.ClassificationId,
+				Updater:          t.Updater,
+				UpdateTime:       t.UpdateTime,
+				SourceBranch:     t.SourceBranch,
+			}
+			for _, c := range t.ColumnConfigs {
+				tc.ColumnConfigs = append(tc.ColumnConfigs, &storepb.BranchColumnConfig{
+					Name:                      c.Name,
+					SemanticTypeId:            c.SemanticTypeId,
+					Labels:                    c.Labels,
+					ClassificationId:          c.ClassificationId,
+					MaskingLevel:              c.MaskingLevel,
+					FullMaskingAlgorithmId:    c.FullMaskingAlgorithmId,
+					PartialMaskingAlgorithmId: c.PartialMaskingAlgorithmId,
+				})
+			}
+			sc.TableConfigs = append(sc.TableConfigs, tc)
+		}
+		for _, v := range s.ViewConfigs {
+			sc.ViewConfigs = append(sc.ViewConfigs, &storepb.BranchViewConfig{
+				Name:         v.Name,
+				Updater:      v.Updater,
+				SourceBranch: v.SourceBranch,
+				UpdateTime:   v.UpdateTime,
+			})
+		}
+		for _, f := range s.FunctionConfigs {
+			sc.FunctionConfigs = append(sc.FunctionConfigs, &storepb.BranchFunctionConfig{
+				Name:         f.Name,
+				Updater:      f.Updater,
+				SourceBranch: f.SourceBranch,
+				UpdateTime:   f.UpdateTime,
+			})
+		}
+		for _, p := range s.ProcedureConfigs {
+			sc.ProcedureConfigs = append(sc.ProcedureConfigs, &storepb.BranchProcedureConfig{
+				Name:         p.Name,
+				Updater:      p.Updater,
+				SourceBranch: p.SourceBranch,
+				UpdateTime:   p.UpdateTime,
+			})
+		}
+		c.SchemaConfigs = append(c.SchemaConfigs, sc)
+	}
+	return c
+}
+
+func convertBranchDatabaseConfig(cfg *storepb.BranchDatabaseConfig) *storepb.DatabaseConfig {
+	c := &storepb.DatabaseConfig{
+		Name: cfg.Name,
+	}
+	for _, s := range cfg.SchemaConfigs {
+		sc := &storepb.SchemaConfig{
+			Name: s.Name,
+		}
+		for _, t := range s.TableConfigs {
+			tc := &storepb.TableConfig{
+				Name:             t.Name,
+				ClassificationId: t.ClassificationId,
+				Updater:          t.Updater,
+				UpdateTime:       t.UpdateTime,
+				SourceBranch:     t.SourceBranch,
+			}
+			for _, c := range t.ColumnConfigs {
+				tc.ColumnConfigs = append(tc.ColumnConfigs, &storepb.ColumnConfig{
+					Name:                      c.Name,
+					SemanticTypeId:            c.SemanticTypeId,
+					Labels:                    c.Labels,
+					ClassificationId:          c.ClassificationId,
+					MaskingLevel:              c.MaskingLevel,
+					FullMaskingAlgorithmId:    c.FullMaskingAlgorithmId,
+					PartialMaskingAlgorithmId: c.PartialMaskingAlgorithmId,
+				})
+			}
+			sc.TableConfigs = append(sc.TableConfigs, tc)
+		}
+		for _, v := range s.ViewConfigs {
+			sc.ViewConfigs = append(sc.ViewConfigs, &storepb.ViewConfig{
+				Name:         v.Name,
+				Updater:      v.Updater,
+				SourceBranch: v.SourceBranch,
+				UpdateTime:   v.UpdateTime,
+			})
+		}
+		for _, f := range s.FunctionConfigs {
+			sc.FunctionConfigs = append(sc.FunctionConfigs, &storepb.FunctionConfig{
+				Name:         f.Name,
+				Updater:      f.Updater,
+				SourceBranch: f.SourceBranch,
+				UpdateTime:   f.UpdateTime,
+			})
+		}
+		for _, p := range s.ProcedureConfigs {
+			sc.ProcedureConfigs = append(sc.ProcedureConfigs, &storepb.ProcedureConfig{
+				Name:         p.Name,
+				Updater:      p.Updater,
+				SourceBranch: p.SourceBranch,
+				UpdateTime:   p.UpdateTime,
+			})
+		}
+		c.SchemaConfigs = append(c.SchemaConfigs, sc)
+	}
+	return c
 }

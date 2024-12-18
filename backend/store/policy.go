@@ -300,31 +300,6 @@ func (s *Store) GetMaskingRulePolicy(ctx context.Context) (*storepb.MaskingRuleP
 	return p, nil
 }
 
-// GetMaskingPolicyByDatabaseUID gets the masking policy for a database.
-func (s *Store) GetMaskingPolicyByDatabaseUID(ctx context.Context, databaseUID int) (*storepb.MaskingPolicy, error) {
-	resourceType := api.PolicyResourceTypeDatabase
-	pType := api.PolicyTypeMasking
-	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
-		ResourceType: &resourceType,
-		ResourceUID:  &databaseUID,
-		Type:         &pType,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if policy == nil {
-		return &storepb.MaskingPolicy{}, nil
-	}
-
-	p := new(storepb.MaskingPolicy)
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
-		return nil, err
-	}
-
-	return p, nil
-}
-
 // GetMaskingExceptionPolicyByProjectUID gets the masking exception policy for a project.
 func (s *Store) GetMaskingExceptionPolicyByProjectUID(ctx context.Context, projectUID int) (*storepb.MaskingExceptionPolicy, error) {
 	resourceType := api.PolicyResourceTypeProject

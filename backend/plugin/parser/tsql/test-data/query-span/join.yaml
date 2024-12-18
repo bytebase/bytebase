@@ -45,6 +45,7 @@
               schema: dbo
               table: MyTable1
               column: a
+          isplainfield: true
         - name: b
           sourcecolumns:
             - server: ""
@@ -52,6 +53,7 @@
               schema: dbo
               table: MyTable1
               column: b
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
@@ -110,6 +112,7 @@
               schema: dbo
               table: MyTable1
               column: a
+          isplainfield: true
         - name: b
           sourcecolumns:
             - server: ""
@@ -117,6 +120,7 @@
               schema: dbo
               table: MyTable1
               column: b
+          isplainfield: true
     sourcecolumns:
         - server: ""
           database: db

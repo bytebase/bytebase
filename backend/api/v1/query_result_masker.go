@@ -127,7 +127,12 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 		case 0:
 			maskers = append(maskers, masker.NewNoneMasker())
 		case 1:
-			maskers = append(maskers, effectiveMaskers[0])
+			// If there is only one source column, and comes from the expression, we fall back to the default full masker.
+			if !spanResult.IsPlainField {
+				maskers = append(maskers, masker.NewDefaultFullMasker())
+			} else {
+				maskers = append(maskers, effectiveMaskers[0])
+			}
 		default:
 			// If there are more than one source columns, we fall back to the default full masker,
 			// because we don't know how the data be made up.
@@ -184,18 +189,30 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 		semanticTypeID = config.SemanticTypeId
 	}
 
-	maskingPolicy, err := s.store.GetMaskingPolicyByDatabaseUID(ctx, database.UID)
+	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get masking policy for database: %q", database.DatabaseName)
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	maskingPolicyMap := make(map[maskingPolicyKey]*storepb.MaskData)
-	if maskingPolicy != nil {
-		for _, maskData := range maskingPolicy.MaskData {
-			maskingPolicyMap[maskingPolicyKey{
-				schema: maskData.Schema,
-				table:  maskData.Table,
-				column: maskData.Column,
-			}] = maskData
+	for _, schemaConfig := range dbSchema.GetConfig().SchemaConfigs {
+		for _, tableConfig := range schemaConfig.GetTableConfigs() {
+			for _, columnConfig := range tableConfig.GetColumnConfigs() {
+				if columnConfig.MaskingLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED {
+					continue
+				}
+				maskingPolicyMap[maskingPolicyKey{
+					schema: schemaConfig.Name,
+					table:  tableConfig.Name,
+					column: columnConfig.Name,
+				}] = &storepb.MaskData{
+					Schema:                    schemaConfig.Name,
+					Table:                     tableConfig.Name,
+					Column:                    columnConfig.Name,
+					MaskingLevel:              columnConfig.MaskingLevel,
+					FullMaskingAlgorithmId:    columnConfig.FullMaskingAlgorithmId,
+					PartialMaskingAlgorithmId: columnConfig.PartialMaskingAlgorithmId,
+				}
+			}
 		}
 	}
 
