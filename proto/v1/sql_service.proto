@@ -192,6 +192,8 @@ message QueryResult {
   // Rows of the query result.
   repeated QueryRow rows = 3;
 
+  int64 rows_count = 10;
+
   // Columns are masked or not.
   repeated bool masked = 4;
 

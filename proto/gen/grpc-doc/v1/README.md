@@ -9426,6 +9426,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | column_names | [string](#string) | repeated | Column names of the query result. |
 | column_type_names | [string](#string) | repeated | Column types of the query result. The types come from the Golang SQL driver. |
 | rows | [QueryRow](#bytebase-v1-QueryRow) | repeated | Rows of the query result. |
+| rows_count | [int64](#int64) |  |  |
 | masked | [bool](#bool) | repeated | Columns are masked or not. |
 | sensitive | [bool](#bool) | repeated | Columns are sensitive or not. |
 | error | [string](#string) |  | The error message if the query failed. |
