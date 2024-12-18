@@ -467,7 +467,131 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequ
 		}
 	}
 
+	// Construct Index.
+	for _, index := range table.Indexes {
+		if !index.Unique && !index.Primary {
+			if err := writeIndex(out, schema, table.Name, index); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Construct Partition table index.
+	for _, partition := range table.Partitions {
+		if err := writePartitionIndex(out, schema, partition); err != nil {
+			return err
+		}
+	}
+
+	// Construct index attach partition.
+	for _, partition := range table.Partitions {
+		if err := writeAttachPartitionIndex(out, schema, partition); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func writeAttachPartitionIndex(out io.Writer, schema string, partition *storepb.TablePartitionMetadata) error {
+	for _, index := range partition.Indexes {
+		if err := writeAttachIndex(out, schema, index); err != nil {
+			return err
+		}
+	}
+
+	for _, subpartition := range partition.Subpartitions {
+		if err := writeAttachPartitionIndex(out, schema, subpartition); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func writeAttachIndex(out io.Writer, schema string, index *storepb.IndexMetadata) error {
+	if len(index.ParentIndexName) == 0 || len(index.ParentIndexSchema) == 0 {
+		return nil
+	}
+
+	if _, err := io.WriteString(out, `ALTER INDEX "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, index.ParentIndexSchema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, index.ParentIndexName); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" ATTACH PARTITION "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, index.Name); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, "\";\n\n")
+	return err
+}
+
+func writePartitionIndex(out io.Writer, schema string, partition *storepb.TablePartitionMetadata) error {
+	for _, index := range partition.Indexes {
+		if !index.Unique && !index.Primary {
+			if err := writeIndex(out, schema, partition.Name, index); err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, subpartition := range partition.Subpartitions {
+		if err := writePartitionIndex(out, schema, subpartition); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func writeIndex(out io.Writer, schema string, table string, index *storepb.IndexMetadata) error {
+	if _, err := io.WriteString(out, `CREATE INDEX "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, index.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" ON "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, table); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" (`); err != nil {
+		return err
+	}
+	for i, expression := range index.Expressions {
+		if i > 0 {
+			if _, err := io.WriteString(out, ", "); err != nil {
+				return err
+			}
+		}
+		if _, err := io.WriteString(out, expression); err != nil {
+			return err
+		}
+	}
+	_, err := io.WriteString(out, ");\n\n")
+	return err
 }
 
 func writePartitionUniqueKey(out io.Writer, schema string, partition *storepb.TablePartitionMetadata) error {
