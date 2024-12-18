@@ -11,9 +11,9 @@ import (
 type stmtType = int
 
 const (
-	stmtTypeUnknown stmtType = iota
+	stmtTypeUnknown = 1 << iota
 	stmtTypeResultSetGenerating
-	stmtTypeResultSetRowCountGenerating
+	stmtTypeRowCountGenerating
 )
 
 type stmtTypeListener struct {
@@ -52,10 +52,14 @@ func (l *stmtTypeListener) EnterBatch_without_go(ctx *rawparser.Batch_without_go
 func getStmtTypeFromSQLClauses(ctx rawparser.ISql_clausesContext) (stmtType, error) {
 	switch {
 	case ctx.Dml_clause() != nil:
-		if ctx.Dml_clause().Select_statement_standalone() != nil {
-			return stmtTypeResultSetGenerating, nil
+		if v := ctx.Dml_clause().Select_statement_standalone(); v != nil {
+			if v.Select_statement().Query_expression().Query_specification() != nil && v.Select_statement().Query_expression().Query_specification().INTO() != nil {
+				// SELECT INTO will generate the row count only.
+				return stmtTypeRowCountGenerating, nil
+			}
+			return stmtTypeResultSetGenerating | stmtTypeRowCountGenerating, nil
 		}
-		return stmtTypeResultSetRowCountGenerating, nil
+		return stmtTypeRowCountGenerating, nil
 	case ctx.Cfl_statement() != nil:
 		return stmtTypeUnknown, errors.Errorf("unsupported control flow statement")
 	case ctx.Another_statement() != nil:
