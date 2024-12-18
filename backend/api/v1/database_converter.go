@@ -222,16 +222,18 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 
 func convertStoreIndexMetadata(index *storepb.IndexMetadata) *v1pb.IndexMetadata {
 	return &v1pb.IndexMetadata{
-		Name:        index.Name,
-		Expressions: index.Expressions,
-		KeyLength:   index.KeyLength,
-		Descending:  index.Descending,
-		Type:        index.Type,
-		Unique:      index.Unique,
-		Primary:     index.Primary,
-		Visible:     index.Visible,
-		Comment:     index.Comment,
-		Definition:  index.Definition,
+		Name:              index.Name,
+		Expressions:       index.Expressions,
+		KeyLength:         index.KeyLength,
+		Descending:        index.Descending,
+		Type:              index.Type,
+		Unique:            index.Unique,
+		Primary:           index.Primary,
+		Visible:           index.Visible,
+		Comment:           index.Comment,
+		Definition:        index.Definition,
+		ParentIndexSchema: index.ParentIndexSchema,
+		ParentIndexName:   index.ParentIndexName,
 	}
 }
 
@@ -702,16 +704,18 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 
 func convertV1IndexMetadata(index *v1pb.IndexMetadata) *storepb.IndexMetadata {
 	return &storepb.IndexMetadata{
-		Name:        index.Name,
-		Expressions: index.Expressions,
-		KeyLength:   index.KeyLength,
-		Descending:  index.Descending,
-		Type:        index.Type,
-		Unique:      index.Unique,
-		Primary:     index.Primary,
-		Visible:     index.Visible,
-		Comment:     index.Comment,
-		Definition:  index.Definition,
+		Name:              index.Name,
+		Expressions:       index.Expressions,
+		KeyLength:         index.KeyLength,
+		Descending:        index.Descending,
+		Type:              index.Type,
+		Unique:            index.Unique,
+		Primary:           index.Primary,
+		Visible:           index.Visible,
+		Comment:           index.Comment,
+		Definition:        index.Definition,
+		ParentIndexSchema: index.ParentIndexSchema,
+		ParentIndexName:   index.ParentIndexName,
 	}
 }
 
