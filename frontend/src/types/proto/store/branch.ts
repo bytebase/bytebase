@@ -9,13 +9,13 @@ import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import Long from "long";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { MaskingLevel, maskingLevelFromJSON, maskingLevelToJSON, maskingLevelToNumber } from "./common";
-import { DatabaseConfig, DatabaseSchemaMetadata } from "./database";
+import { DatabaseSchemaMetadata } from "./database";
 
 export const protobufPackage = "bytebase.store";
 
 export interface BranchSnapshot {
   metadata: DatabaseSchemaMetadata | undefined;
-  databaseConfig: DatabaseConfig | undefined;
+  databaseConfig: BranchDatabaseConfig | undefined;
 }
 
 export interface BranchConfig {
@@ -150,7 +150,7 @@ export const BranchSnapshot: MessageFns<BranchSnapshot> = {
       DatabaseSchemaMetadata.encode(message.metadata, writer.uint32(10).fork()).join();
     }
     if (message.databaseConfig !== undefined) {
-      DatabaseConfig.encode(message.databaseConfig, writer.uint32(18).fork()).join();
+      BranchDatabaseConfig.encode(message.databaseConfig, writer.uint32(18).fork()).join();
     }
     return writer;
   },
@@ -175,7 +175,7 @@ export const BranchSnapshot: MessageFns<BranchSnapshot> = {
             break;
           }
 
-          message.databaseConfig = DatabaseConfig.decode(reader, reader.uint32());
+          message.databaseConfig = BranchDatabaseConfig.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -190,7 +190,7 @@ export const BranchSnapshot: MessageFns<BranchSnapshot> = {
   fromJSON(object: any): BranchSnapshot {
     return {
       metadata: isSet(object.metadata) ? DatabaseSchemaMetadata.fromJSON(object.metadata) : undefined,
-      databaseConfig: isSet(object.databaseConfig) ? DatabaseConfig.fromJSON(object.databaseConfig) : undefined,
+      databaseConfig: isSet(object.databaseConfig) ? BranchDatabaseConfig.fromJSON(object.databaseConfig) : undefined,
     };
   },
 
@@ -200,7 +200,7 @@ export const BranchSnapshot: MessageFns<BranchSnapshot> = {
       obj.metadata = DatabaseSchemaMetadata.toJSON(message.metadata);
     }
     if (message.databaseConfig !== undefined) {
-      obj.databaseConfig = DatabaseConfig.toJSON(message.databaseConfig);
+      obj.databaseConfig = BranchDatabaseConfig.toJSON(message.databaseConfig);
     }
     return obj;
   },
@@ -214,7 +214,7 @@ export const BranchSnapshot: MessageFns<BranchSnapshot> = {
       ? DatabaseSchemaMetadata.fromPartial(object.metadata)
       : undefined;
     message.databaseConfig = (object.databaseConfig !== undefined && object.databaseConfig !== null)
-      ? DatabaseConfig.fromPartial(object.databaseConfig)
+      ? BranchDatabaseConfig.fromPartial(object.databaseConfig)
       : undefined;
     return message;
   },
