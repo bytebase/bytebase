@@ -107,7 +107,7 @@
 </template>
 
 <script lang="ts" setup>
-import { head, orderBy } from "lodash-es";
+import { orderBy } from "lodash-es";
 import { ChevronDown } from "lucide-vue-next";
 import { NButton, NPopover, NRadioGroup, NRadio, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
@@ -131,7 +131,7 @@ import {
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto/v1/sql_service";
-import { readableDataSourceType } from "@/utils";
+import { ensureDataSourceSelection, readableDataSourceType } from "@/utils";
 import { getAdminDataSourceRestrictionOfDatabase } from "@/utils";
 import ResultLimitSelect from "./ResultLimitSelect.vue";
 
@@ -227,21 +227,12 @@ const onDataSourceSelected = (dataSourceId?: string) => {
 };
 
 watch(
-  () => selectedDataSourceId.value,
-  () => {
-    // If current connection has data source, skip initial selection.
-    if (selectedDataSourceId.value) {
-      return;
-    }
-
-    const readOnlyDataSources = dataSources.value.filter(
-      (dataSource) => dataSource.type === DataSourceType.READ_ONLY
-    );
-    // Default set the first read only data source as selected.
-    if (readOnlyDataSources.length > 0) {
-      onDataSourceSelected(readOnlyDataSources[0].id);
-    } else {
-      onDataSourceSelected(head(dataSources.value)?.id);
+  [selectedDataSourceId, database],
+  ([current, database]) => {
+    if (!isValidDatabaseName(database.name)) return;
+    const fixed = ensureDataSourceSelection(current, database);
+    if (fixed !== current) {
+      onDataSourceSelected(fixed);
     }
   },
   {
