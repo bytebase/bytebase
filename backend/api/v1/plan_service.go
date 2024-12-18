@@ -348,9 +348,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 			planUpdate.Description = &description
 		case "steps":
 			convertedRequestSteps := convertPlanSteps(request.GetPlan().GetSteps())
-			planUpdate.Config = &storepb.PlanConfig{
-				Steps: convertedRequestSteps,
-			}
+			planUpdate.Steps = &convertedRequestSteps
 
 			serializeTasks := oldPlan.Config.GetVcsSource() != nil
 
@@ -1376,7 +1374,11 @@ func getPlanSnapshot(ctx context.Context, s *store.Store, steps []*storepb.PlanC
 	if err := utils.ValidateDeploymentSchedule(deploymentConfig.Config.GetSchedule()); err != nil {
 		return nil, errors.Wrapf(err, "failed to validate and get deployment schedule")
 	}
-	snapshot.DeploymentConfig = deploymentConfig.Config
+	snapshot.DeploymentConfigSnapshot = &storepb.PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot{
+		Name:             common.FormatDeploymentConfig(project.ResourceID),
+		Title:            deploymentConfig.Name,
+		DeploymentConfig: deploymentConfig.Config,
+	}
 
 	databaseGroups := getPlanSpecDatabaseGroups(steps)
 
