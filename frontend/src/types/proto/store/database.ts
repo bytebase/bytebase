@@ -774,6 +774,10 @@ export interface IndexMetadata {
   comment: string;
   /** The definition of an index. */
   definition: string;
+  /** The schema name of the parent index. */
+  parentIndexSchema: string;
+  /** The index name of the parent index. */
+  parentIndexName: string;
 }
 
 /** ExtensionMetadata is the metadata for extensions. */
@@ -4487,6 +4491,8 @@ function createBaseIndexMetadata(): IndexMetadata {
     visible: false,
     comment: "",
     definition: "",
+    parentIndexSchema: "",
+    parentIndexName: "",
   };
 }
 
@@ -4525,6 +4531,12 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
     }
     if (message.definition !== "") {
       writer.uint32(66).string(message.definition);
+    }
+    if (message.parentIndexSchema !== "") {
+      writer.uint32(90).string(message.parentIndexSchema);
+    }
+    if (message.parentIndexName !== "") {
+      writer.uint32(98).string(message.parentIndexName);
     }
     return writer;
   },
@@ -4636,6 +4648,22 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
           message.definition = reader.string();
           continue;
         }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.parentIndexSchema = reader.string();
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.parentIndexName = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4661,6 +4689,8 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
       visible: isSet(object.visible) ? globalThis.Boolean(object.visible) : false,
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
       definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
+      parentIndexSchema: isSet(object.parentIndexSchema) ? globalThis.String(object.parentIndexSchema) : "",
+      parentIndexName: isSet(object.parentIndexName) ? globalThis.String(object.parentIndexName) : "",
     };
   },
 
@@ -4696,6 +4726,12 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
     if (message.definition !== "") {
       obj.definition = message.definition;
     }
+    if (message.parentIndexSchema !== "") {
+      obj.parentIndexSchema = message.parentIndexSchema;
+    }
+    if (message.parentIndexName !== "") {
+      obj.parentIndexName = message.parentIndexName;
+    }
     return obj;
   },
 
@@ -4714,6 +4750,8 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
     message.visible = object.visible ?? false;
     message.comment = object.comment ?? "";
     message.definition = object.definition ?? "";
+    message.parentIndexSchema = object.parentIndexSchema ?? "";
+    message.parentIndexName = object.parentIndexName ?? "";
     return message;
   },
 };
