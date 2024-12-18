@@ -11,7 +11,7 @@ option go_package = "generated-go/store";
 
 message BranchSnapshot {
   DatabaseSchemaMetadata metadata = 1;
-  DatabaseConfig database_config = 2;
+  BranchDatabaseConfig database_config = 2;
 }
 
 message BranchConfig {

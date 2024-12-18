@@ -1842,7 +1842,7 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | metadata | [DatabaseSchemaMetadata](#bytebase-store-DatabaseSchemaMetadata) |  |  |
-| database_config | [DatabaseConfig](#bytebase-store-DatabaseConfig) |  |  |
+| database_config | [BranchDatabaseConfig](#bytebase-store-BranchDatabaseConfig) |  |  |
 
 
 
