@@ -16,7 +16,7 @@
         @click="onUpload"
       >
         <template #icon>
-          <ImportIcon class="h-4 w-4" />
+          <UploadIcon class="h-4 w-4" />
         </template>
         {{ $t("settings.sensitive-data.algorithms.upload") }}
         <input
@@ -61,7 +61,7 @@
 </template>
 
 <script lang="ts" setup>
-import { PlusIcon, ImportIcon } from "lucide-vue-next";
+import { PlusIcon, UploadIcon } from "lucide-vue-next";
 import { NButton, useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref } from "vue";
