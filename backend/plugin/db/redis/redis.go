@@ -275,6 +275,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		for i, cmd := range cmds {
 			setQueryResultRows(results[i], cmd, d.maximumSQLResultSize)
 			results[i].Latency = durationpb.New(time.Since(startTime))
+			results[i].RowsCount = int64(len(results[i].Rows))
 		}
 
 	case v1pb.QueryOption_ALL_NODES:
@@ -318,6 +319,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 			for i, cmd := range cmds {
 				setQueryResultRows(results[i], cmd, d.maximumSQLResultSize)
 				results[i].Latency = durationpb.New(time.Since(startTime))
+				results[i].RowsCount = int64(len(results[i].Rows))
 			}
 		}
 	default:
