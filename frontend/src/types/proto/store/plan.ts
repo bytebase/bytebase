@@ -266,9 +266,15 @@ export interface PlanConfig_SpecReleaseSource {
 }
 
 export interface PlanConfig_DeploymentSnapshot {
-  /** The snapshot of the project deployment config at the time of creation. */
-  deploymentConfig: DeploymentConfig | undefined;
+  deploymentConfigSnapshot: PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot | undefined;
   databaseGroupSnapshots: PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot[];
+}
+
+/** The snapshot of the project deployment config at the time of creation. */
+export interface PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot {
+  name: string;
+  title: string;
+  deploymentConfig: DeploymentConfig | undefined;
 }
 
 /** The snapshot of the database group at the time of creation. */
@@ -1551,13 +1557,16 @@ export const PlanConfig_SpecReleaseSource: MessageFns<PlanConfig_SpecReleaseSour
 };
 
 function createBasePlanConfig_DeploymentSnapshot(): PlanConfig_DeploymentSnapshot {
-  return { deploymentConfig: undefined, databaseGroupSnapshots: [] };
+  return { deploymentConfigSnapshot: undefined, databaseGroupSnapshots: [] };
 }
 
 export const PlanConfig_DeploymentSnapshot: MessageFns<PlanConfig_DeploymentSnapshot> = {
   encode(message: PlanConfig_DeploymentSnapshot, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.deploymentConfig !== undefined) {
-      DeploymentConfig.encode(message.deploymentConfig, writer.uint32(10).fork()).join();
+    if (message.deploymentConfigSnapshot !== undefined) {
+      PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot.encode(
+        message.deploymentConfigSnapshot,
+        writer.uint32(10).fork(),
+      ).join();
     }
     for (const v of message.databaseGroupSnapshots) {
       PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot.encode(v!, writer.uint32(18).fork()).join();
@@ -1577,7 +1586,10 @@ export const PlanConfig_DeploymentSnapshot: MessageFns<PlanConfig_DeploymentSnap
             break;
           }
 
-          message.deploymentConfig = DeploymentConfig.decode(reader, reader.uint32());
+          message.deploymentConfigSnapshot = PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot.decode(
+            reader,
+            reader.uint32(),
+          );
           continue;
         }
         case 2: {
@@ -1601,7 +1613,9 @@ export const PlanConfig_DeploymentSnapshot: MessageFns<PlanConfig_DeploymentSnap
 
   fromJSON(object: any): PlanConfig_DeploymentSnapshot {
     return {
-      deploymentConfig: isSet(object.deploymentConfig) ? DeploymentConfig.fromJSON(object.deploymentConfig) : undefined,
+      deploymentConfigSnapshot: isSet(object.deploymentConfigSnapshot)
+        ? PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot.fromJSON(object.deploymentConfigSnapshot)
+        : undefined,
       databaseGroupSnapshots: globalThis.Array.isArray(object?.databaseGroupSnapshots)
         ? object.databaseGroupSnapshots.map((e: any) => PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot.fromJSON(e))
         : [],
@@ -1610,8 +1624,10 @@ export const PlanConfig_DeploymentSnapshot: MessageFns<PlanConfig_DeploymentSnap
 
   toJSON(message: PlanConfig_DeploymentSnapshot): unknown {
     const obj: any = {};
-    if (message.deploymentConfig !== undefined) {
-      obj.deploymentConfig = DeploymentConfig.toJSON(message.deploymentConfig);
+    if (message.deploymentConfigSnapshot !== undefined) {
+      obj.deploymentConfigSnapshot = PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot.toJSON(
+        message.deploymentConfigSnapshot,
+      );
     }
     if (message.databaseGroupSnapshots?.length) {
       obj.databaseGroupSnapshots = message.databaseGroupSnapshots.map((e) =>
@@ -1626,12 +1642,116 @@ export const PlanConfig_DeploymentSnapshot: MessageFns<PlanConfig_DeploymentSnap
   },
   fromPartial(object: DeepPartial<PlanConfig_DeploymentSnapshot>): PlanConfig_DeploymentSnapshot {
     const message = createBasePlanConfig_DeploymentSnapshot();
-    message.deploymentConfig = (object.deploymentConfig !== undefined && object.deploymentConfig !== null)
-      ? DeploymentConfig.fromPartial(object.deploymentConfig)
-      : undefined;
+    message.deploymentConfigSnapshot =
+      (object.deploymentConfigSnapshot !== undefined && object.deploymentConfigSnapshot !== null)
+        ? PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot.fromPartial(object.deploymentConfigSnapshot)
+        : undefined;
     message.databaseGroupSnapshots =
       object.databaseGroupSnapshots?.map((e) => PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot.fromPartial(e)) ||
       [];
+    return message;
+  },
+};
+
+function createBasePlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot(): PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot {
+  return { name: "", title: "", deploymentConfig: undefined };
+}
+
+export const PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot: MessageFns<
+  PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot
+> = {
+  encode(
+    message: PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
+    if (message.deploymentConfig !== undefined) {
+      DeploymentConfig.encode(message.deploymentConfig, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.deploymentConfig = DeploymentConfig.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      deploymentConfig: isSet(object.deploymentConfig) ? DeploymentConfig.fromJSON(object.deploymentConfig) : undefined,
+    };
+  },
+
+  toJSON(message: PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.deploymentConfig !== undefined) {
+      obj.deploymentConfig = DeploymentConfig.toJSON(message.deploymentConfig);
+    }
+    return obj;
+  },
+
+  create(
+    base?: DeepPartial<PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot>,
+  ): PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot {
+    return PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot.fromPartial(base ?? {});
+  },
+  fromPartial(
+    object: DeepPartial<PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot>,
+  ): PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot {
+    const message = createBasePlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot();
+    message.name = object.name ?? "";
+    message.title = object.title ?? "";
+    message.deploymentConfig = (object.deploymentConfig !== undefined && object.deploymentConfig !== null)
+      ? DeploymentConfig.fromPartial(object.deploymentConfig)
+      : undefined;
     return message;
   },
 };

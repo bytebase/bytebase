@@ -12059,6 +12059,13 @@ components:
                          - ERROR
                 releaseSource:
                     $ref: '#/components/schemas/Plan_ReleaseSource'
+                deploymentConfigSnapshot:
+                    readOnly: true
+                    allOf:
+                        - $ref: '#/components/schemas/DeploymentConfig'
+                    description: |-
+                        The deployment config snapshot taken at the time of plan creation.
+                         This is to ensure that we get consistent rollout for the plan.
         PlanCheckRun:
             type: object
             properties:

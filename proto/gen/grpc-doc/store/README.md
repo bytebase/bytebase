@@ -207,6 +207,7 @@
     - [PlanConfig.CreateDatabaseConfig.LabelsEntry](#bytebase-store-PlanConfig-CreateDatabaseConfig-LabelsEntry)
     - [PlanConfig.DeploymentSnapshot](#bytebase-store-PlanConfig-DeploymentSnapshot)
     - [PlanConfig.DeploymentSnapshot.DatabaseGroupSnapshot](#bytebase-store-PlanConfig-DeploymentSnapshot-DatabaseGroupSnapshot)
+    - [PlanConfig.DeploymentSnapshot.DeploymentConfigSnapshot](#bytebase-store-PlanConfig-DeploymentSnapshot-DeploymentConfigSnapshot)
     - [PlanConfig.ExportDataConfig](#bytebase-store-PlanConfig-ExportDataConfig)
     - [PlanConfig.ReleaseSource](#bytebase-store-PlanConfig-ReleaseSource)
     - [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec)
@@ -3364,7 +3365,7 @@ InstanceRole is the API message for instance role.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| deployment_config | [DeploymentConfig](#bytebase-store-DeploymentConfig) |  | The snapshot of the project deployment config at the time of creation. |
+| deployment_config_snapshot | [PlanConfig.DeploymentSnapshot.DeploymentConfigSnapshot](#bytebase-store-PlanConfig-DeploymentSnapshot-DeploymentConfigSnapshot) |  |  |
 | database_group_snapshots | [PlanConfig.DeploymentSnapshot.DatabaseGroupSnapshot](#bytebase-store-PlanConfig-DeploymentSnapshot-DatabaseGroupSnapshot) | repeated |  |
 
 
@@ -3382,6 +3383,23 @@ The snapshot of the database group at the time of creation.
 | ----- | ---- | ----- | ----------- |
 | database_group | [string](#string) |  | Format: projects/{project}/databaseGroups/{databaseGroup}. |
 | databases | [string](#string) | repeated | Format: instances/{instance-id}/databases/{database-name}. |
+
+
+
+
+
+
+<a name="bytebase-store-PlanConfig-DeploymentSnapshot-DeploymentConfigSnapshot"></a>
+
+### PlanConfig.DeploymentSnapshot.DeploymentConfigSnapshot
+The snapshot of the project deployment config at the time of creation.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| title | [string](#string) |  |  |
+| deployment_config | [DeploymentConfig](#bytebase-store-DeploymentConfig) |  |  |
 
 
 
