@@ -30,7 +30,6 @@ func convertToDatabaseState(database *storepb.DatabaseSchemaMetadata) *databaseS
 }
 
 type schemaState struct {
-	id     int
 	name   string
 	tables map[string]*tableState
 	views  map[string]*viewState
@@ -231,31 +230,29 @@ func (i *indexState) toString(buf *strings.Builder) error {
 					return err
 				}
 			}
-			if _, err := buf.WriteString(fmt.Sprintf("%s", key)); err != nil {
+			if _, err := buf.WriteString(key); err != nil {
 				return err
 			}
 		}
 		if _, err := buf.WriteString(")"); err != nil {
 			return err
 		}
-	} else {
-		if i.unique {
-			if _, err := buf.WriteString("UNIQUE ("); err != nil {
-				return err
-			}
-			for i, key := range i.keys {
-				if i > 0 {
-					if _, err := buf.WriteString(", "); err != nil {
-						return err
-					}
-				}
-				if _, err := buf.WriteString(fmt.Sprintf("%s", key)); err != nil {
+	} else if i.unique {
+		if _, err := buf.WriteString("UNIQUE ("); err != nil {
+			return err
+		}
+		for i, key := range i.keys {
+			if i > 0 {
+				if _, err := buf.WriteString(", "); err != nil {
 					return err
 				}
 			}
-			if _, err := buf.WriteString(")"); err != nil {
+			if _, err := buf.WriteString(key); err != nil {
 				return err
 			}
+		}
+		if _, err := buf.WriteString(")"); err != nil {
+			return err
 		}
 	}
 	return nil
