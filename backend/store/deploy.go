@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -139,10 +138,11 @@ func (s *Store) getDefaultDeploymentConfigV2(ctx context.Context) (*DeploymentCo
 		return nil, err
 	}
 	var deployments []*storepb.ScheduleDeployment
-	for _, environment := range environmentList {
+	for i, environment := range environmentList {
 		deployments = append(deployments, &storepb.ScheduleDeployment{
 			Title: fmt.Sprintf("%s Stage", environment.Title),
-			Id:    uuid.NewString(),
+			// Use index rather than uuid to ensure consistent Id for the default deployment config.
+			Id: fmt.Sprintf("%d", i),
 			Spec: &storepb.DeploymentSpec{
 				Selector: &storepb.LabelSelector{
 					MatchExpressions: []*storepb.LabelSelectorRequirement{
