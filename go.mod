@@ -25,7 +25,7 @@ require (
 	github.com/buger/jsonparser v1.1.1
 	github.com/bytebase/google-sql-parser v0.0.0-20241030063241-f3a4e61b6aed
 	github.com/bytebase/mysql-parser v0.0.0-20240810145851-ab2c11629c24
-	github.com/bytebase/plsql-parser v0.0.0-20241216090448-b31aac361cca
+	github.com/bytebase/plsql-parser v0.0.0-20241217100236-775726d725f9
 	github.com/bytebase/postgresql-parser v0.0.0-20241108072816-e932f744004a
 	github.com/bytebase/snowsql-parser v0.0.0-20241211024554-093949951501
 	github.com/bytebase/tidb-parser v0.0.0-20240821091609-162fffe2a839
@@ -90,7 +90,7 @@ require (
 	go.mongodb.org/mongo-driver v1.17.1
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.31.0
-	golang.org/x/exp v0.0.0-20241215155358-4a5509556b9e
+	golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67
 	golang.org/x/oauth2 v0.24.0
 	golang.org/x/text v0.21.0
 	google.golang.org/api v0.207.0
