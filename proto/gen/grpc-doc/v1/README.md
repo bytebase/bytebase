@@ -2372,6 +2372,8 @@ IndexMetadata is the metadata for indexes.
 | visible | [bool](#bool) |  | The visible is whether the index is visible. |
 | comment | [string](#string) |  | The comment is the comment of an index. |
 | definition | [string](#string) |  | The definition of an index. |
+| parent_index_schema | [string](#string) |  | The schema name of the parent index. |
+| parent_index_name | [string](#string) |  | The index name of the parent index. |
 
 
 

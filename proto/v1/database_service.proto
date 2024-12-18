@@ -997,6 +997,12 @@ message IndexMetadata {
 
   // The definition of an index.
   string definition = 8;
+
+  // The schema name of the parent index.
+  string parent_index_schema = 11;
+
+  // The index name of the parent index.
+  string parent_index_name = 12;
 }
 
 // ExtensionMetadata is the metadata for extensions.
