@@ -11,6 +11,7 @@ import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/database_service.proto";
+import "v1/project_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -256,6 +257,10 @@ message Plan {
   map<string, int32> plan_check_run_status_count = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   ReleaseSource release_source = 12;
+
+  // The deployment config snapshot taken at the time of plan creation.
+  // This is to ensure that we get consistent rollout for the plan.
+  DeploymentConfig deployment_config_snapshot = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   message CreateDatabaseConfig {
     // The resource name of the instance on which the database is created.

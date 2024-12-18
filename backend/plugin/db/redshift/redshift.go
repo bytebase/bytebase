@@ -381,6 +381,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		}
 		queryResult.Statement = statement
 		queryResult.Latency = durationpb.New(time.Since(startTime))
+		queryResult.RowsCount = int64(len(queryResult.Rows))
 		results = append(results, queryResult)
 		if stop {
 			break
@@ -391,5 +392,5 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 }
 
 func getStatementWithResultLimit(stmt string, limit int) string {
-	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
+	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", util.TrimStatement(stmt), limit)
 }

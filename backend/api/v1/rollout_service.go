@@ -986,7 +986,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 
 	// For ChangeDatabase specs, we will try to rebuild the steps based on the deployment config.
 	if filterByDeploymentConfig {
-		deploymentConfig := snapshot.GetDeploymentConfig()
+		deploymentConfig := snapshot.GetDeploymentConfigSnapshot().GetDeploymentConfig()
 		if deploymentConfig == nil {
 			deploymentConfigMessage, err := s.GetDeploymentConfigV2(ctx, project.UID)
 			if err != nil {

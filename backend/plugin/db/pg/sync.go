@@ -95,7 +95,14 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get columns from database %q", driver.databaseName)
 	}
-	indexMap, err := getIndexes(txn)
+	var indexInheritanceMap map[db.IndexKey]*db.IndexKey
+	if isAtLeastPG10 {
+		indexInheritanceMap, err = getIndexInheritance(txn)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get index inheritance from database %q", driver.databaseName)
+		}
+	}
+	indexMap, err := getIndexes(txn, indexInheritanceMap)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get indexes from database %q", driver.databaseName)
 	}
@@ -483,7 +490,8 @@ func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMe
 		if pgparser.IsSystemTable(tableName) || pgparser.IsSystemTable(inhTableName) {
 			continue
 		}
-		key := db.TableKey{Schema: inhSchemaName, Table: inhTableName}
+		key := db.TableKey{Schema: schemaName, Table: tableName}
+		inhKey := db.TableKey{Schema: inhSchemaName, Table: inhTableName}
 		metadata := &storepb.TablePartitionMetadata{
 			Name:       tableName,
 			Expression: partKeyDef,
@@ -500,7 +508,46 @@ func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMe
 		default:
 			return nil, errors.Errorf("invalid partition type %q", partitionType)
 		}
-		result[key] = append(result[key], metadata)
+		result[inhKey] = append(result[inhKey], metadata)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+var listIndexInheritanceQuery = `
+SELECT
+  sc.nspname,
+  cc.relname,
+  sp.nspname,
+  cp.relname
+FROM
+  pg_catalog.pg_inherits i
+  left JOIN pg_catalog.pg_class cp ON cp.oid = i.inhparent
+  left join pg_catalog.pg_class cc ON cc.oid = i.inhrelid
+  left join pg_catalog.pg_namespace sp on cp.relnamespace = sp.oid
+  left join pg_catalog.pg_namespace sc on cc.relnamespace = sc.oid
+WHERE (cp.relkind = 'i' or cp.relkind = 'I') and (cc.relkind = 'i' or cc.relkind = 'I')
+`
+
+func getIndexInheritance(txn *sql.Tx) (map[db.IndexKey]*db.IndexKey, error) {
+	result := make(map[db.IndexKey]*db.IndexKey)
+	rows, err := txn.Query(listIndexInheritanceQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var schemaName, indexName, parentSchemaName, parentIndexName string
+		if err := rows.Scan(&schemaName, &indexName, &parentSchemaName, &parentIndexName); err != nil {
+			return nil, err
+		}
+		key := db.IndexKey{Schema: schemaName, Index: indexName}
+		parentKey := db.IndexKey{Schema: parentSchemaName, Index: parentIndexName}
+		result[key] = &parentKey
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -874,7 +921,7 @@ FROM pg_indexes AS idx WHERE idx.schemaname NOT IN (%s)
 ORDER BY idx.schemaname, idx.tablename, idx.indexname;`, pgparser.SystemSchemaWhereClause)
 
 // getIndexes gets all indices of a database.
-func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
+func getIndexes(txn *sql.Tx, indexInheritanceMap map[db.IndexKey]*db.IndexKey) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 	indexMap := make(map[db.TableKey][]*storepb.IndexMetadata)
 
 	rows, err := txn.Query(listIndexQuery)
@@ -917,6 +964,10 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 		}
 		if comment.Valid {
 			index.Comment = comment.String
+		}
+		if parentKey, ok := indexInheritanceMap[db.IndexKey{Schema: schemaName, Index: index.Name}]; ok && parentKey != nil {
+			index.ParentIndexSchema = parentKey.Schema
+			index.ParentIndexName = parentKey.Index
 		}
 
 		key := db.TableKey{Schema: schemaName, Table: tableName}

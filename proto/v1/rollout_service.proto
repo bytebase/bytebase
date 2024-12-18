@@ -28,6 +28,7 @@ service RolloutService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // CreateRollout can be called multiple times with the same rollout.plan but different stage_id to promote rollout stages.
   rpc CreateRollout(CreateRolloutRequest) returns (Rollout) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/rollouts"
@@ -214,6 +215,12 @@ message CreateRolloutRequest {
 
   // The rollout to create.
   Rollout rollout = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // stage_id is the id in the plan deployment_config_snapshot.
+  // The rollout is created according to the plan and the
+  // stages are created up to the stage_id.
+  // If unspecified, all stages are created.
+  string stage_id = 3;
 }
 
 message PreviewRolloutRequest {

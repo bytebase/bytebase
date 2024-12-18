@@ -48,6 +48,7 @@ var (
 			},
 		},
 		Statement: "SELECT * FROM tech_book",
+		RowsCount: 3,
 	}
 	originData = &v1pb.QueryResult{
 		ColumnNames:     []string{"id", "name", "author"},
@@ -76,6 +77,7 @@ var (
 			},
 		},
 		Statement: "SELECT * FROM tech_book",
+		RowsCount: 3,
 	}
 )
 
