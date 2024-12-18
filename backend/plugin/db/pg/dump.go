@@ -490,7 +490,87 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequ
 		}
 	}
 
+	// Construct foreign key constraints.
+	for _, fk := range table.ForeignKeys {
+		if err := writeForeignKey(out, schema, table.Name, fk); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func writeForeignKey(out io.Writer, schema string, table string, fk *storepb.ForeignKeyMetadata) error {
+	if _, err := io.WriteString(out, `ALTER TABLE "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, table); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "\"\n    ADD CONSTRAINT \""); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, fk.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "\" FOREIGN KEY ("); err != nil {
+		return err
+	}
+	for i, column := range fk.Columns {
+		if i > 0 {
+			if _, err := io.WriteString(out, ", "); err != nil {
+				return err
+			}
+		}
+		if _, err := io.WriteString(out, `"`); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, column); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, `"`); err != nil {
+			return err
+		}
+	}
+	if _, err := io.WriteString(out, ")\n    REFERENCES \""); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, fk.ReferencedSchema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, fk.ReferencedTable); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "\" ("); err != nil {
+		return err
+	}
+	for i, column := range fk.ReferencedColumns {
+		if i > 0 {
+			if _, err := io.WriteString(out, ", "); err != nil {
+				return err
+			}
+		}
+		if _, err := io.WriteString(out, `"`); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, column); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, `"`); err != nil {
+			return err
+		}
+	}
+	_, err := io.WriteString(out, ");\n\n")
+	return err
 }
 
 func writeAttachPartitionIndex(out io.Writer, schema string, partition *storepb.TablePartitionMetadata) error {
