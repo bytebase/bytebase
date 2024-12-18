@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import { head } from "lodash-es";
 import { v1 as uuidv1 } from "uuid";
 import {
   useDatabaseV1Store,
@@ -20,7 +21,10 @@ import {
   UNKNOWN_DATABASE_NAME,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import type { InstanceResource } from "@/types/proto/v1/instance_service";
+import {
+  DataSourceType,
+  type InstanceResource,
+} from "@/types/proto/v1/instance_service";
 import {
   DataSourceQueryPolicy_Restriction,
   PolicyType,
@@ -204,4 +208,63 @@ export const getAdminDataSourceRestrictionOfDatabase = (
       projectLevelAdminDSRestriction ??
       DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
   };
+};
+
+export const ensureDataSourceSelection = (
+  current: string | undefined,
+  database: ComposedDatabase
+) => {
+  const restriction = getAdminDataSourceRestrictionOfDatabase(database);
+  const adminDataSource = database.instanceResource.dataSources.find(
+    (ds) => ds.type === DataSourceType.ADMIN
+  )!;
+  const readonlyDataSources = database.instanceResource.dataSources.filter(
+    (ds) => ds.type === DataSourceType.READ_ONLY
+  );
+
+  let behavior: "RO" | "FALLBACK" | "ALLOW_ADMIN";
+  if (
+    restriction.environmentPolicy ===
+      DataSourceQueryPolicy_Restriction.DISALLOW ||
+    restriction.projectPolicy === DataSourceQueryPolicy_Restriction.DISALLOW
+  ) {
+    behavior = "RO";
+  } else if (
+    restriction.environmentPolicy ===
+      DataSourceQueryPolicy_Restriction.FALLBACK ||
+    restriction.projectPolicy === DataSourceQueryPolicy_Restriction.FALLBACK
+  ) {
+    behavior = "FALLBACK";
+  } else {
+    behavior = "ALLOW_ADMIN";
+  }
+  if (behavior === "ALLOW_ADMIN") {
+    if (current) {
+      return current;
+    }
+    return adminDataSource.id;
+  }
+  if (behavior === "FALLBACK") {
+    if (current) {
+      return current;
+    }
+    return head(readonlyDataSources)?.id ?? adminDataSource.id;
+  }
+  if (behavior === "RO") {
+    if (
+      current &&
+      readonlyDataSources.findIndex((ds) => ds.id === current) >= 0
+    ) {
+      return current;
+    }
+    return head(readonlyDataSources)?.id;
+  }
+  console.warn(
+    "[SQL Editor] failed to ensureDataSourceSelection",
+    current,
+    behavior,
+    database,
+    restriction
+  );
+  return undefined;
 };
