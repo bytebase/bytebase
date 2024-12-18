@@ -129,7 +129,7 @@ onMounted(async () => {
         schemaMetadata.tables = [
           TableMetadata.fromPartial({
             ...cloneDeep(tableMetadata.value),
-            foreignKeys: [],
+            foreignKeys: tableMetadata.value?.foreignKeys ?? [],
           }),
         ];
       }
