@@ -56,6 +56,7 @@ func TestSQLExport(t *testing.T) {
 						},
 					},
 					Statement: "INSERT INTO Test1.tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
+					RowsCount: 1,
 				},
 			},
 			resetResult: []*v1pb.QueryResult{
@@ -69,6 +70,7 @@ func TestSQLExport(t *testing.T) {
 							},
 						},
 					},
+					RowsCount: 1,
 				},
 			},
 		},
@@ -91,6 +93,7 @@ func TestSQLExport(t *testing.T) {
 							},
 						},
 					},
+					RowsCount: 1,
 				},
 			},
 			resetResult: []*v1pb.QueryResult{
@@ -104,6 +107,7 @@ func TestSQLExport(t *testing.T) {
 							},
 						},
 					},
+					RowsCount: 1,
 				},
 			},
 		},
