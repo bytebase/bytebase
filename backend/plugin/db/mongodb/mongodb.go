@@ -387,6 +387,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		}},
 		Latency:   durationpb.New(time.Since(startTime)),
 		Statement: statement,
+		RowsCount: -1, /*Unknown*/
 	}}, nil
 }
 
