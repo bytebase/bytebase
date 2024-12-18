@@ -27,7 +27,7 @@ const (
 	SettingPluginOpenAIKey SettingName = "bb.plugin.openai.key"
 	// SettingPluginOpenAIEndpoint is used for OpenAI's API endpoint.
 	SettingPluginOpenAIEndpoint SettingName = "bb.plugin.openai.endpoint"
-	// SettingPluginOpenAIModel is used for OpenAI's API model name
+	// SettingPluginOpenAIModel is used for OpenAI's API model name.
 	SettingPluginOpenAIModel SettingName = "bb.plugin.openai.model"
 	// SettingPluginAgent is the setting name for the internal agent API.
 	// For now we will call the hub to fetch the subscription license.
