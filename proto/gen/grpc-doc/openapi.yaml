@@ -10882,6 +10882,13 @@ components:
                         The maximum number of connections.
                          The default is 10 if the value is unset or zero.
                     format: int32
+                syncDatabases:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        Enable sync for following databases in {schema}/{database} format.
+                         Default empty, means sync all schemas & databases.
             description: InstanceOptions is the option for instances.
         InstanceResource:
             type: object
