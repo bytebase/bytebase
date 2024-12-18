@@ -503,7 +503,7 @@ func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
 			ColumnNames:     result.ColumnNames,
 			ColumnTypeNames: result.ColumnTypeNames,
 			Rows:            nil, // Redacted
-			RowsCount:       int64(len(result.Rows)),
+			RowsCount:       result.RowsCount,
 			Masked:          result.Masked,
 			Sensitive:       result.Sensitive,
 			Error:           result.Error,
