@@ -94,7 +94,7 @@ func RowsToQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) 
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-
+	result.RowsCount = int64(len(result.Rows))
 	return result, nil
 }
 

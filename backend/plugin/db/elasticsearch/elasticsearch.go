@@ -218,6 +218,7 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ d
 			}
 			result.Rows = append(result.Rows, &row)
 			result.Latency = durationpb.New(time.Since(startTime))
+			result.RowsCount = int64(len(result.Rows))
 			result.Statement = fmt.Sprintf("%s %s\n%s", s.method, s.route, s.queryBody)
 			// TODO(d): handle max size.
 			results = append(results, &result)
