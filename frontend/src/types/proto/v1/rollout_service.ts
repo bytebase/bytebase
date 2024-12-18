@@ -114,7 +114,16 @@ export interface CreateRolloutRequest {
    */
   parent: string;
   /** The rollout to create. */
-  rollout: Rollout | undefined;
+  rollout:
+    | Rollout
+    | undefined;
+  /**
+   * stage_id is the id in the plan deployment_config_snapshot.
+   * The rollout is created according to the plan and the
+   * stages are created up to the stage_id.
+   * If unspecified, all stages are created.
+   */
+  stageId: string;
 }
 
 export interface PreviewRolloutRequest {
@@ -1660,7 +1669,7 @@ export const ListRolloutsResponse: MessageFns<ListRolloutsResponse> = {
 };
 
 function createBaseCreateRolloutRequest(): CreateRolloutRequest {
-  return { parent: "", rollout: undefined };
+  return { parent: "", rollout: undefined, stageId: "" };
 }
 
 export const CreateRolloutRequest: MessageFns<CreateRolloutRequest> = {
@@ -1670,6 +1679,9 @@ export const CreateRolloutRequest: MessageFns<CreateRolloutRequest> = {
     }
     if (message.rollout !== undefined) {
       Rollout.encode(message.rollout, writer.uint32(18).fork()).join();
+    }
+    if (message.stageId !== "") {
+      writer.uint32(26).string(message.stageId);
     }
     return writer;
   },
@@ -1697,6 +1709,14 @@ export const CreateRolloutRequest: MessageFns<CreateRolloutRequest> = {
           message.rollout = Rollout.decode(reader, reader.uint32());
           continue;
         }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.stageId = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1710,6 +1730,7 @@ export const CreateRolloutRequest: MessageFns<CreateRolloutRequest> = {
     return {
       parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       rollout: isSet(object.rollout) ? Rollout.fromJSON(object.rollout) : undefined,
+      stageId: isSet(object.stageId) ? globalThis.String(object.stageId) : "",
     };
   },
 
@@ -1720,6 +1741,9 @@ export const CreateRolloutRequest: MessageFns<CreateRolloutRequest> = {
     }
     if (message.rollout !== undefined) {
       obj.rollout = Rollout.toJSON(message.rollout);
+    }
+    if (message.stageId !== "") {
+      obj.stageId = message.stageId;
     }
     return obj;
   },
@@ -1733,6 +1757,7 @@ export const CreateRolloutRequest: MessageFns<CreateRolloutRequest> = {
     message.rollout = (object.rollout !== undefined && object.rollout !== null)
       ? Rollout.fromPartial(object.rollout)
       : undefined;
+    message.stageId = object.stageId ?? "";
     return message;
   },
 };
@@ -5805,6 +5830,7 @@ export const RolloutServiceDefinition = {
         },
       },
     },
+    /** CreateRollout can be called multiple times with the same rollout.plan but different stage_id to promote rollout stages. */
     createRollout: {
       name: "CreateRollout",
       requestType: CreateRolloutRequest,
