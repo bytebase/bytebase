@@ -12731,6 +12731,8 @@ components:
                     items:
                         $ref: '#/components/schemas/QueryRow'
                     description: Rows of the query result.
+                rowsCount:
+                    type: string
                 masked:
                     type: array
                     items:
