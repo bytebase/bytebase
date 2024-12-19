@@ -2,12 +2,10 @@ package clickhouse
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -73,7 +71,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	columnQuery := `
 		SELECT
 			table_name,
-			ifNull(column_name, ''),
+			column_name,
 			ordinal_position,
 			column_default,
 			is_nullable,
@@ -91,13 +89,14 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	defer columnRows.Close()
 	for columnRows.Next() {
 		column := &storepb.ColumnMetadata{}
-		var tableName, nullable string
-		var defaultStr sql.NullString
+		// Reference: https://clickhouse.com/docs/en/operations/system-tables/information_schema#columns
+		// defaultValueExpression is an expression for the default value, or an empty string if it is not defined.
+		var tableName, nullable, defaultValueExpression string
 		if err := columnRows.Scan(
 			&tableName,
 			&column.Name,
 			&column.Position,
-			&defaultStr,
+			&defaultValueExpression,
 			&nullable,
 			&column.Type,
 			&column.CharacterSet,
@@ -111,14 +110,15 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			return nil, err
 		}
 		column.Nullable = nullableBool
-		if defaultStr.Valid {
-			column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
-		} else if nullableBool {
-			// This is NULL if the column has an explicit default of NULL,
-			// or if the column definition includes no DEFAULT clause.
-			// https://dev.mysql.com/doc/refman/8.0/en/information-schema-columns-table.html
-			column.DefaultValue = &storepb.ColumnMetadata_DefaultNull{
-				DefaultNull: true,
+		if defaultValueExpression == "" {
+			if nullableBool {
+				column.DefaultValue = &storepb.ColumnMetadata_DefaultNull{
+					DefaultNull: true,
+				}
+			}
+		} else {
+			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{
+				DefaultExpression: defaultValueExpression,
 			}
 		}
 		columnMap[tableName] = append(columnMap[tableName], column)
