@@ -1413,7 +1413,7 @@ func convertDataSourceTp(tp v1pb.DataSourceType) (api.DataSourceType, error) {
 
 func convertToInstanceOptions(options *storepb.InstanceOptions) *v1pb.InstanceOptions {
 	if options == nil {
-		return nil
+		return &v1pb.InstanceOptions{}
 	}
 
 	return &v1pb.InstanceOptions{
@@ -1425,7 +1425,7 @@ func convertToInstanceOptions(options *storepb.InstanceOptions) *v1pb.InstanceOp
 
 func convertInstanceOptions(options *v1pb.InstanceOptions) *storepb.InstanceOptions {
 	if options == nil {
-		return nil
+		return &storepb.InstanceOptions{}
 	}
 
 	return &storepb.InstanceOptions{
