@@ -65,6 +65,7 @@ import { activeSQLEditorRef } from "./state";
 
 const emit = defineEmits<{
   (e: "execute", params: SQLEditorQueryParams): void;
+  (e: "execute-in-new-tab", params: SQLEditorQueryParams): void;
 }>();
 
 const tabStore = useSQLEditorTabStore();
@@ -150,19 +151,25 @@ const handleSaveSheet = () => {
   editorEvents.emit("save-sheet", { tab });
 };
 
-const runQueryAction = (explain = false) => {
+const runQueryAction = (explain = false, newTab = false) => {
   const tab = tabStore.currentTab;
   if (!tab) {
     return;
   }
   const statement = tab.selectedStatement || tab.statement || "";
-  emit("execute", {
+  const params: SQLEditorQueryParams = {
     connection: { ...tab.connection },
     statement,
     engine: instance.value.engine,
     explain,
-    selection: tab.editorState.selection,
-  });
+    selection: null,
+  };
+  if (!newTab) {
+    params.selection = tab.editorState.selection;
+    emit("execute", params);
+  } else {
+    emit("execute-in-new-tab", params);
+  }
   uiStateStore.saveIntroStateByKey({
     key: "data.query",
     newState: true,
@@ -182,6 +189,16 @@ const handleEditorReady = (
     contextMenuGroupId: "operation",
     contextMenuOrder: 0,
     run: () => runQueryAction(false),
+  });
+  editor.addAction({
+    id: "RunQueryInNewTab",
+    label: "Run Query in New Tab",
+    keybindings: [
+      monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter,
+    ],
+    contextMenuGroupId: "operation",
+    contextMenuOrder: 0,
+    run: () => runQueryAction(false, /* newTab */ true),
   });
   editor.addAction({
     id: "ExplainQuery",
