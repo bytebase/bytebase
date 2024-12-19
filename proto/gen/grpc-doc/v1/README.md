@@ -10887,6 +10887,7 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | export_archive_status | [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus) |  |  |
 | prior_backup_detail | [TaskRun.PriorBackupDetail](#bytebase-v1-TaskRun-PriorBackupDetail) |  | The prior backup detail that will be used to rollback the task run. |
 | scheduler_info | [TaskRun.SchedulerInfo](#bytebase-v1-TaskRun-SchedulerInfo) |  |  |
+| sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 
 
 

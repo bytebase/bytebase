@@ -536,6 +536,9 @@ message TaskRun {
     WaitingCause waiting_cause = 2;
   }
   SchedulerInfo scheduler_info = 18 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Format: projects/{project}/sheets/{sheet}
+  string sheet = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message TaskRunLog {

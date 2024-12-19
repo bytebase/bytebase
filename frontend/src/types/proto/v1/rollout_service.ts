@@ -538,7 +538,11 @@ export interface TaskRun {
   exportArchiveStatus: TaskRun_ExportArchiveStatus;
   /** The prior backup detail that will be used to rollback the task run. */
   priorBackupDetail: TaskRun_PriorBackupDetail | undefined;
-  schedulerInfo: TaskRun_SchedulerInfo | undefined;
+  schedulerInfo:
+    | TaskRun_SchedulerInfo
+    | undefined;
+  /** Format: projects/{project}/sheets/{sheet} */
+  sheet: string;
 }
 
 export enum TaskRun_Status {
@@ -3296,6 +3300,7 @@ function createBaseTaskRun(): TaskRun {
     exportArchiveStatus: TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED,
     priorBackupDetail: undefined,
     schedulerInfo: undefined,
+    sheet: "",
   };
 }
 
@@ -3342,6 +3347,9 @@ export const TaskRun: MessageFns<TaskRun> = {
     }
     if (message.schedulerInfo !== undefined) {
       TaskRun_SchedulerInfo.encode(message.schedulerInfo, writer.uint32(146).fork()).join();
+    }
+    if (message.sheet !== "") {
+      writer.uint32(154).string(message.sheet);
     }
     return writer;
   },
@@ -3465,6 +3473,14 @@ export const TaskRun: MessageFns<TaskRun> = {
           message.schedulerInfo = TaskRun_SchedulerInfo.decode(reader, reader.uint32());
           continue;
         }
+        case 19: {
+          if (tag !== 154) {
+            break;
+          }
+
+          message.sheet = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3494,6 +3510,7 @@ export const TaskRun: MessageFns<TaskRun> = {
         ? TaskRun_PriorBackupDetail.fromJSON(object.priorBackupDetail)
         : undefined,
       schedulerInfo: isSet(object.schedulerInfo) ? TaskRun_SchedulerInfo.fromJSON(object.schedulerInfo) : undefined,
+      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
     };
   },
 
@@ -3541,6 +3558,9 @@ export const TaskRun: MessageFns<TaskRun> = {
     if (message.schedulerInfo !== undefined) {
       obj.schedulerInfo = TaskRun_SchedulerInfo.toJSON(message.schedulerInfo);
     }
+    if (message.sheet !== "") {
+      obj.sheet = message.sheet;
+    }
     return obj;
   },
 
@@ -3574,6 +3594,7 @@ export const TaskRun: MessageFns<TaskRun> = {
     message.schedulerInfo = (object.schedulerInfo !== undefined && object.schedulerInfo !== null)
       ? TaskRun_SchedulerInfo.fromPartial(object.schedulerInfo)
       : undefined;
+    message.sheet = object.sheet ?? "";
     return message;
   },
 };
