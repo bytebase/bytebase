@@ -24,7 +24,7 @@ export interface InstanceOptions {
    */
   maximumConnections: number;
   /**
-   * Enable sync for following databases in {schema}/{database} format.
+   * Enable sync for following databases.
    * Default empty, means sync all schemas & databases.
    */
   syncDatabases: string[];

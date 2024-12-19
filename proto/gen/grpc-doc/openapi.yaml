@@ -10897,7 +10897,7 @@ components:
                     items:
                         type: string
                     description: |-
-                        Enable sync for following databases in {schema}/{database} format.
+                        Enable sync for following databases.
                          Default empty, means sync all schemas & databases.
             description: InstanceOptions is the option for instances.
         InstanceResource:

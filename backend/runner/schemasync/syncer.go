@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -276,6 +277,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	if instanceMeta.Metadata == nil {
 		instanceMeta.Metadata = &storepb.InstanceMetadata{}
 	}
+
 	instanceMeta.Metadata.LastSyncTime = timestamppb.Now()
 	updateInstance := &store.UpdateInstanceMessage{
 		ResourceID: instance.ResourceID,
@@ -295,15 +297,16 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 		return nil, nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.ResourceID)
 	}
 	var newDatabases []*store.DatabaseMessage
+	var filteredDatabaseMetadatas []*storepb.DatabaseSchemaMetadata
+
 	for _, databaseMetadata := range instanceMeta.Databases {
-		exist := false
-		for _, database := range databases {
-			if database.DatabaseName == databaseMetadata.Name {
-				exist = true
-				break
-			}
+		if len(instance.Options.SyncDatabases) > 0 && !slices.Contains(instance.Options.SyncDatabases, databaseMetadata.Name) {
+			continue
 		}
-		if !exist {
+		filteredDatabaseMetadatas = append(filteredDatabaseMetadatas, databaseMetadata)
+		idx := slices.IndexFunc(databases, func(db *store.DatabaseMessage) bool { return db.DatabaseName == databaseMetadata.Name })
+
+		if idx < 0 {
 			// Create the database in the default project.
 			newDatabase, err := s.store.CreateDatabaseDefault(ctx, &store.DatabaseMessage{
 				InstanceID:   instance.ResourceID,
@@ -320,14 +323,8 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	}
 
 	for _, database := range databases {
-		exist := false
-		for _, databaseMetadata := range instanceMeta.Databases {
-			if database.DatabaseName == databaseMetadata.Name {
-				exist = true
-				break
-			}
-		}
-		if !exist {
+		idx := slices.IndexFunc(filteredDatabaseMetadatas, func(db *storepb.DatabaseSchemaMetadata) bool { return db.Name == database.DatabaseName })
+		if idx < 0 {
 			syncStatus := api.NotFound
 			if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 				InstanceID:   instance.ResourceID,
