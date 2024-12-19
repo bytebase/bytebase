@@ -758,6 +758,10 @@
           "openai-endpoint": {
             "self": "OpenAI API エンドポイント",
             "description": "プライベート展開用の OpenAI API エンドポイントを提供します。"
+          },
+          "openai-model": {
+            "self": "OpenAIモデル名",
+            "description": "供給プライベートデプロイメントのOpenAIモデル名。"
           }
         },
         "announcement": {

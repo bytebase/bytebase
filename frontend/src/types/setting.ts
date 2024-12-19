@@ -8,6 +8,7 @@ export type SettingName =
   | "bb.workspace.approval.external"
   | "bb.plugin.openai.key"
   | "bb.plugin.openai.endpoint"
+  | "bb.plugin.openai.model"
   | "bb.enterprise.trial"
   | "bb.workspace.schema-template"
   | "bb.workspace.data-classification"
