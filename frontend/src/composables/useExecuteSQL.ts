@@ -317,6 +317,18 @@ const useExecuteSQL = () => {
               : undefined,
             database
           ) ?? "";
+
+        if (!dataSourceId) {
+          fail(database, {
+            advices: [],
+            allowExport: false,
+            error: "No queriable data source.",
+            results: [],
+            status: Status.NOT_FOUND,
+          });
+          continue;
+        }
+
         const resultSet = await sqlStore.query(
           {
             name: database.name,
