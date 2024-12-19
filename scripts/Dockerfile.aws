@@ -18,7 +18,7 @@ COPY . .
 RUN pnpm --dir frontend install --frozen-lockfile
 RUN pnpm --dir frontend release-aws
 
-FROM golang:1.23.2 as backend
+FROM golang:1.23.4 as backend
 ADD go.mod go.sum /
 RUN go mod download
 
