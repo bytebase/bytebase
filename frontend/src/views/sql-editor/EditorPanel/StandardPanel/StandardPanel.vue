@@ -125,7 +125,7 @@ const handleExecuteInNewTab = (params: SQLEditorQueryParams) => {
   clonedTab.title = suggestedTabTitleForSQLEditorConnection(
     clonedTab.connection
   );
-  const newTab = tabStore.addTab(clonedTab);
+  const newTab = tabStore.addTab(clonedTab, /* beside */ true);
   if (fromTab) {
     const vs = cloneViewState(fromTab.id, newTab.id);
     if (vs) {
