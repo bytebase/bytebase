@@ -26,11 +26,10 @@
 import { uniqueId } from "lodash-es";
 import { RefreshCcwIcon } from "lucide-vue-next";
 import { NButton, NTabs, NTabPane } from "naive-ui";
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useSheetV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { TaskRun_Status, type TaskRun } from "@/types/proto/v1/rollout_service";
-import { sheetNameOfTaskV1 } from "@/utils";
 import { databaseForTask, useIssueContext } from "../../logic";
 import TaskRunLogTable from "./TaskRunLogTable";
 import TaskRunSession from "./TaskRunSession";
@@ -46,6 +45,7 @@ const props = defineProps<{
 }>();
 
 const { issue, selectedTask } = useIssueContext();
+const sheetStore = useSheetV1Store();
 
 const state = reactive<LocalState>({
   currentTab: "LOG",
@@ -54,7 +54,7 @@ const state = reactive<LocalState>({
 const componentId = ref<string>(uniqueId());
 
 const sheet = computed(() =>
-  useSheetV1Store().getSheetByName(sheetNameOfTaskV1(selectedTask.value))
+  useSheetV1Store().getSheetByName(props.taskRun.sheet)
 );
 
 const showTaskRunSessionTab = computed(() =>
@@ -69,5 +69,16 @@ const showRefreshButton = computed(
 
 const database = computed(() =>
   databaseForTask(issue.value, selectedTask.value)
+);
+
+watch(
+  () => props.taskRun.name,
+  async () => {
+    // Prepare the sheet data from task run.
+    if (props.taskRun.sheet) {
+      await sheetStore.getOrFetchSheetByName(props.taskRun.sheet, "FULL");
+    }
+  },
+  { immediate: true }
 );
 </script>

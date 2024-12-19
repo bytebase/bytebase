@@ -14684,6 +14684,10 @@ components:
                     readOnly: true
                     allOf:
                         - $ref: '#/components/schemas/TaskRun_SchedulerInfo'
+                sheet:
+                    readOnly: true
+                    type: string
+                    description: 'Format: projects/{project}/sheets/{sheet}'
         TaskRunLog:
             type: object
             properties:
