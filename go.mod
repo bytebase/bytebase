@@ -23,7 +23,7 @@ require (
 	github.com/beltran/gohive v1.7.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/buger/jsonparser v1.1.1
-	github.com/bytebase/google-sql-parser v0.0.0-20241030063241-f3a4e61b6aed
+	github.com/bytebase/google-sql-parser v0.0.0-20241218091245-c996640523f3
 	github.com/bytebase/mysql-parser v0.0.0-20240810145851-ab2c11629c24
 	github.com/bytebase/plsql-parser v0.0.0-20241217100236-775726d725f9
 	github.com/bytebase/postgresql-parser v0.0.0-20241108072816-e932f744004a
