@@ -41,7 +41,7 @@ require (
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/golang-sql/sqlexp v0.1.0
-	github.com/google/cel-go v0.21.0
+	github.com/google/cel-go v0.22.1
 	github.com/google/go-cmp v0.6.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.6.0
@@ -103,7 +103,7 @@ require (
 )
 
 require (
-	cel.dev/expr v0.16.1 // indirect
+	cel.dev/expr v0.18.0 // indirect
 	cloud.google.com/go/auth v0.10.2 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.5 // indirect
 	cloud.google.com/go/monitoring v1.21.2 // indirect
