@@ -1,13 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:base"
-  ],
+  "extends": ["config:recommended"],
   "schedule": ["every month"],
-  "postUpdateOptions": [
-    "gomodTidy"
-  ],
-  "ignoreDeps": [
-    "github.com/pingcap/tidb/pkg/parser"
-  ]
+  "postUpdateOptions": ["gomodTidy"],
+  "ignoreDeps": ["github.com/pingcap/tidb/pkg/parser"]
 }
