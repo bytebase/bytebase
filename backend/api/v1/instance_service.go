@@ -292,6 +292,11 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 				patch.OptionsUpsert = instance.Options
 			}
 			patch.OptionsUpsert.MaximumConnections = request.Instance.Options.GetMaximumConnections()
+		case "options.sync_databases":
+			if patch.OptionsUpsert == nil {
+				patch.OptionsUpsert = instance.Options
+			}
+			patch.OptionsUpsert.SyncDatabases = request.Instance.Options.GetSyncDatabases()
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupported update_mask "%s"`, path)
 		}
@@ -1414,6 +1419,7 @@ func convertToInstanceOptions(options *storepb.InstanceOptions) *v1pb.InstanceOp
 	return &v1pb.InstanceOptions{
 		SyncInterval:       options.SyncInterval,
 		MaximumConnections: options.MaximumConnections,
+		SyncDatabases:      options.GetSyncDatabases(),
 	}
 }
 
@@ -1425,5 +1431,6 @@ func convertInstanceOptions(options *v1pb.InstanceOptions) *storepb.InstanceOpti
 	return &storepb.InstanceOptions{
 		SyncInterval:       options.SyncInterval,
 		MaximumConnections: options.MaximumConnections,
+		SyncDatabases:      options.GetSyncDatabases(),
 	}
 }

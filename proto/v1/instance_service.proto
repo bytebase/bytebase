@@ -309,6 +309,10 @@ message InstanceOptions {
   // The maximum number of connections.
   // The default is 10 if the value is unset or zero.
   int32 maximum_connections = 3;
+
+  // Enable sync for following databases.
+  // Default empty, means sync all schemas & databases.
+  repeated string sync_databases = 4;
 }
 
 message Instance {
