@@ -643,6 +643,22 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ObjectSchema"><span class="badge">M</span>ObjectSchema</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ObjectSchema.ArrayKind"><span class="badge">M</span>ObjectSchema.ArrayKind</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ObjectSchema.StructKind"><span class="badge">M</span>ObjectSchema.StructKind</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ObjectSchema.StructKind.PropertiesEntry"><span class="badge">M</span>ObjectSchema.StructKind.PropertiesEntry</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.PackageMetadata"><span class="badge">M</span>PackageMetadata</a>
                 </li>
               
@@ -769,6 +785,10 @@
               
                 <li>
                   <a href="#bytebase.v1.GenerationMetadata.Type"><span class="badge">E</span>GenerationMetadata.Type</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ObjectSchema.Type"><span class="badge">E</span>ObjectSchema.Type</a>
                 </li>
               
                 <li>
@@ -8178,6 +8198,123 @@ view. </p></td>
 
         
       
+        <h3 id="bytebase.v1.ObjectSchema">ObjectSchema</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.ObjectSchema.Type">ObjectSchema.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>struct_kind</td>
+                  <td><a href="#bytebase.v1.ObjectSchema.StructKind">ObjectSchema.StructKind</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>array_kind</td>
+                  <td><a href="#bytebase.v1.ObjectSchema.ArrayKind">ObjectSchema.ArrayKind</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ObjectSchema.ArrayKind">ObjectSchema.ArrayKind</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>kind</td>
+                  <td><a href="#bytebase.v1.ObjectSchema">ObjectSchema</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ObjectSchema.StructKind">ObjectSchema.StructKind</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>properties</td>
+                  <td><a href="#bytebase.v1.ObjectSchema.StructKind.PropertiesEntry">ObjectSchema.StructKind.PropertiesEntry</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ObjectSchema.StructKind.PropertiesEntry">ObjectSchema.StructKind.PropertiesEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#bytebase.v1.ObjectSchema">ObjectSchema</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.PackageMetadata">PackageMetadata</h3>
         <p>PackageMetadata is the metadata for packages.</p>
 
@@ -9993,6 +10130,53 @@ view, function names.</p></td>
               <tr>
                 <td>TYPE_STORED</td>
                 <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.ObjectSchema.Type">ObjectSchema.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>STRING</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>NUMBER</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>BOOLEAN</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OBJECT</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ARRAY</td>
+                <td>5</td>
                 <td><p></p></td>
               </tr>
             
