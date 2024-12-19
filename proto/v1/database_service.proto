@@ -1863,7 +1863,7 @@ message ObjectSchema {
   message ArrayKind {
     ObjectSchema kind = 1;
   }
-  oneof Kind {
+  oneof kind {
     StructKind struct_kind = 2;
     ArrayKind array_kind = 3;
   }
