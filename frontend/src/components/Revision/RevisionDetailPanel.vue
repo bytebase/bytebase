@@ -108,11 +108,14 @@ watch(
     state.loading = true;
     const revision = await revisionStore.getOrFetchRevisionByName(revisionName);
     if (revision) {
-      await sheetStore.getOrFetchSheetByName(revision.sheet, "FULL");
       const taskRunData = await rolloutServiceClient.getTaskRun({
         name: revision.taskRun,
       });
       taskRun.value = taskRunData;
+      // Prepare the sheet data from task run.
+      if (taskRunData.sheet) {
+        await sheetStore.getOrFetchSheetByName(taskRunData.sheet, "FULL");
+      }
     }
     state.loading = false;
   },
@@ -124,7 +127,9 @@ const revision = computed(() =>
 );
 
 const sheet = computed(() =>
-  revision.value ? sheetStore.getSheetByName(revision.value.sheet) : undefined
+  taskRun.value && taskRun.value.sheet
+    ? sheetStore.getSheetByName(taskRun.value.sheet)
+    : undefined
 );
 
 const statement = computed(() =>
