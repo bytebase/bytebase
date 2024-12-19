@@ -139,6 +139,14 @@ func (s *Server) getInitSetting(ctx context.Context) (string, error) {
 		return "", err
 	}
 
+	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+		Name:        api.SettingPluginOpenAIModel,
+		Value:       "",
+		Description: "Model for OpenAI",
+	}, api.SystemBotID); err != nil {
+		return "", err
+	}
+
 	// initial external approval setting
 	externalApprovalSettingValue, err := protojson.Marshal(&storepb.ExternalApprovalSetting{})
 	if err != nil {

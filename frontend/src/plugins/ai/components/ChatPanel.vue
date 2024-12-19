@@ -37,6 +37,7 @@ import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
 import * as promptUtils from "../logic/prompt";
 import { useConversationStore } from "../store";
 import type { OpenAIMessage, OpenAIResponse } from "../types";
+import { OPENAI_DEFAULT_MODEL } from "@/types";
 import ActionBar from "./ActionBar.vue";
 import ChatView from "./ChatView";
 import DynamicSuggestions from "./DynamicSuggestions.vue";
@@ -55,7 +56,7 @@ const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const store = useConversationStore();
 
 const context = useAIContext();
-const { openAIKey, openAIEndpoint, showHistoryDialog, pendingSendChat } =
+const { openAIKey, openAIEndpoint, openAIModel, showHistoryDialog, pendingSendChat } =
   context;
 const {
   list: conversationList,
@@ -114,7 +115,10 @@ const requestAI = async (query: string) => {
       ? "https://api.openai.com/v1/chat/completions"
       : openAIEndpoint.value + "/v1/chat/completions";
   const messages: OpenAIMessage[] = [];
-
+  const model =
+    openAIModel.value === ""
+      ? OPENAI_DEFAULT_MODEL
+      : openAIModel.value;
   conversation.messageList.forEach((message) => {
     const { author, prompt } = message;
     messages.push({
@@ -123,7 +127,7 @@ const requestAI = async (query: string) => {
     });
   });
   const body = {
-    model: "gpt-3.5-turbo",
+    model: model,
     messages,
     temperature: 0,
     stop: ["#", ";"],
