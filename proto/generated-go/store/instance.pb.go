@@ -30,7 +30,7 @@ type InstanceOptions struct {
 	// The maximum number of connections.
 	// The default is 10 if the value is unset or zero.
 	MaximumConnections int32 `protobuf:"varint,3,opt,name=maximum_connections,json=maximumConnections,proto3" json:"maximum_connections,omitempty"`
-	// Enable sync for following databases in {schema}/{database} format.
+	// Enable sync for following databases.
 	// Default empty, means sync all schemas & databases.
 	SyncDatabases []string `protobuf:"bytes,4,rep,name=sync_databases,json=syncDatabases,proto3" json:"sync_databases,omitempty"`
 	unknownFields protoimpl.UnknownFields
