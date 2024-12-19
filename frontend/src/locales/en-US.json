@@ -758,6 +758,10 @@
           "openai-endpoint": {
             "self": "OpenAI API Endpoint",
             "description": "Supply private deployment of OpenAI API Endpoint."
+          },
+          "openai-model": {
+            "self": "OpenAI Model Name",
+            "description": "Supply private deployment of OpenAI Model name."
           }
         },
         "announcement": {

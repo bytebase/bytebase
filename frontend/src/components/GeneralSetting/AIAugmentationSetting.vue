@@ -87,6 +87,31 @@
           </span>
         </NTooltip>
 
+        <label class="flex items-center gap-x-2">
+          <span class="font-medium">{{
+            $t("settings.general.workspace.ai-assistant.openai-model.self")
+          }}</span>
+        </label>
+        <div class="mb-3 text-sm text-gray-400">
+          {{
+            $t(
+              "settings.general.workspace.ai-assistant.openai-model.description"
+            )
+          }}
+        </div>
+        <NTooltip placement="top-start" :disabled="allowEdit">
+          <template #trigger>
+            <NInput
+              v-model:value="state.openAIModel"
+              class="mb-4 w-full"
+              :disabled="!allowEdit"
+            />
+          </template>
+          <span class="text-sm text-gray-400 -translate-y-2">
+            {{ $t("settings.general.workspace.only-admin-can-edit") }}
+          </span>
+        </NTooltip>
+
         <div class="flex justify-end">
           <NButton
             type="primary"
@@ -124,6 +149,7 @@ import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 interface LocalState {
   openAIKey: string;
   openAIEndpoint: string;
+  openAIModel: string;
   showFeatureModal: boolean;
 }
 
@@ -138,6 +164,7 @@ const containerRef = ref<HTMLDivElement>();
 const state = reactive<LocalState>({
   openAIKey: "",
   openAIEndpoint: "",
+  openAIModel: "",
   showFeatureModal: false,
 });
 
@@ -147,20 +174,25 @@ const openAIKeySetting = settingV1Store.getSettingByName(
 const openAIEndpointSetting = settingV1Store.getSettingByName(
   "bb.plugin.openai.endpoint"
 );
+const openAIModelSetting = settingV1Store.getSettingByName(
+  "bb.plugin.openai.model"
+);
 
 watchEffect(() => {
   state.openAIKey = maskKey(openAIKeySetting?.value?.stringValue);
   state.openAIEndpoint = openAIEndpointSetting?.value?.stringValue ?? "";
+  state.openAIModel = openAIModelSetting?.value?.stringValue ?? "";
 });
 
 const allowSave = computed((): boolean => {
   const openAIKeyUpdated =
     state.openAIKey !== maskKey(openAIKeySetting?.value?.stringValue) ||
     (state.openAIKey && !state.openAIKey.includes("***"));
-  return (
-    openAIKeyUpdated ||
-    state.openAIEndpoint !== openAIEndpointSetting?.value?.stringValue
-  );
+  const openAIEndpointUpdated =
+    state.openAIEndpoint !== openAIEndpointSetting?.value?.stringValue;
+  const openAIModelUpdated =
+    state.openAIModel !== openAIModelSetting?.value?.stringValue;
+  return openAIKeyUpdated || openAIEndpointUpdated || openAIModelUpdated;
 });
 
 function maskKey(key: string | undefined): string {
@@ -191,6 +223,14 @@ const updateOpenAIKeyEndpoint = async () => {
       name: "bb.plugin.openai.endpoint",
       value: {
         stringValue: state.openAIEndpoint,
+      },
+    });
+  }
+  if (state.openAIEndpoint !== openAIModelSetting?.value?.stringValue) {
+    await settingV1Store.upsertSetting({
+      name: "bb.plugin.openai.model",
+      value: {
+        stringValue: state.openAIModel,
       },
     });
   }
