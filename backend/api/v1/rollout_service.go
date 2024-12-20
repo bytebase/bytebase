@@ -1152,61 +1152,6 @@ func getTaskIndexDAGs(specs []*storepb.PlanConfig_Spec, getTaskIndexes func(spec
 	return taskIndexDAGs
 }
 
-func (s *RolloutService) createPipeline(ctx context.Context, project *store.ProjectMessage, pipelineCreate *store.PipelineMessage, creatorID int) (*store.PipelineMessage, error) {
-	pipelineCreated, err := s.store.CreatePipelineV2(ctx, &store.PipelineMessage{
-		Name:      pipelineCreate.Name,
-		ProjectID: project.ResourceID,
-	}, creatorID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create pipeline for issue")
-	}
-
-	var stageCreates []*store.StageMessage
-	for _, stage := range pipelineCreate.Stages {
-		stageCreates = append(stageCreates, &store.StageMessage{
-			Name:          stage.Name,
-			EnvironmentID: stage.EnvironmentID,
-			PipelineID:    pipelineCreated.ID,
-		})
-	}
-	createdStages, err := s.store.CreateStageV2(ctx, stageCreates, pipelineCreated.ID, creatorID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create stages for issue")
-	}
-	if len(createdStages) != len(stageCreates) {
-		return nil, errors.Errorf("failed to create stages, expect to have created %d stages, got %d", len(stageCreates), len(createdStages))
-	}
-
-	for i, stageCreate := range pipelineCreate.Stages {
-		createdStage := createdStages[i]
-
-		var taskCreateList []*store.TaskMessage
-		for _, taskCreate := range stageCreate.TaskList {
-			c := taskCreate
-			c.CreatorID = creatorID
-			c.PipelineID = pipelineCreated.ID
-			c.StageID = createdStage.ID
-			taskCreateList = append(taskCreateList, c)
-		}
-		tasks, err := s.store.CreateTasksV2(ctx, taskCreateList...)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create tasks for issue")
-		}
-
-		// TODO(p0ny): create task dags in batch.
-		for _, indexDAG := range stageCreate.TaskIndexDAGList {
-			if err := s.store.CreateTaskDAGV2(ctx, &store.TaskDAGMessage{
-				FromTaskID: tasks[indexDAG.FromIndex].ID,
-				ToTaskID:   tasks[indexDAG.ToIndex].ID,
-			}); err != nil {
-				return nil, errors.Wrap(err, "failed to create task DAG for issue")
-			}
-		}
-	}
-
-	return pipelineCreated, nil
-}
-
 func GetValidRolloutPolicyForStage(ctx context.Context, stores *store.Store, licenseService enterprise.LicenseService, stage *store.StageMessage) (*storepb.RolloutPolicy, error) {
 	if licenseService.IsFeatureEnabled(api.FeatureRolloutPolicy) != nil {
 		// nolint:nilerr

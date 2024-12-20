@@ -53,10 +53,10 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 		}
 		createdPipelineUID = createdPipeline.ID
 
+		// update pipeline uid of associated issue and plan
 		if err := updatePipelineUIDOfIssueAndPlan(ctx, tx, planUID, createdPipelineUID); err != nil {
 			return 0, errors.Wrapf(err, "failed to update associated plan or issue")
 		}
-		//update issue plan pipelineid
 	} else {
 		createdPipelineUID = *pipelineUIDMaybe
 	}
@@ -192,27 +192,6 @@ func (s *Store) createPipeline(ctx context.Context, tx *Tx, create *PipelineMess
 	}
 
 	pipeline.UpdatedTs = pipeline.CreatedTs
-	return pipeline, nil
-}
-
-// CreatePipelineV2 creates a pipeline.
-func (s *Store) CreatePipelineV2(ctx context.Context, create *PipelineMessage, creatorUID int) (*PipelineMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
-
-	pipeline, err := s.createPipeline(ctx, tx, create, creatorUID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create pipeline")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit tx")
-	}
-
-	s.pipelineCache.Add(pipeline.ID, pipeline)
 	return pipeline, nil
 }
 
