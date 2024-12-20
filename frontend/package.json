@@ -57,7 +57,7 @@
     "nice-grpc-common": "^2.0.2",
     "nice-grpc-error-details": "^0.2.4",
     "nice-grpc-web": "^3.3.2",
-    "node-sql-parser": "5.3.2",
+    "node-sql-parser": "5.3.5",
     "normalize-wheel": "^1.0.1",
     "pev2": "1.12.1",
     "pinia": "2.2.8",
