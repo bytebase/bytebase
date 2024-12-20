@@ -34,14 +34,127 @@ type PipelineFind struct {
 	Offset *int
 }
 
-// CreatePipelineV2 creates a pipeline.
-func (s *Store) CreatePipelineV2(ctx context.Context, create *PipelineMessage, creatorID int) (*PipelineMessage, error) {
+// targetStage == "" means deploy all stages.
+func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *PipelineMessage, targetStage string, creatorUID int) (createdPipelineUID int, err error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return 0, errors.Wrapf(err, "failed to begin tx")
 	}
 	defer tx.Rollback()
 
+	pipelineUIDMaybe, err := lockPlanAndGetPipelineUID(ctx, tx, planUID)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to SELECT plan FOR UPDATE")
+	}
+	if pipelineUIDMaybe == nil {
+		createdPipeline, err := s.createPipeline(ctx, tx, pipeline, creatorUID)
+		if err != nil {
+			return 0, errors.Wrapf(err, "failed to create pipeline")
+		}
+		createdPipelineUID = createdPipeline.ID
+
+		if err := updatePipelineUIDOfIssueAndPlan(ctx, tx, planUID, createdPipelineUID); err != nil {
+			return 0, errors.Wrapf(err, "failed to update associated plan or issue")
+		}
+		//update issue plan pipelineid
+	} else {
+		createdPipelineUID = *pipelineUIDMaybe
+	}
+
+	stages, err := s.listStages(ctx, tx, createdPipelineUID)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to list stages")
+	}
+	stagesAlreadyExist := map[string]bool{}
+	for _, stage := range stages {
+		stagesAlreadyExist[stage.DeploymentID] = true
+	}
+
+	var stagesToCreate []*StageMessage
+	for _, stage := range pipeline.Stages {
+		if !stagesAlreadyExist[stage.DeploymentID] {
+			stagesToCreate = append(stagesToCreate, stage)
+		}
+		if targetStage != "" && stage.DeploymentID == targetStage {
+			break
+		}
+	}
+
+	createdStages, err := s.createStages(ctx, tx, stagesToCreate, createdPipelineUID, creatorUID)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to create stages")
+	}
+
+	for _, stage := range createdStages {
+		var taskCreateList []*TaskMessage
+		for _, taskCreate := range stage.TaskList {
+			c := taskCreate
+			c.CreatorID = creatorUID
+			c.PipelineID = createdPipelineUID
+			c.StageID = stage.ID
+			taskCreateList = append(taskCreateList, c)
+		}
+		tasks, err := s.createTasks(ctx, tx, taskCreateList...)
+		if err != nil {
+			return 0, errors.Wrap(err, "failed to create tasks")
+		}
+
+		// TODO(p0ny): create task dags in batch.
+		for _, indexDAG := range stage.TaskIndexDAGList {
+			if err := s.createTaskDAG(ctx, tx, &TaskDAGMessage{
+				FromTaskID: tasks[indexDAG.FromIndex].ID,
+				ToTaskID:   tasks[indexDAG.ToIndex].ID,
+			}); err != nil {
+				return 0, errors.Wrap(err, "failed to create task DAG")
+			}
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, errors.Wrapf(err, "failed to commit tx")
+	}
+
+	return createdPipelineUID, nil
+}
+
+func updatePipelineUIDOfIssueAndPlan(ctx context.Context, tx *Tx, planUID int64, pipelineUID int) error {
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE plan
+		SET pipeline_id = $1
+		WHERE id = $2
+	`, pipelineUID, planUID); err != nil {
+		return errors.Wrapf(err, "failed to update plan pipeline_id")
+	}
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE issue
+		SET pipeline_id = $1
+		WHERE plan_id = $2
+	`, pipelineUID, planUID); err != nil {
+		return errors.Wrapf(err, "failed to update issue pipeline_id")
+	}
+	return nil
+}
+
+func lockPlanAndGetPipelineUID(ctx context.Context, tx *Tx, planUID int64) (*int, error) {
+	query := `
+		SELECT pipeline_id FROM plan WHERE id = $1 FOR UPDATE
+	`
+	var uid sql.NullInt32
+	if err := tx.QueryRowContext(ctx, query, planUID).Scan(&uid); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, errors.Wrapf(err, "failed to get pipeline uid")
+	}
+
+	if uid.Valid {
+		uidInt := int(uid.Int32)
+		return &uidInt, nil
+	}
+	return nil, nil
+}
+
+func (s *Store) createPipeline(ctx context.Context, tx *Tx, create *PipelineMessage, creatorUID int) (*PipelineMessage, error) {
 	query := `
 		INSERT INTO pipeline (
 			project_id,
@@ -59,14 +172,14 @@ func (s *Store) CreatePipelineV2(ctx context.Context, create *PipelineMessage, c
 	`
 	pipeline := &PipelineMessage{
 		ProjectID:  create.ProjectID,
-		CreatorUID: creatorID,
-		UpdaterUID: creatorID,
+		CreatorUID: creatorUID,
+		UpdaterUID: creatorUID,
 		Name:       create.Name,
 	}
 	if err := tx.QueryRowContext(ctx, query,
 		create.ProjectID,
-		creatorID,
-		creatorID,
+		creatorUID,
+		creatorUID,
 		create.Name,
 	).Scan(
 		&pipeline.ID,
@@ -75,14 +188,30 @@ func (s *Store) CreatePipelineV2(ctx context.Context, create *PipelineMessage, c
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to insert")
 	}
 
 	pipeline.UpdatedTs = pipeline.CreatedTs
+	return pipeline, nil
+}
+
+// CreatePipelineV2 creates a pipeline.
+func (s *Store) CreatePipelineV2(ctx context.Context, create *PipelineMessage, creatorUID int) (*PipelineMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin tx")
+	}
+	defer tx.Rollback()
+
+	pipeline, err := s.createPipeline(ctx, tx, create, creatorUID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create pipeline")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit tx")
+	}
+
 	s.pipelineCache.Add(pipeline.ID, pipeline)
 	return pipeline, nil
 }

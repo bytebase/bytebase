@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -105,22 +104,13 @@ func (s *Store) CreateStageV2(ctx context.Context, stagesCreate []*StageMessage,
 	return stages, nil
 }
 
-// ListStageV2 finds a list of stages based on find.
-func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
-	where, args = append(where, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, pipelineUID)
-
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
+func (s *Store) listStages(ctx context.Context, tx *Tx, pipelineUID int) ([]*StageMessage, error) {
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			stage.id,
 			stage.pipeline_id,
 			stage.environment_id,
+			stage.deployment_id,
 			stage.name,
 			(
 				SELECT EXISTS (
@@ -145,11 +135,11 @@ func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessa
 				)
 			) AS active
 		FROM stage
-		WHERE %s ORDER BY id ASC`, strings.Join(where, " AND ")),
-		args...,
+		WHERE pipeline_id = $1 ORDER BY id ASC`,
+		pipelineUID,
 	)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to query rows")
 	}
 	defer rows.Close()
 
@@ -160,19 +150,39 @@ func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessa
 			&stage.ID,
 			&stage.PipelineID,
 			&stage.EnvironmentID,
+			&stage.DeploymentID,
 			&stage.Name,
 			&stage.Active,
 		); err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "failed to scan")
 		}
 
 		stages = append(stages, &stage)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "rows err")
 	}
+	return stages, nil
+}
+
+// ListStageV2 finds a list of stages based on find.
+func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessage, error) {
+	where, args := []string{"TRUE"}, []any{}
+	where, args = append(where, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, pipelineUID)
+
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin tx")
+	}
+	defer tx.Rollback()
+
+	stages, err := s.listStages(ctx, tx, pipelineUID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list stages")
+	}
+
 	if err := tx.Commit(); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to commit tx")
 	}
 	return stages, nil
 }

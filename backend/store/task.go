@@ -110,13 +110,12 @@ func (s *Store) FindBlockingTasksByVersion(ctx context.Context, databaseUID int,
 	return ids, nil
 }
 
-// CreateTasksV2 creates a new task.
-func (s *Store) CreateTasksV2(ctx context.Context, creates ...*TaskMessage) ([]*TaskMessage, error) {
+func (s *Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) ([]*TaskMessage, error) {
 	var query strings.Builder
 	var values []any
 	var queryValues []string
 
-	if _, err := query.WriteString(
+	_, _ = query.WriteString(
 		`INSERT INTO task (
 			creator_id,
 			updater_id,
@@ -131,9 +130,7 @@ func (s *Store) CreateTasksV2(ctx context.Context, creates ...*TaskMessage) ([]*
 			earliest_allowed_ts
 		)
 		VALUES
-    `); err != nil {
-		return nil, err
-	}
+    `)
 	for i, create := range creates {
 		if create.Payload == "" {
 			create.Payload = "{}"
@@ -153,23 +150,13 @@ func (s *Store) CreateTasksV2(ctx context.Context, creates ...*TaskMessage) ([]*
 		const count = 10
 		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, 'PENDING_APPROVAL', $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, i*count+7, i*count+8, i*count+9, i*count+10))
 	}
-	if _, err := query.WriteString(strings.Join(queryValues, ",")); err != nil {
-		return nil, err
-	}
-	if _, err := query.WriteString(` RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, type, payload, earliest_allowed_ts`); err != nil {
-		return nil, err
-	}
-
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
+	_, _ = query.WriteString(strings.Join(queryValues, ","))
+	_, _ = query.WriteString(` RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, type, payload, earliest_allowed_ts`)
 
 	var tasks []*TaskMessage
 	rows, err := tx.QueryContext(ctx, query.String(), values...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to query")
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -190,7 +177,7 @@ func (s *Store) CreateTasksV2(ctx context.Context, creates ...*TaskMessage) ([]*
 			&task.Payload,
 			&task.EarliestAllowedTs,
 		); err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "failed to scan rows")
 		}
 		if databaseID.Valid {
 			val := int(databaseID.Int32)
@@ -199,11 +186,28 @@ func (s *Store) CreateTasksV2(ctx context.Context, creates ...*TaskMessage) ([]*
 		tasks = append(tasks, task)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "rows err")
+	}
+
+	return tasks, nil
+}
+
+// CreateTasksV2 creates a new task.
+func (s *Store) CreateTasksV2(ctx context.Context, creates ...*TaskMessage) ([]*TaskMessage, error) {
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin tx")
+	}
+	defer tx.Rollback()
+
+	tasks, err := s.createTasks(ctx, tx, creates...)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create tasks")
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to commit tx")
 	}
 	return tasks, nil
 }
