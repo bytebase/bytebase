@@ -8,7 +8,7 @@ godebug x509negativeserial=1
 
 require (
 	cloud.google.com/go/bigquery v1.65.0
-	cloud.google.com/go/cloudsqlconn v1.13.1
+	cloud.google.com/go/cloudsqlconn v1.13.2
 	cloud.google.com/go/secretmanager v1.14.2
 	cloud.google.com/go/spanner v1.73.0
 	gitee.com/chunanyong/dm v1.8.16
