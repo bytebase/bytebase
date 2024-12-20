@@ -2397,6 +2397,7 @@ IndexMetadata is the metadata for indexes.
 | definition | [string](#string) |  | The definition of an index. |
 | parent_index_schema | [string](#string) |  | The schema name of the parent index. |
 | parent_index_name | [string](#string) |  | The index name of the parent index. |
+| granularity | [int64](#int64) |  | The number of granules in the block. It&#39;s a ClickHouse specific field. |
 
 
 

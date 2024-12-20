@@ -1013,6 +1013,9 @@ message IndexMetadata {
 
   // The index name of the parent index.
   string parent_index_name = 12;
+
+  // The number of granules in the block. It's a ClickHouse specific field.
+  int64 granularity = 13;
 }
 
 // ExtensionMetadata is the metadata for extensions.
