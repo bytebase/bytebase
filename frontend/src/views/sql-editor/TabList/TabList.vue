@@ -7,7 +7,7 @@
       :x-scrollable="true"
       trigger="hover"
       class="scrollbar"
-      content-class="flex"
+      content-class="flex gap-x-1"
       @scroll="recalculateScrollState"
     >
       <Draggable
@@ -41,12 +41,16 @@
         </template>
       </Draggable>
 
-      <button
-        class="bg-gray-200/20 hover:bg-accent/10 ml-1 py-1 px-1.5 border-t border-x rounded-t hover:border-accent"
-        @click="handleAddTab"
+      <div
+        class="shrink-0 sticky right-0 bg-white flex items-stretch justify-end"
       >
-        <PlusIcon class="h-5 w-5" stroke-width="2.5" />
-      </button>
+        <button
+          class="bg-gray-200/20 hover:bg-accent/10py-1 px-1.5 border-t border-x rounded-t hover:border-accent"
+          @click="handleAddTab"
+        >
+          <PlusIcon class="h-5 w-5" stroke-width="2.5" />
+        </button>
+      </div>
     </NScrollbar>
 
     <div class="flex items-center gap-2">
@@ -132,6 +136,10 @@ const hideSettingButton = computed(() => {
   return false;
 });
 
+const scrollElement = computed((): HTMLElement | null | undefined => {
+  return scrollbarRef.value?.scrollbarInstRef?.containerRef;
+});
+
 const handleSelectTab = async (tab: SQLEditorTab | undefined) => {
   tabStore.setCurrentTabId(tab?.id ?? "");
 };
@@ -154,7 +162,18 @@ const handleAddTab = () => {
       vs.detail = {};
     }
   }
-  nextTick(recalculateScrollState);
+
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      const elem = scrollElement.value;
+      if (elem) {
+        elem.scrollTo(elem.scrollWidth, 0);
+      }
+      requestAnimationFrame(() => {
+        recalculateScrollState();
+      });
+    });
+  });
   sheetEvents.emit("add-sheet");
 };
 
@@ -207,10 +226,6 @@ const handleRemoveTab = async (
 
   return _defer.promise;
 };
-
-const scrollElement = computed((): HTMLElement | null | undefined => {
-  return scrollbarRef.value?.scrollbarInstRef?.containerRef;
-});
 
 usePreventBackAndForward(scrollElement);
 useResizeObserver(tabListRef, () => {
