@@ -527,6 +527,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.EnumTypeMetadata"><span class="badge">M</span>EnumTypeMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.EventMetadata"><span class="badge">M</span>EventMetadata</a>
                 </li>
               
@@ -6802,6 +6806,37 @@ instances/{instance}/databases/{database}/changeHistories/{changeHistory} </p></
 
         
       
+        <h3 id="bytebase.v1.EnumTypeMetadata">EnumTypeMetadata</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of a type. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>values</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The enum values of a type. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.EventMetadata">EventMetadata</h3>
         <p></p>
 
@@ -8745,6 +8780,13 @@ table_name, name, event, timing, action_order. </p></td>
                 <tr>
                   <td>events</td>
                   <td><a href="#bytebase.v1.EventMetadata">EventMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enum_types</td>
+                  <td><a href="#bytebase.v1.EnumTypeMetadata">EnumTypeMetadata</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
