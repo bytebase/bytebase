@@ -69,6 +69,7 @@ interface LocalState {
 
 const { t } = useI18n();
 const environmentStore = useEnvironmentV1Store();
+const identityProviderStore = useIdentityProviderStore();
 const state = reactive<LocalState>({
   selectedTab: "PROJECT",
   searchText: "",
@@ -76,6 +77,7 @@ const state = reactive<LocalState>({
 
 const prepareList = () => {
   environmentStore.fetchEnvironments(true /* showDeleted */);
+  identityProviderStore.fetchIdentityProviderList(true /* showDeleted */);
 };
 
 watchEffect(prepareList);
@@ -93,7 +95,7 @@ const instanceList = computed(() => {
 });
 
 const projectList = computed(() => {
-  return useProjectV1List().projectList.value.filter(
+  return useProjectV1List(true /** showDeleted */).projectList.value.filter(
     (project) => project.state === State.DELETED
   );
 });
