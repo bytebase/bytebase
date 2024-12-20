@@ -391,6 +391,7 @@ CREATE TABLE stage (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
     environment_id INTEGER NOT NULL REFERENCES environment (id),
+    deployment_id TEXT NOT NULL DEFAULT '',
     name TEXT NOT NULL
 );
 
