@@ -154,7 +154,7 @@ func lockPlanAndGetPipelineUID(ctx context.Context, tx *Tx, planUID int64) (*int
 	return nil, nil
 }
 
-func (s *Store) createPipeline(ctx context.Context, tx *Tx, create *PipelineMessage, creatorUID int) (*PipelineMessage, error) {
+func (*Store) createPipeline(ctx context.Context, tx *Tx, create *PipelineMessage, creatorUID int) (*PipelineMessage, error) {
 	query := `
 		INSERT INTO pipeline (
 			project_id,

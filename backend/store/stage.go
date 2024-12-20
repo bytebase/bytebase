@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
 	"github.com/pkg/errors"
 )
@@ -34,7 +33,7 @@ type TaskIndexDAG struct {
 	ToIndex   int
 }
 
-func (s *Store) createStages(ctx context.Context, tx *Tx, stagesCreate []*StageMessage, pipelineUID int, creatorID int) ([]*StageMessage, error) {
+func (*Store) createStages(ctx context.Context, tx *Tx, stagesCreate []*StageMessage, pipelineUID int, creatorID int) ([]*StageMessage, error) {
 	var environmentIDs []int
 	var names []string
 	var deploymentIDs []string
@@ -104,7 +103,7 @@ func (s *Store) CreateStageV2(ctx context.Context, stagesCreate []*StageMessage,
 	return stages, nil
 }
 
-func (s *Store) listStages(ctx context.Context, tx *Tx, pipelineUID int) ([]*StageMessage, error) {
+func (*Store) listStages(ctx context.Context, tx *Tx, pipelineUID int) ([]*StageMessage, error) {
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			stage.id,
@@ -167,9 +166,6 @@ func (s *Store) listStages(ctx context.Context, tx *Tx, pipelineUID int) ([]*Sta
 
 // ListStageV2 finds a list of stages based on find.
 func (s *Store) ListStageV2(ctx context.Context, pipelineUID int) ([]*StageMessage, error) {
-	where, args := []string{"TRUE"}, []any{}
-	where, args = append(where, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, pipelineUID)
-
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin tx")

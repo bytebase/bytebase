@@ -110,7 +110,7 @@ func (s *Store) FindBlockingTasksByVersion(ctx context.Context, databaseUID int,
 	return ids, nil
 }
 
-func (s *Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) ([]*TaskMessage, error) {
+func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) ([]*TaskMessage, error) {
 	var query strings.Builder
 	var values []any
 	var queryValues []string
@@ -194,7 +194,6 @@ func (s *Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage
 
 // CreateTasksV2 creates a new task.
 func (s *Store) CreateTasksV2(ctx context.Context, creates ...*TaskMessage) ([]*TaskMessage, error) {
-
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin tx")

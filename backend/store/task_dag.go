@@ -50,7 +50,7 @@ func (s *Store) RebuildTaskDAG(ctx context.Context, fromTaskIDs []int, toTaskID 
 	return tx.Commit()
 }
 
-func (s *Store) createTaskDAG(ctx context.Context, tx *Tx, create *TaskDAGMessage) error {
+func (*Store) createTaskDAG(ctx context.Context, tx *Tx, create *TaskDAGMessage) error {
 	query := `
 		INSERT INTO task_dag (
 			from_task_id,
