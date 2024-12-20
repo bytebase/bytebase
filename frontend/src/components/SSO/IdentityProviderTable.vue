@@ -8,10 +8,7 @@
     @click-row="clickIdentityProvider"
   >
     <template #body="{ rowData: identityProvider }">
-      <BBTableCell :left-padding="4" class="w-4 table-cell text-gray-500">
-        <span class="">#{{ identityProvider.uid }}</span>
-      </BBTableCell>
-      <BBTableCell class="w-48 table-cell">
+      <BBTableCell class="w-48 table-cell pl-4">
         {{ identityProvider.title }}
       </BBTableCell>
       <BBTableCell class="w-48 table-cell">
@@ -42,9 +39,6 @@ const router = useRouter();
 const { t } = useI18n();
 
 const columnList = computed(() => [
-  {
-    title: t("common.id"),
-  },
   {
     title: t("common.name"),
   },

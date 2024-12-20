@@ -25,10 +25,10 @@ export const useIdentityProviderStore = defineStore("idp", {
     },
   },
   actions: {
-    async fetchIdentityProviderList() {
+    async fetchIdentityProviderList(showDeleted = false) {
       const { identityProviders } =
         await identityProviderClient.listIdentityProviders({
-          showDeleted: true,
+          showDeleted,
         });
       for (const identityProvider of identityProviders) {
         this.identityProviderMapByName.set(
