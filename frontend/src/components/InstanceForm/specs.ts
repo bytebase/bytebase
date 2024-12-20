@@ -14,7 +14,8 @@ export const useInstanceSpecs = (
     return (
       (basicInfo.value.engine === Engine.POSTGRES ||
         basicInfo.value.engine === Engine.REDSHIFT ||
-        basicInfo.value.engine === Engine.COCKROACHDB) &&
+        basicInfo.value.engine === Engine.COCKROACHDB ||
+        basicInfo.value.engine === Engine.MSSQL) &&
       editingDataSource.value?.type === DataSourceType.ADMIN
     );
   });
@@ -26,7 +27,6 @@ export const useInstanceSpecs = (
   });
   const isEngineBeta = (_engine: Engine): boolean => {
     return false;
-    // return [].includes(engine);
   };
   const defaultPort = computed(() => {
     return defaultPortForEngine(basicInfo.value.engine);
