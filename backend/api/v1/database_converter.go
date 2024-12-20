@@ -152,7 +152,6 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 			}
 			s.Streams = append(s.Streams, v1Stream)
 		}
-		m.Schemas = append(m.Schemas, s)
 
 		for _, trigger := range schema.Triggers {
 			if trigger == nil {
@@ -205,6 +204,19 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 			}
 			s.Events = append(s.Events, v1Event)
 		}
+
+		for _, enum := range schema.EnumTypes {
+			if enum == nil {
+				continue
+			}
+			v1Enum := &v1pb.EnumTypeMetadata{
+				Name:   enum.Name,
+				Values: enum.Values,
+			}
+			s.EnumTypes = append(s.EnumTypes, v1Enum)
+		}
+
+		m.Schemas = append(m.Schemas, s)
 	}
 	for _, extension := range metadata.Extensions {
 		if extension == nil {
@@ -667,6 +679,16 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 				CollationConnection: event.CollationConnection,
 			}
 			s.Events = append(s.Events, storeEvent)
+		}
+		for _, enum := range schema.EnumTypes {
+			if enum == nil {
+				continue
+			}
+			storeEnum := &storepb.EnumTypeMetadata{
+				Name:   enum.Name,
+				Values: enum.Values,
+			}
+			s.EnumTypes = append(s.EnumTypes, storeEnum)
 		}
 		for _, sequence := range schema.Sequences {
 			if sequence == nil {
