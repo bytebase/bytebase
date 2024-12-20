@@ -56,9 +56,9 @@
 import { useClipboard } from "@vueuse/core";
 import dayjs from "dayjs";
 import { escape, uniqBy } from "lodash-es";
-import { useDialog } from "naive-ui";
+import { NButton, useDialog } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, reactive } from "vue";
+import { computed, h, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { SearchBox } from "@/components/v2";
@@ -152,21 +152,52 @@ const handleCopy = (history: QueryHistory) => {
   });
 };
 
-const confirmOverrideCurrentStatement = () => {
-  const d = defer<boolean>();
-  $d.warning({
+const confirmOverrideCurrentStatement = (): Promise<
+  "CANCEL" | "OVERRIDE" | "COPY"
+> => {
+  const d = defer<"CANCEL" | "OVERRIDE" | "COPY">();
+  const dialog = $d.warning({
     title: t("common.warning"),
-    content: () => t("sql-editor.override-current-statement"),
+    content: t("sql-editor.current-editing-statement-is-not-empty"),
+    contentClass: "whitespace-pre-wrap",
     style: "z-index: 100000",
-    negativeText: t("common.cancel"),
-    positiveText: t("common.confirm"),
-    onNegativeClick: () => {
-      d.resolve(false);
-    },
-    onPositiveClick: () => {
-      d.resolve(true);
+    closable: false,
+    closeOnEsc: false,
+    maskClosable: false,
+    action: () => {
+      const buttons = [
+        h(
+          NButton,
+          { size: "small", onClick: () => d.resolve("CANCEL") },
+          { default: () => t("common.cancel") }
+        ),
+        h(
+          NButton,
+          {
+            size: "small",
+            type: "warning",
+            onClick: () => d.resolve("OVERRIDE"),
+          },
+          { default: () => t("common.override") }
+        ),
+        h(
+          NButton,
+          {
+            size: "small",
+            type: "primary",
+            onClick: () => d.resolve("COPY"),
+          },
+          { default: () => t("common.copy") }
+        ),
+      ];
+      return h(
+        "div",
+        { class: "flex items-center justify-end gap-2" },
+        buttons
+      );
     },
   });
+  d.promise.then(() => dialog.destroy());
   return d.promise;
 };
 
@@ -186,12 +217,21 @@ const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
     );
   };
   const openInCurrentTab = async (tab: SQLEditorTab) => {
-    if (tab.statement) {
-      if (!(await confirmOverrideCurrentStatement())) {
-        return;
-      }
+    if (!tab.statement) {
+      tab.statement = statement;
+      return;
     }
-    tab.statement = statement;
+    const choice = await confirmOverrideCurrentStatement();
+    if (choice === "CANCEL") {
+      return;
+    }
+    if (choice === "OVERRIDE") {
+      tabStore.updateCurrentTab({
+        statement,
+      });
+      return;
+    }
+    handleCopy(queryHistory);
   };
 
   if (tab) {
