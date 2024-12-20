@@ -234,6 +234,7 @@ func convertStoreIndexMetadata(index *storepb.IndexMetadata) *v1pb.IndexMetadata
 		Definition:        index.Definition,
 		ParentIndexSchema: index.ParentIndexSchema,
 		ParentIndexName:   index.ParentIndexName,
+		Granularity:       index.Granularity,
 	}
 }
 
@@ -716,6 +717,7 @@ func convertV1IndexMetadata(index *v1pb.IndexMetadata) *storepb.IndexMetadata {
 		Definition:        index.Definition,
 		ParentIndexSchema: index.ParentIndexSchema,
 		ParentIndexName:   index.ParentIndexName,
+		Granularity:       index.Granularity,
 	}
 }
 

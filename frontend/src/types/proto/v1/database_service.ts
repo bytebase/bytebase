@@ -1203,6 +1203,8 @@ export interface IndexMetadata {
   parentIndexSchema: string;
   /** The index name of the parent index. */
   parentIndexName: string;
+  /** The number of granules in the block. It's a ClickHouse specific field. */
+  granularity: Long;
 }
 
 /** ExtensionMetadata is the metadata for extensions. */
@@ -7048,6 +7050,7 @@ function createBaseIndexMetadata(): IndexMetadata {
     definition: "",
     parentIndexSchema: "",
     parentIndexName: "",
+    granularity: Long.ZERO,
   };
 }
 
@@ -7092,6 +7095,9 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
     }
     if (message.parentIndexName !== "") {
       writer.uint32(98).string(message.parentIndexName);
+    }
+    if (!message.granularity.equals(Long.ZERO)) {
+      writer.uint32(104).int64(message.granularity.toString());
     }
     return writer;
   },
@@ -7219,6 +7225,14 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
           message.parentIndexName = reader.string();
           continue;
         }
+        case 13: {
+          if (tag !== 104) {
+            break;
+          }
+
+          message.granularity = Long.fromString(reader.int64().toString());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -7246,6 +7260,7 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
       definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
       parentIndexSchema: isSet(object.parentIndexSchema) ? globalThis.String(object.parentIndexSchema) : "",
       parentIndexName: isSet(object.parentIndexName) ? globalThis.String(object.parentIndexName) : "",
+      granularity: isSet(object.granularity) ? Long.fromValue(object.granularity) : Long.ZERO,
     };
   },
 
@@ -7287,6 +7302,9 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
     if (message.parentIndexName !== "") {
       obj.parentIndexName = message.parentIndexName;
     }
+    if (!message.granularity.equals(Long.ZERO)) {
+      obj.granularity = (message.granularity || Long.ZERO).toString();
+    }
     return obj;
   },
 
@@ -7307,6 +7325,9 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
     message.definition = object.definition ?? "";
     message.parentIndexSchema = object.parentIndexSchema ?? "";
     message.parentIndexName = object.parentIndexName ?? "";
+    message.granularity = (object.granularity !== undefined && object.granularity !== null)
+      ? Long.fromValue(object.granularity)
+      : Long.ZERO;
     return message;
   },
 };
