@@ -244,33 +244,12 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	if len(pipelineCreate.Stages) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "no database matched for deployment")
 	}
-	pipeline, err := s.createPipeline(ctx, project, pipelineCreate, principalID)
+	pipelineUID, err := s.store.CreatePipelineAIO(ctx, planID, pipelineCreate, request.StageId, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create pipeline, error: %v", err)
 	}
 
-	// Update pipeline ID in the plan.
-	if err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
-		UID:         planID,
-		UpdaterID:   principalID,
-		PipelineUID: &pipeline.ID,
-	}); err != nil {
-		return nil, err
-	}
-
-	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PlanUID: &planID})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get issue by plan id %v, error: %v", planID, err)
-	}
-	if issue != nil {
-		if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
-			PipelineUID: &pipeline.ID,
-		}, principalID); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to update issue by plan id %v, error: %v", planID, err)
-		}
-	}
-
-	rollout, err := s.store.GetRollout(ctx, pipeline.ID)
+	rollout, err := s.store.GetRollout(ctx, pipelineUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get pipeline, error: %v", err)
 	}
@@ -983,6 +962,9 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 	}
 
 	transformedSteps := steps
+	// All 0.
+	// deploymentIDs are present for ChangeDatabase type.
+	deploymentIDs := make([]string, len(transformedSteps))
 
 	// For ChangeDatabase specs, we will try to rebuild the steps based on the deployment config.
 	if filterByDeploymentConfig {
@@ -1035,6 +1017,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 		databaseLoaded := map[string]bool{}
 
 		var steps []*storepb.PlanConfig_Step
+		deploymentIDs = []string{}
 		for i, databases := range matrix {
 			if len(databases) == 0 {
 				continue
@@ -1056,16 +1039,20 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 				databaseLoaded[name] = true
 			}
 			steps = append(steps, step)
+			deploymentIDs = append(deploymentIDs, deploymentConfig.GetSchedule().Deployments[i].Id)
 		}
 		transformedSteps = steps
 	}
 
 	pipelineCreate := &store.PipelineMessage{
-		Name: "Rollout Pipeline",
+		Name:      "Rollout Pipeline",
+		ProjectID: project.ResourceID,
 	}
 
-	for _, step := range transformedSteps {
-		stageCreate := &store.StageMessage{}
+	for i, step := range transformedSteps {
+		stageCreate := &store.StageMessage{
+			DeploymentID: deploymentIDs[i],
+		}
 
 		var stageEnvironmentID string
 		registerEnvironmentID := func(environmentID string) error {
@@ -1163,61 +1150,6 @@ func getTaskIndexDAGs(specs []*storepb.PlanConfig_Spec, getTaskIndexes func(spec
 		}
 	}
 	return taskIndexDAGs
-}
-
-func (s *RolloutService) createPipeline(ctx context.Context, project *store.ProjectMessage, pipelineCreate *store.PipelineMessage, creatorID int) (*store.PipelineMessage, error) {
-	pipelineCreated, err := s.store.CreatePipelineV2(ctx, &store.PipelineMessage{
-		Name:      pipelineCreate.Name,
-		ProjectID: project.ResourceID,
-	}, creatorID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create pipeline for issue")
-	}
-
-	var stageCreates []*store.StageMessage
-	for _, stage := range pipelineCreate.Stages {
-		stageCreates = append(stageCreates, &store.StageMessage{
-			Name:          stage.Name,
-			EnvironmentID: stage.EnvironmentID,
-			PipelineID:    pipelineCreated.ID,
-		})
-	}
-	createdStages, err := s.store.CreateStageV2(ctx, stageCreates, creatorID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create stages for issue")
-	}
-	if len(createdStages) != len(stageCreates) {
-		return nil, errors.Errorf("failed to create stages, expect to have created %d stages, got %d", len(stageCreates), len(createdStages))
-	}
-
-	for i, stageCreate := range pipelineCreate.Stages {
-		createdStage := createdStages[i]
-
-		var taskCreateList []*store.TaskMessage
-		for _, taskCreate := range stageCreate.TaskList {
-			c := taskCreate
-			c.CreatorID = creatorID
-			c.PipelineID = pipelineCreated.ID
-			c.StageID = createdStage.ID
-			taskCreateList = append(taskCreateList, c)
-		}
-		tasks, err := s.store.CreateTasksV2(ctx, taskCreateList...)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create tasks for issue")
-		}
-
-		// TODO(p0ny): create task dags in batch.
-		for _, indexDAG := range stageCreate.TaskIndexDAGList {
-			if err := s.store.CreateTaskDAGV2(ctx, &store.TaskDAGMessage{
-				FromTaskID: tasks[indexDAG.FromIndex].ID,
-				ToTaskID:   tasks[indexDAG.ToIndex].ID,
-			}); err != nil {
-				return nil, errors.Wrap(err, "failed to create task DAG for issue")
-			}
-		}
-	}
-
-	return pipelineCreated, nil
 }
 
 func GetValidRolloutPolicyForStage(ctx context.Context, stores *store.Store, licenseService enterprise.LicenseService, stage *store.StageMessage) (*storepb.RolloutPolicy, error) {
