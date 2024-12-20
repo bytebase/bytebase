@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // StageMessage is the message for stage.
@@ -13,6 +15,9 @@ type StageMessage struct {
 	EnvironmentID int
 	PipelineID    int
 	TaskList      []*TaskMessage
+
+	// empty for legacy stages
+	DeploymentID string
 
 	// Output only.
 	ID     int
@@ -30,65 +35,71 @@ type TaskIndexDAG struct {
 	ToIndex   int
 }
 
+func (s *Store) createStages(ctx context.Context, tx *Tx, stagesCreate []*StageMessage, pipelineUID int, creatorID int) ([]*StageMessage, error) {
+	var environmentIDs []int
+	var names []string
+	var deploymentIDs []string
+	for _, create := range stagesCreate {
+		environmentIDs = append(environmentIDs, create.EnvironmentID)
+		names = append(names, create.Name)
+		deploymentIDs = append(deploymentIDs, create.DeploymentID)
+	}
+
+	query := `
+		INSERT INTO stage (
+			creator_id,
+			updater_id,
+			pipeline_id,
+			environment_id,
+			name,
+			deployment_id
+		) SELECT
+			$1,
+			$1,
+			$2,
+			unnest(CAST($3 AS INTEGER[])) AS environment_id,
+			unnest(CAST($4 AS TEXT[])),
+			unnest(CAST($5 AS TEXT[])) AS deployment_id
+		RETURNING id
+    `
+	rows, err := tx.QueryContext(ctx, query, creatorID, pipelineUID, environmentIDs, names, deploymentIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	i := 0
+	for rows.Next() {
+		stage := stagesCreate[i]
+		if err := rows.Scan(
+			&stage.ID,
+		); err != nil {
+			return nil, err
+		}
+		i++
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return stagesCreate, nil
+}
+
 // CreateStageV2 creates a list of stages.
-func (s *Store) CreateStageV2(ctx context.Context, stagesCreate []*StageMessage, creatorID int) ([]*StageMessage, error) {
+func (s *Store) CreateStageV2(ctx context.Context, stagesCreate []*StageMessage, pipelineUID int, creatorID int) ([]*StageMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	var valueStr []string
-	var values []any
-	for i, create := range stagesCreate {
-		values = append(values,
-			creatorID,
-			creatorID,
-			create.PipelineID,
-			create.EnvironmentID,
-			create.Name,
-		)
-		const count = 5
-		valueStr = append(valueStr, fmt.Sprintf("($%d,$%d,$%d,$%d,$%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5))
-	}
-
-	query := fmt.Sprintf(`
-    WITH inserted AS (
-	  	INSERT INTO stage (
-	  		creator_id,
-	  		updater_id,
-	  		pipeline_id,
-	  		environment_id,
-	  		name
-	  	) VALUES %s
-	  	RETURNING id, pipeline_id, environment_id, name
-    ) SELECT * FROM inserted ORDER BY id ASC
-    `, strings.Join(valueStr, ","))
-	rows, err := tx.QueryContext(ctx, query, values...)
+	stages, err := s.createStages(ctx, tx, stagesCreate, pipelineUID, creatorID)
 	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var stages []*StageMessage
-	for rows.Next() {
-		var stage StageMessage
-		if err := rows.Scan(
-			&stage.ID,
-			&stage.PipelineID,
-			&stage.EnvironmentID,
-			&stage.Name,
-		); err != nil {
-			return nil, err
-		}
-		stages = append(stages, &stage)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to create stages")
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to commit")
 	}
 
 	return stages, nil
