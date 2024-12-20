@@ -3,6 +3,7 @@ package clickhouse
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -137,7 +138,9 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			ifNull(total_bytes, 0),
 			metadata_modification_time,
 			create_table_query,
-			comment
+			comment,
+			sorting_key,
+			primary_key
 		FROM system.tables
 		WHERE database = $1
 		ORDER BY name`
@@ -147,7 +150,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 	defer tableRows.Close()
 	for tableRows.Next() {
-		var name, engine, definition, comment string
+		var name, engine, definition, comment, sortingKey, primaryKey string
 		var rowCount, totalBytes int64
 		var lastUpdatedTime time.Time
 		if err := tableRows.Scan(
@@ -158,25 +161,44 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			&lastUpdatedTime,
 			&definition,
 			&comment,
+			&sortingKey,
+			&primaryKey,
 		); err != nil {
 			return nil, err
 		}
-		if engine != "View" {
-			schemaMetadata.Tables = append(schemaMetadata.Tables, &storepb.TableMetadata{
-				Name:     name,
-				Columns:  columnMap[name],
-				Engine:   engine,
-				RowCount: rowCount,
-				DataSize: totalBytes,
-				Comment:  comment,
-			})
-		} else {
+		// For view, the engine is "View".
+		if engine == "View" {
 			schemaMetadata.Views = append(schemaMetadata.Views, &storepb.ViewMetadata{
 				Name:       name,
 				Columns:    columnMap[name],
 				Definition: definition,
 				Comment:    comment,
 			})
+		} else {
+			// TODO: Save the sorting key into table metadata.
+			table := &storepb.TableMetadata{
+				Name:     name,
+				Columns:  columnMap[name],
+				Engine:   engine,
+				RowCount: rowCount,
+				DataSize: totalBytes,
+				Comment:  comment,
+			}
+			indexes, err := driver.getDataSkippingIndices(ctx, driver.databaseName, name)
+			if err != nil {
+				return nil, err
+			}
+			table.Indexes = indexes
+			if primaryKey != "" {
+				primaryKeys := strings.Split(primaryKey, ", ")
+				// Clickhouse save primary keys in `system`.`tables` instead of an index.
+				// This is a workaround to make it compatible with our metadata design.
+				table.Indexes = append(table.Indexes, &storepb.IndexMetadata{
+					Primary:     true,
+					Expressions: primaryKeys,
+				})
+			}
+			schemaMetadata.Tables = append(schemaMetadata.Tables, table)
 		}
 	}
 	if err := tableRows.Err(); err != nil {
@@ -187,6 +209,47 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		Name:    driver.databaseName,
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}, nil
+}
+
+func (driver *Driver) getDataSkippingIndices(ctx context.Context, database string, table string) ([]*storepb.IndexMetadata, error) {
+	// Select basic fields of the data skipping index.
+	// References:
+	// * https://clickhouse.com/docs/en/operations/system-tables/data_skipping_indices
+	// * https://clickhouse.com/docs/en/optimize/skipping-indexes
+	query := `
+		SELECT
+			name,
+			type,
+			expr,
+			granularity
+		FROM system.data_skipping_indices
+		WHERE database = $1 AND table = $2
+		ORDER BY name`
+	rows, err := driver.db.QueryContext(ctx, query, database, table)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	var indices []*storepb.IndexMetadata
+	for rows.Next() {
+		var expr string
+		index := &storepb.IndexMetadata{}
+		if err := rows.Scan(
+			&index.Name,
+			&index.Type,
+			&expr,
+			&index.Granularity,
+		); err != nil {
+			return nil, err
+		}
+		index.Expressions = strings.Split(expr, ", ")
+		indices = append(indices, index)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return indices, nil
 }
 
 // SyncSlowQuery syncs the slow query.
