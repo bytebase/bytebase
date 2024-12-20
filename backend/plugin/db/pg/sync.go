@@ -143,6 +143,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		return nil, errors.Wrapf(err, "failed to get extensions from database %q", driver.databaseName)
 	}
 
+	enumTypes, err := getEnumTypes(txn, extensionDepend)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get enum types from database %q", driver.databaseName)
+	}
+
 	if err := txn.Commit(); err != nil {
 		return nil, err
 	}
@@ -163,6 +168,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			Sequences:         sequenceMap[schemaName],
 			MaterializedViews: materializedViewMap[schemaName],
 			Owner:             schemaOwners[i],
+			EnumTypes:         enumTypes[schemaName],
 		})
 	}
 	databaseMetadata.Extensions = extensions
@@ -863,6 +869,67 @@ func getExtensions(txn *sql.Tx) ([]*storepb.ExtensionMetadata, error) {
 	}
 
 	return extensions, nil
+}
+
+func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*storepb.EnumTypeMetadata, error) {
+	query := `
+	SELECT
+		pt.oid,
+		pn.nspname as schema_name,
+		pt.typname as enum_name,
+		pe.enumlabel as enum_value
+	FROM pg_enum as pe
+		LEFT JOIN pg_type as pt ON pe.enumtypid = pt.oid
+		LEFT JOIN pg_namespace as pn ON pt.typnamespace = pn.oid
+	WHERE pn.nspname NOT IN (%s)
+	ORDER BY pn.nspname, pt.typname, pe.enumsortorder;`
+	rows, err := txn.Query(fmt.Sprintf(query, pgparser.SystemSchemaWhereClause))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	enumTypes := make(map[string][]*storepb.EnumTypeMetadata)
+	currentEnumSchema := ""
+	currentEnumNmae := ""
+	var currentEnumValues []string
+	for rows.Next() {
+		var oid int
+		var schemaName, enumName, enumValue string
+		if err := rows.Scan(&oid, &schemaName, &enumName, &enumValue); err != nil {
+			return nil, err
+		}
+
+		if extensionDepend[oid] {
+			// Skip extension enum.
+			continue
+		}
+
+		if currentEnumSchema != schemaName || currentEnumNmae != enumName {
+			if currentEnumSchema != "" {
+				enumTypes[currentEnumSchema] = append(enumTypes[currentEnumSchema], &storepb.EnumTypeMetadata{
+					Name:   currentEnumNmae,
+					Values: currentEnumValues,
+				})
+			}
+			currentEnumSchema = schemaName
+			currentEnumNmae = enumName
+			currentEnumValues = []string{}
+		}
+		currentEnumValues = append(currentEnumValues, enumValue)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if currentEnumSchema != "" {
+		enumTypes[currentEnumSchema] = append(enumTypes[currentEnumSchema], &storepb.EnumTypeMetadata{
+			Name:   currentEnumNmae,
+			Values: currentEnumValues,
+		})
+	}
+
+	return enumTypes, nil
 }
 
 // getSequences gets all sequences of a database.
