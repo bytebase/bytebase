@@ -50,14 +50,7 @@ func (s *Store) RebuildTaskDAG(ctx context.Context, fromTaskIDs []int, toTaskID 
 	return tx.Commit()
 }
 
-// CreateTaskDAGV2 creates a task DAG.
-func (s *Store) CreateTaskDAGV2(ctx context.Context, create *TaskDAGMessage) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
+func (*Store) createTaskDAG(ctx context.Context, tx *Tx, create *TaskDAGMessage) error {
 	query := `
 		INSERT INTO task_dag (
 			from_task_id,
@@ -76,10 +69,28 @@ func (s *Store) CreateTaskDAGV2(ctx context.Context, create *TaskDAGMessage) err
 		&taskDAG.FromTaskID,
 		&taskDAG.ToTaskID,
 	); err != nil {
-		return err
+		return errors.Wrapf(err, "failed to scan")
+	}
+	return nil
+}
+
+// CreateTaskDAGV2 creates a task DAG.
+func (s *Store) CreateTaskDAGV2(ctx context.Context, create *TaskDAGMessage) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to begin tx")
+	}
+	defer tx.Rollback()
+
+	if err := s.createTaskDAG(ctx, tx, create); err != nil {
+		return errors.Wrapf(err, "failed to create task dag")
 	}
 
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return errors.Wrapf(err, "failed to commit tx")
+	}
+
+	return nil
 }
 
 // ListTaskDags lists task dags.

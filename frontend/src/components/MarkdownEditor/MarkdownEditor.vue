@@ -79,7 +79,7 @@
       ></textarea>
       <div
         ref="issuePanel"
-        class="border rounded absolute hidden bg-white shadow-sm"
+        class="border rounded absolute hidden bg-white shadow-sm z-10"
       >
         <ul class="text-sm rounded divide-y divide-solid">
           <li

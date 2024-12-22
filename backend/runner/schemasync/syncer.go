@@ -300,7 +300,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	var filteredDatabaseMetadatas []*storepb.DatabaseSchemaMetadata
 
 	for _, databaseMetadata := range instanceMeta.Databases {
-		if len(instance.Options.SyncDatabases) > 0 && !slices.Contains(instance.Options.SyncDatabases, databaseMetadata.Name) {
+		if len(instance.Options.GetSyncDatabases()) > 0 && !slices.Contains(instance.Options.GetSyncDatabases(), databaseMetadata.Name) {
 			continue
 		}
 		filteredDatabaseMetadatas = append(filteredDatabaseMetadatas, databaseMetadata)

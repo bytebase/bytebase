@@ -512,6 +512,14 @@ export interface SchemaMetadata {
   /** The sequences is the list of sequences in a schema, sorted by name. */
   sequences: SequenceMetadata[];
   events: EventMetadata[];
+  enumTypes: EnumTypeMetadata[];
+}
+
+export interface EnumTypeMetadata {
+  /** The name of a type. */
+  name: string;
+  /** The enum values of a type. */
+  values: string[];
 }
 
 export interface EventMetadata {
@@ -1203,6 +1211,8 @@ export interface IndexMetadata {
   parentIndexSchema: string;
   /** The index name of the parent index. */
   parentIndexName: string;
+  /** The number of granules in the block. It's a ClickHouse specific field. */
+  granularity: Long;
 }
 
 /** ExtensionMetadata is the metadata for extensions. */
@@ -3974,6 +3984,7 @@ function createBaseSchemaMetadata(): SchemaMetadata {
     triggers: [],
     sequences: [],
     events: [],
+    enumTypes: [],
   };
 }
 
@@ -4020,6 +4031,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     }
     for (const v of message.events) {
       EventMetadata.encode(v!, writer.uint32(114).fork()).join();
+    }
+    for (const v of message.enumTypes) {
+      EnumTypeMetadata.encode(v!, writer.uint32(122).fork()).join();
     }
     return writer;
   },
@@ -4143,6 +4157,14 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
           message.events.push(EventMetadata.decode(reader, reader.uint32()));
           continue;
         }
+        case 15: {
+          if (tag !== 122) {
+            break;
+          }
+
+          message.enumTypes.push(EnumTypeMetadata.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4185,6 +4207,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
         : [],
       events: globalThis.Array.isArray(object?.events)
         ? object.events.map((e: any) => EventMetadata.fromJSON(e))
+        : [],
+      enumTypes: globalThis.Array.isArray(object?.enumTypes)
+        ? object.enumTypes.map((e: any) => EnumTypeMetadata.fromJSON(e))
         : [],
     };
   },
@@ -4233,6 +4258,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     if (message.events?.length) {
       obj.events = message.events.map((e) => EventMetadata.toJSON(e));
     }
+    if (message.enumTypes?.length) {
+      obj.enumTypes = message.enumTypes.map((e) => EnumTypeMetadata.toJSON(e));
+    }
     return obj;
   },
 
@@ -4255,6 +4283,83 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     message.triggers = object.triggers?.map((e) => TriggerMetadata.fromPartial(e)) || [];
     message.sequences = object.sequences?.map((e) => SequenceMetadata.fromPartial(e)) || [];
     message.events = object.events?.map((e) => EventMetadata.fromPartial(e)) || [];
+    message.enumTypes = object.enumTypes?.map((e) => EnumTypeMetadata.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseEnumTypeMetadata(): EnumTypeMetadata {
+  return { name: "", values: [] };
+}
+
+export const EnumTypeMetadata: MessageFns<EnumTypeMetadata> = {
+  encode(message: EnumTypeMetadata, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.values) {
+      writer.uint32(18).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EnumTypeMetadata {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEnumTypeMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.values.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EnumTypeMetadata {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      values: globalThis.Array.isArray(object?.values) ? object.values.map((e: any) => globalThis.String(e)) : [],
+    };
+  },
+
+  toJSON(message: EnumTypeMetadata): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.values?.length) {
+      obj.values = message.values;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<EnumTypeMetadata>): EnumTypeMetadata {
+    return EnumTypeMetadata.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<EnumTypeMetadata>): EnumTypeMetadata {
+    const message = createBaseEnumTypeMetadata();
+    message.name = object.name ?? "";
+    message.values = object.values?.map((e) => e) || [];
     return message;
   },
 };
@@ -7048,6 +7153,7 @@ function createBaseIndexMetadata(): IndexMetadata {
     definition: "",
     parentIndexSchema: "",
     parentIndexName: "",
+    granularity: Long.ZERO,
   };
 }
 
@@ -7092,6 +7198,9 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
     }
     if (message.parentIndexName !== "") {
       writer.uint32(98).string(message.parentIndexName);
+    }
+    if (!message.granularity.equals(Long.ZERO)) {
+      writer.uint32(104).int64(message.granularity.toString());
     }
     return writer;
   },
@@ -7219,6 +7328,14 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
           message.parentIndexName = reader.string();
           continue;
         }
+        case 13: {
+          if (tag !== 104) {
+            break;
+          }
+
+          message.granularity = Long.fromString(reader.int64().toString());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -7246,6 +7363,7 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
       definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
       parentIndexSchema: isSet(object.parentIndexSchema) ? globalThis.String(object.parentIndexSchema) : "",
       parentIndexName: isSet(object.parentIndexName) ? globalThis.String(object.parentIndexName) : "",
+      granularity: isSet(object.granularity) ? Long.fromValue(object.granularity) : Long.ZERO,
     };
   },
 
@@ -7287,6 +7405,9 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
     if (message.parentIndexName !== "") {
       obj.parentIndexName = message.parentIndexName;
     }
+    if (!message.granularity.equals(Long.ZERO)) {
+      obj.granularity = (message.granularity || Long.ZERO).toString();
+    }
     return obj;
   },
 
@@ -7307,6 +7428,9 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
     message.definition = object.definition ?? "";
     message.parentIndexSchema = object.parentIndexSchema ?? "";
     message.parentIndexName = object.parentIndexName ?? "";
+    message.granularity = (object.granularity !== undefined && object.granularity !== null)
+      ? Long.fromValue(object.granularity)
+      : Long.ZERO;
     return message;
   },
 };

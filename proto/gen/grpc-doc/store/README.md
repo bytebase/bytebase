@@ -53,6 +53,7 @@
     - [DatabaseMetadata.LabelsEntry](#bytebase-store-DatabaseMetadata-LabelsEntry)
     - [DatabaseSchemaMetadata](#bytebase-store-DatabaseSchemaMetadata)
     - [DependentColumn](#bytebase-store-DependentColumn)
+    - [EnumTypeMetadata](#bytebase-store-EnumTypeMetadata)
     - [EventMetadata](#bytebase-store-EventMetadata)
     - [ExtensionMetadata](#bytebase-store-ExtensionMetadata)
     - [ExternalTableMetadata](#bytebase-store-ExternalTableMetadata)
@@ -1062,6 +1063,22 @@ DependentColumn is the metadata for dependent columns.
 
 
 
+<a name="bytebase-store-EnumTypeMetadata"></a>
+
+### EnumTypeMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of a type. |
+| values | [string](#string) | repeated | The enum values of a type. |
+
+
+
+
+
+
 <a name="bytebase-store-EventMetadata"></a>
 
 ### EventMetadata
@@ -1215,6 +1232,7 @@ IndexMetadata is the metadata for indexes.
 | definition | [string](#string) |  | The definition of an index. |
 | parent_index_schema | [string](#string) |  | The schema name of the parent index. |
 | parent_index_name | [string](#string) |  | The index name of the parent index. |
+| granularity | [int64](#int64) |  | The number of granules in the block. It&#39;s a ClickHouse specific field. |
 
 
 
@@ -1369,6 +1387,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | owner | [string](#string) |  |  |
 | triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The triggers is the list of triggers in a schema, triggers are sorted by table_name, event, timing, action_order. |
 | events | [EventMetadata](#bytebase-store-EventMetadata) | repeated |  |
+| enum_types | [EnumTypeMetadata](#bytebase-store-EnumTypeMetadata) | repeated |  |
 
 
 
