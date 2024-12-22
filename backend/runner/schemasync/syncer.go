@@ -177,7 +177,7 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 
 		wp.Go(func() {
 			slog.Debug("Sync instance schema", slog.String("instance", instance.ResourceID))
-			if _, _, err := s.SyncInstance(ctx, instance); err != nil {
+			if _, _, _, err := s.SyncInstance(ctx, instance); err != nil {
 				slog.Debug("Failed to sync instance",
 					slog.String("instance", instance.ResourceID),
 					slog.String("error", err.Error()))
@@ -254,15 +254,15 @@ func (s *Syncer) SyncDatabasesAsync(databases []*store.DatabaseMessage) {
 }
 
 // SyncInstance syncs the schema for all databases in an instance.
-func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessage) (*store.InstanceMessage, []*store.DatabaseMessage, error) {
+func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessage) (*store.InstanceMessage, []*storepb.DatabaseSchemaMetadata, []*store.DatabaseMessage, error) {
 	if s.profile.Readonly {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err != nil {
 		s.upsertInstanceConnectionAnomaly(ctx, instance, err)
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	defer driver.Close(ctx)
 	s.upsertInstanceConnectionAnomaly(ctx, instance, nil)
@@ -271,7 +271,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	defer cancelFunc()
 	instanceMeta, err := driver.SyncInstance(deadlineCtx)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to sync instance: %s", instance.ResourceID)
+		return nil, nil, nil, errors.Wrapf(err, "failed to sync instance: %s", instance.ResourceID)
 	}
 
 	if instanceMeta.Metadata == nil {
@@ -289,12 +289,12 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	}
 	updatedInstance, err := s.store.UpdateInstanceV2(ctx, updateInstance, -1)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.ResourceID)
+		return nil, nil, nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.ResourceID)
 	}
 	var newDatabases []*store.DatabaseMessage
 	var filteredDatabaseMetadatas []*storepb.DatabaseSchemaMetadata
@@ -316,7 +316,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 				ProjectID:    api.DefaultProjectID,
 			})
 			if err != nil {
-				return nil, nil, errors.Wrapf(err, "failed to create instance %q database %q in sync runner", instance.ResourceID, databaseMetadata.Name)
+				return nil, nil, nil, errors.Wrapf(err, "failed to create instance %q database %q in sync runner", instance.ResourceID, databaseMetadata.Name)
 			}
 			newDatabases = append(newDatabases, newDatabase)
 		}
@@ -331,12 +331,12 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 				DatabaseName: database.DatabaseName,
 				SyncState:    &syncStatus,
 			}, api.SystemBotID); err != nil {
-				return nil, nil, errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, instance.ResourceID)
+				return nil, nil, nil, errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, instance.ResourceID)
 			}
 		}
 	}
 
-	return updatedInstance, newDatabases, nil
+	return updatedInstance, instanceMeta.Databases, newDatabases, nil
 }
 
 // SyncDatabaseSchema will sync the schema for a database.

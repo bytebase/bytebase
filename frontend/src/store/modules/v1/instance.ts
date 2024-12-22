@@ -80,7 +80,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     return composed[0];
   };
   const syncInstance = async (instance: string, enableFullSync: boolean) => {
-    await instanceServiceClient.syncInstance({
+    return await instanceServiceClient.syncInstance({
       name: instance,
       enableFullSync,
     });
