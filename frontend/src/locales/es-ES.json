@@ -1653,6 +1653,13 @@
       "description": "Limitar la conexión y el uso de recursos se logra estableciendo el número máximo de conexiones a la instancia.",
       "max-value": "Máximo {value} conexiones"
     },
+    "sync-databases": {
+      "self": "Sincronizar bases de datos",
+      "description": "Sincronizar sólo bases de datos seleccionadas.",
+      "sync-all": "Sincronizar todas las bases de datos",
+      "search-database": "Buscar en la base de datos",
+      "add-database": "+ Agregar base de datos, presione enter para enviar"
+    },
     "advanced-search": {
       "scope": {
         "address": {
@@ -2912,9 +2919,9 @@
         "title": "Instancia de Conexión SSH",
         "desc": "Conéctese a una instancia a través de SSH."
       },
-      "bb-feature-custom-instance-scan-interval": {
-        "title": "Intervalo de escaneo de instancia personalizado",
-        "desc": "Personalice el esquema y el intervalo de escaneo de anomalías, por ejemplo"
+      "bb.feature.custom-instance-synchronization": {
+        "title": "Sincronización de instancias personalizadas",
+        "desc": "Personalice el intervalo de escaneo, las conexiones máximas y sincronice bases de datos específicas"
       },
       "bb-feature-index-advisor": {
         "title": "Asesor de índice",

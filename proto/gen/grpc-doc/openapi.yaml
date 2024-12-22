@@ -14375,7 +14375,12 @@ components:
                          the instance metadata (such as the database list) and any newly discovered instances will be synced.
         SyncInstanceResponse:
             type: object
-            properties: {}
+            properties:
+                databases:
+                    type: array
+                    items:
+                        type: string
+                    description: All database name list in the instance.
         SyncSlowQueriesRequest:
             required:
                 - parent
