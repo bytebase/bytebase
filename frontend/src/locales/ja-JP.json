@@ -1653,6 +1653,13 @@
       "description": "インスタンスの最大接続数を設定して、接続とリソースの使用を制限します。",
       "max-value": "最大接続数 {value}"
     },
+    "sync-databases": {
+      "self": "データベースを同期する",
+      "description": "選択したデータベースのみを同期します。",
+      "sync-all": "すべてのデータベースを同期する",
+      "search-database": "データベースを検索",
+      "add-database": "+ データベースを追加し、Enterキーを押して送信します"
+    },
     "advanced-search": {
       "scope": {
         "address": {
@@ -2912,9 +2919,9 @@
         "title": "SSHインスタンス接続",
         "desc": "SSH 経由でインスタンスに接続します。"
       },
-      "bb-feature-custom-instance-scan-interval": {
-        "title": "カスタムインスタンスのスキャン間隔",
-        "desc": "インスタンス スキーマと例外スキャン間隔をカスタマイズする"
+      "bb.feature.custom-instance-synchronization": {
+        "title": "カスタムインスタンス同期",
+        "desc": "スキャン間隔、最大接続数、特定のデータベースの同期をカスタマイズします"
       },
       "bb-feature-index-advisor": {
         "title": "インデックスの提案",

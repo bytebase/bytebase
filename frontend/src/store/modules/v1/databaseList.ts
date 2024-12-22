@@ -55,6 +55,9 @@ export const useDatabaseV1List = (
         parent: formatParent.value,
         pageSize: DEFAULT_PAGE_SIZE,
       });
+      if (formatParent.value.startsWith(instanceNamePrefix)) {
+        store.removeCacheByInstance(formatParent.value);
+      }
       await store.upsertDatabaseMap(databases);
       listCache.cacheMap.set(cacheKey.value, {
         timestamp: Date.now(),

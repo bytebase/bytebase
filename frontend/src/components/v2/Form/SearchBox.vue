@@ -2,6 +2,7 @@
   <NInput
     ref="inputRef"
     :value="value"
+    :size="size"
     :clearable="!!value"
     :placeholder="placeholder"
     style="max-width: 18rem; flex: 1 1 0%"
@@ -24,10 +25,12 @@ const props = withDefaults(
   defineProps<{
     value?: string;
     autofocus?: boolean;
+    size?: "tiny" | "small" | "medium" | "large";
   }>(),
   {
     value: "",
     autofocus: false,
+    size: "medium",
   }
 );
 

@@ -1653,6 +1653,13 @@
       "description": "Limiting connection and resource usage is achieved by setting the maximum number of connections to the instance.",
       "max-value": "Maximum {value} connections"
     },
+    "sync-databases": {
+      "self": "Sync Databases",
+      "description": "Only sync selected databases.",
+      "sync-all": "Sync all databases",
+      "search-database": "Search database",
+      "add-database": "+ Add database, press enter to sumbit"
+    },
     "advanced-search": {
       "scope": {
         "address": {
@@ -2912,9 +2919,9 @@
         "title": "Instance SSH connection",
         "desc": "Connect to a instance over SSH."
       },
-      "bb-feature-custom-instance-scan-interval": {
-        "title": "Custom instance scan interval",
-        "desc": "Customize schema and anomaly scan interval for instance"
+      "bb.feature.custom-instance-synchronization": {
+        "title": "Custom instance synchronization",
+        "desc": "Customize the scan interval, maximum connections and sync specific databases"
       },
       "bb-feature-index-advisor": {
         "title": "Index advisor",
