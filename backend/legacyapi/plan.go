@@ -138,8 +138,8 @@ const (
 	FeatureReadReplicaConnection FeatureType = "bb.feature.read-replica-connection"
 	// FeatureInstanceSSHConnection provides SSH connection for instances.
 	FeatureInstanceSSHConnection FeatureType = "bb.feature.instance-ssh-connection"
-	// FeatureCustomInstanceScanInterval allows user to customize schema and anomaly scan interval per instance.
-	FeatureCustomInstanceScanInterval FeatureType = "bb.feature.custom-instance-scan-interval"
+	// FeatureCustomInstanceSynchronization allows user to customize the synchronization for instance.
+	FeatureCustomInstanceSynchronization FeatureType = "bb.feature.custom-instance-synchronization"
 	// FeatureSyncSchemaAllVersions allows user to sync the base database schema all versions into target database.
 	FeatureSyncSchemaAllVersions FeatureType = "bb.feature.sync-schema-all-versions"
 	// FeatureIndexAdvisor provides the index advisor for databases.
@@ -245,8 +245,8 @@ func (e FeatureType) Name() string {
 		return "Read replica connection"
 	case FeatureInstanceSSHConnection:
 		return "Instance SSH connection"
-	case FeatureCustomInstanceScanInterval:
-		return "Custom instance scan interval"
+	case FeatureCustomInstanceSynchronization:
+		return "Custom synchronization for instance"
 	case FeatureSyncSchemaAllVersions:
 		return "Synchronize schema all versions"
 	case FeatureIndexAdvisor:
@@ -324,11 +324,11 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureSchemaTemplate:      {false, false, true},
 	FeatureIssueProjectSetting: {false, true, true},
 	// Database management
-	FeatureReadReplicaConnection:      {false, false, true},
-	FeatureInstanceSSHConnection:      {false, false, true},
-	FeatureCustomInstanceScanInterval: {false, false, true},
-	FeatureSyncSchemaAllVersions:      {false, true, true},
-	FeatureIndexAdvisor:               {false, false, true},
+	FeatureReadReplicaConnection:         {false, false, true},
+	FeatureInstanceSSHConnection:         {false, false, true},
+	FeatureCustomInstanceSynchronization: {false, false, true},
+	FeatureSyncSchemaAllVersions:         {false, true, true},
+	FeatureIndexAdvisor:                  {false, false, true},
 	// Policy Control
 	FeatureRolloutPolicy:         {false, true, true},
 	FeatureEnvironmentTierPolicy: {false, false, true},
@@ -353,12 +353,12 @@ var InstanceLimitFeature = map[FeatureType]bool{
 	FeatureTaskScheduleTime: true,
 	FeatureOnlineMigration:  true,
 	// Database management
-	FeatureReadReplicaConnection:      true,
-	FeatureInstanceSSHConnection:      true,
-	FeatureCustomInstanceScanInterval: true,
-	FeatureDatabaseGrouping:           true,
-	FeatureSyncSchemaAllVersions:      true,
-	FeatureIndexAdvisor:               true,
+	FeatureReadReplicaConnection:         true,
+	FeatureInstanceSSHConnection:         true,
+	FeatureCustomInstanceSynchronization: true,
+	FeatureDatabaseGrouping:              true,
+	FeatureSyncSchemaAllVersions:         true,
+	FeatureIndexAdvisor:                  true,
 	// Policy Control
 	FeatureSensitiveData:  true,
 	FeatureCustomApproval: true,

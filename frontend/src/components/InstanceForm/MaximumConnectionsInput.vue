@@ -3,16 +3,22 @@
     v-if="!hideAdvancedFeatures"
     class="sm:col-span-4 sm:col-start-1 flex flex-col gap-y-2"
   >
-    <label class="textlabel">
-      {{ $t("instance.maximum-connections.self") }}
-    </label>
+    <div class="flex items-center space-x-2">
+      <label class="textlabel">
+        {{ $t("instance.maximum-connections.self") }}
+      </label>
+      <FeatureBadge
+        feature="bb.feature.custom-instance-synchronization"
+        :instance="instance"
+      />
+    </div>
     <div class="textinfolabel">
       {{ $t("instance.maximum-connections.description") }}
     </div>
     <div class="flex items-center gap-x-6">
       <NRadio
         :checked="state.mode === 'DEFAULT'"
-        :disabled="!allowEdit || !hasSecretFeature"
+        :disabled="!allowEdit || !hasFeature"
         value="DEFAULT"
         @click="handleModeChange('DEFAULT')"
       >
@@ -22,7 +28,7 @@
       <div class="flex items-center">
         <NRadio
           :checked="state.mode === 'CUSTOM'"
-          :disabled="!allowEdit || !hasSecretFeature"
+          :disabled="!allowEdit || !hasFeature"
           value="CUSTOM"
           class="!items-center"
           @click="handleModeChange('CUSTOM')"
@@ -36,7 +42,7 @@
               size="small"
               style="width: 4rem"
               :status="state.isValid ? undefined : 'error'"
-              :disabled="state.mode !== 'CUSTOM'"
+              :disabled="state.mode !== 'CUSTOM' || !hasFeature"
               @update:value="handleMaximumConnectionsChange($event as number)"
             />
             <span v-if="!state.isValid" class="text-error">
@@ -48,11 +54,6 @@
             </span>
           </div>
         </NRadio>
-        <FeatureBadge
-          feature="bb.feature.custom-instance-scan-interval"
-          :instance="instance"
-          :clickable="allowEdit"
-        />
       </div>
     </div>
   </div>
@@ -86,9 +87,9 @@ const emit = defineEmits<{
 const subscriptionStore = useSubscriptionV1Store();
 const { instance, hideAdvancedFeatures } = useInstanceFormContext();
 
-const hasSecretFeature = computed(() => {
+const hasFeature = computed(() => {
   return subscriptionStore.hasInstanceFeature(
-    "bb.feature.custom-instance-scan-interval",
+    "bb.feature.custom-instance-synchronization",
     instance.value
   );
 });

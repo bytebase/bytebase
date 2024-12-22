@@ -1653,6 +1653,13 @@
       "description": "通过设置实例的最大连接数来限制连接和资源的使用。",
       "max-value": "最大连接数 {value} 个"
     },
+    "sync-databases": {
+      "self": "同步数据库",
+      "description": "仅同步选定的数据库。",
+      "sync-all": "同步所有数据库",
+      "search-database": "搜索数据库",
+      "add-database": "+ 添加数据库，按回车键提交"
+    },
     "advanced-search": {
       "scope": {
         "address": {
@@ -2912,9 +2919,9 @@
         "title": "SSH 实例连接",
         "desc": "通过 SSH 连接实例。"
       },
-      "bb-feature-custom-instance-scan-interval": {
-        "title": "自定义实例扫描间隔",
-        "desc": "自定义实例的 schema 和异常扫描间隔"
+      "bb.feature.custom-instance-synchronization": {
+        "title": "自定义实例同步",
+        "desc": "自定义扫描间隔、最大连接数，同步指定的数据库"
       },
       "bb-feature-index-advisor": {
         "title": "索引建议",

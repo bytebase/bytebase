@@ -232,7 +232,10 @@ message SyncInstanceRequest {
   bool enable_full_sync = 2;
 }
 
-message SyncInstanceResponse {}
+message SyncInstanceResponse {
+  // All database name list in the instance.
+  repeated string databases = 1;
+}
 
 message BatchSyncInstancesRequest {
   // The request message specifying the instances to sync.
