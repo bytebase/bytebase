@@ -170,12 +170,12 @@ func (diff *diffNode) diffCheckConstraint(oldTable, newTable *tableDef) {
 	}
 }
 
-func isCheckConstraintEqual(old, new *checkDef) bool {
-	if !strings.EqualFold(old.name, new.name) {
+func isCheckConstraintEqual(oldCheck, newCheck *checkDef) bool {
+	if !strings.EqualFold(oldCheck.name, newCheck.name) {
 		return false
 	}
 
-	if old.ctx.GetText() != new.ctx.GetText() {
+	if oldCheck.ctx.GetText() != newCheck.ctx.GetText() {
 		return false
 	}
 
@@ -312,14 +312,14 @@ func (diff *diffNode) diffPrimaryKey(oldTable, newTable *tableDef) {
 }
 
 // isPrimaryKeyEqual returns true if definitions of two priamry indexes are the same.
-func isPrimaryKeyEqual(old, new *primaryKeyDef) bool {
-	if old.tableName != new.tableName {
+func isPrimaryKeyEqual(oldKey, newKey *primaryKeyDef) bool {
+	if oldKey.tableName != newKey.tableName {
 		return false
 	}
-	if !isKeyPartEqual(old.columns, new.columns) {
+	if !isKeyPartEqual(oldKey.columns, newKey.columns) {
 		return false
 	}
-	if old.ctx.GetText() != new.ctx.GetText() {
+	if oldKey.ctx.GetText() != newKey.ctx.GetText() {
 		return false
 	}
 	return true
@@ -343,17 +343,17 @@ func (diff *diffNode) diffForeignKey(oldTable, newTable *tableDef) {
 }
 
 // isForeignKeyEqual returns true if two foreign keys are the same.
-func isForeignKeyEqual(old, new *foreignKeyDef) bool {
-	if !strings.EqualFold(old.name, new.name) {
+func isForeignKeyEqual(oldKey, newKey *foreignKeyDef) bool {
+	if !strings.EqualFold(oldKey.name, newKey.name) {
 		return false
 	}
-	if !isKeyPartEqual(old.columns, new.columns) {
+	if !isKeyPartEqual(oldKey.columns, newKey.columns) {
 		return false
 	}
-	if !isKeyPartEqual(old.referencedColumns, new.referencedColumns) {
+	if !isKeyPartEqual(oldKey.referencedColumns, newKey.referencedColumns) {
 		return false
 	}
-	if old.referencedTable != new.referencedTable {
+	if oldKey.referencedTable != newKey.referencedTable {
 		return false
 	}
 	return true
