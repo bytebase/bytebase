@@ -14323,6 +14323,13 @@ components:
                 name:
                     type: string
                     description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}'
+                id:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The id comes from the deployment config.
+                         Format: UUID
+                         Empty for legacy stages.
                 title:
                     type: string
                 tasks:

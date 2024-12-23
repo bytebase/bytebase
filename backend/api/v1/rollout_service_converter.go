@@ -692,6 +692,7 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 		}
 		rolloutStage := &v1pb.Stage{
 			Name:  common.FormatStage(project.ResourceID, rollout.ID, stage.ID),
+			Id:    stage.DeploymentID,
 			Title: stage.Name,
 		}
 		for _, task := range stage.TaskList {
