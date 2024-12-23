@@ -205,8 +205,7 @@ import dayjs from "dayjs";
 import { ArrowRightLeftIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, watch, ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
-import { useRoute } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { BBModal } from "@/bbkit";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import DatabaseChangeHistoryPanel from "@/components/Database/DatabaseChangeHistoryPanel.vue";
@@ -330,7 +329,8 @@ watch(
       hash: `#${tab}`,
       query: route.query,
     });
-  }
+  },
+  { immediate: true }
 );
 
 const database = computed(() => {

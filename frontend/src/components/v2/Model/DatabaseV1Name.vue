@@ -9,7 +9,8 @@
     ]"
   >
     <span v-if="prefix" class="mr-1 text-gray-400">{{ prefix }}</span>
-    <span>{{ database.databaseName }}</span>
+    <!-- eslint-disable-next-line vue/no-v-html -->
+    <span v-html="renderedDatabaseName" />
     <span
       v-if="showNotFound && database.syncState === State.DELETED"
       class="text-control-placeholder"
@@ -25,7 +26,7 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import type { ComposedDatabase } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
-import { autoDatabaseRoute } from "@/utils";
+import { autoDatabaseRoute, getHighlightHTMLByRegExp } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -33,11 +34,13 @@ const props = withDefaults(
     link?: boolean;
     plain?: boolean;
     showNotFound?: boolean;
+    keyword?: string;
   }>(),
   {
     link: true,
     plain: false,
     showNotFound: false,
+    keyword: "",
   }
 );
 
@@ -66,5 +69,9 @@ const prefix = computed(() => {
     return database.instanceResource.title;
   }
   return "";
+});
+
+const renderedDatabaseName = computed(() => {
+  return getHighlightHTMLByRegExp(props.database.databaseName, props.keyword);
 });
 </script>
