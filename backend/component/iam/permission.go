@@ -18,6 +18,8 @@ const (
 	PermissionChangelistsGet             Permission = "bb.changelists.get"
 	PermissionChangelistsList            Permission = "bb.changelists.list"
 	PermissionChangelistsUpdate          Permission = "bb.changelists.update"
+	PermissionDatabaseCatalogsGet        Permission = "bb.databaseCatalogs.get"
+	PermissionDatabaseCatalogsUpdate     Permission = "bb.databaseCatalogs.update"
 	PermissionDatabaseSecretsDelete      Permission = "bb.databaseSecrets.delete"
 	PermissionDatabaseSecretsList        Permission = "bb.databaseSecrets.list"
 	PermissionDatabaseSecretsUpdate      Permission = "bb.databaseSecrets.update"
@@ -149,6 +151,8 @@ var allPermissions = []Permission{
 	PermissionChangelistsGet,
 	PermissionChangelistsList,
 	PermissionChangelistsUpdate,
+	PermissionDatabaseCatalogsGet,
+	PermissionDatabaseCatalogsUpdate,
 	PermissionDatabaseSecretsDelete,
 	PermissionDatabaseSecretsList,
 	PermissionDatabaseSecretsUpdate,
