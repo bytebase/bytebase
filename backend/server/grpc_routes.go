@@ -66,6 +66,7 @@ func configureGrpcRouters(
 		iamManager))
 	v1pb.RegisterProjectServiceServer(grpcServer, apiv1.NewProjectService(stores, profile, iamManager, licenseService))
 	v1pb.RegisterDatabaseServiceServer(grpcServer, apiv1.NewDatabaseService(stores, schemaSyncer, licenseService, profile, iamManager))
+	v1pb.RegisterDatabaseCatalogServiceServer(grpcServer, apiv1.NewDatabaseCatalogService(stores, licenseService))
 	v1pb.RegisterInstanceRoleServiceServer(grpcServer, apiv1.NewInstanceRoleService(stores, dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(grpcServer, apiv1.NewOrgPolicyService(stores, licenseService))
 	v1pb.RegisterWorkspaceServiceServer(grpcServer, apiv1.NewWorkspaceService(stores, iamManager))
@@ -134,6 +135,9 @@ func configureGrpcRouters(
 		return nil, nil, nil, nil, nil, err
 	}
 	if err := v1pb.RegisterDatabaseServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterDatabaseCatalogServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
 	if err := v1pb.RegisterEnvironmentServiceHandler(ctx, mux, grpcConn); err != nil {
