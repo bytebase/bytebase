@@ -504,11 +504,6 @@ export interface SchemaMetadata {
   /** The packages is the list of packages in a schema. */
   packages: PackageMetadata[];
   owner: string;
-  /**
-   * The triggers is the list of triggers in a schema, triggers are sorted by
-   * table_name, name, event, timing, action_order.
-   */
-  triggers: TriggerMetadata[];
   /** The sequences is the list of sequences in a schema, sorted by name. */
   sequences: SequenceMetadata[];
   events: EventMetadata[];
@@ -562,13 +557,6 @@ export interface SequenceMetadata {
 export interface TriggerMetadata {
   /** The name is the name of the trigger. */
   name: string;
-  /** The schema name of the table/view that the trigger is created. */
-  schemaName: string;
-  /**
-   * The table_name is the name of the table/view that the trigger is created
-   * on.
-   */
-  tableName: string;
   /**
    * The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
    * TRUNCATE.
@@ -641,6 +629,7 @@ export interface TableMetadata {
    * Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by
    */
   sortingKeys: string[];
+  triggers: TriggerMetadata[];
 }
 
 /** CheckConstraintMetadata is the metadata for check constraints. */
@@ -3992,7 +3981,6 @@ function createBaseSchemaMetadata(): SchemaMetadata {
     materializedViews: [],
     packages: [],
     owner: "",
-    triggers: [],
     sequences: [],
     events: [],
     enumTypes: [],
@@ -4033,9 +4021,6 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     }
     if (message.owner !== "") {
       writer.uint32(90).string(message.owner);
-    }
-    for (const v of message.triggers) {
-      TriggerMetadata.encode(v!, writer.uint32(98).fork()).join();
     }
     for (const v of message.sequences) {
       SequenceMetadata.encode(v!, writer.uint32(106).fork()).join();
@@ -4144,14 +4129,6 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
           message.owner = reader.string();
           continue;
         }
-        case 12: {
-          if (tag !== 98) {
-            break;
-          }
-
-          message.triggers.push(TriggerMetadata.decode(reader, reader.uint32()));
-          continue;
-        }
         case 13: {
           if (tag !== 106) {
             break;
@@ -4210,15 +4187,10 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
         ? object.packages.map((e: any) => PackageMetadata.fromJSON(e))
         : [],
       owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
-      triggers: globalThis.Array.isArray(object?.triggers)
-        ? object.triggers.map((e: any) => TriggerMetadata.fromJSON(e))
-        : [],
       sequences: globalThis.Array.isArray(object?.sequences)
         ? object.sequences.map((e: any) => SequenceMetadata.fromJSON(e))
         : [],
-      events: globalThis.Array.isArray(object?.events)
-        ? object.events.map((e: any) => EventMetadata.fromJSON(e))
-        : [],
+      events: globalThis.Array.isArray(object?.events) ? object.events.map((e: any) => EventMetadata.fromJSON(e)) : [],
       enumTypes: globalThis.Array.isArray(object?.enumTypes)
         ? object.enumTypes.map((e: any) => EnumTypeMetadata.fromJSON(e))
         : [],
@@ -4260,9 +4232,6 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     if (message.owner !== "") {
       obj.owner = message.owner;
     }
-    if (message.triggers?.length) {
-      obj.triggers = message.triggers.map((e) => TriggerMetadata.toJSON(e));
-    }
     if (message.sequences?.length) {
       obj.sequences = message.sequences.map((e) => SequenceMetadata.toJSON(e));
     }
@@ -4291,7 +4260,6 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     message.materializedViews = object.materializedViews?.map((e) => MaterializedViewMetadata.fromPartial(e)) || [];
     message.packages = object.packages?.map((e) => PackageMetadata.fromPartial(e)) || [];
     message.owner = object.owner ?? "";
-    message.triggers = object.triggers?.map((e) => TriggerMetadata.fromPartial(e)) || [];
     message.sequences = object.sequences?.map((e) => SequenceMetadata.fromPartial(e)) || [];
     message.events = object.events?.map((e) => EventMetadata.fromPartial(e)) || [];
     message.enumTypes = object.enumTypes?.map((e) => EnumTypeMetadata.fromPartial(e)) || [];
@@ -4750,8 +4718,6 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
 function createBaseTriggerMetadata(): TriggerMetadata {
   return {
     name: "",
-    schemaName: "",
-    tableName: "",
     event: "",
     timing: "",
     body: "",
@@ -4767,12 +4733,6 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
   encode(message: TriggerMetadata, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.schemaName !== "") {
-      writer.uint32(74).string(message.schemaName);
-    }
-    if (message.tableName !== "") {
-      writer.uint32(18).string(message.tableName);
     }
     if (message.event !== "") {
       writer.uint32(26).string(message.event);
@@ -4814,22 +4774,6 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
           }
 
           message.name = reader.string();
-          continue;
-        }
-        case 9: {
-          if (tag !== 74) {
-            break;
-          }
-
-          message.schemaName = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.tableName = reader.string();
           continue;
         }
         case 3: {
@@ -4908,8 +4852,6 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
   fromJSON(object: any): TriggerMetadata {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      schemaName: isSet(object.schemaName) ? globalThis.String(object.schemaName) : "",
-      tableName: isSet(object.tableName) ? globalThis.String(object.tableName) : "",
       event: isSet(object.event) ? globalThis.String(object.event) : "",
       timing: isSet(object.timing) ? globalThis.String(object.timing) : "",
       body: isSet(object.body) ? globalThis.String(object.body) : "",
@@ -4925,12 +4867,6 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.schemaName !== "") {
-      obj.schemaName = message.schemaName;
-    }
-    if (message.tableName !== "") {
-      obj.tableName = message.tableName;
     }
     if (message.event !== "") {
       obj.event = message.event;
@@ -4965,8 +4901,6 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
   fromPartial(object: DeepPartial<TriggerMetadata>): TriggerMetadata {
     const message = createBaseTriggerMetadata();
     message.name = object.name ?? "";
-    message.schemaName = object.schemaName ?? "";
-    message.tableName = object.tableName ?? "";
     message.event = object.event ?? "";
     message.timing = object.timing ?? "";
     message.body = object.body ?? "";
@@ -5109,6 +5043,7 @@ function createBaseTableMetadata(): TableMetadata {
     checkConstraints: [],
     owner: "",
     sortingKeys: [],
+    triggers: [],
   };
 }
 
@@ -5167,6 +5102,9 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     }
     for (const v of message.sortingKeys) {
       writer.uint32(154).string(v!);
+    }
+    for (const v of message.triggers) {
+      TriggerMetadata.encode(v!, writer.uint32(162).fork()).join();
     }
     return writer;
   },
@@ -5322,6 +5260,14 @@ export const TableMetadata: MessageFns<TableMetadata> = {
           message.sortingKeys.push(reader.string());
           continue;
         }
+        case 20: {
+          if (tag !== 162) {
+            break;
+          }
+
+          message.triggers.push(TriggerMetadata.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5362,6 +5308,9 @@ export const TableMetadata: MessageFns<TableMetadata> = {
       owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
       sortingKeys: globalThis.Array.isArray(object?.sortingKeys)
         ? object.sortingKeys.map((e: any) => globalThis.String(e))
+        : [],
+      triggers: globalThis.Array.isArray(object?.triggers)
+        ? object.triggers.map((e: any) => TriggerMetadata.fromJSON(e))
         : [],
     };
   },
@@ -5422,6 +5371,9 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     if (message.sortingKeys?.length) {
       obj.sortingKeys = message.sortingKeys;
     }
+    if (message.triggers?.length) {
+      obj.triggers = message.triggers.map((e) => TriggerMetadata.toJSON(e));
+    }
     return obj;
   },
 
@@ -5456,6 +5408,7 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     message.checkConstraints = object.checkConstraints?.map((e) => CheckConstraintMetadata.fromPartial(e)) || [];
     message.owner = object.owner ?? "";
     message.sortingKeys = object.sortingKeys?.map((e) => e) || [];
+    message.triggers = object.triggers?.map((e) => TriggerMetadata.fromPartial(e)) || [];
     return message;
   },
 };

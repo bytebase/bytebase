@@ -2879,7 +2879,6 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | materialized_views | [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata) | repeated | The materialized_views is the list of materialized views in a schema. |
 | packages | [PackageMetadata](#bytebase-v1-PackageMetadata) | repeated | The packages is the list of packages in a schema. |
 | owner | [string](#string) |  |  |
-| triggers | [TriggerMetadata](#bytebase-v1-TriggerMetadata) | repeated | The triggers is the list of triggers in a schema, triggers are sorted by table_name, name, event, timing, action_order. |
 | sequences | [SequenceMetadata](#bytebase-v1-SequenceMetadata) | repeated | The sequences is the list of sequences in a schema, sorted by name. |
 | events | [EventMetadata](#bytebase-v1-EventMetadata) | repeated |  |
 | enum_types | [EnumTypeMetadata](#bytebase-v1-EnumTypeMetadata) | repeated |  |
@@ -3089,6 +3088,7 @@ TableMetadata is the metadata for tables.
 | check_constraints | [CheckConstraintMetadata](#bytebase-v1-CheckConstraintMetadata) | repeated | The check_constraints is the list of check constraints in a table. |
 | owner | [string](#string) |  |  |
 | sorting_keys | [string](#string) | repeated | The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field. Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by |
+| triggers | [TriggerMetadata](#bytebase-v1-TriggerMetadata) | repeated |  |
 
 
 
@@ -3149,8 +3149,6 @@ TablePartitionMetadata is the metadata for table partitions.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of the trigger. |
-| schema_name | [string](#string) |  | The schema name of the table/view that the trigger is created. |
-| table_name | [string](#string) |  | The table_name is the name of the table/view that the trigger is created on. |
 | event | [string](#string) |  | The event is the event of the trigger, such as INSERT, UPDATE, DELETE, TRUNCATE. |
 | timing | [string](#string) |  | The timing is the timing of the trigger, such as BEFORE, AFTER. |
 | body | [string](#string) |  | The body is the body of the trigger. |
