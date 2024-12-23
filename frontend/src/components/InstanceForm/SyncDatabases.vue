@@ -1,0 +1,193 @@
+<template>
+  <div
+    v-if="!hideAdvancedFeatures"
+    class="sm:col-span-4 sm:col-start-1 flex flex-col gap-y-2"
+  >
+    <div class="flex items-center space-x-2">
+      <label class="textlabel">
+        {{ $t("instance.sync-databases.self") }}
+      </label>
+      <FeatureBadge
+        feature="bb.feature.custom-instance-synchronization"
+        :instance="instance"
+      />
+    </div>
+    <div class="textinfolabel">
+      {{ $t("instance.sync-databases.description") }}
+    </div>
+    <div class="space-y-2">
+      <NCheckbox
+        v-model:checked="state.syncAll"
+        :disabled="!allowEdit || !hasFeature"
+      >
+        {{ $t("instance.sync-databases.sync-all") }}
+      </NCheckbox>
+      <div v-if="!state.syncAll">
+        <BBSpin v-if="state.loading" class="opacity-60" />
+        <div v-else class="border rounded-sm p-2 space-y-2">
+          <SearchBox
+            v-model:value="state.searchText"
+            style="max-width: 100%"
+            :disabled="!hasFeature"
+            :placeholder="$t('instance.sync-databases.search-database')"
+          />
+          <NTree
+            class="sync-database-tree"
+            block-line
+            checkable
+            style="max-height: 250px"
+            :pattern="state.searchText"
+            virtual-scroll
+            :check-on-click="true"
+            :data="treeData"
+            :show-irrelevant-nodes="false"
+            :render-label="renderLabel"
+            :disabled="!allowEdit || !hasFeature"
+            v-model:checked-keys="state.selectedDatabases"
+          />
+          <NInput
+            clearable
+            size="small"
+            :placeholder="$t('instance.sync-databases.add-database')"
+            v-model:value="state.inputDatabase"
+            :disabled="!allowEdit || !hasFeature"
+            @keydown="handleKeyDown"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script lang="tsx" setup>
+import { NInput, NCheckbox, NTree } from "naive-ui";
+import type { TreeOption } from "naive-ui";
+import { computed, reactive, watch, h, onMounted } from "vue";
+import { BBSpin } from "@/bbkit";
+import { SearchBox } from "@/components/v2";
+import { useInstanceV1Store, useSubscriptionV1Store } from "@/store";
+import { getHighlightHTMLByKeyWords } from "@/utils";
+import { FeatureBadge } from "../FeatureGuard";
+import { useInstanceFormContext } from "./context";
+
+const props = withDefaults(
+  defineProps<{
+    allowEdit: boolean;
+    syncDatabases?: string[];
+  }>(),
+  {
+    syncDatabases: () => [],
+  }
+);
+
+const emit = defineEmits<{
+  (event: "update:sync-databases", databases: string[]): void;
+}>();
+
+interface LocalState {
+  syncAll: boolean;
+  loading: boolean;
+  selectedDatabases: string[];
+  databaseList: Set<string>;
+  searchText: string;
+  inputDatabase: string;
+}
+
+const subscriptionStore = useSubscriptionV1Store();
+const { instance, hideAdvancedFeatures } = useInstanceFormContext();
+
+const state = reactive<LocalState>({
+  syncAll: props.syncDatabases.length === 0,
+  loading: false,
+  selectedDatabases: [...props.syncDatabases],
+  databaseList: new Set<string>(),
+  searchText: "",
+  inputDatabase: "",
+});
+
+const hasFeature = computed(() => {
+  return subscriptionStore.hasInstanceFeature(
+    "bb.feature.custom-instance-synchronization",
+    instance.value
+  );
+});
+
+const fetchAllDatabases = async () => {
+  if (!instance.value) {
+    return;
+  }
+  state.loading = true;
+  try {
+    const resp = await instanceStore.syncInstance(instance.value.name, false);
+    state.databaseList = new Set([
+      ...resp.databases,
+      ...state.selectedDatabases,
+    ]);
+  } finally {
+    state.loading = false;
+  }
+};
+
+onMounted(fetchAllDatabases);
+
+const instanceStore = useInstanceV1Store();
+
+const treeData = computed((): TreeOption[] => {
+  return [...state.databaseList].map((database) => {
+    return {
+      isLeaf: true,
+      label: database,
+      key: database,
+      checkboxDisabled: false,
+    };
+  });
+});
+
+const renderLabel = ({ option }: { option: TreeOption }) => {
+  return h("span", {
+    class: "textinfo text-sm",
+    innerHTML: getHighlightHTMLByKeyWords(option.label ?? "", state.searchText),
+  });
+};
+
+watch(
+  () => state.syncAll,
+  async (syncAll) => {
+    if (!instance.value) {
+      return;
+    }
+    if (syncAll) {
+      emit("update:sync-databases", []);
+    } else {
+      emit("update:sync-databases", state.selectedDatabases);
+    }
+  }
+);
+
+watch(
+  () => state.selectedDatabases,
+  (selectedDatabases) => {
+    emit("update:sync-databases", selectedDatabases);
+  },
+  { deep: true }
+);
+
+const handleKeyDown = (e: KeyboardEvent) => {
+  const inputDatabase = state.inputDatabase.trim();
+  if (!inputDatabase) {
+    return;
+  }
+  const { key } = e;
+  if (key === "Enter") {
+    state.databaseList.add(inputDatabase);
+    state.selectedDatabases.push(inputDatabase);
+    state.inputDatabase = "";
+  }
+};
+</script>
+
+<style lang="postcss" scoped>
+.sync-database-tree :deep(.n-tree-node-switcher--hide) {
+  @apply !hidden;
+}
+</style>

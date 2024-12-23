@@ -351,6 +351,13 @@
           @update:scan-interval="changeScanInterval"
         />
 
+        <SyncDatabases
+          v-if="!isCreating && instance"
+          :allow-edit="allowEdit"
+          :sync-databases="basicInfo.options?.syncDatabases"
+          @update:sync-databases="handleChangeSyncDatabases"
+        />
+
         <MaximumConnectionsInput
           v-if="!isCreating"
           ref="maximumConnectionsInputRef"
@@ -491,6 +498,7 @@ import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
 import MaximumConnectionsInput from "./MaximumConnectionsInput.vue";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import SpannerHostInput from "./SpannerHostInput.vue";
+import SyncDatabases from "./SyncDatabases.vue";
 import {
   MongoDBConnectionStringSchemaList,
   SnowflakeExtraLinkPlaceHolder,
@@ -619,12 +627,20 @@ const changeInstanceEngine = (engine: Engine) => {
   basicInfo.value.engine = engine;
 };
 
+const handleChangeSyncDatabases = (databases: string[]) => {
+  if (!basicInfo.value.options) {
+    basicInfo.value.options = InstanceOptions.fromPartial({});
+  }
+  basicInfo.value.options.syncDatabases = [...databases];
+};
+
 const changeScanInterval = (duration: Duration | undefined) => {
   if (!basicInfo.value.options) {
     basicInfo.value.options = InstanceOptions.fromPartial({});
   }
   basicInfo.value.options.syncInterval = duration;
 };
+
 const changeMaximumConnections = (maximumConnections: number) => {
   if (!basicInfo.value.options) {
     basicInfo.value.options = InstanceOptions.fromPartial({});

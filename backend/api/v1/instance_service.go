@@ -155,7 +155,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err == nil {
 		defer driver.Close(ctx)
-		updatedInstance, _, err := s.schemaSyncer.SyncInstance(ctx, instance)
+		updatedInstance, _, _, err := s.schemaSyncer.SyncInstance(ctx, instance)
 		if err != nil {
 			slog.Warn("Failed to sync instance",
 				slog.String("instance", instance.ResourceID),
@@ -283,15 +283,29 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 				patch.Activation = &request.Instance.Activation
 			}
 		case "options.sync_interval":
+			if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureCustomInstanceSynchronization, instance); err != nil {
+				return nil, status.Error(codes.PermissionDenied, err.Error())
+			}
 			if patch.OptionsUpsert == nil {
 				patch.OptionsUpsert = instance.Options
 			}
 			patch.OptionsUpsert.SyncInterval = request.Instance.Options.GetSyncInterval()
 		case "options.maximum_connections":
+			if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureCustomInstanceSynchronization, instance); err != nil {
+				return nil, status.Error(codes.PermissionDenied, err.Error())
+			}
 			if patch.OptionsUpsert == nil {
 				patch.OptionsUpsert = instance.Options
 			}
 			patch.OptionsUpsert.MaximumConnections = request.Instance.Options.GetMaximumConnections()
+		case "options.sync_databases":
+			if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureCustomInstanceSynchronization, instance); err != nil {
+				return nil, status.Error(codes.PermissionDenied, err.Error())
+			}
+			if patch.OptionsUpsert == nil {
+				patch.OptionsUpsert = instance.Options
+			}
+			patch.OptionsUpsert.SyncDatabases = request.Instance.Options.GetSyncDatabases()
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupported update_mask "%s"`, path)
 		}
@@ -559,7 +573,7 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
 	}
 
-	updatedInstance, newDatabases, err := s.schemaSyncer.SyncInstance(ctx, instance)
+	updatedInstance, allDatabases, newDatabases, err := s.schemaSyncer.SyncInstance(ctx, instance)
 	if err != nil {
 		return nil, err
 	}
@@ -569,7 +583,12 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 	} else {
 		s.schemaSyncer.SyncDatabasesAsync(newDatabases)
 	}
-	return &v1pb.SyncInstanceResponse{}, nil
+
+	response := &v1pb.SyncInstanceResponse{}
+	for _, database := range allDatabases {
+		response.Databases = append(response.Databases, database.Name)
+	}
+	return response, nil
 }
 
 // SyncInstance syncs the instance.
@@ -583,7 +602,7 @@ func (s *InstanceService) BatchSyncInstances(ctx context.Context, request *v1pb.
 			return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", r.Name)
 		}
 
-		updatedInstance, newDatabases, err := s.schemaSyncer.SyncInstance(ctx, instance)
+		updatedInstance, _, newDatabases, err := s.schemaSyncer.SyncInstance(ctx, instance)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to sync instance, %v", err)
 		}
@@ -1408,22 +1427,24 @@ func convertDataSourceTp(tp v1pb.DataSourceType) (api.DataSourceType, error) {
 
 func convertToInstanceOptions(options *storepb.InstanceOptions) *v1pb.InstanceOptions {
 	if options == nil {
-		return nil
+		return &v1pb.InstanceOptions{}
 	}
 
 	return &v1pb.InstanceOptions{
 		SyncInterval:       options.SyncInterval,
 		MaximumConnections: options.MaximumConnections,
+		SyncDatabases:      options.GetSyncDatabases(),
 	}
 }
 
 func convertInstanceOptions(options *v1pb.InstanceOptions) *storepb.InstanceOptions {
 	if options == nil {
-		return nil
+		return &storepb.InstanceOptions{}
 	}
 
 	return &storepb.InstanceOptions{
 		SyncInterval:       options.SyncInterval,
 		MaximumConnections: options.MaximumConnections,
+		SyncDatabases:      options.GetSyncDatabases(),
 	}
 }

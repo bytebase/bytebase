@@ -514,6 +514,16 @@ message SchemaMetadata {
   repeated SequenceMetadata sequences = 13;
 
   repeated EventMetadata events = 14;
+
+  repeated EnumTypeMetadata enum_types = 15;
+}
+
+message EnumTypeMetadata {
+  // The name of a type.
+  string name = 1;
+
+  // The enum values of a type.
+  repeated string values = 2;
 }
 
 message EventMetadata {
@@ -1003,6 +1013,9 @@ message IndexMetadata {
 
   // The index name of the parent index.
   string parent_index_name = 12;
+
+  // The number of granules in the block. It's a ClickHouse specific field.
+  int64 granularity = 13;
 }
 
 // ExtensionMetadata is the metadata for extensions.
@@ -1845,4 +1858,26 @@ message Changelog {
   string revision = 15;
 
   ChangedResources changed_resources = 16;
+}
+
+message ObjectSchema {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    STRING = 1;
+    NUMBER = 2;
+    BOOLEAN = 3;
+    OBJECT = 4;
+    ARRAY = 5;
+  }
+  Type type = 1;
+  message StructKind {
+    map<string, ObjectSchema> properties = 2;
+  }
+  message ArrayKind {
+    ObjectSchema kind = 1;
+  }
+  oneof kind {
+    StructKind struct_kind = 2;
+    ArrayKind array_kind = 3;
+  }
 }

@@ -23,6 +23,11 @@ export interface InstanceOptions {
    * The default is 10 if the value is unset or zero.
    */
   maximumConnections: number;
+  /**
+   * Enable sync for following databases.
+   * Default empty, means sync all schemas & databases.
+   */
+  syncDatabases: string[];
 }
 
 /** InstanceMetadata is the metadata for instances. */
@@ -57,7 +62,7 @@ export interface InstanceRole {
 }
 
 function createBaseInstanceOptions(): InstanceOptions {
-  return { syncInterval: undefined, maximumConnections: 0 };
+  return { syncInterval: undefined, maximumConnections: 0, syncDatabases: [] };
 }
 
 export const InstanceOptions: MessageFns<InstanceOptions> = {
@@ -67,6 +72,9 @@ export const InstanceOptions: MessageFns<InstanceOptions> = {
     }
     if (message.maximumConnections !== 0) {
       writer.uint32(24).int32(message.maximumConnections);
+    }
+    for (const v of message.syncDatabases) {
+      writer.uint32(34).string(v!);
     }
     return writer;
   },
@@ -94,6 +102,14 @@ export const InstanceOptions: MessageFns<InstanceOptions> = {
           message.maximumConnections = reader.int32();
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.syncDatabases.push(reader.string());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -107,6 +123,9 @@ export const InstanceOptions: MessageFns<InstanceOptions> = {
     return {
       syncInterval: isSet(object.syncInterval) ? Duration.fromJSON(object.syncInterval) : undefined,
       maximumConnections: isSet(object.maximumConnections) ? globalThis.Number(object.maximumConnections) : 0,
+      syncDatabases: globalThis.Array.isArray(object?.syncDatabases)
+        ? object.syncDatabases.map((e: any) => globalThis.String(e))
+        : [],
     };
   },
 
@@ -117,6 +136,9 @@ export const InstanceOptions: MessageFns<InstanceOptions> = {
     }
     if (message.maximumConnections !== 0) {
       obj.maximumConnections = Math.round(message.maximumConnections);
+    }
+    if (message.syncDatabases?.length) {
+      obj.syncDatabases = message.syncDatabases;
     }
     return obj;
   },
@@ -130,6 +152,7 @@ export const InstanceOptions: MessageFns<InstanceOptions> = {
       ? Duration.fromPartial(object.syncInterval)
       : undefined;
     message.maximumConnections = object.maximumConnections ?? 0;
+    message.syncDatabases = object.syncDatabases?.map((e) => e) || [];
     return message;
   },
 };

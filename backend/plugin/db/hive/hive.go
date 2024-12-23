@@ -229,6 +229,7 @@ func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement 
 		}
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
+	result.RowsCount = int64(len(result.Rows))
 	return result, nil
 }
 

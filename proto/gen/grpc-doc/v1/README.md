@@ -93,6 +93,7 @@
     - [DependentColumn](#bytebase-v1-DependentColumn)
     - [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest)
     - [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse)
+    - [EnumTypeMetadata](#bytebase-v1-EnumTypeMetadata)
     - [EventMetadata](#bytebase-v1-EventMetadata)
     - [ExtensionMetadata](#bytebase-v1-ExtensionMetadata)
     - [ExternalTableMetadata](#bytebase-v1-ExternalTableMetadata)
@@ -122,6 +123,10 @@
     - [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest)
     - [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse)
     - [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata)
+    - [ObjectSchema](#bytebase-v1-ObjectSchema)
+    - [ObjectSchema.ArrayKind](#bytebase-v1-ObjectSchema-ArrayKind)
+    - [ObjectSchema.StructKind](#bytebase-v1-ObjectSchema-StructKind)
+    - [ObjectSchema.StructKind.PropertiesEntry](#bytebase-v1-ObjectSchema-StructKind-PropertiesEntry)
     - [PackageMetadata](#bytebase-v1-PackageMetadata)
     - [ProcedureConfig](#bytebase-v1-ProcedureConfig)
     - [ProcedureMetadata](#bytebase-v1-ProcedureMetadata)
@@ -155,6 +160,7 @@
     - [ChangelogView](#bytebase-v1-ChangelogView)
     - [DatabaseMetadataView](#bytebase-v1-DatabaseMetadataView)
     - [GenerationMetadata.Type](#bytebase-v1-GenerationMetadata-Type)
+    - [ObjectSchema.Type](#bytebase-v1-ObjectSchema-Type)
     - [StreamMetadata.Mode](#bytebase-v1-StreamMetadata-Mode)
     - [StreamMetadata.Type](#bytebase-v1-StreamMetadata-Type)
     - [TablePartitionMetadata.Type](#bytebase-v1-TablePartitionMetadata-Type)
@@ -475,6 +481,44 @@
   
     - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
   
+- [v1/project_service.proto](#v1_project_service-proto)
+    - [Activity](#bytebase-v1-Activity)
+    - [AddWebhookRequest](#bytebase-v1-AddWebhookRequest)
+    - [BatchGetIamPolicyRequest](#bytebase-v1-BatchGetIamPolicyRequest)
+    - [BatchGetIamPolicyResponse](#bytebase-v1-BatchGetIamPolicyResponse)
+    - [BatchGetIamPolicyResponse.PolicyResult](#bytebase-v1-BatchGetIamPolicyResponse-PolicyResult)
+    - [CreateProjectRequest](#bytebase-v1-CreateProjectRequest)
+    - [DeleteProjectRequest](#bytebase-v1-DeleteProjectRequest)
+    - [DeploymentConfig](#bytebase-v1-DeploymentConfig)
+    - [DeploymentSpec](#bytebase-v1-DeploymentSpec)
+    - [GetDeploymentConfigRequest](#bytebase-v1-GetDeploymentConfigRequest)
+    - [GetProjectRequest](#bytebase-v1-GetProjectRequest)
+    - [Label](#bytebase-v1-Label)
+    - [LabelSelector](#bytebase-v1-LabelSelector)
+    - [LabelSelectorRequirement](#bytebase-v1-LabelSelectorRequirement)
+    - [ListProjectsRequest](#bytebase-v1-ListProjectsRequest)
+    - [ListProjectsResponse](#bytebase-v1-ListProjectsResponse)
+    - [Project](#bytebase-v1-Project)
+    - [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest)
+    - [Schedule](#bytebase-v1-Schedule)
+    - [ScheduleDeployment](#bytebase-v1-ScheduleDeployment)
+    - [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest)
+    - [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse)
+    - [TestWebhookRequest](#bytebase-v1-TestWebhookRequest)
+    - [TestWebhookResponse](#bytebase-v1-TestWebhookResponse)
+    - [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest)
+    - [UpdateDeploymentConfigRequest](#bytebase-v1-UpdateDeploymentConfigRequest)
+    - [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest)
+    - [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest)
+    - [Webhook](#bytebase-v1-Webhook)
+  
+    - [Activity.Type](#bytebase-v1-Activity-Type)
+    - [OperatorType](#bytebase-v1-OperatorType)
+    - [Webhook.Type](#bytebase-v1-Webhook-Type)
+    - [Workflow](#bytebase-v1-Workflow)
+  
+    - [ProjectService](#bytebase-v1-ProjectService)
+  
 - [v1/plan_service.proto](#v1_plan_service-proto)
     - [BatchCancelPlanCheckRunsRequest](#bytebase-v1-BatchCancelPlanCheckRunsRequest)
     - [BatchCancelPlanCheckRunsResponse](#bytebase-v1-BatchCancelPlanCheckRunsResponse)
@@ -516,44 +560,6 @@
     - [PlanCheckRun.Type](#bytebase-v1-PlanCheckRun-Type)
   
     - [PlanService](#bytebase-v1-PlanService)
-  
-- [v1/project_service.proto](#v1_project_service-proto)
-    - [Activity](#bytebase-v1-Activity)
-    - [AddWebhookRequest](#bytebase-v1-AddWebhookRequest)
-    - [BatchGetIamPolicyRequest](#bytebase-v1-BatchGetIamPolicyRequest)
-    - [BatchGetIamPolicyResponse](#bytebase-v1-BatchGetIamPolicyResponse)
-    - [BatchGetIamPolicyResponse.PolicyResult](#bytebase-v1-BatchGetIamPolicyResponse-PolicyResult)
-    - [CreateProjectRequest](#bytebase-v1-CreateProjectRequest)
-    - [DeleteProjectRequest](#bytebase-v1-DeleteProjectRequest)
-    - [DeploymentConfig](#bytebase-v1-DeploymentConfig)
-    - [DeploymentSpec](#bytebase-v1-DeploymentSpec)
-    - [GetDeploymentConfigRequest](#bytebase-v1-GetDeploymentConfigRequest)
-    - [GetProjectRequest](#bytebase-v1-GetProjectRequest)
-    - [Label](#bytebase-v1-Label)
-    - [LabelSelector](#bytebase-v1-LabelSelector)
-    - [LabelSelectorRequirement](#bytebase-v1-LabelSelectorRequirement)
-    - [ListProjectsRequest](#bytebase-v1-ListProjectsRequest)
-    - [ListProjectsResponse](#bytebase-v1-ListProjectsResponse)
-    - [Project](#bytebase-v1-Project)
-    - [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest)
-    - [Schedule](#bytebase-v1-Schedule)
-    - [ScheduleDeployment](#bytebase-v1-ScheduleDeployment)
-    - [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest)
-    - [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse)
-    - [TestWebhookRequest](#bytebase-v1-TestWebhookRequest)
-    - [TestWebhookResponse](#bytebase-v1-TestWebhookResponse)
-    - [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest)
-    - [UpdateDeploymentConfigRequest](#bytebase-v1-UpdateDeploymentConfigRequest)
-    - [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest)
-    - [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest)
-    - [Webhook](#bytebase-v1-Webhook)
-  
-    - [Activity.Type](#bytebase-v1-Activity-Type)
-    - [OperatorType](#bytebase-v1-OperatorType)
-    - [Webhook.Type](#bytebase-v1-Webhook-Type)
-    - [Workflow](#bytebase-v1-Workflow)
-  
-    - [ProjectService](#bytebase-v1-ProjectService)
   
 - [v1/sql_service.proto](#v1_sql_service-proto)
     - [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest)
@@ -1282,6 +1288,7 @@ InstanceOptions is the option for instances.
 | ----- | ---- | ----- | ----------- |
 | sync_interval | [google.protobuf.Duration](#google-protobuf-Duration) |  | How often the instance is synced. |
 | maximum_connections | [int32](#int32) |  | The maximum number of connections. The default is 10 if the value is unset or zero. |
+| sync_databases | [string](#string) | repeated | Enable sync for following databases. Default empty, means sync all schemas &amp; databases. |
 
 
 
@@ -1416,6 +1423,11 @@ When paginating, all other parameters provided to `ListInstances` must match the
 
 ### SyncInstanceResponse
 
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| databases | [string](#string) | repeated | All database name list in the instance. |
 
 
 
@@ -2121,6 +2133,22 @@ DependentColumn is the metadata for dependent columns.
 
 
 
+<a name="bytebase-v1-EnumTypeMetadata"></a>
+
+### EnumTypeMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of a type. |
+| values | [string](#string) | repeated | The enum values of a type. |
+
+
+
+
+
+
 <a name="bytebase-v1-EventMetadata"></a>
 
 ### EventMetadata
@@ -2374,6 +2402,7 @@ IndexMetadata is the metadata for indexes.
 | definition | [string](#string) |  | The definition of an index. |
 | parent_index_schema | [string](#string) |  | The schema name of the parent index. |
 | parent_index_name | [string](#string) |  | The index name of the parent index. |
+| granularity | [int64](#int64) |  | The number of granules in the block. It&#39;s a ClickHouse specific field. |
 
 
 
@@ -2658,6 +2687,69 @@ MaterializedViewMetadata is the metadata for materialized views.
 
 
 
+<a name="bytebase-v1-ObjectSchema"></a>
+
+### ObjectSchema
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [ObjectSchema.Type](#bytebase-v1-ObjectSchema-Type) |  |  |
+| struct_kind | [ObjectSchema.StructKind](#bytebase-v1-ObjectSchema-StructKind) |  |  |
+| array_kind | [ObjectSchema.ArrayKind](#bytebase-v1-ObjectSchema-ArrayKind) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ObjectSchema-ArrayKind"></a>
+
+### ObjectSchema.ArrayKind
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| kind | [ObjectSchema](#bytebase-v1-ObjectSchema) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ObjectSchema-StructKind"></a>
+
+### ObjectSchema.StructKind
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| properties | [ObjectSchema.StructKind.PropertiesEntry](#bytebase-v1-ObjectSchema-StructKind-PropertiesEntry) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ObjectSchema-StructKind-PropertiesEntry"></a>
+
+### ObjectSchema.StructKind.PropertiesEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [ObjectSchema](#bytebase-v1-ObjectSchema) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-PackageMetadata"></a>
 
 ### PackageMetadata
@@ -2783,6 +2875,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | triggers | [TriggerMetadata](#bytebase-v1-TriggerMetadata) | repeated | The triggers is the list of triggers in a schema, triggers are sorted by table_name, name, event, timing, action_order. |
 | sequences | [SequenceMetadata](#bytebase-v1-SequenceMetadata) | repeated | The sequences is the list of sequences in a schema, sorted by name. |
 | events | [EventMetadata](#bytebase-v1-EventMetadata) | repeated |  |
+| enum_types | [EnumTypeMetadata](#bytebase-v1-EnumTypeMetadata) | repeated |  |
 
 
 
@@ -3260,6 +3353,22 @@ ViewMetadata is the metadata for views.
 | TYPE_UNSPECIFIED | 0 |  |
 | TYPE_VIRTUAL | 1 |  |
 | TYPE_STORED | 2 |  |
+
+
+
+<a name="bytebase-v1-ObjectSchema-Type"></a>
+
+### ObjectSchema.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| STRING | 1 |  |
+| NUMBER | 2 |  |
+| BOOLEAN | 3 |  |
+| OBJECT | 4 |  |
+| ARRAY | 5 |  |
 
 
 
@@ -7877,672 +7986,6 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 
 
 
-<a name="v1_plan_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/plan_service.proto
-
-
-
-<a name="bytebase-v1-BatchCancelPlanCheckRunsRequest"></a>
-
-### BatchCancelPlanCheckRunsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The name of the parent of the planChecks. Format: projects/{project}/plans/{plan} |
-| plan_check_runs | [string](#string) | repeated | TODO(d): update this API. The planCheckRuns to cancel. Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchCancelPlanCheckRunsResponse"></a>
-
-### BatchCancelPlanCheckRunsResponse
-
-
-
-
-
-
-
-<a name="bytebase-v1-CreatePlanRequest"></a>
-
-### CreatePlanRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent project where this plan will be created. Format: projects/{project} |
-| plan | [Plan](#bytebase-v1-Plan) |  | The plan to create. |
-
-
-
-
-
-
-<a name="bytebase-v1-GetPlanRequest"></a>
-
-### GetPlanRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the plan to retrieve. Format: projects/{project}/plans/{plan} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListPlanCheckRunsRequest"></a>
-
-### ListPlanCheckRunsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of plan check runs. Format: projects/{project}/plans/{plan} |
-| page_size | [int32](#int32) |  | Not used. The maximum number of plan check runs to return. The service may return fewer than this value. If unspecified, at most 10 plan check runs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListPlanCheckRuns` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListPlanCheckRuns` must match the call that provided the page token. |
-| latest_only | [bool](#bool) |  | If set to true, only the latest plan check run will be returned. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListPlanCheckRunsResponse"></a>
-
-### ListPlanCheckRunsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| plan_check_runs | [PlanCheckRun](#bytebase-v1-PlanCheckRun) | repeated | The plan check runs from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListPlansRequest"></a>
-
-### ListPlansRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of plans. Format: projects/{project} Use &#34;projects/-&#34; to list all plans from all projects. |
-| page_size | [int32](#int32) |  | The maximum number of plans to return. The service may return fewer than this value. If unspecified, at most 10 plans will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListPlans` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListPlans` must match the call that provided the page token. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListPlansResponse"></a>
-
-### ListPlansResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| plans | [Plan](#bytebase-v1-Plan) | repeated | The plans from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan"></a>
-
-### Plan
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the plan. `plan` is a system generated ID. Format: projects/{project}/plans/{plan} |
-| issue | [string](#string) |  | The resource name of the issue associated with this plan. Format: projects/{project}/issues/{issue} |
-| title | [string](#string) |  |  |
-| description | [string](#string) |  |  |
-| steps | [Plan.Step](#bytebase-v1-Plan-Step) | repeated |  |
-| vcs_source | [Plan.VCSSource](#bytebase-v1-Plan-VCSSource) |  |  |
-| creator | [string](#string) |  | Format: users/hello@world.com |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| plan_check_run_status_count | [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry) | repeated | The status count of the latest plan check runs. Keys are: - SUCCESS - WARNING - ERROR |
-| release_source | [Plan.ReleaseSource](#bytebase-v1-Plan-ReleaseSource) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-ChangeDatabaseConfig"></a>
-
-### Plan.ChangeDatabaseConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| target | [string](#string) |  | The resource name of the target. Format: instances/{instance-id}/databases/{database-name}. Format: projects/{project}/databaseGroups/{databaseGroup}. |
-| sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
-| type | [Plan.ChangeDatabaseConfig.Type](#bytebase-v1-Plan-ChangeDatabaseConfig-Type) |  |  |
-| schema_version | [string](#string) |  | schema_version is parsed from VCS file name. It is automatically generated in the UI workflow. |
-| ghost_flags | [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
-| pre_update_backup_detail | [Plan.ChangeDatabaseConfig.PreUpdateBackupDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-PreUpdateBackupDetail) | optional | If set, a backup of the modified data will be created automatically before any changes are applied. |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry"></a>
-
-### Plan.ChangeDatabaseConfig.GhostFlagsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-ChangeDatabaseConfig-PreUpdateBackupDetail"></a>
-
-### Plan.ChangeDatabaseConfig.PreUpdateBackupDetail
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database | [string](#string) |  | The database for keeping the backup data. Format: instances/{instance}/databases/{database} |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-CreateDatabaseConfig"></a>
-
-### Plan.CreateDatabaseConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| target | [string](#string) |  | The resource name of the instance on which the database is created. Format: instances/{instance} |
-| database | [string](#string) |  | The name of the database to create. |
-| table | [string](#string) |  | table is the name of the table, if it is not empty, Bytebase should create a table after creating the database. For example, in MongoDB, it only creates the database when we first store data in that database. |
-| character_set | [string](#string) |  | character_set is the character set of the database. |
-| collation | [string](#string) |  | collation is the collation of the database. |
-| cluster | [string](#string) |  | cluster is the cluster of the database. This is only applicable to ClickHouse for &#34;ON CLUSTER &lt;&lt;cluster&gt;&gt;&#34;. |
-| owner | [string](#string) |  | owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. |
-| environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
-| labels | [Plan.CreateDatabaseConfig.LabelsEntry](#bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry) | repeated | labels of the database. |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry"></a>
-
-### Plan.CreateDatabaseConfig.LabelsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-ExportDataConfig"></a>
-
-### Plan.ExportDataConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| target | [string](#string) |  | The resource name of the target. Format: instances/{instance-id}/databases/{database-name} |
-| sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
-| format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The format of the exported file. |
-| password | [string](#string) | optional | The zip password provide by users. Leave it empty if no needs to encrypt the zip file. |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-PlanCheckRunStatusCountEntry"></a>
-
-### Plan.PlanCheckRunStatusCountEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [int32](#int32) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-ReleaseSource"></a>
-
-### Plan.ReleaseSource
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| release | [string](#string) |  | The release. Format: projects/{project}/releases/{release} |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-Spec"></a>
-
-### Plan.Spec
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | earliest_allowed_time the earliest execution time of the change. |
-| id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. |
-| depends_on_specs | [string](#string) | repeated | IDs of the specs that this spec depends on. Must be a subset of the specs in the same step. |
-| spec_release_source | [Plan.SpecReleaseSource](#bytebase-v1-Plan-SpecReleaseSource) |  |  |
-| create_database_config | [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig) |  |  |
-| change_database_config | [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig) |  |  |
-| export_data_config | [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-SpecReleaseSource"></a>
-
-### Plan.SpecReleaseSource
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{file} {file} is URL path escaped. |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-Step"></a>
-
-### Plan.Step
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  |  |
-| specs | [Plan.Spec](#bytebase-v1-Plan-Spec) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-VCSSource"></a>
-
-### Plan.VCSSource
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| vcs_type | [VCSType](#bytebase-v1-VCSType) |  |  |
-| vcs_connector | [string](#string) |  | Optional. If present, we will update the pull request for rollout status. Format: projects/{project-ID}/vcsConnectors/{vcs-connector} |
-| pull_request_url | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-PlanCheckRun"></a>
-
-### PlanCheckRun
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} |
-| type | [PlanCheckRun.Type](#bytebase-v1-PlanCheckRun-Type) |  |  |
-| status | [PlanCheckRun.Status](#bytebase-v1-PlanCheckRun-Status) |  |  |
-| target | [string](#string) |  | Format: instances/{instance}/databases/{database} |
-| sheet | [string](#string) |  | Format: project/{project}/sheets/{sheet} |
-| results | [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result) | repeated |  |
-| error | [string](#string) |  | error is set if the Status is FAILED. |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-PlanCheckRun-Result"></a>
-
-### PlanCheckRun.Result
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| status | [PlanCheckRun.Result.Status](#bytebase-v1-PlanCheckRun-Result-Status) |  |  |
-| title | [string](#string) |  |  |
-| content | [string](#string) |  |  |
-| code | [int32](#int32) |  |  |
-| sql_summary_report | [PlanCheckRun.Result.SqlSummaryReport](#bytebase-v1-PlanCheckRun-Result-SqlSummaryReport) |  |  |
-| sql_review_report | [PlanCheckRun.Result.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-SqlReviewReport) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-PlanCheckRun-Result-SqlReviewReport"></a>
-
-### PlanCheckRun.Result.SqlReviewReport
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| line | [int32](#int32) |  |  |
-| column | [int32](#int32) |  |  |
-| detail | [string](#string) |  |  |
-| code | [int32](#int32) |  | Code from sql review. |
-| start_position | [Position](#bytebase-v1-Position) |  | 1-based Position of the SQL statement. To supersede `line` and `column` above. |
-| end_position | [Position](#bytebase-v1-Position) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-PlanCheckRun-Result-SqlSummaryReport"></a>
-
-### PlanCheckRun.Result.SqlSummaryReport
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| code | [int32](#int32) |  |  |
-| statement_types | [string](#string) | repeated | statement_types are the types of statements that are found in the sql. |
-| affected_rows | [int32](#int32) |  |  |
-| changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-PreviewPlanRequest"></a>
-
-### PreviewPlanRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The name of the project. Format: projects/{project} |
-| release | [string](#string) |  | The release used for preview. |
-| targets | [string](#string) | repeated | The targets to deploy. Can be database or databaseGroup. Format: projects/{project}/databaseGroups/{databaseGroup} instances/{instance}/databases/{database} |
-| allow_out_of_order | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-PreviewPlanResponse"></a>
-
-### PreviewPlanResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| plan | [Plan](#bytebase-v1-Plan) |  |  |
-| out_of_order_files | [PreviewPlanResponse.DatabaseFiles](#bytebase-v1-PreviewPlanResponse-DatabaseFiles) | repeated | The out of order files of each database. |
-| applied_but_modified_files | [PreviewPlanResponse.DatabaseFiles](#bytebase-v1-PreviewPlanResponse-DatabaseFiles) | repeated | The applied but modified files of each database. |
-
-
-
-
-
-
-<a name="bytebase-v1-PreviewPlanResponse-DatabaseFiles"></a>
-
-### PreviewPlanResponse.DatabaseFiles
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database | [string](#string) |  |  |
-| files | [string](#string) | repeated | Format: projects/{project}/releases/{release}/files/{file_id} |
-
-
-
-
-
-
-<a name="bytebase-v1-RunPlanChecksRequest"></a>
-
-### RunPlanChecksRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The plan to run plan checks. Format: projects/{project}/plans/{plan} |
-
-
-
-
-
-
-<a name="bytebase-v1-RunPlanChecksResponse"></a>
-
-### RunPlanChecksResponse
-
-
-
-
-
-
-
-<a name="bytebase-v1-SearchPlansRequest"></a>
-
-### SearchPlansRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of plans. Format: projects/{project} Use &#34;projects/-&#34; to list all plans from all projects. |
-| page_size | [int32](#int32) |  | The maximum number of plans to return. The service may return fewer than this value. If unspecified, at most 10 plans will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `SearchPlans` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `SearchPlans` must match the call that provided the page token. |
-| filter | [string](#string) |  | Filter is used to filter plans returned in the list. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchPlansResponse"></a>
-
-### SearchPlansResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| plans | [Plan](#bytebase-v1-Plan) | repeated | The plans from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdatePlanRequest"></a>
-
-### UpdatePlanRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| plan | [Plan](#bytebase-v1-Plan) |  | The plan to update.
-
-The plan&#39;s `name` field is used to identify the plan to update. Format: projects/{project}/plans/{plan} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-Plan-ChangeDatabaseConfig-Type"></a>
-
-### Plan.ChangeDatabaseConfig.Type
-Type is the database change type.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| BASELINE | 1 | Used for establishing schema baseline, this is used when 1. Onboard the database into Bytebase since Bytebase needs to know the current database schema. 2. Had schema drift and need to re-establish the baseline. |
-| MIGRATE | 2 | Used for DDL changes including CREATE DATABASE. |
-| MIGRATE_SDL | 3 | Used for schema changes via state-based schema migration including CREATE DATABASE. |
-| MIGRATE_GHOST | 4 | Used for DDL changes using gh-ost. |
-| DATA | 6 | Used for DML change. |
-
-
-
-<a name="bytebase-v1-PlanCheckRun-Result-Status"></a>
-
-### PlanCheckRun.Result.Status
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| ERROR | 1 |  |
-| WARNING | 2 |  |
-| SUCCESS | 3 |  |
-
-
-
-<a name="bytebase-v1-PlanCheckRun-Status"></a>
-
-### PlanCheckRun.Status
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| RUNNING | 1 |  |
-| DONE | 2 |  |
-| FAILED | 3 |  |
-| CANCELED | 4 |  |
-
-
-
-<a name="bytebase-v1-PlanCheckRun-Type"></a>
-
-### PlanCheckRun.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| DATABASE_STATEMENT_FAKE_ADVISE | 1 |  |
-| DATABASE_STATEMENT_ADVISE | 3 |  |
-| DATABASE_STATEMENT_SUMMARY_REPORT | 5 |  |
-| DATABASE_CONNECT | 6 |  |
-| DATABASE_GHOST_SYNC | 7 |  |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-PlanService"></a>
-
-### PlanService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetPlan | [GetPlanRequest](#bytebase-v1-GetPlanRequest) | [Plan](#bytebase-v1-Plan) |  |
-| ListPlans | [ListPlansRequest](#bytebase-v1-ListPlansRequest) | [ListPlansResponse](#bytebase-v1-ListPlansResponse) |  |
-| SearchPlans | [SearchPlansRequest](#bytebase-v1-SearchPlansRequest) | [SearchPlansResponse](#bytebase-v1-SearchPlansResponse) | Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter &amp; query. |
-| CreatePlan | [CreatePlanRequest](#bytebase-v1-CreatePlanRequest) | [Plan](#bytebase-v1-Plan) |  |
-| UpdatePlan | [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest) | [Plan](#bytebase-v1-Plan) | UpdatePlan updates the plan. The plan creator and the user with bb.plans.update permission on the project can update the plan. |
-| ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) |  |
-| RunPlanChecks | [RunPlanChecksRequest](#bytebase-v1-RunPlanChecksRequest) | [RunPlanChecksResponse](#bytebase-v1-RunPlanChecksResponse) |  |
-| BatchCancelPlanCheckRuns | [BatchCancelPlanCheckRunsRequest](#bytebase-v1-BatchCancelPlanCheckRunsRequest) | [BatchCancelPlanCheckRunsResponse](#bytebase-v1-BatchCancelPlanCheckRunsResponse) |  |
-| PreviewPlan | [PreviewPlanRequest](#bytebase-v1-PreviewPlanRequest) | [PreviewPlanResponse](#bytebase-v1-PreviewPlanResponse) |  |
-
- 
-
-
-
 <a name="v1_project_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -9144,6 +8587,673 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 
 
 
+<a name="v1_plan_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/plan_service.proto
+
+
+
+<a name="bytebase-v1-BatchCancelPlanCheckRunsRequest"></a>
+
+### BatchCancelPlanCheckRunsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The name of the parent of the planChecks. Format: projects/{project}/plans/{plan} |
+| plan_check_runs | [string](#string) | repeated | TODO(d): update this API. The planCheckRuns to cancel. Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchCancelPlanCheckRunsResponse"></a>
+
+### BatchCancelPlanCheckRunsResponse
+
+
+
+
+
+
+
+<a name="bytebase-v1-CreatePlanRequest"></a>
+
+### CreatePlanRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent project where this plan will be created. Format: projects/{project} |
+| plan | [Plan](#bytebase-v1-Plan) |  | The plan to create. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetPlanRequest"></a>
+
+### GetPlanRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the plan to retrieve. Format: projects/{project}/plans/{plan} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListPlanCheckRunsRequest"></a>
+
+### ListPlanCheckRunsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of plan check runs. Format: projects/{project}/plans/{plan} |
+| page_size | [int32](#int32) |  | Not used. The maximum number of plan check runs to return. The service may return fewer than this value. If unspecified, at most 10 plan check runs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListPlanCheckRuns` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListPlanCheckRuns` must match the call that provided the page token. |
+| latest_only | [bool](#bool) |  | If set to true, only the latest plan check run will be returned. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListPlanCheckRunsResponse"></a>
+
+### ListPlanCheckRunsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| plan_check_runs | [PlanCheckRun](#bytebase-v1-PlanCheckRun) | repeated | The plan check runs from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListPlansRequest"></a>
+
+### ListPlansRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of plans. Format: projects/{project} Use &#34;projects/-&#34; to list all plans from all projects. |
+| page_size | [int32](#int32) |  | The maximum number of plans to return. The service may return fewer than this value. If unspecified, at most 10 plans will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListPlans` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListPlans` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListPlansResponse"></a>
+
+### ListPlansResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| plans | [Plan](#bytebase-v1-Plan) | repeated | The plans from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan"></a>
+
+### Plan
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the plan. `plan` is a system generated ID. Format: projects/{project}/plans/{plan} |
+| issue | [string](#string) |  | The resource name of the issue associated with this plan. Format: projects/{project}/issues/{issue} |
+| title | [string](#string) |  |  |
+| description | [string](#string) |  |  |
+| steps | [Plan.Step](#bytebase-v1-Plan-Step) | repeated |  |
+| vcs_source | [Plan.VCSSource](#bytebase-v1-Plan-VCSSource) |  |  |
+| creator | [string](#string) |  | Format: users/hello@world.com |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| plan_check_run_status_count | [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry) | repeated | The status count of the latest plan check runs. Keys are: - SUCCESS - WARNING - ERROR |
+| release_source | [Plan.ReleaseSource](#bytebase-v1-Plan-ReleaseSource) |  |  |
+| deployment_config_snapshot | [DeploymentConfig](#bytebase-v1-DeploymentConfig) |  | The deployment config snapshot taken at the time of plan creation. This is to ensure that we get consistent rollout for the plan. |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-ChangeDatabaseConfig"></a>
+
+### Plan.ChangeDatabaseConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| target | [string](#string) |  | The resource name of the target. Format: instances/{instance-id}/databases/{database-name}. Format: projects/{project}/databaseGroups/{databaseGroup}. |
+| sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
+| type | [Plan.ChangeDatabaseConfig.Type](#bytebase-v1-Plan-ChangeDatabaseConfig-Type) |  |  |
+| schema_version | [string](#string) |  | schema_version is parsed from VCS file name. It is automatically generated in the UI workflow. |
+| ghost_flags | [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
+| pre_update_backup_detail | [Plan.ChangeDatabaseConfig.PreUpdateBackupDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-PreUpdateBackupDetail) | optional | If set, a backup of the modified data will be created automatically before any changes are applied. |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry"></a>
+
+### Plan.ChangeDatabaseConfig.GhostFlagsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-ChangeDatabaseConfig-PreUpdateBackupDetail"></a>
+
+### Plan.ChangeDatabaseConfig.PreUpdateBackupDetail
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database | [string](#string) |  | The database for keeping the backup data. Format: instances/{instance}/databases/{database} |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-CreateDatabaseConfig"></a>
+
+### Plan.CreateDatabaseConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| target | [string](#string) |  | The resource name of the instance on which the database is created. Format: instances/{instance} |
+| database | [string](#string) |  | The name of the database to create. |
+| table | [string](#string) |  | table is the name of the table, if it is not empty, Bytebase should create a table after creating the database. For example, in MongoDB, it only creates the database when we first store data in that database. |
+| character_set | [string](#string) |  | character_set is the character set of the database. |
+| collation | [string](#string) |  | collation is the collation of the database. |
+| cluster | [string](#string) |  | cluster is the cluster of the database. This is only applicable to ClickHouse for &#34;ON CLUSTER &lt;&lt;cluster&gt;&gt;&#34;. |
+| owner | [string](#string) |  | owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. |
+| environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
+| labels | [Plan.CreateDatabaseConfig.LabelsEntry](#bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry) | repeated | labels of the database. |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry"></a>
+
+### Plan.CreateDatabaseConfig.LabelsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-ExportDataConfig"></a>
+
+### Plan.ExportDataConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| target | [string](#string) |  | The resource name of the target. Format: instances/{instance-id}/databases/{database-name} |
+| sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
+| format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The format of the exported file. |
+| password | [string](#string) | optional | The zip password provide by users. Leave it empty if no needs to encrypt the zip file. |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-PlanCheckRunStatusCountEntry"></a>
+
+### Plan.PlanCheckRunStatusCountEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-ReleaseSource"></a>
+
+### Plan.ReleaseSource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| release | [string](#string) |  | The release. Format: projects/{project}/releases/{release} |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-Spec"></a>
+
+### Plan.Spec
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | earliest_allowed_time the earliest execution time of the change. |
+| id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. |
+| depends_on_specs | [string](#string) | repeated | IDs of the specs that this spec depends on. Must be a subset of the specs in the same step. |
+| spec_release_source | [Plan.SpecReleaseSource](#bytebase-v1-Plan-SpecReleaseSource) |  |  |
+| create_database_config | [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig) |  |  |
+| change_database_config | [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig) |  |  |
+| export_data_config | [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-SpecReleaseSource"></a>
+
+### Plan.SpecReleaseSource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{file} {file} is URL path escaped. |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-Step"></a>
+
+### Plan.Step
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) |  |  |
+| specs | [Plan.Spec](#bytebase-v1-Plan-Spec) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-VCSSource"></a>
+
+### Plan.VCSSource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_type | [VCSType](#bytebase-v1-VCSType) |  |  |
+| vcs_connector | [string](#string) |  | Optional. If present, we will update the pull request for rollout status. Format: projects/{project-ID}/vcsConnectors/{vcs-connector} |
+| pull_request_url | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-PlanCheckRun"></a>
+
+### PlanCheckRun
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} |
+| type | [PlanCheckRun.Type](#bytebase-v1-PlanCheckRun-Type) |  |  |
+| status | [PlanCheckRun.Status](#bytebase-v1-PlanCheckRun-Status) |  |  |
+| target | [string](#string) |  | Format: instances/{instance}/databases/{database} |
+| sheet | [string](#string) |  | Format: project/{project}/sheets/{sheet} |
+| results | [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result) | repeated |  |
+| error | [string](#string) |  | error is set if the Status is FAILED. |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-PlanCheckRun-Result"></a>
+
+### PlanCheckRun.Result
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [PlanCheckRun.Result.Status](#bytebase-v1-PlanCheckRun-Result-Status) |  |  |
+| title | [string](#string) |  |  |
+| content | [string](#string) |  |  |
+| code | [int32](#int32) |  |  |
+| sql_summary_report | [PlanCheckRun.Result.SqlSummaryReport](#bytebase-v1-PlanCheckRun-Result-SqlSummaryReport) |  |  |
+| sql_review_report | [PlanCheckRun.Result.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-SqlReviewReport) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-PlanCheckRun-Result-SqlReviewReport"></a>
+
+### PlanCheckRun.Result.SqlReviewReport
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| line | [int32](#int32) |  |  |
+| column | [int32](#int32) |  |  |
+| detail | [string](#string) |  |  |
+| code | [int32](#int32) |  | Code from sql review. |
+| start_position | [Position](#bytebase-v1-Position) |  | 1-based Position of the SQL statement. To supersede `line` and `column` above. |
+| end_position | [Position](#bytebase-v1-Position) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-PlanCheckRun-Result-SqlSummaryReport"></a>
+
+### PlanCheckRun.Result.SqlSummaryReport
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| code | [int32](#int32) |  |  |
+| statement_types | [string](#string) | repeated | statement_types are the types of statements that are found in the sql. |
+| affected_rows | [int32](#int32) |  |  |
+| changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-PreviewPlanRequest"></a>
+
+### PreviewPlanRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project | [string](#string) |  | The name of the project. Format: projects/{project} |
+| release | [string](#string) |  | The release used for preview. |
+| targets | [string](#string) | repeated | The targets to deploy. Can be database or databaseGroup. Format: projects/{project}/databaseGroups/{databaseGroup} instances/{instance}/databases/{database} |
+| allow_out_of_order | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-PreviewPlanResponse"></a>
+
+### PreviewPlanResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| plan | [Plan](#bytebase-v1-Plan) |  |  |
+| out_of_order_files | [PreviewPlanResponse.DatabaseFiles](#bytebase-v1-PreviewPlanResponse-DatabaseFiles) | repeated | The out of order files of each database. |
+| applied_but_modified_files | [PreviewPlanResponse.DatabaseFiles](#bytebase-v1-PreviewPlanResponse-DatabaseFiles) | repeated | The applied but modified files of each database. |
+
+
+
+
+
+
+<a name="bytebase-v1-PreviewPlanResponse-DatabaseFiles"></a>
+
+### PreviewPlanResponse.DatabaseFiles
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database | [string](#string) |  |  |
+| files | [string](#string) | repeated | Format: projects/{project}/releases/{release}/files/{file_id} |
+
+
+
+
+
+
+<a name="bytebase-v1-RunPlanChecksRequest"></a>
+
+### RunPlanChecksRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The plan to run plan checks. Format: projects/{project}/plans/{plan} |
+
+
+
+
+
+
+<a name="bytebase-v1-RunPlanChecksResponse"></a>
+
+### RunPlanChecksResponse
+
+
+
+
+
+
+
+<a name="bytebase-v1-SearchPlansRequest"></a>
+
+### SearchPlansRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of plans. Format: projects/{project} Use &#34;projects/-&#34; to list all plans from all projects. |
+| page_size | [int32](#int32) |  | The maximum number of plans to return. The service may return fewer than this value. If unspecified, at most 10 plans will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `SearchPlans` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `SearchPlans` must match the call that provided the page token. |
+| filter | [string](#string) |  | Filter is used to filter plans returned in the list. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchPlansResponse"></a>
+
+### SearchPlansResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| plans | [Plan](#bytebase-v1-Plan) | repeated | The plans from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdatePlanRequest"></a>
+
+### UpdatePlanRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| plan | [Plan](#bytebase-v1-Plan) |  | The plan to update.
+
+The plan&#39;s `name` field is used to identify the plan to update. Format: projects/{project}/plans/{plan} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-Plan-ChangeDatabaseConfig-Type"></a>
+
+### Plan.ChangeDatabaseConfig.Type
+Type is the database change type.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| BASELINE | 1 | Used for establishing schema baseline, this is used when 1. Onboard the database into Bytebase since Bytebase needs to know the current database schema. 2. Had schema drift and need to re-establish the baseline. |
+| MIGRATE | 2 | Used for DDL changes including CREATE DATABASE. |
+| MIGRATE_SDL | 3 | Used for schema changes via state-based schema migration including CREATE DATABASE. |
+| MIGRATE_GHOST | 4 | Used for DDL changes using gh-ost. |
+| DATA | 6 | Used for DML change. |
+
+
+
+<a name="bytebase-v1-PlanCheckRun-Result-Status"></a>
+
+### PlanCheckRun.Result.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| ERROR | 1 |  |
+| WARNING | 2 |  |
+| SUCCESS | 3 |  |
+
+
+
+<a name="bytebase-v1-PlanCheckRun-Status"></a>
+
+### PlanCheckRun.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| RUNNING | 1 |  |
+| DONE | 2 |  |
+| FAILED | 3 |  |
+| CANCELED | 4 |  |
+
+
+
+<a name="bytebase-v1-PlanCheckRun-Type"></a>
+
+### PlanCheckRun.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| DATABASE_STATEMENT_FAKE_ADVISE | 1 |  |
+| DATABASE_STATEMENT_ADVISE | 3 |  |
+| DATABASE_STATEMENT_SUMMARY_REPORT | 5 |  |
+| DATABASE_CONNECT | 6 |  |
+| DATABASE_GHOST_SYNC | 7 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-PlanService"></a>
+
+### PlanService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetPlan | [GetPlanRequest](#bytebase-v1-GetPlanRequest) | [Plan](#bytebase-v1-Plan) |  |
+| ListPlans | [ListPlansRequest](#bytebase-v1-ListPlansRequest) | [ListPlansResponse](#bytebase-v1-ListPlansResponse) |  |
+| SearchPlans | [SearchPlansRequest](#bytebase-v1-SearchPlansRequest) | [SearchPlansResponse](#bytebase-v1-SearchPlansResponse) | Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter &amp; query. |
+| CreatePlan | [CreatePlanRequest](#bytebase-v1-CreatePlanRequest) | [Plan](#bytebase-v1-Plan) |  |
+| UpdatePlan | [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest) | [Plan](#bytebase-v1-Plan) | UpdatePlan updates the plan. The plan creator and the user with bb.plans.update permission on the project can update the plan. |
+| ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) |  |
+| RunPlanChecks | [RunPlanChecksRequest](#bytebase-v1-RunPlanChecksRequest) | [RunPlanChecksResponse](#bytebase-v1-RunPlanChecksResponse) |  |
+| BatchCancelPlanCheckRuns | [BatchCancelPlanCheckRunsRequest](#bytebase-v1-BatchCancelPlanCheckRunsRequest) | [BatchCancelPlanCheckRunsResponse](#bytebase-v1-BatchCancelPlanCheckRunsResponse) |  |
+| PreviewPlan | [PreviewPlanRequest](#bytebase-v1-PreviewPlanRequest) | [PreviewPlanResponse](#bytebase-v1-PreviewPlanResponse) |  |
+
+ 
+
+
+
 <a name="v1_sql_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -9426,6 +9536,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | column_names | [string](#string) | repeated | Column names of the query result. |
 | column_type_names | [string](#string) | repeated | Column types of the query result. The types come from the Golang SQL driver. |
 | rows | [QueryRow](#bytebase-v1-QueryRow) | repeated | Rows of the query result. |
+| rows_count | [int64](#int64) |  |  |
 | masked | [bool](#bool) | repeated | Columns are masked or not. |
 | sensitive | [bool](#bool) | repeated | Columns are sensitive or not. |
 | error | [string](#string) |  | The error message if the query failed. |
@@ -10511,6 +10622,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent project where this rollout will be created. Format: projects/{project} |
 | rollout | [Rollout](#bytebase-v1-Rollout) |  | The rollout to create. |
+| stage_id | [string](#string) |  | stage_id is the id in the plan deployment_config_snapshot. The rollout is created according to the plan and the stages are created up to the stage_id. If unspecified, all stages are created. |
 
 
 
@@ -10884,6 +10996,7 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | export_archive_status | [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus) |  |  |
 | prior_backup_detail | [TaskRun.PriorBackupDetail](#bytebase-v1-TaskRun-PriorBackupDetail) |  | The prior backup detail that will be used to rollback the task run. |
 | scheduler_info | [TaskRun.SchedulerInfo](#bytebase-v1-TaskRun-SchedulerInfo) |  |  |
+| sheet | [string](#string) |  | Format: projects/{project}/sheets/{sheet} |
 
 
 
@@ -11332,7 +11445,7 @@ Read from `pg_stat_activity`
 | ----------- | ------------ | ------------- | ------------|
 | GetRollout | [GetRolloutRequest](#bytebase-v1-GetRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | ListRollouts | [ListRolloutsRequest](#bytebase-v1-ListRolloutsRequest) | [ListRolloutsResponse](#bytebase-v1-ListRolloutsResponse) |  |
-| CreateRollout | [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
+| CreateRollout | [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest) | [Rollout](#bytebase-v1-Rollout) | CreateRollout can be called multiple times with the same rollout.plan but different stage_id to promote rollout stages. |
 | PreviewRollout | [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | ListTaskRuns | [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest) | [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse) |  |
 | GetTaskRun | [GetTaskRunRequest](#bytebase-v1-GetTaskRunRequest) | [TaskRun](#bytebase-v1-TaskRun) |  |

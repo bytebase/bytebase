@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -176,7 +177,7 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 
 		wp.Go(func() {
 			slog.Debug("Sync instance schema", slog.String("instance", instance.ResourceID))
-			if _, _, err := s.SyncInstance(ctx, instance); err != nil {
+			if _, _, _, err := s.SyncInstance(ctx, instance); err != nil {
 				slog.Debug("Failed to sync instance",
 					slog.String("instance", instance.ResourceID),
 					slog.String("error", err.Error()))
@@ -253,15 +254,15 @@ func (s *Syncer) SyncDatabasesAsync(databases []*store.DatabaseMessage) {
 }
 
 // SyncInstance syncs the schema for all databases in an instance.
-func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessage) (*store.InstanceMessage, []*store.DatabaseMessage, error) {
+func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessage) (*store.InstanceMessage, []*storepb.DatabaseSchemaMetadata, []*store.DatabaseMessage, error) {
 	if s.profile.Readonly {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err != nil {
 		s.upsertInstanceConnectionAnomaly(ctx, instance, err)
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	defer driver.Close(ctx)
 	s.upsertInstanceConnectionAnomaly(ctx, instance, nil)
@@ -270,12 +271,13 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	defer cancelFunc()
 	instanceMeta, err := driver.SyncInstance(deadlineCtx)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to sync instance: %s", instance.ResourceID)
+		return nil, nil, nil, errors.Wrapf(err, "failed to sync instance: %s", instance.ResourceID)
 	}
 
 	if instanceMeta.Metadata == nil {
 		instanceMeta.Metadata = &storepb.InstanceMetadata{}
 	}
+
 	instanceMeta.Metadata.LastSyncTime = timestamppb.Now()
 	updateInstance := &store.UpdateInstanceMessage{
 		ResourceID: instance.ResourceID,
@@ -287,23 +289,24 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	}
 	updatedInstance, err := s.store.UpdateInstanceV2(ctx, updateInstance, -1)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.ResourceID)
+		return nil, nil, nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.ResourceID)
 	}
 	var newDatabases []*store.DatabaseMessage
+	var filteredDatabaseMetadatas []*storepb.DatabaseSchemaMetadata
+
 	for _, databaseMetadata := range instanceMeta.Databases {
-		exist := false
-		for _, database := range databases {
-			if database.DatabaseName == databaseMetadata.Name {
-				exist = true
-				break
-			}
+		if len(instance.Options.GetSyncDatabases()) > 0 && !slices.Contains(instance.Options.GetSyncDatabases(), databaseMetadata.Name) {
+			continue
 		}
-		if !exist {
+		filteredDatabaseMetadatas = append(filteredDatabaseMetadatas, databaseMetadata)
+		idx := slices.IndexFunc(databases, func(db *store.DatabaseMessage) bool { return db.DatabaseName == databaseMetadata.Name })
+
+		if idx < 0 {
 			// Create the database in the default project.
 			newDatabase, err := s.store.CreateDatabaseDefault(ctx, &store.DatabaseMessage{
 				InstanceID:   instance.ResourceID,
@@ -313,33 +316,27 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 				ProjectID:    api.DefaultProjectID,
 			})
 			if err != nil {
-				return nil, nil, errors.Wrapf(err, "failed to create instance %q database %q in sync runner", instance.ResourceID, databaseMetadata.Name)
+				return nil, nil, nil, errors.Wrapf(err, "failed to create instance %q database %q in sync runner", instance.ResourceID, databaseMetadata.Name)
 			}
 			newDatabases = append(newDatabases, newDatabase)
 		}
 	}
 
 	for _, database := range databases {
-		exist := false
-		for _, databaseMetadata := range instanceMeta.Databases {
-			if database.DatabaseName == databaseMetadata.Name {
-				exist = true
-				break
-			}
-		}
-		if !exist {
+		idx := slices.IndexFunc(filteredDatabaseMetadatas, func(db *storepb.DatabaseSchemaMetadata) bool { return db.Name == database.DatabaseName })
+		if idx < 0 {
 			syncStatus := api.NotFound
 			if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 				InstanceID:   instance.ResourceID,
 				DatabaseName: database.DatabaseName,
 				SyncState:    &syncStatus,
 			}, api.SystemBotID); err != nil {
-				return nil, nil, errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, instance.ResourceID)
+				return nil, nil, nil, errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, instance.ResourceID)
 			}
 		}
 	}
 
-	return updatedInstance, newDatabases, nil
+	return updatedInstance, instanceMeta.Databases, newDatabases, nil
 }
 
 // SyncDatabaseSchema will sync the schema for a database.

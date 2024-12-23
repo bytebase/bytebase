@@ -21,6 +21,7 @@ import {
   vCSTypeToNumber,
 } from "./common";
 import { ChangedResources } from "./database_service";
+import { DeploymentConfig } from "./project_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -158,7 +159,14 @@ export interface Plan {
    * - ERROR
    */
   planCheckRunStatusCount: { [key: string]: number };
-  releaseSource: Plan_ReleaseSource | undefined;
+  releaseSource:
+    | Plan_ReleaseSource
+    | undefined;
+  /**
+   * The deployment config snapshot taken at the time of plan creation.
+   * This is to ensure that we get consistent rollout for the plan.
+   */
+  deploymentConfigSnapshot: DeploymentConfig | undefined;
 }
 
 export interface Plan_Step {
@@ -1322,6 +1330,7 @@ function createBasePlan(): Plan {
     updateTime: undefined,
     planCheckRunStatusCount: {},
     releaseSource: undefined,
+    deploymentConfigSnapshot: undefined,
   };
 }
 
@@ -1359,6 +1368,9 @@ export const Plan: MessageFns<Plan> = {
     });
     if (message.releaseSource !== undefined) {
       Plan_ReleaseSource.encode(message.releaseSource, writer.uint32(98).fork()).join();
+    }
+    if (message.deploymentConfigSnapshot !== undefined) {
+      DeploymentConfig.encode(message.deploymentConfigSnapshot, writer.uint32(106).fork()).join();
     }
     return writer;
   },
@@ -1461,6 +1473,14 @@ export const Plan: MessageFns<Plan> = {
           message.releaseSource = Plan_ReleaseSource.decode(reader, reader.uint32());
           continue;
         }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.deploymentConfigSnapshot = DeploymentConfig.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1488,6 +1508,9 @@ export const Plan: MessageFns<Plan> = {
         }, {})
         : {},
       releaseSource: isSet(object.releaseSource) ? Plan_ReleaseSource.fromJSON(object.releaseSource) : undefined,
+      deploymentConfigSnapshot: isSet(object.deploymentConfigSnapshot)
+        ? DeploymentConfig.fromJSON(object.deploymentConfigSnapshot)
+        : undefined,
     };
   },
 
@@ -1532,6 +1555,9 @@ export const Plan: MessageFns<Plan> = {
     if (message.releaseSource !== undefined) {
       obj.releaseSource = Plan_ReleaseSource.toJSON(message.releaseSource);
     }
+    if (message.deploymentConfigSnapshot !== undefined) {
+      obj.deploymentConfigSnapshot = DeploymentConfig.toJSON(message.deploymentConfigSnapshot);
+    }
     return obj;
   },
 
@@ -1566,6 +1592,10 @@ export const Plan: MessageFns<Plan> = {
     message.releaseSource = (object.releaseSource !== undefined && object.releaseSource !== null)
       ? Plan_ReleaseSource.fromPartial(object.releaseSource)
       : undefined;
+    message.deploymentConfigSnapshot =
+      (object.deploymentConfigSnapshot !== undefined && object.deploymentConfigSnapshot !== null)
+        ? DeploymentConfig.fromPartial(object.deploymentConfigSnapshot)
+        : undefined;
     return message;
   },
 };

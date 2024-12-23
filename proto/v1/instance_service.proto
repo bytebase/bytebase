@@ -232,7 +232,10 @@ message SyncInstanceRequest {
   bool enable_full_sync = 2;
 }
 
-message SyncInstanceResponse {}
+message SyncInstanceResponse {
+  // All database name list in the instance.
+  repeated string databases = 1;
+}
 
 message BatchSyncInstancesRequest {
   // The request message specifying the instances to sync.
@@ -309,6 +312,10 @@ message InstanceOptions {
   // The maximum number of connections.
   // The default is 10 if the value is unset or zero.
   int32 maximum_connections = 3;
+
+  // Enable sync for following databases.
+  // Default empty, means sync all schemas & databases.
+  repeated string sync_databases = 4;
 }
 
 message Instance {

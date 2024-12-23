@@ -30,6 +30,7 @@ import {
 } from "@/types/proto/v1/sql_service";
 import {
   emptySQLEditorTabQueryContext,
+  ensureDataSourceSelection,
   hasPermissionToCreateChangeDatabaseIssue,
 } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
@@ -310,9 +311,24 @@ const useExecuteSQL = () => {
           ? database.instance
           : params.connection.instance;
         const dataSourceId =
-          instance === params.connection.instance
-            ? (params.connection.dataSourceId ?? "")
-            : "";
+          ensureDataSourceSelection(
+            instance === params.connection.instance
+              ? params.connection.dataSourceId
+              : undefined,
+            database
+          ) ?? "";
+
+        if (!dataSourceId) {
+          fail(database, {
+            advices: [],
+            allowExport: false,
+            error: "No queriable data source.",
+            results: [],
+            status: Status.NOT_FOUND,
+          });
+          continue;
+        }
+
         const resultSet = await sqlStore.query(
           {
             name: database.name,

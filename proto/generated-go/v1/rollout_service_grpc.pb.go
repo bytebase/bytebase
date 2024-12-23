@@ -39,6 +39,7 @@ const (
 type RolloutServiceClient interface {
 	GetRollout(ctx context.Context, in *GetRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
 	ListRollouts(ctx context.Context, in *ListRolloutsRequest, opts ...grpc.CallOption) (*ListRolloutsResponse, error)
+	// CreateRollout can be called multiple times with the same rollout.plan but different stage_id to promote rollout stages.
 	CreateRollout(ctx context.Context, in *CreateRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
 	PreviewRollout(ctx context.Context, in *PreviewRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
 	ListTaskRuns(ctx context.Context, in *ListTaskRunsRequest, opts ...grpc.CallOption) (*ListTaskRunsResponse, error)
@@ -193,6 +194,7 @@ func (c *rolloutServiceClient) PreviewTaskRunRollback(ctx context.Context, in *P
 type RolloutServiceServer interface {
 	GetRollout(context.Context, *GetRolloutRequest) (*Rollout, error)
 	ListRollouts(context.Context, *ListRolloutsRequest) (*ListRolloutsResponse, error)
+	// CreateRollout can be called multiple times with the same rollout.plan but different stage_id to promote rollout stages.
 	CreateRollout(context.Context, *CreateRolloutRequest) (*Rollout, error)
 	PreviewRollout(context.Context, *PreviewRolloutRequest) (*Rollout, error)
 	ListTaskRuns(context.Context, *ListTaskRunsRequest) (*ListTaskRunsResponse, error)

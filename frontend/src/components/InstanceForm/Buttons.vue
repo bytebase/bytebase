@@ -59,6 +59,7 @@ import {
   useSubscriptionV1Store,
   useGracefulRequest,
   pushNotification,
+  useDBSchemaV1Store,
 } from "@/store";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import { Engine } from "@/types/proto/v1/common";
@@ -67,7 +68,7 @@ import {
   DataSourceType,
   Instance,
 } from "@/types/proto/v1/instance_service";
-import { isValidSpannerHost, defer } from "@/utils";
+import { isValidSpannerHost, defer, wrapRefAsPromise } from "@/utils";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import {
   calcDataSourceUpdateMask,
@@ -381,11 +382,33 @@ const doUpdate = async () => {
     ) {
       updateMask.push("options.maximum_connections");
     }
+    if (
+      !isEqual(
+        instancePatch.options?.syncDatabases,
+        inst.options?.syncDatabases
+      )
+    ) {
+      updateMask.push("options.sync_databases");
+    }
     if (updateMask.length === 0) {
       return;
     }
     pendingRequestRunners.push(() =>
-      instanceV1Store.updateInstance(instancePatch, updateMask)
+      instanceV1Store.updateInstance(instancePatch, updateMask).then(() => {
+        if (updateMask.includes("options.sync_databases")) {
+          return refreshInstanceDatabases(instancePatch.name);
+        }
+      })
+    );
+  };
+  const refreshInstanceDatabases = async (instance: string) => {
+    await instanceV1Store.syncInstance(instance, true);
+    const { listCache, databaseList, ready } = useDatabaseV1List(instance);
+    listCache.deleteCache(instance);
+    await wrapRefAsPromise(ready, true);
+    const dbSchemaStore = useDBSchemaV1Store();
+    databaseList.value.forEach((database) =>
+      dbSchemaStore.removeCache(database.name)
     );
   };
   /**
