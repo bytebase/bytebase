@@ -386,6 +386,13 @@
   
     - [ChangelistService](#bytebase-v1-ChangelistService)
   
+- [v1/database_catalog_service.proto](#v1_database_catalog_service-proto)
+    - [DatabaseCatalog](#bytebase-v1-DatabaseCatalog)
+    - [GetDatabaseCatalogRequest](#bytebase-v1-GetDatabaseCatalogRequest)
+    - [UpdateDatabaseCatalogRequest](#bytebase-v1-UpdateDatabaseCatalogRequest)
+  
+    - [DatabaseCatalogService](#bytebase-v1-DatabaseCatalogService)
+  
 - [v1/database_group_service.proto](#v1_database_group_service-proto)
     - [CreateDatabaseGroupRequest](#bytebase-v1-CreateDatabaseGroupRequest)
     - [DatabaseGroup](#bytebase-v1-DatabaseGroup)
@@ -6643,6 +6650,81 @@ The changelist&#39;s `name` field is used to identify the changelist to update. 
 | ListChangelists | [ListChangelistsRequest](#bytebase-v1-ListChangelistsRequest) | [ListChangelistsResponse](#bytebase-v1-ListChangelistsResponse) |  |
 | UpdateChangelist | [UpdateChangelistRequest](#bytebase-v1-UpdateChangelistRequest) | [Changelist](#bytebase-v1-Changelist) |  |
 | DeleteChangelist | [DeleteChangelistRequest](#bytebase-v1-DeleteChangelistRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+
+ 
+
+
+
+<a name="v1_database_catalog_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/database_catalog_service.proto
+
+
+
+<a name="bytebase-v1-DatabaseCatalog"></a>
+
+### DatabaseCatalog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database catalog. Format: instances/{instance}/databases/{database}/catalog |
+
+
+
+
+
+
+<a name="bytebase-v1-GetDatabaseCatalogRequest"></a>
+
+### GetDatabaseCatalogRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database catalog to retrieve. Format: instances/{instance}/databases/{database}/catalog |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateDatabaseCatalogRequest"></a>
+
+### UpdateDatabaseCatalogRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| catalog | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  | The database catalog to update.
+
+The catalog&#39;s `name` field is used to identify the database catalog to update. Format: instances/{instance}/databases/{database}/catalog |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-DatabaseCatalogService"></a>
+
+### DatabaseCatalogService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetDatabaseCatalog | [GetDatabaseCatalogRequest](#bytebase-v1-GetDatabaseCatalogRequest) | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  |
+| UpdateDatabaseCatalog | [UpdateDatabaseCatalogRequest](#bytebase-v1-UpdateDatabaseCatalogRequest) | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  |
 
  
 
