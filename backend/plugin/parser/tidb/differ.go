@@ -1484,23 +1484,23 @@ func buildConstraintMap(stmt *ast.CreateTableStmt) (*ast.Constraint, constraintM
 }
 
 // isColumnEqual returns true if definitions of two columns with the same name are the same.
-func isColumnEqual(old, new *ast.ColumnDef) bool {
-	if !isColumnTypesEqual(old, new) {
+func isColumnEqual(o, n *ast.ColumnDef) bool {
+	if !isColumnTypesEqual(o, n) {
 		return false
 	}
-	if !isColumnOptionsEqual(old.Options, new.Options) {
+	if !isColumnOptionsEqual(o.Options, n.Options) {
 		return false
 	}
 	return true
 }
 
-func isColumnTypesEqual(old, new *ast.ColumnDef) bool {
-	return old.Tp.String() == new.Tp.String()
+func isColumnTypesEqual(o, n *ast.ColumnDef) bool {
+	return o.Tp.String() == n.Tp.String()
 }
 
-func isColumnOptionsEqual(old, new []*ast.ColumnOption) bool {
-	oldCollate, oldNormalizeOptions := normalizeColumnOptions(old)
-	newCollate, newNormalizeOptions := normalizeColumnOptions(new)
+func isColumnOptionsEqual(o, n []*ast.ColumnOption) bool {
+	oldCollate, oldNormalizeOptions := normalizeColumnOptions(o)
+	newCollate, newNormalizeOptions := normalizeColumnOptions(n)
 	if len(oldNormalizeOptions) != len(newNormalizeOptions) {
 		return false
 	}
@@ -1559,7 +1559,7 @@ func normalizeColumnOptions(options []*ast.ColumnOption) (*ast.ColumnOption, []*
 }
 
 // isIndexEqual returns true if definitions of two indexes are the same.
-func isIndexEqual(old, new *ast.CreateIndexStmt) bool {
+func isIndexEqual(o, n *ast.CreateIndexStmt) bool {
 	// CREATE [UNIQUE | FULLTEXT | SPATIAL] INDEX index_name
 	// [index_type]
 	// ON tbl_name (key_part,...)
@@ -1567,59 +1567,59 @@ func isIndexEqual(old, new *ast.CreateIndexStmt) bool {
 	// [algorithm_option | lock_option] ...
 
 	// MySQL index names are case insensitive.
-	if !strings.EqualFold(old.IndexName, new.IndexName) {
+	if !strings.EqualFold(o.IndexName, n.IndexName) {
 		return false
 	}
-	if (old.IndexOption == nil) != (new.IndexOption == nil) {
+	if (o.IndexOption == nil) != (n.IndexOption == nil) {
 		return false
 	}
-	if old.IndexOption != nil && new.IndexOption != nil {
-		if old.IndexOption.Tp != new.IndexOption.Tp {
+	if o.IndexOption != nil && n.IndexOption != nil {
+		if o.IndexOption.Tp != n.IndexOption.Tp {
 			return false
 		}
 	}
 
-	if !isKeyPartEqual(old.IndexPartSpecifications, new.IndexPartSpecifications) {
+	if !isKeyPartEqual(o.IndexPartSpecifications, n.IndexPartSpecifications) {
 		return false
 	}
-	if !isIndexOptionEqual(old.IndexOption, new.IndexOption) {
+	if !isIndexOptionEqual(o.IndexOption, n.IndexOption) {
 		return false
 	}
 	return true
 }
 
 // isPrimaryKeyEqual returns true if definitions of two indexes are the same.
-func isPrimaryKeyEqual(old, new *ast.Constraint) bool {
+func isPrimaryKeyEqual(o, n *ast.Constraint) bool {
 	// {INDEX | KEY} [index_name] [index_type] (key_part,...) [index_option] ...
-	if old.Name != new.Name {
+	if o.Name != n.Name {
 		return false
 	}
-	if (old.Option == nil) != (new.Option == nil) {
+	if (o.Option == nil) != (n.Option == nil) {
 		return false
 	}
-	if old.Option != nil && new.Option != nil {
-		if old.Option.Tp != new.Option.Tp {
+	if o.Option != nil && n.Option != nil {
+		if o.Option.Tp != n.Option.Tp {
 			return false
 		}
 	}
 
-	if !isKeyPartEqual(old.Keys, new.Keys) {
+	if !isKeyPartEqual(o.Keys, n.Keys) {
 		return false
 	}
-	if !isIndexOptionEqual(old.Option, new.Option) {
+	if !isIndexOptionEqual(o.Option, n.Option) {
 		return false
 	}
 	return true
 }
 
 // isKeyPartEqual returns true if two key parts are the same.
-func isKeyPartEqual(old, new []*ast.IndexPartSpecification) bool {
-	if len(old) != len(new) {
+func isKeyPartEqual(o, n []*ast.IndexPartSpecification) bool {
+	if len(o) != len(n) {
 		return false
 	}
 	// key_part: {col_name [(length)] | (expr)} [ASC | DESC]
-	for idx, oldKeyPart := range old {
-		newKeyPart := new[idx]
+	for idx, oldKeyPart := range o {
+		newKeyPart := n[idx]
 		if (oldKeyPart.Column == nil) != (newKeyPart.Column == nil) {
 			return false
 		}
@@ -1659,7 +1659,7 @@ func isKeyPartEqual(old, new []*ast.IndexPartSpecification) bool {
 }
 
 // isIndexOptionEqual returns true if two index options are the same.
-func isIndexOptionEqual(old, new *ast.IndexOption) bool {
+func isIndexOptionEqual(o, n *ast.IndexOption) bool {
 	// index_option: {
 	// 	KEY_BLOCK_SIZE [=] value
 	//   | index_type
@@ -1669,25 +1669,25 @@ func isIndexOptionEqual(old, new *ast.IndexOption) bool {
 	//   |ENGINE_ATTRIBUTE [=] 'string'
 	//   |SECONDARY_ENGINE_ATTRIBUTE [=] 'string'
 	// }
-	if (old == nil) != (new == nil) {
+	if (o == nil) != (n == nil) {
 		return false
 	}
-	if old == nil && new == nil {
+	if o == nil && n == nil {
 		return true
 	}
-	if old.KeyBlockSize != new.KeyBlockSize {
+	if o.KeyBlockSize != n.KeyBlockSize {
 		return false
 	}
-	if old.Tp != new.Tp {
+	if o.Tp != n.Tp {
 		return false
 	}
-	if old.ParserName.O != new.ParserName.O {
+	if o.ParserName.O != n.ParserName.O {
 		return false
 	}
-	if old.Comment != new.Comment {
+	if o.Comment != n.Comment {
 		return false
 	}
-	if old.Visibility != new.Visibility {
+	if o.Visibility != n.Visibility {
 		return false
 	}
 	// TODO(zp): support ENGINE_ATTRIBUTE and SECONDARY_ENGINE_ATTRIBUTE.
@@ -1695,56 +1695,56 @@ func isIndexOptionEqual(old, new *ast.IndexOption) bool {
 }
 
 // isForeignKeyEqual returns true if two foreign keys are the same.
-func isForeignKeyConstraintEqual(old, new *ast.Constraint) bool {
+func isForeignKeyConstraintEqual(o, n *ast.Constraint) bool {
 	// FOREIGN KEY [index_name] (index_col_name,...) reference_definition
-	if !strings.EqualFold(old.Name, new.Name) {
+	if !strings.EqualFold(o.Name, n.Name) {
 		return false
 	}
-	if !isKeyPartEqual(old.Keys, new.Keys) {
+	if !isKeyPartEqual(o.Keys, n.Keys) {
 		return false
 	}
-	if !isReferenceDefinitionEqual(old.Refer, new.Refer) {
+	if !isReferenceDefinitionEqual(o.Refer, n.Refer) {
 		return false
 	}
 	return true
 }
 
 // isReferenceDefinitionEqual returns true if two reference definitions are the same.
-func isReferenceDefinitionEqual(old, new *ast.ReferenceDef) bool {
+func isReferenceDefinitionEqual(o, n *ast.ReferenceDef) bool {
 	// reference_definition:
 	// 	REFERENCES tbl_name (index_col_name,...)
 	//   [MATCH FULL | MATCH PARTIAL | MATCH SIMPLE]
 	//   [ON DELETE reference_option]
 	//   [ON UPDATE reference_option]
-	if old.Table.Name.String() != new.Table.Name.String() {
+	if o.Table.Name.String() != n.Table.Name.String() {
 		return false
 	}
 
-	if len(old.IndexPartSpecifications) != len(new.IndexPartSpecifications) {
+	if len(o.IndexPartSpecifications) != len(n.IndexPartSpecifications) {
 		return false
 	}
-	for idx, oldIndexColName := range old.IndexPartSpecifications {
-		newIndexColName := new.IndexPartSpecifications[idx]
+	for idx, oldIndexColName := range o.IndexPartSpecifications {
+		newIndexColName := n.IndexPartSpecifications[idx]
 		if oldIndexColName.Column.Name.String() != newIndexColName.Column.Name.String() {
 			return false
 		}
 	}
 
-	if old.Match != new.Match {
+	if o.Match != n.Match {
 		return false
 	}
 
-	if (old.OnDelete == nil) != (new.OnDelete == nil) {
+	if (o.OnDelete == nil) != (n.OnDelete == nil) {
 		return false
 	}
-	if old.OnDelete != nil && new.OnDelete != nil && old.OnDelete.ReferOpt != new.OnDelete.ReferOpt {
+	if o.OnDelete != nil && n.OnDelete != nil && o.OnDelete.ReferOpt != n.OnDelete.ReferOpt {
 		return false
 	}
 
-	if (old.OnUpdate == nil) != (new.OnUpdate == nil) {
+	if (o.OnUpdate == nil) != (n.OnUpdate == nil) {
 		return false
 	}
-	if old.OnUpdate != nil && new.OnUpdate != nil && old.OnUpdate.ReferOpt != new.OnUpdate.ReferOpt {
+	if o.OnUpdate != nil && n.OnUpdate != nil && o.OnUpdate.ReferOpt != n.OnUpdate.ReferOpt {
 		return false
 	}
 	return true
@@ -1764,23 +1764,23 @@ func trimParentheses(expr ast.ExprNode) ast.ExprNode {
 }
 
 // isCheckConstraintEqual returns true if two check constraints are the same.
-func isCheckConstraintEqual(old, new *ast.Constraint) bool {
+func isCheckConstraintEqual(o, n *ast.Constraint) bool {
 	// check_constraint_definition:
 	// 		[CONSTRAINT [symbol]] CHECK (expr) [[NOT] ENFORCED]
-	if !strings.EqualFold(old.Name, new.Name) {
+	if !strings.EqualFold(o.Name, n.Name) {
 		return false
 	}
 
-	if old.Enforced != new.Enforced {
+	if o.Enforced != n.Enforced {
 		return false
 	}
 
-	oldExpr, err := toString(trimParentheses(old.Expr))
+	oldExpr, err := toString(trimParentheses(o.Expr))
 	if err != nil {
 		slog.Error("failed to convert old check constraint expression to string", log.BBError(err))
 		return false
 	}
-	newExpr, err := toString(trimParentheses(new.Expr))
+	newExpr, err := toString(trimParentheses(n.Expr))
 	if err != nil {
 		slog.Error("failed to convert new check constraint expression to string", log.BBError(err))
 		return false
@@ -1789,7 +1789,7 @@ func isCheckConstraintEqual(old, new *ast.Constraint) bool {
 }
 
 // diffTableOptions returns the diff of two table options, returns nil if they are the same.
-func diffTableOptions(tableName *ast.TableName, old, new []*ast.TableOption) *ast.AlterTableStmt {
+func diffTableOptions(tableName *ast.TableName, o, n []*ast.TableOption) *ast.AlterTableStmt {
 	// https://dev.mysql.com/doc/refman/8.0/en/create-table.html
 	// table_option: {
 	// 	AUTOEXTEND_SIZE [=] value
@@ -1825,8 +1825,8 @@ func diffTableOptions(tableName *ast.TableName, old, new []*ast.TableOption) *as
 	// }
 
 	// We use map to record the table options, so we can easily find the difference.
-	oldOptionsMap := buildTableOptionMap(old)
-	newOptionsMap := buildTableOptionMap(new)
+	oldOptionsMap := buildTableOptionMap(o)
+	newOptionsMap := buildTableOptionMap(n)
 
 	var options []*ast.TableOption
 	for oldTp, oldOption := range oldOptionsMap {
@@ -2002,77 +2002,77 @@ func dropTableOption(option *ast.TableOption) *ast.TableOption {
 
 // isTableOptionValEqual compare the two table options value, if they are equal, returns true.
 // Caller need to ensure the two table options are not nil and the type is the same.
-func isTableOptionValEqual(old, new *ast.TableOption) bool {
-	switch old.Tp {
+func isTableOptionValEqual(o, n *ast.TableOption) bool {
+	switch o.Tp {
 	case ast.TableOptionAutoIncrement:
 		// You cannot reset the counter to a value less than or equal to the value that is currently in use.
 		// For both InnoDB and MyISAM, if the value is less than or equal to the maximum value currently in the AUTO_INCREMENT column,
 		// the value is reset to the current maximum AUTO_INCREMENT column value plus one.
 		// https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
-		return old.UintValue == new.UintValue
+		return o.UintValue == n.UintValue
 	case ast.TableOptionAvgRowLength:
-		return old.UintValue == new.UintValue
+		return o.UintValue == n.UintValue
 	case ast.TableOptionCharset:
-		if old.Default != new.Default {
+		if o.Default != n.Default {
 			return false
 		}
-		if old.Default && new.Default {
+		if o.Default && n.Default {
 			return true
 		}
-		return old.StrValue == new.StrValue
+		return o.StrValue == n.StrValue
 	case ast.TableOptionCollate:
-		return old.StrValue == new.StrValue
+		return o.StrValue == n.StrValue
 	case ast.TableOptionCheckSum:
-		return old.UintValue == new.UintValue
+		return o.UintValue == n.UintValue
 	case ast.TableOptionComment:
-		return old.StrValue == new.StrValue
+		return o.StrValue == n.StrValue
 	case ast.TableOptionCompression:
-		return old.StrValue == new.StrValue
+		return o.StrValue == n.StrValue
 	case ast.TableOptionConnection:
-		return old.StrValue == new.StrValue
+		return o.StrValue == n.StrValue
 	case ast.TableOptionDataDirectory:
-		return old.StrValue == new.StrValue
+		return o.StrValue == n.StrValue
 	case ast.TableOptionIndexDirectory:
-		return old.StrValue == new.StrValue
+		return o.StrValue == n.StrValue
 	case ast.TableOptionDelayKeyWrite:
-		return old.UintValue == new.UintValue
+		return o.UintValue == n.UintValue
 	case ast.TableOptionEncryption:
-		return old.StrValue == new.StrValue
+		return o.StrValue == n.StrValue
 	case ast.TableOptionEngine:
-		return old.StrValue == new.StrValue
+		return o.StrValue == n.StrValue
 	case ast.TableOptionInsertMethod:
-		return old.StrValue == new.StrValue
+		return o.StrValue == n.StrValue
 	case ast.TableOptionKeyBlockSize:
-		return old.UintValue == new.UintValue
+		return o.UintValue == n.UintValue
 	case ast.TableOptionMaxRows:
-		return old.UintValue == new.UintValue
+		return o.UintValue == n.UintValue
 	case ast.TableOptionMinRows:
-		return old.UintValue == new.UintValue
+		return o.UintValue == n.UintValue
 	case ast.TableOptionPackKeys:
 		// TiDB doesn't support this, and the restore will always write "DEFAULT".
 		// The parser will ignore it. So we can only ignore it here.
 		// https://github.com/pingcap/tidb/blob/master/parser/parser.y#L11661
-		return old.Default == new.Default
+		return o.Default == n.Default
 	case ast.TableOptionPassword:
 		// mysqldump will not dump the password, so we just return false here.
 		return false
 	case ast.TableOptionRowFormat:
-		return old.UintValue == new.UintValue
+		return o.UintValue == n.UintValue
 	case ast.TableOptionStatsAutoRecalc:
 		// TiDB parser will ignore the DEFAULT value. So we just can compare the UINT value here.
 		// https://github.com/pingcap/tidb/blob/master/parser/parser.y#L11599
-		return old.UintValue == new.UintValue
+		return o.UintValue == n.UintValue
 	case ast.TableOptionStatsPersistent:
 		// TiDB parser doesn't support this, it only assign the type without any value.
 		// https://github.com/pingcap/tidb/blob/master/parser/parser.y#L11595
 		return true
 	case ast.TableOptionStatsSamplePages:
-		return old.UintValue == new.UintValue
+		return o.UintValue == n.UintValue
 	case ast.TableOptionTablespace:
-		return old.StrValue == new.StrValue
+		return o.StrValue == n.StrValue
 	case ast.TableOptionUnion:
-		oldTableNames := old.TableNames
-		newTableNames := new.TableNames
+		oldTableNames := o.TableNames
+		newTableNames := n.TableNames
 		if len(oldTableNames) != len(newTableNames) {
 			return false
 		}
@@ -2088,7 +2088,7 @@ func isTableOptionValEqual(old, new *ast.TableOption) bool {
 }
 
 // isViewEqual checks whether two views with same name are equal.
-func (diff *diffNode) isViewEqual(old, new *ast.CreateViewStmt) bool {
+func (diff *diffNode) isViewEqual(o, n *ast.CreateViewStmt) bool {
 	// CREATE
 	// 		[OR REPLACE]
 	// 		[ALGORITHM = {UNDEFINED | MERGE | TEMPTABLE}]
@@ -2100,24 +2100,24 @@ func (diff *diffNode) isViewEqual(old, new *ast.CreateViewStmt) bool {
 	// We can easily replace view statement by using `CREATE OR REPLACE VIEW` statement to replace the old one.
 	// So we don't need to compare each part, just compare the restore string.
 	if diff.ignoreCaseSensitive {
-		oldViewStr, err := toLowerNameString(old)
+		oldViewStr, err := toLowerNameString(o)
 		if err != nil {
 			slog.Error("fail to convert old view to string", log.BBError(err))
 			return false
 		}
-		newViewStr, err := toLowerNameString(new)
+		newViewStr, err := toLowerNameString(n)
 		if err != nil {
 			slog.Error("fail to convert new view to string", log.BBError(err))
 			return false
 		}
 		return oldViewStr == newViewStr
 	}
-	oldViewStr, err := toString(old)
+	oldViewStr, err := toString(o)
 	if err != nil {
 		slog.Error("fail to convert old view to string", log.BBError(err))
 		return false
 	}
-	newViewStr, err := toString(new)
+	newViewStr, err := toString(n)
 	if err != nil {
 		slog.Error("fail to convert new view to string", log.BBError(err))
 		return false

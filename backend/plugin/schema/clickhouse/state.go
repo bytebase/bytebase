@@ -149,28 +149,6 @@ func convertToTableState(id int, table *storepb.TableMetadata) *tableState {
 	return state
 }
 
-type indexState struct {
-	id      int
-	name    string
-	keys    []string
-	lengths []int64
-	primary bool
-	unique  bool
-	tp      string
-}
-
-func convertToIndexState(id int, index *storepb.IndexMetadata) *indexState {
-	return &indexState{
-		id:      id,
-		name:    index.Name,
-		keys:    index.Expressions,
-		lengths: index.KeyLength,
-		primary: index.Primary,
-		unique:  index.Unique,
-		tp:      index.Type,
-	}
-}
-
 type defaultValue interface {
 	toString() string
 }
