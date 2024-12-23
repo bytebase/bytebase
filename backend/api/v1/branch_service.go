@@ -1291,17 +1291,17 @@ func reconcileMySQLPartitionMetadata(partitions []*storepb.TablePartitionMetadat
 // updateConfigBranchUpdateInfoForUpdate compare the proto of old and new metadata, and update the config branch update info.
 // NOTE: this function would not delete the config of deleted objects, and it's safe because the next time adding the object
 // back will trigger the update of the config branch update info.
-func updateConfigBranchUpdateInfoForUpdate(old *storepb.DatabaseSchemaMetadata, new *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, formattedUserUID string, formattedBranchResourceID string) *storepb.DatabaseConfig {
+func updateConfigBranchUpdateInfoForUpdate(o *storepb.DatabaseSchemaMetadata, n *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, formattedUserUID string, formattedBranchResourceID string) *storepb.DatabaseConfig {
 	time := timestamppb.Now()
 
-	alignedConfig := alignDatabaseConfig(new, config)
-	oldModel := model.NewDatabaseMetadata(old)
+	alignedConfig := alignDatabaseConfig(n, config)
+	oldModel := model.NewDatabaseMetadata(o)
 
 	newSchemaConfigMap := buildMap(alignedConfig.SchemaConfigs, func(s *storepb.SchemaConfig) string {
 		return s.Name
 	})
 	var newSchemaConfigs []*storepb.SchemaConfig
-	for _, schema := range new.Schemas {
+	for _, schema := range n.Schemas {
 		newSchemaConfig, ok := newSchemaConfigMap[schema.Name]
 		if !ok {
 			newSchemaConfigs = append(newSchemaConfigs, initSchemaConfig(schema, formattedUserUID, formattedBranchResourceID, time))
