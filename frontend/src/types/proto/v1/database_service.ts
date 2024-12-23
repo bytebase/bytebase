@@ -636,6 +636,11 @@ export interface TableMetadata {
   /** The check_constraints is the list of check constraints in a table. */
   checkConstraints: CheckConstraintMetadata[];
   owner: string;
+  /**
+   * The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.
+   * Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by
+   */
+  sortingKeys: string[];
 }
 
 /** CheckConstraintMetadata is the metadata for check constraints. */
@@ -5103,6 +5108,7 @@ function createBaseTableMetadata(): TableMetadata {
     partitions: [],
     checkConstraints: [],
     owner: "",
+    sortingKeys: [],
   };
 }
 
@@ -5158,6 +5164,9 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     }
     if (message.owner !== "") {
       writer.uint32(146).string(message.owner);
+    }
+    for (const v of message.sortingKeys) {
+      writer.uint32(154).string(v!);
     }
     return writer;
   },
@@ -5305,6 +5314,14 @@ export const TableMetadata: MessageFns<TableMetadata> = {
           message.owner = reader.string();
           continue;
         }
+        case 19: {
+          if (tag !== 154) {
+            break;
+          }
+
+          message.sortingKeys.push(reader.string());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5343,6 +5360,9 @@ export const TableMetadata: MessageFns<TableMetadata> = {
         ? object.checkConstraints.map((e: any) => CheckConstraintMetadata.fromJSON(e))
         : [],
       owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
+      sortingKeys: globalThis.Array.isArray(object?.sortingKeys)
+        ? object.sortingKeys.map((e: any) => globalThis.String(e))
+        : [],
     };
   },
 
@@ -5399,6 +5419,9 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     if (message.owner !== "") {
       obj.owner = message.owner;
     }
+    if (message.sortingKeys?.length) {
+      obj.sortingKeys = message.sortingKeys;
+    }
     return obj;
   },
 
@@ -5432,6 +5455,7 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     message.partitions = object.partitions?.map((e) => TablePartitionMetadata.fromPartial(e)) || [];
     message.checkConstraints = object.checkConstraints?.map((e) => CheckConstraintMetadata.fromPartial(e)) || [];
     message.owner = object.owner ?? "";
+    message.sortingKeys = object.sortingKeys?.map((e) => e) || [];
     return message;
   },
 };
