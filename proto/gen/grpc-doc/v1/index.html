@@ -1655,6 +1655,33 @@
         
           
           <li>
+            <a href="#v1%2fdatabase_catalog_service.proto">v1/database_catalog_service.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.DatabaseCatalog"><span class="badge">M</span>DatabaseCatalog</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GetDatabaseCatalogRequest"><span class="badge">M</span>GetDatabaseCatalogRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.UpdateDatabaseCatalogRequest"><span class="badge">M</span>UpdateDatabaseCatalogRequest</a>
+                </li>
+              
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.DatabaseCatalogService"><span class="badge">S</span>DatabaseCatalogService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#v1%2fdatabase_group_service.proto">v1/database_group_service.proto</a>
             <ul>
               
@@ -18976,6 +19003,168 @@ Format: projects/{project}/changelists/{changelist} </p></td>
                 <td>DELETE</td>
                 <td>/v1/{name=projects/*/changelists/*}</td>
                 <td></td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
+        <h2 id="v1/database_catalog_service.proto">v1/database_catalog_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.DatabaseCatalog">DatabaseCatalog</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the database catalog.
+Format: instances/{instance}/databases/{database}/catalog </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetDatabaseCatalogRequest">GetDatabaseCatalogRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the database catalog to retrieve.
+Format: instances/{instance}/databases/{database}/catalog </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.UpdateDatabaseCatalogRequest">UpdateDatabaseCatalogRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>catalog</td>
+                  <td><a href="#bytebase.v1.DatabaseCatalog">DatabaseCatalog</a></td>
+                  <td></td>
+                  <td><p>The database catalog to update.
+
+The catalog&#39;s `name` field is used to identify the database catalog to update.
+Format: instances/{instance}/databases/{database}/catalog </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_mask</td>
+                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
+                  <td></td>
+                  <td><p>The list of fields to update. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.DatabaseCatalogService">DatabaseCatalogService</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>GetDatabaseCatalog</td>
+                <td><a href="#bytebase.v1.GetDatabaseCatalogRequest">GetDatabaseCatalogRequest</a></td>
+                <td><a href="#bytebase.v1.DatabaseCatalog">DatabaseCatalog</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>UpdateDatabaseCatalog</td>
+                <td><a href="#bytebase.v1.UpdateDatabaseCatalogRequest">UpdateDatabaseCatalogRequest</a></td>
+                <td><a href="#bytebase.v1.DatabaseCatalog">DatabaseCatalog</a></td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>GetDatabaseCatalog</td>
+                <td>GET</td>
+                <td>/v1/{name=instances/*/databases/*/catalog}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>UpdateDatabaseCatalog</td>
+                <td>PATCH</td>
+                <td>/v1/{catalog.name=instances/*/databases/*/catalog}</td>
+                <td>catalog</td>
               </tr>
               
             
