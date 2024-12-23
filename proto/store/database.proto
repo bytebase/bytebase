@@ -315,6 +315,10 @@ message TableMetadata {
   repeated CheckConstraintMetadata check_constraints = 16;
 
   string owner = 18;
+
+  // The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.
+  // Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by
+  repeated string sorting_keys = 19;
 }
 
 message CheckConstraintMetadata {
