@@ -1363,7 +1363,9 @@ type Stage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The deployment id which comes from the deployment config.
+	// The id comes from the deployment config.
+	// Format: UUID
+	// Empty for legacy stages.
 	Id            string  `protobuf:"bytes,3,opt,name=id,proto3" json:"id,omitempty"`
 	Title         string  `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
 	Tasks         []*Task `protobuf:"bytes,5,rep,name=tasks,proto3" json:"tasks,omitempty"`

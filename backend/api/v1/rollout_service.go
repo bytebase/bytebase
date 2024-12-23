@@ -1163,7 +1163,7 @@ func getTaskIndexDAGs(specs []*storepb.PlanConfig_Spec, getTaskIndexes func(spec
 	return taskIndexDAGs
 }
 
-// filter pipelineCreate.Stages using targetStageID
+// filter pipelineCreate.Stages using targetStageID.
 func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, snapshot *storepb.DeploymentConfig, project *store.ProjectMessage, pipelineCreate *store.PipelineMessage, targetStageID string) (*store.PipelineMessage, error) {
 	if targetStageID == "" {
 		return pipelineCreate, nil

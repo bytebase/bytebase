@@ -14326,7 +14326,10 @@ components:
                 id:
                     readOnly: true
                     type: string
-                    description: The deployment id which comes from the deployment config.
+                    description: |-
+                        The id comes from the deployment config.
+                         Format: UUID
+                         Empty for legacy stages.
                 title:
                     type: string
                 tasks:

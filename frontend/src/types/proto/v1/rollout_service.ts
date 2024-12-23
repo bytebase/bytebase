@@ -215,7 +215,11 @@ export interface Rollout {
 export interface Stage {
   /** Format: projects/{project}/rollouts/{rollout}/stages/{stage} */
   name: string;
-  /** The deployment id which comes from the deployment config. */
+  /**
+   * The id comes from the deployment config.
+   * Format: UUID
+   * Empty for legacy stages.
+   */
   id: string;
   title: string;
   tasks: Task[];
