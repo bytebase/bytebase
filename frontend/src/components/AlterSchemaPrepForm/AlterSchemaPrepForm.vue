@@ -34,6 +34,7 @@
             mode="ALL_SHORT"
             :show-sql-editor-button="false"
             :database-list="selectableDatabaseList"
+            :keyword="state.params.query.trim().toLowerCase()"
             @update:selected-databases="handleDatabasesSelectionChanged"
           />
           <SchemalessDatabaseTable

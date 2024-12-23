@@ -7,6 +7,8 @@
   >
     <span class="line-clamp-1 select-none" :class="textClass">
       {{ prefix }}
+      <!-- eslint-disable-next-line vue/no-v-html -->
+      <span v-html="renderedEnvironmentName" />
       {{ environmentV1Name(environment) }}
       <slot name="suffix">
         {{ suffix }}
@@ -26,7 +28,11 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type { VueClass } from "@/utils";
-import { autoEnvironmentRoute, environmentV1Name } from "@/utils";
+import {
+  autoEnvironmentRoute,
+  environmentV1Name,
+  getHighlightHTMLByRegExp,
+} from "@/utils";
 import ProductionEnvironmentV1Icon from "./ProductionEnvironmentV1Icon.vue";
 
 const props = withDefaults(
@@ -41,6 +47,7 @@ const props = withDefaults(
     prefix?: string;
     showIcon?: boolean;
     textClass?: string;
+    keyword?: string;
   }>(),
   {
     tag: "span",
@@ -52,6 +59,7 @@ const props = withDefaults(
     prefix: "",
     showIcon: true,
     textClass: "",
+    keyword: "",
   }
 );
 
@@ -71,5 +79,12 @@ const bindings = computed(() => {
     };
   }
   return {};
+});
+
+const renderedEnvironmentName = computed(() => {
+  return getHighlightHTMLByRegExp(
+    environmentV1Name(props.environment),
+    props.keyword
+  );
 });
 </script>

@@ -14,6 +14,8 @@ permissions:
   - bb.changelists.get
   - bb.changelists.list
   - bb.changelists.update
+  - bb.databaseCatalogs.get
+  - bb.databaseCatalogs.update
   - bb.databaseSecrets.delete
   - bb.databaseSecrets.list
   - bb.databaseSecrets.update

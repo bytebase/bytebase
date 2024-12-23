@@ -1579,6 +1579,7 @@ TablePartitionMetadata is the metadata for table partitions.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of the trigger. |
+| schema_name | [string](#string) |  | The schema name of the table/view that the trigger is created. |
 | table_name | [string](#string) |  | The table_name is the name of the table/view that the trigger is created on. |
 | event | [string](#string) |  | The event is the event of the trigger, such as INSERT, UPDATE, DELETE, TRUNCATE. |
 | timing | [string](#string) |  | The timing is the timing of the trigger, such as BEFORE, AFTER. |
@@ -1586,6 +1587,8 @@ TablePartitionMetadata is the metadata for table partitions.
 | sql_mode | [string](#string) |  |  |
 | character_set_client | [string](#string) |  |  |
 | collation_connection | [string](#string) |  |  |
+| action_orientation | [string](#string) |  | For Postgres, identifies whether the trigger fires once for each processed row or once for each statement (ROW or STATEMENT). |
+| condition | [string](#string) |  | For Postgres, the WHEN condition of the trigger. |
 
 
 

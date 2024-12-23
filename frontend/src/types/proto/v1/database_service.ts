@@ -562,6 +562,8 @@ export interface SequenceMetadata {
 export interface TriggerMetadata {
   /** The name is the name of the trigger. */
   name: string;
+  /** The schema name of the table/view that the trigger is created. */
+  schemaName: string;
   /**
    * The table_name is the name of the table/view that the trigger is created
    * on.
@@ -579,6 +581,10 @@ export interface TriggerMetadata {
   sqlMode: string;
   characterSetClient: string;
   collationConnection: string;
+  /** For Postgres, identifies whether the trigger fires once for each processed row or once for each statement (ROW or STATEMENT). */
+  actionOrientation: string;
+  /** For Postgres, the WHEN condition of the trigger. */
+  condition: string;
 }
 
 export interface ExternalTableMetadata {
@@ -4744,6 +4750,7 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
 function createBaseTriggerMetadata(): TriggerMetadata {
   return {
     name: "",
+    schemaName: "",
     tableName: "",
     event: "",
     timing: "",
@@ -4751,6 +4758,8 @@ function createBaseTriggerMetadata(): TriggerMetadata {
     sqlMode: "",
     characterSetClient: "",
     collationConnection: "",
+    actionOrientation: "",
+    condition: "",
   };
 }
 
@@ -4758,6 +4767,9 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
   encode(message: TriggerMetadata, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.schemaName !== "") {
+      writer.uint32(74).string(message.schemaName);
     }
     if (message.tableName !== "") {
       writer.uint32(18).string(message.tableName);
@@ -4780,6 +4792,12 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
     if (message.collationConnection !== "") {
       writer.uint32(66).string(message.collationConnection);
     }
+    if (message.actionOrientation !== "") {
+      writer.uint32(82).string(message.actionOrientation);
+    }
+    if (message.condition !== "") {
+      writer.uint32(90).string(message.condition);
+    }
     return writer;
   },
 
@@ -4796,6 +4814,14 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
           }
 
           message.name = reader.string();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.schemaName = reader.string();
           continue;
         }
         case 2: {
@@ -4854,6 +4880,22 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
           message.collationConnection = reader.string();
           continue;
         }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.actionOrientation = reader.string();
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.condition = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4866,6 +4908,7 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
   fromJSON(object: any): TriggerMetadata {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
+      schemaName: isSet(object.schemaName) ? globalThis.String(object.schemaName) : "",
       tableName: isSet(object.tableName) ? globalThis.String(object.tableName) : "",
       event: isSet(object.event) ? globalThis.String(object.event) : "",
       timing: isSet(object.timing) ? globalThis.String(object.timing) : "",
@@ -4873,6 +4916,8 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
       sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
       characterSetClient: isSet(object.characterSetClient) ? globalThis.String(object.characterSetClient) : "",
       collationConnection: isSet(object.collationConnection) ? globalThis.String(object.collationConnection) : "",
+      actionOrientation: isSet(object.actionOrientation) ? globalThis.String(object.actionOrientation) : "",
+      condition: isSet(object.condition) ? globalThis.String(object.condition) : "",
     };
   },
 
@@ -4880,6 +4925,9 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
+    }
+    if (message.schemaName !== "") {
+      obj.schemaName = message.schemaName;
     }
     if (message.tableName !== "") {
       obj.tableName = message.tableName;
@@ -4902,6 +4950,12 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
     if (message.collationConnection !== "") {
       obj.collationConnection = message.collationConnection;
     }
+    if (message.actionOrientation !== "") {
+      obj.actionOrientation = message.actionOrientation;
+    }
+    if (message.condition !== "") {
+      obj.condition = message.condition;
+    }
     return obj;
   },
 
@@ -4911,6 +4965,7 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
   fromPartial(object: DeepPartial<TriggerMetadata>): TriggerMetadata {
     const message = createBaseTriggerMetadata();
     message.name = object.name ?? "";
+    message.schemaName = object.schemaName ?? "";
     message.tableName = object.tableName ?? "";
     message.event = object.event ?? "";
     message.timing = object.timing ?? "";
@@ -4918,6 +4973,8 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
     message.sqlMode = object.sqlMode ?? "";
     message.characterSetClient = object.characterSetClient ?? "";
     message.collationConnection = object.collationConnection ?? "";
+    message.actionOrientation = object.actionOrientation ?? "";
+    message.condition = object.condition ?? "";
     return message;
   },
 };

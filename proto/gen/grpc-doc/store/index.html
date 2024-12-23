@@ -4886,6 +4886,13 @@ Example: 01ad32a0-1bb6-5e93-0000-000000000001 </p></td>
                 </tr>
               
                 <tr>
+                  <td>schema_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The schema name of the table/view that the trigger is created. </p></td>
+                </tr>
+              
+                <tr>
                   <td>table_name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -4934,6 +4941,20 @@ TRUNCATE. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>action_orientation</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>For Postgres, identifies whether the trigger fires once for each processed row or once for each statement (ROW or STATEMENT). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>condition</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>For Postgres, the WHEN condition of the trigger. </p></td>
                 </tr>
               
             </tbody>
