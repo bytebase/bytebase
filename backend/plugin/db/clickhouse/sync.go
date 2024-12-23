@@ -175,7 +175,6 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 				Comment:    comment,
 			})
 		} else {
-			// TODO: Save the sorting key into table metadata.
 			table := &storepb.TableMetadata{
 				Name:     name,
 				Columns:  columnMap[name],
@@ -197,6 +196,9 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 					Primary:     true,
 					Expressions: primaryKeys,
 				})
+			}
+			if sortingKey != "" {
+				table.SortingKeys = strings.Split(sortingKey, ", ")
 			}
 			schemaMetadata.Tables = append(schemaMetadata.Tables, table)
 		}
