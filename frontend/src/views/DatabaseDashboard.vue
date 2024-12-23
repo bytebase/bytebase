@@ -37,6 +37,7 @@
         :bordered="false"
         :database-list="filteredDatabaseList"
         :custom-click="true"
+        :keyword="state.params.query.trim().toLowerCase()"
         @row-click="handleDatabaseClick"
         @update:selected-databases="handleDatabasesSelectionChanged"
       />
