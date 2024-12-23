@@ -1394,6 +1394,79 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/instances/{instance}/databases/{database}/catalog:
+        get:
+            tags:
+                - DatabaseCatalogService
+            operationId: DatabaseCatalogService_GetDatabaseCatalog
+            parameters:
+                - name: instance
+                  in: path
+                  description: The instance id.
+                  required: true
+                  schema:
+                    type: string
+                - name: database
+                  in: path
+                  description: The database id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DatabaseCatalog'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        patch:
+            tags:
+                - DatabaseCatalogService
+            operationId: DatabaseCatalogService_UpdateDatabaseCatalog
+            parameters:
+                - name: instance
+                  in: path
+                  description: The instance id.
+                  required: true
+                  schema:
+                    type: string
+                - name: database
+                  in: path
+                  description: The database id.
+                  required: true
+                  schema:
+                    type: string
+                - name: updateMask
+                  in: query
+                  description: The list of fields to update.
+                  schema:
+                    type: string
+                    format: field-mask
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/DatabaseCatalog'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DatabaseCatalog'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}/databases/{database}/changeHistories:
         get:
             tags:
@@ -10127,6 +10200,14 @@ components:
                     readOnly: true
                     type: boolean
                     description: The database is available for DML prior backup.
+        DatabaseCatalog:
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: |-
+                        The name of the database catalog.
+                         Format: instances/{instance}/databases/{database}/catalog
         DatabaseConfig:
             type: object
             properties:
@@ -15547,6 +15628,7 @@ tags:
     - name: BranchService
     - name: CelService
     - name: ChangelistService
+    - name: DatabaseCatalogService
     - name: DatabaseGroupService
     - name: DatabaseService
     - name: EnvironmentService

@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/field_mask.proto";
+import "v1/annotation.proto";
+
+option go_package = "generated-go/v1";
+
+service DatabaseCatalogService {
+  rpc GetDatabaseCatalog(GetDatabaseCatalogRequest) returns (DatabaseCatalog) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/catalog}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.databaseCatalogs.get";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
+  rpc UpdateDatabaseCatalog(UpdateDatabaseCatalogRequest) returns (DatabaseCatalog) {
+    option (google.api.http) = {
+      patch: "/v1/{catalog.name=instances/*/databases/*/catalog}"
+      body: "catalog"
+    };
+    option (google.api.method_signature) = "catalog,update_mask";
+    option (bytebase.v1.permission) = "bb.databaseCatalogs.update";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+  }
+}
+
+message GetDatabaseCatalogRequest {
+  // The name of the database catalog to retrieve.
+  // Format: instances/{instance}/databases/{database}/catalog
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/DatabaseCatalog"}
+  ];
+}
+
+message UpdateDatabaseCatalogRequest {
+  // The database catalog to update.
+  //
+  // The catalog's `name` field is used to identify the database catalog to update.
+  // Format: instances/{instance}/databases/{database}/catalog
+  DatabaseCatalog catalog = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DatabaseCatalog {
+  option (google.api.resource) = {
+    type: "bytebase.com/DatabaseCatalog"
+    pattern: "instances/{instance}/databases/{database}/catalog"
+  };
+
+  // The name of the database catalog.
+  // Format: instances/{instance}/databases/{database}/catalog
+  string name = 1;
+}
