@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="tsx">
-import { NDataTable, type DataTableColumn, NHighlight } from "naive-ui";
+import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed, reactive } from "vue";
 import { watch } from "vue";
 import { useI18n } from "vue-i18n";
