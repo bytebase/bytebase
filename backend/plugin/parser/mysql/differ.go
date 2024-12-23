@@ -643,12 +643,12 @@ func (diff *diffNode) diffIndexConstraint(oldTable, newTable *tableDef) {
 	}
 }
 
-func isIndexConstraintEqual(new, old *indexConstraintDef) bool {
-	if old.name != new.name {
+func isIndexConstraintEqual(n, o *indexConstraintDef) bool {
+	if o.name != n.name {
 		return false
 	}
 
-	if old.ctx.GetText() != new.ctx.GetText() {
+	if o.ctx.GetText() != n.ctx.GetText() {
 		return false
 	}
 	return true
