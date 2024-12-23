@@ -250,6 +250,13 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 			return nil, status.Errorf(codes.Internal, "failed to filter stages with stageId, error: %v", err)
 		}
 	}
+	if request.ValidateOnly {
+		rolloutV1, err := convertToRollout(ctx, s.store, project, pipelineCreate)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert to rollout, error: %v", err)
+		}
+		return rolloutV1, nil
+	}
 	pipelineUID, err := s.store.CreatePipelineAIO(ctx, planID, pipelineCreate, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create pipeline, error: %v", err)
