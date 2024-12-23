@@ -165,6 +165,9 @@ message TriggerMetadata {
   // The name is the name of the trigger.
   string name = 1;
 
+  // The schema name of the table/view that the trigger is created.
+  string schema_name = 9;
+
   // The table_name is the name of the table/view that the trigger is created
   // on.
   string table_name = 2;
@@ -184,6 +187,12 @@ message TriggerMetadata {
   string character_set_client = 7;
 
   string collation_connection = 8;
+
+  // For Postgres, identifies whether the trigger fires once for each processed row or once for each statement (ROW or STATEMENT).
+  string action_orientation = 10;
+
+  // For Postgres, the WHEN condition of the trigger.
+  string condition = 11;
 }
 
 message TaskMetadata {
