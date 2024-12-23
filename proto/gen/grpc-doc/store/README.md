@@ -1518,6 +1518,7 @@ TableMetadata is the metadata for tables.
 | partitions | [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata) | repeated | The partitions is the list of partitions in a table. |
 | check_constraints | [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata) | repeated | The check_constraints is the list of check constraints in a table. |
 | owner | [string](#string) |  |  |
+| sorting_keys | [string](#string) | repeated | The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field. Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by |
 
 
 
@@ -1578,6 +1579,7 @@ TablePartitionMetadata is the metadata for table partitions.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of the trigger. |
+| schema_name | [string](#string) |  | The schema name of the table/view that the trigger is created. |
 | table_name | [string](#string) |  | The table_name is the name of the table/view that the trigger is created on. |
 | event | [string](#string) |  | The event is the event of the trigger, such as INSERT, UPDATE, DELETE, TRUNCATE. |
 | timing | [string](#string) |  | The timing is the timing of the trigger, such as BEFORE, AFTER. |
@@ -1585,6 +1587,8 @@ TablePartitionMetadata is the metadata for table partitions.
 | sql_mode | [string](#string) |  |  |
 | character_set_client | [string](#string) |  |  |
 | collation_connection | [string](#string) |  |  |
+| action_orientation | [string](#string) |  | For Postgres, identifies whether the trigger fires once for each processed row or once for each statement (ROW or STATEMENT). |
+| condition | [string](#string) |  | For Postgres, the WHEN condition of the trigger. |
 
 
 
