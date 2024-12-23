@@ -10709,6 +10709,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | parent | [string](#string) |  | The parent project where this rollout will be created. Format: projects/{project} |
 | rollout | [Rollout](#bytebase-v1-Rollout) |  | The rollout to create. |
 | stage_id | [string](#string) |  | stage_id is the id in the plan deployment_config_snapshot. The rollout is created according to the plan and the stages are created up to the stage_id. If unspecified, all stages are created. |
+| validate_only | [bool](#bool) |  | If set, validate the request and preview the rollout, but do not actually create it. |
 
 
 
