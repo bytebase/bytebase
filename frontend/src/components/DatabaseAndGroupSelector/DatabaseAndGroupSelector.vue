@@ -13,6 +13,7 @@
         :database-list="filteredDatabaseList"
         :show-selection="true"
         :selected-database-names="databaseSelectState.selectedDatabaseNameList"
+        :keyword="searchParams.query.trim().toLowerCase()"
         @update:selected-databases="
           databaseSelectState.selectedDatabaseNameList = Array.from($event)
         "

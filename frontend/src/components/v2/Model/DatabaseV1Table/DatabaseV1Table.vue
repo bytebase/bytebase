@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="tsx">
-import { NDataTable, type DataTableColumn } from "naive-ui";
+import { NDataTable, type DataTableColumn, NHighlight } from "naive-ui";
 import { computed, reactive } from "vue";
 import { watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -57,12 +57,14 @@ const props = withDefaults(
     customClick?: boolean;
     rowClickable?: boolean;
     selectedDatabaseNames?: string[];
+    keyword?: string;
   }>(),
   {
     mode: "ALL",
     bordered: true,
     showSelection: true,
     rowClickable: true,
+    keyword: undefined,
     selectedDatabaseNames: () => [],
   }
 );
@@ -95,7 +97,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     title: t("common.name"),
     resizable: true,
     render: (data) => {
-      return <DatabaseNameCell database={data} />;
+      return <DatabaseNameCell database={data} keyword={props.keyword} />;
     },
   };
   const ENVIRONMENT: DatabaseDataTableColumn = {
@@ -108,6 +110,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
         environment={data.effectiveEnvironmentEntity}
         link={false}
         tag="div"
+        keyword={props.keyword}
       />
     ),
   };
@@ -123,7 +126,11 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     title: t("common.project"),
     resizable: true,
     render: (data) => (
-      <ProjectNameCell project={data.projectEntity} mode={props.mode} />
+      <ProjectNameCell
+        project={data.projectEntity}
+        mode={props.mode}
+        keyword={props.keyword}
+      />
     ),
   };
   const INSTANCE: DatabaseDataTableColumn = {
