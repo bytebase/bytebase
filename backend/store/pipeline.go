@@ -35,7 +35,7 @@ type PipelineFind struct {
 }
 
 // targetStage == "" means deploy all stages.
-func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *PipelineMessage, targetStage string, creatorUID int) (createdPipelineUID int, err error) {
+func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *PipelineMessage, creatorUID int) (createdPipelineUID int, err error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to begin tx")
@@ -74,9 +74,6 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 	for _, stage := range pipeline.Stages {
 		if !stagesAlreadyExist[stage.DeploymentID] {
 			stagesToCreate = append(stagesToCreate, stage)
-		}
-		if targetStage != "" && stage.DeploymentID == targetStage {
-			break
 		}
 	}
 
@@ -142,7 +139,7 @@ func lockPlanAndGetPipelineUID(ctx context.Context, tx *Tx, planUID int64) (*int
 	var uid sql.NullInt32
 	if err := tx.QueryRowContext(ctx, query, planUID).Scan(&uid); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil
+			return nil, errors.Errorf("plan %d not found", planUID)
 		}
 		return nil, errors.Wrapf(err, "failed to get pipeline uid")
 	}
