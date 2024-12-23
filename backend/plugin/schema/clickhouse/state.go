@@ -99,8 +99,11 @@ func (t *tableState) toString(buf *strings.Builder) error {
 			return err
 		}
 	} else {
-		if _, err := buf.WriteString("\nORDER BY tuple()"); err != nil {
-			return err
+		// For merge tree table, we need to specify ORDER BY tuple() to make it work.
+		if strings.ToLower(t.engine) == "mergetree" {
+			if _, err := buf.WriteString("\nORDER BY tuple()"); err != nil {
+				return err
+			}
 		}
 	}
 	if len(t.primaryKeys) > 0 {
