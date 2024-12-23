@@ -13,6 +13,7 @@ import highlight from "./plugins/highlight";
 import i18n from "./plugins/i18n";
 import NaiveUI from "./plugins/naive-ui";
 import { isSilent } from "./plugins/silent-request";
+import "./polyfill";
 import { router } from "./router";
 import { pinia, pushNotification, useAuthStore } from "./store";
 import {
