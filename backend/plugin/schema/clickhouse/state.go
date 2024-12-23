@@ -100,6 +100,8 @@ func (t *tableState) toString(buf *strings.Builder) error {
 		}
 	} else {
 		// For merge tree table, we need to specify ORDER BY tuple() to make it work.
+		// Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by
+		// TODO: handle other engines.
 		if strings.ToLower(t.engine) == "mergetree" {
 			if _, err := buf.WriteString("\nORDER BY tuple()"); err != nil {
 				return err
