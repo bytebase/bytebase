@@ -62,6 +62,15 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 		}
 	}
 
+	// Construct enums.
+	for _, schema := range metadata.Schemas {
+		for _, enum := range schema.EnumTypes {
+			if err := writeEnum(out, schema.Name, enum); err != nil {
+				return err
+			}
+		}
+	}
+
 	// Construct functions.
 	for _, schema := range metadata.Schemas {
 		for _, function := range schema.Functions {
@@ -152,6 +161,43 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 	}
 
 	return nil
+}
+
+func writeEnum(out io.Writer, schema string, enum *storepb.EnumTypeMetadata) error {
+	if _, err := io.WriteString(out, `CREATE TYPE "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, enum.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" AS ENUM (\n`); err != nil {
+		return err
+	}
+	for i, value := range enum.Values {
+		if i > 0 {
+			if _, err := io.WriteString(out, ",\n"); err != nil {
+				return err
+			}
+		}
+		if _, err := io.WriteString(out, `    '`); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, value); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, `'`); err != nil {
+			return err
+		}
+	}
+
+	_, err := io.WriteString(out, ");\n\n")
+	return err
 }
 
 func writeMaterializedView(out io.Writer, schema string, view *storepb.MaterializedViewMetadata) error {
