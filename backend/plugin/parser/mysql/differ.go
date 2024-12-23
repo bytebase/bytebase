@@ -170,12 +170,12 @@ func (diff *diffNode) diffCheckConstraint(oldTable, newTable *tableDef) {
 	}
 }
 
-func isCheckConstraintEqual(old, new *checkDef) bool {
-	if !strings.EqualFold(old.name, new.name) {
+func isCheckConstraintEqual(o, n *checkDef) bool {
+	if !strings.EqualFold(o.name, n.name) {
 		return false
 	}
 
-	if old.ctx.GetText() != new.ctx.GetText() {
+	if o.ctx.GetText() != n.ctx.GetText() {
 		return false
 	}
 
@@ -312,14 +312,14 @@ func (diff *diffNode) diffPrimaryKey(oldTable, newTable *tableDef) {
 }
 
 // isPrimaryKeyEqual returns true if definitions of two priamry indexes are the same.
-func isPrimaryKeyEqual(old, new *primaryKeyDef) bool {
-	if old.tableName != new.tableName {
+func isPrimaryKeyEqual(o, n *primaryKeyDef) bool {
+	if o.tableName != n.tableName {
 		return false
 	}
-	if !isKeyPartEqual(old.columns, new.columns) {
+	if !isKeyPartEqual(o.columns, n.columns) {
 		return false
 	}
-	if old.ctx.GetText() != new.ctx.GetText() {
+	if o.ctx.GetText() != n.ctx.GetText() {
 		return false
 	}
 	return true
@@ -343,17 +343,17 @@ func (diff *diffNode) diffForeignKey(oldTable, newTable *tableDef) {
 }
 
 // isForeignKeyEqual returns true if two foreign keys are the same.
-func isForeignKeyEqual(old, new *foreignKeyDef) bool {
-	if !strings.EqualFold(old.name, new.name) {
+func isForeignKeyEqual(o, n *foreignKeyDef) bool {
+	if !strings.EqualFold(o.name, n.name) {
 		return false
 	}
-	if !isKeyPartEqual(old.columns, new.columns) {
+	if !isKeyPartEqual(o.columns, n.columns) {
 		return false
 	}
-	if !isKeyPartEqual(old.referencedColumns, new.referencedColumns) {
+	if !isKeyPartEqual(o.referencedColumns, n.referencedColumns) {
 		return false
 	}
-	if old.referencedTable != new.referencedTable {
+	if o.referencedTable != n.referencedTable {
 		return false
 	}
 	return true
@@ -477,8 +477,8 @@ func (diff *diffNode) diffFunction(oldDatabase, newDatabase *databaseDef) error 
 	return nil
 }
 
-func isFunctionEqual(old, new *functionDef) bool {
-	return old.ctx.GetText() == new.ctx.GetText()
+func isFunctionEqual(o, n *functionDef) bool {
+	return o.ctx.GetText() == n.ctx.GetText()
 }
 
 func (diff *diffNode) diffProcedure(oldDatabase, newDatabase *databaseDef) error {
@@ -502,8 +502,8 @@ func (diff *diffNode) diffProcedure(oldDatabase, newDatabase *databaseDef) error
 	return nil
 }
 
-func isProcedureEqual(old, new *procedureDef) bool {
-	return old.ctx.GetText() == new.ctx.GetText()
+func isProcedureEqual(o, n *procedureDef) bool {
+	return o.ctx.GetText() == n.ctx.GetText()
 }
 
 func (diff *diffNode) diffEvent(oldSchema, newSchema *schemaDef) error {
@@ -525,8 +525,8 @@ func (diff *diffNode) diffEvent(oldSchema, newSchema *schemaDef) error {
 	return nil
 }
 
-func isEventEqual(old, new *eventDef) bool {
-	return old.ctx.GetText() == new.ctx.GetText()
+func isEventEqual(o, n *eventDef) bool {
+	return o.ctx.GetText() == n.ctx.GetText()
 }
 
 func (diff *diffNode) diffTrigger(oldSchema, newSchema *schemaDef) error {
@@ -548,8 +548,8 @@ func (diff *diffNode) diffTrigger(oldSchema, newSchema *schemaDef) error {
 	return nil
 }
 
-func isTriggerEqual(old, new *triggerDef) bool {
-	return old.ctx.GetText() == new.ctx.GetText()
+func isTriggerEqual(o, n *triggerDef) bool {
+	return o.ctx.GetText() == n.ctx.GetText()
 }
 
 func (diff *diffNode) diffColumn(oldTable, newTable *tableDef) {
@@ -643,12 +643,12 @@ func (diff *diffNode) diffIndexConstraint(oldTable, newTable *tableDef) {
 	}
 }
 
-func isIndexConstraintEqual(new, old *indexConstraintDef) bool {
-	if old.name != new.name {
+func isIndexConstraintEqual(n, o *indexConstraintDef) bool {
+	if o.name != n.name {
 		return false
 	}
 
-	if old.ctx.GetText() != new.ctx.GetText() {
+	if o.ctx.GetText() != n.ctx.GetText() {
 		return false
 	}
 	return true
@@ -678,25 +678,25 @@ func (diff *diffNode) buildSchemaInfo(statement string) (*databaseDef, error) {
 }
 
 // isViewEqual checks whether two views with same name are equal.
-func (*diffNode) isViewEqual(old, new *viewDef) bool {
-	if old.name != new.name {
+func (*diffNode) isViewEqual(o, n *viewDef) bool {
+	if o.name != n.name {
 		return false
 	}
 
-	if old.ctx.GetText() != new.ctx.GetText() {
+	if o.ctx.GetText() != n.ctx.GetText() {
 		return false
 	}
 	return true
 }
 
 // isColumnEqual returns true if definitions of two columns with the same name are the same.
-func isColumnEqual(old, new *columnDef) bool {
+func isColumnEqual(o, n *columnDef) bool {
 	// column name
-	return old.ctx.GetText() == new.ctx.GetText()
+	return o.ctx.GetText() == n.ctx.GetText()
 }
 
 // isIndexEqual returns true if definitions of two indexes are the same.
-func isIndexEqual(old, new *indexDef) bool {
+func isIndexEqual(o, n *indexDef) bool {
 	// CREATE [UNIQUE | FULLTEXT | SPATIAL] INDEX index_name
 	// [index_type]
 	// ON tbl_name (key_part,...)
@@ -704,23 +704,23 @@ func isIndexEqual(old, new *indexDef) bool {
 	// [algorithm_option | lock_option] ...
 
 	// MySQL index names are case insensitive.
-	if !strings.EqualFold(old.name, new.name) {
+	if !strings.EqualFold(o.name, n.name) {
 		return false
 	}
-	if old.ctx.GetText() != new.ctx.GetText() {
+	if o.ctx.GetText() != n.ctx.GetText() {
 		return false
 	}
 
 	return true
 }
 
-func isKeyPartEqual(old, new []string) bool {
-	if len(old) != len(new) {
+func isKeyPartEqual(o, n []string) bool {
+	if len(o) != len(n) {
 		return false
 	}
 
-	for idx, oldKey := range old {
-		if oldKey != new[idx] {
+	for idx, oldKey := range o {
+		if oldKey != n[idx] {
 			return false
 		}
 	}
