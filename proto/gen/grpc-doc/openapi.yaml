@@ -14571,6 +14571,13 @@ components:
                     description: The check_constraints is the list of check constraints in a table.
                 owner:
                     type: string
+                sortingKeys:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.
+                         Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by
             description: TableMetadata is the metadata for tables.
         TablePartitionMetadata:
             type: object
