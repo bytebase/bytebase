@@ -5920,6 +5920,13 @@ paths:
                      If unspecified, all stages are created.
                   schema:
                     type: string
+                - name: validateOnly
+                  in: query
+                  description: |-
+                    If set, validate the request and preview the rollout, but
+                     do not actually create it.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
