@@ -14323,6 +14323,10 @@ components:
                 name:
                     type: string
                     description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}'
+                id:
+                    readOnly: true
+                    type: string
+                    description: The deployment id which comes from the deployment config.
                 title:
                     type: string
                 tasks:

@@ -215,6 +215,8 @@ export interface Rollout {
 export interface Stage {
   /** Format: projects/{project}/rollouts/{rollout}/stages/{stage} */
   name: string;
+  /** The deployment id which comes from the deployment config. */
+  id: string;
   title: string;
   tasks: Task[];
 }
@@ -2312,13 +2314,16 @@ export const Rollout: MessageFns<Rollout> = {
 };
 
 function createBaseStage(): Stage {
-  return { name: "", title: "", tasks: [] };
+  return { name: "", id: "", title: "", tasks: [] };
 }
 
 export const Stage: MessageFns<Stage> = {
   encode(message: Stage, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.id !== "") {
+      writer.uint32(26).string(message.id);
     }
     if (message.title !== "") {
       writer.uint32(34).string(message.title);
@@ -2342,6 +2347,14 @@ export const Stage: MessageFns<Stage> = {
           }
 
           message.name = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.id = reader.string();
           continue;
         }
         case 4: {
@@ -2372,6 +2385,7 @@ export const Stage: MessageFns<Stage> = {
   fromJSON(object: any): Stage {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       tasks: globalThis.Array.isArray(object?.tasks) ? object.tasks.map((e: any) => Task.fromJSON(e)) : [],
     };
@@ -2381,6 +2395,9 @@ export const Stage: MessageFns<Stage> = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
+    }
+    if (message.id !== "") {
+      obj.id = message.id;
     }
     if (message.title !== "") {
       obj.title = message.title;
@@ -2397,6 +2414,7 @@ export const Stage: MessageFns<Stage> = {
   fromPartial(object: DeepPartial<Stage>): Stage {
     const message = createBaseStage();
     message.name = object.name ?? "";
+    message.id = object.id ?? "";
     message.title = object.title ?? "";
     message.tasks = object.tasks?.map((e) => Task.fromPartial(e)) || [];
     return message;

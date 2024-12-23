@@ -10922,6 +10922,7 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage} |
+| id | [string](#string) |  | The deployment id which comes from the deployment config. |
 | title | [string](#string) |  |  |
 | tasks | [Task](#bytebase-v1-Task) | repeated |  |
 

@@ -330,6 +330,9 @@ message Stage {
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
   string name = 1;
 
+  // The deployment id which comes from the deployment config.
+  string id = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   string title = 4;
   repeated Task tasks = 5;
 }
