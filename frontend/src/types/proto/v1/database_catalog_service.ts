@@ -68,7 +68,7 @@ export interface ColumnCatalog {
   maskingLevel: MaskingLevel;
   fullMaskingAlgorithmId: string;
   partialMaskingAlgorithmId: string;
-  objectSchema: ObjectSchema | undefined;
+  objectSchema?: ObjectSchema | undefined;
 }
 
 export interface ColumnCatalog_LabelsEntry {

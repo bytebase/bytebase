@@ -101,7 +101,7 @@ message ColumnCatalog {
 
   string partial_masking_algorithm_id = 7;
 
-  ObjectSchema object_schema = 8;
+  optional ObjectSchema object_schema = 8;
 }
 
 message ObjectSchema {

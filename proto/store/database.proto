@@ -705,6 +705,8 @@ message TableConfig {
   // The column_configs is the ordered list of configs for columns in a table.
   repeated ColumnConfig column_configs = 2;
 
+  optional ObjectSchema object_schema = 7;
+
   string classification_id = 3;
 
   // The last updater of the table in branch.
@@ -783,4 +785,28 @@ message ColumnConfig {
   string full_masking_algorithm_id = 6;
 
   string partial_masking_algorithm_id = 7;
+
+  optional ObjectSchema object_schema = 8;
+}
+
+message ObjectSchema {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    STRING = 1;
+    NUMBER = 2;
+    BOOLEAN = 3;
+    OBJECT = 4;
+    ARRAY = 5;
+  }
+  Type type = 1;
+  message StructKind {
+    map<string, ObjectSchema> properties = 2;
+  }
+  message ArrayKind {
+    ObjectSchema kind = 1;
+  }
+  oneof kind {
+    StructKind struct_kind = 2;
+    ArrayKind array_kind = 3;
+  }
 }
