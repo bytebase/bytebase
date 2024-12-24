@@ -1,21 +1,25 @@
 (() => {
-  if (!String.prototype.replaceAll) {
-    String.prototype.replaceAll = function (
-      search: string | RegExp,
-      replacement: any
-    ) {
-      if (search instanceof RegExp) {
-        if (!search.flags.includes("g")) {
-          throw new TypeError("replaceAll must be called with a global RegExp");
+  if (typeof WeakRef === "undefined") {
+    class WeakRefPolyfill<T> {
+      private targetMap = new Map<WeakRefPolyfill<T>, T | undefined>();
+      private target: T;
+
+      constructor(target: T) {
+        if (typeof target !== "object" || target === null) {
+          throw new TypeError("WeakRef target must be an object.");
         }
-        return this.replace(search, replacement);
-      } else {
-        const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const regex = new RegExp(escapedSearch, "g");
-        return this.replace(regex, replacement);
+        this.target = target;
+        this.targetMap.set(this, target);
       }
-    };
+
+      deref(): T | undefined {
+        const target = this.targetMap.get(this);
+        return target ?? undefined;
+      }
+    }
+
+    (globalThis as any).WeakRef = WeakRefPolyfill;
+  } else {
+    console.log("Environment supports WeakRef");
   }
 })();
-
-export default null;
