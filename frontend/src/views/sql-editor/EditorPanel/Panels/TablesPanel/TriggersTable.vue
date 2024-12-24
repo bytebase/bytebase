@@ -3,7 +3,7 @@
     horizontal
     class="w-full h-full overflow-x-auto relative flex flex-col"
   >
-    <Pane class="flex-1 overflow-y-hidden">
+    <Pane class="flex-1 overflow-y-hidden" :size="detail ? 60 : 100">
       <div ref="containerElRef" class="w-full h-full">
         <NDataTable
           v-bind="$attrs"
@@ -36,7 +36,7 @@
         header-class="!p-0 h-[34px]"
       >
         <template #title-prefix>
-          <NButton text @click="detail = undefined">
+          <NButton text @click="deselect">
             <ChevronDownIcon class="w-5 h-5" />
             <div class="flex items-center gap-1">
               <TriggerIcon class="w-4 h-4" />
@@ -50,7 +50,6 @@
 </template>
 
 <script setup lang="tsx">
-import { useElementSize } from "@vueuse/core";
 import { ChevronDownIcon } from "lucide-vue-next";
 import { NButton, NDataTable, type DataTableColumn } from "naive-ui";
 import { Pane, Splitpanes } from "splitpanes";
@@ -64,7 +63,7 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { minmax, useAutoHeightDataTable } from "@/utils";
+import { useAutoHeightDataTable } from "@/utils";
 import {
   extractKeyWithPosition,
   keyWithPosition,
@@ -101,7 +100,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { viewState } = useEditorPanelContext();
+const { viewState, updateViewState } = useEditorPanelContext();
 
 const detail = ref<TriggerWithPosition>();
 
@@ -138,15 +137,6 @@ const {
     maxHeight: props.maxHeight ? props.maxHeight : null,
   }))
 );
-const { height: containerHeight } = useElementSize(containerElRef);
-
-const detailHeight = computed(() => {
-  const min = 8 * 16; // 8rem ~= 6 lines
-  const max = 16 * 16; // 16rem ~= 13 lines
-  const flexible = containerHeight.value * 0.4;
-  return minmax(flexible, min, max);
-});
-
 const columns = computed(() => {
   const columns: (DataTableColumn<TriggerWithPosition> & {
     hide?: boolean;
@@ -218,6 +208,15 @@ const rowProps = ({ trigger, position }: TriggerWithPosition) => {
       });
     },
   };
+};
+
+const deselect = () => {
+  updateViewState({
+    detail: {
+      ...viewState.value?.detail,
+      trigger: "-1", // Used as a placeholder to prevent the tab going (fallback) to "Columns"
+    },
+  });
 };
 
 watch(
