@@ -9,7 +9,6 @@
       {{ prefix }}
       <!-- eslint-disable-next-line vue/no-v-html -->
       <span v-html="renderedEnvironmentName" />
-      {{ environmentV1Name(environment) }}
       <slot name="suffix">
         {{ suffix }}
       </slot>
