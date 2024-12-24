@@ -1,15 +1,18 @@
 <template>
   <div
     class="w-full h-[44px] px-2 py-2 border-b flex flex-row justify-between items-center"
+    :class="headerClass"
   >
     <div class="flex justify-start items-center gap-2">
-      <NButton text @click="$emit('back')">
-        <ChevronLeftIcon class="w-5 h-5" />
-        <div class="flex items-center gap-1">
-          <slot name="title-icon" />
-          <span>{{ title }}</span>
-        </div>
-      </NButton>
+      <slot name="title-prefix">
+        <NButton text @click="$emit('back')">
+          <ChevronLeftIcon class="w-5 h-5" />
+          <div class="flex items-center gap-1">
+            <slot name="title-icon" />
+            <span>{{ title }}</span>
+          </div>
+        </NButton>
+      </slot>
     </div>
     <div class="flex justify-end items-center gap-2">
       <NCheckbox v-model:checked="format">
@@ -78,7 +81,7 @@ import { useAIContext } from "@/plugins/ai/logic";
 import * as promptUtils from "@/plugins/ai/logic/prompt";
 import type { ComposedDatabase } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
-import { nextAnimationFrame } from "@/utils";
+import { nextAnimationFrame, type VueClass } from "@/utils";
 import { OpenAIButton } from "@/views/sql-editor/EditorCommon";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 
@@ -86,6 +89,7 @@ const props = defineProps<{
   db: ComposedDatabase;
   title: string;
   code: string;
+  headerClass?: VueClass;
 }>();
 
 defineEmits<{

@@ -14680,6 +14680,10 @@ components:
                     description: |-
                         The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.
                          Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by
+                triggers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TriggerMetadata'
             description: TableMetadata is the metadata for tables.
         TablePartitionMetadata:
             type: object
@@ -15155,6 +15159,35 @@ components:
                 error:
                     type: string
                     description: The result of the test, empty if the test is successful.
+        TriggerMetadata:
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: The name is the name of the trigger.
+                event:
+                    type: string
+                    description: |-
+                        The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
+                         TRUNCATE.
+                timing:
+                    type: string
+                    description: The timing is the timing of the trigger, such as BEFORE, AFTER.
+                body:
+                    type: string
+                    description: The body is the body of the trigger.
+                sqlMode:
+                    type: string
+                characterSetClient:
+                    type: string
+                collationConnection:
+                    type: string
+                actionOrientation:
+                    type: string
+                    description: For Postgres, identifies whether the trigger fires once for each processed row or once for each statement (ROW or STATEMENT).
+                condition:
+                    type: string
+                    description: For Postgres, the WHEN condition of the trigger.
         UndeleteEnvironmentRequest:
             required:
                 - name

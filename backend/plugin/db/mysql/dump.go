@@ -103,9 +103,11 @@ func (*Driver) Dump(_ context.Context, out io.Writer, dbSchema *storepb.Database
 	}
 
 	// Construct triggers.
-	for _, trigger := range schema.Triggers {
-		if err := writeTrigger(out, trigger); err != nil {
-			return err
+	for _, table := range schema.Tables {
+		for _, trigger := range table.Triggers {
+			if err := writeTrigger(out, table.Name, trigger); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -204,7 +206,7 @@ func writeEvent(out io.Writer, event *storepb.EventMetadata) error {
 	return err
 }
 
-func writeTrigger(out io.Writer, trigger *storepb.TriggerMetadata) error {
+func writeTrigger(out io.Writer, tableName string, trigger *storepb.TriggerMetadata) error {
 	// Header.
 	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
 		return err
@@ -288,7 +290,7 @@ func writeTrigger(out io.Writer, trigger *storepb.TriggerMetadata) error {
 	if _, err := io.WriteString(out, " ON `"); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, trigger.TableName); err != nil {
+	if _, err := io.WriteString(out, tableName); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, "` FOR EACH ROW\n"); err != nil {
