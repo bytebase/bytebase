@@ -195,6 +195,8 @@ func getRequestResource(request any) string {
 		return r.Parent
 	case *v1pb.UpdateDatabaseMetadataRequest:
 		return r.GetDatabaseMetadata().GetName()
+	case *v1pb.UpdateDatabaseCatalogRequest:
+		return r.GetCatalog().GetName()
 	case *v1pb.UpdateSecretRequest:
 		return r.GetSecret().GetName()
 	case *v1pb.DeleteSecretRequest:
