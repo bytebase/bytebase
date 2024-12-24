@@ -310,10 +310,12 @@ export const keyForNodeTarget = <T extends NodeType>(
     ].join("/");
   }
   if (type === "trigger") {
-    const { db, schema, trigger, position } = target as NodeTarget<"trigger">;
+    const { db, schema, table, trigger, position } =
+      target as NodeTarget<"trigger">;
     return [
       db.name,
       `schemas/${schema.name}`,
+      `tables/${table.name}`,
       `triggers/${keyWithPosition(trigger.name, position)}`,
     ].join("/");
   }

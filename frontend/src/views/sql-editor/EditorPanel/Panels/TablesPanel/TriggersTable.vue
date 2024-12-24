@@ -1,39 +1,77 @@
 <template>
-  <div ref="containerElRef" class="w-full h-full px-2 py-2 overflow-x-auto">
-    <NDataTable
-      v-bind="$attrs"
-      ref="dataTableRef"
-      size="small"
-      :row-key="
-        ({ trigger, position }) => keyWithPosition(trigger.name, position)
-      "
-      :columns="columns"
-      :data="layoutReady ? filteredTriggers : []"
-      :row-props="rowProps"
-      :max-height="tableBodyHeight"
-      :virtual-scroll="true"
-      :striped="true"
-      :bordered="true"
-      :bottom-bordered="true"
-      row-class-name="cursor-pointer"
-    />
-  </div>
+  <Splitpanes
+    horizontal
+    class="w-full h-full overflow-x-auto relative flex flex-col"
+  >
+    <Pane class="flex-1 overflow-y-hidden">
+      <div ref="containerElRef" class="w-full h-full">
+        <NDataTable
+          v-bind="$attrs"
+          ref="dataTableRef"
+          size="small"
+          :row-key="
+            ({ trigger, position }) => keyWithPosition(trigger.name, position)
+          "
+          :columns="columns"
+          :data="layoutReady ? filteredTriggers : []"
+          :row-props="rowProps"
+          :max-height="tableBodyHeight"
+          :virtual-scroll="true"
+          :striped="true"
+          :bordered="true"
+          :bottom-bordered="true"
+          row-class-name="cursor-pointer"
+        />
+      </div>
+    </Pane>
+    <Pane
+      v-if="detail"
+      class="flex flex-col items-stretch shrink-0 overflow-hidden"
+      :size="40"
+    >
+      <CodeViewer
+        :db="db"
+        :title="detail.trigger.name"
+        :code="detail.trigger.body"
+        header-class="!p-0 h-[34px]"
+      >
+        <template #title-prefix>
+          <NButton text @click="detail = undefined">
+            <ChevronDownIcon class="w-5 h-5" />
+            <div class="flex items-center gap-1">
+              <TriggerIcon class="w-4 h-4" />
+              <span>{{ detail.trigger.name }}</span>
+            </div>
+          </NButton>
+        </template>
+      </CodeViewer>
+    </Pane>
+  </Splitpanes>
 </template>
 
 <script setup lang="tsx">
-import { NDataTable, type DataTableColumn } from "naive-ui";
-import { computed, h, watch, withModifiers } from "vue";
+import { useElementSize } from "@vueuse/core";
+import { ChevronDownIcon } from "lucide-vue-next";
+import { NButton, NDataTable, type DataTableColumn } from "naive-ui";
+import { Pane, Splitpanes } from "splitpanes";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { TriggerIcon } from "@/components/Icon";
 import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
   TriggerMetadata,
   SchemaMetadata,
+  TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { useAutoHeightDataTable } from "@/utils";
-import { keyWithPosition } from "@/views/sql-editor/EditorCommon";
+import { minmax, useAutoHeightDataTable } from "@/utils";
+import {
+  extractKeyWithPosition,
+  keyWithPosition,
+} from "@/views/sql-editor/EditorCommon";
 import { EllipsisCell } from "../../common";
 import { useEditorPanelContext } from "../../context";
+import { CodeViewer } from "../common";
 
 type TriggerWithPosition = {
   trigger: TriggerMetadata;
@@ -44,7 +82,7 @@ const props = defineProps<{
   db: ComposedDatabase;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
-  triggers: TriggerMetadata[];
+  table: TableMetadata;
   keyword?: string;
   maxHeight?: number;
 }>();
@@ -55,6 +93,7 @@ const emit = defineEmits<{
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
+      table: TableMetadata;
       trigger: TriggerMetadata;
       position: number;
     }
@@ -62,10 +101,16 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { viewState, updateViewState } = useEditorPanelContext();
+const { viewState } = useEditorPanelContext();
+
+const detail = ref<TriggerWithPosition>();
+
+const triggers = computed(() => {
+  return props.table.triggers;
+});
 
 const triggersWithPosition = computed(() => {
-  return props.triggers.map<TriggerWithPosition>((trigger, position) => ({
+  return triggers.value.map<TriggerWithPosition>((trigger, position) => ({
     trigger,
     position,
   }));
@@ -74,10 +119,8 @@ const triggersWithPosition = computed(() => {
 const filteredTriggers = computed(() => {
   const keyword = props.keyword?.trim().toLowerCase();
   if (keyword) {
-    return triggersWithPosition.value.filter(
-      ({ trigger }) =>
-        trigger.name.toLowerCase().includes(keyword) ||
-        trigger.tableName.toLowerCase().includes(keyword)
+    return triggersWithPosition.value.filter(({ trigger }) =>
+      trigger.name.toLowerCase().includes(keyword)
     );
   }
   return triggersWithPosition.value;
@@ -95,6 +138,14 @@ const {
     maxHeight: props.maxHeight ? props.maxHeight : null,
   }))
 );
+const { height: containerHeight } = useElementSize(containerElRef);
+
+const detailHeight = computed(() => {
+  const min = 8 * 16; // 8rem ~= 6 lines
+  const max = 16 * 16; // 16rem ~= 13 lines
+  const flexible = containerHeight.value * 0.4;
+  return minmax(flexible, min, max);
+});
 
 const columns = computed(() => {
   const columns: (DataTableColumn<TriggerWithPosition> & {
@@ -106,28 +157,6 @@ const columns = computed(() => {
       resizable: true,
       render: ({ trigger }) => {
         return <EllipsisCell content={trigger.name} keyword={props.keyword} />;
-      },
-    },
-    {
-      key: "table-name",
-      title: t("db.trigger.table-name"),
-      resizable: true,
-      render: ({ trigger }) => {
-        return h(EllipsisCell, {
-          content: trigger.tableName,
-          keyword: props.keyword,
-          class: "cursor-pointer hover:underline hover:text-accent",
-          onClick: withModifiers(() => {
-            const { schema } = props;
-            updateViewState({
-              view: "TABLES",
-              schema: schema.name,
-              detail: {
-                table: trigger.tableName,
-              },
-            });
-          }, ["stop", "prevent"]),
-        });
       },
     },
     {
@@ -183,6 +212,7 @@ const rowProps = ({ trigger, position }: TriggerWithPosition) => {
       emit("click", {
         database: props.database,
         schema: props.schema,
+        table: props.table,
         trigger,
         position,
       });
@@ -191,10 +221,17 @@ const rowProps = ({ trigger, position }: TriggerWithPosition) => {
 };
 
 watch(
-  [() => viewState.value?.detail.procedure, virtualListRef],
-  ([procedure, vl]) => {
-    if (procedure && vl) {
-      vl.scrollTo({ key: procedure });
+  [() => viewState.value?.detail.trigger, virtualListRef],
+  ([trigger, vl]) => {
+    if (trigger) {
+      const [name, position] = extractKeyWithPosition(trigger);
+      const found = triggersWithPosition.value.find(
+        (item) => item.trigger.name === name && item.position === position
+      );
+      detail.value = found;
+    }
+    if (trigger && vl) {
+      vl.scrollTo({ key: trigger });
     }
   },
   { immediate: true }
