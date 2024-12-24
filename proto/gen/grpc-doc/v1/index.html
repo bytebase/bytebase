@@ -8717,14 +8717,6 @@ Snowflake. </p></td>
                 </tr>
               
                 <tr>
-                  <td>triggers</td>
-                  <td><a href="#bytebase.v1.TriggerMetadata">TriggerMetadata</a></td>
-                  <td>repeated</td>
-                  <td><p>The triggers is the list of triggers in a schema, triggers are sorted by
-table_name, name, event, timing, action_order. </p></td>
-                </tr>
-              
-                <tr>
                   <td>sequences</td>
                   <td><a href="#bytebase.v1.SequenceMetadata">SequenceMetadata</a></td>
                   <td>repeated</td>
@@ -9405,6 +9397,13 @@ classification and user_comment is parsed from the comment. </p></td>
 Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by </p></td>
                 </tr>
               
+                <tr>
+                  <td>triggers</td>
+                  <td><a href="#bytebase.v1.TriggerMetadata">TriggerMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -9600,21 +9599,6 @@ Example: 01ad32a0-1bb6-5e93-0000-000000000001 </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name is the name of the trigger. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema_name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The schema name of the table/view that the trigger is created. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>table_name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The table_name is the name of the table/view that the trigger is created
-on. </p></td>
                 </tr>
               
                 <tr>
