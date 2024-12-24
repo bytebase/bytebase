@@ -268,6 +268,7 @@ export const useActions = () => {
       type === "table" ||
       type === "index" ||
       type === "foreign-key" ||
+      type === "trigger" ||
       type === "partition-table"
     ) {
       detail.table = (target as NodeTarget<"table">).table.name;
@@ -294,6 +295,10 @@ export const useActions = () => {
           view: "VIEWS",
         });
       }
+    }
+    if (type === "trigger") {
+      const { trigger, position } = target as NodeTarget<"trigger">;
+      detail.trigger = keyWithPosition(trigger.name, position);
     }
     if (type === "view") {
       detail.view = (target as NodeTarget<"view">).view.name;
@@ -338,10 +343,6 @@ export const useActions = () => {
     if (type === "sequence") {
       const { sequence, position } = target as NodeTarget<"sequence">;
       detail.sequence = keyWithPosition(sequence.name, position);
-    }
-    if (type === "trigger") {
-      const { trigger, position } = target as NodeTarget<"trigger">;
-      detail.trigger = keyWithPosition(trigger.name, position);
     }
     if (type === "external-table") {
       detail.externalTable = (
