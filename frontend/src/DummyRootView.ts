@@ -1,13 +1,11 @@
-import { defineComponent, watch, computed } from "vue";
+import { defineComponent, watch } from "vue";
 import { useRouter } from "vue-router";
 import { getProjectName } from "@/store/modules/v1/common";
-import { PresetRoleType } from "@/types";
 import { PROJECT_V1_ROUTE_DETAIL } from "./router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_LANDING } from "./router/dashboard/workspaceRoutes";
 import { SQL_EDITOR_HOME_MODULE } from "./router/sqlEditor";
 import { useRecentVisit } from "./router/useRecentVisit";
 import { useAppFeature, useProjectV1List } from "./store";
-import { hasWorkspaceLevelRole } from "./utils";
 
 export default defineComponent({
   name: "DummyRootView",
@@ -18,14 +16,6 @@ export default defineComponent({
     const defaultWorkspaceView = useAppFeature(
       "bb.feature.default-workspace-view"
     );
-
-    const hasWorkspaceAdvancedRole = computed(() => {
-      return (
-        hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN) ||
-        hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_DBA)
-      );
-    });
-
     const { projectList } = useProjectV1List();
 
     watch(
@@ -39,10 +29,7 @@ export default defineComponent({
         }
 
         const fallback = () => {
-          if (
-            hasWorkspaceAdvancedRole.value ||
-            projectList.value.length !== 1
-          ) {
+          if (projectList.value.length !== 1) {
             router.replace({
               name: WORKSPACE_ROUTE_LANDING,
             });
