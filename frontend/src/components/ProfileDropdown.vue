@@ -56,6 +56,7 @@ const hideQuickstart = computed(() => {
   if (useAppFeature("bb.feature.hide-quick-start").value) {
     return true;
   }
+  // Hide quick start for non-admin users.
   return !(
     hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN) ||
     hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_DBA)

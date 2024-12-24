@@ -19,7 +19,7 @@ export default defineComponent({
       "bb.feature.default-workspace-view"
     );
 
-    const hasWorkspaceRole = computed(() => {
+    const hasWorkspaceAdvancedRole = computed(() => {
       return (
         hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN) ||
         hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_DBA)
@@ -39,7 +39,10 @@ export default defineComponent({
         }
 
         const fallback = () => {
-          if (hasWorkspaceRole.value || projectList.value.length !== 1) {
+          if (
+            hasWorkspaceAdvancedRole.value ||
+            projectList.value.length !== 1
+          ) {
             router.replace({
               name: WORKSPACE_ROUTE_LANDING,
             });

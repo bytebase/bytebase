@@ -261,6 +261,7 @@ const introList = computed(() => {
   );
 });
 
+// Only show quickstart for those who have workspace admin role.
 const isWorkspaceAdmin = computed(() =>
   hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN)
 );

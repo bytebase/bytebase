@@ -186,16 +186,12 @@ import {
   featureToRef,
 } from "@/store";
 import { groupNamePrefix } from "@/store/modules/v1/common";
-import {
-  ALL_USERS_USER_EMAIL,
-  PresetRoleType,
-  filterUserListByKeyword,
-} from "@/types";
+import { ALL_USERS_USER_EMAIL, filterUserListByKeyword } from "@/types";
 import { UserType, type User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import type { Group } from "@/types/proto/v1/group_service";
 import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
-import { hasWorkspacePermissionV2, hasWorkspaceLevelRole } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 const tabList = ["USERS", "GROUPS"] as const;
 type MemberTab = (typeof tabList)[number];
@@ -278,7 +274,7 @@ const allowCreateGroup = computed(() =>
 );
 
 const allowCreateUser = computed(() => {
-  return hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN);
+  return hasWorkspacePermissionV2("bb.users.create");
 });
 
 onMounted(() => {
