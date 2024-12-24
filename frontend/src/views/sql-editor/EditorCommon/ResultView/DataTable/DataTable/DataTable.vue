@@ -29,13 +29,21 @@
               <th
                 v-for="header of table.getFlatHeaders()"
                 :key="header.index"
-                class="relative px-2 py-2 min-w-[2rem] text-left bg-gray-50 dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border border-t-0 border-block-border border-b-0"
+                class="group relative px-2 py-2 min-w-[2rem] text-left bg-gray-50 dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border border-t-0 border-block-border border-b-0"
+                :class="{
+                  'cursor-pointer': !selectionDisabled,
+                }"
+                @click.stop="selectColumn(header.index)"
                 v-bind="tableResize.getColumnProps(header.index)"
               >
                 <div
-                  class="flex items-center overflow-hidden cursor-pointer"
-                  @click="header.column.getToggleSortingHandler()?.($event)"
-                >
+                  v-if="!selectionDisabled"
+                  class="absolute inset-0 group-hover:bg-accent/10 pointer-events-none"
+                  :class="
+                    selectionState.column === header.index && 'bg-accent/10'
+                  "
+                />
+                <div class="flex items-center overflow-hidden">
                   <span class="flex flex-row items-center select-none">
                     <template
                       v-if="String(header.column.columnDef.header).length > 0"
@@ -63,7 +71,10 @@
                     />
                   </template>
 
-                  <ColumnSortedIcon :is-sorted="header.column.getIsSorted()" />
+                  <ColumnSortedIcon
+                    :is-sorted="header.column.getIsSorted()"
+                    @click="header.column.getToggleSortingHandler()?.($event)"
+                  />
                 </div>
 
                 <!-- The drag-to-resize handler -->
@@ -85,7 +96,7 @@
               <td
                 v-for="(cell, cellIndex) of row.getVisibleCells()"
                 :key="cellIndex"
-                class="p-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border border-block-border border-y-0 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
+                class="relative p-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border border-block-border border-y-0 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
                 :data-col-index="cellIndex"
               >
                 <TableCell
@@ -125,7 +136,7 @@
 import type { Table } from "@tanstack/vue-table";
 import { useElementSize } from "@vueuse/core";
 import { NEmpty, NScrollbar } from "naive-ui";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, toRef, watch } from "vue";
 import {
   FeatureBadge,
   FeatureBadgeForInstanceLicense,
@@ -136,6 +147,7 @@ import { usePreventBackAndForward } from "@/utils";
 import { useSQLResultViewContext } from "../../context";
 import ColumnSortedIcon from "../common/ColumnSortedIcon.vue";
 import SensitiveDataIcon from "../common/SensitiveDataIcon.vue";
+import { provideSelectionContext } from "../common/selection-logic";
 import TableCell from "./TableCell.vue";
 import useTableColumnWidthLogic from "./useTableResize";
 
@@ -153,6 +165,11 @@ const props = defineProps<{
   maxHeight?: number;
 }>();
 
+const {
+  state: selectionState,
+  disabled: selectionDisabled,
+  selectColumn,
+} = provideSelectionContext(toRef(props, "table"));
 const containerRef = ref<HTMLDivElement>();
 const scrollbarRef = ref<InstanceType<typeof NScrollbar>>();
 const tableRef = ref<HTMLTableElement>();
