@@ -116,7 +116,7 @@ export const updateTableConfig = async (
     skipCache: true,
     silent: true,
   });
-  console.log("catalog: ", catalog);
+  console.debug("catalog: ", catalog);
 
   const schemaConfig = dbSchemaV1Store.getSchemaConfig(database, schema);
   const pendingUpdateSchemaConfig = cloneDeep(schemaConfig);
