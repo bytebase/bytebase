@@ -29,16 +29,18 @@ export default defineComponent({
         }
 
         const fallback = () => {
-          if (projectList.value.length !== 1) {
-            router.replace({
-              name: WORKSPACE_ROUTE_LANDING,
-            });
-          } else {
+          // Redirect to the first project if there are more than one project
+          if (projectList.value.length > 1) {
             router.replace({
               name: PROJECT_V1_ROUTE_DETAIL,
               params: {
                 projectId: getProjectName(projectList.value[0].name),
               },
+            });
+          } else {
+            // Otherwise, redirect to the landing page.
+            router.replace({
+              name: WORKSPACE_ROUTE_LANDING,
             });
           }
         };
