@@ -19,7 +19,5 @@
     }
 
     (globalThis as any).WeakRef = WeakRefPolyfill;
-  } else {
-    console.log("Environment supports WeakRef");
   }
 })();
