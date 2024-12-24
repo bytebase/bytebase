@@ -27,7 +27,7 @@
 
 <script setup lang="ts">
 import { type Table } from "@tanstack/vue-table";
-import { escape } from "lodash-es";
+import { escape, uniq } from "lodash-es";
 import { NButton } from "naive-ui";
 import stringWidth from "string-width";
 import { computed, ref } from "vue";
@@ -36,6 +36,7 @@ import { Engine } from "@/types/proto/v1/common";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
 import { extractSQLRowValue, getHighlightHTMLByRegExp } from "@/utils";
 import { useSQLResultViewContext } from "../../context";
+import { useSelectionContext } from "../common/selection-logic";
 
 const props = defineProps<{
   table: Table<QueryRow>;
@@ -46,6 +47,11 @@ const props = defineProps<{
   colIndex: number;
 }>();
 
+const {
+  state: selectionState,
+  disabled: selectionDisabled,
+  selectRow,
+} = useSelectionContext();
 const { dark, disallowCopyingData, detail, keyword } =
   useSQLResultViewContext();
 const wrapperRef = ref<HTMLDivElement>();
@@ -82,11 +88,23 @@ const classes = computed(() => {
   if (disallowCopyingData.value) {
     classes.push("select-none");
   }
+  if (!selectionDisabled.value) {
+    if (props.colIndex === 0) {
+      classes.push("cursor-pointer");
+      classes.push("hover:bg-accent/10");
+    }
+    if (
+      selectionState.value.column === props.colIndex ||
+      selectionState.value.row === props.rowIndex
+    ) {
+      classes.push("bg-accent/10");
+    }
+  }
   if (clickable.value) {
     classes.push("cursor-pointer");
     classes.push(dark.value ? "hover:!bg-white/20" : "hover:!bg-black/5");
   }
-  return classes;
+  return uniq(classes);
 });
 
 const html = computed(() => {
@@ -114,7 +132,12 @@ const html = computed(() => {
   );
 });
 
-const handleClick = () => {
+const handleClick = (e: MouseEvent) => {
+  if (props.colIndex === 0 && !selectionDisabled.value) {
+    selectRow(props.rowIndex);
+    e.stopPropagation();
+  }
+
   if (!clickable.value) return;
   showDetail();
 };
