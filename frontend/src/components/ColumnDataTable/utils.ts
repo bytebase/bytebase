@@ -1,12 +1,15 @@
 import { cloneDeep } from "lodash-es";
 import { t } from "@/plugins/i18n";
-import { pushNotification, useDBSchemaV1Store } from "@/store";
+import { pushNotification, useDBSchemaV1Store, useDatabaseCatalogV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import {
   ColumnConfig,
   TableConfig,
   DatabaseMetadataView,
 } from "@/types/proto/v1/database_service";
+import {
+  TableCatalog,
+} from "@/types/proto/v1/database_catalog_service";
 
 export const supportClassificationFromCommentFeature = (engine: Engine) => {
   return engine === Engine.MYSQL || engine === Engine.POSTGRES;
@@ -100,13 +103,20 @@ export const updateTableConfig = async (
   database: string,
   schema: string,
   table: string,
-  config: Partial<TableConfig>
+  config: Partial<TableCatalog>
 ) => {
   const dbSchemaV1Store = useDBSchemaV1Store();
+  const dbCatalogStore = useDatabaseCatalogV1Store();
   const databaseMetadata = dbSchemaV1Store.getDatabaseMetadata(
     database,
     DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL
   );
+  const catalog = dbCatalogStore.getOrFetchDatabaseCatalog({
+    database,
+    skipCache: true,
+    silent: true,
+  });
+  console.debug("catalog: ", catalog);
 
   const schemaConfig = dbSchemaV1Store.getSchemaConfig(database, schema);
   const pendingUpdateSchemaConfig = cloneDeep(schemaConfig);

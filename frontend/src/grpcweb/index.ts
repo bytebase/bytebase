@@ -14,6 +14,7 @@ import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
 import { ChangelistServiceDefinition } from "@/types/proto/v1/changelist_service";
 import { DatabaseGroupServiceDefinition } from "@/types/proto/v1/database_group_service";
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
+import { DatabaseCatalogServiceDefinition } from "@/types/proto/v1/database_catalog_service";
 import { EnvironmentServiceDefinition } from "@/types/proto/v1/environment_service";
 import { GroupServiceDefinition } from "@/types/proto/v1/group_service";
 import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
@@ -105,6 +106,11 @@ export const projectServiceClient = clientFactory.create(
 
 export const databaseServiceClient = clientFactory.create(
   DatabaseServiceDefinition,
+  channel
+);
+
+export const databaseCatalogServiceClient = clientFactory.create(
+  DatabaseCatalogServiceDefinition,
   channel
 );
 
