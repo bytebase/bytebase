@@ -56,6 +56,7 @@ const (
 
 	SchemaSuffix     = "/schema"
 	MetadataSuffix   = "/metadata"
+	CatalogSuffix    = "/catalog"
 	GitOpsInfoSuffix = "/gitOpsInfo"
 
 	UserBindingPrefix  = "user:"
