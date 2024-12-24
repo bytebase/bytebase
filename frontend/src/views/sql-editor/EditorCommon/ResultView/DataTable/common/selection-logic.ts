@@ -78,7 +78,7 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
 
   const getValues = () => {
     if (state.value.row >= 0) {
-      const row = table.value.getRowModel().rows[state.value.row];
+      const row = table.value.getPrePaginationRowModel().rows[state.value.row];
       if (!row) {
         return "";
       }
