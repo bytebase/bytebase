@@ -1,11 +1,17 @@
 <template>
   <div
-    class="relative px-2 h-[32px] min-w-[2rem] whitespace-nowrap text-left bg-gray-50 dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider"
+    class="group relative px-2 h-[32px] min-w-[2rem] whitespace-nowrap text-left bg-gray-50 dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider"
+    :class="{
+      'cursor-pointer': !selectionDisabled,
+    }"
+    @click.stop="selectColumn(header.index)"
   >
     <div
-      class="h-full flex items-center overflow-hidden cursor-pointer"
-      @click="header.column.getToggleSortingHandler()?.($event)"
-    >
+      v-if="!selectionDisabled"
+      class="absolute inset-0 group-hover:bg-accent/10 pointer-events-none"
+      :class="selectionState.column === header.index && 'bg-accent/10'"
+    />
+    <div class="h-full flex items-center overflow-hidden">
       <span class="flex flex-row items-center select-none">
         <template v-if="String(header.column.columnDef.header).length > 0">
           {{ header.column.columnDef.header }}
@@ -31,7 +37,10 @@
         />
       </template>
 
-      <ColumnSortedIcon :is-sorted="header.column.getIsSorted()" />
+      <ColumnSortedIcon
+        :is-sorted="header.column.getIsSorted()"
+        @click="header.column.getToggleSortingHandler()?.($event)"
+      />
     </div>
 
     <!-- The drag-to-resize handler -->
@@ -55,6 +64,7 @@ import { featureToRef } from "@/store";
 import type { QueryRow } from "@/types/proto/v1/sql_service";
 import ColumnSortedIcon from "../common/ColumnSortedIcon.vue";
 import SensitiveDataIcon from "../common/SensitiveDataIcon.vue";
+import { useSelectionContext } from "../common/selection-logic";
 
 defineProps<{
   header: Header<QueryRow, any>;
@@ -67,5 +77,10 @@ defineEmits<{
   (event: "auto-resize"): void;
 }>();
 
+const {
+  state: selectionState,
+  disabled: selectionDisabled,
+  selectColumn,
+} = useSelectionContext();
 const hasSensitiveFeature = featureToRef("bb.feature.sensitive-data");
 </script>
