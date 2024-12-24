@@ -9844,6 +9844,8 @@ components:
                     type: string
                 partialMaskingAlgorithmId:
                     type: string
+                objectSchema:
+                    $ref: '#/components/schemas/ObjectSchema'
         ColumnMetadata:
             type: object
             properties:
@@ -14589,6 +14591,8 @@ components:
                     items:
                         $ref: '#/components/schemas/ColumnConfig'
                     description: The column_configs is the ordered list of configs for columns in a table.
+                objectSchema:
+                    $ref: '#/components/schemas/ObjectSchema'
                 classificationId:
                     type: string
                 updater:
