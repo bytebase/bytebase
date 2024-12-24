@@ -1,7 +1,9 @@
 import { VueQueryPlugin } from "@tanstack/vue-query";
 import axios from "axios";
+import "core-js/stable";
 import Long from "long";
 import protobufjs from "protobufjs";
+import "regenerator-runtime/runtime";
 import { createApp } from "vue";
 import App from "./App.vue";
 import "./assets/css/github-markdown-style.css";
