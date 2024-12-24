@@ -9789,6 +9789,34 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Advice'
+        ColumnCatalog:
+            type: object
+            properties:
+                name:
+                    type: string
+                semanticTypeId:
+                    type: string
+                labels:
+                    type: object
+                    additionalProperties:
+                        type: string
+                    description: The user labels for a column.
+                classificationId:
+                    type: string
+                maskingLevel:
+                    enum:
+                        - MASKING_LEVEL_UNSPECIFIED
+                        - NONE
+                        - PARTIAL
+                        - FULL
+                    type: string
+                    format: enum
+                fullMaskingAlgorithmId:
+                    type: string
+                partialMaskingAlgorithmId:
+                    type: string
+                objectSchema:
+                    $ref: '#/components/schemas/ObjectSchema'
         ColumnConfig:
             type: object
             properties:
@@ -10215,6 +10243,10 @@ components:
                     description: |-
                         The name of the database catalog.
                          Format: instances/{instance}/databases/{database}/catalog
+                schemas:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/SchemaCatalog'
         DatabaseConfig:
             type: object
             properties:
@@ -12066,6 +12098,35 @@ components:
         OIDCIdentityProviderContext:
             type: object
             properties: {}
+        ObjectSchema:
+            type: object
+            properties:
+                type:
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - STRING
+                        - NUMBER
+                        - BOOLEAN
+                        - OBJECT
+                        - ARRAY
+                    type: string
+                    format: enum
+                structKind:
+                    $ref: '#/components/schemas/ObjectSchema_StructKind'
+                arrayKind:
+                    $ref: '#/components/schemas/ObjectSchema_ArrayKind'
+        ObjectSchema_ArrayKind:
+            type: object
+            properties:
+                kind:
+                    $ref: '#/components/schemas/ObjectSchema'
+        ObjectSchema_StructKind:
+            type: object
+            properties:
+                properties:
+                    type: object
+                    additionalProperties:
+                        $ref: '#/components/schemas/ObjectSchema'
         ParseMyBatisMapperRequest:
             type: object
             properties:
@@ -13559,6 +13620,15 @@ components:
                 taskUid:
                     type: integer
                     format: int32
+        SchemaCatalog:
+            type: object
+            properties:
+                name:
+                    type: string
+                tables:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TableCatalog'
         SchemaConfig:
             type: object
             properties:
@@ -14490,6 +14560,24 @@ components:
                         The name of the instance to sync slow queries.
                          Format: instances/{instance} for one instance
                               or projects/{project} for one project.
+        TableCatalog:
+            type: object
+            properties:
+                name:
+                    type: string
+                columns:
+                    $ref: '#/components/schemas/TableCatalog_Columns'
+                objectSchema:
+                    $ref: '#/components/schemas/ObjectSchema'
+                classificationId:
+                    type: string
+        TableCatalog_Columns:
+            type: object
+            properties:
+                columns:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ColumnCatalog'
         TableConfig:
             type: object
             properties:

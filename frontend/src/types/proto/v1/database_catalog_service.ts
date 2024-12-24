@@ -8,6 +8,7 @@
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import Long from "long";
 import { FieldMask } from "../google/protobuf/field_mask";
+import { MaskingLevel, maskingLevelFromJSON, maskingLevelToJSON, maskingLevelToNumber } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -39,6 +40,136 @@ export interface DatabaseCatalog {
    * Format: instances/{instance}/databases/{database}/catalog
    */
   name: string;
+  schemas: SchemaCatalog[];
+}
+
+export interface SchemaCatalog {
+  name: string;
+  tables: TableCatalog[];
+}
+
+export interface TableCatalog {
+  name: string;
+  columns?: TableCatalog_Columns | undefined;
+  objectSchema?: ObjectSchema | undefined;
+  classificationId: string;
+}
+
+export interface TableCatalog_Columns {
+  columns: ColumnCatalog[];
+}
+
+export interface ColumnCatalog {
+  name: string;
+  semanticTypeId: string;
+  /** The user labels for a column. */
+  labels: { [key: string]: string };
+  classificationId: string;
+  maskingLevel: MaskingLevel;
+  fullMaskingAlgorithmId: string;
+  partialMaskingAlgorithmId: string;
+  objectSchema: ObjectSchema | undefined;
+}
+
+export interface ColumnCatalog_LabelsEntry {
+  key: string;
+  value: string;
+}
+
+export interface ObjectSchema {
+  type: ObjectSchema_Type;
+  structKind?: ObjectSchema_StructKind | undefined;
+  arrayKind?: ObjectSchema_ArrayKind | undefined;
+}
+
+export enum ObjectSchema_Type {
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  STRING = "STRING",
+  NUMBER = "NUMBER",
+  BOOLEAN = "BOOLEAN",
+  OBJECT = "OBJECT",
+  ARRAY = "ARRAY",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function objectSchema_TypeFromJSON(object: any): ObjectSchema_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return ObjectSchema_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "STRING":
+      return ObjectSchema_Type.STRING;
+    case 2:
+    case "NUMBER":
+      return ObjectSchema_Type.NUMBER;
+    case 3:
+    case "BOOLEAN":
+      return ObjectSchema_Type.BOOLEAN;
+    case 4:
+    case "OBJECT":
+      return ObjectSchema_Type.OBJECT;
+    case 5:
+    case "ARRAY":
+      return ObjectSchema_Type.ARRAY;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ObjectSchema_Type.UNRECOGNIZED;
+  }
+}
+
+export function objectSchema_TypeToJSON(object: ObjectSchema_Type): string {
+  switch (object) {
+    case ObjectSchema_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case ObjectSchema_Type.STRING:
+      return "STRING";
+    case ObjectSchema_Type.NUMBER:
+      return "NUMBER";
+    case ObjectSchema_Type.BOOLEAN:
+      return "BOOLEAN";
+    case ObjectSchema_Type.OBJECT:
+      return "OBJECT";
+    case ObjectSchema_Type.ARRAY:
+      return "ARRAY";
+    case ObjectSchema_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function objectSchema_TypeToNumber(object: ObjectSchema_Type): number {
+  switch (object) {
+    case ObjectSchema_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case ObjectSchema_Type.STRING:
+      return 1;
+    case ObjectSchema_Type.NUMBER:
+      return 2;
+    case ObjectSchema_Type.BOOLEAN:
+      return 3;
+    case ObjectSchema_Type.OBJECT:
+      return 4;
+    case ObjectSchema_Type.ARRAY:
+      return 5;
+    case ObjectSchema_Type.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
+export interface ObjectSchema_StructKind {
+  properties: { [key: string]: ObjectSchema };
+}
+
+export interface ObjectSchema_StructKind_PropertiesEntry {
+  key: string;
+  value: ObjectSchema | undefined;
+}
+
+export interface ObjectSchema_ArrayKind {
+  kind: ObjectSchema | undefined;
 }
 
 function createBaseGetDatabaseCatalogRequest(): GetDatabaseCatalogRequest {
@@ -178,13 +309,16 @@ export const UpdateDatabaseCatalogRequest: MessageFns<UpdateDatabaseCatalogReque
 };
 
 function createBaseDatabaseCatalog(): DatabaseCatalog {
-  return { name: "" };
+  return { name: "", schemas: [] };
 }
 
 export const DatabaseCatalog: MessageFns<DatabaseCatalog> = {
   encode(message: DatabaseCatalog, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    for (const v of message.schemas) {
+      SchemaCatalog.encode(v!, writer.uint32(18).fork()).join();
     }
     return writer;
   },
@@ -204,6 +338,14 @@ export const DatabaseCatalog: MessageFns<DatabaseCatalog> = {
           message.name = reader.string();
           continue;
         }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.schemas.push(SchemaCatalog.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -214,13 +356,21 @@ export const DatabaseCatalog: MessageFns<DatabaseCatalog> = {
   },
 
   fromJSON(object: any): DatabaseCatalog {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      schemas: globalThis.Array.isArray(object?.schemas)
+        ? object.schemas.map((e: any) => SchemaCatalog.fromJSON(e))
+        : [],
+    };
   },
 
   toJSON(message: DatabaseCatalog): unknown {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
+    }
+    if (message.schemas?.length) {
+      obj.schemas = message.schemas.map((e) => SchemaCatalog.toJSON(e));
     }
     return obj;
   },
@@ -231,6 +381,857 @@ export const DatabaseCatalog: MessageFns<DatabaseCatalog> = {
   fromPartial(object: DeepPartial<DatabaseCatalog>): DatabaseCatalog {
     const message = createBaseDatabaseCatalog();
     message.name = object.name ?? "";
+    message.schemas = object.schemas?.map((e) => SchemaCatalog.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSchemaCatalog(): SchemaCatalog {
+  return { name: "", tables: [] };
+}
+
+export const SchemaCatalog: MessageFns<SchemaCatalog> = {
+  encode(message: SchemaCatalog, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.tables) {
+      TableCatalog.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SchemaCatalog {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSchemaCatalog();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.tables.push(TableCatalog.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SchemaCatalog {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      tables: globalThis.Array.isArray(object?.tables) ? object.tables.map((e: any) => TableCatalog.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: SchemaCatalog): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.tables?.length) {
+      obj.tables = message.tables.map((e) => TableCatalog.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SchemaCatalog>): SchemaCatalog {
+    return SchemaCatalog.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SchemaCatalog>): SchemaCatalog {
+    const message = createBaseSchemaCatalog();
+    message.name = object.name ?? "";
+    message.tables = object.tables?.map((e) => TableCatalog.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseTableCatalog(): TableCatalog {
+  return { name: "", columns: undefined, objectSchema: undefined, classificationId: "" };
+}
+
+export const TableCatalog: MessageFns<TableCatalog> = {
+  encode(message: TableCatalog, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.columns !== undefined) {
+      TableCatalog_Columns.encode(message.columns, writer.uint32(18).fork()).join();
+    }
+    if (message.objectSchema !== undefined) {
+      ObjectSchema.encode(message.objectSchema, writer.uint32(26).fork()).join();
+    }
+    if (message.classificationId !== "") {
+      writer.uint32(34).string(message.classificationId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): TableCatalog {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTableCatalog();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.columns = TableCatalog_Columns.decode(reader, reader.uint32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.objectSchema = ObjectSchema.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.classificationId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TableCatalog {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      columns: isSet(object.columns) ? TableCatalog_Columns.fromJSON(object.columns) : undefined,
+      objectSchema: isSet(object.objectSchema) ? ObjectSchema.fromJSON(object.objectSchema) : undefined,
+      classificationId: isSet(object.classificationId) ? globalThis.String(object.classificationId) : "",
+    };
+  },
+
+  toJSON(message: TableCatalog): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.columns !== undefined) {
+      obj.columns = TableCatalog_Columns.toJSON(message.columns);
+    }
+    if (message.objectSchema !== undefined) {
+      obj.objectSchema = ObjectSchema.toJSON(message.objectSchema);
+    }
+    if (message.classificationId !== "") {
+      obj.classificationId = message.classificationId;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TableCatalog>): TableCatalog {
+    return TableCatalog.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TableCatalog>): TableCatalog {
+    const message = createBaseTableCatalog();
+    message.name = object.name ?? "";
+    message.columns = (object.columns !== undefined && object.columns !== null)
+      ? TableCatalog_Columns.fromPartial(object.columns)
+      : undefined;
+    message.objectSchema = (object.objectSchema !== undefined && object.objectSchema !== null)
+      ? ObjectSchema.fromPartial(object.objectSchema)
+      : undefined;
+    message.classificationId = object.classificationId ?? "";
+    return message;
+  },
+};
+
+function createBaseTableCatalog_Columns(): TableCatalog_Columns {
+  return { columns: [] };
+}
+
+export const TableCatalog_Columns: MessageFns<TableCatalog_Columns> = {
+  encode(message: TableCatalog_Columns, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.columns) {
+      ColumnCatalog.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): TableCatalog_Columns {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTableCatalog_Columns();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.columns.push(ColumnCatalog.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TableCatalog_Columns {
+    return {
+      columns: globalThis.Array.isArray(object?.columns)
+        ? object.columns.map((e: any) => ColumnCatalog.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: TableCatalog_Columns): unknown {
+    const obj: any = {};
+    if (message.columns?.length) {
+      obj.columns = message.columns.map((e) => ColumnCatalog.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TableCatalog_Columns>): TableCatalog_Columns {
+    return TableCatalog_Columns.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TableCatalog_Columns>): TableCatalog_Columns {
+    const message = createBaseTableCatalog_Columns();
+    message.columns = object.columns?.map((e) => ColumnCatalog.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseColumnCatalog(): ColumnCatalog {
+  return {
+    name: "",
+    semanticTypeId: "",
+    labels: {},
+    classificationId: "",
+    maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
+    fullMaskingAlgorithmId: "",
+    partialMaskingAlgorithmId: "",
+    objectSchema: undefined,
+  };
+}
+
+export const ColumnCatalog: MessageFns<ColumnCatalog> = {
+  encode(message: ColumnCatalog, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.semanticTypeId !== "") {
+      writer.uint32(18).string(message.semanticTypeId);
+    }
+    Object.entries(message.labels).forEach(([key, value]) => {
+      ColumnCatalog_LabelsEntry.encode({ key: key as any, value }, writer.uint32(26).fork()).join();
+    });
+    if (message.classificationId !== "") {
+      writer.uint32(34).string(message.classificationId);
+    }
+    if (message.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
+      writer.uint32(40).int32(maskingLevelToNumber(message.maskingLevel));
+    }
+    if (message.fullMaskingAlgorithmId !== "") {
+      writer.uint32(50).string(message.fullMaskingAlgorithmId);
+    }
+    if (message.partialMaskingAlgorithmId !== "") {
+      writer.uint32(58).string(message.partialMaskingAlgorithmId);
+    }
+    if (message.objectSchema !== undefined) {
+      ObjectSchema.encode(message.objectSchema, writer.uint32(66).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ColumnCatalog {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseColumnCatalog();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.semanticTypeId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          const entry3 = ColumnCatalog_LabelsEntry.decode(reader, reader.uint32());
+          if (entry3.value !== undefined) {
+            message.labels[entry3.key] = entry3.value;
+          }
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.classificationId = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.maskingLevel = maskingLevelFromJSON(reader.int32());
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.fullMaskingAlgorithmId = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.partialMaskingAlgorithmId = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.objectSchema = ObjectSchema.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ColumnCatalog {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      semanticTypeId: isSet(object.semanticTypeId) ? globalThis.String(object.semanticTypeId) : "",
+      labels: isObject(object.labels)
+        ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+      classificationId: isSet(object.classificationId) ? globalThis.String(object.classificationId) : "",
+      maskingLevel: isSet(object.maskingLevel)
+        ? maskingLevelFromJSON(object.maskingLevel)
+        : MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
+      fullMaskingAlgorithmId: isSet(object.fullMaskingAlgorithmId)
+        ? globalThis.String(object.fullMaskingAlgorithmId)
+        : "",
+      partialMaskingAlgorithmId: isSet(object.partialMaskingAlgorithmId)
+        ? globalThis.String(object.partialMaskingAlgorithmId)
+        : "",
+      objectSchema: isSet(object.objectSchema) ? ObjectSchema.fromJSON(object.objectSchema) : undefined,
+    };
+  },
+
+  toJSON(message: ColumnCatalog): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.semanticTypeId !== "") {
+      obj.semanticTypeId = message.semanticTypeId;
+    }
+    if (message.labels) {
+      const entries = Object.entries(message.labels);
+      if (entries.length > 0) {
+        obj.labels = {};
+        entries.forEach(([k, v]) => {
+          obj.labels[k] = v;
+        });
+      }
+    }
+    if (message.classificationId !== "") {
+      obj.classificationId = message.classificationId;
+    }
+    if (message.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
+      obj.maskingLevel = maskingLevelToJSON(message.maskingLevel);
+    }
+    if (message.fullMaskingAlgorithmId !== "") {
+      obj.fullMaskingAlgorithmId = message.fullMaskingAlgorithmId;
+    }
+    if (message.partialMaskingAlgorithmId !== "") {
+      obj.partialMaskingAlgorithmId = message.partialMaskingAlgorithmId;
+    }
+    if (message.objectSchema !== undefined) {
+      obj.objectSchema = ObjectSchema.toJSON(message.objectSchema);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ColumnCatalog>): ColumnCatalog {
+    return ColumnCatalog.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ColumnCatalog>): ColumnCatalog {
+    const message = createBaseColumnCatalog();
+    message.name = object.name ?? "";
+    message.semanticTypeId = object.semanticTypeId ?? "";
+    message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = globalThis.String(value);
+      }
+      return acc;
+    }, {});
+    message.classificationId = object.classificationId ?? "";
+    message.maskingLevel = object.maskingLevel ?? MaskingLevel.MASKING_LEVEL_UNSPECIFIED;
+    message.fullMaskingAlgorithmId = object.fullMaskingAlgorithmId ?? "";
+    message.partialMaskingAlgorithmId = object.partialMaskingAlgorithmId ?? "";
+    message.objectSchema = (object.objectSchema !== undefined && object.objectSchema !== null)
+      ? ObjectSchema.fromPartial(object.objectSchema)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseColumnCatalog_LabelsEntry(): ColumnCatalog_LabelsEntry {
+  return { key: "", value: "" };
+}
+
+export const ColumnCatalog_LabelsEntry: MessageFns<ColumnCatalog_LabelsEntry> = {
+  encode(message: ColumnCatalog_LabelsEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ColumnCatalog_LabelsEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseColumnCatalog_LabelsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ColumnCatalog_LabelsEntry {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
+  },
+
+  toJSON(message: ColumnCatalog_LabelsEntry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ColumnCatalog_LabelsEntry>): ColumnCatalog_LabelsEntry {
+    return ColumnCatalog_LabelsEntry.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ColumnCatalog_LabelsEntry>): ColumnCatalog_LabelsEntry {
+    const message = createBaseColumnCatalog_LabelsEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseObjectSchema(): ObjectSchema {
+  return { type: ObjectSchema_Type.TYPE_UNSPECIFIED, structKind: undefined, arrayKind: undefined };
+}
+
+export const ObjectSchema: MessageFns<ObjectSchema> = {
+  encode(message: ObjectSchema, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.type !== ObjectSchema_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(8).int32(objectSchema_TypeToNumber(message.type));
+    }
+    if (message.structKind !== undefined) {
+      ObjectSchema_StructKind.encode(message.structKind, writer.uint32(18).fork()).join();
+    }
+    if (message.arrayKind !== undefined) {
+      ObjectSchema_ArrayKind.encode(message.arrayKind, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ObjectSchema {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseObjectSchema();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.type = objectSchema_TypeFromJSON(reader.int32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.structKind = ObjectSchema_StructKind.decode(reader, reader.uint32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.arrayKind = ObjectSchema_ArrayKind.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ObjectSchema {
+    return {
+      type: isSet(object.type) ? objectSchema_TypeFromJSON(object.type) : ObjectSchema_Type.TYPE_UNSPECIFIED,
+      structKind: isSet(object.structKind) ? ObjectSchema_StructKind.fromJSON(object.structKind) : undefined,
+      arrayKind: isSet(object.arrayKind) ? ObjectSchema_ArrayKind.fromJSON(object.arrayKind) : undefined,
+    };
+  },
+
+  toJSON(message: ObjectSchema): unknown {
+    const obj: any = {};
+    if (message.type !== ObjectSchema_Type.TYPE_UNSPECIFIED) {
+      obj.type = objectSchema_TypeToJSON(message.type);
+    }
+    if (message.structKind !== undefined) {
+      obj.structKind = ObjectSchema_StructKind.toJSON(message.structKind);
+    }
+    if (message.arrayKind !== undefined) {
+      obj.arrayKind = ObjectSchema_ArrayKind.toJSON(message.arrayKind);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ObjectSchema>): ObjectSchema {
+    return ObjectSchema.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ObjectSchema>): ObjectSchema {
+    const message = createBaseObjectSchema();
+    message.type = object.type ?? ObjectSchema_Type.TYPE_UNSPECIFIED;
+    message.structKind = (object.structKind !== undefined && object.structKind !== null)
+      ? ObjectSchema_StructKind.fromPartial(object.structKind)
+      : undefined;
+    message.arrayKind = (object.arrayKind !== undefined && object.arrayKind !== null)
+      ? ObjectSchema_ArrayKind.fromPartial(object.arrayKind)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseObjectSchema_StructKind(): ObjectSchema_StructKind {
+  return { properties: {} };
+}
+
+export const ObjectSchema_StructKind: MessageFns<ObjectSchema_StructKind> = {
+  encode(message: ObjectSchema_StructKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    Object.entries(message.properties).forEach(([key, value]) => {
+      ObjectSchema_StructKind_PropertiesEntry.encode({ key: key as any, value }, writer.uint32(18).fork()).join();
+    });
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ObjectSchema_StructKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseObjectSchema_StructKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          const entry2 = ObjectSchema_StructKind_PropertiesEntry.decode(reader, reader.uint32());
+          if (entry2.value !== undefined) {
+            message.properties[entry2.key] = entry2.value;
+          }
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ObjectSchema_StructKind {
+    return {
+      properties: isObject(object.properties)
+        ? Object.entries(object.properties).reduce<{ [key: string]: ObjectSchema }>((acc, [key, value]) => {
+          acc[key] = ObjectSchema.fromJSON(value);
+          return acc;
+        }, {})
+        : {},
+    };
+  },
+
+  toJSON(message: ObjectSchema_StructKind): unknown {
+    const obj: any = {};
+    if (message.properties) {
+      const entries = Object.entries(message.properties);
+      if (entries.length > 0) {
+        obj.properties = {};
+        entries.forEach(([k, v]) => {
+          obj.properties[k] = ObjectSchema.toJSON(v);
+        });
+      }
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ObjectSchema_StructKind>): ObjectSchema_StructKind {
+    return ObjectSchema_StructKind.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ObjectSchema_StructKind>): ObjectSchema_StructKind {
+    const message = createBaseObjectSchema_StructKind();
+    message.properties = Object.entries(object.properties ?? {}).reduce<{ [key: string]: ObjectSchema }>(
+      (acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = ObjectSchema.fromPartial(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    return message;
+  },
+};
+
+function createBaseObjectSchema_StructKind_PropertiesEntry(): ObjectSchema_StructKind_PropertiesEntry {
+  return { key: "", value: undefined };
+}
+
+export const ObjectSchema_StructKind_PropertiesEntry: MessageFns<ObjectSchema_StructKind_PropertiesEntry> = {
+  encode(message: ObjectSchema_StructKind_PropertiesEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== undefined) {
+      ObjectSchema.encode(message.value, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ObjectSchema_StructKind_PropertiesEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseObjectSchema_StructKind_PropertiesEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = ObjectSchema.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ObjectSchema_StructKind_PropertiesEntry {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? ObjectSchema.fromJSON(object.value) : undefined,
+    };
+  },
+
+  toJSON(message: ObjectSchema_StructKind_PropertiesEntry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== undefined) {
+      obj.value = ObjectSchema.toJSON(message.value);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ObjectSchema_StructKind_PropertiesEntry>): ObjectSchema_StructKind_PropertiesEntry {
+    return ObjectSchema_StructKind_PropertiesEntry.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ObjectSchema_StructKind_PropertiesEntry>): ObjectSchema_StructKind_PropertiesEntry {
+    const message = createBaseObjectSchema_StructKind_PropertiesEntry();
+    message.key = object.key ?? "";
+    message.value = (object.value !== undefined && object.value !== null)
+      ? ObjectSchema.fromPartial(object.value)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseObjectSchema_ArrayKind(): ObjectSchema_ArrayKind {
+  return { kind: undefined };
+}
+
+export const ObjectSchema_ArrayKind: MessageFns<ObjectSchema_ArrayKind> = {
+  encode(message: ObjectSchema_ArrayKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.kind !== undefined) {
+      ObjectSchema.encode(message.kind, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ObjectSchema_ArrayKind {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseObjectSchema_ArrayKind();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.kind = ObjectSchema.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ObjectSchema_ArrayKind {
+    return { kind: isSet(object.kind) ? ObjectSchema.fromJSON(object.kind) : undefined };
+  },
+
+  toJSON(message: ObjectSchema_ArrayKind): unknown {
+    const obj: any = {};
+    if (message.kind !== undefined) {
+      obj.kind = ObjectSchema.toJSON(message.kind);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ObjectSchema_ArrayKind>): ObjectSchema_ArrayKind {
+    return ObjectSchema_ArrayKind.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ObjectSchema_ArrayKind>): ObjectSchema_ArrayKind {
+    const message = createBaseObjectSchema_ArrayKind();
+    message.kind = (object.kind !== undefined && object.kind !== null)
+      ? ObjectSchema.fromPartial(object.kind)
+      : undefined;
     return message;
   },
 };
@@ -474,6 +1475,10 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;
