@@ -13,8 +13,10 @@ import {
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
-import { extractSQLRowValue, toClipboard } from "@/utils";
+import { extractSQLRowValue, isDescendantOf, toClipboard } from "@/utils";
 import { useSQLResultViewContext } from "../../context";
+
+export const PREVENT_DISMISS_SELECTION = "bb-prevent-dismiss-selection";
 
 export type SelectionState = {
   row: number;
@@ -61,8 +63,11 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
     };
   };
 
-  useEventListener("click", () => {
+  useEventListener("click", (e) => {
     if (copying.value) return;
+    if (isDescendantOf(e.target as Element, `.${PREVENT_DISMISS_SELECTION}`)) {
+      return;
+    }
     deselect();
   });
 
