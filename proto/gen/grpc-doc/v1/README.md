@@ -123,10 +123,6 @@
     - [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest)
     - [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse)
     - [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata)
-    - [ObjectSchema](#bytebase-v1-ObjectSchema)
-    - [ObjectSchema.ArrayKind](#bytebase-v1-ObjectSchema-ArrayKind)
-    - [ObjectSchema.StructKind](#bytebase-v1-ObjectSchema-StructKind)
-    - [ObjectSchema.StructKind.PropertiesEntry](#bytebase-v1-ObjectSchema-StructKind-PropertiesEntry)
     - [PackageMetadata](#bytebase-v1-PackageMetadata)
     - [ProcedureConfig](#bytebase-v1-ProcedureConfig)
     - [ProcedureMetadata](#bytebase-v1-ProcedureMetadata)
@@ -160,7 +156,6 @@
     - [ChangelogView](#bytebase-v1-ChangelogView)
     - [DatabaseMetadataView](#bytebase-v1-DatabaseMetadataView)
     - [GenerationMetadata.Type](#bytebase-v1-GenerationMetadata-Type)
-    - [ObjectSchema.Type](#bytebase-v1-ObjectSchema-Type)
     - [StreamMetadata.Mode](#bytebase-v1-StreamMetadata-Mode)
     - [StreamMetadata.Type](#bytebase-v1-StreamMetadata-Type)
     - [TablePartitionMetadata.Type](#bytebase-v1-TablePartitionMetadata-Type)
@@ -387,9 +382,20 @@
     - [ChangelistService](#bytebase-v1-ChangelistService)
   
 - [v1/database_catalog_service.proto](#v1_database_catalog_service-proto)
+    - [ColumnCatalog](#bytebase-v1-ColumnCatalog)
+    - [ColumnCatalog.LabelsEntry](#bytebase-v1-ColumnCatalog-LabelsEntry)
     - [DatabaseCatalog](#bytebase-v1-DatabaseCatalog)
     - [GetDatabaseCatalogRequest](#bytebase-v1-GetDatabaseCatalogRequest)
+    - [ObjectSchema](#bytebase-v1-ObjectSchema)
+    - [ObjectSchema.ArrayKind](#bytebase-v1-ObjectSchema-ArrayKind)
+    - [ObjectSchema.StructKind](#bytebase-v1-ObjectSchema-StructKind)
+    - [ObjectSchema.StructKind.PropertiesEntry](#bytebase-v1-ObjectSchema-StructKind-PropertiesEntry)
+    - [SchemaCatalog](#bytebase-v1-SchemaCatalog)
+    - [TableCatalog](#bytebase-v1-TableCatalog)
+    - [TableCatalog.Columns](#bytebase-v1-TableCatalog-Columns)
     - [UpdateDatabaseCatalogRequest](#bytebase-v1-UpdateDatabaseCatalogRequest)
+  
+    - [ObjectSchema.Type](#bytebase-v1-ObjectSchema-Type)
   
     - [DatabaseCatalogService](#bytebase-v1-DatabaseCatalogService)
   
@@ -2694,69 +2700,6 @@ MaterializedViewMetadata is the metadata for materialized views.
 
 
 
-<a name="bytebase-v1-ObjectSchema"></a>
-
-### ObjectSchema
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [ObjectSchema.Type](#bytebase-v1-ObjectSchema-Type) |  |  |
-| struct_kind | [ObjectSchema.StructKind](#bytebase-v1-ObjectSchema-StructKind) |  |  |
-| array_kind | [ObjectSchema.ArrayKind](#bytebase-v1-ObjectSchema-ArrayKind) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ObjectSchema-ArrayKind"></a>
-
-### ObjectSchema.ArrayKind
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| kind | [ObjectSchema](#bytebase-v1-ObjectSchema) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ObjectSchema-StructKind"></a>
-
-### ObjectSchema.StructKind
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| properties | [ObjectSchema.StructKind.PropertiesEntry](#bytebase-v1-ObjectSchema-StructKind-PropertiesEntry) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ObjectSchema-StructKind-PropertiesEntry"></a>
-
-### ObjectSchema.StructKind.PropertiesEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [ObjectSchema](#bytebase-v1-ObjectSchema) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-PackageMetadata"></a>
 
 ### PackageMetadata
@@ -3362,22 +3305,6 @@ ViewMetadata is the metadata for views.
 | TYPE_UNSPECIFIED | 0 |  |
 | TYPE_VIRTUAL | 1 |  |
 | TYPE_STORED | 2 |  |
-
-
-
-<a name="bytebase-v1-ObjectSchema-Type"></a>
-
-### ObjectSchema.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| STRING | 1 |  |
-| NUMBER | 2 |  |
-| BOOLEAN | 3 |  |
-| OBJECT | 4 |  |
-| ARRAY | 5 |  |
 
 
 
@@ -6664,6 +6591,44 @@ The changelist&#39;s `name` field is used to identify the changelist to update. 
 
 
 
+<a name="bytebase-v1-ColumnCatalog"></a>
+
+### ColumnCatalog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| semantic_type_id | [string](#string) |  |  |
+| labels | [ColumnCatalog.LabelsEntry](#bytebase-v1-ColumnCatalog-LabelsEntry) | repeated | The user labels for a column. |
+| classification_id | [string](#string) |  |  |
+| masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
+| full_masking_algorithm_id | [string](#string) |  |  |
+| partial_masking_algorithm_id | [string](#string) |  |  |
+| object_schema | [ObjectSchema](#bytebase-v1-ObjectSchema) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ColumnCatalog-LabelsEntry"></a>
+
+### ColumnCatalog.LabelsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-DatabaseCatalog"></a>
 
 ### DatabaseCatalog
@@ -6673,6 +6638,7 @@ The changelist&#39;s `name` field is used to identify the changelist to update. 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the database catalog. Format: instances/{instance}/databases/{database}/catalog |
+| schemas | [SchemaCatalog](#bytebase-v1-SchemaCatalog) | repeated |  |
 
 
 
@@ -6688,6 +6654,118 @@ The changelist&#39;s `name` field is used to identify the changelist to update. 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the database catalog to retrieve. Format: instances/{instance}/databases/{database}/catalog |
+
+
+
+
+
+
+<a name="bytebase-v1-ObjectSchema"></a>
+
+### ObjectSchema
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [ObjectSchema.Type](#bytebase-v1-ObjectSchema-Type) |  |  |
+| struct_kind | [ObjectSchema.StructKind](#bytebase-v1-ObjectSchema-StructKind) |  |  |
+| array_kind | [ObjectSchema.ArrayKind](#bytebase-v1-ObjectSchema-ArrayKind) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ObjectSchema-ArrayKind"></a>
+
+### ObjectSchema.ArrayKind
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| kind | [ObjectSchema](#bytebase-v1-ObjectSchema) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ObjectSchema-StructKind"></a>
+
+### ObjectSchema.StructKind
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| properties | [ObjectSchema.StructKind.PropertiesEntry](#bytebase-v1-ObjectSchema-StructKind-PropertiesEntry) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ObjectSchema-StructKind-PropertiesEntry"></a>
+
+### ObjectSchema.StructKind.PropertiesEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [ObjectSchema](#bytebase-v1-ObjectSchema) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SchemaCatalog"></a>
+
+### SchemaCatalog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| tables | [TableCatalog](#bytebase-v1-TableCatalog) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TableCatalog"></a>
+
+### TableCatalog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| columns | [TableCatalog.Columns](#bytebase-v1-TableCatalog-Columns) |  |  |
+| object_schema | [ObjectSchema](#bytebase-v1-ObjectSchema) |  |  |
+| classification_id | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TableCatalog-Columns"></a>
+
+### TableCatalog.Columns
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| columns | [ColumnCatalog](#bytebase-v1-ColumnCatalog) | repeated |  |
 
 
 
@@ -6712,6 +6790,22 @@ The catalog&#39;s `name` field is used to identify the database catalog to updat
 
 
  
+
+
+<a name="bytebase-v1-ObjectSchema-Type"></a>
+
+### ObjectSchema.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| STRING | 1 |  |
+| NUMBER | 2 |  |
+| BOOLEAN | 3 |  |
+| OBJECT | 4 |  |
+| ARRAY | 5 |  |
+
 
  
 
@@ -10707,6 +10801,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | parent | [string](#string) |  | The parent project where this rollout will be created. Format: projects/{project} |
 | rollout | [Rollout](#bytebase-v1-Rollout) |  | The rollout to create. |
 | stage_id | [string](#string) |  | stage_id is the id in the plan deployment_config_snapshot. The rollout is created according to the plan and the stages are created up to the stage_id. If unspecified, all stages are created. |
+| validate_only | [bool](#bool) |  | If set, validate the request and preview the rollout, but do not actually create it. |
 
 
 
@@ -10920,6 +11015,7 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage} |
+| id | [string](#string) |  | The id comes from the deployment config. Format: UUID Empty for legacy stages. |
 | title | [string](#string) |  |  |
 | tasks | [Task](#bytebase-v1-Task) | repeated |  |
 

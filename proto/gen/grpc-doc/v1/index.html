@@ -647,22 +647,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ObjectSchema"><span class="badge">M</span>ObjectSchema</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ObjectSchema.ArrayKind"><span class="badge">M</span>ObjectSchema.ArrayKind</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ObjectSchema.StructKind"><span class="badge">M</span>ObjectSchema.StructKind</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ObjectSchema.StructKind.PropertiesEntry"><span class="badge">M</span>ObjectSchema.StructKind.PropertiesEntry</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.PackageMetadata"><span class="badge">M</span>PackageMetadata</a>
                 </li>
               
@@ -789,10 +773,6 @@
               
                 <li>
                   <a href="#bytebase.v1.GenerationMetadata.Type"><span class="badge">E</span>GenerationMetadata.Type</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ObjectSchema.Type"><span class="badge">E</span>ObjectSchema.Type</a>
                 </li>
               
                 <li>
@@ -1659,6 +1639,14 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.v1.ColumnCatalog"><span class="badge">M</span>ColumnCatalog</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ColumnCatalog.LabelsEntry"><span class="badge">M</span>ColumnCatalog.LabelsEntry</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DatabaseCatalog"><span class="badge">M</span>DatabaseCatalog</a>
                 </li>
               
@@ -1667,9 +1655,41 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ObjectSchema"><span class="badge">M</span>ObjectSchema</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ObjectSchema.ArrayKind"><span class="badge">M</span>ObjectSchema.ArrayKind</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ObjectSchema.StructKind"><span class="badge">M</span>ObjectSchema.StructKind</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ObjectSchema.StructKind.PropertiesEntry"><span class="badge">M</span>ObjectSchema.StructKind.PropertiesEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SchemaCatalog"><span class="badge">M</span>SchemaCatalog</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TableCatalog"><span class="badge">M</span>TableCatalog</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TableCatalog.Columns"><span class="badge">M</span>TableCatalog.Columns</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.UpdateDatabaseCatalogRequest"><span class="badge">M</span>UpdateDatabaseCatalogRequest</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.v1.ObjectSchema.Type"><span class="badge">E</span>ObjectSchema.Type</a>
+                </li>
               
               
               
@@ -8284,123 +8304,6 @@ view. </p></td>
 
         
       
-        <h3 id="bytebase.v1.ObjectSchema">ObjectSchema</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.ObjectSchema.Type">ObjectSchema.Type</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>struct_kind</td>
-                  <td><a href="#bytebase.v1.ObjectSchema.StructKind">ObjectSchema.StructKind</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>array_kind</td>
-                  <td><a href="#bytebase.v1.ObjectSchema.ArrayKind">ObjectSchema.ArrayKind</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ObjectSchema.ArrayKind">ObjectSchema.ArrayKind</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>kind</td>
-                  <td><a href="#bytebase.v1.ObjectSchema">ObjectSchema</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ObjectSchema.StructKind">ObjectSchema.StructKind</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>properties</td>
-                  <td><a href="#bytebase.v1.ObjectSchema.StructKind.PropertiesEntry">ObjectSchema.StructKind.PropertiesEntry</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ObjectSchema.StructKind.PropertiesEntry">ObjectSchema.StructKind.PropertiesEntry</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#bytebase.v1.ObjectSchema">ObjectSchema</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.PackageMetadata">PackageMetadata</h3>
         <p>PackageMetadata is the metadata for packages.</p>
 
@@ -10236,53 +10139,6 @@ view, function names.</p></td>
               <tr>
                 <td>TYPE_STORED</td>
                 <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.ObjectSchema.Type">ObjectSchema.Type</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>STRING</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>NUMBER</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>BOOLEAN</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>OBJECT</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ARRAY</td>
-                <td>5</td>
                 <td><p></p></td>
               </tr>
             
@@ -19031,6 +18887,110 @@ Format: projects/{project}/changelists/{changelist} </p></td>
       <p></p>
 
       
+        <h3 id="bytebase.v1.ColumnCatalog">ColumnCatalog</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>semantic_type_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>labels</td>
+                  <td><a href="#bytebase.v1.ColumnCatalog.LabelsEntry">ColumnCatalog.LabelsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>The user labels for a column. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>classification_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>masking_level</td>
+                  <td><a href="#bytebase.v1.MaskingLevel">MaskingLevel</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>full_masking_algorithm_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>partial_masking_algorithm_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>object_schema</td>
+                  <td><a href="#bytebase.v1.ObjectSchema">ObjectSchema</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ColumnCatalog.LabelsEntry">ColumnCatalog.LabelsEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.DatabaseCatalog">DatabaseCatalog</h3>
         <p></p>
 
@@ -19047,6 +19007,13 @@ Format: projects/{project}/changelists/{changelist} </p></td>
                   <td></td>
                   <td><p>The name of the database catalog.
 Format: instances/{instance}/databases/{database}/catalog </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schemas</td>
+                  <td><a href="#bytebase.v1.SchemaCatalog">SchemaCatalog</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -19072,6 +19039,223 @@ Format: instances/{instance}/databases/{database}/catalog </p></td>
                   <td></td>
                   <td><p>The name of the database catalog to retrieve.
 Format: instances/{instance}/databases/{database}/catalog </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ObjectSchema">ObjectSchema</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.ObjectSchema.Type">ObjectSchema.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>struct_kind</td>
+                  <td><a href="#bytebase.v1.ObjectSchema.StructKind">ObjectSchema.StructKind</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>array_kind</td>
+                  <td><a href="#bytebase.v1.ObjectSchema.ArrayKind">ObjectSchema.ArrayKind</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ObjectSchema.ArrayKind">ObjectSchema.ArrayKind</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>kind</td>
+                  <td><a href="#bytebase.v1.ObjectSchema">ObjectSchema</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ObjectSchema.StructKind">ObjectSchema.StructKind</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>properties</td>
+                  <td><a href="#bytebase.v1.ObjectSchema.StructKind.PropertiesEntry">ObjectSchema.StructKind.PropertiesEntry</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ObjectSchema.StructKind.PropertiesEntry">ObjectSchema.StructKind.PropertiesEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#bytebase.v1.ObjectSchema">ObjectSchema</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SchemaCatalog">SchemaCatalog</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tables</td>
+                  <td><a href="#bytebase.v1.TableCatalog">TableCatalog</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TableCatalog">TableCatalog</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>columns</td>
+                  <td><a href="#bytebase.v1.TableCatalog.Columns">TableCatalog.Columns</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>object_schema</td>
+                  <td><a href="#bytebase.v1.ObjectSchema">ObjectSchema</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>classification_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TableCatalog.Columns">TableCatalog.Columns</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>columns</td>
+                  <td><a href="#bytebase.v1.ColumnCatalog">ColumnCatalog</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -19116,6 +19300,53 @@ Format: instances/{instance}/databases/{database}/catalog </p></td>
         
       
 
+      
+        <h3 id="bytebase.v1.ObjectSchema.Type">ObjectSchema.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>STRING</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>NUMBER</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>BOOLEAN</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OBJECT</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ARRAY</td>
+                <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
 
       
@@ -29652,6 +29883,14 @@ stages are created up to the stage_id.
 If unspecified, all stages are created. </p></td>
                 </tr>
               
+                <tr>
+                  <td>validate_only</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set, validate the request and preview the rollout, but
+do not actually create it. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -30088,6 +30327,15 @@ Format: projects/{project}/issues/{issue} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The id comes from the deployment config.
+Format: UUID
+Empty for legacy stages. </p></td>
                 </tr>
               
                 <tr>

@@ -242,9 +242,22 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
 	if len(pipelineCreate.Stages) == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "no database matched for deployment")
+		return nil, status.Errorf(codes.InvalidArgument, "no database matched for deployment, hint: check deployment config setting")
 	}
-	pipelineUID, err := s.store.CreatePipelineAIO(ctx, planID, pipelineCreate, request.StageId, principalID)
+	if isChangeDatabasePlan(plan.Config.GetSteps()) {
+		pipelineCreate, err = getPipelineCreateToTargetStage(ctx, s.store, plan.Config.GetDeploymentSnapshot().GetDeploymentConfigSnapshot().GetDeploymentConfig(), project, pipelineCreate, request.StageId)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to filter stages with stageId, error: %v", err)
+		}
+	}
+	if request.ValidateOnly {
+		rolloutV1, err := convertToRollout(ctx, s.store, project, pipelineCreate)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert to rollout, error: %v", err)
+		}
+		return rolloutV1, nil
+	}
+	pipelineUID, err := s.store.CreatePipelineAIO(ctx, planID, pipelineCreate, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create pipeline, error: %v", err)
 	}
@@ -935,6 +948,17 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, request *v1
 	}, nil
 }
 
+func isChangeDatabasePlan(steps []*storepb.PlanConfig_Step) bool {
+	for _, step := range steps {
+		for _, spec := range step.GetSpecs() {
+			if spec.GetChangeDatabaseConfig() != nil {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // GetPipelineCreate gets a pipeline create message from a plan.
 // serializeTasks serialize tasks on the same database using taskDAG.
 func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, snapshot *storepb.PlanConfig_DeploymentSnapshot /* nullable */, project *store.ProjectMessage, serializeTasks bool) (*store.PipelineMessage, error) {
@@ -953,13 +977,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 	specs = transformSpecs
 
 	// Step 2 - filter by deployment config for ChangeDatabase specs.
-	var filterByDeploymentConfig bool
-	for _, spec := range specs {
-		if spec.GetChangeDatabaseConfig() != nil {
-			filterByDeploymentConfig = true
-			break
-		}
-	}
+	filterByDeploymentConfig := isChangeDatabasePlan(steps)
 
 	transformedSteps := steps
 	// All 0.
@@ -1150,6 +1168,47 @@ func getTaskIndexDAGs(specs []*storepb.PlanConfig_Spec, getTaskIndexes func(spec
 		}
 	}
 	return taskIndexDAGs
+}
+
+// filter pipelineCreate.Stages using targetStageID.
+func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, snapshot *storepb.DeploymentConfig, project *store.ProjectMessage, pipelineCreate *store.PipelineMessage, targetStageID string) (*store.PipelineMessage, error) {
+	if targetStageID == "" {
+		return pipelineCreate, nil
+	}
+	if snapshot == nil {
+		deploymentConfigMessage, err := s.GetDeploymentConfigV2(ctx, project.UID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get deployment config")
+		}
+		snapshot = deploymentConfigMessage.Config
+	}
+
+	// Consider:
+	// deploymentStages: ["1", "2", "3", "4"]
+	// pipelineCreate.stageId: ["2", "4"]
+	// We iterate through deploymentStages and use i to indicate the current stage.
+	// We push the stage to stageCreates if stageId == deploymentStageId.
+	// On deploymentStageId == targetStageID, we break the loop.
+
+	foundID := false
+	var stageCreates []*store.StageMessage
+	i := 0
+	for _, deploymentStage := range snapshot.GetSchedule().Deployments {
+		id := deploymentStage.Id
+		if i < len(pipelineCreate.Stages) && pipelineCreate.Stages[i].DeploymentID == id {
+			stageCreates = append(stageCreates, pipelineCreate.Stages[i])
+			i++
+		}
+		if id == targetStageID {
+			foundID = true
+			break
+		}
+	}
+	if !foundID {
+		return nil, errors.Errorf("stageId %q not found in deployment schedules", targetStageID)
+	}
+	pipelineCreate.Stages = stageCreates
+	return pipelineCreate, nil
 }
 
 func GetValidRolloutPolicyForStage(ctx context.Context, stores *store.Store, licenseService enterprise.LicenseService, stage *store.StageMessage) (*storepb.RolloutPolicy, error) {

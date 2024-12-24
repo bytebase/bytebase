@@ -1863,25 +1863,3 @@ message Changelog {
 
   ChangedResources changed_resources = 16;
 }
-
-message ObjectSchema {
-  enum Type {
-    TYPE_UNSPECIFIED = 0;
-    STRING = 1;
-    NUMBER = 2;
-    BOOLEAN = 3;
-    OBJECT = 4;
-    ARRAY = 5;
-  }
-  Type type = 1;
-  message StructKind {
-    map<string, ObjectSchema> properties = 2;
-  }
-  message ArrayKind {
-    ObjectSchema kind = 1;
-  }
-  oneof kind {
-    StructKind struct_kind = 2;
-    ArrayKind array_kind = 3;
-  }
-}
