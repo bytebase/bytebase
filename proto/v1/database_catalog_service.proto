@@ -8,6 +8,7 @@ import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/field_mask.proto";
 import "v1/annotation.proto";
+import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
@@ -60,4 +61,67 @@ message DatabaseCatalog {
   // The name of the database catalog.
   // Format: instances/{instance}/databases/{database}/catalog
   string name = 1;
+
+  repeated SchemaCatalog schemas = 2;
+}
+
+message SchemaCatalog {
+  string name = 1;
+
+  repeated TableCatalog tables = 2;
+}
+
+message TableCatalog {
+  string name = 1;
+
+  message Columns {
+    repeated ColumnCatalog columns = 1;
+  }
+  oneof kind {
+    Columns columns = 2;
+    ObjectSchema object_schema = 3;
+  }
+
+  string classification_id = 4;
+}
+
+message ColumnCatalog {
+  string name = 1;
+
+  string semantic_type_id = 2;
+
+  // The user labels for a column.
+  map<string, string> labels = 3;
+
+  string classification_id = 4;
+
+  MaskingLevel masking_level = 5;
+
+  string full_masking_algorithm_id = 6;
+
+  string partial_masking_algorithm_id = 7;
+
+  ObjectSchema object_schema = 8;
+}
+
+message ObjectSchema {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    STRING = 1;
+    NUMBER = 2;
+    BOOLEAN = 3;
+    OBJECT = 4;
+    ARRAY = 5;
+  }
+  Type type = 1;
+  message StructKind {
+    map<string, ObjectSchema> properties = 2;
+  }
+  message ArrayKind {
+    ObjectSchema kind = 1;
+  }
+  oneof kind {
+    StructKind struct_kind = 2;
+    ArrayKind array_kind = 3;
+  }
 }
