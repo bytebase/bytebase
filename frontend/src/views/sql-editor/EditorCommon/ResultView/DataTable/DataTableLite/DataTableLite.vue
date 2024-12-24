@@ -57,6 +57,7 @@ import { computed, h, nextTick, ref, toRef, watch, type StyleValue } from "vue";
 import { QueryRow, type RowValue } from "@/types/proto/v1/sql_service";
 import { nextAnimationFrame, usePreventBackAndForward } from "@/utils";
 import { useSQLResultViewContext } from "../../context";
+import { provideSelectionContext } from "../common/selection-logic";
 import ColumnHeader from "./ColumnHeader.vue";
 import TableCell from "./TableCell.vue";
 import useTableColumnWidthLogic from "./useTableResize";
@@ -81,6 +82,7 @@ const props = defineProps<{
 
 const { keyword } = useSQLResultViewContext();
 
+provideSelectionContext(toRef(props, "table"));
 const headers = computed(() => {
   return props.table.getFlatHeaders() as Header<QueryRow, RowValue>[];
 });
@@ -195,6 +197,7 @@ const columns = computed(() => {
             value,
             width: tableResize.getColumnWidth(colIndex),
             keyword: keyword.value,
+            offset: props.offset,
             setIndex: props.setIndex,
             rowIndex: props.offset + rowIndex,
             colIndex,
