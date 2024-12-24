@@ -6606,7 +6606,7 @@ The changelist&#39;s `name` field is used to identify the changelist to update. 
 | masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
 | full_masking_algorithm_id | [string](#string) |  |  |
 | partial_masking_algorithm_id | [string](#string) |  |  |
-| object_schema | [ObjectSchema](#bytebase-v1-ObjectSchema) |  |  |
+| object_schema | [ObjectSchema](#bytebase-v1-ObjectSchema) | optional |  |
 
 
 
