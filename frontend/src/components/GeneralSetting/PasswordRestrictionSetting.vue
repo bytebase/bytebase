@@ -10,7 +10,7 @@
       <div class="flex items-center space-x-2">
         <NInputNumber
           :value="passwordRestrictionSetting.minLength"
-          :readonly="!hasPermission"
+          :readonly="!allowEdit"
           class="w-24"
           :min="1"
           :placeholder="'Minimum length'"
@@ -35,7 +35,7 @@
       </div>
       <NCheckbox
         :checked="passwordRestrictionSetting.requireNumber"
-        :readonly="!hasPermission"
+        :readonly="!allowEdit"
         @update:checked="
           (val) => {
             onUpdate({ requireNumber: val });
@@ -50,7 +50,7 @@
       </NCheckbox>
       <NCheckbox
         :checked="passwordRestrictionSetting.requireLetter"
-        :readonly="!hasPermission"
+        :readonly="!allowEdit"
         @update:checked="
           (val) => {
             onUpdate({ requireLetter: val });
@@ -65,7 +65,7 @@
       </NCheckbox>
       <NCheckbox
         :checked="passwordRestrictionSetting.requireUppercaseLetter"
-        :readonly="!hasPermission"
+        :readonly="!allowEdit"
         @update:checked="
           (val) => {
             onUpdate({ requireUppercaseLetter: val });
@@ -82,7 +82,7 @@
       </NCheckbox>
       <NCheckbox
         :checked="passwordRestrictionSetting.requireSpecialCharacter"
-        :readonly="!hasPermission"
+        :readonly="!allowEdit"
         @update:checked="
           (val) => {
             onUpdate({ requireSpecialCharacter: val });
@@ -99,7 +99,7 @@
       </NCheckbox>
       <NCheckbox
         :checked="passwordRestrictionSetting.requireResetPasswordForFirstLogin"
-        :readonly="!hasPermission"
+        :readonly="!allowEdit"
         @update:checked="
           (val) => {
             onUpdate({ requireResetPasswordForFirstLogin: val });
@@ -116,7 +116,7 @@
       </NCheckbox>
       <NCheckbox
         :checked="!!passwordRestrictionSetting.passwordRotation"
-        :readonly="!hasPermission"
+        :readonly="!allowEdit"
         class="!flex !items-center"
         @update:checked="
           (checked) => {
@@ -146,7 +146,7 @@
                   )
                 )
               "
-              :readonly="!hasPermission"
+              :readonly="!allowEdit"
               :min="1"
               class="w-24 mx-2"
               :size="'small'"
@@ -183,15 +183,13 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { PresetRoleType } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
-import { hasWorkspaceLevelRole } from "@/utils";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 
 const DEFAULT_MIN_LENGTH = 8;
 
-const props = defineProps<{
+defineProps<{
   allowEdit: boolean;
 }>();
 
@@ -199,12 +197,6 @@ const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const showFeatureModal = ref<boolean>(false);
 const hasPasswordFeature = featureToRef("bb.feature.password-restriction");
-
-const hasPermission = computed(() => {
-  return (
-    props.allowEdit && hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN)
-  );
-});
 
 const passwordRestrictionSetting = computed(
   () =>
