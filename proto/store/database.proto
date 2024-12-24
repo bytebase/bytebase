@@ -800,7 +800,7 @@ message ObjectSchema {
   }
   Type type = 1;
   message StructKind {
-    map<string, ObjectSchema> properties = 2;
+    map<string, ObjectSchema> properties = 1;
   }
   message ArrayKind {
     ObjectSchema kind = 1;
