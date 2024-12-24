@@ -153,23 +153,6 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 			s.Streams = append(s.Streams, v1Stream)
 		}
 
-		for _, trigger := range schema.Triggers {
-			if trigger == nil {
-				continue
-			}
-			v1Trigger := &v1pb.TriggerMetadata{
-				Name:                trigger.Name,
-				TableName:           trigger.TableName,
-				Event:               trigger.Event,
-				Timing:              trigger.Timing,
-				Body:                trigger.Body,
-				SqlMode:             trigger.SqlMode,
-				CharacterSetClient:  trigger.CharacterSetClient,
-				CollationConnection: trigger.CollationConnection,
-			}
-			s.Triggers = append(s.Triggers, v1Trigger)
-		}
-
 		for _, sequence := range schema.Sequences {
 			if sequence == nil {
 				continue
@@ -307,6 +290,22 @@ func convertStoreTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata
 		t.CheckConstraints = append(t.CheckConstraints, &v1pb.CheckConstraintMetadata{
 			Name:       check.Name,
 			Expression: check.Expression,
+		})
+	}
+	for _, trigger := range table.Triggers {
+		if trigger == nil {
+			continue
+		}
+		t.Triggers = append(t.Triggers, &v1pb.TriggerMetadata{
+			Name:                trigger.Name,
+			Timing:              trigger.Timing,
+			Event:               trigger.Event,
+			Body:                trigger.Body,
+			SqlMode:             trigger.SqlMode,
+			CharacterSetClient:  trigger.CharacterSetClient,
+			CollationConnection: trigger.CollationConnection,
+			ActionOrientation:   trigger.ActionOrientation,
+			Condition:           trigger.Condition,
 		})
 	}
 	return t
@@ -800,6 +799,22 @@ func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 		t.CheckConstraints = append(t.CheckConstraints, &storepb.CheckConstraintMetadata{
 			Name:       check.Name,
 			Expression: check.Expression,
+		})
+	}
+	for _, trigger := range table.Triggers {
+		if trigger == nil {
+			continue
+		}
+		t.Triggers = append(t.Triggers, &storepb.TriggerMetadata{
+			Name:                trigger.Name,
+			Timing:              trigger.Timing,
+			Event:               trigger.Event,
+			Body:                trigger.Body,
+			SqlMode:             trigger.SqlMode,
+			CharacterSetClient:  trigger.CharacterSetClient,
+			CollationConnection: trigger.CollationConnection,
+			ActionOrientation:   trigger.ActionOrientation,
+			Condition:           trigger.Condition,
 		})
 	}
 	return t
