@@ -101,7 +101,7 @@ message ColumnCatalog {
 
   string partial_masking_algorithm_id = 7;
 
-  ObjectSchema object_schema = 8;
+  optional ObjectSchema object_schema = 8;
 }
 
 message ObjectSchema {
@@ -115,7 +115,7 @@ message ObjectSchema {
   }
   Type type = 1;
   message StructKind {
-    map<string, ObjectSchema> properties = 2;
+    map<string, ObjectSchema> properties = 1;
   }
   message ArrayKind {
     ObjectSchema kind = 1;

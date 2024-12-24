@@ -65,6 +65,10 @@
     - [InstanceRoleMetadata](#bytebase-store-InstanceRoleMetadata)
     - [LinkedDatabaseMetadata](#bytebase-store-LinkedDatabaseMetadata)
     - [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata)
+    - [ObjectSchema](#bytebase-store-ObjectSchema)
+    - [ObjectSchema.ArrayKind](#bytebase-store-ObjectSchema-ArrayKind)
+    - [ObjectSchema.StructKind](#bytebase-store-ObjectSchema-StructKind)
+    - [ObjectSchema.StructKind.PropertiesEntry](#bytebase-store-ObjectSchema-StructKind-PropertiesEntry)
     - [PackageMetadata](#bytebase-store-PackageMetadata)
     - [ProcedureConfig](#bytebase-store-ProcedureConfig)
     - [ProcedureMetadata](#bytebase-store-ProcedureMetadata)
@@ -83,6 +87,7 @@
     - [ViewMetadata](#bytebase-store-ViewMetadata)
   
     - [GenerationMetadata.Type](#bytebase-store-GenerationMetadata-Type)
+    - [ObjectSchema.Type](#bytebase-store-ObjectSchema-Type)
     - [StreamMetadata.Mode](#bytebase-store-StreamMetadata-Mode)
     - [StreamMetadata.Type](#bytebase-store-StreamMetadata-Type)
     - [TablePartitionMetadata.Type](#bytebase-store-TablePartitionMetadata-Type)
@@ -925,6 +930,7 @@ Metadata about the request.
 | masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
 | full_masking_algorithm_id | [string](#string) |  |  |
 | partial_masking_algorithm_id | [string](#string) |  |  |
+| object_schema | [ObjectSchema](#bytebase-store-ObjectSchema) | optional |  |
 
 
 
@@ -1290,6 +1296,69 @@ MaterializedViewMetadata is the metadata for materialized views.
 
 
 
+<a name="bytebase-store-ObjectSchema"></a>
+
+### ObjectSchema
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [ObjectSchema.Type](#bytebase-store-ObjectSchema-Type) |  |  |
+| struct_kind | [ObjectSchema.StructKind](#bytebase-store-ObjectSchema-StructKind) |  |  |
+| array_kind | [ObjectSchema.ArrayKind](#bytebase-store-ObjectSchema-ArrayKind) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ObjectSchema-ArrayKind"></a>
+
+### ObjectSchema.ArrayKind
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| kind | [ObjectSchema](#bytebase-store-ObjectSchema) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ObjectSchema-StructKind"></a>
+
+### ObjectSchema.StructKind
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| properties | [ObjectSchema.StructKind.PropertiesEntry](#bytebase-store-ObjectSchema-StructKind-PropertiesEntry) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ObjectSchema-StructKind-PropertiesEntry"></a>
+
+### ObjectSchema.StructKind.PropertiesEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [ObjectSchema](#bytebase-store-ObjectSchema) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-PackageMetadata"></a>
 
 ### PackageMetadata
@@ -1482,6 +1551,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a table. |
 | column_configs | [ColumnConfig](#bytebase-store-ColumnConfig) | repeated | The column_configs is the ordered list of configs for columns in a table. |
+| object_schema | [ObjectSchema](#bytebase-store-ObjectSchema) | optional |  |
 | classification_id | [string](#string) |  |  |
 | updater | [string](#string) |  | The last updater of the table in branch. Format: users/{userUID}. |
 | source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
@@ -1642,6 +1712,22 @@ ViewMetadata is the metadata for views.
 | TYPE_UNSPECIFIED | 0 |  |
 | TYPE_VIRTUAL | 1 |  |
 | TYPE_STORED | 2 |  |
+
+
+
+<a name="bytebase-store-ObjectSchema-Type"></a>
+
+### ObjectSchema.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| STRING | 1 |  |
+| NUMBER | 2 |  |
+| BOOLEAN | 3 |  |
+| OBJECT | 4 |  |
+| ARRAY | 5 |  |
 
 
 

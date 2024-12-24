@@ -68,7 +68,7 @@ export interface ColumnCatalog {
   maskingLevel: MaskingLevel;
   fullMaskingAlgorithmId: string;
   partialMaskingAlgorithmId: string;
-  objectSchema: ObjectSchema | undefined;
+  objectSchema?: ObjectSchema | undefined;
 }
 
 export interface ColumnCatalog_LabelsEntry {
@@ -1023,7 +1023,7 @@ function createBaseObjectSchema_StructKind(): ObjectSchema_StructKind {
 export const ObjectSchema_StructKind: MessageFns<ObjectSchema_StructKind> = {
   encode(message: ObjectSchema_StructKind, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     Object.entries(message.properties).forEach(([key, value]) => {
-      ObjectSchema_StructKind_PropertiesEntry.encode({ key: key as any, value }, writer.uint32(18).fork()).join();
+      ObjectSchema_StructKind_PropertiesEntry.encode({ key: key as any, value }, writer.uint32(10).fork()).join();
     });
     return writer;
   },
@@ -1035,14 +1035,14 @@ export const ObjectSchema_StructKind: MessageFns<ObjectSchema_StructKind> = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 2: {
-          if (tag !== 18) {
+        case 1: {
+          if (tag !== 10) {
             break;
           }
 
-          const entry2 = ObjectSchema_StructKind_PropertiesEntry.decode(reader, reader.uint32());
-          if (entry2.value !== undefined) {
-            message.properties[entry2.key] = entry2.value;
+          const entry1 = ObjectSchema_StructKind_PropertiesEntry.decode(reader, reader.uint32());
+          if (entry1.value !== undefined) {
+            message.properties[entry1.key] = entry1.value;
           }
           continue;
         }
