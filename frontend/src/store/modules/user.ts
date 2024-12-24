@@ -176,3 +176,13 @@ export const getUpdateMaskFromUsers = (
   }
   return updateMask;
 };
+
+// Get all active users, including user and service account.
+export const useActiveUsers = () => {
+  const userStore = useUserStore();
+  return userStore.userList.filter(
+    (user) =>
+      user.state === State.ACTIVE &&
+      [UserType.USER, UserType.SERVICE_ACCOUNT].includes(user.userType)
+  );
+};
