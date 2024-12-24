@@ -7,8 +7,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/bytebase/backend/common"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -73,7 +71,7 @@ func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, requ
 
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
+		return nil, status.Errorf(codes.Internal, "failed to get instance %s", instanceID)
 	}
 	if instance == nil {
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
