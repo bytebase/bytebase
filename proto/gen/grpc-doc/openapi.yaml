@@ -15186,12 +15186,6 @@ components:
                     type: string
                 collationConnection:
                     type: string
-                actionOrientation:
-                    type: string
-                    description: For Postgres, identifies whether the trigger fires once for each processed row or once for each statement (ROW or STATEMENT).
-                condition:
-                    type: string
-                    description: For Postgres, the WHEN condition of the trigger.
         UndeleteEnvironmentRequest:
             required:
                 - name
