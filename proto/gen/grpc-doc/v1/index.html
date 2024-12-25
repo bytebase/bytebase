@@ -723,10 +723,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.UpdateDatabaseMetadataRequest"><span class="badge">M</span>UpdateDatabaseMetadataRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.UpdateDatabaseRequest"><span class="badge">M</span>UpdateDatabaseRequest</a>
                 </li>
               
@@ -9665,41 +9661,6 @@ TRUNCATE. </p></td>
 
         
       
-        <h3 id="bytebase.v1.UpdateDatabaseMetadataRequest">UpdateDatabaseMetadataRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>database_metadata</td>
-                  <td><a href="#bytebase.v1.DatabaseMetadata">DatabaseMetadata</a></td>
-                  <td></td>
-                  <td><p>The database metadata to update.
-
-The database_metadata&#39;s `name` field is used to identify the database
-metadata to update. Format:
-instances/{instance}/databases/{database}/metadata </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_mask</td>
-                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
-                  <td></td>
-                  <td><p>The list of fields to update. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.UpdateDatabaseRequest">UpdateDatabaseRequest</h3>
         <p></p>
 
@@ -10359,13 +10320,6 @@ view, function names.</p></td>
               </tr>
             
               <tr>
-                <td>UpdateDatabaseMetadata</td>
-                <td><a href="#bytebase.v1.UpdateDatabaseMetadataRequest">UpdateDatabaseMetadataRequest</a></td>
-                <td><a href="#bytebase.v1.DatabaseMetadata">DatabaseMetadata</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>GetDatabaseSchema</td>
                 <td><a href="#bytebase.v1.GetDatabaseSchemaRequest">GetDatabaseSchemaRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseSchema">DatabaseSchema</a></td>
@@ -10562,16 +10516,6 @@ view, function names.</p></td>
                 <td>GET</td>
                 <td>/v1/{name=instances/*/databases/*/metadata}</td>
                 <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>UpdateDatabaseMetadata</td>
-                <td>PATCH</td>
-                <td>/v1/{database_metadata.name=instances/*/databases/*/metadata}</td>
-                <td>database_metadata</td>
               </tr>
               
             
