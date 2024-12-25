@@ -187,62 +187,6 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     }
   };
 
-  const updateDatabaseSchemaConfigs = async (metadata: DatabaseMetadata) => {
-    await databaseServiceClient.updateDatabaseMetadata({
-      databaseMetadata: metadata,
-      updateMask: ["schema_configs"],
-    });
-    // updateDatabaseMetadata actually returns basic view
-    // so we cannot setCache(updated) here
-    mergeCache(metadata, VIEW_FULL, true);
-  };
-
-  const getSchemaConfig = (database: string, schema: string) => {
-    const metadata = getDatabaseMetadata(
-      database,
-      DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL
-    );
-
-    return (
-      metadata.schemaConfigs.find((config) => config.name === schema) ??
-      SchemaConfig.fromPartial({
-        name: schema,
-        tableConfigs: [],
-      })
-    );
-  };
-
-  const getTableConfig = (database: string, schema: string, table: string) => {
-    const schemaConfig = getSchemaConfig(database, schema);
-
-    return (
-      schemaConfig.tableConfigs.find((config) => config.name === table) ??
-      TableConfig.fromPartial({
-        name: table,
-        columnConfigs: [],
-      })
-    );
-  };
-
-  const getColumnConfig = ({
-    database,
-    schema,
-    table,
-    column,
-  }: {
-    database: string;
-    schema: string;
-    table: string;
-    column: string;
-  }) => {
-    const tableConfig = getTableConfig(database, schema, table);
-
-    return (
-      tableConfig.columnConfigs.find((config) => config.name === column) ??
-      ColumnConfig.fromPartial({})
-    );
-  };
-
   const getDatabaseMetadataWithoutDefault = (
     database: string,
     view?: DatabaseMetadataView
@@ -504,9 +448,6 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
   };
 
   return {
-    updateDatabaseSchemaConfigs,
-    getSchemaConfig,
-    getColumnConfig,
     getDatabaseMetadataWithoutDefault,
     getDatabaseMetadata,
     getOrFetchDatabaseMetadata,
