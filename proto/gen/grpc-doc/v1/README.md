@@ -2935,6 +2935,7 @@ MaterializedViewMetadata is the metadata for materialized views.
 | definition | [string](#string) |  | The definition is the definition of a materialized view. |
 | comment | [string](#string) |  | The comment is the comment of a materialized view. |
 | dependent_columns | [DependentColumn](#bytebase-v1-DependentColumn) | repeated | The dependent_columns is the list of dependent columns of a materialized view. |
+| triggers | [TriggerMetadata](#bytebase-v1-TriggerMetadata) | repeated | The columns is the ordered list of columns in a table. |
 
 
 
@@ -3339,8 +3340,6 @@ TablePartitionMetadata is the metadata for table partitions.
 | sql_mode | [string](#string) |  |  |
 | character_set_client | [string](#string) |  |  |
 | collation_connection | [string](#string) |  |  |
-| action_orientation | [string](#string) |  | For Postgres, identifies whether the trigger fires once for each processed row or once for each statement (ROW or STATEMENT). |
-| condition | [string](#string) |  | For Postgres, the WHEN condition of the trigger. |
 
 
 
@@ -3413,6 +3412,7 @@ ViewMetadata is the metadata for views.
 | comment | [string](#string) |  | The comment is the comment of a view. |
 | dependent_columns | [DependentColumn](#bytebase-v1-DependentColumn) | repeated | The dependent_columns is the list of dependent columns of a view. |
 | columns | [ColumnMetadata](#bytebase-v1-ColumnMetadata) | repeated | The columns is the ordered list of columns in a table. |
+| triggers | [TriggerMetadata](#bytebase-v1-TriggerMetadata) | repeated | The triggers is the list of triggers in a view. |
 
 
 
