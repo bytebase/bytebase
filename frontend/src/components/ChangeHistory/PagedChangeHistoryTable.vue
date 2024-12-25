@@ -32,7 +32,7 @@ import { computed, reactive, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { databaseServiceClient } from "@/grpcweb";
 import { useIsLoggedIn } from "@/store";
-import type { ComposedDatabase, SearchChangeLogParams } from "@/types";
+import type { ComposedDatabase, SearchChangeHistoriesParams } from "@/types";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 
 type LocalState = {
@@ -62,7 +62,7 @@ const props = defineProps({
     required: true,
   },
   searchChangeHistories: {
-    type: Object as PropType<SearchChangeLogParams>,
+    type: Object as PropType<SearchChangeHistoriesParams>,
     default: () => ({}),
   },
   pageSize: {
@@ -107,7 +107,7 @@ const condition = computed(() => {
   });
 });
 
-const buildFilter = (search: SearchChangeLogParams): string => {
+const buildFilter = (search: SearchChangeHistoriesParams): string => {
   const filter: string[] = [];
   if (search.types && search.types.length > 0) {
     filter.push(`type = "${search.types.join(" | ")}"`);
