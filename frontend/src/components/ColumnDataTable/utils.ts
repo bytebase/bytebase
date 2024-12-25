@@ -1,10 +1,7 @@
 import { cloneDeep } from "lodash-es";
 import { t } from "@/plugins/i18n";
-import { pushNotification, useDBSchemaV1Store, useDatabaseCatalogV1Store } from "@/store";
+import { pushNotification, useDatabaseCatalogV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
-import {
-  DatabaseMetadataView,
-} from "@/types/proto/v1/database_service";
 import {
   ColumnCatalog,
   TableCatalog,
@@ -67,13 +64,6 @@ export const updateColumnConfig = async ({
   }
   await dbCatalogStore.updateDatabaseCatalog(pendingUpdateCatalog);
 
-  // TODO(d): remove the cache update after fully migrated to database catalog service.
-  const dbSchemaV1Store = useDBSchemaV1Store();
-  await dbSchemaV1Store.getOrFetchDatabaseMetadata({
-    database: database,
-    view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
-    skipCache: true,
-  });
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
@@ -111,14 +101,6 @@ export const updateTableConfig = async (
   }
 
   await dbCatalogStore.updateDatabaseCatalog(pendingUpdateCatalog);
-
-  // TODO(d): remove the cache update after fully migrated to database catalog service.
-  const dbSchemaV1Store = useDBSchemaV1Store();
-  await dbSchemaV1Store.getOrFetchDatabaseMetadata({
-    database: database,
-    view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
-    skipCache: true,
-  });
 
   pushNotification({
     module: "bytebase",
