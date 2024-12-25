@@ -152,6 +152,7 @@
     - [ChangeHistory.Type](#bytebase-v1-ChangeHistory-Type)
     - [ChangeHistoryView](#bytebase-v1-ChangeHistoryView)
     - [Changelog.Status](#bytebase-v1-Changelog-Status)
+    - [Changelog.Type](#bytebase-v1-Changelog-Type)
     - [ChangelogView](#bytebase-v1-ChangelogView)
     - [DatabaseMetadataView](#bytebase-v1-DatabaseMetadataView)
     - [GenerationMetadata.Type](#bytebase-v1-GenerationMetadata-Type)
@@ -1867,6 +1868,7 @@ AdviseIndexResponse is the response of advising index.
 | version | [string](#string) |  | Could be empty |
 | revision | [string](#string) |  | Could be empty Or present but not found if deleted |
 | changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
+| type | [Changelog.Type](#bytebase-v1-Changelog-Type) |  |  |
 
 
 
@@ -3247,6 +3249,22 @@ ViewMetadata is the metadata for views.
 | PENDING | 1 |  |
 | DONE | 2 |  |
 | FAILED | 3 |  |
+
+
+
+<a name="bytebase-v1-Changelog-Type"></a>
+
+### Changelog.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| BASELINE | 1 |  |
+| MIGRATE | 2 |  |
+| MIGRATE_SDL | 3 |  |
+| MIGRATE_GHOST | 4 |  |
+| DATA | 6 |  |
 
 
 

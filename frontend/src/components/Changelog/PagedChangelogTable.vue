@@ -1,5 +1,5 @@
 <template>
-  <slot name="table" :list="state.changeHistoryList" :loading="state.loading" />
+  <slot name="table" :list="state.changelogList" :loading="state.loading" />
 
   <div
     v-if="state.loading"
@@ -33,11 +33,11 @@ import { BBSpin } from "@/bbkit";
 import { databaseServiceClient } from "@/grpcweb";
 import { useIsLoggedIn } from "@/store";
 import type { ComposedDatabase, SearchChangeLogParams } from "@/types";
-import type { ChangeHistory } from "@/types/proto/v1/database_service";
+import type { Changelog } from "@/types/proto/v1/database_service";
 
 type LocalState = {
   loading: boolean;
-  changeHistoryList: ChangeHistory[];
+  changelogList: Changelog[];
   paginationToken: string;
 };
 
@@ -61,7 +61,7 @@ const props = defineProps({
     type: Object as PropType<ComposedDatabase>,
     required: true,
   },
-  searchChangeHistories: {
+  searchChangelogs: {
     type: Object as PropType<SearchChangeLogParams>,
     default: () => ({}),
   },
@@ -76,12 +76,12 @@ const props = defineProps({
 });
 
 const emit = defineEmits<{
-  (event: "list:update", list: ChangeHistory[]): void;
+  (event: "list:update", list: Changelog[]): void;
 }>();
 
 const state = reactive<LocalState>({
   loading: false,
-  changeHistoryList: [],
+  changelogList: [],
   paginationToken: "",
 });
 
@@ -98,11 +98,11 @@ const limit = computed(() => {
 });
 
 const condition = computed(() => {
-  const searchChangeHistories = {
-    ...props.searchChangeHistories,
+  const searchChangelogs = {
+    ...props.searchChangelogs,
     limit: limit.value,
   };
-  return stringify(searchChangeHistories, {
+  return stringify(searchChangelogs, {
     arrayFormat: "repeat",
   });
 });
@@ -131,20 +131,20 @@ const fetchData = async (refresh = false) => {
       limit.value;
 
   try {
-    const { nextPageToken, changeHistories } =
-      await databaseServiceClient.listChangeHistories({
+    const { nextPageToken, changelogs } =
+      await databaseServiceClient.listChangelogs({
         parent: props.database.name,
-        filter: buildFilter(props.searchChangeHistories),
+        filter: buildFilter(props.searchChangelogs),
         pageSize: expectedRowCount,
         pageToken: state.paginationToken,
       });
     if (refresh) {
-      state.changeHistoryList = changeHistories;
+      state.changelogList = changelogs;
     } else {
-      state.changeHistoryList.push(...changeHistories);
+      state.changelogList.push(...changelogs);
     }
 
-    if (!isFirstFetch && changeHistories.length === expectedRowCount) {
+    if (!isFirstFetch && changelogs.length === expectedRowCount) {
       // If we didn't reach the end, memorize we've clicked the "load more" button.
       sessionState.value.page++;
     }
@@ -189,7 +189,7 @@ watch(isLoggedIn, () => {
 });
 
 watch(
-  () => state.changeHistoryList,
+  () => state.changelogList,
   (list) => emit("list:update", list)
 );
 </script>

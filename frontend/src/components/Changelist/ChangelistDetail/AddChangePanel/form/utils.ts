@@ -1,5 +1,5 @@
 import { orderBy, uniqBy } from "lodash-es";
-import { EmptyAffectedTable } from "@/types/changeHistory";
+import { EmptyAffectedTable } from "@/types";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import { ChangeHistory_Type } from "@/types/proto/v1/database_service";
 import { getAffectedTablesOfChangeHistory } from "@/utils";

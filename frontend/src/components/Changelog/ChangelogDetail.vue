@@ -1,7 +1,7 @@
 <template>
   <div class="focus:outline-none" tabindex="0" v-bind="$attrs">
     <NoPermissionPlaceholder v-if="!hasPermission" />
-    <main v-else-if="changeHistory" class="flex flex-col relative gap-y-6">
+    <main v-else-if="changelog" class="flex flex-col relative gap-y-6">
       <!-- Highlight Panel -->
       <div
         class="pb-4 border-b border-block-border md:flex md:items-center md:justify-between"
@@ -9,12 +9,12 @@
         <div class="flex-1 min-w-0 space-y-3">
           <!-- Summary -->
           <div class="flex items-center space-x-2">
-            <ChangeHistoryStatusIcon :status="changeHistory.status" />
+            <ChangelogStatusIcon :status="changelog.status" />
             <h1 class="text-xl font-bold leading-6 text-main truncate">
-              {{ $t("common.version") }} {{ changeHistory.version }}
+              {{ $t("common.version") }} {{ changelog.version }}
             </h1>
             <NTag round>
-              {{ changeHistory_TypeToJSON(changeHistory.type) }}
+              {{ changelog_TypeToJSON(changelog.type) }}
             </NTag>
           </div>
           <dl
@@ -27,11 +27,11 @@
               >
               <router-link
                 :to="{
-                  path: `/${changeHistory.issue}`,
+                  path: `/${changelog.issue}`,
                 }"
                 class="normal-link"
               >
-                #{{ extractIssueUID(changeHistory.issue) }}
+                #{{ extractIssueUID(changelog.issue) }}
               </router-link>
             </dd>
             <dt class="sr-only">{{ $t("common.creator") }}</dt>
@@ -46,9 +46,7 @@
               <span class="textlabel"
                 >{{ $t("common.created-at") }}&nbsp;-&nbsp;</span
               >
-              {{
-                humanizeDate(getDateForPbTimestamp(changeHistory.createTime))
-              }}
+              {{ humanizeDate(getDateForPbTimestamp(changelog.createTime)) }}
             </dd>
           </dl>
         </div>
@@ -92,7 +90,7 @@
           </a>
           <MonacoEditor
             class="h-auto max-h-[480px] min-h-[120px] border rounded-[3px] text-sm overflow-clip relative"
-            :content="changeHistoryStatement"
+            :content="changelogStatement"
             :readonly="true"
             :auto-height="{ min: 120, max: 480 }"
           />
@@ -101,7 +99,7 @@
               quaternary
               size="small"
               :disabled="state.loading"
-              @click="fetchFullHistory"
+              @click="fetchFullChangelogs"
             >
               <template #icon>
                 <BBSpin v-if="state.loading" />
@@ -136,7 +134,7 @@
             </div>
             <div
               class="normal-link text-sm"
-              data-label="bb-change-history-view-drift-button"
+              data-label="bb-changelog-view-drift-button"
               @click="state.viewDrift = true"
             >
               {{ $t("change-history.view-drift") }}
@@ -149,7 +147,7 @@
                 :value="state.showDiff"
                 size="small"
                 :disabled="state.loading"
-                data-label="bb-change-history-diff-switch"
+                data-label="bb-changelog-diff-switch"
                 @update:value="switchShowDiff"
               />
               <span class="text-sm font-semibold">
@@ -164,11 +162,11 @@
               >
                 <template #prevLink>
                   <router-link
-                    v-if="previousHistory"
+                    v-if="previousChangelog"
                     class="normal-link"
-                    :to="previousHistoryLink"
+                    :to="previousChangelogLink"
                   >
-                    ({{ previousHistory.version }})
+                    ({{ previousChangelog.version }})
                   </router-link>
                 </template>
               </i18n-t>
@@ -184,31 +182,29 @@
           <DiffEditor
             v-if="state.showDiff"
             class="h-auto max-h-[600px] min-h-[120px] border rounded-md text-sm overflow-clip"
-            :original="changeHistory.prevSchema"
-            :modified="changeHistory.schema"
+            :original="changelog.prevSchema"
+            :modified="changelog.schema"
             :readonly="true"
             :auto-height="{ min: 120, max: 600 }"
           />
           <template v-else>
-            <div v-if="changeHistory.schema" class="space-y-2">
+            <div v-if="changelog.schema" class="space-y-2">
               <MonacoEditor
                 class="h-auto max-h-[600px] min-h-[120px] border rounded-md text-sm overflow-clip relative"
-                :content="changeHistorySchema"
+                :content="changelogSchema"
                 :readonly="true"
                 :auto-height="{ min: 120, max: 600 }"
               />
               <div
                 v-if="
-                  getStatementSize(changeHistory.schema).ne(
-                    changeHistory.schemaSize
-                  )
+                  getStatementSize(changelog.schema).ne(changelog.schemaSize)
                 "
               >
                 <NButton
                   quaternary
                   size="small"
                   :disabled="state.loading"
-                  @click="fetchFullHistory"
+                  @click="fetchFullChangelogs"
                 >
                   <template #icon>
                     <BBSpin v-if="state.loading" />
@@ -227,7 +223,7 @@
     </main>
 
     <BBModal
-      v-if="changeHistory && previousHistory && state.viewDrift"
+      v-if="changelog && previousChangelog && state.viewDrift"
       @close="state.viewDrift = false"
     >
       <template #title>
@@ -235,8 +231,8 @@
         <span class="mx-2">-</span>
         <i18n-t tag="span" keypath="change-history.left-vs-right">
           <template #prevLink>
-            <router-link class="normal-link" :to="previousHistoryLink">
-              ({{ previousHistory.version }})
+            <router-link class="normal-link" :to="previousChangelogLink">
+              ({{ previousChangelog.version }})
             </router-link>
           </template>
         </i18n-t>
@@ -248,8 +244,8 @@
       >
         <DiffEditor
           class="flex-1 w-full border rounded-md overflow-clip"
-          :original="previousHistory.schema"
-          :modified="changeHistory.schema"
+          :original="previousChangelog.schema"
+          :modified="changelog.schema"
           :readonly="true"
         />
         <div class="flex justify-end">
@@ -277,12 +273,11 @@ import { ChevronDownIcon } from "lucide-vue-next";
 import { NButton, NSwitch, NTag } from "naive-ui";
 import { computed, reactive, watch, ref, unref } from "vue";
 import { BBModal, BBSpin } from "@/bbkit";
-import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
 import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
 import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
 import {
   pushNotification,
-  useChangeHistoryStore,
+  useChangelogStore,
   useDBSchemaV1Store,
   useUserStore,
   useSettingV1Store,
@@ -290,24 +285,27 @@ import {
 } from "@/store";
 import { getDateForPbTimestamp, type AffectedTable } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import type { ChangeHistory } from "@/types/proto/v1/database_service";
+import type { Changelog } from "@/types/proto/v1/database_service";
 import {
-  ChangeHistory_Type,
-  changeHistory_TypeToJSON,
-  ChangeHistoryView,
+  Changelog_Type,
+  changelog_TypeToJSON,
+  ChangelogView,
 } from "@/types/proto/v1/database_service";
 import {
-  changeHistoryLink,
   extractIssueUID,
   extractUserResourceName,
-  getAffectedTablesOfChangeHistory,
   toClipboard,
   getStatementSize,
   hasProjectPermissionV2,
   getAffectedTableDisplayName,
-  extractChangeHistoryUID,
 } from "@/utils";
+import {
+  changelogLink,
+  extractChangelogUID,
+  getAffectedTablesOfChangelog,
+} from "@/utils/v1/changelog";
 import NoPermissionPlaceholder from "../misc/NoPermissionPlaceholder.vue";
+import ChangelogStatusIcon from "./ChangelogStatusIcon.vue";
 
 interface LocalState {
   showDiff: boolean;
@@ -318,7 +316,7 @@ interface LocalState {
 const props = defineProps<{
   instance: string;
   database: string;
-  changeHistoryId: string;
+  changelogId: string;
 }>();
 
 const state = reactive<LocalState>({
@@ -329,7 +327,7 @@ const state = reactive<LocalState>({
 
 const dbSchemaStore = useDBSchemaV1Store();
 const settingStore = useSettingV1Store();
-const changeHistoryStore = useChangeHistoryStore();
+const changelogStore = useChangelogStore();
 const selectedAffectedTable = ref<AffectedTable | undefined>();
 
 const { database } = useDatabaseV1ByName(props.database);
@@ -344,15 +342,15 @@ const classificationConfig = computed(() => {
   );
 });
 
-const changeHistoryName = computed(() => {
-  return `${props.database}/changeHistories/${props.changeHistoryId}`;
+const changelogName = computed(() => {
+  return `${props.database}/changelogs/${props.changelogId}`;
 });
 
 const affectedTables = computed(() => {
-  if (changeHistory.value === undefined) {
+  if (changelog.value === undefined) {
     return [];
   }
-  return getAffectedTablesOfChangeHistory(changeHistory.value);
+  return getAffectedTablesOfChangelog(changelog.value);
 });
 
 const showSchemaSnapshot = computed(() => {
@@ -360,16 +358,16 @@ const showSchemaSnapshot = computed(() => {
 });
 
 watch(
-  [database.value.name, changeHistoryName],
+  [database.value.name, changelogName],
   async ([_, name]) => {
     await Promise.all([
       dbSchemaStore.getOrFetchDatabaseMetadata({
         database: database.value.name,
         skipCache: false,
       }),
-      changeHistoryStore.getOrFetchChangeHistoryByName(
+      changelogStore.getOrFetchChangelogByName(
         unref(name),
-        ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
+        ChangelogView.CHANGELOG_VIEW_FULL
       ),
     ]);
   },
@@ -377,7 +375,7 @@ watch(
 );
 
 const switchShowDiff = async (showDiff: boolean) => {
-  await fetchFullHistory();
+  await fetchFullChangelogs();
   state.showDiff = showDiff;
 };
 
@@ -389,50 +387,45 @@ const handleAffectedTableClick = (affectedTable: AffectedTable): void => {
 };
 
 // get all change histories before (include) the one of given id, ordered by descending version.
-const prevChangeHistoryList = computed(() => {
-  const changeHistoryList = changeHistoryStore.changeHistoryListByDatabase(
+const prevChangelogList = computed(() => {
+  const changelogList = changelogStore.changelogListByDatabase(
     database.value.name
   );
 
-  // The returned change history list has been ordered by `id` DESC or (`namespace` ASC, `sequence` DESC) .
-  // We can obtain prevChangeHistoryList by cutting up the array by the `changeHistoryId`.
-  const idx = changeHistoryList.findIndex(
-    (history) => extractChangeHistoryUID(history.name) === props.changeHistoryId
+  // The returned changelog list has been ordered by `id` DESC or (`namespace` ASC, `sequence` DESC) .
+  // We can obtain prevChangelogList by cutting up the array by the `changeHistoryId`.
+  const idx = changelogList.findIndex(
+    (changelog) => extractChangelogUID(changelog.name) === props.changelogId
   );
   if (idx === -1) {
     return [];
   }
-  return changeHistoryList.slice(idx);
+  return changelogList.slice(idx);
 });
 
-// changeHistory is the latest migration NOW.
-const changeHistory = computed((): ChangeHistory | undefined => {
-  if (prevChangeHistoryList.value.length > 0) {
-    const current = prevChangeHistoryList.value[0];
-    return changeHistoryStore.getChangeHistoryByName(current.name) ?? current;
-  }
-  return changeHistoryStore.getChangeHistoryByName(changeHistoryName.value);
+const changelog = computed((): Changelog | undefined => {
+  return changelogStore.getChangelogByName(changelogName.value);
 });
 
-const changeHistorySchema = computed(() => {
-  if (!changeHistory.value) {
+const changelogSchema = computed(() => {
+  if (!changelog.value) {
     return "";
   }
-  let schema = changeHistory.value.schema;
+  let schema = changelog.value.schema;
   if (guessedIsBasicView.value) {
     schema = `${schema}${schema.endsWith("\n") ? "" : "\n"}...`;
   }
   return schema;
 });
 
-const changeHistoryStatement = computed(() => {
-  if (!changeHistory.value) {
+const changelogStatement = computed(() => {
+  if (!changelog.value) {
     return "";
   }
-  let statement = changeHistory.value.statement;
+  let statement = changelog.value.statement;
   if (
-    getStatementSize(changeHistory.value.statement).lt(
-      changeHistory.value.statementSize
+    getStatementSize(changelog.value.statement).lt(
+      changelog.value.statementSize
     )
   ) {
     statement = `${statement}${statement.endsWith("\n") ? "" : "\n"}...`;
@@ -440,35 +433,35 @@ const changeHistoryStatement = computed(() => {
   return statement;
 });
 
-// previousHistory is the last change history before the one of given id.
+// previousChangelog is the last changelog before the one of given id.
 // Only referenced if hasDrift is true.
-const previousHistory = computed((): ChangeHistory | undefined => {
-  const prev = prevChangeHistoryList.value[1];
+const previousChangelog = computed((): Changelog | undefined => {
+  const prev = prevChangelogList.value[1];
   if (!prev) return undefined;
-  return changeHistoryStore.getChangeHistoryByName(prev.name) ?? prev;
+  return changelogStore.getChangelogByName(prev.name) ?? prev;
 });
 
-const fetchFullPreviousHistory = async () => {
-  const prev = previousHistory.value;
+const fetchFullPreviousChangelog = async () => {
+  const prev = previousChangelog.value;
   if (!prev) return;
-  await changeHistoryStore.getOrFetchChangeHistoryByName(
+  await changelogStore.getOrFetchChangelogByName(
     prev.name,
-    ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
+    ChangelogView.CHANGELOG_VIEW_FULL
   );
 };
 
-const fetchFullHistory = async () => {
+const fetchFullChangelogs = async () => {
   if (state.loading) {
     return;
   }
   state.loading = true;
   try {
     await Promise.all([
-      changeHistoryStore.getOrFetchChangeHistoryByName(
-        changeHistoryName.value,
-        ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
+      changelogStore.getOrFetchChangelogByName(
+        changelogName.value,
+        ChangelogView.CHANGELOG_VIEW_FULL
       ),
-      fetchFullPreviousHistory(),
+      fetchFullPreviousChangelog(),
     ]);
   } finally {
     state.loading = false;
@@ -476,26 +469,27 @@ const fetchFullHistory = async () => {
 };
 
 const guessedIsBasicView = computed(() => {
-  const history = changeHistory.value;
-  if (!history) return true;
-  return getStatementSize(history.statement).ne(history.statementSize);
+  if (!changelog.value) return true;
+  return getStatementSize(changelog.value.statement).ne(
+    changelog.value.statementSize
+  );
 });
 
 // "Show diff" feature is enabled when current migration has changed the schema.
 const allowShowDiff = computed((): boolean => {
-  if (!changeHistory.value) {
+  if (!changelog.value) {
     return false;
   }
   return true;
 });
 
-// A schema drift is detected when the schema AFTER previousHistory has been
-// changed unexpectedly BEFORE current changeHistory.
+// A schema drift is detected when the schema AFTER previousChangelog has been
+// changed unexpectedly BEFORE current changelog.
 const hasDrift = computed((): boolean => {
-  if (!changeHistory.value) {
+  if (!changelog.value) {
     return false;
   }
-  if (changeHistory.value.type === ChangeHistory_Type.BASELINE) {
+  if (changelog.value.type === Changelog_Type.BASELINE) {
     return false;
   }
   if (guessedIsBasicView.value) {
@@ -503,32 +497,32 @@ const hasDrift = computed((): boolean => {
   }
 
   return (
-    prevChangeHistoryList.value.length > 1 && // no drift if no previous change history
-    previousHistory.value?.schema !== changeHistory.value.prevSchema
+    prevChangelogList.value.length > 1 && // no drift if no previous changelog
+    previousChangelog.value?.schema !== changelog.value.prevSchema
   );
 });
 
 const creator = computed(() => {
-  if (!changeHistory.value) {
+  if (!changelog.value) {
     return undefined;
   }
-  const email = extractUserResourceName(changeHistory.value.creator);
+  const email = extractUserResourceName(changelog.value.creator);
   return useUserStore().getUserByEmail(email);
 });
 
-const previousHistoryLink = computed(() => {
-  const previous = previousHistory.value;
+const previousChangelogLink = computed(() => {
+  const previous = previousChangelog.value;
   if (!previous) return "";
-  return changeHistoryLink(previous);
+  return changelogLink(previous);
 });
 
 const copyStatement = async () => {
-  await fetchFullHistory();
+  await fetchFullChangelogs();
 
-  if (!changeHistoryStatement.value) {
+  if (!changelogStatement.value) {
     return false;
   }
-  toClipboard(changeHistoryStatement.value).then(() => {
+  toClipboard(changelogStatement.value).then(() => {
     pushNotification({
       module: "bytebase",
       style: "INFO",
@@ -538,12 +532,12 @@ const copyStatement = async () => {
 };
 
 const copySchema = async () => {
-  await fetchFullHistory();
+  await fetchFullChangelogs();
 
-  if (!changeHistorySchema.value) {
+  if (!changelogSchema.value) {
     return false;
   }
-  toClipboard(changeHistorySchema.value).then(() => {
+  toClipboard(changelogSchema.value).then(() => {
     pushNotification({
       module: "bytebase",
       style: "INFO",
@@ -556,7 +550,7 @@ watch(
   guessedIsBasicView,
   (basic) => {
     if (!basic) {
-      fetchFullPreviousHistory();
+      fetchFullPreviousChangelog();
     }
   },
   {
@@ -564,5 +558,5 @@ watch(
   }
 );
 
-useTitle(changeHistory.value?.version || "Change History");
+useTitle(changelog.value?.version || "Changelog");
 </script>

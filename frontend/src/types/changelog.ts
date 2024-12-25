@@ -20,7 +20,7 @@ export interface ComposedChangeHistory extends ChangeHistory {
   issueEntity?: Issue;
 }
 
-export interface SearchChangeHistoriesParams {
+export interface SearchChangeLogParams {
   tables?: Table[];
   types?: string[];
 }

@@ -2155,6 +2155,7 @@ export interface Changelog {
    */
   revision: string;
   changedResources: ChangedResources | undefined;
+  type: Changelog_Type;
 }
 
 export enum Changelog_Status {
@@ -2213,6 +2214,83 @@ export function changelog_StatusToNumber(object: Changelog_Status): number {
     case Changelog_Status.FAILED:
       return 3;
     case Changelog_Status.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
+export enum Changelog_Type {
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  BASELINE = "BASELINE",
+  MIGRATE = "MIGRATE",
+  MIGRATE_SDL = "MIGRATE_SDL",
+  MIGRATE_GHOST = "MIGRATE_GHOST",
+  DATA = "DATA",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function changelog_TypeFromJSON(object: any): Changelog_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return Changelog_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "BASELINE":
+      return Changelog_Type.BASELINE;
+    case 2:
+    case "MIGRATE":
+      return Changelog_Type.MIGRATE;
+    case 3:
+    case "MIGRATE_SDL":
+      return Changelog_Type.MIGRATE_SDL;
+    case 4:
+    case "MIGRATE_GHOST":
+      return Changelog_Type.MIGRATE_GHOST;
+    case 6:
+    case "DATA":
+      return Changelog_Type.DATA;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Changelog_Type.UNRECOGNIZED;
+  }
+}
+
+export function changelog_TypeToJSON(object: Changelog_Type): string {
+  switch (object) {
+    case Changelog_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case Changelog_Type.BASELINE:
+      return "BASELINE";
+    case Changelog_Type.MIGRATE:
+      return "MIGRATE";
+    case Changelog_Type.MIGRATE_SDL:
+      return "MIGRATE_SDL";
+    case Changelog_Type.MIGRATE_GHOST:
+      return "MIGRATE_GHOST";
+    case Changelog_Type.DATA:
+      return "DATA";
+    case Changelog_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function changelog_TypeToNumber(object: Changelog_Type): number {
+  switch (object) {
+    case Changelog_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case Changelog_Type.BASELINE:
+      return 1;
+    case Changelog_Type.MIGRATE:
+      return 2;
+    case Changelog_Type.MIGRATE_SDL:
+      return 3;
+    case Changelog_Type.MIGRATE_GHOST:
+      return 4;
+    case Changelog_Type.DATA:
+      return 6;
+    case Changelog_Type.UNRECOGNIZED:
     default:
       return -1;
   }
@@ -12158,6 +12236,7 @@ function createBaseChangelog(): Changelog {
     version: "",
     revision: "",
     changedResources: undefined,
+    type: Changelog_Type.TYPE_UNSPECIFIED,
   };
 }
 
@@ -12210,6 +12289,9 @@ export const Changelog: MessageFns<Changelog> = {
     }
     if (message.changedResources !== undefined) {
       ChangedResources.encode(message.changedResources, writer.uint32(130).fork()).join();
+    }
+    if (message.type !== Changelog_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(136).int32(changelog_TypeToNumber(message.type));
     }
     return writer;
   },
@@ -12349,6 +12431,14 @@ export const Changelog: MessageFns<Changelog> = {
           message.changedResources = ChangedResources.decode(reader, reader.uint32());
           continue;
         }
+        case 17: {
+          if (tag !== 136) {
+            break;
+          }
+
+          message.type = changelog_TypeFromJSON(reader.int32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -12376,6 +12466,7 @@ export const Changelog: MessageFns<Changelog> = {
       version: isSet(object.version) ? globalThis.String(object.version) : "",
       revision: isSet(object.revision) ? globalThis.String(object.revision) : "",
       changedResources: isSet(object.changedResources) ? ChangedResources.fromJSON(object.changedResources) : undefined,
+      type: isSet(object.type) ? changelog_TypeFromJSON(object.type) : Changelog_Type.TYPE_UNSPECIFIED,
     };
   },
 
@@ -12429,6 +12520,9 @@ export const Changelog: MessageFns<Changelog> = {
     if (message.changedResources !== undefined) {
       obj.changedResources = ChangedResources.toJSON(message.changedResources);
     }
+    if (message.type !== Changelog_Type.TYPE_UNSPECIFIED) {
+      obj.type = changelog_TypeToJSON(message.type);
+    }
     return obj;
   },
 
@@ -12463,6 +12557,7 @@ export const Changelog: MessageFns<Changelog> = {
     message.changedResources = (object.changedResources !== undefined && object.changedResources !== null)
       ? ChangedResources.fromPartial(object.changedResources)
       : undefined;
+    message.type = object.type ?? Changelog_Type.TYPE_UNSPECIFIED;
     return message;
   },
 };

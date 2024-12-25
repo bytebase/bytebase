@@ -9663,6 +9663,16 @@ components:
                          Or present but not found if deleted
                 changedResources:
                     $ref: '#/components/schemas/ChangedResources'
+                type:
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - BASELINE
+                        - MIGRATE
+                        - MIGRATE_SDL
+                        - MIGRATE_GHOST
+                        - DATA
+                    type: string
+                    format: enum
         CheckConstraintMetadata:
             type: object
             properties:

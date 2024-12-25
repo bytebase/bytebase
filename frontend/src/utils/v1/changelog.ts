@@ -1,74 +1,60 @@
 import { isEqual, isUndefined, orderBy, uniqBy } from "lodash-es";
 import Long from "long";
 import { t } from "@/plugins/i18n";
-import { useDBSchemaV1Store, useDatabaseV1Store, useUserStore } from "@/store";
+import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
+import { EMPTY_ID, UNKNOWN_ID } from "@/types";
+import { type AffectedTable, EmptyAffectedTable } from "@/types";
 import {
-  EMPTY_ID,
-  UNKNOWN_ID,
-  EmptyAffectedTable,
-  type AffectedTable,
-} from "@/types";
-import type { DatabaseSchema } from "@/types/proto/v1/database_service";
-import {
-  ChangeHistory,
-  ChangeHistory_Type,
+  Changelog_Type,
+  type DatabaseSchema,
 } from "@/types/proto/v1/database_service";
-import { extractUserResourceName } from ".";
+import { Changelog } from "@/types/proto/v1/database_service";
 import { databaseV1Url, extractDatabaseResourceName } from "./database";
 
-export const extractChangeHistoryUID = (name: string) => {
-  const pattern = /(?:^|\/)changeHistories\/([^/]+)(?:$|\/)/;
+export const extractChangelogUID = (name: string) => {
+  const pattern = /(?:^|\/)changelogs\/([^/]+)(?:$|\/)/;
   const matches = name.match(pattern);
   return matches?.[1] ?? "";
 };
 
-export const extractDatabaseNameAndChangeHistoryUID = (
-  changeHistoryName: string
-) => {
-  const parts = changeHistoryName.split("/changeHistories/");
+export const extractDatabaseNameAndChangelogUID = (changelogName: string) => {
+  const parts = changelogName.split("/changelogs/");
   if (parts.length !== 2) {
-    throw new Error("Invalid change history name");
+    throw new Error("Invalid changelog name");
   }
   return {
     databaseName: parts[0],
-    uid: extractChangeHistoryUID(parts[1]),
+    changelogUID: extractChangelogUID(parts[1]),
   };
 };
 
-export const isValidChangeHistoryName = (name: string | undefined) => {
+export const isValidChangelogName = (name: string | undefined) => {
   if (!name) {
     return false;
   }
-  const uid = extractChangeHistoryUID(name);
+  const uid = extractChangelogUID(name);
   return uid && uid !== String(EMPTY_ID) && uid !== String(UNKNOWN_ID);
 };
 
-export const changeHistoryLinkRaw = (parent: string, uid: string) => {
-  const { database } = extractDatabaseResourceName(parent);
+export const changelogLink = (changelog: Changelog): string => {
+  const { changelogUID } = extractDatabaseNameAndChangelogUID(changelog.name);
+  const { database } = extractDatabaseResourceName(changelog.name);
   const composedDatabase = useDatabaseV1Store().getDatabaseByName(database);
-  const path = [databaseV1Url(composedDatabase), "change-histories", uid].join(
+  return [databaseV1Url(composedDatabase), "changelogs", changelogUID].join(
     "/"
   );
-  return path;
 };
 
-export const changeHistoryLink = (changeHistory: ChangeHistory): string => {
-  const { name } = changeHistory;
-  return changeHistoryLinkRaw(name, extractChangeHistoryUID(name));
-};
-
-export const getAffectedTablesOfChangeHistory = (
-  changeHistory: ChangeHistory
+export const getAffectedTablesOfChangelog = (
+  changelog: Changelog
 ): AffectedTable[] => {
-  const { databaseName } = extractDatabaseNameAndChangeHistoryUID(
-    changeHistory.name
-  );
+  const { databaseName } = extractDatabaseNameAndChangelogUID(changelog.name);
   const database = useDatabaseV1Store().getDatabaseByName(databaseName);
   const metadata = useDBSchemaV1Store().getDatabaseMetadata(database.name);
   return uniqBy(
     orderBy(
-      changeHistory.changedResources?.databases
+      changelog.changedResources?.databases
         .find((db) => db.name === database.databaseName)
         ?.schemas.map((schema) => {
           return schema.tables.map((table) => {
@@ -111,26 +97,12 @@ export const getAffectedTableDisplayName = (affectedTable: AffectedTable) => {
   return name;
 };
 
-export const getHistoryChangeType = (type: ChangeHistory_Type) => {
-  switch (type) {
-    case ChangeHistory_Type.BASELINE:
-    case ChangeHistory_Type.MIGRATE:
-    case ChangeHistory_Type.MIGRATE_SDL:
-    case ChangeHistory_Type.MIGRATE_GHOST:
-      return "DDL";
-    case ChangeHistory_Type.DATA:
-      return "DML";
-    default:
-      return "-";
-  }
-};
-
-export const mockLatestSchemaChangeHistory = (
+export const mockLatestChangelog = (
   database: ComposedDatabase,
   schema: DatabaseSchema | undefined = undefined
 ) => {
-  return ChangeHistory.fromPartial({
-    name: `${database.name}/changeHistories/${UNKNOWN_ID}`,
+  return Changelog.fromPartial({
+    name: `${database.name}/changelogs/${UNKNOWN_ID}`,
     schema: schema?.schema,
     schemaSize: Long.fromNumber(
       new TextEncoder().encode(schema?.schema).length
@@ -139,7 +111,16 @@ export const mockLatestSchemaChangeHistory = (
   });
 };
 
-export const creatorOfChangeHistory = (history: ChangeHistory) => {
-  const email = extractUserResourceName(history.creator);
-  return useUserStore().getUserByEmail(email);
+export const getChangelogChangeType = (type: Changelog_Type) => {
+  switch (type) {
+    case Changelog_Type.BASELINE:
+    case Changelog_Type.MIGRATE:
+    case Changelog_Type.MIGRATE_SDL:
+    case Changelog_Type.MIGRATE_GHOST:
+      return "DDL";
+    case Changelog_Type.DATA:
+      return "DML";
+    default:
+      return "-";
+  }
 };
