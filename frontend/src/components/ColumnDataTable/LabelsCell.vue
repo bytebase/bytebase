@@ -72,7 +72,7 @@ const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
     schema: props.schema,
     table: props.table.name,
     column: props.column.name,
-    config: { labels: labelsList[0] },
+    columnCatalog: { labels: labelsList[0] },
   });
 };
 </script>

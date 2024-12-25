@@ -250,7 +250,7 @@ const removeSensitiveColumn = async (sensitiveColumn: MaskData) => {
     schema: sensitiveColumn.schema,
     table: sensitiveColumn.table,
     column: sensitiveColumn.column,
-    config: {
+    columnCatalog: {
       maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
     },
   });

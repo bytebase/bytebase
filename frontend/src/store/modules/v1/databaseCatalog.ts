@@ -71,6 +71,14 @@ export const useDatabaseCatalogV1Store = defineStore("databaseCatalog_v1", () =>
     return promise;
   };
 
+  const updateDatabaseCatalog = async (catalog: DatabaseCatalog) => {
+    const updated = await databaseCatalogServiceClient.updateDatabaseCatalog({
+      catalog,
+    });
+    setCache(updated);
+    return updated;
+  };
+
   const removeCache = (name: string) => {
     const catalogResourceName = ensureDatabaseCatalogResourceName(name);
     cacheByName.invalidateEntity([catalogResourceName]);
@@ -78,6 +86,7 @@ export const useDatabaseCatalogV1Store = defineStore("databaseCatalog_v1", () =>
 
   return {
     getOrFetchDatabaseCatalog,
+    updateDatabaseCatalog,
     removeCache,
   };
 });
