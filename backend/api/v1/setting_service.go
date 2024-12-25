@@ -1269,7 +1269,7 @@ func convertSchemaTemplateSetting(ctx context.Context, template *storepb.SchemaT
 			t.Column = convertStoreColumnMetadata(v.Column)
 		}
 		if v.Config != nil {
-			t.Config = convertStoreColumnConfig(v.Config)
+			t.Catalog = convertColumnConfig(v.Config)
 		}
 		v1Setting.FieldTemplates = append(v1Setting.FieldTemplates, t)
 	}
@@ -1315,8 +1315,8 @@ func convertV1SchemaTemplateSetting(ctx context.Context, template *v1pb.SchemaTe
 		if v.Column != nil {
 			t.Column = convertV1ColumnMetadata(v.Column)
 		}
-		if v.Config != nil {
-			t.Config = convertV1ColumnConfig(v.Config)
+		if v.Catalog != nil {
+			t.Config = convertColumnCatalog(v.Catalog)
 		}
 		v1Setting.FieldTemplates = append(v1Setting.FieldTemplates, t)
 	}

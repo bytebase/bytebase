@@ -128,7 +128,7 @@
                   </dt>
                   <dd class="mt-1 font-semibold">
                     <ClassificationLevelBadge
-                      :classification="tableConfig.classificationId"
+                      :classification="tableCatalog.classificationId"
                       :classification-config="classificationConfig"
                       placeholder="-"
                     />
@@ -267,7 +267,7 @@ import {
   ProjectV1Name,
   SearchBox,
 } from "@/components/v2";
-import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
+import { useDatabaseV1Store, useDatabaseCatalog, useDBSchemaV1Store, getTableCatalog } from "@/store";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
@@ -332,13 +332,8 @@ const table = computedAsync(
   }
 );
 
-const tableConfig = computed(() =>
-  dbSchemaStore.getTableConfig(
-    props.databaseName,
-    props.schemaName,
-    props.tableName
-  )
-);
+const databaseCatalog = useDatabaseCatalog(props.databaseName, false);
+const tableCatalog = computed(() => getTableCatalog(databaseCatalog.value, props.schemaName, props.tableName));
 
 const database = computed(() => {
   return databaseV1Store.getDatabaseByName(props.databaseName);

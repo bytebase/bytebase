@@ -273,7 +273,7 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 	r := &v1pb.Revision{
 		Name:          fmt.Sprintf("%s/%s%d", parent, common.RevisionNamePrefix, revision.UID),
 		Release:       revision.Payload.Release,
-		CreateTime:    timestamppb.New(revision.CreatedTime),
+		CreateTime:    timestamppb.New(revision.CreateTime),
 		Creator:       common.FormatUserEmail(creator.Email),
 		Sheet:         revision.Payload.Sheet,
 		SheetSha256:   revision.Payload.SheetSha256,
@@ -288,15 +288,15 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 	if revision.DeleterUID != nil {
 		deleter, err := s.GetUserByID(ctx, *revision.DeleterUID)
 		if err != nil {
-			return nil, errors.Wrapf(err, "faile to get deleter")
+			return nil, errors.Wrapf(err, "failed to get deleter")
 		}
 		if deleter == nil {
 			return nil, errors.Errorf("deleter %v not found", *revision.DeleterUID)
 		}
 		r.Deleter = common.FormatUserEmail(deleter.Email)
 	}
-	if revision.DeletedTime != nil {
-		r.DeleteTime = timestamppb.New(*revision.DeletedTime)
+	if revision.DeleteTime != nil {
+		r.DeleteTime = timestamppb.New(*revision.DeleteTime)
 	}
 
 	return r, nil

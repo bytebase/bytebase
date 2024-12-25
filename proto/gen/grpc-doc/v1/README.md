@@ -21,6 +21,24 @@
     - [State](#bytebase-v1-State)
     - [VCSType](#bytebase-v1-VCSType)
   
+- [v1/database_catalog_service.proto](#v1_database_catalog_service-proto)
+    - [ColumnCatalog](#bytebase-v1-ColumnCatalog)
+    - [ColumnCatalog.LabelsEntry](#bytebase-v1-ColumnCatalog-LabelsEntry)
+    - [DatabaseCatalog](#bytebase-v1-DatabaseCatalog)
+    - [GetDatabaseCatalogRequest](#bytebase-v1-GetDatabaseCatalogRequest)
+    - [ObjectSchema](#bytebase-v1-ObjectSchema)
+    - [ObjectSchema.ArrayKind](#bytebase-v1-ObjectSchema-ArrayKind)
+    - [ObjectSchema.StructKind](#bytebase-v1-ObjectSchema-StructKind)
+    - [ObjectSchema.StructKind.PropertiesEntry](#bytebase-v1-ObjectSchema-StructKind-PropertiesEntry)
+    - [SchemaCatalog](#bytebase-v1-SchemaCatalog)
+    - [TableCatalog](#bytebase-v1-TableCatalog)
+    - [TableCatalog.Columns](#bytebase-v1-TableCatalog-Columns)
+    - [UpdateDatabaseCatalogRequest](#bytebase-v1-UpdateDatabaseCatalogRequest)
+  
+    - [ObjectSchema.Type](#bytebase-v1-ObjectSchema-Type)
+  
+    - [DatabaseCatalogService](#bytebase-v1-DatabaseCatalogService)
+  
 - [v1/instance_role_service.proto](#v1_instance_role_service-proto)
     - [GetInstanceRoleRequest](#bytebase-v1-GetInstanceRoleRequest)
     - [InstanceRole](#bytebase-v1-InstanceRole)
@@ -142,7 +160,6 @@
     - [TablePartitionMetadata](#bytebase-v1-TablePartitionMetadata)
     - [TaskMetadata](#bytebase-v1-TaskMetadata)
     - [TriggerMetadata](#bytebase-v1-TriggerMetadata)
-    - [UpdateDatabaseMetadataRequest](#bytebase-v1-UpdateDatabaseMetadataRequest)
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
     - [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest)
     - [ViewConfig](#bytebase-v1-ViewConfig)
@@ -380,24 +397,6 @@
     - [UpdateChangelistRequest](#bytebase-v1-UpdateChangelistRequest)
   
     - [ChangelistService](#bytebase-v1-ChangelistService)
-  
-- [v1/database_catalog_service.proto](#v1_database_catalog_service-proto)
-    - [ColumnCatalog](#bytebase-v1-ColumnCatalog)
-    - [ColumnCatalog.LabelsEntry](#bytebase-v1-ColumnCatalog-LabelsEntry)
-    - [DatabaseCatalog](#bytebase-v1-DatabaseCatalog)
-    - [GetDatabaseCatalogRequest](#bytebase-v1-GetDatabaseCatalogRequest)
-    - [ObjectSchema](#bytebase-v1-ObjectSchema)
-    - [ObjectSchema.ArrayKind](#bytebase-v1-ObjectSchema-ArrayKind)
-    - [ObjectSchema.StructKind](#bytebase-v1-ObjectSchema-StructKind)
-    - [ObjectSchema.StructKind.PropertiesEntry](#bytebase-v1-ObjectSchema-StructKind-PropertiesEntry)
-    - [SchemaCatalog](#bytebase-v1-SchemaCatalog)
-    - [TableCatalog](#bytebase-v1-TableCatalog)
-    - [TableCatalog.Columns](#bytebase-v1-TableCatalog-Columns)
-    - [UpdateDatabaseCatalogRequest](#bytebase-v1-UpdateDatabaseCatalogRequest)
-  
-    - [ObjectSchema.Type](#bytebase-v1-ObjectSchema-Type)
-  
-    - [DatabaseCatalogService](#bytebase-v1-DatabaseCatalogService)
   
 - [v1/database_group_service.proto](#v1_database_group_service-proto)
     - [CreateDatabaseGroupRequest](#bytebase-v1-CreateDatabaseGroupRequest)
@@ -960,6 +959,248 @@
  
 
  
+
+ 
+
+
+
+<a name="v1_database_catalog_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/database_catalog_service.proto
+
+
+
+<a name="bytebase-v1-ColumnCatalog"></a>
+
+### ColumnCatalog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| semantic_type_id | [string](#string) |  |  |
+| labels | [ColumnCatalog.LabelsEntry](#bytebase-v1-ColumnCatalog-LabelsEntry) | repeated | The user labels for a column. |
+| classification_id | [string](#string) |  |  |
+| masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
+| full_masking_algorithm_id | [string](#string) |  |  |
+| partial_masking_algorithm_id | [string](#string) |  |  |
+| object_schema | [ObjectSchema](#bytebase-v1-ObjectSchema) | optional |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ColumnCatalog-LabelsEntry"></a>
+
+### ColumnCatalog.LabelsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DatabaseCatalog"></a>
+
+### DatabaseCatalog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database catalog. Format: instances/{instance}/databases/{database}/catalog |
+| schemas | [SchemaCatalog](#bytebase-v1-SchemaCatalog) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-GetDatabaseCatalogRequest"></a>
+
+### GetDatabaseCatalogRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database catalog to retrieve. Format: instances/{instance}/databases/{database}/catalog |
+
+
+
+
+
+
+<a name="bytebase-v1-ObjectSchema"></a>
+
+### ObjectSchema
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [ObjectSchema.Type](#bytebase-v1-ObjectSchema-Type) |  |  |
+| struct_kind | [ObjectSchema.StructKind](#bytebase-v1-ObjectSchema-StructKind) |  |  |
+| array_kind | [ObjectSchema.ArrayKind](#bytebase-v1-ObjectSchema-ArrayKind) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ObjectSchema-ArrayKind"></a>
+
+### ObjectSchema.ArrayKind
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| kind | [ObjectSchema](#bytebase-v1-ObjectSchema) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ObjectSchema-StructKind"></a>
+
+### ObjectSchema.StructKind
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| properties | [ObjectSchema.StructKind.PropertiesEntry](#bytebase-v1-ObjectSchema-StructKind-PropertiesEntry) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ObjectSchema-StructKind-PropertiesEntry"></a>
+
+### ObjectSchema.StructKind.PropertiesEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [ObjectSchema](#bytebase-v1-ObjectSchema) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SchemaCatalog"></a>
+
+### SchemaCatalog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| tables | [TableCatalog](#bytebase-v1-TableCatalog) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TableCatalog"></a>
+
+### TableCatalog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| columns | [TableCatalog.Columns](#bytebase-v1-TableCatalog-Columns) |  |  |
+| object_schema | [ObjectSchema](#bytebase-v1-ObjectSchema) |  |  |
+| classification_id | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TableCatalog-Columns"></a>
+
+### TableCatalog.Columns
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| columns | [ColumnCatalog](#bytebase-v1-ColumnCatalog) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateDatabaseCatalogRequest"></a>
+
+### UpdateDatabaseCatalogRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| catalog | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  | The database catalog to update.
+
+The catalog&#39;s `name` field is used to identify the database catalog to update. Format: instances/{instance}/databases/{database}/catalog |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-ObjectSchema-Type"></a>
+
+### ObjectSchema.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| STRING | 1 |  |
+| NUMBER | 2 |  |
+| BOOLEAN | 3 |  |
+| OBJECT | 4 |  |
+| ARRAY | 5 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-DatabaseCatalogService"></a>
+
+### DatabaseCatalogService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetDatabaseCatalog | [GetDatabaseCatalogRequest](#bytebase-v1-GetDatabaseCatalogRequest) | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  |
+| UpdateDatabaseCatalog | [UpdateDatabaseCatalogRequest](#bytebase-v1-UpdateDatabaseCatalogRequest) | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  |
 
  
 
@@ -3105,24 +3346,6 @@ TablePartitionMetadata is the metadata for table partitions.
 
 
 
-<a name="bytebase-v1-UpdateDatabaseMetadataRequest"></a>
-
-### UpdateDatabaseMetadataRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The database metadata to update.
-
-The database_metadata&#39;s `name` field is used to identify the database metadata to update. Format: instances/{instance}/databases/{database}/metadata |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-
-
-
-
-
-
 <a name="bytebase-v1-UpdateDatabaseRequest"></a>
 
 ### UpdateDatabaseRequest
@@ -3390,7 +3613,6 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | BatchUpdateDatabases | [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest) | [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse) |  |
 | SyncDatabase | [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest) | [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse) |  |
 | GetDatabaseMetadata | [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |
-| UpdateDatabaseMetadata | [UpdateDatabaseMetadataRequest](#bytebase-v1-UpdateDatabaseMetadataRequest) | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |
 | GetDatabaseSchema | [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest) | [DatabaseSchema](#bytebase-v1-DatabaseSchema) |  |
 | DiffSchema | [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest) | [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse) |  |
 | ListSlowQueries | [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest) | [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse) |  |
@@ -4842,7 +5064,7 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 | engine | [Engine](#bytebase-v1-Engine) |  |  |
 | category | [string](#string) |  |  |
 | column | [ColumnMetadata](#bytebase-v1-ColumnMetadata) |  |  |
-| config | [ColumnConfig](#bytebase-v1-ColumnConfig) |  |  |
+| catalog | [ColumnCatalog](#bytebase-v1-ColumnCatalog) |  |  |
 
 
 
@@ -6579,248 +6801,6 @@ The changelist&#39;s `name` field is used to identify the changelist to update. 
 | ListChangelists | [ListChangelistsRequest](#bytebase-v1-ListChangelistsRequest) | [ListChangelistsResponse](#bytebase-v1-ListChangelistsResponse) |  |
 | UpdateChangelist | [UpdateChangelistRequest](#bytebase-v1-UpdateChangelistRequest) | [Changelist](#bytebase-v1-Changelist) |  |
 | DeleteChangelist | [DeleteChangelistRequest](#bytebase-v1-DeleteChangelistRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-
- 
-
-
-
-<a name="v1_database_catalog_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/database_catalog_service.proto
-
-
-
-<a name="bytebase-v1-ColumnCatalog"></a>
-
-### ColumnCatalog
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| semantic_type_id | [string](#string) |  |  |
-| labels | [ColumnCatalog.LabelsEntry](#bytebase-v1-ColumnCatalog-LabelsEntry) | repeated | The user labels for a column. |
-| classification_id | [string](#string) |  |  |
-| masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
-| full_masking_algorithm_id | [string](#string) |  |  |
-| partial_masking_algorithm_id | [string](#string) |  |  |
-| object_schema | [ObjectSchema](#bytebase-v1-ObjectSchema) | optional |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ColumnCatalog-LabelsEntry"></a>
-
-### ColumnCatalog.LabelsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DatabaseCatalog"></a>
-
-### DatabaseCatalog
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database catalog. Format: instances/{instance}/databases/{database}/catalog |
-| schemas | [SchemaCatalog](#bytebase-v1-SchemaCatalog) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-GetDatabaseCatalogRequest"></a>
-
-### GetDatabaseCatalogRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database catalog to retrieve. Format: instances/{instance}/databases/{database}/catalog |
-
-
-
-
-
-
-<a name="bytebase-v1-ObjectSchema"></a>
-
-### ObjectSchema
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [ObjectSchema.Type](#bytebase-v1-ObjectSchema-Type) |  |  |
-| struct_kind | [ObjectSchema.StructKind](#bytebase-v1-ObjectSchema-StructKind) |  |  |
-| array_kind | [ObjectSchema.ArrayKind](#bytebase-v1-ObjectSchema-ArrayKind) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ObjectSchema-ArrayKind"></a>
-
-### ObjectSchema.ArrayKind
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| kind | [ObjectSchema](#bytebase-v1-ObjectSchema) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ObjectSchema-StructKind"></a>
-
-### ObjectSchema.StructKind
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| properties | [ObjectSchema.StructKind.PropertiesEntry](#bytebase-v1-ObjectSchema-StructKind-PropertiesEntry) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ObjectSchema-StructKind-PropertiesEntry"></a>
-
-### ObjectSchema.StructKind.PropertiesEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [ObjectSchema](#bytebase-v1-ObjectSchema) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SchemaCatalog"></a>
-
-### SchemaCatalog
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| tables | [TableCatalog](#bytebase-v1-TableCatalog) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-TableCatalog"></a>
-
-### TableCatalog
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| columns | [TableCatalog.Columns](#bytebase-v1-TableCatalog-Columns) |  |  |
-| object_schema | [ObjectSchema](#bytebase-v1-ObjectSchema) |  |  |
-| classification_id | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-TableCatalog-Columns"></a>
-
-### TableCatalog.Columns
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| columns | [ColumnCatalog](#bytebase-v1-ColumnCatalog) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateDatabaseCatalogRequest"></a>
-
-### UpdateDatabaseCatalogRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| catalog | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  | The database catalog to update.
-
-The catalog&#39;s `name` field is used to identify the database catalog to update. Format: instances/{instance}/databases/{database}/catalog |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-ObjectSchema-Type"></a>
-
-### ObjectSchema.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| STRING | 1 |  |
-| NUMBER | 2 |  |
-| BOOLEAN | 3 |  |
-| OBJECT | 4 |  |
-| ARRAY | 5 |  |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-DatabaseCatalogService"></a>
-
-### DatabaseCatalogService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetDatabaseCatalog | [GetDatabaseCatalogRequest](#bytebase-v1-GetDatabaseCatalogRequest) | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  |
-| UpdateDatabaseCatalog | [UpdateDatabaseCatalogRequest](#bytebase-v1-UpdateDatabaseCatalogRequest) | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  |
 
  
 

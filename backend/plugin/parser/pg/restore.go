@@ -87,11 +87,6 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 		return "", errors.Errorf("table metadata not found for %s.%s", schema, backupItem.SourceTable.Table)
 	}
 
-	pk := tableMetadata.GetPrimaryKey()
-	if pk == nil {
-		return "", errors.Errorf("primary key not found for %s.%s", schema, backupItem.SourceTable.Table)
-	}
-
 	g := &generator{
 		ctx:            ctx,
 		rCtx:           rCtx,
@@ -99,7 +94,7 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 		backupTable:    backupItem.TargetTable.Table,
 		originalSchema: schema,
 		originalTable:  backupItem.SourceTable.Table,
-		pk:             pk,
+		pk:             tableMetadata.GetPrimaryKey(),
 		isFirst:        true,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(g, tree.Tree)
@@ -139,6 +134,11 @@ func (g *generator) EnterDeletestmt(ctx *parser.DeletestmtContext) {
 func (g *generator) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 	if isTopLevel(ctx.GetParent()) && g.isFirst {
 		g.isFirst = false
+
+		if g.pk == nil {
+			g.err = errors.Errorf("primary key not found for %s.%s", g.originalSchema, g.originalTable)
+			return
+		}
 
 		l := &setFieldListener{}
 		antlr.ParseTreeWalkerDefault.Walk(l, ctx)
