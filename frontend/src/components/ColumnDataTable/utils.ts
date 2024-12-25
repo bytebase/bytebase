@@ -45,20 +45,20 @@ export const updateColumnConfig = async ({
   const pendingUpdateCatalog = cloneDeep(catalog);
   let targetSchema = pendingUpdateCatalog.schemas.find((s) => s.name === schema);
   if (!targetSchema) {
-    targetSchema = {name: schema};
+    targetSchema = {name: schema, tables: []};
     pendingUpdateCatalog.schemas.push(targetSchema);
   }
 
   let targetTable = targetSchema.tables.find((t) => t.name === table);
   if (!targetTable) {
-    targetTable = {name: table};
+    targetTable = TableCatalog.fromPartial({ name: table });
     targetSchema.tables.push(targetTable);
   }
 
   const columns = targetTable.columns?.columns || [];
   const columnIndex = columns.findIndex((c) => c.name === column);
   if (columnIndex < 0) {
-    columns.push(ColumnCatalog.fromPartial({ name: column, ...columnCatalog }));
+    columns.push(ColumnCatalog.fromPartial({name: column, ...columnCatalog}));
   } else {
     columns[columnIndex] = {
       ...columns[columnIndex],
@@ -93,16 +93,16 @@ export const updateTableConfig = async (
   const pendingUpdateCatalog = cloneDeep(catalog);
   let targetSchema = pendingUpdateCatalog.schemas.find((s) => s.name === schema);
   if (!targetSchema) {
-    targetSchema = {name: schema};
+    targetSchema = {name: schema, tables: []};
     pendingUpdateCatalog.schemas.push(targetSchema);
   }
 
   const tableIndex = targetSchema.tables.findIndex((t) => t.name === table);
   if (tableIndex < 0) {
-    targetSchema.tables.push({
+    targetSchema.tables.push(TableCatalog.fromPartial({
       name: table,
       ...tableCatalog,
-    });
+    }));
   } else {
     targetSchema.tables[tableIndex] = {
       ...targetSchema.tables[tableIndex],
