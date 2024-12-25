@@ -8,9 +8,6 @@ import {
   TableMetadata,
   DatabaseMetadata,
   DatabaseMetadataView,
-  ColumnConfig,
-  SchemaConfig,
-  TableConfig,
 } from "@/types/proto/v1/database_service";
 import { extractDatabaseResourceName } from "@/utils";
 
