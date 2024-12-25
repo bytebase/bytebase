@@ -506,7 +506,6 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
   return {
     updateDatabaseSchemaConfigs,
     getSchemaConfig,
-    getTableConfig,
     getColumnConfig,
     getDatabaseMetadataWithoutDefault,
     getDatabaseMetadata,
