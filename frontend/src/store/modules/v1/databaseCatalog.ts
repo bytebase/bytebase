@@ -5,7 +5,9 @@ import { useCache } from "@/store/cache";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_ID, EMPTY_ID, UNKNOWN_INSTANCE_NAME } from "@/types";
 import {
+  ColumnCatalog,
   DatabaseCatalog,
+  TableCatalog,
 } from "@/types/proto/v1/database_catalog_service";
 import { extractDatabaseResourceName } from "@/utils";
 
@@ -79,6 +81,25 @@ export const useDatabaseCatalogV1Store = defineStore("databaseCatalog_v1", () =>
     return updated;
   };
 
+  const getDatabaseCatalog = (database: string) => {
+    const { databaseName } = extractDatabaseResourceName(database);
+    if (databaseName === String(UNKNOWN_ID) || databaseName === String(EMPTY_ID)) {
+      return DatabaseCatalog.fromPartial({
+        name: ensureDatabaseCatalogResourceName(
+          `${UNKNOWN_INSTANCE_NAME}/databases/${UNKNOWN_ID}`
+        ),
+      });
+    }
+
+    return (
+      getCache(database) ??
+      DatabaseCatalog.fromPartial({
+        name: ensureDatabaseCatalogResourceName(database),
+        schemas: [],
+      })
+    );
+  };
+
   const removeCache = (name: string) => {
     const catalogResourceName = ensureDatabaseCatalogResourceName(name);
     cacheByName.invalidateEntity([catalogResourceName]);
@@ -87,6 +108,7 @@ export const useDatabaseCatalogV1Store = defineStore("databaseCatalog_v1", () =>
   return {
     getOrFetchDatabaseCatalog,
     updateDatabaseCatalog,
+    getDatabaseCatalog,
     removeCache,
   };
 });
@@ -97,6 +119,21 @@ const ensureDatabaseResourceName = (name: string) => {
 const ensureDatabaseCatalogResourceName = (name: string) => {
   const database = ensureDatabaseResourceName(name);
   return `${database}/catalog`;
+};
+
+export const getTableCatalog = (catalog: DatabaseCatalog, schema: string, table: string) => {
+  const schemaCatalog = catalog.schemas.find((s) => s.name === schema)
+  return schemaCatalog?.tables.find((t) => t.name === table) ?? TableCatalog.fromPartial({
+    name: table,
+  });
+};
+
+export const getColumnCatalog = (catalog: DatabaseCatalog, schema: string, table: string, column: string) => {
+  const schemaConfig = catalog.schemas.find((s) => s.name === schema)
+  const tableCatalog = schemaConfig?.tables.find((t) => t.name === table) ?? TableCatalog.fromPartial({});
+  return tableCatalog.columns?.columns.find((c) => c.name === column) ?? ColumnCatalog.fromPartial({
+    name: column,
+  });
 };
 
 export const useDatabaseCatalog = (
@@ -118,6 +155,6 @@ export const useDatabaseCatalog = (
     });
   });
   return computed(() =>
-    store.getOrFetchDatabaseCatalog({ database: unref(database) })
+    store.getDatabaseCatalog(unref(database))
   );
-};
+}
