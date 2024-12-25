@@ -89,8 +89,8 @@ const classes = computed(() => {
       classes.push("hover:bg-accent/10");
     }
     if (
-      selectionState.value.column === props.colIndex ||
-      selectionState.value.row === props.rowIndex
+      selectionState.value.columns.includes(props.colIndex) ||
+      selectionState.value.rows.includes(props.rowIndex)
     ) {
       classes.push("bg-accent/10");
     }
