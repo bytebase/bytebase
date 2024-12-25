@@ -40,7 +40,8 @@
                   v-if="!selectionDisabled"
                   class="absolute inset-0 group-hover:bg-accent/10 pointer-events-none"
                   :class="
-                    selectionState.column === header.index && 'bg-accent/10'
+                    selectionState.columns.includes(header.index) &&
+                    'bg-accent/10'
                   "
                 />
                 <div class="flex items-center overflow-hidden">
