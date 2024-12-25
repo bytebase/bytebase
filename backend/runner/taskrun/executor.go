@@ -89,9 +89,6 @@ type migrateContext struct {
 
 	// mutable
 	changelog int64
-
-	syncHistoryPrev int64
-	syncHistory     int64
 }
 
 func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int, taskRunUID int, dbFactory *dbfactory.DBFactory) (*db.MigrationInfo, *migrateContext, error) {
@@ -492,7 +489,7 @@ func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 	startedNs := time.Now().UnixNano()
 
 	defer func() {
-		if err := endMigration(ctx, s, startedNs, insertedID, updatedSchema, prevSchemaBuf.String(), mc, sheetID, resErr == nil /* isDone */); err != nil {
+		if err := endMigration(ctx, s, startedNs, insertedID, updatedSchema, prevSchemaBuf.String(), mi, mc, sheetID, resErr == nil /* isDone */); err != nil {
 			slog.Error("Failed to update migration history record",
 				log.BBError(err),
 				slog.String("migration_id", migrationHistoryID),
@@ -587,17 +584,20 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 		}
 
 		// sync history
-		syncHistoryPrev, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database, false)
-		if err != nil {
-			return "", errors.Wrapf(err, "failed to sync database metadata and schema")
+		var syncHistoryPrevUID *int64
+		if mi.Type.NeedDump() {
+			syncHistoryPrev, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database, false)
+			if err != nil {
+				return "", errors.Wrapf(err, "failed to sync database metadata and schema")
+			}
+			syncHistoryPrevUID = &syncHistoryPrev
 		}
-		mc.syncHistoryPrev = syncHistoryPrev
 
 		// changelog
 		changelogUID, err := stores.CreateChangelog(ctx, &store.ChangelogMessage{
 			DatabaseUID:        mc.database.UID,
 			Status:             store.ChangelogStatusPending,
-			PrevSyncHistoryUID: &syncHistoryPrev,
+			PrevSyncHistoryUID: syncHistoryPrevUID,
 			SyncHistoryUID:     nil,
 			Payload: &storepb.ChangelogPayload{
 				TaskRun:          mc.taskRunName,
@@ -653,17 +653,18 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 }
 
 // endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func endMigration(ctx context.Context, storeInstance *store.Store, startedNs int64, insertedID string, updatedSchema, schemaPrev string, mc *migrateContext, sheetID *int, isDone bool) error {
+func endMigration(ctx context.Context, storeInstance *store.Store, startedNs int64, insertedID string, updatedSchema, schemaPrev string, mi *db.MigrationInfo, mc *migrateContext, sheetID *int, isDone bool) error {
 	if common.IsDev() && mc.profile.DevelopmentVersioned {
-		syncHistory, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database, false)
-		if err != nil {
-			return errors.Wrapf(err, "failed to sync database metadata and schema")
-		}
-		mc.syncHistory = syncHistory
-
 		update := &store.UpdateChangelogMessage{
-			UID:            mc.changelog,
-			SyncHistoryUID: &mc.syncHistory,
+			UID: mc.changelog,
+		}
+
+		if mi.Type.NeedDump() {
+			syncHistory, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database, false)
+			if err != nil {
+				return errors.Wrapf(err, "failed to sync database metadata and schema")
+			}
+			update.SyncHistoryUID = &syncHistory
 		}
 
 		if isDone {
