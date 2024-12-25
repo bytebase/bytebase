@@ -421,9 +421,9 @@ const handleApplyColumnTemplate = (
   const column = cloneDeep(template.column);
   /* eslint-disable-next-line vue/no-mutating-props */
   props.table.columns.push(column);
-  if (template.config) {
+  if (template.catalog) {
     upsertColumnConfig(props.db, metadataForColumn(column), (config) => {
-      Object.assign(config, template.config);
+      Object.assign(config, template.catalog);
     });
   }
   markColumnStatus(column, "created");

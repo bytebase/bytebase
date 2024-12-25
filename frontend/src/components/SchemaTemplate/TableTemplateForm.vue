@@ -469,9 +469,9 @@ const handleApplyColumnTemplate = (
   }
   const column = cloneDeep(template.column);
   table.columns.push(column);
-  if (template.config) {
+  if (template.catalog) {
     context.upsertColumnConfig(db, metadataForColumn(column), (config) => {
-      Object.assign(config, template.config);
+      Object.assign(config, template.catalog);
     });
   }
   markColumnStatus(column, "created");

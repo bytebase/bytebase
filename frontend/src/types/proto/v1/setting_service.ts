@@ -12,7 +12,8 @@ import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { Expr } from "../google/type/expr";
 import { Engine, engineFromJSON, engineToJSON, engineToNumber } from "./common";
-import { ColumnConfig, ColumnMetadata, TableConfig, TableMetadata } from "./database_service";
+import { ColumnCatalog } from "./database_catalog_service";
+import { ColumnMetadata, TableConfig, TableMetadata } from "./database_service";
 import { ApprovalTemplate } from "./issue_service";
 import { PlanType, planTypeFromJSON, planTypeToJSON, planTypeToNumber } from "./subscription_service";
 
@@ -515,7 +516,7 @@ export interface SchemaTemplateSetting_FieldTemplate {
   engine: Engine;
   category: string;
   column: ColumnMetadata | undefined;
-  config: ColumnConfig | undefined;
+  catalog: ColumnCatalog | undefined;
 }
 
 export interface SchemaTemplateSetting_ColumnType {
@@ -3127,7 +3128,7 @@ export const SchemaTemplateSetting: MessageFns<SchemaTemplateSetting> = {
 };
 
 function createBaseSchemaTemplateSetting_FieldTemplate(): SchemaTemplateSetting_FieldTemplate {
-  return { id: "", engine: Engine.ENGINE_UNSPECIFIED, category: "", column: undefined, config: undefined };
+  return { id: "", engine: Engine.ENGINE_UNSPECIFIED, category: "", column: undefined, catalog: undefined };
 }
 
 export const SchemaTemplateSetting_FieldTemplate: MessageFns<SchemaTemplateSetting_FieldTemplate> = {
@@ -3144,8 +3145,8 @@ export const SchemaTemplateSetting_FieldTemplate: MessageFns<SchemaTemplateSetti
     if (message.column !== undefined) {
       ColumnMetadata.encode(message.column, writer.uint32(34).fork()).join();
     }
-    if (message.config !== undefined) {
-      ColumnConfig.encode(message.config, writer.uint32(42).fork()).join();
+    if (message.catalog !== undefined) {
+      ColumnCatalog.encode(message.catalog, writer.uint32(42).fork()).join();
     }
     return writer;
   },
@@ -3194,7 +3195,7 @@ export const SchemaTemplateSetting_FieldTemplate: MessageFns<SchemaTemplateSetti
             break;
           }
 
-          message.config = ColumnConfig.decode(reader, reader.uint32());
+          message.catalog = ColumnCatalog.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -3212,7 +3213,7 @@ export const SchemaTemplateSetting_FieldTemplate: MessageFns<SchemaTemplateSetti
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
       category: isSet(object.category) ? globalThis.String(object.category) : "",
       column: isSet(object.column) ? ColumnMetadata.fromJSON(object.column) : undefined,
-      config: isSet(object.config) ? ColumnConfig.fromJSON(object.config) : undefined,
+      catalog: isSet(object.catalog) ? ColumnCatalog.fromJSON(object.catalog) : undefined,
     };
   },
 
@@ -3230,8 +3231,8 @@ export const SchemaTemplateSetting_FieldTemplate: MessageFns<SchemaTemplateSetti
     if (message.column !== undefined) {
       obj.column = ColumnMetadata.toJSON(message.column);
     }
-    if (message.config !== undefined) {
-      obj.config = ColumnConfig.toJSON(message.config);
+    if (message.catalog !== undefined) {
+      obj.catalog = ColumnCatalog.toJSON(message.catalog);
     }
     return obj;
   },
@@ -3247,8 +3248,8 @@ export const SchemaTemplateSetting_FieldTemplate: MessageFns<SchemaTemplateSetti
     message.column = (object.column !== undefined && object.column !== null)
       ? ColumnMetadata.fromPartial(object.column)
       : undefined;
-    message.config = (object.config !== undefined && object.config !== null)
-      ? ColumnConfig.fromPartial(object.config)
+    message.catalog = (object.catalog !== undefined && object.catalog !== null)
+      ? ColumnCatalog.fromPartial(object.catalog)
       : undefined;
     return message;
   },
