@@ -195,17 +195,17 @@ func (s *DatabaseService) CreateRevision(ctx context.Context, request *v1pb.Crea
 		}
 	}
 
-	converted := convertRevision(request.Revision, database, sheet)
-	revisionM, err := s.store.CreateRevision(ctx, converted, user.ID)
+	revisionCreate := convertRevision(request.Revision, database, sheet)
+	revisionM, err := s.store.CreateRevision(ctx, revisionCreate, user.ID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create revision, err: %v", err)
 	}
-	converted1, err := convertToRevision(ctx, s.store, request.Parent, revisionM)
+	converted, err := convertToRevision(ctx, s.store, request.Parent, revisionM)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to revision, err: %v", err)
 	}
 
-	return converted1, nil
+	return converted, nil
 }
 
 func (s *DatabaseService) DeleteRevision(ctx context.Context, request *v1pb.DeleteRevisionRequest) (*emptypb.Empty, error) {
