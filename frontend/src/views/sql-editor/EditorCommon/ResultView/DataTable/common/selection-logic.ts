@@ -153,6 +153,14 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
     }
     copying.value = true;
     toClipboard(values)
+      .then(() => {
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("common.copied"),
+        });
+        deselect();
+      })
       .catch((err: any) => {
         const errors = [t("common.failed")];
         if (err && err instanceof Error) {
