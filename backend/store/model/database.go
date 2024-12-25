@@ -185,16 +185,16 @@ func NewDatabaseConfig(config *storepb.DatabaseConfig) *DatabaseConfig {
 		return databaseConfig
 	}
 	databaseConfig.name = config.Name
-	for _, schema := range config.SchemaConfigs {
+	for _, schema := range config.Schemas {
 		schemaConfig := &SchemaConfig{
 			internal: make(map[string]*TableConfig),
 		}
-		for _, table := range schema.TableConfigs {
+		for _, table := range schema.Tables {
 			tableConfig := &TableConfig{
 				ClassificationID: table.ClassificationId,
-				internal:         make(map[string]*storepb.ColumnConfig),
+				internal:         make(map[string]*storepb.ColumnCatalog),
 			}
-			for _, column := range table.ColumnConfigs {
+			for _, column := range table.Columns {
 				tableConfig.internal[column.Name] = column
 			}
 			schemaConfig.internal[table.Name] = tableConfig
@@ -224,13 +224,13 @@ func (d *DatabaseConfig) BuildDatabaseConfig() *storepb.DatabaseConfig {
 	config := &storepb.DatabaseConfig{Name: d.name}
 
 	for schemaName, sConfig := range d.internal {
-		schemaConfig := &storepb.SchemaConfig{Name: schemaName}
+		schemaConfig := &storepb.SchemaCatalog{Name: schemaName}
 
 		for tableName, tConfig := range sConfig.internal {
-			tableConfig := &storepb.TableConfig{Name: tableName, ClassificationId: tConfig.ClassificationID}
+			tableConfig := &storepb.TableCatalog{Name: tableName, ClassificationId: tConfig.ClassificationID}
 
 			for colName, colConfig := range tConfig.internal {
-				tableConfig.ColumnConfigs = append(tableConfig.ColumnConfigs, &storepb.ColumnConfig{
+				tableConfig.Columns = append(tableConfig.Columns, &storepb.ColumnCatalog{
 					Name:                      colName,
 					SemanticTypeId:            colConfig.SemanticTypeId,
 					Labels:                    colConfig.Labels,
@@ -240,9 +240,9 @@ func (d *DatabaseConfig) BuildDatabaseConfig() *storepb.DatabaseConfig {
 					PartialMaskingAlgorithmId: colConfig.PartialMaskingAlgorithmId,
 				})
 			}
-			schemaConfig.TableConfigs = append(schemaConfig.TableConfigs, tableConfig)
+			schemaConfig.Tables = append(schemaConfig.Tables, tableConfig)
 		}
-		config.SchemaConfigs = append(config.SchemaConfigs, schemaConfig)
+		config.Schemas = append(config.Schemas, schemaConfig)
 	}
 
 	return config
@@ -264,7 +264,7 @@ func (s *SchemaConfig) CreateOrGetTableConfig(name string) *TableConfig {
 		return config
 	}
 	s.internal[name] = &TableConfig{
-		internal: make(map[string]*storepb.ColumnConfig),
+		internal: make(map[string]*storepb.ColumnCatalog),
 	}
 	return s.internal[name]
 }
@@ -277,15 +277,15 @@ func (s *SchemaConfig) RemoveTableConfig(name string) {
 // TableConfig is the config for a table.
 type TableConfig struct {
 	ClassificationID string
-	internal         map[string]*storepb.ColumnConfig
+	internal         map[string]*storepb.ColumnCatalog
 }
 
 // CreateOrGetColumnConfig creates or gets the column config by name.
-func (t *TableConfig) CreateOrGetColumnConfig(name string) *storepb.ColumnConfig {
+func (t *TableConfig) CreateOrGetColumnConfig(name string) *storepb.ColumnCatalog {
 	if config := t.internal[name]; config != nil {
 		return config
 	}
-	t.internal[name] = &storepb.ColumnConfig{
+	t.internal[name] = &storepb.ColumnCatalog{
 		Name:         name,
 		MaskingLevel: storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED,
 	}

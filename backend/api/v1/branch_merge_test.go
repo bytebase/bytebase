@@ -173,10 +173,10 @@ func TestDeriveUpdateInfoFromMetadataDiff(t *testing.T) {
 				},
 			},
 			config: &storepb.DatabaseConfig{
-				SchemaConfigs: []*storepb.SchemaConfig{
+				Schemas: []*storepb.SchemaCatalog{
 					{
 						Name: "",
-						TableConfigs: []*storepb.TableConfig{
+						Tables: []*storepb.TableCatalog{
 							{
 								Name:         "t1",
 								Updater:      "anonymous+01@bytebase.com",
@@ -281,15 +281,15 @@ func TestApplyUpdateInfoDiffRootNode(t *testing.T) {
 				},
 			},
 			config: &storepb.DatabaseConfig{
-				SchemaConfigs: []*storepb.SchemaConfig{
+				Schemas: []*storepb.SchemaCatalog{
 					{
 						Name: "",
-						TableConfigs: []*storepb.TableConfig{
+						Tables: []*storepb.TableCatalog{
 							{
 								Name:       "t1",
 								Updater:    "my",
 								UpdateTime: time1,
-								ColumnConfigs: []*storepb.ColumnConfig{
+								Columns: []*storepb.ColumnCatalog{
 									{
 										Name:             "t",
 										ClassificationId: "1-1-1",
@@ -306,16 +306,16 @@ func TestApplyUpdateInfoDiffRootNode(t *testing.T) {
 				},
 			},
 			want: &storepb.DatabaseConfig{
-				SchemaConfigs: []*storepb.SchemaConfig{
+				Schemas: []*storepb.SchemaCatalog{
 					{
 						Name: "",
-						TableConfigs: []*storepb.TableConfig{
+						Tables: []*storepb.TableCatalog{
 							{
 								Name:         "t1",
 								UpdateTime:   time2,
 								Updater:      "anonymous+01@bytebase.com",
 								SourceBranch: "feat/01",
-								ColumnConfigs: []*storepb.ColumnConfig{
+								Columns: []*storepb.ColumnCatalog{
 									{
 										Name:             "t",
 										ClassificationId: "1-1-1",

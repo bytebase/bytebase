@@ -9775,35 +9775,6 @@ components:
                     type: string
                 objectSchema:
                     $ref: '#/components/schemas/ObjectSchema'
-        ColumnConfig:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: The name is the name of a column.
-                semanticTypeId:
-                    type: string
-                labels:
-                    type: object
-                    additionalProperties:
-                        type: string
-                    description: The user labels for a column.
-                classificationId:
-                    type: string
-                maskingLevel:
-                    enum:
-                        - MASKING_LEVEL_UNSPECIFIED
-                        - NONE
-                        - PARTIAL
-                        - FULL
-                    type: string
-                    format: enum
-                fullMaskingAlgorithmId:
-                    type: string
-                partialMaskingAlgorithmId:
-                    type: string
-                objectSchema:
-                    $ref: '#/components/schemas/ObjectSchema'
         ColumnMetadata:
             type: object
             properties:
@@ -10212,10 +10183,10 @@ components:
             properties:
                 name:
                     type: string
-                schemaConfigs:
+                schemas:
                     type: array
                     items:
-                        $ref: '#/components/schemas/SchemaConfig'
+                        $ref: '#/components/schemas/SchemaCatalog'
                     description: The schema_configs is the list of configs for schemas in a database.
         DatabaseGroup:
             type: object
@@ -10674,29 +10645,6 @@ components:
                          The match_type is the PostgreSQL specific field.
                          It's empty string for other databases.
             description: ForeignKeyMetadata is the metadata for foreign keys.
-        FunctionConfig:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: The name is the name of a function.
-                updater:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The last updater of the function in branch.
-                         Format: users/{userUID}.
-                sourceBranch:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The last change come from branch.
-                         Format: projcets/{project}/branches/{branch}
-                updateTime:
-                    readOnly: true
-                    type: string
-                    description: The timestamp when the function is updated in branch.
-                    format: date-time
         GenerationMetadata:
             type: object
             properties:
@@ -12685,29 +12633,6 @@ components:
                     $ref: '#/components/schemas/Position'
                 endPosition:
                     $ref: '#/components/schemas/Position'
-        ProcedureConfig:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: The name is the name of a procedure.
-                updater:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The last updater of the procedure in branch.
-                         Format: users/{userUID}.
-                sourceBranch:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The last change come from branch.
-                         Format: projcets/{project}/branches/{branch}
-                updateTime:
-                    readOnly: true
-                    type: string
-                    description: The timestamp when the procedure is updated in branch.
-                    format: date-time
         Project:
             type: object
             properties:
@@ -13589,31 +13514,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/TableCatalog'
-        SchemaConfig:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: |-
-                        The name is the schema name.
-                         It is an empty string for databases without such concept such as MySQL.
-                tableConfigs:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/TableConfig'
-                    description: The table_configs is the list of configs for tables in a schema.
-                functionConfigs:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/FunctionConfig'
-                procedureConfigs:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ProcedureConfig'
-                viewConfigs:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ViewConfig'
         SchemaTemplateSetting:
             type: object
             properties:
@@ -13707,8 +13607,8 @@ components:
                     type: string
                 column:
                     $ref: '#/components/schemas/ColumnMetadata'
-                config:
-                    $ref: '#/components/schemas/ColumnConfig'
+                catalog:
+                    $ref: '#/components/schemas/ColumnCatalog'
         SchemaTemplateSetting_TableTemplate:
             type: object
             properties:
@@ -13748,8 +13648,8 @@ components:
                     type: string
                 table:
                     $ref: '#/components/schemas/TableMetadata'
-                config:
-                    $ref: '#/components/schemas/TableConfig'
+                catalog:
+                    $ref: '#/components/schemas/TableCatalog'
         SearchAnomaliesRequest:
             type: object
             properties:
@@ -14538,38 +14438,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ColumnCatalog'
-        TableConfig:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: The name is the name of a table.
-                columnConfigs:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ColumnConfig'
-                    description: The column_configs is the ordered list of configs for columns in a table.
-                objectSchema:
-                    $ref: '#/components/schemas/ObjectSchema'
-                classificationId:
-                    type: string
-                updater:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The last updater of the table in branch.
-                         Format: users/{userUID}.
-                sourceBranch:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The last change come from branch.
-                         Format: projcets/{project}/branches/{branch}
-                updateTime:
-                    readOnly: true
-                    type: string
-                    description: The timestamp when the table is updated in branch.
-                    format: date-time
         TableMetadata:
             type: object
             properties:
@@ -15448,29 +15316,6 @@ components:
                 passwordRestrictionSetting:
                     $ref: '#/components/schemas/PasswordRestrictionSetting'
             description: The data in setting value.
-        ViewConfig:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: The name is the name of a view.
-                updater:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The last updater of the view in branch.
-                         Format: users/{userUID}.
-                sourceBranch:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The last change come from branch.
-                         Format: projcets/{project}/branches/{branch}
-                updateTime:
-                    readOnly: true
-                    type: string
-                    description: The timestamp when the view is updated in branch.
-                    format: date-time
         Webhook:
             required:
                 - type

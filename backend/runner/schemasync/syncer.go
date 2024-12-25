@@ -783,7 +783,7 @@ func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchema
 	}
 }
 
-func isEmptyColumnConfig(config *storepb.ColumnConfig) bool {
+func isEmptyColumnConfig(config *storepb.ColumnCatalog) bool {
 	return config == nil || (len(config.Labels) == 0 &&
 		config.ClassificationId == "" &&
 		config.SemanticTypeId == "" &&

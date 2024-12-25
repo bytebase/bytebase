@@ -44,24 +44,24 @@ func MergeDatabaseConfig(target, baseline, current *storepb.DatabaseConfig) *sto
 
 	result := &storepb.DatabaseConfig{Name: current.Name}
 	for _, v := range currentMap {
-		result.SchemaConfigs = append(result.SchemaConfigs, v)
+		result.Schemas = append(result.Schemas, v)
 	}
-	sort.Slice(result.SchemaConfigs, func(i, j int) bool {
-		return result.SchemaConfigs[i].Name < result.SchemaConfigs[j].Name
+	sort.Slice(result.Schemas, func(i, j int) bool {
+		return result.Schemas[i].Name < result.Schemas[j].Name
 	})
 	return result
 }
 
-func mergeSchemaConfig(target, baseline, current *storepb.SchemaConfig) *storepb.SchemaConfig {
+func mergeSchemaConfig(target, baseline, current *storepb.SchemaCatalog) *storepb.SchemaCatalog {
 	// Avoid nil values.
 	if target == nil {
-		target = &storepb.SchemaConfig{}
+		target = &storepb.SchemaCatalog{}
 	}
 	if baseline == nil {
-		baseline = &storepb.SchemaConfig{}
+		baseline = &storepb.SchemaCatalog{}
 	}
 	if current == nil {
-		current = &storepb.SchemaConfig{}
+		current = &storepb.SchemaCatalog{}
 	}
 
 	targetMap, baselineMap, currentMap := buildTableMap(target), buildTableMap(baseline), buildTableMap(current)
@@ -116,9 +116,9 @@ func mergeSchemaConfig(target, baseline, current *storepb.SchemaConfig) *storepb
 		}
 	}
 
-	result := &storepb.SchemaConfig{Name: current.Name}
+	result := &storepb.SchemaCatalog{Name: current.Name}
 	for _, v := range currentMap {
-		result.TableConfigs = append(result.TableConfigs, v)
+		result.Tables = append(result.Tables, v)
 	}
 	for _, v := range currentProcedureMap {
 		result.ProcedureConfigs = append(result.ProcedureConfigs, v)
@@ -129,8 +129,8 @@ func mergeSchemaConfig(target, baseline, current *storepb.SchemaConfig) *storepb
 	for _, v := range currentViewMap {
 		result.ViewConfigs = append(result.ViewConfigs, v)
 	}
-	sort.Slice(result.TableConfigs, func(i, j int) bool {
-		return result.TableConfigs[i].Name < result.TableConfigs[j].Name
+	sort.Slice(result.Tables, func(i, j int) bool {
+		return result.Tables[i].Name < result.Tables[j].Name
 	})
 	return result
 }
@@ -165,16 +165,16 @@ func mergeViewConfig(target, baseline, current *storepb.ViewConfig) *storepb.Vie
 	}
 }
 
-func mergeTableConfig(target, baseline, current *storepb.TableConfig) *storepb.TableConfig {
+func mergeTableConfig(target, baseline, current *storepb.TableCatalog) *storepb.TableCatalog {
 	// Avoid nil values.
 	if target == nil {
-		target = &storepb.TableConfig{}
+		target = &storepb.TableCatalog{}
 	}
 	if baseline == nil {
-		baseline = &storepb.TableConfig{}
+		baseline = &storepb.TableCatalog{}
 	}
 	if current == nil {
-		current = &storepb.TableConfig{}
+		current = &storepb.TableCatalog{}
 	}
 
 	targetMap, baselineMap, currentMap := buildColumnMap(target), buildColumnMap(baseline), buildColumnMap(current)
@@ -196,21 +196,21 @@ func mergeTableConfig(target, baseline, current *storepb.TableConfig) *storepb.T
 		delete(currentMap, tableName)
 	}
 
-	result := &storepb.TableConfig{Name: current.Name, ClassificationId: current.ClassificationId}
+	result := &storepb.TableCatalog{Name: current.Name, ClassificationId: current.ClassificationId}
 	lastUpdater, lastUpdateTime, sourceBranch := getLastUpdaterAndSourceBranch(target.GetUpdater(), target.GetUpdateTime(), target.GetSourceBranch(), baseline.GetUpdater(), current.GetUpdater(), current.GetUpdateTime(), current.GetSourceBranch())
 	result.Updater = lastUpdater
 	result.UpdateTime = lastUpdateTime
 	result.SourceBranch = sourceBranch
 	for _, v := range currentMap {
-		result.ColumnConfigs = append(result.ColumnConfigs, v)
+		result.Columns = append(result.Columns, v)
 	}
-	sort.Slice(result.ColumnConfigs, func(i, j int) bool {
-		return result.ColumnConfigs[i].Name < result.ColumnConfigs[j].Name
+	sort.Slice(result.Columns, func(i, j int) bool {
+		return result.Columns[i].Name < result.Columns[j].Name
 	})
 	return result
 }
 
-func mergeColumnConfig(target, baseline, current *storepb.ColumnConfig) *storepb.ColumnConfig {
+func mergeColumnConfig(target, baseline, current *storepb.ColumnCatalog) *storepb.ColumnCatalog {
 	if baseline == nil {
 		// Baseline could be nil. When it's nil, we should set the current stale value to target value.
 		if target == nil {
@@ -244,23 +244,23 @@ func mergeColumnConfig(target, baseline, current *storepb.ColumnConfig) *storepb
 	return current
 }
 
-func buildSchemaMap(config *storepb.DatabaseConfig) map[string]*storepb.SchemaConfig {
-	m := make(map[string]*storepb.SchemaConfig)
-	for _, v := range config.SchemaConfigs {
+func buildSchemaMap(config *storepb.DatabaseConfig) map[string]*storepb.SchemaCatalog {
+	m := make(map[string]*storepb.SchemaCatalog)
+	for _, v := range config.Schemas {
 		m[v.Name] = v
 	}
 	return m
 }
 
-func buildTableMap(config *storepb.SchemaConfig) map[string]*storepb.TableConfig {
-	m := make(map[string]*storepb.TableConfig)
-	for _, v := range config.TableConfigs {
+func buildTableMap(config *storepb.SchemaCatalog) map[string]*storepb.TableCatalog {
+	m := make(map[string]*storepb.TableCatalog)
+	for _, v := range config.Tables {
 		m[v.Name] = v
 	}
 	return m
 }
 
-func buildProcedureMap(config *storepb.SchemaConfig) map[string]*storepb.ProcedureConfig {
+func buildProcedureMap(config *storepb.SchemaCatalog) map[string]*storepb.ProcedureConfig {
 	m := make(map[string]*storepb.ProcedureConfig)
 	for _, v := range config.ProcedureConfigs {
 		m[v.Name] = v
@@ -268,7 +268,7 @@ func buildProcedureMap(config *storepb.SchemaConfig) map[string]*storepb.Procedu
 	return m
 }
 
-func buildFunctionMap(config *storepb.SchemaConfig) map[string]*storepb.FunctionConfig {
+func buildFunctionMap(config *storepb.SchemaCatalog) map[string]*storepb.FunctionConfig {
 	m := make(map[string]*storepb.FunctionConfig)
 	for _, v := range config.FunctionConfigs {
 		m[v.Name] = v
@@ -276,7 +276,7 @@ func buildFunctionMap(config *storepb.SchemaConfig) map[string]*storepb.Function
 	return m
 }
 
-func buildViewMap(config *storepb.SchemaConfig) map[string]*storepb.ViewConfig {
+func buildViewMap(config *storepb.SchemaCatalog) map[string]*storepb.ViewConfig {
 	m := make(map[string]*storepb.ViewConfig)
 	for _, v := range config.ViewConfigs {
 		m[v.Name] = v
@@ -284,9 +284,9 @@ func buildViewMap(config *storepb.SchemaConfig) map[string]*storepb.ViewConfig {
 	return m
 }
 
-func buildColumnMap(config *storepb.TableConfig) map[string]*storepb.ColumnConfig {
-	m := make(map[string]*storepb.ColumnConfig)
-	for _, v := range config.ColumnConfigs {
+func buildColumnMap(config *storepb.TableCatalog) map[string]*storepb.ColumnCatalog {
+	m := make(map[string]*storepb.ColumnCatalog)
+	for _, v := range config.Columns {
 		m[v.Name] = v
 	}
 	return m
