@@ -65,6 +65,10 @@
     - [InstanceRoleMetadata](#bytebase-store-InstanceRoleMetadata)
     - [LinkedDatabaseMetadata](#bytebase-store-LinkedDatabaseMetadata)
     - [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata)
+    - [ObjectSchema](#bytebase-store-ObjectSchema)
+    - [ObjectSchema.ArrayKind](#bytebase-store-ObjectSchema-ArrayKind)
+    - [ObjectSchema.StructKind](#bytebase-store-ObjectSchema-StructKind)
+    - [ObjectSchema.StructKind.PropertiesEntry](#bytebase-store-ObjectSchema-StructKind-PropertiesEntry)
     - [PackageMetadata](#bytebase-store-PackageMetadata)
     - [ProcedureConfig](#bytebase-store-ProcedureConfig)
     - [ProcedureMetadata](#bytebase-store-ProcedureMetadata)
@@ -83,6 +87,7 @@
     - [ViewMetadata](#bytebase-store-ViewMetadata)
   
     - [GenerationMetadata.Type](#bytebase-store-GenerationMetadata-Type)
+    - [ObjectSchema.Type](#bytebase-store-ObjectSchema-Type)
     - [StreamMetadata.Mode](#bytebase-store-StreamMetadata-Mode)
     - [StreamMetadata.Type](#bytebase-store-StreamMetadata-Type)
     - [TablePartitionMetadata.Type](#bytebase-store-TablePartitionMetadata-Type)
@@ -925,6 +930,7 @@ Metadata about the request.
 | masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
 | full_masking_algorithm_id | [string](#string) |  |  |
 | partial_masking_algorithm_id | [string](#string) |  |  |
+| object_schema | [ObjectSchema](#bytebase-store-ObjectSchema) | optional |  |
 
 
 
@@ -1290,6 +1296,69 @@ MaterializedViewMetadata is the metadata for materialized views.
 
 
 
+<a name="bytebase-store-ObjectSchema"></a>
+
+### ObjectSchema
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [ObjectSchema.Type](#bytebase-store-ObjectSchema-Type) |  |  |
+| struct_kind | [ObjectSchema.StructKind](#bytebase-store-ObjectSchema-StructKind) |  |  |
+| array_kind | [ObjectSchema.ArrayKind](#bytebase-store-ObjectSchema-ArrayKind) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ObjectSchema-ArrayKind"></a>
+
+### ObjectSchema.ArrayKind
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| kind | [ObjectSchema](#bytebase-store-ObjectSchema) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ObjectSchema-StructKind"></a>
+
+### ObjectSchema.StructKind
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| properties | [ObjectSchema.StructKind.PropertiesEntry](#bytebase-store-ObjectSchema-StructKind-PropertiesEntry) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ObjectSchema-StructKind-PropertiesEntry"></a>
+
+### ObjectSchema.StructKind.PropertiesEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [ObjectSchema](#bytebase-store-ObjectSchema) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-PackageMetadata"></a>
 
 ### PackageMetadata
@@ -1385,7 +1454,6 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | sequences | [SequenceMetadata](#bytebase-store-SequenceMetadata) | repeated | The sequences is the list of sequences in a schema. |
 | packages | [PackageMetadata](#bytebase-store-PackageMetadata) | repeated | The packages is the list of packages in a schema. |
 | owner | [string](#string) |  |  |
-| triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The triggers is the list of triggers in a schema, triggers are sorted by table_name, event, timing, action_order. |
 | events | [EventMetadata](#bytebase-store-EventMetadata) | repeated |  |
 | enum_types | [EnumTypeMetadata](#bytebase-store-EnumTypeMetadata) | repeated |  |
 
@@ -1483,6 +1551,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a table. |
 | column_configs | [ColumnConfig](#bytebase-store-ColumnConfig) | repeated | The column_configs is the ordered list of configs for columns in a table. |
+| object_schema | [ObjectSchema](#bytebase-store-ObjectSchema) | optional |  |
 | classification_id | [string](#string) |  |  |
 | updater | [string](#string) |  | The last updater of the table in branch. Format: users/{userUID}. |
 | source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
@@ -1518,6 +1587,8 @@ TableMetadata is the metadata for tables.
 | partitions | [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata) | repeated | The partitions is the list of partitions in a table. |
 | check_constraints | [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata) | repeated | The check_constraints is the list of check constraints in a table. |
 | owner | [string](#string) |  |  |
+| sorting_keys | [string](#string) | repeated | The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field. Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by |
+| triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated |  |
 
 
 
@@ -1578,13 +1649,14 @@ TablePartitionMetadata is the metadata for table partitions.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of the trigger. |
-| table_name | [string](#string) |  | The table_name is the name of the table/view that the trigger is created on. |
 | event | [string](#string) |  | The event is the event of the trigger, such as INSERT, UPDATE, DELETE, TRUNCATE. |
 | timing | [string](#string) |  | The timing is the timing of the trigger, such as BEFORE, AFTER. |
 | body | [string](#string) |  | The body is the body of the trigger. |
 | sql_mode | [string](#string) |  |  |
 | character_set_client | [string](#string) |  |  |
 | collation_connection | [string](#string) |  |  |
+| action_orientation | [string](#string) |  | For Postgres, identifies whether the trigger fires once for each processed row or once for each statement (ROW or STATEMENT). |
+| condition | [string](#string) |  | For Postgres, the WHEN condition of the trigger. |
 
 
 
@@ -1640,6 +1712,22 @@ ViewMetadata is the metadata for views.
 | TYPE_UNSPECIFIED | 0 |  |
 | TYPE_VIRTUAL | 1 |  |
 | TYPE_STORED | 2 |  |
+
+
+
+<a name="bytebase-store-ObjectSchema-Type"></a>
+
+### ObjectSchema.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| STRING | 1 |  |
+| NUMBER | 2 |  |
+| BOOLEAN | 3 |  |
+| OBJECT | 4 |  |
+| ARRAY | 5 |  |
 
 
 

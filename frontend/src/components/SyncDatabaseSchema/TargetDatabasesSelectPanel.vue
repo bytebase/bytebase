@@ -24,6 +24,7 @@
         :database-list="filteredDatabaseList"
         :show-selection="true"
         :selected-database-names="state.selectedDatabaseNameList"
+        :keyword="state.params.query.trim().toLowerCase()"
         @update:selected-databases="
           state.selectedDatabaseNameList = Array.from($event)
         "

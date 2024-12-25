@@ -1394,6 +1394,79 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/instances/{instance}/databases/{database}/catalog:
+        get:
+            tags:
+                - DatabaseCatalogService
+            operationId: DatabaseCatalogService_GetDatabaseCatalog
+            parameters:
+                - name: instance
+                  in: path
+                  description: The instance id.
+                  required: true
+                  schema:
+                    type: string
+                - name: database
+                  in: path
+                  description: The database id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DatabaseCatalog'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        patch:
+            tags:
+                - DatabaseCatalogService
+            operationId: DatabaseCatalogService_UpdateDatabaseCatalog
+            parameters:
+                - name: instance
+                  in: path
+                  description: The instance id.
+                  required: true
+                  schema:
+                    type: string
+                - name: database
+                  in: path
+                  description: The database id.
+                  required: true
+                  schema:
+                    type: string
+                - name: updateMask
+                  in: query
+                  description: The list of fields to update.
+                  schema:
+                    type: string
+                    format: field-mask
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/DatabaseCatalog'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DatabaseCatalog'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}/databases/{database}/changeHistories:
         get:
             tags:
@@ -5847,6 +5920,13 @@ paths:
                      If unspecified, all stages are created.
                   schema:
                     type: string
+                - name: validateOnly
+                  in: query
+                  description: |-
+                    If set, validate the request and preview the rollout, but
+                     do not actually create it.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -9709,6 +9789,34 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Advice'
+        ColumnCatalog:
+            type: object
+            properties:
+                name:
+                    type: string
+                semanticTypeId:
+                    type: string
+                labels:
+                    type: object
+                    additionalProperties:
+                        type: string
+                    description: The user labels for a column.
+                classificationId:
+                    type: string
+                maskingLevel:
+                    enum:
+                        - MASKING_LEVEL_UNSPECIFIED
+                        - NONE
+                        - PARTIAL
+                        - FULL
+                    type: string
+                    format: enum
+                fullMaskingAlgorithmId:
+                    type: string
+                partialMaskingAlgorithmId:
+                    type: string
+                objectSchema:
+                    $ref: '#/components/schemas/ObjectSchema'
         ColumnConfig:
             type: object
             properties:
@@ -9736,6 +9844,8 @@ components:
                     type: string
                 partialMaskingAlgorithmId:
                     type: string
+                objectSchema:
+                    $ref: '#/components/schemas/ObjectSchema'
         ColumnMetadata:
             type: object
             properties:
@@ -10127,6 +10237,18 @@ components:
                     readOnly: true
                     type: boolean
                     description: The database is available for DML prior backup.
+        DatabaseCatalog:
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: |-
+                        The name of the database catalog.
+                         Format: instances/{instance}/databases/{database}/catalog
+                schemas:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/SchemaCatalog'
         DatabaseConfig:
             type: object
             properties:
@@ -11978,6 +12100,35 @@ components:
         OIDCIdentityProviderContext:
             type: object
             properties: {}
+        ObjectSchema:
+            type: object
+            properties:
+                type:
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - STRING
+                        - NUMBER
+                        - BOOLEAN
+                        - OBJECT
+                        - ARRAY
+                    type: string
+                    format: enum
+                structKind:
+                    $ref: '#/components/schemas/ObjectSchema_StructKind'
+                arrayKind:
+                    $ref: '#/components/schemas/ObjectSchema_ArrayKind'
+        ObjectSchema_ArrayKind:
+            type: object
+            properties:
+                kind:
+                    $ref: '#/components/schemas/ObjectSchema'
+        ObjectSchema_StructKind:
+            type: object
+            properties:
+                properties:
+                    type: object
+                    additionalProperties:
+                        $ref: '#/components/schemas/ObjectSchema'
         ParseMyBatisMapperRequest:
             type: object
             properties:
@@ -13471,6 +13622,15 @@ components:
                 taskUid:
                     type: integer
                     format: int32
+        SchemaCatalog:
+            type: object
+            properties:
+                name:
+                    type: string
+                tables:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TableCatalog'
         SchemaConfig:
             type: object
             properties:
@@ -14242,6 +14402,13 @@ components:
                 name:
                     type: string
                     description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}'
+                id:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The id comes from the deployment config.
+                         Format: UUID
+                         Empty for legacy stages.
                 title:
                     type: string
                 tasks:
@@ -14395,6 +14562,24 @@ components:
                         The name of the instance to sync slow queries.
                          Format: instances/{instance} for one instance
                               or projects/{project} for one project.
+        TableCatalog:
+            type: object
+            properties:
+                name:
+                    type: string
+                columns:
+                    $ref: '#/components/schemas/TableCatalog_Columns'
+                objectSchema:
+                    $ref: '#/components/schemas/ObjectSchema'
+                classificationId:
+                    type: string
+        TableCatalog_Columns:
+            type: object
+            properties:
+                columns:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ColumnCatalog'
         TableConfig:
             type: object
             properties:
@@ -14406,6 +14591,8 @@ components:
                     items:
                         $ref: '#/components/schemas/ColumnConfig'
                     description: The column_configs is the ordered list of configs for columns in a table.
+                objectSchema:
+                    $ref: '#/components/schemas/ObjectSchema'
                 classificationId:
                     type: string
                 updater:
@@ -14490,6 +14677,17 @@ components:
                     description: The check_constraints is the list of check constraints in a table.
                 owner:
                     type: string
+                sortingKeys:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.
+                         Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by
+                triggers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TriggerMetadata'
             description: TableMetadata is the metadata for tables.
         TablePartitionMetadata:
             type: object
@@ -14965,6 +15163,35 @@ components:
                 error:
                     type: string
                     description: The result of the test, empty if the test is successful.
+        TriggerMetadata:
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: The name is the name of the trigger.
+                event:
+                    type: string
+                    description: |-
+                        The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
+                         TRUNCATE.
+                timing:
+                    type: string
+                    description: The timing is the timing of the trigger, such as BEFORE, AFTER.
+                body:
+                    type: string
+                    description: The body is the body of the trigger.
+                sqlMode:
+                    type: string
+                characterSetClient:
+                    type: string
+                collationConnection:
+                    type: string
+                actionOrientation:
+                    type: string
+                    description: For Postgres, identifies whether the trigger fires once for each processed row or once for each statement (ROW or STATEMENT).
+                condition:
+                    type: string
+                    description: For Postgres, the WHEN condition of the trigger.
         UndeleteEnvironmentRequest:
             required:
                 - name
@@ -15547,6 +15774,7 @@ tags:
     - name: BranchService
     - name: CelService
     - name: ChangelistService
+    - name: DatabaseCatalogService
     - name: DatabaseGroupService
     - name: DatabaseService
     - name: EnvironmentService

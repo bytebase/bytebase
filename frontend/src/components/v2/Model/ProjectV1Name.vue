@@ -37,7 +37,7 @@ const props = withDefaults(
     link: true,
     plain: false,
     hash: "",
-    keyword: undefined,
+    keyword: "",
   }
 );
 const router = useRouter();
@@ -57,9 +57,6 @@ const bindings = computed(() => {
 });
 
 const renderedProjectName = computed(() => {
-  return getHighlightHTMLByRegExp(
-    projectV1Name(props.project),
-    props.keyword || ""
-  );
+  return getHighlightHTMLByRegExp(projectV1Name(props.project), props.keyword);
 });
 </script>

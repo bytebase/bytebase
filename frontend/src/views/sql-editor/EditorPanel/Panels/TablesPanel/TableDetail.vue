@@ -57,6 +57,23 @@
     :table="table"
     :keyword="state.keyword"
   />
+  <TriggersTable
+    v-show="state.view === 'TRIGGERS'"
+    :db="db"
+    :database="database"
+    :schema="schema"
+    :table="table"
+    :keyword="state.keyword"
+    @click="
+      ({ trigger, position }) =>
+        updateViewState({
+          detail: {
+            table: table.name,
+            trigger: keyWithPosition(trigger.name, position),
+          },
+        })
+    "
+  />
   <PartitionsTable
     v-show="state.view === 'PARTITIONS'"
     :db="db"
@@ -78,6 +95,7 @@ import {
   IndexIcon,
   TableIcon,
   TablePartitionIcon,
+  TriggerIcon,
 } from "@/components/Icon";
 import { SearchBox } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
@@ -86,13 +104,15 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
+import { keyWithPosition } from "@/views/sql-editor/EditorCommon";
 import { useEditorPanelContext } from "../../context";
 import ColumnsTable from "./ColumnsTable.vue";
 import ForeignKeysTable from "./ForeignKeysTable.vue";
 import IndexesTable from "./IndexesTable.vue";
 import PartitionsTable from "./PartitionsTable.vue";
+import TriggersTable from "./TriggersTable.vue";
 
-type View = "COLUMNS" | "INDEXES" | "FOREIGN-KEYS" | "PARTITIONS";
+type View = "COLUMNS" | "INDEXES" | "FOREIGN-KEYS" | "PARTITIONS" | "TRIGGERS";
 type LocalState = {
   view: View;
   keyword: string;
@@ -131,6 +151,13 @@ const tabItems = computed(() => {
       icon: () => h(ForeignKeyIcon),
     });
   }
+  if (table.triggers.length > 0) {
+    items.push({
+      view: "TRIGGERS",
+      text: t("db.triggers"),
+      icon: () => h(TriggerIcon),
+    });
+  }
   if (table.partitions.length > 0) {
     items.push({
       view: "PARTITIONS",
@@ -153,9 +180,10 @@ watch(
     () => viewState.value?.detail.column,
     () => viewState.value?.detail.index,
     () => viewState.value?.detail.foreignKey,
+    () => viewState.value?.detail.trigger,
     () => viewState.value?.detail.partition,
   ],
-  ([table, column, index, foreignKey, partition]) => {
+  ([table, column, index, foreignKey, trigger, partition]) => {
     if (!table) return;
     if (column) {
       state.view = "COLUMNS";
@@ -171,6 +199,10 @@ watch(
     }
     if (partition) {
       state.view = "PARTITIONS";
+      return;
+    }
+    if (trigger) {
+      state.view = "TRIGGERS";
       return;
     }
     // fallback

@@ -9,7 +9,7 @@
       </div>
     </div>
 
-    <NTabs>
+    <NTabs v-model:value="state.selectedTab">
       <template #suffix>
         <div class="flex items-center space-x-2">
           <InstanceSyncButton
@@ -28,13 +28,13 @@
           </NButton>
         </div>
       </template>
-      <NTabPane name="OVERVIEW" :tab="$t('common.overview')">
+      <NTabPane name="overview" :tab="$t('common.overview')">
         <InstanceForm class="-mt-2" :instance="instance">
           <InstanceFormBody :hide-archive-restore="hideArchiveRestore" />
           <InstanceFormButtons class="sticky bottom-0 z-10" />
         </InstanceForm>
       </NTabPane>
-      <NTabPane name="DATABASES" :tab="$t('common.databases')">
+      <NTabPane name="databases" :tab="$t('common.databases')">
         <div class="space-y-2">
           <div
             class="w-full flex flex-col sm:flex-row items-start sm:items-end justify-between gap-2"
@@ -60,12 +60,13 @@
             :show-selection="true"
             :database-list="filteredDatabaseList"
             :custom-click="true"
+            :keyword="state.params.query.trim().toLowerCase()"
             @row-click="handleDatabaseClick"
             @update:selected-databases="handleDatabasesSelectionChanged"
           />
         </div>
       </NTabPane>
-      <NTabPane name="USERS" :tab="$t('instance.users')">
+      <NTabPane name="users" :tab="$t('instance.users')">
         <InstanceRoleTable :instance-role-list="instanceRoleList" />
       </NTabPane>
     </NTabs>
@@ -87,9 +88,9 @@
 import { useTitle } from "@vueuse/core";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
@@ -128,8 +129,14 @@ import {
   CommonFilterScopeIdList,
   filterDatabaseV1ByKeyword,
   extractEnvironmentResourceName,
+  extractProjectResourceName,
 } from "@/utils";
 import type { SearchParams, SearchScope } from "@/utils";
+
+const instanceHashList = ["overview", "databases", "users"] as const;
+export type InstanceHash = (typeof instanceHashList)[number];
+const isInstanceHash = (x: any): x is InstanceHash =>
+  instanceHashList.includes(x);
 
 interface LocalState {
   showCreateDatabaseModal: boolean;
@@ -137,6 +144,7 @@ interface LocalState {
   selectedDatabaseNameList: Set<string>;
   selectedLabels: { key: string; value: string }[];
   params: SearchParams;
+  selectedTab: InstanceHash;
 }
 
 const props = defineProps<{
@@ -172,11 +180,36 @@ const state = reactive<LocalState>({
     query: "",
     scopes: [...readonlyScopes.value],
   },
+  selectedTab: "overview",
 });
+
+const route = useRoute();
 
 const scopeOptions = useCommonSearchScopeOptions(
   computed(() => state.params),
-  [...CommonFilterScopeIdList]
+  [...CommonFilterScopeIdList, "project"]
+);
+
+watch(
+  () => route.hash,
+  (hash) => {
+    const targetHash = hash.replace(/^#?/g, "") as InstanceHash;
+    if (isInstanceHash(targetHash)) {
+      state.selectedTab = targetHash;
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => state.selectedTab,
+  (tab) => {
+    router.replace({
+      hash: `#${tab}`,
+      query: route.query,
+    });
+  },
+  { immediate: true }
 );
 
 const instance = computed(() => {
@@ -202,6 +235,10 @@ const selectedEnvironment = computed(() => {
   );
 });
 
+const selectedProject = computed(() => {
+  return state.params.scopes.find((scope) => scope.id === "project")?.value;
+});
+
 const filteredDatabaseList = computed(() => {
   let list = databaseList.value;
   if (selectedEnvironment.value !== `${UNKNOWN_ID}`) {
@@ -211,6 +248,11 @@ const filteredDatabaseList = computed(() => {
         selectedEnvironment.value
     );
   }
+  if (selectedProject.value) {
+    list = list.filter(
+      (db) => extractProjectResourceName(db.project) === selectedProject.value
+    );
+  }
   const keyword = state.params.query.trim().toLowerCase();
   if (keyword) {
     list = list.filter((db) =>
@@ -218,6 +260,7 @@ const filteredDatabaseList = computed(() => {
         "name",
         "environment",
         "instance",
+        "project",
       ])
     );
   }

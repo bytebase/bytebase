@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
@@ -135,6 +136,11 @@ func getStatementWithResultLimitFor11g(statement string, limitCount int) string 
 }
 
 func getStatementWithResultLimit(statement string, limit int) string {
+	trimmedStatement := strings.ToLower(strings.TrimLeftFunc(statement, unicode.IsSpace))
+	// Add limit for select statement only
+	if !strings.HasPrefix(trimmedStatement, "select") && !strings.HasPrefix(trimmedStatement, "with") {
+		return statement
+	}
 	stmt, err := getStatementWithResultLimitInline(statement, limit)
 	if err != nil {
 		slog.Error("fail to add limit clause", slog.String("statement", statement), log.BBError(err))

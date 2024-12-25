@@ -92,10 +92,6 @@ message SchemaMetadata {
 
   string owner = 12;
 
-  // The triggers is the list of triggers in a schema, triggers are sorted by
-  // table_name, event, timing, action_order.
-  repeated TriggerMetadata triggers = 13;
-
   repeated EventMetadata events = 14;
 
   repeated EnumTypeMetadata enum_types = 15;
@@ -165,10 +161,6 @@ message TriggerMetadata {
   // The name is the name of the trigger.
   string name = 1;
 
-  // The table_name is the name of the table/view that the trigger is created
-  // on.
-  string table_name = 2;
-
   // The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
   // TRUNCATE.
   string event = 3;
@@ -184,6 +176,12 @@ message TriggerMetadata {
   string character_set_client = 7;
 
   string collation_connection = 8;
+
+  // For Postgres, identifies whether the trigger fires once for each processed row or once for each statement (ROW or STATEMENT).
+  string action_orientation = 10;
+
+  // For Postgres, the WHEN condition of the trigger.
+  string condition = 11;
 }
 
 message TaskMetadata {
@@ -315,6 +313,12 @@ message TableMetadata {
   repeated CheckConstraintMetadata check_constraints = 16;
 
   string owner = 18;
+
+  // The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.
+  // Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by
+  repeated string sorting_keys = 19;
+
+  repeated TriggerMetadata triggers = 20;
 }
 
 message CheckConstraintMetadata {
@@ -701,6 +705,8 @@ message TableConfig {
   // The column_configs is the ordered list of configs for columns in a table.
   repeated ColumnConfig column_configs = 2;
 
+  optional ObjectSchema object_schema = 7;
+
   string classification_id = 3;
 
   // The last updater of the table in branch.
@@ -779,4 +785,28 @@ message ColumnConfig {
   string full_masking_algorithm_id = 6;
 
   string partial_masking_algorithm_id = 7;
+
+  optional ObjectSchema object_schema = 8;
+}
+
+message ObjectSchema {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    STRING = 1;
+    NUMBER = 2;
+    BOOLEAN = 3;
+    OBJECT = 4;
+    ARRAY = 5;
+  }
+  Type type = 1;
+  message StructKind {
+    map<string, ObjectSchema> properties = 1;
+  }
+  message ArrayKind {
+    ObjectSchema kind = 1;
+  }
+  oneof kind {
+    StructKind struct_kind = 2;
+    ArrayKind array_kind = 3;
+  }
 }

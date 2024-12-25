@@ -229,6 +229,21 @@
             </div>
             <IndexTable :database="database" :index-list="table.indexes" />
           </div>
+
+          <div
+            v-if="instanceV1SupportsTrigger(instanceEngine)"
+            class="mt-6 px-6"
+          >
+            <div class="text-lg leading-6 font-medium text-main mb-4">
+              {{ $t("db.triggers") }}
+            </div>
+            <TriggerDataTable
+              :database="database"
+              :schema-name="schemaName"
+              :table-name="tableName"
+              :trigger-list="table.triggers"
+            />
+          </div>
         </main>
       </div>
     </DrawerContent>
@@ -263,6 +278,7 @@ import {
   hasProjectPermissionV2,
   hasSchemaProperty,
   hasTableEngineProperty,
+  instanceV1SupportsTrigger,
   isDatabaseV1Queryable,
   isGhostTable,
 } from "@/utils";
@@ -270,6 +286,7 @@ import ColumnDataTable from "./ColumnDataTable/index.vue";
 import { SQLEditorButtonV1 } from "./DatabaseDetail";
 import IndexTable from "./IndexTable.vue";
 import PartitionTablesDataTable from "./PartitionTablesDataTable.vue";
+import TriggerDataTable from "./TriggerDataTable.vue";
 import MaskSpinner from "./misc/MaskSpinner.vue";
 
 interface LocalState {

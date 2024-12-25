@@ -5,6 +5,8 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -20,7 +22,7 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	case "FLOAT", "DOUBLE", "FLOAT4", "FLOAT8":
 		return new(sql.NullFloat64)
 	case "TIMESTAMP", "TIMESTAMPTZ":
-		return new(sql.NullTime)
+		return new(pgtype.Timestamptz)
 	case "BIT", "VARBIT":
 		return new([]byte)
 	default:
@@ -70,8 +72,15 @@ func convertValue(typeName string, value any) *v1pb.RowValue {
 				},
 			}
 		}
-	case *sql.NullTime:
+	case *pgtype.Timestamptz:
 		if raw.Valid {
+			if raw.InfinityModifier != pgtype.Finite {
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: raw.InfinityModifier.String(),
+					},
+				}
+			}
 			if typeName == "TIMESTAMP" {
 				return &v1pb.RowValue{
 					Kind: &v1pb.RowValue_TimestampValue{

@@ -50,10 +50,9 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
 import { useUserStore, pushNotification, useCurrentUserV1 } from "@/store";
-import { PresetRoleType } from "@/types";
 import { type User, UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { hasWorkspaceLevelRole } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{
   user: User;
@@ -68,8 +67,7 @@ const { t } = useI18n();
 const me = useCurrentUserV1();
 
 const allowEdit = computed(() => {
-  // Only allow workspace admin to manage user.
-  return hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN);
+  return hasWorkspacePermissionV2("bb.users.update");
 });
 
 const allowUpdateUser = computed(() => {

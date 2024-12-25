@@ -342,6 +342,8 @@ const selectedKeys = computed(() => {
       parts.push(`indexes/${index}`);
     } else if (partition) {
       parts.push(`partitionTables/${partition}`);
+    } else if (trigger) {
+      parts.push(`triggers/${trigger}`);
     } else if (foreignKey) {
       parts.push(`foreignKeys/${foreignKey}`);
     }
@@ -358,8 +360,6 @@ const selectedKeys = computed(() => {
     parts.push(`functions/${func}`);
   } else if (sequence) {
     parts.push(`sequences/${sequence}`);
-  } else if (trigger) {
-    parts.push(`triggers/${trigger}`);
   } else if (externalTable) {
     parts.push(`externalTables/${externalTable}`);
   } else if (pack) {

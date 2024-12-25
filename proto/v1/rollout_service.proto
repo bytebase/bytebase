@@ -221,6 +221,10 @@ message CreateRolloutRequest {
   // stages are created up to the stage_id.
   // If unspecified, all stages are created.
   string stage_id = 3;
+
+  // If set, validate the request and preview the rollout, but
+  // do not actually create it.
+  bool validate_only = 4;
 }
 
 message PreviewRolloutRequest {
@@ -329,6 +333,11 @@ message Stage {
 
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
   string name = 1;
+
+  // The id comes from the deployment config.
+  // Format: UUID
+  // Empty for legacy stages.
+  string id = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string title = 4;
   repeated Task tasks = 5;

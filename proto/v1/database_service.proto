@@ -506,10 +506,6 @@ message SchemaMetadata {
 
   string owner = 11;
 
-  // The triggers is the list of triggers in a schema, triggers are sorted by
-  // table_name, name, event, timing, action_order.
-  repeated TriggerMetadata triggers = 12;
-
   // The sequences is the list of sequences in a schema, sorted by name.
   repeated SequenceMetadata sequences = 13;
 
@@ -582,10 +578,6 @@ message TriggerMetadata {
   // The name is the name of the trigger.
   string name = 1;
 
-  // The table_name is the name of the table/view that the trigger is created
-  // on.
-  string table_name = 2;
-
   // The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
   // TRUNCATE.
   string event = 3;
@@ -601,6 +593,12 @@ message TriggerMetadata {
   string character_set_client = 7;
 
   string collation_connection = 8;
+
+  // For Postgres, identifies whether the trigger fires once for each processed row or once for each statement (ROW or STATEMENT).
+  string action_orientation = 10;
+
+  // For Postgres, the WHEN condition of the trigger.
+  string condition = 11;
 }
 
 message ExternalTableMetadata {
@@ -669,6 +667,12 @@ message TableMetadata {
   repeated CheckConstraintMetadata check_constraints = 16;
 
   string owner = 18;
+
+  // The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.
+  // Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by
+  repeated string sorting_keys = 19;
+
+  repeated TriggerMetadata triggers = 20;
 }
 
 // CheckConstraintMetadata is the metadata for check constraints.
@@ -1858,26 +1862,4 @@ message Changelog {
   string revision = 15;
 
   ChangedResources changed_resources = 16;
-}
-
-message ObjectSchema {
-  enum Type {
-    TYPE_UNSPECIFIED = 0;
-    STRING = 1;
-    NUMBER = 2;
-    BOOLEAN = 3;
-    OBJECT = 4;
-    ARRAY = 5;
-  }
-  Type type = 1;
-  message StructKind {
-    map<string, ObjectSchema> properties = 2;
-  }
-  message ArrayKind {
-    ObjectSchema kind = 1;
-  }
-  oneof kind {
-    StructKind struct_kind = 2;
-    ArrayKind array_kind = 3;
-  }
 }

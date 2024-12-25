@@ -31,7 +31,6 @@ import {
   useIssueContext,
 } from "@/components/IssueV1";
 import { useCurrentUserV1, useAppFeature, extractUserEmail } from "@/store";
-import { PresetRoleType } from "@/types";
 import {
   IssueStatus,
   Issue_Approver_Status,
@@ -39,7 +38,8 @@ import {
 import {
   extractUserResourceName,
   isDatabaseChangeRelatedIssue,
-  hasWorkspaceLevelRole,
+  hasWorkspacePermissionV2,
+  hasProjectPermissionV2,
 } from "@/utils";
 import type { ExtraActionOption } from "../common";
 import { IssueStatusActionButtonGroup } from "../common";
@@ -117,12 +117,11 @@ const forceRolloutActionList = computed((): ExtraActionOption[] => {
     return [];
   }
 
-  // Still using role based permission checks
   if (
-    !hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN) &&
-    !hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_DBA)
+    !hasWorkspacePermissionV2("bb.taskRuns.create") &&
+    !hasProjectPermissionV2(issue.value.projectEntity, "bb.taskRuns.create")
   ) {
-    // Only for workspace admins and DBAs.
+    // Only for users with permission to create task runs.
     return [];
   }
 

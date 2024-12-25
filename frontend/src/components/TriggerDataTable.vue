@@ -28,6 +28,10 @@ defineProps({
     type: String,
     default: "",
   },
+  tableName: {
+    type: String,
+    default: "",
+  },
   triggerList: {
     required: true,
     type: Object as PropType<TriggerMetadata[]>,
@@ -44,14 +48,6 @@ const columns = computed(() => {
       resizable: true,
       render: (trigger) => {
         return trigger.name;
-      },
-    },
-    {
-      key: "table-name",
-      title: t("db.trigger.table-name"),
-      resizable: true,
-      render: (trigger) => {
-        return trigger.tableName;
       },
     },
     {
