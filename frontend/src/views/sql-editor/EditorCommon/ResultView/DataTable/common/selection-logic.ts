@@ -1,5 +1,6 @@
-import type { Cell, Table } from "@tanstack/vue-table";
+import type { Cell, Row, Table } from "@tanstack/vue-table";
 import { useEventListener } from "@vueuse/core";
+import { sortBy } from "lodash-es";
 import {
   computed,
   inject,
@@ -19,8 +20,8 @@ import { useSQLResultViewContext } from "../../context";
 export const PREVENT_DISMISS_SELECTION = "bb-prevent-dismiss-selection";
 
 export type SelectionState = {
-  row: number;
-  column: number;
+  rows: number[];
+  columns: number[];
 };
 
 export type SelectionContext = {
@@ -41,8 +42,8 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
 
   const copying = ref(false);
   const state = ref<SelectionState>({
-    row: -1,
-    column: -1,
+    rows: [],
+    columns: [],
   });
   const resultViewContext = useSQLResultViewContext();
   const disabled = computed(() => {
@@ -50,16 +51,30 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
   });
   const selectRow = (row: number) => {
     if (disabled.value) return;
-    state.value = { row, column: -1 };
+    state.value = {
+      rows: sortBy(
+        state.value.rows.includes(row)
+          ? state.value.rows.filter((r) => r !== row)
+          : [...state.value.rows, row]
+      ),
+      columns: [],
+    };
   };
   const selectColumn = (column: number) => {
     if (disabled.value) return;
-    state.value = { row: -1, column };
+    state.value = {
+      rows: [],
+      columns: sortBy(
+        state.value.columns.includes(column)
+          ? state.value.columns.filter((c) => c !== column)
+          : [...state.value.columns, column]
+      ),
+    };
   };
   const deselect = () => {
     state.value = {
-      row: -1,
-      column: -1,
+      rows: [],
+      columns: [],
     };
   };
 
@@ -77,32 +92,50 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
   });
 
   const getValues = () => {
-    if (state.value.row >= 0) {
-      const row = table.value.getPrePaginationRowModel().rows[state.value.row];
-      if (!row) {
+    if (state.value.rows.length > 0) {
+      const rows: Row<QueryRow>[] = [];
+      for (const row of state.value.rows) {
+        const d = table.value.getPrePaginationRowModel().rows[row];
+        if (!d) {
+          continue;
+        }
+        rows.push(d);
+      }
+      if (rows.length === 0) {
         return "";
       }
-      const cells = row.getVisibleCells();
-      return cells
-        .map((cell) =>
-          String(extractSQLRowValue(cell.getValue() as RowValue).plain)
-        )
-        .join("\t");
-    } else if (state.value.column >= 0) {
+      return rows
+        .map((row) => {
+          const cells = row.getVisibleCells();
+          return cells
+            .map((cell) =>
+              String(extractSQLRowValue(cell.getValue() as RowValue).plain)
+            )
+            .join("\t");
+        })
+        .join("\n");
+    } else if (state.value.columns.length > 0) {
       const rows = table.value.getRowModel().rows;
-      const cells: Cell<QueryRow, unknown>[] = [];
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        const cell = row.getVisibleCells()[state.value.column];
-        if (!cell) continue;
-        cells.push(cell);
+      const values: Cell<QueryRow, unknown>[][] = [];
+      for (const row of rows) {
+        const cells: Cell<QueryRow, unknown>[] = [];
+        for (const column of state.value.columns) {
+          const cell = row.getVisibleCells()[column];
+          if (!cell) continue;
+          cells.push(cell);
+        }
+        values.push(cells);
       }
-      if (cells.length === 0) {
+      if (values.length === 0) {
         return "";
       }
-      return cells
-        .map((cell) =>
-          String(extractSQLRowValue(cell.getValue() as RowValue).plain)
+      return values
+        .map((cells) =>
+          cells
+            .map((cell) =>
+              String(extractSQLRowValue(cell.getValue() as RowValue).plain)
+            )
+            .join("\t")
         )
         .join("\n");
     }
@@ -141,12 +174,19 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
 
   useEventListener("keydown", (e) => {
     if (disabled.value) return;
-    if (state.value.row < 0 && state.value.column < 0) return;
+    if (state.value.columns.length === 0 && state.value.rows.length === 0)
+      return;
     if ((e.key === "c" || e.key === "C") && (e.metaKey || e.ctrlKey)) {
       const copied = copy();
       if (copied) {
         e.preventDefault();
         e.stopImmediatePropagation();
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("common.copied"),
+        });
+        deselect();
       }
     }
   });
