@@ -294,7 +294,7 @@ const onClassificationIdApply = async (
     schema: props.schema,
     table: props.table.name,
     column,
-    config: { classificationId },
+    columnCatalog: { classificationId },
   });
 };
 </script>

@@ -98,7 +98,7 @@ const onSemanticTypeApply = async (semanticTypeId: string) => {
     schema: props.schema,
     table: props.table.name,
     column: props.column.name,
-    config: { semanticTypeId },
+    columnCatalog: { semanticTypeId },
   });
 };
 </script>
