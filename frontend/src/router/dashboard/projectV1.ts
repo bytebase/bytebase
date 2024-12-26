@@ -9,6 +9,7 @@ export const PROJECT_V1_ROUTE_MASKING_ACCESS = `${PROJECT_V1_ROUTE_DASHBOARD}.ma
 export const PROJECT_V1_ROUTE_MASKING_ACCESS_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.masking-access.create`;
 export const PROJECT_V1_ROUTE_DATABASE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database.detail`;
 export const PROJECT_V1_ROUTE_DATABASE_CHANGE_HISTORY_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database.change-history.detail`;
+export const PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database.changelog.detail`;
 export const PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database.revision.detail`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUPS = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.create`;
@@ -501,6 +502,27 @@ const projectV1Routes: RouteRecordRaw[] = [
               instance: `instances/${route.params.instanceId}`,
               database: `instances/${route.params.instanceId}/databases/${route.params.databaseName}`,
               changeHistoryId: route.params.changeHistoryId,
+            }),
+          },
+          {
+            path: "changelogs/:changelogId",
+            name: PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
+            meta: {
+              overrideTitle: true,
+              requiredProjectPermissionList: () => [
+                "bb.projects.get",
+                "bb.databases.get",
+                // TODO: add changelogs related permission.
+              ],
+            },
+            component: () =>
+              import("@/views/DatabaseDetail/ChangelogDetail.vue"),
+            props: (route) => ({
+              ...route.params,
+              project: `projects/${route.params.projectId}`,
+              instance: `instances/${route.params.instanceId}`,
+              database: `instances/${route.params.instanceId}/databases/${route.params.databaseName}`,
+              changelogId: route.params.changelogId,
             }),
           },
           {

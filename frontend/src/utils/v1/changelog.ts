@@ -25,7 +25,7 @@ export const extractDatabaseNameAndChangelogUID = (changelogName: string) => {
   }
   return {
     databaseName: parts[0],
-    changelogUID: extractChangelogUID(parts[1]),
+    changelogUID: extractChangelogUID(changelogName),
   };
 };
 
