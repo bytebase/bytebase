@@ -5101,7 +5101,7 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 | engine | [Engine](#bytebase-v1-Engine) |  |  |
 | category | [string](#string) |  |  |
 | table | [TableMetadata](#bytebase-v1-TableMetadata) |  |  |
-| config | [TableConfig](#bytebase-v1-TableConfig) |  |  |
+| catalog | [TableCatalog](#bytebase-v1-TableCatalog) |  |  |
 
 
 
