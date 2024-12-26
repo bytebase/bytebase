@@ -7,25 +7,25 @@
       {{ database.databaseName }}
     </NBreadcrumbItem>
     <NBreadcrumbItem
-      @click="router.push(`${databaseV1Url(database)}#change-history`)"
+      @click="router.push(`${databaseV1Url(database)}#changelog`)"
     >
       {{ $t("change-history.self") }}
     </NBreadcrumbItem>
     <NBreadcrumbItem :clickable="false">
-      {{ changeHistoryId }}
+      {{ changelogId }}
     </NBreadcrumbItem>
   </NBreadcrumb>
-  <ChangeHistoryDetailView
+  <ChangelogDetailView
     :instance="instance"
     :database="database.name"
-    :change-history-id="changeHistoryId"
+    :changelog-id="changelogId"
   />
 </template>
 
 <script lang="ts" setup>
 import { NBreadcrumb, NBreadcrumbItem } from "naive-ui";
 import { useRouter } from "vue-router";
-import { ChangeHistoryDetail as ChangeHistoryDetailView } from "@/components/ChangeHistory";
+import { ChangelogDetail as ChangelogDetailView } from "@/components/Changelog";
 import { useDatabaseV1ByName } from "@/store";
 import { databaseV1Url } from "@/utils";
 
@@ -33,7 +33,7 @@ const props = defineProps<{
   project: string;
   instance: string;
   database: string;
-  changeHistoryId: string;
+  changelogId: string;
 }>();
 
 const router = useRouter();

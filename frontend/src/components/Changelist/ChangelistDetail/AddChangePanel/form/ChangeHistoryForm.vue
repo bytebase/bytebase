@@ -69,10 +69,12 @@ import {
   useDBSchemaV1Store,
   useDatabaseV1Store,
 } from "@/store";
-import { isValidDatabaseName } from "@/types";
+import {
+  isValidDatabaseName,
+  type AffectedTable,
+  EmptyAffectedTable,
+} from "@/types";
 import { type ComposedChangeHistory } from "@/types";
-import type { AffectedTable } from "@/types/changeHistory";
-import { EmptyAffectedTable } from "@/types/changeHistory";
 import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import {
   ChangeHistory_Status,
