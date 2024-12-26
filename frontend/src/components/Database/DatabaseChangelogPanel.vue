@@ -1,19 +1,17 @@
 <template>
   <div class="flex flex-col space-y-4" v-bind="$attrs">
-    <div
-      class="w-full flex flex-row justify-between items-center text-lg leading-6 font-medium text-main space-x-2"
-    >
+    <div class="w-full flex flex-row justify-between items-center space-x-2">
       <div class="flex flex-row justify-start items-center space-x-4">
-        <div class="w-56">
+        <div class="w-52">
           <AffectedTablesSelect
             v-model:tables="state.selectedAffectedTables"
             :database="database"
           />
         </div>
-        <div class="w-44">
+        <div class="w-40">
           <ChangeTypeSelect
             v-model:change-type="state.selectedChangeType"
-            :change-history-list="changeHistoryList"
+            :changelogs="changelogs"
           />
         </div>
       </div>
@@ -25,9 +23,9 @@
         />
         <TooltipButton
           tooltip-mode="DISABLED-ONLY"
-          :disabled="!allowExportChangeHistory"
+          :disabled="!allowExportChangelog"
           :loading="state.isExporting"
-          @click="handleExportChangeHistory"
+          @click="handleExportChangelogs"
         >
           <template #default>
             {{ $t("change-history.export") }}
@@ -42,8 +40,8 @@
           v-if="allowAlterSchema"
           tooltip-mode="DISABLED-ONLY"
           :disabled="
-            !selectedChangeHistory ||
-            getHistoryChangeType(selectedChangeHistory.type) !== 'DDL'
+            !selectedChangelogForRollback ||
+            getChangelogChangeType(selectedChangelogForRollback.type) !== 'DDL'
           "
           @click="rollback"
         >
@@ -81,28 +79,26 @@
       </div>
     </div>
 
-    <PagedChangeHistoryTable
+    <PagedChangelogTable
       :database="database"
-      :search-change-histories="{
+      :search-changelogs="{
         tables: state.selectedAffectedTables,
         types: state.selectedChangeType
           ? [state.selectedChangeType]
           : undefined,
       }"
-      session-key="bb.paged-change-history-table"
+      session-key="bb.paged-changelog-table"
     >
       <template #table="{ list, loading }">
-        <ChangeHistoryDataTable
-          :key="`change-history-table.${database.name}`"
-          v-model:selected-change-history-names="
-            state.selectedChangeHistoryNameList
-          "
+        <ChangelogDataTable
+          :key="`changelog-table.${database.name}`"
+          v-model:selected-changelogs="state.selectedChangelogNames"
           :loading="loading"
-          :change-histories="list"
+          :changelogs="list"
           :show-selection="true"
         />
       </template>
-    </PagedChangeHistoryTable>
+    </PagedChangelogTable>
   </div>
 
   <BBAlert
@@ -131,35 +127,36 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAlert, BBSpin } from "@/bbkit";
 import {
-  ChangeHistoryDataTable,
-  PagedChangeHistoryTable,
-  ChangeTypeSelect,
   AffectedTablesSelect,
-} from "@/components/ChangeHistory";
+  ChangeTypeSelect,
+  ChangelogDataTable,
+  PagedChangelogTable,
+} from "@/components/Changelog";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import { TooltipButton } from "@/components/v2";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
 } from "@/router/dashboard/projectV1";
-import { useChangeHistoryStore, useDBSchemaV1Store } from "@/store";
+import { useChangelogStore, useDBSchemaV1Store } from "@/store";
 import { DEFAULT_PAGE_SIZE } from "@/store/modules/common";
 import type { ComposedDatabase, Table } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import {
-  ChangeHistory_Status,
-  ChangeHistory_Type,
-  ChangeHistoryView,
+  Changelog_Status,
+  Changelog_Type,
+  ChangelogView,
 } from "@/types/proto/v1/database_service";
-import { extractProjectResourceName, getHistoryChangeType } from "@/utils";
+import { extractProjectResourceName } from "@/utils";
+import { getChangelogChangeType } from "@/utils/v1/changelog";
 
 interface LocalState {
   showBaselineModal: boolean;
   loading: boolean;
-  selectedChangeHistoryNameList: string[];
+  selectedChangelogNames: string[];
   isExporting: boolean;
   selectedAffectedTables: Table[];
-  selectedChangeType?: string;
+  selectedChangeType?: Changelog_Type;
 }
 
 const props = defineProps<{
@@ -167,23 +164,22 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-
-const changeHistoryStore = useChangeHistoryStore();
 const router = useRouter();
+const changelogStore = useChangelogStore();
 
 const state = reactive<LocalState>({
   showBaselineModal: false,
   loading: false,
-  selectedChangeHistoryNameList: [],
+  selectedChangelogNames: [],
   isExporting: false,
   selectedAffectedTables: [],
 });
 
 const { allowAlterSchema } = useDatabaseDetailContext();
 
-const prepareChangeHistoryList = async () => {
+const prepareChangelogList = async () => {
   state.loading = true;
-  await changeHistoryStore.fetchChangeHistoryList({
+  await changelogStore.fetchChangelogList({
     parent: props.database.name,
     pageSize: DEFAULT_PAGE_SIZE,
   });
@@ -195,31 +191,29 @@ const prepareChangeHistoryList = async () => {
   state.loading = false;
 };
 
-onBeforeMount(prepareChangeHistoryList);
+onBeforeMount(prepareChangelogList);
 
-const allowExportChangeHistory = computed(() => {
-  return state.selectedChangeHistoryNameList.length > 0;
+const allowExportChangelog = computed(() => {
+  return state.selectedChangelogNames.length > 0;
 });
 
 const allowEstablishBaseline = computed(() => {
   return allowAlterSchema.value;
 });
 
-const changeHistoryList = computed(() => {
-  return changeHistoryStore.changeHistoryListByDatabase(props.database.name);
+const changelogs = computed(() => {
+  return changelogStore.changelogListByDatabase(props.database.name);
 });
 
-const selectedChangeHistory = computed(() => {
-  if (state.selectedChangeHistoryNameList.length !== 1) {
+const selectedChangelogForRollback = computed(() => {
+  if (state.selectedChangelogNames.length !== 1) {
     return;
   }
-  return changeHistoryStore.getChangeHistoryByName(
-    state.selectedChangeHistoryNameList[0]
-  );
+  return changelogStore.getChangelogByName(state.selectedChangelogNames[0]);
 });
 
 const rollback = () => {
-  if (!selectedChangeHistory.value) {
+  if (!selectedChangelogForRollback.value) {
     return;
   }
 
@@ -229,38 +223,38 @@ const rollback = () => {
       projectId: extractProjectResourceName(props.database.project),
     },
     query: {
-      version: selectedChangeHistory.value.name,
+      version: selectedChangelogForRollback.value.name,
       target: props.database.name,
     },
   });
 };
 
-const handleExportChangeHistory = async () => {
+const handleExportChangelogs = async () => {
   if (state.isExporting) {
     return;
   }
 
   state.isExporting = true;
   const zip = new JSZip();
-  for (const name of state.selectedChangeHistoryNameList) {
-    const changeHistory = await changeHistoryStore.fetchChangeHistory({
+  for (const name of state.selectedChangelogNames) {
+    const changelog = await changelogStore.fetchChangelog({
       name,
-      view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
+      view: ChangelogView.CHANGELOG_VIEW_FULL,
     });
 
-    if (changeHistory) {
-      if (changeHistory.status !== ChangeHistory_Status.DONE) {
+    if (changelog) {
+      if (changelog.status !== Changelog_Status.DONE) {
         continue;
       }
 
       if (
-        changeHistory.type === ChangeHistory_Type.MIGRATE ||
-        changeHistory.type === ChangeHistory_Type.MIGRATE_SDL ||
-        changeHistory.type === ChangeHistory_Type.DATA
+        changelog.type === Changelog_Type.MIGRATE ||
+        changelog.type === Changelog_Type.MIGRATE_SDL ||
+        changelog.type === Changelog_Type.DATA
       ) {
-        zip.file(`${changeHistory.version}.sql`, changeHistory.statement);
-      } else if (changeHistory.type === ChangeHistory_Type.BASELINE) {
-        zip.file(`${changeHistory.version}_baseline.sql`, changeHistory.schema);
+        zip.file(`${changelog.version}.sql`, changelog.statement);
+      } else if (changelog.type === Changelog_Type.BASELINE) {
+        zip.file(`${changelog.version}_baseline.sql`, changelog.schema);
       } else {
         // NOT SUPPORTED.
       }
@@ -277,7 +271,7 @@ const handleExportChangeHistory = async () => {
     console.error(error);
   }
 
-  state.selectedChangeHistoryNameList = [];
+  state.selectedChangelogNames = [];
   state.isExporting = false;
 };
 
