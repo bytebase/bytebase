@@ -535,9 +535,9 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 
 		// Convert the maskingPolicy to a map to reduce the time complexity of searching.
 		maskingPolicyMap := make(map[maskingPolicyKey]*storepb.MaskData)
-		for _, schemaConfig := range dbSchema.GetConfig().SchemaConfigs {
-			for _, tableConfig := range schemaConfig.GetTableConfigs() {
-				for _, columnConfig := range tableConfig.GetColumnConfigs() {
+		for _, schemaConfig := range dbSchema.GetConfig().Schemas {
+			for _, tableConfig := range schemaConfig.GetTables() {
+				for _, columnConfig := range tableConfig.GetColumns() {
 					if columnConfig.MaskingLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED {
 						continue
 					}
