@@ -160,7 +160,42 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 		}
 	}
 
+	// Construct triggers.
+	for _, schema := range metadata.Schemas {
+		for _, table := range schema.Tables {
+			for _, trigger := range table.Triggers {
+				if err := writeTrigger(out, trigger); err != nil {
+					return err
+				}
+			}
+		}
+
+		for _, view := range schema.Views {
+			for _, trigger := range view.Triggers {
+				if err := writeTrigger(out, trigger); err != nil {
+					return err
+				}
+			}
+		}
+
+		for _, materializedView := range schema.MaterializedViews {
+			for _, trigger := range materializedView.Triggers {
+				if err := writeTrigger(out, trigger); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
 	return nil
+}
+
+func writeTrigger(out io.Writer, trigger *storepb.TriggerMetadata) error {
+	if _, err := io.WriteString(out, trigger.Body); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, ";\n\n")
+	return err
 }
 
 func writeEnum(out io.Writer, schema string, enum *storepb.EnumTypeMetadata) error {
