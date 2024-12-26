@@ -2280,7 +2280,7 @@ func deriveUpdateInfoFromMetadataDiff(metadataDiff *metadataDiffRootNode, headDa
 		schemas: make(map[string]*updateInfoDiffSchemaNode),
 	}
 
-	schemaConfigMap := buildMap(headDatabaseConfig.GetSchemaConfigs(), func(schemaConfig *storepb.SchemaConfig) string {
+	schemaConfigMap := buildMap(headDatabaseConfig.GetSchemas(), func(schemaConfig *storepb.SchemaCatalog) string {
 		return schemaConfig.GetName()
 	})
 	for _, metadataSchemaDiff := range metadataDiff.schemas {
@@ -2296,7 +2296,7 @@ func deriveUpdateInfoFromMetadataDiff(metadataDiff *metadataDiffRootNode, headDa
 			procedures: make(map[string]*updateInfoDiffProcedureNode),
 		}
 		schemaConfig := schemaConfigMap[metadataSchemaDiff.name]
-		tableConfigMap := buildMap(schemaConfig.GetTableConfigs(), func(tableConfig *storepb.TableConfig) string {
+		tableConfigMap := buildMap(schemaConfig.GetTables(), func(tableConfig *storepb.TableCatalog) string {
 			return tableConfig.GetName()
 		})
 		for tableName, table := range metadataSchemaDiff.tables {
@@ -2676,11 +2676,11 @@ func applyUpdateInfoDiffRootNode(a *updateInfoDiffRootNode, target *storepb.Data
 		return proto.Clone(target).(*storepb.DatabaseConfig)
 	}
 
-	schemaConfigMap := buildMap(target.GetSchemaConfigs(), func(schemaConfig *storepb.SchemaConfig) string {
+	schemaConfigMap := buildMap(target.GetSchemas(), func(schemaConfig *storepb.SchemaCatalog) string {
 		return schemaConfig.GetName()
 	})
 
-	var schemaConfigs []*storepb.SchemaConfig
+	var schemaConfigs []*storepb.SchemaCatalog
 	for schemaName, schema := range a.schemas {
 		switch schema.action {
 		case diffActionDrop:
@@ -2688,7 +2688,7 @@ func applyUpdateInfoDiffRootNode(a *updateInfoDiffRootNode, target *storepb.Data
 		default:
 			schemaConfig := schemaConfigMap[schemaName]
 			if schemaConfig == nil {
-				schemaConfig = &storepb.SchemaConfig{
+				schemaConfig = &storepb.SchemaCatalog{
 					Name: schema.name,
 				}
 			}
@@ -2698,43 +2698,43 @@ func applyUpdateInfoDiffRootNode(a *updateInfoDiffRootNode, target *storepb.Data
 	}
 
 	return &storepb.DatabaseConfig{
-		Name:          target.GetName(),
-		SchemaConfigs: schemaConfigs,
+		Name:    target.GetName(),
+		Schemas: schemaConfigs,
 	}
 }
 
-func applyUpdateInfoDiffSchemaNode(a *updateInfoDiffSchemaNode, target *storepb.SchemaConfig) *storepb.SchemaConfig {
+func applyUpdateInfoDiffSchemaNode(a *updateInfoDiffSchemaNode, target *storepb.SchemaCatalog) *storepb.SchemaCatalog {
 	if a == nil {
 		//nolint
-		return proto.Clone(target).(*storepb.SchemaConfig)
+		return proto.Clone(target).(*storepb.SchemaCatalog)
 	}
 
-	tableConfigMap := buildMap(target.GetTableConfigs(), func(tableConfig *storepb.TableConfig) string {
+	tableCatalogMap := buildMap(target.GetTables(), func(tableConfig *storepb.TableCatalog) string {
 		return tableConfig.GetName()
 	})
-	var tableConfigs []*storepb.TableConfig
+	var tableCatalogs []*storepb.TableCatalog
 	for tableName, table := range a.tables {
 		switch table.action {
 		case diffActionDrop:
-			delete(tableConfigMap, tableName)
+			delete(tableCatalogMap, tableName)
 			continue
 		default:
-			tableConfig := tableConfigMap[tableName]
-			if tableConfig == nil {
-				tableConfig = &storepb.TableConfig{
+			tableCatalog := tableCatalogMap[tableName]
+			if tableCatalog == nil {
+				tableCatalog = &storepb.TableCatalog{
 					Name: tableName,
 				}
 			}
-			tableConfig.UpdateTime = table.updateInfo.lastUpdatedTime
-			tableConfig.Updater = table.updateInfo.lastUpdater
-			tableConfig.SourceBranch = table.updateInfo.sourceBranch
-			tableConfigs = append(tableConfigs, tableConfig)
-			delete(tableConfigMap, tableName)
+			tableCatalog.UpdateTime = table.updateInfo.lastUpdatedTime
+			tableCatalog.Updater = table.updateInfo.lastUpdater
+			tableCatalog.SourceBranch = table.updateInfo.sourceBranch
+			tableCatalogs = append(tableCatalogs, tableCatalog)
+			delete(tableCatalogMap, tableName)
 		}
 	}
 	// Add the remaining table configs in the target schema config.
-	for _, tableConfig := range tableConfigMap {
-		tableConfigs = append(tableConfigs, tableConfig)
+	for _, tableCatalog := range tableCatalogMap {
+		tableCatalogs = append(tableCatalogs, tableCatalog)
 	}
 
 	viewConfigMap := buildMap(target.GetViewConfigs(), func(viewConfig *storepb.ViewConfig) string {
@@ -2821,9 +2821,9 @@ func applyUpdateInfoDiffSchemaNode(a *updateInfoDiffSchemaNode, target *storepb.
 		functionConfigs = append(functionConfigs, functionConfig)
 	}
 
-	return &storepb.SchemaConfig{
+	return &storepb.SchemaCatalog{
 		Name:             target.GetName(),
-		TableConfigs:     tableConfigs,
+		Tables:           tableCatalogs,
 		ViewConfigs:      viewConfigs,
 		FunctionConfigs:  functionConfigs,
 		ProcedureConfigs: procedureConfigs,

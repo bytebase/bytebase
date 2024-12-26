@@ -194,9 +194,9 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	maskingPolicyMap := make(map[maskingPolicyKey]*storepb.MaskData)
-	for _, schemaConfig := range dbSchema.GetConfig().SchemaConfigs {
-		for _, tableConfig := range schemaConfig.GetTableConfigs() {
-			for _, columnConfig := range tableConfig.GetColumnConfigs() {
+	for _, schemaConfig := range dbSchema.GetConfig().Schemas {
+		for _, tableConfig := range schemaConfig.GetTables() {
+			for _, columnConfig := range tableConfig.GetColumns() {
 				if columnConfig.MaskingLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED {
 					continue
 				}
@@ -254,7 +254,7 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 	return getMaskerByMaskingAlgorithmAndLevel(maskingAlgorithm, maskingLevel), nil
 }
 
-func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, instanceID string, sourceColumn *base.ColumnResource) (*storepb.ColumnMetadata, *storepb.ColumnConfig, error) {
+func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, instanceID string, sourceColumn *base.ColumnResource) (*storepb.ColumnMetadata, *storepb.ColumnCatalog, error) {
 	if sourceColumn == nil {
 		return nil, nil, nil
 	}
@@ -295,7 +295,7 @@ func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, inst
 	}
 	columnMetadata = column
 
-	var columnConfig *storepb.ColumnConfig
+	var columnConfig *storepb.ColumnCatalog
 	config := dbSchema.GetInternalConfig()
 	if config == nil {
 		return columnMetadata, nil, nil
