@@ -152,6 +152,7 @@ export interface TriggerMetadata {
   sqlMode: string;
   characterSetClient: string;
   collationConnection: string;
+  comment: string;
 }
 
 export interface TaskMetadata {
@@ -2331,7 +2332,16 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
 };
 
 function createBaseTriggerMetadata(): TriggerMetadata {
-  return { name: "", event: "", timing: "", body: "", sqlMode: "", characterSetClient: "", collationConnection: "" };
+  return {
+    name: "",
+    event: "",
+    timing: "",
+    body: "",
+    sqlMode: "",
+    characterSetClient: "",
+    collationConnection: "",
+    comment: "",
+  };
 }
 
 export const TriggerMetadata: MessageFns<TriggerMetadata> = {
@@ -2356,6 +2366,9 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
     }
     if (message.collationConnection !== "") {
       writer.uint32(66).string(message.collationConnection);
+    }
+    if (message.comment !== "") {
+      writer.uint32(74).string(message.comment);
     }
     return writer;
   },
@@ -2423,6 +2436,14 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
           message.collationConnection = reader.string();
           continue;
         }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.comment = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2441,6 +2462,7 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
       sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
       characterSetClient: isSet(object.characterSetClient) ? globalThis.String(object.characterSetClient) : "",
       collationConnection: isSet(object.collationConnection) ? globalThis.String(object.collationConnection) : "",
+      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
     };
   },
 
@@ -2467,6 +2489,9 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
     if (message.collationConnection !== "") {
       obj.collationConnection = message.collationConnection;
     }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
     return obj;
   },
 
@@ -2482,6 +2507,7 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
     message.sqlMode = object.sqlMode ?? "";
     message.characterSetClient = object.characterSetClient ?? "";
     message.collationConnection = object.collationConnection ?? "";
+    message.comment = object.comment ?? "";
     return message;
   },
 };

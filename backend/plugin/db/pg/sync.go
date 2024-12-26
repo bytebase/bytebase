@@ -891,7 +891,8 @@ func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 		pt.oid,
 		pn.nspname as schema_name,
 		pt.typname as enum_name,
-		pe.enumlabel as enum_value
+		pe.enumlabel as enum_value,
+		pg_catalog.obj_description(pt.oid) as enum_comment
 	FROM pg_enum as pe
 		LEFT JOIN pg_type as pt ON pe.enumtypid = pt.oid
 		LEFT JOIN pg_namespace as pn ON pt.typnamespace = pn.oid
@@ -906,11 +907,13 @@ func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 	enumTypes := make(map[string][]*storepb.EnumTypeMetadata)
 	currentEnumSchema := ""
 	currentEnumNmae := ""
+	currentEnumComment := ""
 	var currentEnumValues []string
 	for rows.Next() {
 		var oid int
 		var schemaName, enumName, enumValue string
-		if err := rows.Scan(&oid, &schemaName, &enumName, &enumValue); err != nil {
+		var comment sql.NullString
+		if err := rows.Scan(&oid, &schemaName, &enumName, &enumValue, &comment); err != nil {
 			return nil, err
 		}
 
@@ -919,16 +922,22 @@ func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 			continue
 		}
 
+		if comment.Valid {
+			currentEnumComment = comment.String
+		}
+
 		if currentEnumSchema != schemaName || currentEnumNmae != enumName {
 			if currentEnumSchema != "" {
 				enumTypes[currentEnumSchema] = append(enumTypes[currentEnumSchema], &storepb.EnumTypeMetadata{
-					Name:   currentEnumNmae,
-					Values: currentEnumValues,
+					Name:    currentEnumNmae,
+					Values:  currentEnumValues,
+					Comment: currentEnumComment,
 				})
 			}
 			currentEnumSchema = schemaName
 			currentEnumNmae = enumName
 			currentEnumValues = []string{}
+			currentEnumComment = ""
 		}
 		currentEnumValues = append(currentEnumValues, enumValue)
 	}
@@ -960,7 +969,8 @@ func getSequences(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 		increment_by,
 		cycle,
 		cache_size,
-		last_value
+		last_value,
+		pg_catalog.obj_description(pc.oid) as sequence_comment
 	FROM pg_sequences
 		LEFT JOIN pg_class as pc ON pc.oid = format('%s.%s', quote_ident(schemaname), quote_ident(sequencename))::regclass
 	ORDER BY schemaname, sequencename;`
@@ -974,9 +984,10 @@ func getSequences(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 		var oid int
 		var schemaName, sequenceName, dataType string
 		var startValue, minValue, maxValue, incrementBy, cacheSize int64
+		var comment sql.NullString
 		var cycle bool
 		var lastValue sql.NullInt64
-		if err := rows.Scan(&oid, &schemaName, &sequenceName, &dataType, &startValue, &minValue, &maxValue, &incrementBy, &cycle, &cacheSize, &lastValue); err != nil {
+		if err := rows.Scan(&oid, &schemaName, &sequenceName, &dataType, &startValue, &minValue, &maxValue, &incrementBy, &cycle, &cacheSize, &lastValue, &comment); err != nil {
 			return nil, err
 		}
 		if extensionDepend[oid] {
@@ -986,6 +997,10 @@ func getSequences(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 		lastValueStr := ""
 		if lastValue.Valid {
 			lastValueStr = strconv.FormatInt(lastValue.Int64, 10)
+		}
+		sequenceComment := ""
+		if comment.Valid {
+			sequenceComment = comment.String
 		}
 		sequence := &storepb.SequenceMetadata{
 			Name:      sequenceName,
@@ -997,6 +1012,7 @@ func getSequences(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 			Cycle:     cycle,
 			CacheSize: strconv.FormatInt(cacheSize, 10),
 			LastValue: lastValueStr,
+			Comment:   sequenceComment,
 		}
 		sequenceMap[schemaName] = append(sequenceMap[schemaName], sequence)
 	}
@@ -1056,7 +1072,8 @@ func getTriggers(txn *sql.Tx, extensionDepend map[int]bool) (map[db.TableKey][]*
 		pn.nspname as schema_name,
 		pc.relname as table_name,
 		pt.tgname as trigger_name,
-		pg_get_triggerdef(pt.oid) as trigger_def
+		pg_get_triggerdef(pt.oid) as trigger_def,
+		obj_description(pt.oid) as trigger_comment
 	FROM pg_trigger as pt
 		LEFT JOIN pg_class as pc ON pc.oid = pt.tgrelid
 		LEFT JOIN pg_namespace as pn ON pn.oid = pc.relnamespace
@@ -1072,12 +1089,16 @@ func getTriggers(txn *sql.Tx, extensionDepend map[int]bool) (map[db.TableKey][]*
 		trigger := &storepb.TriggerMetadata{}
 		var oid int
 		var schemaName, tableName string
-		if err := rows.Scan(&oid, &schemaName, &tableName, &trigger.Name, &trigger.Body); err != nil {
+		var comment sql.NullString
+		if err := rows.Scan(&oid, &schemaName, &tableName, &trigger.Name, &trigger.Body, &comment); err != nil {
 			return nil, err
 		}
 		if extensionDepend[oid] {
 			// Skip extension trigger.
 			continue
+		}
+		if comment.Valid {
+			trigger.Comment = comment.String
 		}
 		tableKey := db.TableKey{Schema: schemaName, Table: tableName}
 		triggersMap[tableKey] = append(triggersMap[tableKey], trigger)
@@ -1176,7 +1197,8 @@ select p.oid, n.nspname as function_schema,
 	pg_catalog.pg_get_function_identity_arguments(p.oid) as arguments,
 	case when l.lanname = 'internal' then p.prosrc
 			else pg_get_functiondef(p.oid)
-			end as definition
+			end as definition,
+	pg_catalog.obj_description(p.oid) as comment
 from pg_proc p
 left join pg_namespace n on p.pronamespace = n.oid
 left join pg_language l on p.prolang = l.oid
@@ -1197,7 +1219,8 @@ func getFunctions(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 		function := &storepb.FunctionMetadata{}
 		var oid int
 		var schemaName, arguments string
-		if err := rows.Scan(&oid, &schemaName, &function.Name, &arguments, &function.Definition); err != nil {
+		var comment sql.NullString
+		if err := rows.Scan(&oid, &schemaName, &function.Name, &arguments, &function.Definition, &comment); err != nil {
 			return nil, err
 		}
 		// Skip internal functions.
@@ -1207,6 +1230,9 @@ func getFunctions(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 		if extensionDepend[oid] {
 			// Skip extension function.
 			continue
+		}
+		if comment.Valid {
+			function.Comment = comment.String
 		}
 
 		function.Signature = fmt.Sprintf("%s(%s)", function.Name, arguments)

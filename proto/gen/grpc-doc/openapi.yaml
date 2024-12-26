@@ -15022,6 +15022,8 @@ components:
                     type: string
                 collationConnection:
                     type: string
+                comment:
+                    type: string
         UndeleteEnvironmentRequest:
             required:
                 - name

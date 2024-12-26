@@ -1659,6 +1659,7 @@ TablePartitionMetadata is the metadata for table partitions.
 | sql_mode | [string](#string) |  |  |
 | character_set_client | [string](#string) |  |  |
 | collation_connection | [string](#string) |  |  |
+| comment | [string](#string) |  |  |
 
 
 
