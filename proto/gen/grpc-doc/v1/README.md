@@ -2399,6 +2399,7 @@ DependentColumn is the metadata for dependent columns.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of a type. |
 | values | [string](#string) | repeated | The enum values of a type. |
+| comment | [string](#string) |  |  |
 
 
 
@@ -2516,6 +2517,7 @@ FunctionMetadata is the metadata for functions.
 | collation_connection | [string](#string) |  |  |
 | database_collation | [string](#string) |  |  |
 | sql_mode | [string](#string) |  |  |
+| comment | [string](#string) |  |  |
 
 
 
@@ -3113,6 +3115,7 @@ Secret is the secret of the database now.
 | last_value | [string](#string) |  | Last value of a sequence. |
 | owner_table | [string](#string) |  | The owner table of the sequence. |
 | owner_column | [string](#string) |  | The owner column of the sequence. |
+| comment | [string](#string) |  |  |
 
 
 
