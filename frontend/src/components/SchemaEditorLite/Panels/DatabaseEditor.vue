@@ -367,9 +367,9 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
     };
   };
   const { db } = props;
-  if (template.config) {
+  if (template.catalog) {
     upsertTableConfig(db, metadataForTable(), (config) => {
-      Object.assign(config, template.config);
+      Object.assign(config, template.catalog);
     });
   }
   markEditStatus(db, metadataForTable(), "created");
