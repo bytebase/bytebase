@@ -947,8 +947,9 @@ func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 
 	if currentEnumSchema != "" {
 		enumTypes[currentEnumSchema] = append(enumTypes[currentEnumSchema], &storepb.EnumTypeMetadata{
-			Name:   currentEnumNmae,
-			Values: currentEnumValues,
+			Name:    currentEnumNmae,
+			Values:  currentEnumValues,
+			Comment: currentEnumComment,
 		})
 	}
 
