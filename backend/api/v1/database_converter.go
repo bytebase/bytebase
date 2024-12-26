@@ -99,6 +99,7 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 				CollationConnection: function.CollationConnection,
 				DatabaseCollation:   function.DatabaseCollation,
 				SqlMode:             function.SqlMode,
+				Comment:             function.Comment,
 			}
 			s.Functions = append(s.Functions, v1Func)
 		}
@@ -178,6 +179,7 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 				LastValue:   sequence.LastValue,
 				OwnerTable:  sequence.OwnerTable,
 				OwnerColumn: sequence.OwnerColumn,
+				Comment:     sequence.Comment,
 			}
 			s.Sequences = append(s.Sequences, v1Sequence)
 		}
@@ -202,8 +204,9 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 				continue
 			}
 			v1Enum := &v1pb.EnumTypeMetadata{
-				Name:   enum.Name,
-				Values: enum.Values,
+				Name:    enum.Name,
+				Values:  enum.Values,
+				Comment: enum.Comment,
 			}
 			s.EnumTypes = append(s.EnumTypes, v1Enum)
 		}
@@ -351,6 +354,7 @@ func convertStoreTriggerMetadata(trigger *storepb.TriggerMetadata) *v1pb.Trigger
 		SqlMode:             trigger.SqlMode,
 		CharacterSetClient:  trigger.CharacterSetClient,
 		CollationConnection: trigger.CollationConnection,
+		Comment:             trigger.Comment,
 	}
 }
 
@@ -661,6 +665,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 				CollationConnection: function.CollationConnection,
 				DatabaseCollation:   function.DatabaseCollation,
 				SqlMode:             function.SqlMode,
+				Comment:             function.Comment,
 			}
 			s.Functions = append(s.Functions, storeFunc)
 		}
@@ -742,8 +747,9 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 				continue
 			}
 			storeEnum := &storepb.EnumTypeMetadata{
-				Name:   enum.Name,
-				Values: enum.Values,
+				Name:    enum.Name,
+				Values:  enum.Values,
+				Comment: enum.Comment,
 			}
 			s.EnumTypes = append(s.EnumTypes, storeEnum)
 		}
@@ -763,6 +769,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 				LastValue:   sequence.LastValue,
 				OwnerTable:  sequence.OwnerTable,
 				OwnerColumn: sequence.OwnerColumn,
+				Comment:     sequence.Comment,
 			}
 			s.Sequences = append(s.Sequences, storeSequence)
 		}
@@ -876,6 +883,7 @@ func convertV1TriggerMetadata(trigger *v1pb.TriggerMetadata) *storepb.TriggerMet
 		SqlMode:             trigger.SqlMode,
 		CharacterSetClient:  trigger.CharacterSetClient,
 		CollationConnection: trigger.CollationConnection,
+		Comment:             trigger.Comment,
 	}
 }
 

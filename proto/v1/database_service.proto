@@ -575,6 +575,8 @@ message TriggerMetadata {
   string character_set_client = 7;
 
   string collation_connection = 8;
+
+  string comment = 9;
 }
 
 message ExternalTableMetadata {
