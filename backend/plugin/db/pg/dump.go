@@ -74,7 +74,7 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 	// Construct functions.
 	for _, schema := range metadata.Schemas {
 		for _, function := range schema.Functions {
-			if err := writeFunction(out, function); err != nil {
+			if err := writeFunction(out, schema.Name, function); err != nil {
 				return err
 			}
 		}
@@ -164,7 +164,7 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 	for _, schema := range metadata.Schemas {
 		for _, table := range schema.Tables {
 			for _, trigger := range table.Triggers {
-				if err := writeTrigger(out, trigger); err != nil {
+				if err := writeTrigger(out, schema.Name, table.Name, trigger); err != nil {
 					return err
 				}
 			}
@@ -172,7 +172,7 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 
 		for _, view := range schema.Views {
 			for _, trigger := range view.Triggers {
-				if err := writeTrigger(out, trigger); err != nil {
+				if err := writeTrigger(out, schema.Name, view.Name, trigger); err != nil {
 					return err
 				}
 			}
@@ -180,7 +180,7 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 
 		for _, materializedView := range schema.MaterializedViews {
 			for _, trigger := range materializedView.Triggers {
-				if err := writeTrigger(out, trigger); err != nil {
+				if err := writeTrigger(out, schema.Name, materializedView.Name, trigger); err != nil {
 					return err
 				}
 			}
@@ -190,11 +190,61 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 	return nil
 }
 
-func writeTrigger(out io.Writer, trigger *storepb.TriggerMetadata) error {
+func writeTrigger(out io.Writer, schema string, table string, trigger *storepb.TriggerMetadata) error {
 	if _, err := io.WriteString(out, trigger.Body); err != nil {
 		return err
 	}
-	_, err := io.WriteString(out, ";\n\n")
+	if _, err := io.WriteString(out, ";\n\n"); err != nil {
+		return err
+	}
+
+	if len(trigger.Comment) > 0 {
+		if err := writeTriggerComment(out, schema, table, trigger); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func writeTriggerComment(out io.Writer, schema string, table string, trigger *storepb.TriggerMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON TRIGGER "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, trigger.Name); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" ON "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, table); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, escapeSingleQuote(trigger.Comment)); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `';`); err != nil {
+		return err
+	}
+
+	_, err := io.WriteString(out, "\n\n")
 	return err
 }
 
@@ -231,7 +281,53 @@ func writeEnum(out io.Writer, schema string, enum *storepb.EnumTypeMetadata) err
 		}
 	}
 
-	_, err := io.WriteString(out, ");\n\n")
+	if _, err := io.WriteString(out, ");\n\n"); err != nil {
+		return err
+	}
+
+	if len(enum.Comment) > 0 {
+		if err := writeEnumComment(out, schema, enum); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func escapeSingleQuote(s string) string {
+	return strings.ReplaceAll(s, "'", "''")
+}
+
+func writeEnumComment(out io.Writer, schema string, enum *storepb.EnumTypeMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON TYPE "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, enum.Name); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, escapeSingleQuote(enum.Comment)); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `';`); err != nil {
+		return err
+	}
+
+	_, err := io.WriteString(out, "\n\n")
 	return err
 }
 
@@ -254,7 +350,49 @@ func writeMaterializedView(out io.Writer, schema string, view *storepb.Materiali
 	if _, err := io.WriteString(out, view.Definition); err != nil {
 		return err
 	}
-	_, err := io.WriteString(out, "\n  WITH NO DATA;\n\n")
+	if _, err := io.WriteString(out, "\n  WITH NO DATA;\n\n"); err != nil {
+		return err
+	}
+
+	if len(view.Comment) > 0 {
+		if err := writeMaterializedViewComment(out, schema, view); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func writeMaterializedViewComment(out io.Writer, schema string, view *storepb.MaterializedViewMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON MATERIALIZED VIEW "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, view.Name); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, escapeSingleQuote(view.Comment)); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `';`); err != nil {
+		return err
+	}
+
+	_, err := io.WriteString(out, "\n\n")
 	return err
 }
 
@@ -277,7 +415,49 @@ func writeView(out io.Writer, schema string, view *storepb.ViewMetadata) error {
 	if _, err := io.WriteString(out, view.Definition); err != nil {
 		return err
 	}
-	_, err := io.WriteString(out, ";\n\n")
+	if _, err := io.WriteString(out, ";\n\n"); err != nil {
+		return err
+	}
+
+	if len(view.Comment) > 0 {
+		if err := writeViewComment(out, schema, view); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func writeViewComment(out io.Writer, schema string, view *storepb.ViewMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON VIEW "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, view.Name); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, escapeSingleQuote(view.Comment)); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `';`); err != nil {
+		return err
+	}
+
+	_, err := io.WriteString(out, "\n\n")
 	return err
 }
 
@@ -344,7 +524,49 @@ func writeCreateSequence(out io.Writer, schema string, sequence *storepb.Sequenc
 			return err
 		}
 	}
-	_, err := io.WriteString(out, ";\n\n")
+	if _, err := io.WriteString(out, ";\n\n"); err != nil {
+		return err
+	}
+
+	if len(sequence.Comment) > 0 {
+		if err := writeSequenceComment(out, schema, sequence); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func writeSequenceComment(out io.Writer, schema string, sequence *storepb.SequenceMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON SEQUENCE "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, sequence.Name); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, escapeSingleQuote(sequence.Comment)); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `';`); err != nil {
+		return err
+	}
+
+	_, err := io.WriteString(out, "\n\n")
 	return err
 }
 
@@ -751,7 +973,45 @@ func writeIndex(out io.Writer, schema string, table string, index *storepb.Index
 			return err
 		}
 	}
-	_, err := io.WriteString(out, ");\n\n")
+	if _, err := io.WriteString(out, ");\n\n"); err != nil {
+		return err
+	}
+
+	if len(index.Comment) > 0 {
+		if err := writeIndexComment(out, schema, index); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func writeIndexComment(out io.Writer, schema string, index *storepb.IndexMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON INDEX "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, index.Name); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, escapeSingleQuote(index.Comment)); err != nil {
+		return err
+	}
+
+	_, err := io.WriteString(out, `';\n\n`)
 	return err
 }
 
@@ -804,8 +1064,17 @@ func writeUniqueKey(out io.Writer, schema string, table string, index *storepb.I
 			return err
 		}
 	}
-	_, err := io.WriteString(out, ");\n\n")
-	return err
+	if _, err := io.WriteString(out, ");\n\n"); err != nil {
+		return err
+	}
+
+	if len(index.Comment) > 0 {
+		if err := writeConstraintComment(out, schema, table, index); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func writePartitionPrimaryKey(out io.Writer, schema string, partition *storepb.TablePartitionMetadata) error {
@@ -857,7 +1126,57 @@ func writePrimaryKey(out io.Writer, schema string, table string, index *storepb.
 			return err
 		}
 	}
-	_, err := io.WriteString(out, ");\n\n")
+	if _, err := io.WriteString(out, ");\n\n"); err != nil {
+		return err
+	}
+
+	if len(index.Comment) > 0 {
+		if err := writeConstraintComment(out, schema, table, index); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func writeConstraintComment(out io.Writer, schema string, table string, index *storepb.IndexMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON CONSTRAINT "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, index.Name); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" ON "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, table); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, escapeSingleQuote(index.Comment)); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `';`); err != nil {
+		return err
+	}
+
+	_, err := io.WriteString(out, "\n\n")
 	return err
 }
 
@@ -883,7 +1202,7 @@ func writeColumnComment(out io.Writer, schema string, table string, column *stor
 	if _, err := io.WriteString(out, `" IS '`); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, column.Comment); err != nil {
+	if _, err := io.WriteString(out, escapeSingleQuote(column.Comment)); err != nil {
 		return err
 	}
 	_, err := io.WriteString(out, "';\n\n")
@@ -907,7 +1226,7 @@ func writeTableComment(out io.Writer, schema string, table *storepb.TableMetadat
 	if _, err := io.WriteString(out, `" IS '`); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, table.Comment); err != nil {
+	if _, err := io.WriteString(out, escapeSingleQuote(table.Comment)); err != nil {
 		return err
 	}
 	_, err := io.WriteString(out, "';\n\n")
@@ -988,12 +1307,50 @@ func writePartitionTable(out io.Writer, schema string, table *storepb.TableMetad
 	return nil
 }
 
-func writeFunction(out io.Writer, function *storepb.FunctionMetadata) error {
+func writeFunction(out io.Writer, schema string, function *storepb.FunctionMetadata) error {
 	if _, err := io.WriteString(out, function.Definition); err != nil {
 		return err
 	}
 
-	_, err := io.WriteString(out, "\n\n")
+	if _, err := io.WriteString(out, "\n\n"); err != nil {
+		return err
+	}
+
+	if len(function.Comment) > 0 {
+		if err := writeFunctionComment(out, schema, function); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func writeFunctionComment(out io.Writer, schema string, function *storepb.FunctionMetadata) error {
+	if _, err := io.WriteString(out, `COMMENT ON FUNCTION "`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, function.Name); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, `" IS '`); err != nil {
+		return err
+	}
+
+	if _, err := io.WriteString(out, escapeSingleQuote(function.Comment)); err != nil {
+		return err
+	}
+
+	_, err := io.WriteString(out, `';\n\n`)
 	return err
 }
 
