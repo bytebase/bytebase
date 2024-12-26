@@ -77,7 +77,8 @@ import { engineList } from "@/components/SchemaTemplate/utils";
 import { Drawer, SearchBox } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
-import { TableMetadata, TableConfig } from "@/types/proto/v1/database_service";
+import { TableMetadata } from "@/types/proto/v1/database_service";
+import { TableCatalog } from "@/types/proto/v1/database_catalog_service";
 import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
 
 interface LocalState {
@@ -106,7 +107,7 @@ const initialTemplate = (): SchemaTemplateSetting_TableTemplate => ({
     comment: "",
     columns: [],
   }),
-  config: TableConfig.fromPartial({}),
+  catalog: TableCatalog.fromPartial({}),
 });
 
 const state = reactive<LocalState>({

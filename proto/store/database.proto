@@ -103,6 +103,8 @@ message EnumTypeMetadata {
 
   // The enum values of a type.
   repeated string values = 2;
+
+  string comment = 3;
 }
 
 message EventMetadata {
@@ -155,6 +157,8 @@ message SequenceMetadata {
 
   // The owner column of the sequence.
   string owner_column = 11;
+
+  string comment = 12;
 }
 
 message TriggerMetadata {
@@ -176,6 +180,8 @@ message TriggerMetadata {
   string character_set_client = 7;
 
   string collation_connection = 8;
+
+  string comment = 9;
 }
 
 message TaskMetadata {
@@ -525,6 +531,8 @@ message FunctionMetadata {
   string database_collation = 6;
 
   string sql_mode = 7;
+
+  string comment = 8;
 }
 
 // ProcedureMetadata is the metadata for procedures.

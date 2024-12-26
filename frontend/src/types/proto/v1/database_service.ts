@@ -500,6 +500,7 @@ export interface EnumTypeMetadata {
   name: string;
   /** The enum values of a type. */
   values: string[];
+  comment: string;
 }
 
 export interface EventMetadata {
@@ -537,6 +538,7 @@ export interface SequenceMetadata {
   ownerTable: string;
   /** The owner column of the sequence. */
   ownerColumn: string;
+  comment: string;
 }
 
 export interface TriggerMetadata {
@@ -554,6 +556,7 @@ export interface TriggerMetadata {
   sqlMode: string;
   characterSetClient: string;
   collationConnection: string;
+  comment: string;
 }
 
 export interface ExternalTableMetadata {
@@ -932,6 +935,7 @@ export interface FunctionMetadata {
   collationConnection: string;
   databaseCollation: string;
   sqlMode: string;
+  comment: string;
 }
 
 /** ProcedureMetadata is the metadata for procedures. */
@@ -4157,7 +4161,7 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
 };
 
 function createBaseEnumTypeMetadata(): EnumTypeMetadata {
-  return { name: "", values: [] };
+  return { name: "", values: [], comment: "" };
 }
 
 export const EnumTypeMetadata: MessageFns<EnumTypeMetadata> = {
@@ -4167,6 +4171,9 @@ export const EnumTypeMetadata: MessageFns<EnumTypeMetadata> = {
     }
     for (const v of message.values) {
       writer.uint32(18).string(v!);
+    }
+    if (message.comment !== "") {
+      writer.uint32(26).string(message.comment);
     }
     return writer;
   },
@@ -4194,6 +4201,14 @@ export const EnumTypeMetadata: MessageFns<EnumTypeMetadata> = {
           message.values.push(reader.string());
           continue;
         }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.comment = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4207,6 +4222,7 @@ export const EnumTypeMetadata: MessageFns<EnumTypeMetadata> = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       values: globalThis.Array.isArray(object?.values) ? object.values.map((e: any) => globalThis.String(e)) : [],
+      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
     };
   },
 
@@ -4218,6 +4234,9 @@ export const EnumTypeMetadata: MessageFns<EnumTypeMetadata> = {
     if (message.values?.length) {
       obj.values = message.values;
     }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
     return obj;
   },
 
@@ -4228,6 +4247,7 @@ export const EnumTypeMetadata: MessageFns<EnumTypeMetadata> = {
     const message = createBaseEnumTypeMetadata();
     message.name = object.name ?? "";
     message.values = object.values?.map((e) => e) || [];
+    message.comment = object.comment ?? "";
     return message;
   },
 };
@@ -4385,6 +4405,7 @@ function createBaseSequenceMetadata(): SequenceMetadata {
     lastValue: "",
     ownerTable: "",
     ownerColumn: "",
+    comment: "",
   };
 }
 
@@ -4422,6 +4443,9 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     }
     if (message.ownerColumn !== "") {
       writer.uint32(90).string(message.ownerColumn);
+    }
+    if (message.comment !== "") {
+      writer.uint32(98).string(message.comment);
     }
     return writer;
   },
@@ -4521,6 +4545,14 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
           message.ownerColumn = reader.string();
           continue;
         }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.comment = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4543,6 +4575,7 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
       lastValue: isSet(object.lastValue) ? globalThis.String(object.lastValue) : "",
       ownerTable: isSet(object.ownerTable) ? globalThis.String(object.ownerTable) : "",
       ownerColumn: isSet(object.ownerColumn) ? globalThis.String(object.ownerColumn) : "",
+      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
     };
   },
 
@@ -4581,6 +4614,9 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     if (message.ownerColumn !== "") {
       obj.ownerColumn = message.ownerColumn;
     }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
     return obj;
   },
 
@@ -4600,12 +4636,22 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     message.lastValue = object.lastValue ?? "";
     message.ownerTable = object.ownerTable ?? "";
     message.ownerColumn = object.ownerColumn ?? "";
+    message.comment = object.comment ?? "";
     return message;
   },
 };
 
 function createBaseTriggerMetadata(): TriggerMetadata {
-  return { name: "", event: "", timing: "", body: "", sqlMode: "", characterSetClient: "", collationConnection: "" };
+  return {
+    name: "",
+    event: "",
+    timing: "",
+    body: "",
+    sqlMode: "",
+    characterSetClient: "",
+    collationConnection: "",
+    comment: "",
+  };
 }
 
 export const TriggerMetadata: MessageFns<TriggerMetadata> = {
@@ -4630,6 +4676,9 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
     }
     if (message.collationConnection !== "") {
       writer.uint32(66).string(message.collationConnection);
+    }
+    if (message.comment !== "") {
+      writer.uint32(74).string(message.comment);
     }
     return writer;
   },
@@ -4697,6 +4746,14 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
           message.collationConnection = reader.string();
           continue;
         }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.comment = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4715,6 +4772,7 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
       sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
       characterSetClient: isSet(object.characterSetClient) ? globalThis.String(object.characterSetClient) : "",
       collationConnection: isSet(object.collationConnection) ? globalThis.String(object.collationConnection) : "",
+      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
     };
   },
 
@@ -4741,6 +4799,9 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
     if (message.collationConnection !== "") {
       obj.collationConnection = message.collationConnection;
     }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
     return obj;
   },
 
@@ -4756,6 +4817,7 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
     message.sqlMode = object.sqlMode ?? "";
     message.characterSetClient = object.characterSetClient ?? "";
     message.collationConnection = object.collationConnection ?? "";
+    message.comment = object.comment ?? "";
     return message;
   },
 };
@@ -6263,6 +6325,7 @@ function createBaseFunctionMetadata(): FunctionMetadata {
     collationConnection: "",
     databaseCollation: "",
     sqlMode: "",
+    comment: "",
   };
 }
 
@@ -6288,6 +6351,9 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     }
     if (message.sqlMode !== "") {
       writer.uint32(58).string(message.sqlMode);
+    }
+    if (message.comment !== "") {
+      writer.uint32(66).string(message.comment);
     }
     return writer;
   },
@@ -6355,6 +6421,14 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
           message.sqlMode = reader.string();
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.comment = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -6373,6 +6447,7 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
       collationConnection: isSet(object.collationConnection) ? globalThis.String(object.collationConnection) : "",
       databaseCollation: isSet(object.databaseCollation) ? globalThis.String(object.databaseCollation) : "",
       sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
+      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
     };
   },
 
@@ -6399,6 +6474,9 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     if (message.sqlMode !== "") {
       obj.sqlMode = message.sqlMode;
     }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
     return obj;
   },
 
@@ -6414,6 +6492,7 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     message.collationConnection = object.collationConnection ?? "";
     message.databaseCollation = object.databaseCollation ?? "";
     message.sqlMode = object.sqlMode ?? "";
+    message.comment = object.comment ?? "";
     return message;
   },
 };
