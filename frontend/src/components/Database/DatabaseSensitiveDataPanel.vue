@@ -131,15 +131,14 @@ import type { MaskData } from "@/components/SensitiveData/types";
 import { isCurrentColumnException } from "@/components/SensitiveData/utils";
 import { SearchBox } from "@/components/v2";
 import {
-  useMetadata,
   featureToRef,
   pushNotification,
   usePolicyV1Store,
   useSubscriptionV1Store,
+  useDatabaseCatalog,
 } from "@/store";
 import { type ComposedDatabase } from "@/types";
 import { MaskingLevel } from "@/types/proto/v1/common";
-import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { autoDatabaseRoute, hasProjectPermissionV2 } from "@/utils";
 import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";
@@ -191,31 +190,27 @@ const isMissingLicenseForInstance = computed(() =>
   )
 );
 
-const databaseMetadata = useMetadata(
-  computed(() => props.database.name),
-  false /* !skipCache */,
-  DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL
-);
+const databaseCatalog = useDatabaseCatalog(props.database.name, false);
 
 const updateList = async () => {
   state.isLoading = true;
   const sensitiveColumnList: MaskData[] = [];
 
-  for (const schemaConfig of databaseMetadata.value.schemaConfigs) {
-    for (const tableConfig of schemaConfig.tableConfigs) {
-      for (const columnConfig of tableConfig.columnConfigs) {
+  for (const schema of databaseCatalog.value.schemas) {
+    for (const table of schema.tables) {
+      for (const column of table.columns?.columns ?? []) {
         if (
-          columnConfig.maskingLevel === MaskingLevel.MASKING_LEVEL_UNSPECIFIED
+          column.maskingLevel === MaskingLevel.MASKING_LEVEL_UNSPECIFIED
         ) {
           continue;
         }
         sensitiveColumnList.push({
-          schema: schemaConfig.name,
-          table: tableConfig.name,
-          column: columnConfig.name,
-          maskingLevel: columnConfig.maskingLevel,
-          fullMaskingAlgorithmId: columnConfig.fullMaskingAlgorithmId,
-          partialMaskingAlgorithmId: columnConfig.partialMaskingAlgorithmId,
+          schema: schema.name,
+          table: table.name,
+          column: column.name,
+          maskingLevel: column.maskingLevel,
+          fullMaskingAlgorithmId: column.fullMaskingAlgorithmId,
+          partialMaskingAlgorithmId: column.partialMaskingAlgorithmId,
         });
       }
     }
@@ -225,7 +220,7 @@ const updateList = async () => {
   state.isLoading = false;
 };
 
-watch(databaseMetadata, updateList, { immediate: true, deep: true });
+watch(databaseCatalog, updateList, { immediate: true, deep: true });
 
 const filteredColumnList = computed(() => {
   let list = state.sensitiveColumnList;
