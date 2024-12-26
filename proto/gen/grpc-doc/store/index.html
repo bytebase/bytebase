@@ -3956,6 +3956,13 @@ engine. </p></td>
                   <td><p>The dependent_columns is the list of dependent columns of a view. </p></td>
                 </tr>
               
+                <tr>
+                  <td>triggers</td>
+                  <td><a href="#bytebase.store.TriggerMetadata">TriggerMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The columns is the ordered list of columns in a table. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5078,20 +5085,6 @@ TRUNCATE. </p></td>
                   <td><p> </p></td>
                 </tr>
               
-                <tr>
-                  <td>action_orientation</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>For Postgres, identifies whether the trigger fires once for each processed row or once for each statement (ROW or STATEMENT). </p></td>
-                </tr>
-              
-                <tr>
-                  <td>condition</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>For Postgres, the WHEN condition of the trigger. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -5189,6 +5182,13 @@ Format: projcets/{project}/branches/{branch} </p></td>
                   <td><a href="#bytebase.store.ColumnMetadata">ColumnMetadata</a></td>
                   <td>repeated</td>
                   <td><p>The columns is the ordered list of columns in a table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>triggers</td>
+                  <td><a href="#bytebase.store.TriggerMetadata">TriggerMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The triggers is the list of triggers in a view. </p></td>
                 </tr>
               
             </tbody>

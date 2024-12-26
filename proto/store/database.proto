@@ -176,12 +176,6 @@ message TriggerMetadata {
   string character_set_client = 7;
 
   string collation_connection = 8;
-
-  // For Postgres, identifies whether the trigger fires once for each processed row or once for each statement (ROW or STATEMENT).
-  string action_orientation = 10;
-
-  // For Postgres, the WHEN condition of the trigger.
-  string condition = 11;
 }
 
 message TaskMetadata {
@@ -476,6 +470,9 @@ message ViewMetadata {
 
   // The columns is the ordered list of columns in a table.
   repeated ColumnMetadata columns = 5;
+
+  // The triggers is the list of triggers in a view.
+  repeated TriggerMetadata triggers = 6;
 }
 
 // DependentColumn is the metadata for dependent columns.
@@ -503,6 +500,9 @@ message MaterializedViewMetadata {
 
   // The dependent_columns is the list of dependent columns of a view.
   repeated DependentColumn dependent_columns = 4;
+
+  // The columns is the ordered list of columns in a table.
+  repeated TriggerMetadata triggers = 5;
 }
 
 // FunctionMetadata is the metadata for functions.

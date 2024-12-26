@@ -110,7 +110,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get indexes from database %q", driver.databaseName)
 	}
-	tableMap, externalTableMap, err := getTables(txn, isAtLeastPG10, columnMap, indexMap, extensionDepend)
+	triggerMap, err := getTriggers(txn, extensionDepend)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get triggers from database %q", driver.databaseName)
+	}
+	tableMap, externalTableMap, err := getTables(txn, isAtLeastPG10, columnMap, indexMap, triggerMap, extensionDepend)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
 	}
@@ -121,11 +125,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			return nil, errors.Wrapf(err, "failed to get table partitions from database %q", driver.databaseName)
 		}
 	}
-	viewMap, err := getViews(txn, columnMap, extensionDepend)
+	viewMap, err := getViews(txn, columnMap, triggerMap, extensionDepend)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
 	}
-	materializedViewMap, err := getMaterializedViews(txn, extensionDepend)
+	materializedViewMap, err := getMaterializedViews(txn, triggerMap, extensionDepend)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get materialized views from database %q", driver.databaseName)
 	}
@@ -408,7 +412,14 @@ func getListTableQuery(isAtLeastPG10 bool) string {
 }
 
 // getTables gets all tables of a database.
-func getTables(txn *sql.Tx, isAtLeastPG10 bool, columnMap map[db.TableKey][]*storepb.ColumnMetadata, indexMap map[db.TableKey][]*storepb.IndexMetadata, extensionDepend map[int]bool) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ExternalTableMetadata, error) {
+func getTables(
+	txn *sql.Tx,
+	isAtLeastPG10 bool,
+	columnMap map[db.TableKey][]*storepb.ColumnMetadata,
+	indexMap map[db.TableKey][]*storepb.IndexMetadata,
+	triggerMap map[db.TableKey][]*storepb.TriggerMetadata,
+	extensionDepend map[int]bool,
+) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ExternalTableMetadata, error) {
 	foreignKeysMap, err := getForeignKeys(txn)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get foreign keys")
@@ -448,6 +459,7 @@ func getTables(txn *sql.Tx, isAtLeastPG10 bool, columnMap map[db.TableKey][]*sto
 		table.Columns = columnMap[key]
 		table.Indexes = indexMap[key]
 		table.ForeignKeys = foreignKeysMap[key]
+		table.Triggers = triggerMap[key]
 
 		tableMap[schemaName] = append(tableMap[schemaName], table)
 	}
@@ -678,7 +690,7 @@ FROM pg_catalog.pg_matviews
 WHERE schemaname NOT IN (%s)
 ORDER BY schemaname, matviewname;`, pgparser.SystemSchemaWhereClause)
 
-func getMaterializedViews(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*storepb.MaterializedViewMetadata, error) {
+func getMaterializedViews(txn *sql.Tx, triggerMap map[db.TableKey][]*storepb.TriggerMetadata, extensionDepend map[int]bool) (map[string][]*storepb.MaterializedViewMetadata, error) {
 	matviewMap := make(map[string][]*storepb.MaterializedViewMetadata)
 
 	rows, err := txn.Query(listMaterializedViewQuery)
@@ -711,6 +723,7 @@ func getMaterializedViews(txn *sql.Tx, extensionDepend map[int]bool) (map[string
 		if comment.Valid {
 			matview.Comment = comment.String
 		}
+		matview.Triggers = triggerMap[db.TableKey{Schema: schemaName, Table: matview.Name}]
 
 		matviewMap[schemaName] = append(matviewMap[schemaName], matview)
 	}
@@ -739,7 +752,7 @@ WHERE schemaname NOT IN (%s)
 ORDER BY schemaname, viewname;`, pgparser.SystemSchemaWhereClause)
 
 // getViews gets all views of a database.
-func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata, extensionDepend map[int]bool) (map[string][]*storepb.ViewMetadata, error) {
+func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata, triggerMap map[db.TableKey][]*storepb.TriggerMetadata, extensionDepend map[int]bool) (map[string][]*storepb.ViewMetadata, error) {
 	viewMap := make(map[string][]*storepb.ViewMetadata)
 
 	rows, err := txn.Query(listViewQuery)
@@ -776,6 +789,7 @@ func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata, 
 
 		key := db.TableKey{Schema: schemaName, Table: view.Name}
 		view.Columns = columnMap[key]
+		view.Triggers = triggerMap[key]
 
 		viewMap[schemaName] = append(viewMap[schemaName], view)
 	}
@@ -1033,6 +1047,46 @@ func getSequenceOwner(txn *sql.Tx, schemaName, sequenceName string) (string, str
 		return "", "", err
 	}
 	return ownerTable, ownerColumn, nil
+}
+
+func getTriggers(txn *sql.Tx, extensionDepend map[int]bool) (map[db.TableKey][]*storepb.TriggerMetadata, error) {
+	query := `
+	SELECT
+		pt.oid,
+		pn.nspname as schema_name,
+		pc.relname as table_name,
+		pt.tgname as trigger_name,
+		pg_get_triggerdef(pt.oid) as trigger_def
+	FROM pg_trigger as pt
+		LEFT JOIN pg_class as pc ON pc.oid = pt.tgrelid
+		LEFT JOIN pg_namespace as pn ON pn.oid = pc.relnamespace
+	WHERE pn.nspname NOT IN (%s) AND pt.tgisinternal = false;`
+	rows, err := txn.Query(fmt.Sprintf(query, pgparser.SystemSchemaWhereClause))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	triggersMap := make(map[db.TableKey][]*storepb.TriggerMetadata)
+	for rows.Next() {
+		trigger := &storepb.TriggerMetadata{}
+		var oid int
+		var schemaName, tableName string
+		if err := rows.Scan(&oid, &schemaName, &tableName, &trigger.Name, &trigger.Body); err != nil {
+			return nil, err
+		}
+		if extensionDepend[oid] {
+			// Skip extension trigger.
+			continue
+		}
+		tableKey := db.TableKey{Schema: schemaName, Table: tableName}
+		triggersMap[tableKey] = append(triggersMap[tableKey], trigger)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return triggersMap, nil
 }
 
 var listIndexQuery = `
