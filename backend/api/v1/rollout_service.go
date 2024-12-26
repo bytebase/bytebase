@@ -34,10 +34,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-var getProfile = func() *config.Profile {
-	return nil
-}
-
 // RolloutService represents a service for managing rollout.
 type RolloutService struct {
 	v1pb.UnimplementedRolloutServiceServer
@@ -53,9 +49,6 @@ type RolloutService struct {
 
 // NewRolloutService returns a rollout service instance.
 func NewRolloutService(store *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, profile *config.Profile, iamManager *iam.Manager) *RolloutService {
-	getProfile = func() *config.Profile {
-		return profile
-	}
 	return &RolloutService{
 		store:          store,
 		sheetManager:   sheetManager,
