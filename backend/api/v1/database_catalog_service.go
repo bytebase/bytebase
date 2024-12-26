@@ -119,22 +119,22 @@ func convertDatabaseConfig(database *store.DatabaseMessage, config *storepb.Data
 }
 
 func convertTableCatalog(t *storepb.TableCatalog) *v1pb.TableCatalog {
-	t := &v1pb.TableCatalog{
-		Name:             tc.Name,
-		ClassificationId: tc.ClassificationId,
+	tc := &v1pb.TableCatalog{
+		Name:             t.Name,
+		ClassificationId: t.ClassificationId,
 	}
-	if tc.ObjectSchema != nil && len(tc.Columns) == 0 {
-		t.Kind = &v1pb.TableCatalog_ObjectSchema{ObjectSchema: convertStoreObjectSchema(tc.ObjectSchema)}
+	if t.ObjectSchema != nil && len(t.Columns) == 0 {
+		tc.Kind = &v1pb.TableCatalog_ObjectSchema{ObjectSchema: convertStoreObjectSchema(t.ObjectSchema)}
 	} else {
 		var columns []*v1pb.ColumnCatalog
-		for _, cc := range tc.Columns {
+		for _, cc := range t.Columns {
 			columns = append(columns, convertColumnCatalog(cc))
 		}
-		t.Kind = &v1pb.TableCatalog_Columns_{Columns: &v1pb.TableCatalog_Columns{
+		tc.Kind = &v1pb.TableCatalog_Columns_{Columns: &v1pb.TableCatalog_Columns{
 			Columns: columns,
 		}}
 	}
-	return t
+	return tc
 }
 
 func convertColumnCatalog(c *storepb.ColumnCatalog) *v1pb.ColumnCatalog {
@@ -198,19 +198,19 @@ func convertDatabaseCatalog(catalog *v1pb.DatabaseCatalog) *storepb.DatabaseConf
 	return c
 }
 
-func convertV1TableCatalog(tc *v1pb.TableCatalog) *storepb.TableCatalog {
-	t := &storepb.TableCatalog{
-		Name:             tc.Name,
-		ClassificationId: tc.ClassificationId,
+func convertV1TableCatalog(t *v1pb.TableCatalog) *storepb.TableCatalog {
+	tc := &storepb.TableCatalog{
+		Name:             t.Name,
+		ClassificationId: t.ClassificationId,
 	}
-	if tc.GetObjectSchema() != nil && len(tc.GetColumns().GetColumns()) == 0 {
-		t.ObjectSchema = convertV1ObjectSchema(tc.GetObjectSchema())
+	if t.GetObjectSchema() != nil && len(t.GetColumns().GetColumns()) == 0 {
+		tc.ObjectSchema = convertV1ObjectSchema(t.GetObjectSchema())
 	} else {
-		for _, cc := range tc.GetColumns().GetColumns() {
-			t.Columns = append(t.Columns, convertV1ColumnCatalog(cc))
+		for _, cc := range t.GetColumns().GetColumns() {
+			tc.Columns = append(tc.Columns, convertV1ColumnCatalog(cc))
 		}
 	}
-	return t
+	return tc
 }
 
 func convertV1ColumnCatalog(c *v1pb.ColumnCatalog) *storepb.ColumnCatalog {
