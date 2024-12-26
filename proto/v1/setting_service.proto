@@ -335,7 +335,7 @@ message SchemaTemplateSetting {
 
     TableMetadata table = 4;
 
-    TableConfig config = 5;
+    TableCatalog catalog = 5;
   }
 
   repeated TableTemplate table_templates = 3;

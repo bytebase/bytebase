@@ -111,29 +111,33 @@ func convertDatabaseConfig(database *store.DatabaseMessage, config *storepb.Data
 	for _, sc := range config.Schemas {
 		s := &v1pb.SchemaCatalog{Name: sc.Name}
 		for _, tc := range sc.Tables {
-			t := &v1pb.TableCatalog{
-				Name:             tc.Name,
-				ClassificationId: tc.ClassificationId,
-			}
-			if tc.ObjectSchema != nil && len(tc.Columns) == 0 {
-				t.Kind = &v1pb.TableCatalog_ObjectSchema{ObjectSchema: convertStoreObjectSchema(tc.ObjectSchema)}
-			} else {
-				var columns []*v1pb.ColumnCatalog
-				for _, cc := range tc.Columns {
-					columns = append(columns, convertColumnConfig(cc))
-				}
-				t.Kind = &v1pb.TableCatalog_Columns_{Columns: &v1pb.TableCatalog_Columns{
-					Columns: columns,
-				}}
-			}
-			s.Tables = append(s.Tables, t)
+			s.Tables = append(s.Tables, convertTableCatalog(tc))
 		}
 		c.Schemas = append(c.Schemas, s)
 	}
 	return c
 }
 
-func convertColumnConfig(c *storepb.ColumnCatalog) *v1pb.ColumnCatalog {
+func convertTableCatalog(t *storepb.TableCatalog) *v1pb.TableCatalog {
+	tc := &v1pb.TableCatalog{
+		Name:             t.Name,
+		ClassificationId: t.ClassificationId,
+	}
+	if t.ObjectSchema != nil && len(t.Columns) == 0 {
+		tc.Kind = &v1pb.TableCatalog_ObjectSchema{ObjectSchema: convertStoreObjectSchema(t.ObjectSchema)}
+	} else {
+		var columns []*v1pb.ColumnCatalog
+		for _, cc := range t.Columns {
+			columns = append(columns, convertColumnCatalog(cc))
+		}
+		tc.Kind = &v1pb.TableCatalog_Columns_{Columns: &v1pb.TableCatalog_Columns{
+			Columns: columns,
+		}}
+	}
+	return tc
+}
+
+func convertColumnCatalog(c *storepb.ColumnCatalog) *v1pb.ColumnCatalog {
 	return &v1pb.ColumnCatalog{
 		Name:                      c.Name,
 		SemanticTypeId:            c.SemanticTypeId,
@@ -187,25 +191,29 @@ func convertDatabaseCatalog(catalog *v1pb.DatabaseCatalog) *storepb.DatabaseConf
 	for _, sc := range catalog.Schemas {
 		s := &storepb.SchemaCatalog{Name: sc.Name}
 		for _, tc := range sc.Tables {
-			t := &storepb.TableCatalog{
-				Name:             tc.Name,
-				ClassificationId: tc.ClassificationId,
-			}
-			if tc.GetObjectSchema() != nil && len(tc.GetColumns().GetColumns()) == 0 {
-				t.ObjectSchema = convertV1ObjectSchema(tc.GetObjectSchema())
-			} else {
-				for _, cc := range tc.GetColumns().GetColumns() {
-					t.Columns = append(t.Columns, convertColumnCatalog(cc))
-				}
-			}
-			s.Tables = append(s.Tables, t)
+			s.Tables = append(s.Tables, convertV1TableCatalog(tc))
 		}
 		c.Schemas = append(c.Schemas, s)
 	}
 	return c
 }
 
-func convertColumnCatalog(c *v1pb.ColumnCatalog) *storepb.ColumnCatalog {
+func convertV1TableCatalog(t *v1pb.TableCatalog) *storepb.TableCatalog {
+	tc := &storepb.TableCatalog{
+		Name:             t.Name,
+		ClassificationId: t.ClassificationId,
+	}
+	if t.GetObjectSchema() != nil && len(t.GetColumns().GetColumns()) == 0 {
+		tc.ObjectSchema = convertV1ObjectSchema(t.GetObjectSchema())
+	} else {
+		for _, cc := range t.GetColumns().GetColumns() {
+			tc.Columns = append(tc.Columns, convertV1ColumnCatalog(cc))
+		}
+	}
+	return tc
+}
+
+func convertV1ColumnCatalog(c *v1pb.ColumnCatalog) *storepb.ColumnCatalog {
 	return &storepb.ColumnCatalog{
 		Name:                      c.Name,
 		SemanticTypeId:            c.SemanticTypeId,

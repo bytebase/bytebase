@@ -1,6 +1,6 @@
 import { cloneDeep } from "lodash-es";
 import { computed, reactive } from "vue";
-import { useSettingV1Store } from "@/store";
+import { useSettingV1Store, useDatabaseCatalog } from "@/store";
 import { unknownDatabase, type ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -53,7 +53,7 @@ export const mockMetadataFromTableTemplate = (
     tables: [table],
   });
   const tableConfig =
-    cloneDeep(template.config) ?? TableConfig.fromPartial({ name: "" });
+    cloneDeep(template.catalog) ?? TableConfig.fromPartial({ name: "" });
   const database = DatabaseMetadata.fromPartial({
     schemas: [schema],
     schemaConfigs: [
@@ -83,13 +83,15 @@ export const rebuildTableTemplateFromMetadata = (params: {
   category: string;
   engine: Engine;
 }) => {
-  const { database, schema, table, id, category, engine } = params;
-  const tableConfig = database.schemaConfigs
+  const { schema, table, id, category, engine } = params;
+  const databaseCatalog = useDatabaseCatalog(params.database.name, false);
+
+  const tableCatalog = databaseCatalog.value.schemas
     .find((sc) => sc.name === schema.name)
-    ?.tableConfigs.find((tc) => tc.name === table.name);
+    ?.tables.find((tc) => tc.name === table.name);
   return SchemaTemplateSetting_TableTemplate.fromPartial({
     table,
-    config: tableConfig,
+    catalog: tableCatalog,
     id,
     category,
     engine,
