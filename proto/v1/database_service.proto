@@ -1840,4 +1840,14 @@ message Changelog {
   string revision = 15;
 
   ChangedResources changed_resources = 16;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    BASELINE = 1;
+    MIGRATE = 2;
+    MIGRATE_SDL = 3;
+    MIGRATE_GHOST = 4;
+    DATA = 6;
+  }
+  Type type = 17;
 }
