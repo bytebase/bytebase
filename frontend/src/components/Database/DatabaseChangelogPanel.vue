@@ -1,16 +1,14 @@
 <template>
   <div class="flex flex-col space-y-4" v-bind="$attrs">
-    <div
-      class="w-full flex flex-row justify-between items-center text-lg leading-6 font-medium text-main space-x-2"
-    >
+    <div class="w-full flex flex-row justify-between items-center space-x-2">
       <div class="flex flex-row justify-start items-center space-x-4">
-        <div class="w-56">
+        <div class="w-52">
           <AffectedTablesSelect
             v-model:tables="state.selectedAffectedTables"
             :database="database"
           />
         </div>
-        <div class="w-44">
+        <div class="w-40">
           <ChangeTypeSelect
             v-model:change-type="state.selectedChangeType"
             :changelogs="changelogs"
@@ -42,8 +40,8 @@
           v-if="allowAlterSchema"
           tooltip-mode="DISABLED-ONLY"
           :disabled="
-            !selectedChangelog ||
-            getChangelogChangeType(selectedChangelog.type) !== 'DDL'
+            !selectedChangelogForRollback ||
+            getChangelogChangeType(selectedChangelogForRollback.type) !== 'DDL'
           "
           @click="rollback"
         >
@@ -158,7 +156,7 @@ interface LocalState {
   selectedChangelogNames: string[];
   isExporting: boolean;
   selectedAffectedTables: Table[];
-  selectedChangeType?: string;
+  selectedChangeType?: Changelog_Type;
 }
 
 const props = defineProps<{
@@ -207,7 +205,7 @@ const changelogs = computed(() => {
   return changelogStore.changelogListByDatabase(props.database.name);
 });
 
-const selectedChangelog = computed(() => {
+const selectedChangelogForRollback = computed(() => {
   if (state.selectedChangelogNames.length !== 1) {
     return;
   }
@@ -215,7 +213,7 @@ const selectedChangelog = computed(() => {
 });
 
 const rollback = () => {
-  if (!selectedChangelog.value) {
+  if (!selectedChangelogForRollback.value) {
     return;
   }
 
@@ -225,7 +223,7 @@ const rollback = () => {
       projectId: extractProjectResourceName(props.database.project),
     },
     query: {
-      version: selectedChangelog.value.name,
+      version: selectedChangelogForRollback.value.name,
       target: props.database.name,
     },
   });

@@ -8,7 +8,7 @@
     :striped="true"
     :row-props="rowProps"
     :checked-row-keys="selectedChangelogs"
-    @update:checked-row-keys="(keys) => $emit('update:selected-change-logs', keys as string[])"
+    @update:checked-row-keys="(keys) => $emit('update:selected-changelogs', keys as string[])"
   />
 </template>
 
@@ -48,7 +48,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (event: "update:selected-change-logs", value: string[]): void;
+  (event: "update:selected-changelogs", value: string[]): void;
   (event: "row-click", id: string): void;
 }>();
 
