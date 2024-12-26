@@ -1297,10 +1297,10 @@ func updateConfigBranchUpdateInfoForUpdate(o *storepb.DatabaseSchemaMetadata, n 
 	alignedConfig := alignDatabaseConfig(n, config)
 	oldModel := model.NewDatabaseMetadata(o)
 
-	newSchemaConfigMap := buildMap(alignedConfig.SchemaConfigs, func(s *storepb.SchemaConfig) string {
+	newSchemaConfigMap := buildMap(alignedConfig.Schemas, func(s *storepb.SchemaCatalog) string {
 		return s.Name
 	})
-	var newSchemaConfigs []*storepb.SchemaConfig
+	var newSchemaConfigs []*storepb.SchemaCatalog
 	for _, schema := range n.Schemas {
 		newSchemaConfig, ok := newSchemaConfigMap[schema.Name]
 		if !ok {
@@ -1309,7 +1309,7 @@ func updateConfigBranchUpdateInfoForUpdate(o *storepb.DatabaseSchemaMetadata, n 
 		}
 		oldSchema := oldModel.GetSchema(schema.Name)
 		if oldSchema == nil {
-			for _, tableConfig := range newSchemaConfig.TableConfigs {
+			for _, tableConfig := range newSchemaConfig.Tables {
 				tableConfig.Updater = formattedUserUID
 				tableConfig.UpdateTime = time
 				tableConfig.SourceBranch = formattedBranchResourceID
@@ -1332,8 +1332,8 @@ func updateConfigBranchUpdateInfoForUpdate(o *storepb.DatabaseSchemaMetadata, n 
 			continue
 		}
 
-		var newTableConfig []*storepb.TableConfig
-		tableConfigMap := buildMap(newSchemaConfig.TableConfigs, func(t *storepb.TableConfig) string {
+		var newTableConfig []*storepb.TableCatalog
+		tableConfigMap := buildMap(newSchemaConfig.Tables, func(t *storepb.TableCatalog) string {
 			return t.Name
 		})
 		for _, table := range schema.Tables {
@@ -1432,23 +1432,23 @@ func updateConfigBranchUpdateInfoForUpdate(o *storepb.DatabaseSchemaMetadata, n 
 			}
 		}
 
-		newSchemaConfig.TableConfigs = append(newSchemaConfig.TableConfigs, newTableConfig...)
+		newSchemaConfig.Tables = append(newSchemaConfig.Tables, newTableConfig...)
 		newSchemaConfig.ViewConfigs = append(newSchemaConfig.ViewConfigs, newViewConfig...)
 		newSchemaConfig.FunctionConfigs = append(newSchemaConfig.FunctionConfigs, newFunctionConfig...)
 		newSchemaConfig.ProcedureConfigs = append(newSchemaConfig.ProcedureConfigs, newProcedureConfig...)
 	}
-	alignedConfig.SchemaConfigs = append(alignedConfig.SchemaConfigs, newSchemaConfigs...)
+	alignedConfig.Schemas = append(alignedConfig.Schemas, newSchemaConfigs...)
 
 	return alignedConfig
 }
 
-func initSchemaConfig(schema *storepb.SchemaMetadata, formattedUserUID string, branchResourceID string, time *timestamppb.Timestamp) *storepb.SchemaConfig {
-	s := &storepb.SchemaConfig{
+func initSchemaConfig(schema *storepb.SchemaMetadata, formattedUserUID string, branchResourceID string, time *timestamppb.Timestamp) *storepb.SchemaCatalog {
+	s := &storepb.SchemaCatalog{
 		Name: schema.Name,
 	}
 
 	for _, table := range schema.Tables {
-		s.TableConfigs = append(s.TableConfigs, initTableConfig(table, formattedUserUID, branchResourceID, time))
+		s.Tables = append(s.Tables, initTableConfig(table, formattedUserUID, branchResourceID, time))
 	}
 
 	for _, view := range schema.Views {
@@ -1466,19 +1466,19 @@ func initSchemaConfig(schema *storepb.SchemaMetadata, formattedUserUID string, b
 	return s
 }
 
-func initTableConfig(table *storepb.TableMetadata, formattedUserEmail string, branchResourceID string, time *timestamppb.Timestamp) *storepb.TableConfig {
-	var columnConfigs []*storepb.ColumnConfig
+func initTableConfig(table *storepb.TableMetadata, formattedUserEmail string, branchResourceID string, time *timestamppb.Timestamp) *storepb.TableCatalog {
+	var columnConfigs []*storepb.ColumnCatalog
 	for _, column := range table.Columns {
-		columnConfigs = append(columnConfigs, &storepb.ColumnConfig{
+		columnConfigs = append(columnConfigs, &storepb.ColumnCatalog{
 			Name: column.Name,
 		})
 	}
-	return &storepb.TableConfig{
-		Name:          table.Name,
-		Updater:       formattedUserEmail,
-		SourceBranch:  branchResourceID,
-		UpdateTime:    time,
-		ColumnConfigs: columnConfigs,
+	return &storepb.TableCatalog{
+		Name:         table.Name,
+		Updater:      formattedUserEmail,
+		SourceBranch: branchResourceID,
+		UpdateTime:   time,
+		Columns:      columnConfigs,
 	}
 }
 
@@ -1518,22 +1518,22 @@ func buildMap[T any](objects []T, getUniqueIdentifier func(T) string) map[string
 }
 
 func initBranchLastUpdateInfoConfig(metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig) {
-	schemaConfigMap := buildMap(config.SchemaConfigs, func(s *storepb.SchemaConfig) string {
+	schemaConfigMap := buildMap(config.Schemas, func(s *storepb.SchemaCatalog) string {
 		return s.Name
 	})
 	for _, schema := range metadata.Schemas {
 		schemaConfig, ok := schemaConfigMap[schema.Name]
 		if !ok {
-			config.SchemaConfigs = append(config.SchemaConfigs, initSchemaConfig(schema, "", "", nil))
+			config.Schemas = append(config.Schemas, initSchemaConfig(schema, "", "", nil))
 			continue
 		}
-		tableConfigMap := buildMap(schemaConfig.TableConfigs, func(t *storepb.TableConfig) string {
+		tableConfigMap := buildMap(schemaConfig.Tables, func(t *storepb.TableCatalog) string {
 			return t.Name
 		})
 		for _, table := range schema.Tables {
 			tableConfig, ok := tableConfigMap[table.Name]
 			if !ok {
-				schemaConfig.TableConfigs = append(schemaConfig.TableConfigs, initTableConfig(table, "", "", nil))
+				schemaConfig.Tables = append(schemaConfig.Tables, initTableConfig(table, "", "", nil))
 			} else {
 				tableConfig.Updater = ""
 				tableConfig.UpdateTime = nil
@@ -1607,7 +1607,7 @@ func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *store
 		Name: metadata.GetName(),
 	}
 	dbModel := model.NewDatabaseMetadata(metadata)
-	schemaConfigMap := buildMap(config.SchemaConfigs, func(s *storepb.SchemaConfig) string {
+	schemaConfigMap := buildMap(config.Schemas, func(s *storepb.SchemaCatalog) string {
 		return s.Name
 	})
 	for _, schemaName := range dbModel.ListSchemaNames() {
@@ -1615,42 +1615,42 @@ func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *store
 		oldSchemaConfig, ok := schemaConfigMap[schemaName]
 		if !ok {
 			schemaConfig := initSchemaConfig(schema.GetProto(), "", "", nil)
-			result.SchemaConfigs = append(result.SchemaConfigs, schemaConfig)
+			result.Schemas = append(result.Schemas, schemaConfig)
 			continue
 		}
-		schemaConfig := &storepb.SchemaConfig{
+		schemaConfig := &storepb.SchemaCatalog{
 			Name: schemaName,
 		}
 		for _, tableName := range schema.ListTableNames() {
 			table := schema.GetTable(tableName)
-			tableConfigMap := buildMap(oldSchemaConfig.TableConfigs, func(t *storepb.TableConfig) string {
+			tableConfigMap := buildMap(oldSchemaConfig.Tables, func(t *storepb.TableCatalog) string {
 				return t.Name
 			})
 			oldTableConfig, ok := tableConfigMap[tableName]
 			if !ok {
 				tableConfig := initTableConfig(table.GetProto(), "", "", nil)
-				schemaConfig.TableConfigs = append(schemaConfig.TableConfigs, tableConfig)
+				schemaConfig.Tables = append(schemaConfig.Tables, tableConfig)
 				continue
 			}
 			//nolint
-			tableConfig := &storepb.TableConfig{
+			tableConfig := &storepb.TableCatalog{
 				Name:             tableName,
 				ClassificationId: oldTableConfig.ClassificationId,
 				Updater:          oldTableConfig.Updater,
 				UpdateTime:       oldTableConfig.UpdateTime,
 				SourceBranch:     oldTableConfig.SourceBranch,
 			}
-			columnConfigMap := buildMap(oldTableConfig.ColumnConfigs, func(c *storepb.ColumnConfig) string {
+			columnConfigMap := buildMap(oldTableConfig.Columns, func(c *storepb.ColumnCatalog) string {
 				return c.Name
 			})
 			for _, columnProto := range table.GetColumns() {
 				columnName := columnProto.GetName()
 				if columnConfig, ok := columnConfigMap[columnName]; !ok {
-					tableConfig.ColumnConfigs = append(tableConfig.ColumnConfigs, &storepb.ColumnConfig{
+					tableConfig.Columns = append(tableConfig.Columns, &storepb.ColumnCatalog{
 						Name: columnName,
 					})
 				} else {
-					columnConfig := &storepb.ColumnConfig{
+					columnConfig := &storepb.ColumnCatalog{
 						Name:                      columnName,
 						ClassificationId:          columnConfig.ClassificationId,
 						SemanticTypeId:            columnConfig.SemanticTypeId,
@@ -1659,10 +1659,10 @@ func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *store
 						FullMaskingAlgorithmId:    columnConfig.FullMaskingAlgorithmId,
 						PartialMaskingAlgorithmId: columnConfig.PartialMaskingAlgorithmId,
 					}
-					tableConfig.ColumnConfigs = append(tableConfig.ColumnConfigs, columnConfig)
+					tableConfig.Columns = append(tableConfig.Columns, columnConfig)
 				}
 			}
-			schemaConfig.TableConfigs = append(schemaConfig.TableConfigs, tableConfig)
+			schemaConfig.Tables = append(schemaConfig.Tables, tableConfig)
 		}
 
 		for _, viewName := range schema.ListViewNames() {
@@ -1725,7 +1725,7 @@ func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *store
 			}
 			schemaConfig.FunctionConfigs = append(schemaConfig.FunctionConfigs, functionConfig)
 		}
-		result.SchemaConfigs = append(result.SchemaConfigs, schemaConfig)
+		result.Schemas = append(result.Schemas, schemaConfig)
 	}
 	return result
 }
@@ -1736,28 +1736,28 @@ func formatViewDef(def string) string {
 
 // setClassificationIDToConfig inplace set the classification ID from the a config to the b config.
 func setClassificationIDToConfig(a, b *storepb.DatabaseConfig) {
-	aSchemaConfigMap := buildMap(a.SchemaConfigs, func(s *storepb.SchemaConfig) string {
+	aSchemaConfigMap := buildMap(a.Schemas, func(s *storepb.SchemaCatalog) string {
 		return s.Name
 	})
 
-	for _, schemaConfig := range b.SchemaConfigs {
+	for _, schemaConfig := range b.Schemas {
 		aSchemaConfig, ok := aSchemaConfigMap[schemaConfig.Name]
 		if !ok {
 			continue
 		}
-		aTableConfigMap := buildMap(aSchemaConfig.TableConfigs, func(t *storepb.TableConfig) string {
+		aTableConfigMap := buildMap(aSchemaConfig.Tables, func(t *storepb.TableCatalog) string {
 			return t.Name
 		})
-		for _, tableConfig := range schemaConfig.TableConfigs {
+		for _, tableConfig := range schemaConfig.Tables {
 			aTableConfig, ok := aTableConfigMap[tableConfig.Name]
 			if !ok {
 				continue
 			}
 			tableConfig.ClassificationId = aTableConfig.ClassificationId
-			aColumnConfigMap := buildMap(aTableConfig.ColumnConfigs, func(c *storepb.ColumnConfig) string {
+			aColumnConfigMap := buildMap(aTableConfig.Columns, func(c *storepb.ColumnCatalog) string {
 				return c.Name
 			})
-			for _, columnConfig := range tableConfig.ColumnConfigs {
+			for _, columnConfig := range tableConfig.Columns {
 				aColumnConfig, ok := aColumnConfigMap[columnConfig.Name]
 				if !ok {
 					continue

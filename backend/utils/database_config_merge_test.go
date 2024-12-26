@@ -24,13 +24,13 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 			description: "easy change and the target config is the same as the baseline config",
 			target: &storepb.DatabaseConfig{
 				Name: "db1",
-				SchemaConfigs: []*storepb.SchemaConfig{
+				Schemas: []*storepb.SchemaCatalog{
 					{
 						Name: "schema1",
-						TableConfigs: []*storepb.TableConfig{
+						Tables: []*storepb.TableCatalog{
 							{
 								Name: "table1",
-								ColumnConfigs: []*storepb.ColumnConfig{
+								Columns: []*storepb.ColumnCatalog{
 									{
 										Name:           "a",
 										SemanticTypeId: "id_a",
@@ -48,13 +48,13 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 			},
 			baseline: &storepb.DatabaseConfig{
 				Name: "db1",
-				SchemaConfigs: []*storepb.SchemaConfig{
+				Schemas: []*storepb.SchemaCatalog{
 					{
 						Name: "schema1",
-						TableConfigs: []*storepb.TableConfig{
+						Tables: []*storepb.TableCatalog{
 							{
 								Name: "table1",
-								ColumnConfigs: []*storepb.ColumnConfig{
+								Columns: []*storepb.ColumnCatalog{
 									{
 										Name:           "a",
 										SemanticTypeId: "id_a",
@@ -67,13 +67,13 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 			},
 			head: &storepb.DatabaseConfig{
 				Name: "db1",
-				SchemaConfigs: []*storepb.SchemaConfig{
+				Schemas: []*storepb.SchemaCatalog{
 					{
 						Name: "schema1",
-						TableConfigs: []*storepb.TableConfig{
+						Tables: []*storepb.TableCatalog{
 							{
 								Name: "table1",
-								ColumnConfigs: []*storepb.ColumnConfig{
+								Columns: []*storepb.ColumnCatalog{
 									{
 										Name:           "a",
 										SemanticTypeId: "id_a",
@@ -86,13 +86,13 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 			},
 			want: &storepb.DatabaseConfig{
 				Name: "db1",
-				SchemaConfigs: []*storepb.SchemaConfig{
+				Schemas: []*storepb.SchemaCatalog{
 					{
 						Name: "schema1",
-						TableConfigs: []*storepb.TableConfig{
+						Tables: []*storepb.TableCatalog{
 							{
 								Name: "table1",
-								ColumnConfigs: []*storepb.ColumnConfig{
+								Columns: []*storepb.ColumnCatalog{
 									{
 										Name:           "a",
 										SemanticTypeId: "id_a",
@@ -113,13 +113,13 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 			description: "if the target config has changed the same column, we should overwrite it",
 			target: &storepb.DatabaseConfig{
 				Name: "db1",
-				SchemaConfigs: []*storepb.SchemaConfig{
+				Schemas: []*storepb.SchemaCatalog{
 					{
 						Name: "schema1",
-						TableConfigs: []*storepb.TableConfig{
+						Tables: []*storepb.TableCatalog{
 							{
 								Name: "table1",
-								ColumnConfigs: []*storepb.ColumnConfig{
+								Columns: []*storepb.ColumnCatalog{
 									{
 										Name:           "a",
 										SemanticTypeId: "id_b",
@@ -132,13 +132,13 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 			},
 			baseline: &storepb.DatabaseConfig{
 				Name: "db1",
-				SchemaConfigs: []*storepb.SchemaConfig{
+				Schemas: []*storepb.SchemaCatalog{
 					{
 						Name: "schema1",
-						TableConfigs: []*storepb.TableConfig{
+						Tables: []*storepb.TableCatalog{
 							{
 								Name: "table1",
-								ColumnConfigs: []*storepb.ColumnConfig{
+								Columns: []*storepb.ColumnCatalog{
 									{
 										Name:           "a",
 										SemanticTypeId: "id_a",
@@ -151,13 +151,13 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 			},
 			head: &storepb.DatabaseConfig{
 				Name: "db1",
-				SchemaConfigs: []*storepb.SchemaConfig{
+				Schemas: []*storepb.SchemaCatalog{
 					{
 						Name: "schema1",
-						TableConfigs: []*storepb.TableConfig{
+						Tables: []*storepb.TableCatalog{
 							{
 								Name: "table1",
-								ColumnConfigs: []*storepb.ColumnConfig{
+								Columns: []*storepb.ColumnCatalog{
 									{
 										Name:           "a",
 										SemanticTypeId: "id_c",
@@ -170,13 +170,13 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 			},
 			want: &storepb.DatabaseConfig{
 				Name: "db1",
-				SchemaConfigs: []*storepb.SchemaConfig{
+				Schemas: []*storepb.SchemaCatalog{
 					{
 						Name: "schema1",
-						TableConfigs: []*storepb.TableConfig{
+						Tables: []*storepb.TableCatalog{
 							{
 								Name: "table1",
-								ColumnConfigs: []*storepb.ColumnConfig{
+								Columns: []*storepb.ColumnCatalog{
 									{
 										Name:           "a",
 										SemanticTypeId: "id_b",
@@ -192,13 +192,13 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 			description: "if the target config has changed, we should not overwrite the difference set",
 			target: &storepb.DatabaseConfig{
 				Name: "db1",
-				SchemaConfigs: []*storepb.SchemaConfig{
+				Schemas: []*storepb.SchemaCatalog{
 					{
 						Name: "schema1",
-						TableConfigs: []*storepb.TableConfig{
+						Tables: []*storepb.TableCatalog{
 							{
 								Name: "table1",
-								ColumnConfigs: []*storepb.ColumnConfig{
+								Columns: []*storepb.ColumnCatalog{
 									{
 										// Modify the semantic type id to id_b.
 										Name:           "a",
@@ -220,7 +220,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 							// Delete the table.
 							// {
 							// 	Name: "table2",
-							// 	ColumnConfigs: []*storepb.ColumnConfig{
+							// 	Columns: []*storepb.ColumnCatalog{
 							// 		{
 							// 			Name:           "a",
 							// 			SemanticTypeId: "id_a",
@@ -230,7 +230,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 							// Create a new table.
 							{
 								Name: "table3",
-								ColumnConfigs: []*storepb.ColumnConfig{
+								Columns: []*storepb.ColumnCatalog{
 									{
 										Name:           "a",
 										SemanticTypeId: "id_a",
@@ -247,13 +247,13 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 			},
 			baseline: &storepb.DatabaseConfig{
 				Name: "db1",
-				SchemaConfigs: []*storepb.SchemaConfig{
+				Schemas: []*storepb.SchemaCatalog{
 					{
 						Name: "schema1",
-						TableConfigs: []*storepb.TableConfig{
+						Tables: []*storepb.TableCatalog{
 							{
 								Name: "table1",
-								ColumnConfigs: []*storepb.ColumnConfig{
+								Columns: []*storepb.ColumnCatalog{
 									{
 										Name:           "a",
 										SemanticTypeId: "id_a",
@@ -267,7 +267,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 							},
 							{
 								Name: "table2",
-								ColumnConfigs: []*storepb.ColumnConfig{
+								Columns: []*storepb.ColumnCatalog{
 									{
 										Name:           "a",
 										SemanticTypeId: "id_a",
@@ -280,13 +280,13 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 			},
 			head: &storepb.DatabaseConfig{
 				Name: "db1",
-				SchemaConfigs: []*storepb.SchemaConfig{
+				Schemas: []*storepb.SchemaCatalog{
 					{
 						Name: "schema1",
-						TableConfigs: []*storepb.TableConfig{
+						Tables: []*storepb.TableCatalog{
 							{
 								Name: "table1",
-								ColumnConfigs: []*storepb.ColumnConfig{
+								Columns: []*storepb.ColumnCatalog{
 									{
 										Name:           "a",
 										SemanticTypeId: "id_c",
@@ -299,7 +299,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 							},
 							{
 								Name: "table2",
-								ColumnConfigs: []*storepb.ColumnConfig{
+								Columns: []*storepb.ColumnCatalog{
 									{
 										Name:           "b",
 										SemanticTypeId: "id_b",
@@ -312,13 +312,13 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 			},
 			want: &storepb.DatabaseConfig{
 				Name: "db1",
-				SchemaConfigs: []*storepb.SchemaConfig{
+				Schemas: []*storepb.SchemaCatalog{
 					{
 						Name: "schema1",
-						TableConfigs: []*storepb.TableConfig{
+						Tables: []*storepb.TableCatalog{
 							{
 								Name: "table1",
-								ColumnConfigs: []*storepb.ColumnConfig{
+								Columns: []*storepb.ColumnCatalog{
 									{
 										Name:           "a",
 										SemanticTypeId: "id_b",
@@ -336,7 +336,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 							},
 							{
 								Name: "table3",
-								ColumnConfigs: []*storepb.ColumnConfig{
+								Columns: []*storepb.ColumnCatalog{
 									{
 										Name:           "a",
 										SemanticTypeId: "id_a",
