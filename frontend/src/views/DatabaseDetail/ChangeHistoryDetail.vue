@@ -15,7 +15,7 @@
       {{ changeHistoryId }}
     </NBreadcrumbItem>
   </NBreadcrumb>
-  <ChangeHistoryDetail
+  <ChangeHistoryDetailView
     :instance="instance"
     :database="database.name"
     :change-history-id="changeHistoryId"
@@ -25,7 +25,7 @@
 <script lang="ts" setup>
 import { NBreadcrumb, NBreadcrumbItem } from "naive-ui";
 import { useRouter } from "vue-router";
-import { ChangeHistoryDetail } from "@/components/ChangeHistory";
+import { ChangeHistoryDetail as ChangeHistoryDetailView } from "@/components/ChangeHistory";
 import { useDatabaseV1ByName } from "@/store";
 import { databaseV1Url } from "@/utils";
 

@@ -30,3 +30,4 @@ export * from "./permission";
 export * from "./workspace";
 export * from "./instanceResource";
 export * from "./storage";
+export * from "./changelog";

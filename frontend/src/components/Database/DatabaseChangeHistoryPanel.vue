@@ -144,9 +144,8 @@ import {
 } from "@/router/dashboard/projectV1";
 import { useChangeHistoryStore, useDBSchemaV1Store } from "@/store";
 import { DEFAULT_PAGE_SIZE } from "@/store/modules/common";
-import type { ComposedDatabase } from "@/types";
+import type { ComposedDatabase, Table } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
-import type { Table } from "@/types/changeHistory";
 import {
   ChangeHistory_Status,
   ChangeHistory_Type,

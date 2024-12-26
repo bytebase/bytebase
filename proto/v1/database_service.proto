@@ -79,16 +79,6 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  rpc UpdateDatabaseMetadata(UpdateDatabaseMetadataRequest) returns (DatabaseMetadata) {
-    option (google.api.http) = {
-      patch: "/v1/{database_metadata.name=instances/*/databases/*/metadata}"
-      body: "database_metadata"
-    };
-    option (bytebase.v1.permission) = "bb.databases.update";
-    option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
-  }
-
   rpc GetDatabaseSchema(GetDatabaseSchemaRequest) returns (DatabaseSchema) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schema}"};
     option (bytebase.v1.permission) = "bb.databases.getSchema";
@@ -333,18 +323,6 @@ message GetDatabaseMetadataRequest {
   // "schemas/schema-a/tables/table-a".
   // The column masking level will only be returned when a table filter is used.
   string filter = 3;
-}
-
-message UpdateDatabaseMetadataRequest {
-  // The database metadata to update.
-  //
-  // The database_metadata's `name` field is used to identify the database
-  // metadata to update. Format:
-  // instances/{instance}/databases/{database}/metadata
-  DatabaseMetadata database_metadata = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The list of fields to update.
-  google.protobuf.FieldMask update_mask = 2;
 }
 
 message GetDatabaseSchemaRequest {
@@ -593,12 +571,6 @@ message TriggerMetadata {
   string character_set_client = 7;
 
   string collation_connection = 8;
-
-  // For Postgres, identifies whether the trigger fires once for each processed row or once for each statement (ROW or STATEMENT).
-  string action_orientation = 10;
-
-  // For Postgres, the WHEN condition of the trigger.
-  string condition = 11;
 }
 
 message ExternalTableMetadata {
@@ -821,6 +793,9 @@ message ViewMetadata {
 
   // The columns is the ordered list of columns in a table.
   repeated ColumnMetadata columns = 5;
+
+  // The triggers is the list of triggers in a view.
+  repeated TriggerMetadata triggers = 6;
 }
 
 // DependentColumn is the metadata for dependent columns.
@@ -849,6 +824,9 @@ message MaterializedViewMetadata {
   // The dependent_columns is the list of dependent columns of a materialized
   // view.
   repeated DependentColumn dependent_columns = 4;
+
+  // The columns is the ordered list of columns in a table.
+  repeated TriggerMetadata triggers = 5;
 }
 
 // FunctionMetadata is the metadata for functions.
@@ -1862,4 +1840,14 @@ message Changelog {
   string revision = 15;
 
   ChangedResources changed_resources = 16;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    BASELINE = 1;
+    MIGRATE = 2;
+    MIGRATE_SDL = 3;
+    MIGRATE_GHOST = 4;
+    DATA = 6;
+  }
+  Type type = 17;
 }

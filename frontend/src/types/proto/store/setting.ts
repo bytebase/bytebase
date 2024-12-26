@@ -12,7 +12,7 @@ import { Duration } from "../google/protobuf/duration";
 import { Expr as Expr1 } from "../google/type/expr";
 import { ApprovalTemplate } from "./approval";
 import { Engine, engineFromJSON, engineToJSON, engineToNumber } from "./common";
-import { ColumnConfig, ColumnMetadata, TableConfig, TableMetadata } from "./database";
+import { ColumnCatalog, ColumnMetadata, TableCatalog, TableMetadata } from "./database";
 
 export const protobufPackage = "bytebase.store";
 
@@ -389,7 +389,7 @@ export interface SchemaTemplateSetting_FieldTemplate {
   engine: Engine;
   category: string;
   column: ColumnMetadata | undefined;
-  config: ColumnConfig | undefined;
+  catalog: ColumnCatalog | undefined;
 }
 
 export interface SchemaTemplateSetting_ColumnType {
@@ -403,7 +403,7 @@ export interface SchemaTemplateSetting_TableTemplate {
   engine: Engine;
   category: string;
   table: TableMetadata | undefined;
-  config: TableConfig | undefined;
+  catalog: TableCatalog | undefined;
 }
 
 export interface DataClassificationSetting {
@@ -1806,7 +1806,7 @@ export const SchemaTemplateSetting: MessageFns<SchemaTemplateSetting> = {
 };
 
 function createBaseSchemaTemplateSetting_FieldTemplate(): SchemaTemplateSetting_FieldTemplate {
-  return { id: "", engine: Engine.ENGINE_UNSPECIFIED, category: "", column: undefined, config: undefined };
+  return { id: "", engine: Engine.ENGINE_UNSPECIFIED, category: "", column: undefined, catalog: undefined };
 }
 
 export const SchemaTemplateSetting_FieldTemplate: MessageFns<SchemaTemplateSetting_FieldTemplate> = {
@@ -1823,8 +1823,8 @@ export const SchemaTemplateSetting_FieldTemplate: MessageFns<SchemaTemplateSetti
     if (message.column !== undefined) {
       ColumnMetadata.encode(message.column, writer.uint32(34).fork()).join();
     }
-    if (message.config !== undefined) {
-      ColumnConfig.encode(message.config, writer.uint32(42).fork()).join();
+    if (message.catalog !== undefined) {
+      ColumnCatalog.encode(message.catalog, writer.uint32(42).fork()).join();
     }
     return writer;
   },
@@ -1873,7 +1873,7 @@ export const SchemaTemplateSetting_FieldTemplate: MessageFns<SchemaTemplateSetti
             break;
           }
 
-          message.config = ColumnConfig.decode(reader, reader.uint32());
+          message.catalog = ColumnCatalog.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -1891,7 +1891,7 @@ export const SchemaTemplateSetting_FieldTemplate: MessageFns<SchemaTemplateSetti
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
       category: isSet(object.category) ? globalThis.String(object.category) : "",
       column: isSet(object.column) ? ColumnMetadata.fromJSON(object.column) : undefined,
-      config: isSet(object.config) ? ColumnConfig.fromJSON(object.config) : undefined,
+      catalog: isSet(object.catalog) ? ColumnCatalog.fromJSON(object.catalog) : undefined,
     };
   },
 
@@ -1909,8 +1909,8 @@ export const SchemaTemplateSetting_FieldTemplate: MessageFns<SchemaTemplateSetti
     if (message.column !== undefined) {
       obj.column = ColumnMetadata.toJSON(message.column);
     }
-    if (message.config !== undefined) {
-      obj.config = ColumnConfig.toJSON(message.config);
+    if (message.catalog !== undefined) {
+      obj.catalog = ColumnCatalog.toJSON(message.catalog);
     }
     return obj;
   },
@@ -1926,8 +1926,8 @@ export const SchemaTemplateSetting_FieldTemplate: MessageFns<SchemaTemplateSetti
     message.column = (object.column !== undefined && object.column !== null)
       ? ColumnMetadata.fromPartial(object.column)
       : undefined;
-    message.config = (object.config !== undefined && object.config !== null)
-      ? ColumnConfig.fromPartial(object.config)
+    message.catalog = (object.catalog !== undefined && object.catalog !== null)
+      ? ColumnCatalog.fromPartial(object.catalog)
       : undefined;
     return message;
   },
@@ -2026,7 +2026,7 @@ export const SchemaTemplateSetting_ColumnType: MessageFns<SchemaTemplateSetting_
 };
 
 function createBaseSchemaTemplateSetting_TableTemplate(): SchemaTemplateSetting_TableTemplate {
-  return { id: "", engine: Engine.ENGINE_UNSPECIFIED, category: "", table: undefined, config: undefined };
+  return { id: "", engine: Engine.ENGINE_UNSPECIFIED, category: "", table: undefined, catalog: undefined };
 }
 
 export const SchemaTemplateSetting_TableTemplate: MessageFns<SchemaTemplateSetting_TableTemplate> = {
@@ -2043,8 +2043,8 @@ export const SchemaTemplateSetting_TableTemplate: MessageFns<SchemaTemplateSetti
     if (message.table !== undefined) {
       TableMetadata.encode(message.table, writer.uint32(34).fork()).join();
     }
-    if (message.config !== undefined) {
-      TableConfig.encode(message.config, writer.uint32(42).fork()).join();
+    if (message.catalog !== undefined) {
+      TableCatalog.encode(message.catalog, writer.uint32(42).fork()).join();
     }
     return writer;
   },
@@ -2093,7 +2093,7 @@ export const SchemaTemplateSetting_TableTemplate: MessageFns<SchemaTemplateSetti
             break;
           }
 
-          message.config = TableConfig.decode(reader, reader.uint32());
+          message.catalog = TableCatalog.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -2111,7 +2111,7 @@ export const SchemaTemplateSetting_TableTemplate: MessageFns<SchemaTemplateSetti
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
       category: isSet(object.category) ? globalThis.String(object.category) : "",
       table: isSet(object.table) ? TableMetadata.fromJSON(object.table) : undefined,
-      config: isSet(object.config) ? TableConfig.fromJSON(object.config) : undefined,
+      catalog: isSet(object.catalog) ? TableCatalog.fromJSON(object.catalog) : undefined,
     };
   },
 
@@ -2129,8 +2129,8 @@ export const SchemaTemplateSetting_TableTemplate: MessageFns<SchemaTemplateSetti
     if (message.table !== undefined) {
       obj.table = TableMetadata.toJSON(message.table);
     }
-    if (message.config !== undefined) {
-      obj.config = TableConfig.toJSON(message.config);
+    if (message.catalog !== undefined) {
+      obj.catalog = TableCatalog.toJSON(message.catalog);
     }
     return obj;
   },
@@ -2146,8 +2146,8 @@ export const SchemaTemplateSetting_TableTemplate: MessageFns<SchemaTemplateSetti
     message.table = (object.table !== undefined && object.table !== null)
       ? TableMetadata.fromPartial(object.table)
       : undefined;
-    message.config = (object.config !== undefined && object.config !== null)
-      ? TableConfig.fromPartial(object.config)
+    message.catalog = (object.catalog !== undefined && object.catalog !== null)
+      ? TableCatalog.fromPartial(object.catalog)
       : undefined;
     return message;
   },

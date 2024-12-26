@@ -106,10 +106,10 @@ func TestAlignDatabaseConfig(t *testing.T) {
 	// Create a sample config with one schema and one table
 	config := &storepb.DatabaseConfig{
 		Name: "testdb",
-		SchemaConfigs: []*storepb.SchemaConfig{
+		Schemas: []*storepb.SchemaCatalog{
 			{
 				Name: "schema1",
-				TableConfigs: []*storepb.TableConfig{
+				Tables: []*storepb.TableCatalog{
 					{Name: "table1"},
 				},
 				FunctionConfigs: []*storepb.FunctionConfig{
@@ -124,10 +124,10 @@ func TestAlignDatabaseConfig(t *testing.T) {
 
 	want := &storepb.DatabaseConfig{
 		Name: "testdb",
-		SchemaConfigs: []*storepb.SchemaConfig{
+		Schemas: []*storepb.SchemaCatalog{
 			{
 				Name: "schema1",
-				TableConfigs: []*storepb.TableConfig{
+				Tables: []*storepb.TableCatalog{
 					{Name: "table3"},
 				},
 				FunctionConfigs: []*storepb.FunctionConfig{

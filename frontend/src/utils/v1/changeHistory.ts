@@ -3,9 +3,12 @@ import Long from "long";
 import { t } from "@/plugins/i18n";
 import { useDBSchemaV1Store, useDatabaseV1Store, useUserStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { EMPTY_ID, UNKNOWN_ID } from "@/types";
-import type { AffectedTable } from "@/types/changeHistory";
-import { EmptyAffectedTable } from "@/types/changeHistory";
+import {
+  EMPTY_ID,
+  UNKNOWN_ID,
+  EmptyAffectedTable,
+  type AffectedTable,
+} from "@/types";
 import type { DatabaseSchema } from "@/types/proto/v1/database_service";
 import {
   ChangeHistory,

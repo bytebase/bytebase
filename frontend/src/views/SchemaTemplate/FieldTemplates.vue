@@ -79,8 +79,10 @@ import { useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import {
   ColumnMetadata,
-  ColumnConfig,
 } from "@/types/proto/v1/database_service";
+import {
+  ColumnCatalog,
+} from "@/types/proto/v1/database_catalog_service";
 import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 
 interface LocalState {
@@ -113,7 +115,7 @@ const initialTemplate = () => ({
     characterSet: "",
     collation: "",
   }),
-  config: ColumnConfig.fromPartial({}),
+  catalog: ColumnCatalog.fromPartial({}),
 });
 
 const state = reactive<LocalState>({

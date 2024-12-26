@@ -76,6 +76,15 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 					Column: dependentColumn.Column,
 				})
 			}
+
+			for _, trigger := range view.Triggers {
+				if trigger == nil {
+					continue
+				}
+
+				v1View.Triggers = append(v1View.Triggers, convertStoreTriggerMetadata(trigger))
+			}
+
 			s.Views = append(s.Views, v1View)
 		}
 		for _, function := range schema.Functions {
@@ -199,6 +208,38 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 			s.EnumTypes = append(s.EnumTypes, v1Enum)
 		}
 
+		for _, matview := range schema.MaterializedViews {
+			if matview == nil {
+				continue
+			}
+			v1Matview := &v1pb.MaterializedViewMetadata{
+				Name:       matview.Name,
+				Definition: matview.Definition,
+				Comment:    matview.Comment,
+			}
+
+			for _, dependentColumn := range matview.DependentColumns {
+				if dependentColumn == nil {
+					continue
+				}
+				v1Matview.DependentColumns = append(v1Matview.DependentColumns,
+					&v1pb.DependentColumn{
+						Schema: dependentColumn.Schema,
+						Table:  dependentColumn.Table,
+						Column: dependentColumn.Column,
+					})
+			}
+
+			for _, trigger := range matview.Triggers {
+				if trigger == nil {
+					continue
+				}
+				v1Matview.Triggers = append(v1Matview.Triggers, convertStoreTriggerMetadata(trigger))
+			}
+
+			s.MaterializedViews = append(s.MaterializedViews, v1Matview)
+		}
+
 		m.Schemas = append(m.Schemas, s)
 	}
 	for _, extension := range metadata.Extensions {
@@ -296,19 +337,21 @@ func convertStoreTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata
 		if trigger == nil {
 			continue
 		}
-		t.Triggers = append(t.Triggers, &v1pb.TriggerMetadata{
-			Name:                trigger.Name,
-			Timing:              trigger.Timing,
-			Event:               trigger.Event,
-			Body:                trigger.Body,
-			SqlMode:             trigger.SqlMode,
-			CharacterSetClient:  trigger.CharacterSetClient,
-			CollationConnection: trigger.CollationConnection,
-			ActionOrientation:   trigger.ActionOrientation,
-			Condition:           trigger.Condition,
-		})
+		t.Triggers = append(t.Triggers, convertStoreTriggerMetadata(trigger))
 	}
 	return t
+}
+
+func convertStoreTriggerMetadata(trigger *storepb.TriggerMetadata) *v1pb.TriggerMetadata {
+	return &v1pb.TriggerMetadata{
+		Name:                trigger.Name,
+		Timing:              trigger.Timing,
+		Event:               trigger.Event,
+		Body:                trigger.Body,
+		SqlMode:             trigger.SqlMode,
+		CharacterSetClient:  trigger.CharacterSetClient,
+		CollationConnection: trigger.CollationConnection,
+	}
 }
 
 func convertStoreExternalTableMetadata(externalTable *storepb.ExternalTableMetadata) *v1pb.ExternalTableMetadata {
@@ -422,7 +465,7 @@ func convertStoreDatabaseConfig(ctx context.Context, config *storepb.DatabaseCon
 	databaseConfig := &v1pb.DatabaseConfig{
 		Name: config.Name,
 	}
-	for _, schema := range config.SchemaConfigs {
+	for _, schema := range config.Schemas {
 		if schema == nil {
 			continue
 		}
@@ -432,7 +475,7 @@ func convertStoreDatabaseConfig(ctx context.Context, config *storepb.DatabaseCon
 		s := &v1pb.SchemaConfig{
 			Name: schema.Name,
 		}
-		for _, table := range schema.TableConfigs {
+		for _, table := range schema.Tables {
 			if table == nil {
 				continue
 			}
@@ -491,7 +534,7 @@ func convertStoreViewConfig(ctx context.Context, config *storepb.ViewConfig, opt
 	}
 }
 
-func convertStoreTableConfig(ctx context.Context, table *storepb.TableConfig, optionalStores *store.Store) *v1pb.TableConfig {
+func convertStoreTableConfig(ctx context.Context, table *storepb.TableCatalog, optionalStores *store.Store) *v1pb.TableConfig {
 	t := &v1pb.TableConfig{
 		Name:             table.Name,
 		ClassificationId: table.ClassificationId,
@@ -499,7 +542,7 @@ func convertStoreTableConfig(ctx context.Context, table *storepb.TableConfig, op
 		SourceBranch:     table.SourceBranch,
 		UpdateTime:       table.UpdateTime,
 	}
-	for _, column := range table.ColumnConfigs {
+	for _, column := range table.Columns {
 		if column == nil {
 			continue
 		}
@@ -508,7 +551,7 @@ func convertStoreTableConfig(ctx context.Context, table *storepb.TableConfig, op
 	return t
 }
 
-func convertStoreColumnConfig(column *storepb.ColumnConfig) *v1pb.ColumnConfig {
+func convertStoreColumnConfig(column *storepb.ColumnCatalog) *v1pb.ColumnConfig {
 	return &v1pb.ColumnConfig{
 		Name:                      column.Name,
 		SemanticTypeId:            column.SemanticTypeId,
@@ -567,6 +610,13 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 					})
 			}
 
+			for _, trigger := range view.Triggers {
+				if trigger == nil {
+					continue
+				}
+				storeView.Triggers = append(storeView.Triggers, convertV1TriggerMetadata(trigger))
+			}
+
 			s.Views = append(s.Views, storeView)
 		}
 		for _, materializedView := range schema.MaterializedViews {
@@ -588,6 +638,13 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 						Table:  dependentColumn.Table,
 						Column: dependentColumn.Column,
 					})
+			}
+
+			for _, trigger := range materializedView.Triggers {
+				if trigger == nil {
+					continue
+				}
+				storeMaterializedView.Triggers = append(storeMaterializedView.Triggers, convertV1TriggerMetadata(trigger))
 			}
 
 			s.MaterializedViews = append(s.MaterializedViews, storeMaterializedView)
@@ -805,19 +862,21 @@ func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 		if trigger == nil {
 			continue
 		}
-		t.Triggers = append(t.Triggers, &storepb.TriggerMetadata{
-			Name:                trigger.Name,
-			Timing:              trigger.Timing,
-			Event:               trigger.Event,
-			Body:                trigger.Body,
-			SqlMode:             trigger.SqlMode,
-			CharacterSetClient:  trigger.CharacterSetClient,
-			CollationConnection: trigger.CollationConnection,
-			ActionOrientation:   trigger.ActionOrientation,
-			Condition:           trigger.Condition,
-		})
+		t.Triggers = append(t.Triggers, convertV1TriggerMetadata(trigger))
 	}
 	return t
+}
+
+func convertV1TriggerMetadata(trigger *v1pb.TriggerMetadata) *storepb.TriggerMetadata {
+	return &storepb.TriggerMetadata{
+		Name:                trigger.Name,
+		Timing:              trigger.Timing,
+		Event:               trigger.Event,
+		Body:                trigger.Body,
+		SqlMode:             trigger.SqlMode,
+		CharacterSetClient:  trigger.CharacterSetClient,
+		CollationConnection: trigger.CollationConnection,
+	}
 }
 
 func convertV1TablePartitionMetadata(tablePartition *v1pb.TablePartitionMetadata) *storepb.TablePartitionMetadata {
@@ -915,7 +974,7 @@ func convertV1DatabaseConfig(ctx context.Context, databaseConfig *v1pb.DatabaseC
 		if schema == nil {
 			continue
 		}
-		s := &storepb.SchemaConfig{
+		s := &storepb.SchemaCatalog{
 			Name: schema.Name,
 		}
 		for _, table := range schema.TableConfigs {
@@ -923,7 +982,7 @@ func convertV1DatabaseConfig(ctx context.Context, databaseConfig *v1pb.DatabaseC
 				continue
 			}
 
-			s.TableConfigs = append(s.TableConfigs, convertV1TableConfig(ctx, table, optionalStores))
+			s.Tables = append(s.Tables, convertV1TableConfig(ctx, table, optionalStores))
 		}
 		for _, view := range schema.ViewConfigs {
 			if view == nil {
@@ -943,7 +1002,7 @@ func convertV1DatabaseConfig(ctx context.Context, databaseConfig *v1pb.DatabaseC
 			}
 			s.ProcedureConfigs = append(s.ProcedureConfigs, convertV1ProcedureConfig(ctx, procedure, optionalStores))
 		}
-		config.SchemaConfigs = append(config.SchemaConfigs, s)
+		config.Schemas = append(config.Schemas, s)
 	}
 	return config
 }
@@ -975,8 +1034,8 @@ func convertV1ProcedureConfig(ctx context.Context, procedure *v1pb.ProcedureConf
 	}
 }
 
-func convertV1TableConfig(ctx context.Context, table *v1pb.TableConfig, optionalStores *store.Store) *storepb.TableConfig {
-	t := &storepb.TableConfig{
+func convertV1TableConfig(ctx context.Context, table *v1pb.TableConfig, optionalStores *store.Store) *storepb.TableCatalog {
+	t := &storepb.TableCatalog{
 		Name:             table.Name,
 		ClassificationId: table.ClassificationId,
 		Updater:          getUpdaterFromEmail(ctx, table.Updater, optionalStores),
@@ -987,13 +1046,13 @@ func convertV1TableConfig(ctx context.Context, table *v1pb.TableConfig, optional
 		if column == nil {
 			continue
 		}
-		t.ColumnConfigs = append(t.ColumnConfigs, convertV1ColumnConfig(column))
+		t.Columns = append(t.Columns, convertV1ColumnConfig(column))
 	}
 	return t
 }
 
-func convertV1ColumnConfig(column *v1pb.ColumnConfig) *storepb.ColumnConfig {
-	return &storepb.ColumnConfig{
+func convertV1ColumnConfig(column *v1pb.ColumnConfig) *storepb.ColumnCatalog {
+	return &storepb.ColumnCatalog{
 		Name:                      column.Name,
 		SemanticTypeId:            column.SemanticTypeId,
 		Labels:                    column.Labels,

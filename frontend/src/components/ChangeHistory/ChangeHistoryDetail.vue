@@ -288,8 +288,7 @@ import {
   useSettingV1Store,
   useDatabaseV1ByName,
 } from "@/store";
-import { getDateForPbTimestamp } from "@/types";
-import type { AffectedTable } from "@/types/changeHistory";
+import { getDateForPbTimestamp, type AffectedTable } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {

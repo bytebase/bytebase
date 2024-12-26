@@ -160,7 +160,7 @@ message SchemaTemplateSetting {
 
     ColumnMetadata column = 4;
 
-    ColumnConfig config = 5;
+    ColumnCatalog catalog = 5;
   }
 
   repeated FieldTemplate field_templates = 1;
@@ -184,7 +184,7 @@ message SchemaTemplateSetting {
 
     TableMetadata table = 4;
 
-    TableConfig config = 5;
+    TableCatalog catalog = 5;
   }
 
   repeated TableTemplate table_templates = 3;

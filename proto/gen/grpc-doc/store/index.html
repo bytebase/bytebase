@@ -342,11 +342,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.ColumnConfig"><span class="badge">M</span>ColumnConfig</a>
+                  <a href="#bytebase.store.ColumnCatalog"><span class="badge">M</span>ColumnCatalog</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.ColumnConfig.LabelsEntry"><span class="badge">M</span>ColumnConfig.LabelsEntry</a>
+                  <a href="#bytebase.store.ColumnCatalog.LabelsEntry"><span class="badge">M</span>ColumnCatalog.LabelsEntry</a>
                 </li>
               
                 <li>
@@ -450,7 +450,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.SchemaConfig"><span class="badge">M</span>SchemaConfig</a>
+                  <a href="#bytebase.store.SchemaCatalog"><span class="badge">M</span>SchemaCatalog</a>
                 </li>
               
                 <li>
@@ -474,7 +474,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.TableConfig"><span class="badge">M</span>TableConfig</a>
+                  <a href="#bytebase.store.TableCatalog"><span class="badge">M</span>TableCatalog</a>
                 </li>
               
                 <li>
@@ -2902,7 +2902,7 @@ This information is not authenticated and should be treated accordingly. </p></t
 
         
       
-        <h3 id="bytebase.store.ColumnConfig">ColumnConfig</h3>
+        <h3 id="bytebase.store.ColumnCatalog">ColumnCatalog</h3>
         <p></p>
 
         
@@ -2928,7 +2928,7 @@ This information is not authenticated and should be treated accordingly. </p></t
               
                 <tr>
                   <td>labels</td>
-                  <td><a href="#bytebase.store.ColumnConfig.LabelsEntry">ColumnConfig.LabelsEntry</a></td>
+                  <td><a href="#bytebase.store.ColumnCatalog.LabelsEntry">ColumnCatalog.LabelsEntry</a></td>
                   <td>repeated</td>
                   <td><p>The user labels for a column. </p></td>
                 </tr>
@@ -2975,7 +2975,7 @@ This information is not authenticated and should be treated accordingly. </p></t
 
         
       
-        <h3 id="bytebase.store.ColumnConfig.LabelsEntry">ColumnConfig.LabelsEntry</h3>
+        <h3 id="bytebase.store.ColumnCatalog.LabelsEntry">ColumnCatalog.LabelsEntry</h3>
         <p></p>
 
         
@@ -3136,8 +3136,8 @@ classification and user_comment is parsed from the comment. </p></td>
                 </tr>
               
                 <tr>
-                  <td>schema_configs</td>
-                  <td><a href="#bytebase.store.SchemaConfig">SchemaConfig</a></td>
+                  <td>schemas</td>
+                  <td><a href="#bytebase.store.SchemaCatalog">SchemaCatalog</a></td>
                   <td>repeated</td>
                   <td><p>The schema_configs is the list of configs for schemas in a database. </p></td>
                 </tr>
@@ -3956,6 +3956,13 @@ engine. </p></td>
                   <td><p>The dependent_columns is the list of dependent columns of a view. </p></td>
                 </tr>
               
+                <tr>
+                  <td>triggers</td>
+                  <td><a href="#bytebase.store.TriggerMetadata">TriggerMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The columns is the ordered list of columns in a table. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -4225,7 +4232,7 @@ function takes. </p></td>
 
         
       
-        <h3 id="bytebase.store.SchemaConfig">SchemaConfig</h3>
+        <h3 id="bytebase.store.SchemaCatalog">SchemaCatalog</h3>
         <p></p>
 
         
@@ -4244,8 +4251,8 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                 </tr>
               
                 <tr>
-                  <td>table_configs</td>
-                  <td><a href="#bytebase.store.TableConfig">TableConfig</a></td>
+                  <td>tables</td>
+                  <td><a href="#bytebase.store.TableCatalog">TableCatalog</a></td>
                   <td>repeated</td>
                   <td><p>The table_configs is the list of configs for tables in a schema. </p></td>
                 </tr>
@@ -4625,7 +4632,7 @@ Snowflake. </p></td>
 
         
       
-        <h3 id="bytebase.store.TableConfig">TableConfig</h3>
+        <h3 id="bytebase.store.TableCatalog">TableCatalog</h3>
         <p></p>
 
         
@@ -4643,8 +4650,8 @@ Snowflake. </p></td>
                 </tr>
               
                 <tr>
-                  <td>column_configs</td>
-                  <td><a href="#bytebase.store.ColumnConfig">ColumnConfig</a></td>
+                  <td>columns</td>
+                  <td><a href="#bytebase.store.ColumnCatalog">ColumnCatalog</a></td>
                   <td>repeated</td>
                   <td><p>The column_configs is the ordered list of configs for columns in a table. </p></td>
                 </tr>
@@ -5078,20 +5085,6 @@ TRUNCATE. </p></td>
                   <td><p> </p></td>
                 </tr>
               
-                <tr>
-                  <td>action_orientation</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>For Postgres, identifies whether the trigger fires once for each processed row or once for each statement (ROW or STATEMENT). </p></td>
-                </tr>
-              
-                <tr>
-                  <td>condition</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>For Postgres, the WHEN condition of the trigger. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -5189,6 +5182,13 @@ Format: projcets/{project}/branches/{branch} </p></td>
                   <td><a href="#bytebase.store.ColumnMetadata">ColumnMetadata</a></td>
                   <td>repeated</td>
                   <td><p>The columns is the ordered list of columns in a table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>triggers</td>
+                  <td><a href="#bytebase.store.TriggerMetadata">TriggerMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The triggers is the list of triggers in a view. </p></td>
                 </tr>
               
             </tbody>
@@ -11643,8 +11643,8 @@ The default value is 100MB, we will use the default value if the setting not exi
                 </tr>
               
                 <tr>
-                  <td>config</td>
-                  <td><a href="#bytebase.store.ColumnConfig">ColumnConfig</a></td>
+                  <td>catalog</td>
+                  <td><a href="#bytebase.store.ColumnCatalog">ColumnCatalog</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -11695,8 +11695,8 @@ The default value is 100MB, we will use the default value if the setting not exi
                 </tr>
               
                 <tr>
-                  <td>config</td>
-                  <td><a href="#bytebase.store.TableConfig">TableConfig</a></td>
+                  <td>catalog</td>
+                  <td><a href="#bytebase.store.TableCatalog">TableCatalog</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
