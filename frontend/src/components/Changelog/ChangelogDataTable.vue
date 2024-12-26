@@ -94,16 +94,9 @@ const columnList = computed(() => {
       },
     },
     {
-      key: "version",
-      title: t("common.version"),
-      width: "15rem",
-      resizable: true,
-      render: (changelog) => changelog.version,
-    },
-    {
       key: "issue",
       title: t("common.issue"),
-      width: "5rem",
+      width: "6rem",
       resizable: true,
       render: (changelog) => {
         const uid = extractIssueUID(changelog.issue);
@@ -131,6 +124,13 @@ const columnList = computed(() => {
       },
     },
     {
+      key: "version",
+      title: t("common.version"),
+      width: "6rem",
+      resizable: true,
+      render: (changelog) => changelog.version || "-",
+    },
+    {
       key: "tables",
       title: t("db.tables"),
       width: "15rem",
@@ -138,6 +138,7 @@ const columnList = computed(() => {
       ellipsis: true,
       render: (changelog) => {
         const tables = getAffectedTablesOfChangelog(changelog);
+        if (tables.length === 0) return "-";
         return (
           <p class="space-x-2 truncate">
             {tables.map((table) => (
