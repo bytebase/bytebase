@@ -1,3 +1,6 @@
+-- migrate changeHistories to changelog table.
+-- the changelog ids are kept the same as in the instance_change_history
+-- table to facilitate other migrations that need to know the changelog.id---instance_change_history.id mapping relation.
 DO $$
 DECLARE
     h_row RECORD;
@@ -7,6 +10,7 @@ BEGIN
 FOR h_row IN (
     SELECT
         project.resource_id AS project_resource_id,
+        instance_change_history.id AS instance_change_history_id,
         instance_change_history.creator_id,
         to_timestamp(instance_change_history.created_ts) AS created_ts,
         instance_change_history.database_id,
@@ -54,6 +58,7 @@ LOOP
     END IF;
 
     INSERT INTO changelog (
+        id,
         creator_id,
         created_ts,
         database_id,
@@ -62,6 +67,7 @@ LOOP
         sync_history_id,
         payload
     ) SELECT
+        h_row.instance_change_history_id,
         h_row.creator_id,
         h_row.created_ts,
         h_row.database_id,
@@ -76,3 +82,30 @@ LOOP
         );
 END LOOP;
 END $$;
+
+SELECT setval('changelog_id_seq', (SELECT COALESCE(MAX(id),0)+1 FROM changelog));
+
+-- backfill changelog.payload.taskRun
+WITH t AS (
+    SELECT
+        task_run.id,
+        split_part(task_run.result->>'changeHistory', '/', 6) AS changelog_id,
+        'projects/'||project.resource_id||'/rollouts/'||pipeline.id||'/stages/'||task.stage_id||'/tasks/'||task.id||'/taskRuns/'||task_run.id AS task_run_name
+    FROM task_run
+    LEFT JOIN task ON task_run.task_id = task.id
+    LEFT JOIN pipeline ON pipeline.id = task.pipeline_id
+    LEFT JOIN project ON project.id = pipeline.project_id
+)
+UPDATE changelog
+SET payload = payload || jsonb_build_object('taskRun', t.task_run_name)
+FROM t
+WHERE t.changelog_id = changelog.id::TEXT;
+
+-- backfill task_run.result.changelog
+UPDATE task_run
+SET result = result || jsonb_build_object('changelog', replace(result->>'changeHistory', 'changeHistories', 'changelogs'))
+WHERE result ? 'changeHistory';
+
+-- update changelist change source
+UPDATE changelist
+SET payload = payload || jsonb_build_object('changes', replace(payload->>'changes', '/changeHistories/', '/changelogs/')::JSONB)
