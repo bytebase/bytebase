@@ -1230,7 +1230,6 @@
     },
     "sql-hint": {
       "change-will-apply-to-all-tasks-in-tenant-mode": "改动将会应用到其他所有任务",
-      "dont-apply-to-database-in-baseline-migration": "建立基线只会记录当前的 Schema 到变更历史里，并不会把 SQL 应用到数据库",
       "snowflake": "使用 <<schema>>.<<table>> 来标注一个 SnowFlake 的表"
     },
     "will-rollback": "当前任务将会回滚 {link}",
@@ -1786,8 +1785,6 @@
     "schema-drift-detected": "上次变更后的 Schema 与本次变更前不一致。",
     "view-drift": "查看偏差",
     "before-left-schema-choice": "比较",
-    "left-schema-choice-prev-history-schema": "上次变更后",
-    "left-schema-choice-current-history-schema-prev": "本次变更前",
     "after-left-schema-choice": "和本次变更后的 Schema",
     "show-diff": "显示差异",
     "left-vs-right": "之前{prevLink} vs 当前版本",
@@ -1797,7 +1794,7 @@
     "no-history-in-project": "这个项目下没有发现任何数据库有变更历史。",
     "recording-info": "每当数据库 schema 变更时，我们便会记录下变更历史。",
     "establish-baseline": "建立新的基线",
-    "refreshing-history": "刷新历史中 ...",
+    "refreshing": "刷新历史中 ...",
     "config-instance": "配置实例",
     "establish-baseline-description": "Bytebase 将用当前的 schema 作为新的基线。这将会把数据库当前的 schema 状态同步到 Bytebase 记录的 schema 状态，并且解决 schema 偏差的问题。在进行此操作前，您应该检查当前的基线确实反映了期望的状态。",
     "establish-database-baseline": "建立「{name}」基线",

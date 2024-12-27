@@ -1230,7 +1230,6 @@
     },
     "sql-hint": {
       "change-will-apply-to-all-tasks-in-tenant-mode": "El cambio se aplicará a todas las tareas",
-      "dont-apply-to-database-in-baseline-migration": "La creación de la línea base solo registra el esquema actual en el historial de cambios y no aplica SQL a la base de datos",
       "snowflake": "Use <<schema>>.<<table>> para especificar una tabla Snowflake"
     },
     "will-rollback": "Esta tarea revertirá {link}",
@@ -1795,7 +1794,7 @@
     "no-history-in-project": "No se encontró historial de cambios en ninguna base de datos en este proyecto.",
     "recording-info": "El historial de cambios se registra cada vez que se altera el esquema de la base de datos.",
     "establish-baseline": "Establecer nueva línea base",
-    "refreshing-history": "Refrescando historial...",
+    "refreshing": "Refrescando historial...",
     "config-instance": "Configurar instancia",
     "establish-baseline-description": "Bytebase usará el esquema actual como la nueva línea base. Esto reconciliará el estado actual del esquema con el estado del esquema registrado en Bytebase y corregirá la deriva del esquema informado. Solo debe hacer esto si el esquema actual refleja el estado deseado.",
     "establish-database-baseline": "Establecer línea base de \"{name}\"",
