@@ -37,12 +37,8 @@ import {
   getTimeForPbTimestamp,
 } from "@/types";
 import { TaskRun_Status, Task_Type } from "@/types/proto/v1/rollout_service";
-import {
-  databaseV1Url,
-  extractChangeHistoryUID,
-  extractTaskUID,
-  flattenTaskV1List,
-} from "@/utils";
+import { databaseV1Url, extractTaskUID, flattenTaskV1List } from "@/utils";
+import { extractChangelogUID } from "@/utils/v1/changelog";
 import { databaseForTask, specForTask, useIssueContext } from "../../logic";
 import { displayTaskRunLogEntryType } from "./TaskRunLogTable/common";
 
@@ -140,7 +136,7 @@ const commentLink = computed((): CommentLink => {
         const db = databaseForTask(issue.value, task);
         const link = `${databaseV1Url(
           db
-        )}/change-histories/${extractChangeHistoryUID(taskRun.changeHistory)}`;
+        )}/changelogs/${extractChangelogUID(taskRun.changelog)}`;
         return {
           title: t("task.view-change"),
           link,

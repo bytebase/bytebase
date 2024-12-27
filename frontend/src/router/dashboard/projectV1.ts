@@ -485,27 +485,6 @@ const projectV1Routes: RouteRecordRaw[] = [
             props: true,
           },
           {
-            path: "change-histories/:changeHistoryId",
-            name: PROJECT_V1_ROUTE_DATABASE_CHANGE_HISTORY_DETAIL,
-            meta: {
-              overrideTitle: true,
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
-                "bb.databases.get",
-                "bb.changeHistories.get",
-              ],
-            },
-            component: () =>
-              import("@/views/DatabaseDetail/ChangeHistoryDetail.vue"),
-            props: (route) => ({
-              ...route.params,
-              project: `projects/${route.params.projectId}`,
-              instance: `instances/${route.params.instanceId}`,
-              database: `instances/${route.params.instanceId}/databases/${route.params.databaseName}`,
-              changeHistoryId: route.params.changeHistoryId,
-            }),
-          },
-          {
             path: "changelogs/:changelogId",
             name: PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
             meta: {
