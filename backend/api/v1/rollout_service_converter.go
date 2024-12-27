@@ -495,6 +495,7 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 		Status:        convertToTaskRunStatus(taskRun.Status),
 		Detail:        taskRun.ResultProto.Detail,
 		ChangeHistory: taskRun.ResultProto.ChangeHistory,
+		Changelog:     taskRun.ResultProto.Changelog,
 		SchemaVersion: taskRun.ResultProto.Version,
 		Sheet:         "",
 	}
