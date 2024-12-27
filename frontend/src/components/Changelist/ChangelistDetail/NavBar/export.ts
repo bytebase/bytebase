@@ -1,10 +1,13 @@
+import dayjs from "dayjs";
 import type JSZip from "jszip";
 import { padStart } from "lodash-es";
-import { useChangeHistoryStore, useSheetV1Store } from "@/store";
-import { useBranchStore } from "@/store/modules/branch";
-import type { Changelist_Change_Source as ChangeSource } from "@/types";
+import { useChangelogStore, useSheetV1Store } from "@/store";
+import {
+  getDateForPbTimestamp,
+  type Changelist_Change_Source as ChangeSource,
+} from "@/types";
 import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
-import { ChangeHistoryView } from "@/types/proto/v1/database_service";
+import { ChangelogView } from "@/types/proto/v1/database_service";
 import {
   escapeFilename,
   getChangelistChangeSourceType,
@@ -21,7 +24,7 @@ const buildFileName = (type: ChangeSource, name: string, index: number) => {
   return `${basename}.sql`;
 };
 
-const zipFileForChangeHistory = async (
+const zipFileForChangelog = async (
   zip: JSZip,
   change: Change,
   index: number
@@ -30,37 +33,24 @@ const zipFileForChangeHistory = async (
   if (!sheet) {
     return;
   }
-  const changeHistory =
-    await useChangeHistoryStore().getOrFetchChangeHistoryByName(
-      change.source,
-      ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
-    );
-  if (!changeHistory) {
-    return;
-  }
-
-  const filename = buildFileName(
-    "CHANGE_HISTORY",
-    changeHistory.version,
-    index
-  );
-  zip.file(filename, getSheetStatement(sheet));
-};
-
-const zipFileForBranch = async (zip: JSZip, change: Change, index: number) => {
-  const sheet = await useSheetV1Store().fetchSheetByName(change.sheet, "FULL");
-  if (!sheet) {
-    return;
-  }
-  const branch = await useBranchStore().fetchBranchByName(
+  const changelog = await useChangelogStore().getOrFetchChangelogByName(
     change.source,
-    false /* !useCache */
+    ChangelogView.CHANGELOG_VIEW_FULL
   );
-  if (!branch) {
+  if (!changelog) {
     return;
   }
 
-  const filename = buildFileName("BRANCH", branch.branchId, index);
+  const parts: string[] = [
+    dayjs(getDateForPbTimestamp(changelog.createTime)).format(
+      "YYYY-MM-DD HH:mm:ss"
+    ),
+  ];
+  if (changelog.version) {
+    parts.push(changelog.version);
+  }
+
+  const filename = buildFileName("CHANGELOG", parts.join("-"), index);
   zip.file(filename, getSheetStatement(sheet));
 };
 
@@ -80,11 +70,8 @@ export const zipFileForChange = async (
   index: number
 ) => {
   const type = getChangelistChangeSourceType(change);
-  if (type === "CHANGE_HISTORY") {
-    await zipFileForChangeHistory(zip, change, index);
-  }
-  if (type === "BRANCH") {
-    await zipFileForBranch(zip, change, index);
+  if (type === "CHANGELOG") {
+    await zipFileForChangelog(zip, change, index);
   }
   if (type === "RAW_SQL") {
     await zipFileForRawSQL(zip, change, index);

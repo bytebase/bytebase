@@ -9,8 +9,8 @@ export const extractChangelistResourceName = (name: string) => {
   return matches?.[1] ?? "";
 };
 
-export const isChangeHistoryChangeSource = (change: Change) => {
-  return change.source.match(/(^|\/)changeHistories\//);
+export const isChangelogChangeSource = (change: Change) => {
+  return change.source.match(/(^|\/)changelogs\//);
 };
 export const isBranchChangeSource = (change: Change) => {
   return change.source.match(/(^|\/)branches\//);
@@ -19,8 +19,8 @@ export const isBranchChangeSource = (change: Change) => {
 export const getChangelistChangeSourceType = (
   change: Change
 ): Changelist_Change_Source => {
-  if (isChangeHistoryChangeSource(change)) {
-    return "CHANGE_HISTORY";
+  if (isChangelogChangeSource(change)) {
+    return "CHANGELOG";
   } else if (isBranchChangeSource(change)) {
     return "BRANCH";
   } else {

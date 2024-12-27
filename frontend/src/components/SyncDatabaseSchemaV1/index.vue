@@ -45,7 +45,7 @@
           "
           :project="project"
           :source-schema="changelogSourceSchemaState"
-          @update="handleChangeHistorySchemaVersionChanges"
+          @update="handleChangelogSchemaVersionChanges"
         />
         <RawSQLEditor
           v-if="state.sourceSchemaType === SourceSchemaType.RAW_SQL"
@@ -176,7 +176,7 @@ const sourceEngine = computed(() => {
   }
 });
 
-const handleChangeHistorySchemaVersionChanges = (
+const handleChangelogSchemaVersionChanges = (
   schemaVersion: ChangelogSourceSchema
 ) => {
   Object.assign(changelogSourceSchemaState, schemaVersion);
@@ -192,7 +192,7 @@ onMounted(async () => {
     );
     const { databaseName } = extractDatabaseNameAndChangelogUID(changelogName);
     const database = await databaseStore.getOrFetchDatabaseByName(databaseName);
-    handleChangeHistorySchemaVersionChanges({
+    handleChangelogSchemaVersionChanges({
       environmentName: database.effectiveEnvironment,
       databaseName: databaseName,
       changelogName: changelogName,

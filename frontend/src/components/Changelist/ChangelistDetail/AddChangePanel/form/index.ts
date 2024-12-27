@@ -1,4 +1,4 @@
-import ChangeHistoryForm from "./ChangeHistoryForm.vue";
+import ChangelogForm from "./ChangelogForm.vue";
 import RawSQLForm from "./RawSQLForm.vue";
 
-export { ChangeHistoryForm, RawSQLForm };
+export { ChangelogForm, RawSQLForm };

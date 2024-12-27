@@ -33,7 +33,6 @@ import {
 } from "@/utils";
 import {
   changelogLink,
-  extractChangelogUID,
   getAffectedTablesOfChangelog,
   getChangelogChangeType,
 } from "@/utils/v1/changelog";
@@ -49,7 +48,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: "update:selected-changelogs", value: string[]): void;
-  (event: "row-click", id: string): void;
+  (event: "row-click", changelog: Changelog): void;
 }>();
 
 const router = useRouter();
@@ -199,7 +198,7 @@ const rowProps = (changelog: Changelog) => {
   return {
     onClick: (e: MouseEvent) => {
       if (props.customClick) {
-        emit("row-click", extractChangelogUID(changelog.name));
+        emit("row-click", changelog);
         return;
       }
 
