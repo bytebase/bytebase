@@ -71,7 +71,7 @@
         "batch-change-basic-tooltip": "マルチ環境変更",
         "batch-change-advanced": "高度",
         "batch-change-advanced-tooltip": "マルチ環境+マルチリージョン/マルチテナンシー変更",
-        "change-history": "変更履歴",
+        "changelog": "変更履歴",
         "rollout-policy": "展開ポリシー",
         "rollout-policy-basic": "基本",
         "rollout-policy-basic-tooltip": "自動展開",

@@ -2,7 +2,7 @@
   <Drawer :show="show" @close="$emit('close')">
     <DrawerContent
       style="width: 75vw; max-width: calc(100vw - 8rem)"
-      :title="$t('common.change-history')"
+      :title="$t('common.changelog')"
     >
       <ChangelogDetail v-if="detailBindings" v-bind="detailBindings" />
     </DrawerContent>

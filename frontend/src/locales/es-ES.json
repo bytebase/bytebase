@@ -14,7 +14,7 @@
     "custom": "Personalizado",
     "im": "IM",
     "overview": "Resumen",
-    "change-history": "Historial de cambios",
+    "changelog": "Historial de cambios",
     "webhook": "Webhook",
     "webhooks": "Webhooks",
     "key": "Clave",
@@ -350,7 +350,7 @@
     "started": "Iniciado",
     "ended": "Finalizado",
     "view-change": "Ver cambio",
-    "view-change-history": "Ver historial de cambios",
+    "view-changelog": "Ver historial de cambios",
     "status": {
       "running": "Ejecutándose",
       "failed": "Fallido",
@@ -1775,7 +1775,7 @@
       "mark-env-as-production": "Marcar como entorno de producción"
     }
   },
-  "change-history": {
+  "changelog": {
     "self": "Historial de cambios",
     "select": "La versión del esquema se registra cada vez que se aplica un cambio de esquema a través de Bytebase",
     "workflow": "Flujo de trabajo",
@@ -1786,8 +1786,6 @@
     "schema-drift-detected": "Se detectó una desviación de esquema.",
     "view-drift": "Ver desviación",
     "before-left-schema-choice": "Comparar el esquema",
-    "left-schema-choice-prev-history-schema": "después del cambio anterior",
-    "left-schema-choice-current-history-schema-prev": "antes de este cambio",
     "after-left-schema-choice": "y después de este cambio",
     "show-diff": "Mostrar diferencias",
     "left-vs-right": "Anterior {prevLink} vs Esta versión",
@@ -3759,8 +3757,8 @@
     "apply-to-database": "Aplicar a la base de datos",
     "add-change": {
       "self": "Agregar cambio",
-      "change-history": {
-        "select-at-least-one-history-below": "Seleccione al menos un historial a continuación"
+      "changelog": {
+        "select-at-least-one-changelog-below": "Seleccione al menos un historial a continuación"
       },
       "branch": {
         "select-at-least-one-branch-below": "Seleccione al menos una sucursal a continuación"
@@ -3769,9 +3767,6 @@
     "change-source": {
       "self": "Cambiar fuente",
       "raw-sql": "SQL sin formato",
-      "change-history": {
-        "tables": "Mesas"
-      },
       "source": "Fuente",
       "filter": "Filtrar por problema o versión"
     },

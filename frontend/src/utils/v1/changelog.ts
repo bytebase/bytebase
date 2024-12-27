@@ -84,7 +84,7 @@ export const stringifyAffectedTable = (affectedTable: AffectedTable) => {
 
 export const getAffectedTableDisplayName = (affectedTable: AffectedTable) => {
   if (isEqual(affectedTable, EmptyAffectedTable)) {
-    return t("change-history.all-tables");
+    return t("changelog.all-tables");
   }
 
   let name = stringifyAffectedTable(affectedTable);

@@ -71,7 +71,7 @@
         "batch-change-basic-tooltip": "Cambio Multi-entorno",
         "batch-change-advanced": "Avanzado",
         "batch-change-advanced-tooltip": "Multi-entorno + Multi-región / Cambio Multi-tenencia",
-        "change-history": "Historial de Cambios",
+        "changelog": "Historial de Cambios",
         "rollout-policy": "Política de despliegue",
         "rollout-policy-basic": "Básica",
         "rollout-policy-basic-tooltip": "Despliegue Automático",

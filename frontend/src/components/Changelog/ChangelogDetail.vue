@@ -61,7 +61,7 @@
       <div class="flex flex-col gap-y-6">
         <div v-if="affectedTables.length > 0">
           <span class="flex items-center text-lg text-main capitalize">
-            {{ $t("change-history.affected-tables") }}
+            {{ $t("changelog.affected-tables") }}
           </span>
           <div class="flex flex-wrap gap-x-3 gap-y-2">
             <span
@@ -124,14 +124,14 @@
                 @update:value="state.showDiff = $event"
               />
               <span class="text-sm font-semibold">
-                {{ $t("change-history.show-diff") }}
+                {{ $t("changelog.show-diff") }}
               </span>
             </div>
             <div class="textinfolabel">
-              {{ $t("change-history.schema-snapshot-after-change") }}
+              {{ $t("changelog.schema-snapshot-after-change") }}
             </div>
             <div v-if="!allowShowDiff" class="text-sm font-normal text-accent">
-              ({{ $t("change-history.no-schema-change") }})
+              ({{ $t("changelog.no-schema-change") }})
             </div>
           </div>
 
@@ -151,7 +151,7 @@
             :auto-height="{ min: 120, max: 600 }"
           />
           <div v-else>
-            {{ $t("change-history.current-schema-empty") }}
+            {{ $t("changelog.current-schema-empty") }}
           </div>
         </div>
       </div>

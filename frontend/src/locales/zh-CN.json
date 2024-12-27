@@ -14,7 +14,7 @@
     "custom": "自定义",
     "im": "IM",
     "overview": "概览",
-    "change-history": "变更历史",
+    "changelog": "变更历史",
     "webhook": "Webhook",
     "webhooks": "Webhook",
     "key": "键值",
@@ -350,7 +350,7 @@
     "started": "开始于",
     "ended": "结束于",
     "view-change": "查看变更",
-    "view-change-history": "查看变更历史",
+    "view-changelog": "查看变更历史",
     "status": {
       "running": "运行中",
       "failed": "失败",
@@ -1775,7 +1775,7 @@
       "mark-env-as-production": "标记为生产环境"
     }
   },
-  "change-history": {
+  "changelog": {
     "self": "变更历史",
     "select": "Schema 版本是在每次通过 Bytebase 执行 Schema 变更后被记录下来的",
     "workflow": "工作流",
@@ -1979,7 +1979,7 @@
     },
     "create-target-database-or-schema-for-backup": "请先创建备份的目标数据库或 Schema",
     "revision": {
-      "self": "修改",
+      "self": "版本",
       "applied-at": "应用时间",
       "filename": "文件名",
       "delete-confirm-dialog": {
@@ -3759,8 +3759,8 @@
     "apply-to-database": "应用到数据库",
     "add-change": {
       "self": "添加变更",
-      "change-history": {
-        "select-at-least-one-history-below": "请在下方选择至少一条记录"
+      "changelog": {
+        "select-at-least-one-changelog-below": "请在下方选择至少一条记录"
       },
       "branch": {
         "select-at-least-one-branch-below": "请在下方选择至少一条记录"
@@ -3769,9 +3769,6 @@
     "change-source": {
       "self": "变更来源",
       "raw-sql": "SQL 语句",
-      "change-history": {
-        "tables": "表"
-      },
       "source": "来源",
       "filter": "按工单或版本过滤"
     },
@@ -3786,8 +3783,8 @@
     "change-type": "更改类型"
   },
   "release": {
-    "self": "发布",
-    "releases": "发布",
+    "self": "发布包",
+    "releases": "发布包",
     "files": "文件",
     "create": "创建发布",
     "select": "选择发布",

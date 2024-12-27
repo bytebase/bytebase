@@ -118,10 +118,10 @@
       <NTabPane
         v-if="
           databaseChangeMode === DatabaseChangeMode.PIPELINE &&
-          allowListChangeHistories
+          allowListChangelogs
         "
         name="changelog"
-        :tab="'Changelog'"
+        :tab="$t('common.changelog')"
       >
         <DatabaseChangelogPanel class="mt-2" :database="database" />
       </NTabPane>
@@ -297,7 +297,7 @@ const {
   allowTransferDatabase,
   allowChangeData,
   allowAlterSchema,
-  allowListChangeHistories,
+  allowListChangelogs,
   allowListSlowQueries,
 } = useDatabaseDetailContext();
 const disableSchemaEditor = useAppFeature(
