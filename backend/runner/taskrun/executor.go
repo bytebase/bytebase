@@ -92,10 +92,8 @@ type migrateContext struct {
 }
 
 func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int, taskRunUID int, dbFactory *dbfactory.DBFactory) (*db.MigrationInfo, *migrateContext, error) {
-	if !(common.IsDev() && profile.DevelopmentVersioned) {
-		if schemaVersion.Version == "" {
-			return nil, nil, errors.Errorf("empty schema version")
-		}
+	if !common.IsDev() && schemaVersion.Version == "" {
+		return nil, nil, errors.Errorf("empty schema version")
 	}
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
@@ -569,7 +567,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 	// users can create revisions though via API
 	// however we can warn users not to unless they know
 	// what they are doing
-	if common.IsDev() && mc.profile.DevelopmentVersioned {
+	if common.IsDev() {
 		if mc.version != "" {
 			list, err := stores.ListRevisions(ctx, &store.FindRevisionMessage{
 				DatabaseUID: &mc.database.UID,
@@ -607,7 +605,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 				Sheet:            mc.sheetName,
 				Version:          mc.version,
 				Type:             convertTaskType(mc.task.Type),
-			}}, api.SystemBotID)
+			}}, mi.CreatorID)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to create changelog")
 		}
@@ -654,7 +652,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 
 // endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
 func endMigration(ctx context.Context, storeInstance *store.Store, startedNs int64, insertedID string, updatedSchema, schemaPrev string, mi *db.MigrationInfo, mc *migrateContext, sheetID *int, isDone bool) error {
-	if common.IsDev() && mc.profile.DevelopmentVersioned {
+	if common.IsDev() {
 		update := &store.UpdateChangelogMessage{
 			UID: mc.changelog,
 		}
@@ -686,7 +684,7 @@ func endMigration(ctx context.Context, storeInstance *store.Store, startedNs int
 					r.Payload.SheetSha256 = mc.sheet.GetSha256Hex()
 				}
 
-				revision, err := storeInstance.CreateRevision(ctx, r, mc.task.CreatorID)
+				revision, err := storeInstance.CreateRevision(ctx, r, mi.CreatorID)
 				if err != nil {
 					return errors.Wrapf(err, "failed to create revision")
 				}

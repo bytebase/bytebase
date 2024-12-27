@@ -124,27 +124,48 @@ func TestFilterChangeHistoryByResources(t *testing.T) {
 
 	// Get migration history by filter.
 	for _, tt := range tests {
-		resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
-			Parent: database.Name,
-			View:   v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
-			Filter: tt.filter,
-		})
-		a.NoError(err)
-		a.Equal(len(tt.wantStatements), len(resp.ChangeHistories), tt.filter)
-		for i, wantStatement := range tt.wantStatements {
-			// Sort by change history UID.
-			sort.Slice(resp.ChangeHistories, func(i, j int) bool {
-				_, _, id1, err := common.GetInstanceDatabaseIDChangeHistory(resp.ChangeHistories[i].Name)
-				a.NoError(err)
-				_, _, id2, err := common.GetInstanceDatabaseIDChangeHistory(resp.ChangeHistories[j].Name)
-				a.NoError(err)
-				uid1, err := strconv.Atoi(id1)
-				a.NoError(err)
-				uid2, err := strconv.Atoi(id2)
-				a.NoError(err)
-				return uid1 < uid2
+		if common.IsDev() {
+			resp, err := ctl.databaseServiceClient.ListChangelogs(ctx, &v1pb.ListChangelogsRequest{
+				Parent: database.Name,
+				View:   v1pb.ChangelogView_CHANGELOG_VIEW_FULL,
+				Filter: tt.filter,
 			})
-			a.Equal(wantStatement, string(resp.ChangeHistories[i].Statement), tt.filter)
+			a.NoError(err)
+			a.Equal(len(tt.wantStatements), len(resp.Changelogs), tt.filter)
+			for i, wantStatement := range tt.wantStatements {
+				// Sort by changelog UID.
+				sort.Slice(resp.Changelogs, func(i, j int) bool {
+					_, _, id1, err := common.GetInstanceDatabaseChangelogUID(resp.Changelogs[i].Name)
+					a.NoError(err)
+					_, _, id2, err := common.GetInstanceDatabaseChangelogUID(resp.Changelogs[j].Name)
+					a.NoError(err)
+					return id1 < id2
+				})
+				a.Equal(wantStatement, string(resp.Changelogs[i].Statement), tt.filter)
+			}
+		} else {
+			resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
+				Parent: database.Name,
+				View:   v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
+				Filter: tt.filter,
+			})
+			a.NoError(err)
+			a.Equal(len(tt.wantStatements), len(resp.ChangeHistories), tt.filter)
+			for i, wantStatement := range tt.wantStatements {
+				// Sort by change history UID.
+				sort.Slice(resp.ChangeHistories, func(i, j int) bool {
+					_, _, id1, err := common.GetInstanceDatabaseIDChangeHistory(resp.ChangeHistories[i].Name)
+					a.NoError(err)
+					_, _, id2, err := common.GetInstanceDatabaseIDChangeHistory(resp.ChangeHistories[j].Name)
+					a.NoError(err)
+					uid1, err := strconv.Atoi(id1)
+					a.NoError(err)
+					uid2, err := strconv.Atoi(id2)
+					a.NoError(err)
+					return uid1 < uid2
+				})
+				a.Equal(wantStatement, string(resp.ChangeHistories[i].Statement), tt.filter)
+			}
 		}
 	}
 }
