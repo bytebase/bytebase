@@ -14,8 +14,13 @@ export const protobufPackage = "bytebase.store";
 
 export interface TaskRunResult {
   detail: string;
-  /** Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} */
+  /**
+   * Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+   * Deprecated.
+   */
   changeHistory: string;
+  /** Format: instances/{instance}/databases/{database}/changelogs/{changelog} */
+  changelog: string;
   version: string;
   startPosition: TaskRunResult_Position | undefined;
   endPosition:
@@ -72,6 +77,7 @@ function createBaseTaskRunResult(): TaskRunResult {
   return {
     detail: "",
     changeHistory: "",
+    changelog: "",
     version: "",
     startPosition: undefined,
     endPosition: undefined,
@@ -87,6 +93,9 @@ export const TaskRunResult: MessageFns<TaskRunResult> = {
     }
     if (message.changeHistory !== "") {
       writer.uint32(18).string(message.changeHistory);
+    }
+    if (message.changelog !== "") {
+      writer.uint32(66).string(message.changelog);
     }
     if (message.version !== "") {
       writer.uint32(26).string(message.version);
@@ -127,6 +136,14 @@ export const TaskRunResult: MessageFns<TaskRunResult> = {
           }
 
           message.changeHistory = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.changelog = reader.string();
           continue;
         }
         case 3: {
@@ -182,6 +199,7 @@ export const TaskRunResult: MessageFns<TaskRunResult> = {
     return {
       detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
       changeHistory: isSet(object.changeHistory) ? globalThis.String(object.changeHistory) : "",
+      changelog: isSet(object.changelog) ? globalThis.String(object.changelog) : "",
       version: isSet(object.version) ? globalThis.String(object.version) : "",
       startPosition: isSet(object.startPosition) ? TaskRunResult_Position.fromJSON(object.startPosition) : undefined,
       endPosition: isSet(object.endPosition) ? TaskRunResult_Position.fromJSON(object.endPosition) : undefined,
@@ -199,6 +217,9 @@ export const TaskRunResult: MessageFns<TaskRunResult> = {
     }
     if (message.changeHistory !== "") {
       obj.changeHistory = message.changeHistory;
+    }
+    if (message.changelog !== "") {
+      obj.changelog = message.changelog;
     }
     if (message.version !== "") {
       obj.version = message.version;
@@ -225,6 +246,7 @@ export const TaskRunResult: MessageFns<TaskRunResult> = {
     const message = createBaseTaskRunResult();
     message.detail = object.detail ?? "";
     message.changeHistory = object.changeHistory ?? "";
+    message.changelog = object.changelog ?? "";
     message.version = object.version ?? "";
     message.startPosition = (object.startPosition !== undefined && object.startPosition !== null)
       ? TaskRunResult_Position.fromPartial(object.startPosition)
