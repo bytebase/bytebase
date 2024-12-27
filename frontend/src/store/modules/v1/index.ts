@@ -18,7 +18,6 @@ export * from "./actuator";
 export * from "./sql";
 export * from "./vcs_provider";
 export * from "./vcs_connector";
-export * from "./changeHistory";
 export * from "./dbSchema";
 export * from "./databaseCatalog";
 export * from "./anomaly";
