@@ -9600,9 +9600,8 @@ components:
                     type: string
                     description: |-
                         The source of origin.
-                         1) change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}.
-                         2) branch: projects/{project}/branches/{branch}.
-                         3) raw SQL if empty.
+                         1) changelog: instances/{instance}/databases/{database}/changelog/{changeHistory}.
+                         2) raw SQL if empty.
                 version:
                     type: string
                     description: The migration version for a change.
