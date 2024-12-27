@@ -2940,6 +2940,7 @@ MaterializedViewMetadata is the metadata for materialized views.
 | comment | [string](#string) |  | The comment is the comment of a materialized view. |
 | dependent_columns | [DependentColumn](#bytebase-v1-DependentColumn) | repeated | The dependent_columns is the list of dependent columns of a materialized view. |
 | triggers | [TriggerMetadata](#bytebase-v1-TriggerMetadata) | repeated | The columns is the ordered list of columns in a table. |
+| indexes | [IndexMetadata](#bytebase-v1-IndexMetadata) | repeated | The indexes is the list of indexes in a table. |
 
 
 
