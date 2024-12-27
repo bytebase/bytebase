@@ -330,7 +330,7 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 		}
 	}
 
-	if common.IsDev() && s.profile.DevelopmentVersioned {
+	if common.IsDev() {
 		doSchedule, err := func() (bool, error) {
 			if task.DatabaseID == nil {
 				return true, nil

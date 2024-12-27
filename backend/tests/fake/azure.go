@@ -314,8 +314,16 @@ func (az *Azure) SendWebhookPush(repositoryID string, payload []byte) error {
 		return errors.Errorf("Azure repository %q does not exist", repositoryID)
 	}
 
+	var event azure.PullRequestEvent
+	if err := json.Unmarshal(payload, &event); err != nil {
+		return errors.Wrapf(err, "failed to unmarshal event")
+	}
+
 	// Trigger all webhooks
 	for _, webhook := range r.webhooks {
+		if event.EventType != azure.PullRequestEventType(webhook.EventType) {
+			continue
+		}
 		if err := func() error {
 			url := webhook.ConsumerInputs.URL
 			req, err := http.NewRequest("POST", url, bytes.NewReader(payload))

@@ -702,7 +702,7 @@ func getOrDefaultSchemaVersion(v string) string {
 	if v != "" {
 		return v
 	}
-	if common.IsDev() && getProfile().DevelopmentVersioned {
+	if common.IsDev() {
 		return ""
 	}
 	return common.DefaultMigrationVersion().Version
