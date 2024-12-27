@@ -5183,7 +5183,8 @@ TaskDatabaseUpdatePayload is the task payload for updating database (DDL &amp; D
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | detail | [string](#string) |  |  |
-| change_history | [string](#string) |  | Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
+| change_history | [string](#string) |  | Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} Deprecated. |
+| changelog | [string](#string) |  | Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
 | version | [string](#string) |  |  |
 | start_position | [TaskRunResult.Position](#bytebase-store-TaskRunResult-Position) |  |  |
 | end_position | [TaskRunResult.Position](#bytebase-store-TaskRunResult-Position) |  |  |
