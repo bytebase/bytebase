@@ -129,7 +129,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
 	}
-	materializedViewMap, err := getMaterializedViews(txn, triggerMap, extensionDepend)
+	materializedViewMap, err := getMaterializedViews(txn, indexMap, triggerMap, extensionDepend)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get materialized views from database %q", driver.databaseName)
 	}
@@ -690,7 +690,7 @@ FROM pg_catalog.pg_matviews
 WHERE schemaname NOT IN (%s)
 ORDER BY schemaname, matviewname;`, pgparser.SystemSchemaWhereClause)
 
-func getMaterializedViews(txn *sql.Tx, triggerMap map[db.TableKey][]*storepb.TriggerMetadata, extensionDepend map[int]bool) (map[string][]*storepb.MaterializedViewMetadata, error) {
+func getMaterializedViews(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMetadata, triggerMap map[db.TableKey][]*storepb.TriggerMetadata, extensionDepend map[int]bool) (map[string][]*storepb.MaterializedViewMetadata, error) {
 	matviewMap := make(map[string][]*storepb.MaterializedViewMetadata)
 
 	rows, err := txn.Query(listMaterializedViewQuery)
@@ -723,7 +723,9 @@ func getMaterializedViews(txn *sql.Tx, triggerMap map[db.TableKey][]*storepb.Tri
 		if comment.Valid {
 			matview.Comment = comment.String
 		}
-		matview.Triggers = triggerMap[db.TableKey{Schema: schemaName, Table: matview.Name}]
+		viewKey := db.TableKey{Schema: schemaName, Table: matview.Name}
+		matview.Indexes = indexMap[viewKey]
+		matview.Triggers = triggerMap[viewKey]
 
 		matviewMap[schemaName] = append(matviewMap[schemaName], matview)
 	}
