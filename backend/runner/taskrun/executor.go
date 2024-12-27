@@ -418,6 +418,7 @@ func postMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInf
 	return true, &storepb.TaskRunResult{
 		Detail:        detail,
 		ChangeHistory: fmt.Sprintf("instances/%s/databases/%s/changeHistories/%s", instance.ResourceID, database.DatabaseName, migrationID),
+		Changelog:     common.FormatChangelog(instance.ResourceID, database.DatabaseName, mc.changelog),
 		Version:       storedVersion,
 	}, nil
 }

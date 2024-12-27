@@ -544,6 +544,11 @@ export interface TaskRun {
    * Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
    */
   changeHistory: string;
+  /**
+   * The resource name of the changelog.
+   * Format: instances/{instance}/databases/{database}/changelogs/{changelog}
+   */
+  changelog: string;
   schemaVersion: string;
   startTime: Timestamp | undefined;
   exportArchiveStatus: TaskRun_ExportArchiveStatus;
@@ -3338,6 +3343,7 @@ function createBaseTaskRun(): TaskRun {
     status: TaskRun_Status.STATUS_UNSPECIFIED,
     detail: "",
     changeHistory: "",
+    changelog: "",
     schemaVersion: "",
     startTime: undefined,
     exportArchiveStatus: TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED,
@@ -3375,6 +3381,9 @@ export const TaskRun: MessageFns<TaskRun> = {
     }
     if (message.changeHistory !== "") {
       writer.uint32(82).string(message.changeHistory);
+    }
+    if (message.changelog !== "") {
+      writer.uint32(162).string(message.changelog);
     }
     if (message.schemaVersion !== "") {
       writer.uint32(90).string(message.schemaVersion);
@@ -3476,6 +3485,14 @@ export const TaskRun: MessageFns<TaskRun> = {
           message.changeHistory = reader.string();
           continue;
         }
+        case 20: {
+          if (tag !== 162) {
+            break;
+          }
+
+          message.changelog = reader.string();
+          continue;
+        }
         case 11: {
           if (tag !== 90) {
             break;
@@ -3544,6 +3561,7 @@ export const TaskRun: MessageFns<TaskRun> = {
       status: isSet(object.status) ? taskRun_StatusFromJSON(object.status) : TaskRun_Status.STATUS_UNSPECIFIED,
       detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
       changeHistory: isSet(object.changeHistory) ? globalThis.String(object.changeHistory) : "",
+      changelog: isSet(object.changelog) ? globalThis.String(object.changelog) : "",
       schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "",
       startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
       exportArchiveStatus: isSet(object.exportArchiveStatus)
@@ -3586,6 +3604,9 @@ export const TaskRun: MessageFns<TaskRun> = {
     if (message.changeHistory !== "") {
       obj.changeHistory = message.changeHistory;
     }
+    if (message.changelog !== "") {
+      obj.changelog = message.changelog;
+    }
     if (message.schemaVersion !== "") {
       obj.schemaVersion = message.schemaVersion;
     }
@@ -3625,6 +3646,7 @@ export const TaskRun: MessageFns<TaskRun> = {
     message.status = object.status ?? TaskRun_Status.STATUS_UNSPECIFIED;
     message.detail = object.detail ?? "";
     message.changeHistory = object.changeHistory ?? "";
+    message.changelog = object.changelog ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
     message.startTime = (object.startTime !== undefined && object.startTime !== null)
       ? Timestamp.fromPartial(object.startTime)
