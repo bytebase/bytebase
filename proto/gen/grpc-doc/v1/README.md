@@ -6696,7 +6696,7 @@ The branch&#39;s `name` field is used to identify the branch to update. Format: 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | sheet | [string](#string) |  | The name of a sheet. |
-| source | [string](#string) |  | The source of origin. 1) change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}. 2) branch: projects/{project}/branches/{branch}. 3) raw SQL if empty. |
+| source | [string](#string) |  | The source of origin. 1) changelog: instances/{instance}/databases/{database}/changelog/{changeHistory}. 2) raw SQL if empty. |
 | version | [string](#string) |  | The migration version for a change. |
 
 
