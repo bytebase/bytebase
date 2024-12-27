@@ -74,6 +74,7 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 			created_ts,
 			deleter_id,
 			deleted_ts,
+			version,
 			payload
 		FROM revision
 		WHERE %s
@@ -106,6 +107,7 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 			&r.CreateTime,
 			&r.DeleterUID,
 			&r.DeleteTime,
+			&r.Version,
 			&p,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")

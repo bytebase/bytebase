@@ -5,10 +5,7 @@ import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types";
 import { type AffectedTable, EmptyAffectedTable } from "@/types";
-import {
-  Changelog_Type,
-  type DatabaseSchema,
-} from "@/types/proto/v1/database_service";
+import { Changelog_Type } from "@/types/proto/v1/database_service";
 import { Changelog } from "@/types/proto/v1/database_service";
 import { databaseV1Url, extractDatabaseResourceName } from "./database";
 
@@ -99,15 +96,12 @@ export const getAffectedTableDisplayName = (affectedTable: AffectedTable) => {
 
 export const mockLatestChangelog = (
   database: ComposedDatabase,
-  schema: DatabaseSchema | undefined = undefined
+  schema: string = ""
 ) => {
   return Changelog.fromPartial({
     name: `${database.name}/changelogs/${UNKNOWN_ID}`,
-    schema: schema?.schema,
-    schemaSize: Long.fromNumber(
-      new TextEncoder().encode(schema?.schema).length
-    ),
-    version: "Latest version",
+    schema: schema,
+    schemaSize: Long.fromNumber(new TextEncoder().encode(schema).length),
   });
 };
 

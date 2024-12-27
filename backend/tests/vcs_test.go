@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/vcs"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/azure"
 	"github.com/bytebase/bytebase/backend/plugin/vcs/bitbucket"
@@ -260,40 +261,76 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 			a.Equal(want2BookSchema, dbMetadata.Schema)
 
-			// Get migration history.
-			resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
-				Parent: database.Name,
-				View:   v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
-			})
-			a.NoError(err)
-			histories := resp.ChangeHistories
-			wantHistories := []*v1pb.ChangeHistory{
-				{
-					Type:       v1pb.ChangeHistory_MIGRATE,
-					Status:     v1pb.ChangeHistory_DONE,
-					Schema:     dumpedSchema2,
-					PrevSchema: dumpedSchema,
-					Version:    "0002",
-				},
-				{
-					Type:       v1pb.ChangeHistory_MIGRATE,
-					Status:     v1pb.ChangeHistory_DONE,
-					Schema:     dumpedSchema,
-					PrevSchema: "",
-					Version:    "0001",
-				},
-			}
-			a.Equal(len(wantHistories), len(histories))
-			for i, history := range histories {
-				got := &v1pb.ChangeHistory{
-					Type:       history.Type,
-					Status:     history.Status,
-					Schema:     history.Schema,
-					PrevSchema: history.PrevSchema,
-					Version:    history.Version,
+			if common.IsDev() {
+				resp, err := ctl.databaseServiceClient.ListChangelogs(ctx, &v1pb.ListChangelogsRequest{
+					Parent: database.Name,
+				})
+				a.NoError(err)
+				changelogs := resp.Changelogs
+				wantChangelogs := []*v1pb.Changelog{
+					{
+						Type:       v1pb.Changelog_MIGRATE,
+						Status:     v1pb.Changelog_DONE,
+						Schema:     dumpedSchema2,
+						PrevSchema: dumpedSchema,
+						Version:    "0002",
+					},
+					{
+						Type:       v1pb.Changelog_MIGRATE,
+						Status:     v1pb.Changelog_DONE,
+						Schema:     dumpedSchema,
+						PrevSchema: "",
+						Version:    "0001",
+					},
 				}
-				want := wantHistories[i]
-				a.Equal(got, want)
+				a.Equal(len(wantChangelogs), len(changelogs))
+				for i, changelog := range changelogs {
+					got := &v1pb.Changelog{
+						Type:       changelog.Type,
+						Status:     changelog.Status,
+						Schema:     changelog.Schema,
+						PrevSchema: changelog.PrevSchema,
+						Version:    changelog.Version,
+					}
+					want := wantChangelogs[i]
+					a.Equal(got, want)
+				}
+			} else {
+				// Get migration history.
+				resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
+					Parent: database.Name,
+					View:   v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
+				})
+				a.NoError(err)
+				histories := resp.ChangeHistories
+				wantHistories := []*v1pb.ChangeHistory{
+					{
+						Type:       v1pb.ChangeHistory_MIGRATE,
+						Status:     v1pb.ChangeHistory_DONE,
+						Schema:     dumpedSchema2,
+						PrevSchema: dumpedSchema,
+						Version:    "0002",
+					},
+					{
+						Type:       v1pb.ChangeHistory_MIGRATE,
+						Status:     v1pb.ChangeHistory_DONE,
+						Schema:     dumpedSchema,
+						PrevSchema: "",
+						Version:    "0001",
+					},
+				}
+				a.Equal(len(wantHistories), len(histories))
+				for i, history := range histories {
+					got := &v1pb.ChangeHistory{
+						Type:       history.Type,
+						Status:     history.Status,
+						Schema:     history.Schema,
+						PrevSchema: history.PrevSchema,
+						Version:    history.Version,
+					}
+					want := wantHistories[i]
+					a.Equal(got, want)
+				}
 			}
 
 			_, err = ctl.vcsConnectorServiceClient.DeleteVCSConnector(ctx, &v1pb.DeleteVCSConnectorRequest{Name: vcsConnector.Name})

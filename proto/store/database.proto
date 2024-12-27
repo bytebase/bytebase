@@ -509,6 +509,9 @@ message MaterializedViewMetadata {
 
   // The columns is the ordered list of columns in a table.
   repeated TriggerMetadata triggers = 5;
+
+  // The indexes is the list of indexes in a table.
+  repeated IndexMetadata indexes = 6;
 }
 
 // FunctionMetadata is the metadata for functions.

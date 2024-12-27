@@ -141,7 +141,9 @@ const selectedEnvironment = computed(() => {
 });
 
 const filteredDatabaseList = computed(() => {
-  let list = databaseList.value;
+  let list = databaseList.value.filter(
+    (db) => db.instanceResource.engine === props.engine
+  );
   if (selectedEnvironment.value !== `${UNKNOWN_ID}`) {
     list = list.filter(
       (db) =>
