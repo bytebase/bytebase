@@ -354,6 +354,12 @@ func writeMaterializedView(out io.Writer, schema string, view *storepb.Materiali
 		return err
 	}
 
+	for _, index := range view.Indexes {
+		if err := writeIndex(out, schema, view.Name, index); err != nil {
+			return err
+		}
+	}
+
 	if len(view.Comment) > 0 {
 		if err := writeMaterializedViewComment(out, schema, view); err != nil {
 			return err
@@ -942,8 +948,14 @@ func writePartitionIndex(out io.Writer, schema string, partition *storepb.TableP
 }
 
 func writeIndex(out io.Writer, schema string, table string, index *storepb.IndexMetadata) error {
-	if _, err := io.WriteString(out, `CREATE INDEX "`); err != nil {
-		return err
+	if index.Unique {
+		if _, err := io.WriteString(out, `CREATE UNIQUE INDEX "`); err != nil {
+			return err
+		}
+	} else {
+		if _, err := io.WriteString(out, `CREATE INDEX "`); err != nil {
+			return err
+		}
 	}
 	if _, err := io.WriteString(out, index.Name); err != nil {
 		return err
