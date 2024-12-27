@@ -82,7 +82,7 @@ const columnList = computed(() => {
     },
     {
       key: "type",
-      title: t("change-history.change-type"),
+      title: t("changelog.change-type"),
       width: "4rem",
       render: (changelog) => {
         return (
