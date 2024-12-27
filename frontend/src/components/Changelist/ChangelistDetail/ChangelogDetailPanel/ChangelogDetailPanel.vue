@@ -4,7 +4,7 @@
       style="width: 75vw; max-width: calc(100vw - 8rem)"
       :title="$t('common.change-history')"
     >
-      <ChangeHistoryDetail v-if="detailBindings" v-bind="detailBindings" />
+      <ChangelogDetail v-if="detailBindings" v-bind="detailBindings" />
     </DrawerContent>
   </Drawer>
 </template>
@@ -12,13 +12,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { useChangeHistoryStore } from "@/store";
-import { extractChangeHistoryUID, extractDatabaseResourceName } from "@/utils";
-import ChangeHistoryDetail from "@/views/DatabaseDetail/ChangeHistoryDetail.vue";
+import { useChangelogStore } from "@/store";
+import { extractDatabaseResourceName } from "@/utils";
+import { extractChangelogUID } from "@/utils/v1/changelog";
+import ChangelogDetail from "@/views/DatabaseDetail/ChangelogDetail.vue";
 import { provideChangelistDetailContext } from "../context";
 
 const props = defineProps<{
-  changeHistoryName?: string;
+  changelogName?: string;
 }>();
 
 defineEmits<{
@@ -27,30 +28,30 @@ defineEmits<{
 
 const { project } = provideChangelistDetailContext();
 
-const changeHistory = computed(() => {
-  const { changeHistoryName } = props;
-  if (!changeHistoryName) {
+const changelog = computed(() => {
+  const { changelogName } = props;
+  if (!changelogName) {
     return undefined;
   }
-  return useChangeHistoryStore().getChangeHistoryByName(changeHistoryName);
+  return useChangelogStore().getChangelogByName(changelogName);
 });
 
 const detailBindings = computed(() => {
-  if (!changeHistory.value) {
+  if (!changelog.value) {
     return undefined;
   }
   const { instance, database } = extractDatabaseResourceName(
-    changeHistory.value.name
+    changelog.value.name
   );
   return {
     project: project.value.name,
     instance,
     database,
-    changeHistoryId: extractChangeHistoryUID(changeHistory.value.name),
+    changelogId: extractChangelogUID(changelog.value.name),
   };
 });
 
 const show = computed(() => {
-  return changeHistory.value !== undefined;
+  return changelog.value !== undefined;
 });
 </script>

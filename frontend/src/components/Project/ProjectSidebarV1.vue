@@ -26,7 +26,7 @@ const props = defineProps<{
   projectId?: string;
   instanceId?: string;
   databaseName?: string;
-  changeHistoryId?: string;
+  changelogId?: string;
   issueSlug?: string;
 }>();
 
@@ -39,7 +39,7 @@ const params = computed(() => {
     projectId: props.projectId,
     instanceId: props.instanceId,
     databaseName: props.databaseName,
-    changeHistoryId: props.changeHistoryId,
+    changelogId: props.changelogId,
     issueSlug: props.issueSlug,
   };
 });

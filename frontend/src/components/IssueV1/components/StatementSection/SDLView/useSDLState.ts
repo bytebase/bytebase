@@ -2,8 +2,8 @@ import Emittery from "emittery";
 import { computed, reactive, watch } from "vue";
 import { sqlServiceClient } from "@/grpcweb";
 import { useSilentRequest } from "@/plugins/silent-request";
-import { useChangeHistoryStore, useDatabaseV1Store } from "@/store";
-import { ChangeHistoryView } from "@/types/proto/v1/database_service";
+import { useChangelogStore, useDatabaseV1Store } from "@/store";
+import { ChangelogView } from "@/types/proto/v1/database_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import { TaskRun_Status, Task_Status } from "@/types/proto/v1/rollout_service";
 import { extractTaskUID } from "@/utils";
@@ -44,7 +44,7 @@ export const useSDLState = () => {
 
   const map = reactive(new Map<string, SDLState>());
 
-  const findLatestChangeHistoryName = (task: Task) => {
+  const findLatestChangelogName = (task: Task) => {
     if (task.status !== Task_Status.DONE) return undefined;
     const taskRunList = issue.value.rolloutTaskRunList.filter((taskRun) => {
       return extractTaskUID(taskRun.name) === extractTaskUID(task.name);
@@ -52,15 +52,15 @@ export const useSDLState = () => {
     for (let i = taskRunList.length - 1; i >= 0; i--) {
       const taskRun = taskRunList[i];
       if (taskRun.status === TaskRun_Status.DONE) {
-        return taskRun.changeHistory;
+        return taskRun.changelog;
       }
     }
     return undefined;
   };
 
-  const changeHistoryName = computed(() => {
+  const changelogName = computed(() => {
     const task = selectedTask.value;
-    return findLatestChangeHistoryName(task);
+    return findLatestChangelogName(task);
   });
 
   const fetchOngoingSDLDetail = async (
@@ -111,42 +111,37 @@ export const useSDLState = () => {
     };
   };
 
-  const fetchSDLDetailFromChangeHistory = async (
+  const fetchSDLDetailFromChangelog = async (
     task: Task,
-    changeHistoryName: string | undefined
+    changelogName: string | undefined
   ): Promise<SDLDetail | undefined> => {
-    if (!changeHistoryName) {
+    if (!changelogName) {
       return undefined;
     }
-    const history = await useChangeHistoryStore().fetchChangeHistory({
-      name: changeHistoryName,
+    const changelog = await useChangelogStore().fetchChangelog({
+      name: changelogName,
       sdlFormat: true,
-      view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
+      view: ChangelogView.CHANGELOG_VIEW_FULL,
     });
-    // The latestChangeHistoryName might change during fetching the
-    // ChangeHistory.
+    // The latestChangelogName might change during fetching the
+    // Changelog.
     // Should give up the result.
-    const latestChangeHistoryName = findLatestChangeHistoryName(task);
-    if (history.name !== latestChangeHistoryName) {
+    const latestChangelogName = findLatestChangelogName(task);
+    if (changelog.name !== latestChangelogName) {
       throw new Error();
     }
     return {
       error: "",
-      previousSDL: history.prevSchema,
-      prettyExpectedSDL: history.schema,
-      expectedSDL: history.schema,
-      diffDDL: history.statement,
+      previousSDL: changelog.prevSchema,
+      prettyExpectedSDL: changelog.schema,
+      expectedSDL: changelog.schema,
+      diffDDL: changelog.statement,
     };
   };
 
   watch(
-    [
-      () => selectedTask.value.name,
-      sheetStatement,
-      sheetReady,
-      changeHistoryName,
-    ],
-    async ([taskName, statement, sheetReady, changeHistoryName]) => {
+    [() => selectedTask.value.name, sheetStatement, sheetReady, changelogName],
+    async ([taskName, statement, sheetReady, changelogName]) => {
       if (!sheetReady) return;
 
       const task = selectedTask.value;
@@ -161,10 +156,7 @@ export const useSDLState = () => {
       };
       try {
         if (task.status === Task_Status.DONE) {
-          const detail = await fetchSDLDetailFromChangeHistory(
-            task,
-            changeHistoryName
-          );
+          const detail = await fetchSDLDetailFromChangelog(task, changelogName);
           finish(detail);
         } else {
           const detail = await fetchOngoingSDLDetail(task, statement);
