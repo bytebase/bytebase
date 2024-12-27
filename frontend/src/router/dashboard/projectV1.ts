@@ -311,7 +311,8 @@ const projectV1Routes: RouteRecordRaw[] = [
             "bb.databases.sync",
           ],
         },
-        component: () => import("@/views/project/ProjectSyncDatabasePanel.vue"),
+        component: () =>
+          import("@/views/project/ProjectSyncDatabasePanelV1.vue"),
         props: true,
       },
       {
@@ -508,7 +509,6 @@ const projectV1Routes: RouteRecordRaw[] = [
             path: "changelogs/:changelogId",
             name: PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
             meta: {
-              overrideTitle: true,
               requiredProjectPermissionList: () => [
                 "bb.projects.get",
                 "bb.databases.get",
