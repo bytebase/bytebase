@@ -3,7 +3,7 @@
     <template v-if="type === 'CHANGELOG'">
       <div class="flex items-center gap-x-1">
         <HistoryIcon :size="16" />
-        <span>{{ $t("common.change-history") }}</span>
+        <span>{{ $t("common.changelog") }}</span>
         <span v-if="changelog" class="textinfolabel">
           {{ changelog.version }}
         </span>

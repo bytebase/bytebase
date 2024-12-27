@@ -38,7 +38,7 @@
           :loading="isPreparingSchemaVersionOptions"
           :value="state.changelogName"
           :options="schemaVersionOptions"
-          :placeholder="$t('change-history.select')"
+          :placeholder="$t('changelog.select')"
           :disabled="schemaVersionOptions.length === 0"
           :render-label="renderSchemaVersionLabel"
           :fallback-option="
@@ -182,7 +182,7 @@ const schemaVersionOptions = computed(() => {
   const options: SelectOption[] = [
     {
       value: "PLACEHOLDER",
-      label: t("change-history.select"),
+      label: t("changelog.select"),
       disabled: true,
       style: "cursor: default",
     },
@@ -258,7 +258,7 @@ const fallbackSchemaVersionOption = (value: string): SelectOption => {
   return {
     value: "PLACEHOLDER",
     disabled: true,
-    label: t("change-history.select"),
+    label: t("changelog.select"),
     style: "cursor: default",
   };
 };

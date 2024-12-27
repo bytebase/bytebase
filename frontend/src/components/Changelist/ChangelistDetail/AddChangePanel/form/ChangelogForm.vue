@@ -7,7 +7,7 @@
       >
         {{
           $t(
-            "changelist.add-change.change-history.select-at-least-one-history-below"
+            "changelist.add-change.changelog.select-at-least-one-changelog-below"
           )
         }}
       </div>

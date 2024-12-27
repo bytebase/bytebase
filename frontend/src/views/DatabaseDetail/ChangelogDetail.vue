@@ -9,7 +9,7 @@
     <NBreadcrumbItem
       @click="router.push(`${databaseV1Url(database)}#changelog`)"
     >
-      {{ $t("change-history.self") }}
+      {{ $t("changelog.self") }}
     </NBreadcrumbItem>
     <NBreadcrumbItem :clickable="false">
       {{ changelogId }}

@@ -112,6 +112,6 @@ const databaseDetailUrl = computed((): string => {
 });
 
 const schemaVersionUrl = computed((): string => {
-  return `${databaseV1Url(props.database)}#change-history`;
+  return `${databaseV1Url(props.database)}#changelog`;
 });
 </script>

@@ -5,7 +5,7 @@
     filterable
     multiple
     tag
-    :placeholder="$t('change-history.select-affection-tables')"
+    :placeholder="$t('changelog.select-affection-tables')"
     :render-label="renderLabel"
     @update:value="updateSelectedKey"
   />
