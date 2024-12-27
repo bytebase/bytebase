@@ -233,6 +233,13 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 					})
 			}
 
+			for _, index := range matview.Indexes {
+				if index == nil {
+					continue
+				}
+				v1Matview.Indexes = append(v1Matview.Indexes, convertStoreIndexMetadata(index))
+			}
+
 			for _, trigger := range matview.Triggers {
 				if trigger == nil {
 					continue
@@ -642,6 +649,13 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 						Table:  dependentColumn.Table,
 						Column: dependentColumn.Column,
 					})
+			}
+
+			for _, index := range materializedView.Indexes {
+				if index == nil {
+					continue
+				}
+				storeMaterializedView.Indexes = append(storeMaterializedView.Indexes, convertV1IndexMetadata(index))
 			}
 
 			for _, trigger := range materializedView.Triggers {
