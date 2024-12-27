@@ -9,10 +9,7 @@
           />
         </div>
         <div class="w-40">
-          <ChangeTypeSelect
-            v-model:change-type="state.selectedChangeType"
-            :changelogs="changelogs"
-          />
+          <ChangeTypeSelect v-model:change-type="state.selectedChangeType" />
         </div>
       </div>
       <div class="flex flex-row justify-end items-center grow space-x-2">
@@ -122,7 +119,7 @@
 import dayjs from "dayjs";
 import saveAs from "file-saver";
 import JSZip from "jszip";
-import { computed, onBeforeMount, reactive } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAlert, BBSpin } from "@/bbkit";
@@ -138,8 +135,7 @@ import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
 } from "@/router/dashboard/projectV1";
-import { useChangelogStore, useDBSchemaV1Store } from "@/store";
-import { DEFAULT_PAGE_SIZE } from "@/store/modules/common";
+import { useChangelogStore } from "@/store";
 import type { ComposedDatabase, Table } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import {
@@ -177,32 +173,12 @@ const state = reactive<LocalState>({
 
 const { allowAlterSchema } = useDatabaseDetailContext();
 
-const prepareChangelogList = async () => {
-  state.loading = true;
-  await changelogStore.fetchChangelogList({
-    parent: props.database.name,
-    pageSize: DEFAULT_PAGE_SIZE,
-  });
-  // prepare database metadata for getting affected tables.
-  await useDBSchemaV1Store().getOrFetchDatabaseMetadata({
-    database: props.database.name,
-    skipCache: true, // Skip cache to get the latest metadata.
-  });
-  state.loading = false;
-};
-
-onBeforeMount(prepareChangelogList);
-
 const allowExportChangelog = computed(() => {
   return state.selectedChangelogNames.length > 0;
 });
 
 const allowEstablishBaseline = computed(() => {
   return allowAlterSchema.value;
-});
-
-const changelogs = computed(() => {
-  return changelogStore.changelogListByDatabase(props.database.name);
 });
 
 const selectedChangelogForRollback = computed(() => {
@@ -223,7 +199,7 @@ const rollback = () => {
       projectId: extractProjectResourceName(props.database.project),
     },
     query: {
-      version: selectedChangelogForRollback.value.name,
+      changelog: selectedChangelogForRollback.value.name,
       target: props.database.name,
     },
   });

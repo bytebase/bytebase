@@ -15,7 +15,7 @@
           v-if="shouldShowDiff"
           :title="previewSchemaChangeMessage"
           :original="targetDatabaseSchema"
-          :modified="displayOnlySourceDatabaseSchema"
+          :modified="sourceDatabaseSchema"
           :show-fullscreen="true"
         />
         <div
@@ -69,9 +69,6 @@ defineProps<{
   engine: Engine;
   targetDatabaseSchema: string;
   sourceDatabaseSchema: string;
-  // The source database schema that is displayed in the diff editor.
-  // It's different from `sourceDatabaseSchema` when for Oracle.
-  displayOnlySourceDatabaseSchema: string;
   shouldShowDiff: boolean;
   previewSchemaChangeMessage: string;
 }>();

@@ -126,7 +126,7 @@ import { useRouter } from "vue-router";
 import { BBButtonConfirm } from "@/bbkit";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { validateDatabaseMetadata } from "@/components/SchemaEditorLite";
-import TargetDatabasesSelectPanel from "@/components/SyncDatabaseSchema/TargetDatabasesSelectPanel.vue";
+import TargetDatabasesSelectPanel from "@/components/SyncDatabaseSchemaV1/TargetDatabasesSelectPanel.vue";
 import {
   PROJECT_V1_ROUTE_BRANCHES,
   PROJECT_V1_ROUTE_BRANCH_DETAIL,
