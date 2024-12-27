@@ -14,7 +14,7 @@
     "custom": "自定义",
     "im": "IM",
     "overview": "概览",
-    "change-history": "变更历史",
+    "changelog": "变更历史",
     "webhook": "Webhook",
     "webhooks": "Webhook",
     "key": "键值",
@@ -350,7 +350,7 @@
     "started": "开始于",
     "ended": "结束于",
     "view-change": "查看变更",
-    "view-change-history": "查看变更历史",
+    "view-changelog": "查看变更历史",
     "status": {
       "running": "运行中",
       "failed": "失败",
@@ -1230,7 +1230,6 @@
     },
     "sql-hint": {
       "change-will-apply-to-all-tasks-in-tenant-mode": "改动将会应用到其他所有任务",
-      "dont-apply-to-database-in-baseline-migration": "建立基线只会记录当前的 Schema 到变更历史里，并不会把 SQL 应用到数据库",
       "snowflake": "使用 <<schema>>.<<table>> 来标注一个 SnowFlake 的表"
     },
     "will-rollback": "当前任务将会回滚 {link}",
@@ -1775,7 +1774,7 @@
       "mark-env-as-production": "标记为生产环境"
     }
   },
-  "change-history": {
+  "changelog": {
     "self": "变更历史",
     "select": "Schema 版本是在每次通过 Bytebase 执行 Schema 变更后被记录下来的",
     "workflow": "工作流",
@@ -1786,23 +1785,17 @@
     "schema-drift-detected": "上次变更后的 Schema 与本次变更前不一致。",
     "view-drift": "查看偏差",
     "before-left-schema-choice": "比较",
-    "left-schema-choice-prev-history-schema": "上次变更后",
-    "left-schema-choice-current-history-schema-prev": "本次变更前",
     "after-left-schema-choice": "和本次变更后的 Schema",
     "show-diff": "显示差异",
     "left-vs-right": "之前{prevLink} vs 当前版本",
     "schema-snapshot-after-change": "完成这次变更后的 schema 快照",
     "current-schema-empty": "当前 schema 为空",
-    "list-limit": "对于有变更历史的数据库，我们会在下面最多列出5条记录。您可以点击数据库名称去进一步查看全部的记录。",
-    "no-history-in-project": "这个项目下没有发现任何数据库有变更历史。",
-    "recording-info": "每当数据库 schema 变更时，我们便会记录下变更历史。",
     "establish-baseline": "建立新的基线",
-    "refreshing-history": "刷新历史中 ...",
+    "refreshing": "刷新历史中...",
     "config-instance": "配置实例",
     "establish-baseline-description": "Bytebase 将用当前的 schema 作为新的基线。这将会把数据库当前的 schema 状态同步到 Bytebase 记录的 schema 状态，并且解决 schema 偏差的问题。在进行此操作前，您应该检查当前的基线确实反映了期望的状态。",
     "establish-database-baseline": "建立「{name}」基线",
     "instance-missing-change-schema": "实例「{name}」缺失用于记录变更历史的 schema。",
-    "instance-bad-connection": "无法连接实例「{name}」以获取变更历史。",
     "contact-dba": "请联系您的 DBA 进行配置。",
     "export": "导出变更历史",
     "need-to-select-first": "需要先选择变更历史",
@@ -1979,7 +1972,7 @@
     },
     "create-target-database-or-schema-for-backup": "请先创建备份的目标数据库或 Schema",
     "revision": {
-      "self": "修改",
+      "self": "版本",
       "applied-at": "应用时间",
       "filename": "文件名",
       "delete-confirm-dialog": {
@@ -3759,8 +3752,8 @@
     "apply-to-database": "应用到数据库",
     "add-change": {
       "self": "添加变更",
-      "change-history": {
-        "select-at-least-one-history-below": "请在下方选择至少一条记录"
+      "changelog": {
+        "select-at-least-one-changelog-below": "请在下方选择至少一条记录"
       },
       "branch": {
         "select-at-least-one-branch-below": "请在下方选择至少一条记录"
@@ -3769,9 +3762,6 @@
     "change-source": {
       "self": "变更来源",
       "raw-sql": "SQL 语句",
-      "change-history": {
-        "tables": "表"
-      },
       "source": "来源",
       "filter": "按工单或版本过滤"
     },
@@ -3786,8 +3776,8 @@
     "change-type": "更改类型"
   },
   "release": {
-    "self": "发布",
-    "releases": "发布",
+    "self": "发布包",
+    "releases": "发布包",
     "files": "文件",
     "create": "创建发布",
     "select": "选择发布",

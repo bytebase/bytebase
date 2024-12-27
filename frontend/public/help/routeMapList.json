@@ -148,10 +148,6 @@
     "helpName": ""
   },
   {
-    "routeName": "workspace.instance.change-history.detail",
-    "helpName": ""
-  },
-  {
     "routeName": "workspace.instance.detail",
     "helpName": ""
   },

@@ -71,7 +71,7 @@
         "batch-change-basic-tooltip": "多环境变更",
         "batch-change-advanced": "高级",
         "batch-change-advanced-tooltip": "多环境 + 多地域 / 多租户变更",
-        "change-history": "变更历史",
+        "changelog": "变更历史",
         "rollout-policy": "发布策略",
         "rollout-policy-basic": "基础",
         "rollout-policy-basic-tooltip": "自动发布",
