@@ -38,18 +38,21 @@ export const useChangelogStore = defineStore("changelog", () => {
   const fetchChangelogList = async (params: Partial<ListChangelogsRequest>) => {
     const { parent } = params;
     if (!parent) throw new Error('"parent" field is required');
-    const { changelogs } = await databaseServiceClient.listChangelogs(params);
+    const { changelogs, nextPageToken } =
+      await databaseServiceClient.listChangelogs(params);
     await upsertChangelogsMap(parent, changelogs);
-    return changelogs;
+    return { changelogs, nextPageToken };
   };
   const getOrFetchChangelogListOfDatabase = async (databaseName: string) => {
     if (changelogsMapByDatabase.has(databaseName)) {
       return changelogsMapByDatabase.get(databaseName) ?? [];
     }
-    return fetchChangelogList({
+    // Fetch all changelogs of the database with max DEFAULT_PAGE_SIZE.
+    const { changelogs } = await fetchChangelogList({
       parent: databaseName,
       pageSize: DEFAULT_PAGE_SIZE,
     });
+    return changelogs;
   };
   const changelogListByDatabase = (name: string) => {
     return changelogsMapByDatabase.get(name) ?? [];
@@ -64,7 +67,8 @@ export const useChangelogStore = defineStore("changelog", () => {
   };
   const getOrFetchChangelogByName = async (
     name: string,
-    view: ChangelogView
+    view: ChangelogView = ChangelogView.CHANGELOG_VIEW_BASIC,
+    concise = false
   ) => {
     const uid = extractChangelogUID(name);
     if (!uid || uid === String(UNKNOWN_ID)) {
@@ -78,7 +82,7 @@ export const useChangelogStore = defineStore("changelog", () => {
     if (request) {
       return request;
     }
-    const promise = fetchChangelog({ name, view });
+    const promise = fetchChangelog({ name, view, concise });
     cache.setRequest([name, view], promise);
     return promise;
   };

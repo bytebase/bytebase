@@ -6,7 +6,15 @@
         url="https://www.bytebase.com/docs/change-database/synchronize-schema?source=console"
       />
     </p>
+
+    <div
+      v-if="state.isLoading"
+      class="flex items-center justify-center py-2 text-gray-400 text-sm"
+    >
+      <BBSpin />
+    </div>
     <StepTab
+      v-else
       class="pt-4 flex-1 overflow-hidden flex flex-col"
       :step-list="stepTabList"
       :current-index="state.currentStep"
@@ -14,7 +22,6 @@
       :allow-next="allowNext"
       :finish-title="$t('database.sync-schema.preview-issue')"
       pane-class="flex-1 overflow-y-auto"
-      :next-button-props="nextButtonProps"
       @cancel="cancelSetup"
       @update:current-index="tryChangeStep"
       @finish="tryFinishSetup"
@@ -23,7 +30,7 @@
         <div class="mb-4">
           <NRadioGroup v-model:value="state.sourceSchemaType" class="space-x-4">
             <NRadio
-              :value="'SCHEMA_HISTORY_VERSION'"
+              :value="SourceSchemaType.SCHEMA_HISTORY_VERSION"
               :label="$t('database.sync-schema.schema-history-version')"
             />
             <NRadio
@@ -33,29 +40,28 @@
           </NRadioGroup>
         </div>
         <DatabaseSchemaSelector
-          v-if="state.sourceSchemaType === 'SCHEMA_HISTORY_VERSION'"
-          :select-state="changeHistorySourceSchemaState"
-          :disable-project-select="!!project"
+          v-if="
+            state.sourceSchemaType === SourceSchemaType.SCHEMA_HISTORY_VERSION
+          "
+          :project="project"
+          :source-schema="changelogSourceSchemaState"
           @update="handleChangeHistorySchemaVersionChanges"
         />
         <RawSQLEditor
-          v-if="state.sourceSchemaType === 'RAW_SQL'"
-          :project-name="rawSQLState.projectName"
+          v-if="state.sourceSchemaType === SourceSchemaType.RAW_SQL"
+          :project="project"
           :engine="rawSQLState.engine"
           :statement="rawSQLState.statement"
-          :sheet-id="rawSQLState.sheetId"
-          :disable-project-select="!!project"
-          @update="handleRawSQLStateChange"
+          @update="(state) => Object.assign(rawSQLState, state)"
         />
       </template>
       <template #1>
         <SelectTargetDatabasesView
           ref="targetDatabaseViewRef"
-          :project-name="projectName"
-          :source-schema-type="state.sourceSchemaType"
-          :database-source-schema="changeHistorySourceSchemaState as any"
-          :raw-sql-state="rawSQLState"
-          :target-database-name-list="targetDatabaseList"
+          :project="project"
+          :source-schema-string="sourceSchemaString"
+          :source-engine="sourceEngine"
+          :source-changelog-bane="changelogSourceSchemaState.changelogName"
         />
       </template>
     </StepTab>
@@ -63,90 +69,137 @@
 </template>
 
 <script lang="ts" setup>
+import { asyncComputed } from "@vueuse/core";
 import { isUndefined } from "lodash-es";
-import type { ButtonProps } from "naive-ui";
 import { NRadioGroup, NRadio, useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, reactive, ref, watchEffect } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
+import { BBSpin } from "@/bbkit";
 import { StepTab } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
-import { useProjectV1Store, useStorageStore } from "@/store";
-import type { ComposedProject } from "@/types";
 import {
-  isValidDatabaseName,
-  isValidEnvironmentName,
-  isValidProjectName,
-} from "@/types";
+  useChangelogStore,
+  useDatabaseV1Store,
+  useStorageStore,
+} from "@/store";
+import type { ComposedProject } from "@/types";
+import { isValidDatabaseName, isValidEnvironmentName } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import { ChangelogView } from "@/types/proto/v1/database_service";
 import { extractProjectResourceName, generateIssueTitle } from "@/utils";
+import {
+  extractDatabaseNameAndChangelogUID,
+  isValidChangelogName,
+} from "@/utils/v1/changelog";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import DatabaseSchemaSelector from "./DatabaseSchemaSelector.vue";
 import RawSQLEditor from "./RawSQLEditor.vue";
 import SelectTargetDatabasesView from "./SelectTargetDatabasesView.vue";
-import type {
-  ChangeHistorySourceSchema,
-  RawSQLState,
+import {
+  type ChangelogSourceSchema,
+  type RawSQLState,
   SourceSchemaType,
 } from "./types";
 
-const SELECT_SOURCE_SCHEMA = 0;
-const SELECT_TARGET_DATABASE_LIST = 1;
-
-type Step = typeof SELECT_SOURCE_SCHEMA | typeof SELECT_TARGET_DATABASE_LIST;
+enum Step {
+  SELECT_SOURCE_SCHEMA,
+  SELECT_TARGET_DATABASE_LIST,
+}
 
 interface LocalState {
+  isLoading: boolean;
   sourceSchemaType: SourceSchemaType;
   currentStep: Step;
 }
 
 const props = defineProps<{
   project: ComposedProject;
-  sourceSchemaType?: SourceSchemaType;
-  source?: ChangeHistorySourceSchema;
-  targetDatabaseList?: string[];
 }>();
 
 const { t } = useI18n();
+const route = useRoute();
 const router = useRouter();
 const dialog = useDialog();
-const projectStore = useProjectV1Store();
-const targetDatabaseViewRef =
-  ref<InstanceType<typeof SelectTargetDatabasesView>>();
+const changelogStore = useChangelogStore();
+const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
-  sourceSchemaType: props.sourceSchemaType ?? "SCHEMA_HISTORY_VERSION",
-  currentStep: SELECT_SOURCE_SCHEMA,
+  isLoading: true,
+  sourceSchemaType: SourceSchemaType.SCHEMA_HISTORY_VERSION,
+  currentStep: Step.SELECT_SOURCE_SCHEMA,
 });
-const changeHistorySourceSchemaState = reactive<ChangeHistorySourceSchema>({
-  projectName: props.project.name,
-});
+const changelogSourceSchemaState = reactive<ChangelogSourceSchema>({});
 const rawSQLState = reactive<RawSQLState>({
-  projectName: props.project.name,
   engine: Engine.MYSQL,
   statement: "",
 });
+const targetDatabaseViewRef =
+  ref<InstanceType<typeof SelectTargetDatabasesView>>();
 
-const projectName = computed(() => {
-  return props.project.name;
+const sourceSchemaString = asyncComputed(async () => {
+  if (state.sourceSchemaType === SourceSchemaType.SCHEMA_HISTORY_VERSION) {
+    if (isValidChangelogName(changelogSourceSchemaState.changelogName)) {
+      const changelog = changelogStore.getChangelogByName(
+        changelogSourceSchemaState?.changelogName || ""
+      );
+      if (changelog) {
+        return changelog.schema;
+      }
+      console.error("Changelog not found");
+      return "";
+    } else if (isValidDatabaseName(changelogSourceSchemaState.databaseName)) {
+      const databaseSchema = await databaseStore.fetchDatabaseSchema(
+        `${changelogSourceSchemaState.databaseName}/schema`
+      );
+      return databaseSchema.schema;
+    }
+    // Fallback to empty string if no valid source schema.
+    return "";
+  } else {
+    return rawSQLState.statement;
+  }
+}, "");
+
+const sourceEngine = computed(() => {
+  if (state.sourceSchemaType === SourceSchemaType.SCHEMA_HISTORY_VERSION) {
+    if (!changelogSourceSchemaState.databaseName) {
+      return Engine.ENGINE_UNSPECIFIED;
+    }
+    const database = databaseStore.getDatabaseByName(
+      changelogSourceSchemaState.databaseName
+    );
+    return database.instanceResource.engine;
+  } else {
+    return rawSQLState.engine;
+  }
 });
 
 const handleChangeHistorySchemaVersionChanges = (
-  schemaVersion: ChangeHistorySourceSchema
+  schemaVersion: ChangelogSourceSchema
 ) => {
-  Object.assign(changeHistorySourceSchemaState, schemaVersion);
+  Object.assign(changelogSourceSchemaState, schemaVersion);
 };
 
-const autoNext = ref<boolean>(true);
-watchEffect(() => {
-  if (props.source) {
-    handleChangeHistorySchemaVersionChanges(props.source);
-    if (autoNext.value) {
-      state.currentStep = SELECT_TARGET_DATABASE_LIST;
-      autoNext.value = false;
-    }
+onMounted(async () => {
+  const changelogName = route.query.changelog as string;
+  if (isValidChangelogName(changelogName)) {
+    // Prepare source schema from the selected changelog.
+    await changelogStore.getOrFetchChangelogByName(
+      changelogName,
+      ChangelogView.CHANGELOG_VIEW_FULL
+    );
+    const { databaseName } = extractDatabaseNameAndChangelogUID(changelogName);
+    const database = await databaseStore.getOrFetchDatabaseByName(databaseName);
+    handleChangeHistorySchemaVersionChanges({
+      environmentName: database.effectiveEnvironment,
+      databaseName: databaseName,
+      changelogName: changelogName,
+    });
+    state.currentStep = Step.SELECT_TARGET_DATABASE_LIST;
   }
+  state.isLoading = false;
 });
 
 const stepTabList = computed(() => {
@@ -157,21 +210,15 @@ const stepTabList = computed(() => {
 });
 
 const allowNext = computed(() => {
-  if (state.currentStep === SELECT_SOURCE_SCHEMA) {
-    if (state.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
+  if (state.currentStep === Step.SELECT_SOURCE_SCHEMA) {
+    if (state.sourceSchemaType === SourceSchemaType.SCHEMA_HISTORY_VERSION) {
       return (
-        !changeHistorySourceSchemaState.isFetching &&
-        isValidEnvironmentName(
-          changeHistorySourceSchemaState.environmentName
-        ) &&
-        isValidDatabaseName(changeHistorySourceSchemaState.databaseName) &&
-        !isUndefined(changeHistorySourceSchemaState.changeHistory)
+        isValidEnvironmentName(changelogSourceSchemaState.environmentName) &&
+        isValidDatabaseName(changelogSourceSchemaState.databaseName) &&
+        !isUndefined(changelogSourceSchemaState.changelogName)
       );
     } else {
-      return (
-        isValidProjectName(rawSQLState.projectName) &&
-        (rawSQLState.statement !== "" || !isUndefined(rawSQLState.sheetId))
-      );
+      return rawSQLState.statement !== "";
     }
   } else {
     if (!targetDatabaseViewRef.value) {
@@ -180,7 +227,7 @@ const allowNext = computed(() => {
     const targetDatabaseList = targetDatabaseViewRef.value?.targetDatabaseList;
     const targetDatabaseDiffList = targetDatabaseList
       .map((db) => {
-        const diff = targetDatabaseViewRef.value!.databaseDiffCache[db.name];
+        const diff = targetDatabaseViewRef.value!.schemaDiffCache[db.name];
         return {
           name: db.name,
           diff: diff?.edited || "",
@@ -191,25 +238,11 @@ const allowNext = computed(() => {
   }
 });
 
-const nextButtonProps = computed((): ButtonProps | undefined => {
-  if (state.currentStep === SELECT_SOURCE_SCHEMA) {
-    if (state.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
-      if (changeHistorySourceSchemaState.isFetching) {
-        return {
-          loading: true,
-        };
-      }
-    }
-  }
-  return undefined;
-});
-
-const handleRawSQLStateChange = (state: RawSQLState) => {
-  Object.assign(rawSQLState, state);
-};
-
 const tryChangeStep = async (nextStepIndex: number) => {
-  if (state.currentStep === 1 && nextStepIndex === 0) {
+  if (
+    state.currentStep === Step.SELECT_TARGET_DATABASE_LIST &&
+    nextStepIndex === Step.SELECT_SOURCE_SCHEMA
+  ) {
     const targetDatabaseList =
       targetDatabaseViewRef.value?.targetDatabaseList || [];
     if (targetDatabaseList.length > 0) {
@@ -230,6 +263,17 @@ const tryChangeStep = async (nextStepIndex: number) => {
       });
       return;
     }
+  } else if (
+    state.currentStep === Step.SELECT_SOURCE_SCHEMA &&
+    nextStepIndex === Step.SELECT_TARGET_DATABASE_LIST
+  ) {
+    // Prepare source schema from the selected changelog.
+    if (changelogSourceSchemaState?.changelogName) {
+      await changelogStore.getOrFetchChangelogByName(
+        changelogSourceSchemaState.changelogName,
+        ChangelogView.CHANGELOG_VIEW_FULL
+      );
+    }
   }
   state.currentStep = nextStepIndex as Step;
 };
@@ -240,8 +284,6 @@ const tryFinishSetup = async () => {
   }
 
   const targetDatabaseList = targetDatabaseViewRef.value.targetDatabaseList;
-  const project = await projectStore.getOrFetchProjectByName(projectName.value);
-
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
     mode: "normal",
@@ -249,7 +291,7 @@ const tryFinishSetup = async () => {
   };
   const sqlMap: Record<string, string> = {};
   targetDatabaseList.forEach((db) => {
-    const diff = targetDatabaseViewRef.value!.databaseDiffCache[db.name];
+    const diff = targetDatabaseViewRef.value!.schemaDiffCache[db.name];
     // Only allow edited database to be included in the issue.
     if (diff.edited) {
       sqlMap[db.name] = diff.edited;
@@ -267,7 +309,7 @@ const tryFinishSetup = async () => {
   const routeInfo = {
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      projectId: extractProjectResourceName(project.name),
+      projectId: extractProjectResourceName(props.project.name),
       issueSlug: "create",
     },
     query,
