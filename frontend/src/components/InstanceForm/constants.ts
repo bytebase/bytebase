@@ -89,6 +89,7 @@ export const EngineIconPath: Record<string, string> = {
     .href,
   [Engine.COCKROACHDB]: new URL("@/assets/db-cockroachdb.png", import.meta.url)
     .href,
+  [Engine.COSMOSDB]: new URL("@/assets/db-cosmosdb.svg", import.meta.url).href,
 };
 
 export const MongoDBConnectionStringSchemaList = [

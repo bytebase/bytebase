@@ -15,6 +15,7 @@ import {
   type DataSource,
 } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { isDev } from "../util";
 
 export function instanceV1Name(instance: Instance | InstanceResource) {
   const store = useSubscriptionV1Store();
@@ -125,6 +126,9 @@ export const supportedEngineV1List = () => {
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);
     engines.push(Engine.DORIS);
+  }
+  if (isDev()) {
+    engines.push(Engine.COSMOSDB);
   }
   return engines;
 };
@@ -344,6 +348,8 @@ export const engineNameV1 = (type: Engine): string => {
       return "DynamoDB";
     case Engine.DATABRICKS:
       return "Databricks";
+    case Engine.COSMOSDB:
+      return "CosmosDB";
   }
   return "";
 };

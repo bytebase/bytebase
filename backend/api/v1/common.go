@@ -346,6 +346,8 @@ func convertToEngine(engine storepb.Engine) v1pb.Engine {
 		return v1pb.Engine_DATABRICKS
 	case storepb.Engine_COCKROACHDB:
 		return v1pb.Engine_COCKROACHDB
+	case storepb.Engine_COSMOSDB:
+		return v1pb.Engine_COSMOSDB
 	}
 	return v1pb.Engine_ENGINE_UNSPECIFIED
 }
@@ -402,6 +404,8 @@ func convertEngine(engine v1pb.Engine) storepb.Engine {
 		return storepb.Engine_DATABRICKS
 	case v1pb.Engine_COCKROACHDB:
 		return storepb.Engine_COCKROACHDB
+	case v1pb.Engine_COSMOSDB:
+		return storepb.Engine_COSMOSDB
 	}
 	return storepb.Engine_ENGINE_UNSPECIFIED
 }
