@@ -14091,6 +14091,10 @@ export const DatabaseServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          800010: [
+            new Uint8Array([17, 98, 98, 46, 114, 101, 118, 105, 115, 105, 111, 110, 115, 46, 108, 105, 115, 116]),
+          ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               48,
@@ -14156,6 +14160,8 @@ export const DatabaseServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          800010: [new Uint8Array([16, 98, 98, 46, 114, 101, 118, 105, 115, 105, 111, 110, 115, 46, 103, 101, 116])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               48,
@@ -14220,6 +14226,31 @@ export const DatabaseServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800010: [
+            new Uint8Array([
+              19,
+              98,
+              98,
+              46,
+              114,
+              101,
+              118,
+              105,
+              115,
+              105,
+              111,
+              110,
+              115,
+              46,
+              99,
+              114,
+              101,
+              97,
+              116,
+              101,
+            ]),
+          ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               58,
@@ -14295,6 +14326,31 @@ export const DatabaseServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          800010: [
+            new Uint8Array([
+              19,
+              98,
+              98,
+              46,
+              114,
+              101,
+              118,
+              105,
+              115,
+              105,
+              111,
+              110,
+              115,
+              46,
+              100,
+              101,
+              108,
+              101,
+              116,
+              101,
+            ]),
+          ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               48,
@@ -14360,6 +14416,10 @@ export const DatabaseServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          800010: [
+            new Uint8Array([18, 98, 98, 46, 99, 104, 97, 110, 103, 101, 108, 111, 103, 115, 46, 108, 105, 115, 116]),
+          ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               49,
@@ -14426,6 +14486,8 @@ export const DatabaseServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          800010: [new Uint8Array([17, 98, 98, 46, 99, 104, 97, 110, 103, 101, 108, 111, 103, 115, 46, 103, 101, 116])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               49,
