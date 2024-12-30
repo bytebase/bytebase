@@ -13808,13 +13808,17 @@ components:
                 partialMaskAlgorithmId:
                     type: string
                     description: |-
-                        the partial mask algorithm id for the semantic type, if it is empty,
+                        Deprecated.
+                         the partial mask algorithm id for the semantic type, if it is empty,
                          should use the default partial mask algorithm.
                 fullMaskAlgorithmId:
                     type: string
                     description: |-
-                        the full mask algorithm id for the semantic type, if it is empty, should
+                        Deprecated.
+                         the full mask algorithm id for the semantic type, if it is empty, should
                          use the default full mask algorithm.
+                algorithms:
+                    $ref: '#/components/schemas/Algorithm'
         SetIamPolicyRequest:
             required:
                 - resource
