@@ -85,6 +85,12 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       enableFullSync,
     });
   };
+  const listInstanceDatabases = async (name: string, instance?: Instance) => {
+    return await instanceServiceClient.listInstanceDatabase({
+      name,
+      instance,
+    });
+  };
   const batchSyncInstances = async (
     instanceNameList: string[],
     enableFullSync: boolean
@@ -169,6 +175,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     createDataSource,
     updateDataSource,
     deleteDataSource,
+    listInstanceDatabases,
   };
 });
 
