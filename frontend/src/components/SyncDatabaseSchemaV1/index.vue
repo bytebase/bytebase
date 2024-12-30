@@ -204,8 +204,18 @@ onMounted(async () => {
 
 const stepTabList = computed(() => {
   return [
-    { title: t("database.sync-schema.select-source-schema") },
-    { title: t("database.sync-schema.select-target-databases") },
+    {
+      title: t("database.sync-schema.select-source-schema"),
+      description:
+        state.currentStep === Step.SELECT_TARGET_DATABASE_LIST
+          ? state.sourceSchemaType === SourceSchemaType.SCHEMA_HISTORY_VERSION
+            ? t("database.sync-schema.schema-history-version")
+            : t("database.sync-schema.copy-schema")
+          : undefined,
+    },
+    {
+      title: t("database.sync-schema.select-target-databases"),
+    },
   ];
 });
 

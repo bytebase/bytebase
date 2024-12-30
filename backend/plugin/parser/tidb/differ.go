@@ -14,6 +14,7 @@ import (
 
 	tidbparser "github.com/bytebase/tidb-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 
 	"github.com/pingcap/tidb/pkg/parser"
@@ -29,6 +30,10 @@ import (
 
 	// Register pingcap parser driver.
 	driver "github.com/pingcap/tidb/pkg/types/parser_driver"
+)
+
+const (
+	maxErrorStatementSize = 1 << 8 // 256
 )
 
 func init() {
@@ -66,6 +71,10 @@ func (diff *diffNode) diffSupportedStatement(oldStatement, newStatement string) 
 	}
 	newNodeList, _, err := parser.New().Parse(newStatement, "", "")
 	if err != nil {
+		sqlForComment, truncated := common.TruncateString(newStatement, maxErrorStatementSize)
+		if truncated {
+			sqlForComment += "..."
+		}
 		return errors.Wrapf(err, "failed to parse new statement %q", newStatement)
 	}
 

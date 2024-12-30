@@ -1,14 +1,13 @@
 <template>
   <div>
-    <template v-if="type === 'CHANGELOG'">
+    <template v-if="type === 'CHANGELOG' && changelog">
       <div class="flex items-center gap-x-1">
         <HistoryIcon :size="16" />
         <span>{{ $t("common.changelog") }}</span>
-        <span v-if="changelog" class="textinfolabel">
+        <span v-if="changelog.version" class="textinfolabel">
           {{ changelog.version }}
         </span>
         <router-link
-          v-if="changelog"
           :to="{
             path: `/${changelog.issue}`,
           }"
@@ -20,10 +19,17 @@
         </router-link>
       </div>
     </template>
-    <template v-if="type === 'RAW_SQL'">
+    <template v-else-if="type === 'RAW_SQL'">
       <div class="flex items-center gap-x-1">
         <FileIcon :size="16" />
         <span>{{ $t("changelist.change-source.raw-sql") }}</span>
+      </div>
+    </template>
+    <!-- Fallback -->
+    <template v-else>
+      <div class="flex items-center gap-x-1">
+        <FileIcon :size="16" />
+        <span>Unknown change type</span>
       </div>
     </template>
   </div>
