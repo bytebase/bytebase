@@ -490,9 +490,6 @@ message TaskRun {
 
   // Below are the results of a task run.
   string detail = 9;
-  // The resource name of the change history
-  // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
-  string change_history = 10;
   // The resource name of the changelog.
   // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
   string changelog = 20 [(google.api.field_behavior) = OUTPUT_ONLY];

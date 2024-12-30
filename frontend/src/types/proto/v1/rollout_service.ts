@@ -540,11 +540,6 @@ export interface TaskRun {
   /** Below are the results of a task run. */
   detail: string;
   /**
-   * The resource name of the change history
-   * Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
-   */
-  changeHistory: string;
-  /**
    * The resource name of the changelog.
    * Format: instances/{instance}/databases/{database}/changelogs/{changelog}
    */
@@ -3342,7 +3337,6 @@ function createBaseTaskRun(): TaskRun {
     title: "",
     status: TaskRun_Status.STATUS_UNSPECIFIED,
     detail: "",
-    changeHistory: "",
     changelog: "",
     schemaVersion: "",
     startTime: undefined,
@@ -3378,9 +3372,6 @@ export const TaskRun: MessageFns<TaskRun> = {
     }
     if (message.detail !== "") {
       writer.uint32(74).string(message.detail);
-    }
-    if (message.changeHistory !== "") {
-      writer.uint32(82).string(message.changeHistory);
     }
     if (message.changelog !== "") {
       writer.uint32(162).string(message.changelog);
@@ -3477,14 +3468,6 @@ export const TaskRun: MessageFns<TaskRun> = {
           message.detail = reader.string();
           continue;
         }
-        case 10: {
-          if (tag !== 82) {
-            break;
-          }
-
-          message.changeHistory = reader.string();
-          continue;
-        }
         case 20: {
           if (tag !== 162) {
             break;
@@ -3560,7 +3543,6 @@ export const TaskRun: MessageFns<TaskRun> = {
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       status: isSet(object.status) ? taskRun_StatusFromJSON(object.status) : TaskRun_Status.STATUS_UNSPECIFIED,
       detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
-      changeHistory: isSet(object.changeHistory) ? globalThis.String(object.changeHistory) : "",
       changelog: isSet(object.changelog) ? globalThis.String(object.changelog) : "",
       schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "",
       startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
@@ -3600,9 +3582,6 @@ export const TaskRun: MessageFns<TaskRun> = {
     }
     if (message.detail !== "") {
       obj.detail = message.detail;
-    }
-    if (message.changeHistory !== "") {
-      obj.changeHistory = message.changeHistory;
     }
     if (message.changelog !== "") {
       obj.changelog = message.changelog;
@@ -3645,7 +3624,6 @@ export const TaskRun: MessageFns<TaskRun> = {
     message.title = object.title ?? "";
     message.status = object.status ?? TaskRun_Status.STATUS_UNSPECIFIED;
     message.detail = object.detail ?? "";
-    message.changeHistory = object.changeHistory ?? "";
     message.changelog = object.changelog ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
     message.startTime = (object.startTime !== undefined && object.startTime !== null)

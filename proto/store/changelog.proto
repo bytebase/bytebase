@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package bytebase.store;
 
-import "store/instance_change_history.proto";
+import "store/common.proto";
 
 option go_package = "generated-go/store";
 
@@ -33,4 +33,57 @@ message ChangelogPayload {
     DATA = 6;
   }
   Type type = 7;
+}
+
+message ChangedResources {
+  repeated ChangedResourceDatabase databases = 1;
+}
+
+message ChangedResourceDatabase {
+  string name = 1;
+
+  repeated ChangedResourceSchema schemas = 2;
+}
+
+message ChangedResourceSchema {
+  string name = 1;
+
+  repeated ChangedResourceTable tables = 2;
+
+  repeated ChangedResourceView views = 3;
+
+  repeated ChangedResourceFunction functions = 4;
+
+  repeated ChangedResourceProcedure procedures = 5;
+}
+
+message ChangedResourceTable {
+  string name = 1;
+
+  // estimated row count of the table
+  int64 table_rows = 2;
+
+  // The ranges of sub-strings correspond to the statements on the sheet.
+  repeated Range ranges = 3;
+}
+
+message ChangedResourceView {
+  string name = 1;
+
+  // The ranges of sub-strings correspond to the statements on the sheet.
+  repeated Range ranges = 2;
+}
+
+message ChangedResourceFunction {
+  string name = 1;
+
+  // The ranges of sub-strings correspond to the statements on the sheet.
+  repeated Range ranges = 2;
+}
+
+message ChangedResourceProcedure {
+  string name = 1;
+
+  // The ranges of sub-strings correspond to the statements on the sheet.
+  repeated Range ranges = 2;
 }
