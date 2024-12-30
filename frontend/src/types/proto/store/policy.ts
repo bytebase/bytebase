@@ -114,8 +114,6 @@ export interface MaskingExceptionPolicy {
 export interface MaskingExceptionPolicy_MaskingException {
   /** action is the action that the user can access sensitive data. */
   action: MaskingExceptionPolicy_MaskingException_Action;
-  /** Level is the masking level that the user can access sensitive data. */
-  maskingLevel: MaskingLevel;
   /**
    * Member is the principal who bind to this exception policy instance.
    *
@@ -781,7 +779,6 @@ export const MaskingExceptionPolicy: MessageFns<MaskingExceptionPolicy> = {
 function createBaseMaskingExceptionPolicy_MaskingException(): MaskingExceptionPolicy_MaskingException {
   return {
     action: MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED,
-    maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
     member: "",
     condition: undefined,
   };
@@ -791,9 +788,6 @@ export const MaskingExceptionPolicy_MaskingException: MessageFns<MaskingExceptio
   encode(message: MaskingExceptionPolicy_MaskingException, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.action !== MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED) {
       writer.uint32(8).int32(maskingExceptionPolicy_MaskingException_ActionToNumber(message.action));
-    }
-    if (message.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
-      writer.uint32(16).int32(maskingLevelToNumber(message.maskingLevel));
     }
     if (message.member !== "") {
       writer.uint32(34).string(message.member);
@@ -817,14 +811,6 @@ export const MaskingExceptionPolicy_MaskingException: MessageFns<MaskingExceptio
           }
 
           message.action = maskingExceptionPolicy_MaskingException_ActionFromJSON(reader.int32());
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.maskingLevel = maskingLevelFromJSON(reader.int32());
           continue;
         }
         case 4: {
@@ -857,9 +843,6 @@ export const MaskingExceptionPolicy_MaskingException: MessageFns<MaskingExceptio
       action: isSet(object.action)
         ? maskingExceptionPolicy_MaskingException_ActionFromJSON(object.action)
         : MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED,
-      maskingLevel: isSet(object.maskingLevel)
-        ? maskingLevelFromJSON(object.maskingLevel)
-        : MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
       member: isSet(object.member) ? globalThis.String(object.member) : "",
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
     };
@@ -869,9 +852,6 @@ export const MaskingExceptionPolicy_MaskingException: MessageFns<MaskingExceptio
     const obj: any = {};
     if (message.action !== MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED) {
       obj.action = maskingExceptionPolicy_MaskingException_ActionToJSON(message.action);
-    }
-    if (message.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
-      obj.maskingLevel = maskingLevelToJSON(message.maskingLevel);
     }
     if (message.member !== "") {
       obj.member = message.member;
@@ -888,7 +868,6 @@ export const MaskingExceptionPolicy_MaskingException: MessageFns<MaskingExceptio
   fromPartial(object: DeepPartial<MaskingExceptionPolicy_MaskingException>): MaskingExceptionPolicy_MaskingException {
     const message = createBaseMaskingExceptionPolicy_MaskingException();
     message.action = object.action ?? MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED;
-    message.maskingLevel = object.maskingLevel ?? MaskingLevel.MASKING_LEVEL_UNSPECIFIED;
     message.member = object.member ?? "";
     message.condition = (object.condition !== undefined && object.condition !== null)
       ? Expr.fromPartial(object.condition)

@@ -11,12 +11,6 @@
           :project-name="project.name"
           :database-name="state.selectedDatabaseName"
         />
-        <MaskingLevelDropdown
-          v-model:level="state.selectedMaskLevel"
-          style="width: 12rem"
-          :clearable="true"
-          :level-list="[MaskingLevel.PARTIAL, MaskingLevel.NONE]"
-        />
         <MaskingActionDropdown
           v-model:action="state.selectedAction"
           style="width: 12rem"
@@ -83,12 +77,10 @@ import { useRouter } from "vue-router";
 import { FeatureModal, FeatureBadge } from "@/components/FeatureGuard";
 import MaskingExceptionUserTable from "@/components/SensitiveData/MaskingExceptionUserTable.vue";
 import MaskingActionDropdown from "@/components/SensitiveData/components/MaskingActionDropdown.vue";
-import MaskingLevelDropdown from "@/components/SensitiveData/components/MaskingLevelDropdown.vue";
 import { SearchBox, DatabaseSelect } from "@/components/v2";
 import { PROJECT_V1_ROUTE_MASKING_ACCESS_CREATE } from "@/router/dashboard/projectV1";
 import { useProjectByName, hasFeature } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { MaskingLevel } from "@/types/proto/v1/common";
 import type { MaskingExceptionPolicy_MaskingException } from "@/types/proto/v1/org_policy_service";
 import { MaskingExceptionPolicy_MaskingException_Action as Action } from "@/types/proto/v1/org_policy_service";
 import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
@@ -98,7 +90,6 @@ interface LocalState {
   showFeatureModal: boolean;
   selectedEnvironmentName?: string;
   selectedDatabaseName?: string;
-  selectedMaskLevel?: MaskingLevel;
   selectedAction?: Action;
 }
 
@@ -130,12 +121,6 @@ const allowCreate = computed(() => {
 const filterException = (
   exception: MaskingExceptionPolicy_MaskingException
 ): boolean => {
-  if (
-    state.selectedMaskLevel &&
-    exception.maskingLevel !== state.selectedMaskLevel
-  ) {
-    return false;
-  }
   if (state.selectedAction && exception.action !== state.selectedAction) {
     return false;
   }

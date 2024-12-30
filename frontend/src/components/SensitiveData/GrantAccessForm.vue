@@ -43,20 +43,6 @@
         </div>
 
         <div class="w-full">
-          <div class="flex items-center gap-x-1 mb-2">
-            <span class="font-medium text-main">
-              {{ $t("settings.sensitive-data.masking-level.self") }}
-            </span>
-            <span class="text-red-600">*</span>
-          </div>
-          <MaskingLevelRadioGroup
-            :level="state.maskingLevel"
-            :level-list="MASKING_LEVELS"
-            @update:level="state.maskingLevel = $event"
-          />
-        </div>
-
-        <div class="w-full">
           <p class="mb-2 font-medium text-main">
             {{ $t("common.expiration") }}
           </p>
@@ -113,7 +99,6 @@ import FormLayout from "@/components/v2/Form/FormLayout.vue";
 import { usePolicyV1Store, pushNotification } from "@/store";
 import type { DatabaseResource } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
-import { MaskingLevel } from "@/types/proto/v1/common";
 import type {
   Policy,
   MaskingExceptionPolicy_MaskingException,
@@ -124,7 +109,6 @@ import {
   MaskingExceptionPolicy_MaskingException_Action,
   maskingExceptionPolicy_MaskingException_ActionToJSON,
 } from "@/types/proto/v1/org_policy_service";
-import MaskingLevelRadioGroup from "./components/MaskingLevelRadioGroup.vue";
 import type { SensitiveColumn } from "./types";
 import {
   getExpressionsForDatabaseResource,
@@ -142,7 +126,6 @@ const emit = defineEmits(["dismiss"]);
 interface LocalState {
   memberList: string[];
   expirationTimestamp?: number;
-  maskingLevel: MaskingLevel;
   processing: boolean;
   supportActions: Set<MaskingExceptionPolicy_MaskingException_Action>;
   databaseResources?: DatabaseResource[];
@@ -152,11 +135,9 @@ const ACTIONS = [
   MaskingExceptionPolicy_MaskingException_Action.EXPORT,
   MaskingExceptionPolicy_MaskingException_Action.QUERY,
 ];
-const MASKING_LEVELS = [MaskingLevel.PARTIAL, MaskingLevel.NONE];
 
 const state = reactive<LocalState>({
   memberList: [],
-  maskingLevel: MaskingLevel.PARTIAL,
   processing: false,
   supportActions: new Set(ACTIONS),
   databaseResources: props.columnList.map(
@@ -169,7 +150,6 @@ const { t } = useI18n();
 
 const resetState = () => {
   state.expirationTimestamp = undefined;
-  state.maskingLevel = MaskingLevel.PARTIAL;
   state.supportActions = new Set(ACTIONS);
   state.memberList = [];
   state.databaseResources = undefined;
@@ -237,7 +217,6 @@ const getPendingUpdatePolicy = async (
         maskingExceptions.push({
           member,
           action,
-          maskingLevel: state.maskingLevel,
           condition: Expr.fromPartial({
             expression:
               expressions.length > 0 ? expressions.join(" && ") : undefined,
@@ -251,7 +230,6 @@ const getPendingUpdatePolicy = async (
           maskingExceptions.push({
             member,
             action,
-            maskingLevel: state.maskingLevel,
             condition: Expr.fromPartial({
               expression: resourceExpressions.join(" && "),
             }),

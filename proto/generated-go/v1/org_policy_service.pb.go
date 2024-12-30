@@ -1447,8 +1447,6 @@ type MaskingExceptionPolicy_MaskingException struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// action is the action that the user can access sensitive data.
 	Action MaskingExceptionPolicy_MaskingException_Action `protobuf:"varint,1,opt,name=action,proto3,enum=bytebase.v1.MaskingExceptionPolicy_MaskingException_Action" json:"action,omitempty"`
-	// Level is the masking level that the user can access sensitive data.
-	MaskingLevel MaskingLevel `protobuf:"varint,2,opt,name=masking_level,json=maskingLevel,proto3,enum=bytebase.v1.MaskingLevel" json:"masking_level,omitempty"`
 	// Member is the principal who bind to this exception policy instance.
 	//
 	// - `user:{email}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
@@ -1495,13 +1493,6 @@ func (x *MaskingExceptionPolicy_MaskingException) GetAction() MaskingExceptionPo
 		return x.Action
 	}
 	return MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED
-}
-
-func (x *MaskingExceptionPolicy_MaskingException) GetMaskingLevel() MaskingLevel {
-	if x != nil {
-		return x.MaskingLevel
-	}
-	return MaskingLevel_MASKING_LEVEL_UNSPECIFIED
 }
 
 func (x *MaskingExceptionPolicy_MaskingException) GetMember() string {
@@ -1763,7 +1754,7 @@ var file_v1_org_policy_service_proto_rawDesc = []byte{
 	0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x45, 0x6e, 0x67,
 	0x69, 0x6e, 0x65, 0x52, 0x06, 0x65, 0x6e, 0x67, 0x69, 0x6e, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x63,
 	0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6f,
-	0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x22, 0xa9, 0x03, 0x0a, 0x16, 0x4d, 0x61, 0x73, 0x6b, 0x69, 0x6e,
+	0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x22, 0xe9, 0x02, 0x0a, 0x16, 0x4d, 0x61, 0x73, 0x6b, 0x69, 0x6e,
 	0x67, 0x45, 0x78, 0x63, 0x65, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79,
 	0x12, 0x63, 0x0a, 0x12, 0x6d, 0x61, 0x73, 0x6b, 0x69, 0x6e, 0x67, 0x5f, 0x65, 0x78, 0x63, 0x65,
 	0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x34, 0x2e, 0x62,
@@ -1771,17 +1762,13 @@ var file_v1_org_policy_service_proto_rawDesc = []byte{
 	0x6e, 0x67, 0x45, 0x78, 0x63, 0x65, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x50, 0x6f, 0x6c, 0x69, 0x63,
 	0x79, 0x2e, 0x4d, 0x61, 0x73, 0x6b, 0x69, 0x6e, 0x67, 0x45, 0x78, 0x63, 0x65, 0x70, 0x74, 0x69,
 	0x6f, 0x6e, 0x52, 0x11, 0x6d, 0x61, 0x73, 0x6b, 0x69, 0x6e, 0x67, 0x45, 0x78, 0x63, 0x65, 0x70,
-	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x1a, 0xa9, 0x02, 0x0a, 0x10, 0x4d, 0x61, 0x73, 0x6b, 0x69, 0x6e,
+	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x1a, 0xe9, 0x01, 0x0a, 0x10, 0x4d, 0x61, 0x73, 0x6b, 0x69, 0x6e,
 	0x67, 0x45, 0x78, 0x63, 0x65, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x53, 0x0a, 0x06, 0x61, 0x63,
 	0x74, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x3b, 0x2e, 0x62, 0x79, 0x74,
 	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x61, 0x73, 0x6b, 0x69, 0x6e, 0x67,
 	0x45, 0x78, 0x63, 0x65, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x2e,
 	0x4d, 0x61, 0x73, 0x6b, 0x69, 0x6e, 0x67, 0x45, 0x78, 0x63, 0x65, 0x70, 0x74, 0x69, 0x6f, 0x6e,
 	0x2e, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x06, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12,
-	0x3e, 0x0a, 0x0d, 0x6d, 0x61, 0x73, 0x6b, 0x69, 0x6e, 0x67, 0x5f, 0x6c, 0x65, 0x76, 0x65, 0x6c,
-	0x18, 0x02, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x19, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
-	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x61, 0x73, 0x6b, 0x69, 0x6e, 0x67, 0x4c, 0x65, 0x76, 0x65,
-	0x6c, 0x52, 0x0c, 0x6d, 0x61, 0x73, 0x6b, 0x69, 0x6e, 0x67, 0x4c, 0x65, 0x76, 0x65, 0x6c, 0x12,
 	0x16, 0x0a, 0x06, 0x6d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52,
 	0x06, 0x6d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x12, 0x2f, 0x0a, 0x09, 0x63, 0x6f, 0x6e, 0x64, 0x69,
 	0x74, 0x69, 0x6f, 0x6e, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x11, 0x2e, 0x67, 0x6f, 0x6f,
@@ -2013,8 +2000,8 @@ var file_v1_org_policy_service_proto_goTypes = []any{
 	nil,                                                 // 24: bytebase.v1.TagPolicy.TagsEntry
 	(*fieldmaskpb.FieldMask)(nil),                       // 25: google.protobuf.FieldMask
 	(Engine)(0),                                         // 26: bytebase.v1.Engine
-	(MaskingLevel)(0),                                   // 27: bytebase.v1.MaskingLevel
-	(*expr.Expr)(nil),                                   // 28: google.type.Expr
+	(*expr.Expr)(nil),                                   // 27: google.type.Expr
+	(MaskingLevel)(0),                                   // 28: bytebase.v1.MaskingLevel
 	(*emptypb.Empty)(nil),                               // 29: google.protobuf.Empty
 }
 var file_v1_org_policy_service_proto_depIdxs = []int32{
@@ -2042,25 +2029,24 @@ var file_v1_org_policy_service_proto_depIdxs = []int32{
 	24, // 21: bytebase.v1.TagPolicy.tags:type_name -> bytebase.v1.TagPolicy.TagsEntry
 	4,  // 22: bytebase.v1.DataSourceQueryPolicy.admin_data_source_restriction:type_name -> bytebase.v1.DataSourceQueryPolicy.Restriction
 	3,  // 23: bytebase.v1.MaskingExceptionPolicy.MaskingException.action:type_name -> bytebase.v1.MaskingExceptionPolicy.MaskingException.Action
-	27, // 24: bytebase.v1.MaskingExceptionPolicy.MaskingException.masking_level:type_name -> bytebase.v1.MaskingLevel
-	28, // 25: bytebase.v1.MaskingExceptionPolicy.MaskingException.condition:type_name -> google.type.Expr
-	28, // 26: bytebase.v1.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
-	27, // 27: bytebase.v1.MaskingRulePolicy.MaskingRule.masking_level:type_name -> bytebase.v1.MaskingLevel
-	8,  // 28: bytebase.v1.OrgPolicyService.GetPolicy:input_type -> bytebase.v1.GetPolicyRequest
-	9,  // 29: bytebase.v1.OrgPolicyService.ListPolicies:input_type -> bytebase.v1.ListPoliciesRequest
-	5,  // 30: bytebase.v1.OrgPolicyService.CreatePolicy:input_type -> bytebase.v1.CreatePolicyRequest
-	6,  // 31: bytebase.v1.OrgPolicyService.UpdatePolicy:input_type -> bytebase.v1.UpdatePolicyRequest
-	7,  // 32: bytebase.v1.OrgPolicyService.DeletePolicy:input_type -> bytebase.v1.DeletePolicyRequest
-	11, // 33: bytebase.v1.OrgPolicyService.GetPolicy:output_type -> bytebase.v1.Policy
-	10, // 34: bytebase.v1.OrgPolicyService.ListPolicies:output_type -> bytebase.v1.ListPoliciesResponse
-	11, // 35: bytebase.v1.OrgPolicyService.CreatePolicy:output_type -> bytebase.v1.Policy
-	11, // 36: bytebase.v1.OrgPolicyService.UpdatePolicy:output_type -> bytebase.v1.Policy
-	29, // 37: bytebase.v1.OrgPolicyService.DeletePolicy:output_type -> google.protobuf.Empty
-	33, // [33:38] is the sub-list for method output_type
-	28, // [28:33] is the sub-list for method input_type
-	28, // [28:28] is the sub-list for extension type_name
-	28, // [28:28] is the sub-list for extension extendee
-	0,  // [0:28] is the sub-list for field type_name
+	27, // 24: bytebase.v1.MaskingExceptionPolicy.MaskingException.condition:type_name -> google.type.Expr
+	27, // 25: bytebase.v1.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
+	28, // 26: bytebase.v1.MaskingRulePolicy.MaskingRule.masking_level:type_name -> bytebase.v1.MaskingLevel
+	8,  // 27: bytebase.v1.OrgPolicyService.GetPolicy:input_type -> bytebase.v1.GetPolicyRequest
+	9,  // 28: bytebase.v1.OrgPolicyService.ListPolicies:input_type -> bytebase.v1.ListPoliciesRequest
+	5,  // 29: bytebase.v1.OrgPolicyService.CreatePolicy:input_type -> bytebase.v1.CreatePolicyRequest
+	6,  // 30: bytebase.v1.OrgPolicyService.UpdatePolicy:input_type -> bytebase.v1.UpdatePolicyRequest
+	7,  // 31: bytebase.v1.OrgPolicyService.DeletePolicy:input_type -> bytebase.v1.DeletePolicyRequest
+	11, // 32: bytebase.v1.OrgPolicyService.GetPolicy:output_type -> bytebase.v1.Policy
+	10, // 33: bytebase.v1.OrgPolicyService.ListPolicies:output_type -> bytebase.v1.ListPoliciesResponse
+	11, // 34: bytebase.v1.OrgPolicyService.CreatePolicy:output_type -> bytebase.v1.Policy
+	11, // 35: bytebase.v1.OrgPolicyService.UpdatePolicy:output_type -> bytebase.v1.Policy
+	29, // 36: bytebase.v1.OrgPolicyService.DeletePolicy:output_type -> google.protobuf.Empty
+	32, // [32:37] is the sub-list for method output_type
+	27, // [27:32] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() { file_v1_org_policy_service_proto_init() }

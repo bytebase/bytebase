@@ -324,9 +324,6 @@ message MaskingExceptionPolicy {
     // action is the action that the user can access sensitive data.
     Action action = 1;
 
-    // Level is the masking level that the user can access sensitive data.
-    MaskingLevel masking_level = 2;
-
     // Member is the principal who bind to this exception policy instance.
     //
     // - `user:{email}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
