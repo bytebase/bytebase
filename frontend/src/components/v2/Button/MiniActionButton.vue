@@ -1,5 +1,13 @@
 <template>
-  <NButton quaternary size="tiny" style="--n-padding: 4px" :disabled="disabled">
+  <NButton
+    quaternary
+    size="tiny"
+    :type="type"
+    style="--n-padding: 4px"
+    :disabled="disabled"
+    v-bind="$attrs"
+    @click="$emit('click', $event)"
+  >
     <template #icon>
       <slot />
     </template>
@@ -14,5 +22,17 @@ import { NButton } from "naive-ui";
 
 defineProps<{
   disabled?: boolean;
+  type?:
+    | "default"
+    | "tertiary"
+    | "primary"
+    | "success"
+    | "info"
+    | "warning"
+    | "error";
+}>();
+
+defineEmits<{
+  (event: "click", e: MouseEvent): void;
 }>();
 </script>
