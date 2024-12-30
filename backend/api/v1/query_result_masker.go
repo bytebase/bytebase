@@ -193,7 +193,7 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	maskingPolicyMap := make(map[maskingPolicyKey]*storepb.MaskData)
+	maskingPolicyMap := make(map[maskingPolicyKey]*maskData)
 	for _, schemaConfig := range dbSchema.GetConfig().Schemas {
 		for _, tableConfig := range schemaConfig.GetTables() {
 			for _, columnConfig := range tableConfig.GetColumns() {
@@ -204,7 +204,7 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 					schema: schemaConfig.Name,
 					table:  tableConfig.Name,
 					column: columnConfig.Name,
-				}] = &storepb.MaskData{
+				}] = &maskData{
 					Schema:                    schemaConfig.Name,
 					Table:                     tableConfig.Name,
 					Column:                    columnConfig.Name,

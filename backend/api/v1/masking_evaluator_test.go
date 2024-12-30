@@ -55,7 +55,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 		tableName                               string
 		columnName                              string
 		columnClassification                    string
-		maskingPolicyMap                        map[maskingPolicyKey]*storepb.MaskData
+		maskingPolicyMap                        map[maskingPolicyKey]*maskData
 		maskingRulePolicy                       *storepb.MaskingRulePolicy
 		filteredMaskingExceptions               []*storepb.MaskingExceptionPolicy_MaskingException
 		dataClassification                      *storepb.DataClassificationSetting
@@ -69,7 +69,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			tableName:            "employees",
 			columnName:           "salary",
 			columnClassification: "1-1-1",
-			maskingPolicyMap:     map[maskingPolicyKey]*storepb.MaskData{},
+			maskingPolicyMap:     map[maskingPolicyKey]*maskData{},
 			maskingRulePolicy: &storepb.MaskingRulePolicy{
 				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
 					{
@@ -92,7 +92,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			tableName:            "employees",
 			columnName:           "salary",
 			columnClassification: "1-1-1",
-			maskingPolicyMap:     map[maskingPolicyKey]*storepb.MaskData{},
+			maskingPolicyMap:     map[maskingPolicyKey]*maskData{},
 			maskingRulePolicy: &storepb.MaskingRulePolicy{
 				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
 					{
@@ -123,7 +123,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			tableName:            "employees",
 			columnName:           "salary",
 			columnClassification: "1-1-1",
-			maskingPolicyMap:     map[maskingPolicyKey]*storepb.MaskData{},
+			maskingPolicyMap:     map[maskingPolicyKey]*maskData{},
 			maskingRulePolicy: &storepb.MaskingRulePolicy{
 				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
 					{
@@ -155,7 +155,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			tableName:            "employees",
 			columnName:           "salary",
 			columnClassification: "1-1-1",
-			maskingPolicyMap: map[maskingPolicyKey]*storepb.MaskData{
+			maskingPolicyMap: map[maskingPolicyKey]*maskData{
 				{
 					schema: "hiring",
 					table:  "employees",
