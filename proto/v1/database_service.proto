@@ -154,30 +154,42 @@ service DatabaseService {
   rpc ListRevisions(ListRevisionsRequest) returns (ListRevisionsResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/revisions"};
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.revisions.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
   rpc GetRevision(GetRevisionRequest) returns (Revision) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/revisions/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.revisions.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
   rpc CreateRevision(CreateRevisionRequest) returns (Revision) {
     option (google.api.http) = {
       post: "/v1/{parent=instances/*/databases/*}/revisions"
       body: "revision"
     };
+    option (bytebase.v1.permission) = "bb.revisions.create";
+    option (bytebase.v1.auth_method) = IAM;
   }
   rpc DeleteRevision(DeleteRevisionRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=instances/*/databases/*/revisions/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.revisions.delete";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListChangelogs(ListChangelogsRequest) returns (ListChangelogsResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/changelogs"};
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.changelogs.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc GetChangelog(GetChangelogRequest) returns (Changelog) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/changelogs/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.changelogs.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 

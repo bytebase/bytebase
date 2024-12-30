@@ -14,6 +14,8 @@ permissions:
   - bb.changelists.get
   - bb.changelists.list
   - bb.changelists.update
+  - bb.changelogs.get
+  - bb.changelogs.list
   - bb.databaseCatalogs.get
   - bb.databaseCatalogs.update
   - bb.databaseSecrets.delete
@@ -82,6 +84,10 @@ permissions:
   - bb.reviewConfigs.get
   - bb.reviewConfigs.list
   - bb.reviewConfigs.update
+  - bb.revisions.create
+  - bb.revisions.delete
+  - bb.revisions.get
+  - bb.revisions.list
   - bb.risks.create
   - bb.risks.delete
   - bb.risks.list
