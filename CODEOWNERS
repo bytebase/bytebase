@@ -1,20 +1,6 @@
 # Default
-*                            @d-bytebase @bytebase/bytebase-dev
+*                            @bytebase/bytebase-dev
 
 # API and schema
 proto                        @d-bytebase @ecmadao @RainbowDashy
 backend/migrator/migration   @d-bytebase @ecmadao @RainbowDashy
-
-# Backend
-backend                      @d-bytebase @ecmadao @bytebase/bytebase-dev
-go.mod                       @d-bytebase @ecmadao @bytebase/bytebase-dev
-
-# Database
-backend/plugin/advisor       @rebelice @h3n4l @bytebase/bytebase-dev
-backend/plugin/db            @rebelice @h3n4l @bytebase/bytebase-dev
-backend/plugin/parser        @rebelice @h3n4l @bytebase/bytebase-dev
-backend/plugin/schema        @rebelice @h3n4l @bytebase/bytebase-dev
-
-# Frontend
-frontend                     @LiuJi-Jim @boojack @bytebase/bytebase-dev
-frontend/package.json        @LiuJi-Jim @boojack @bytebase/bytebase-dev
