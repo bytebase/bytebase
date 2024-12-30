@@ -31,6 +31,7 @@ import {
   type SemanticTypeSetting_SemanticType,
 } from "@/types/proto/v1/setting_service";
 import { isDev } from "@/utils";
+import MaskingAlgorithmsCreateDrawer from "./MaskingAlgorithmsCreateDrawer.vue";
 
 type SemanticItemMode = "NORMAL" | "CREATE" | "EDIT";
 
@@ -302,7 +303,7 @@ const columnList = computed(() => {
 const rowProps = (item: SemanticItem) => {
   return {
     style: props.rowClickable ? "cursor: pointer;" : "",
-    onClick: (e: MouseEvent) => {
+    onClick: () => {
       if (!props.rowClickable) {
         return;
       }
