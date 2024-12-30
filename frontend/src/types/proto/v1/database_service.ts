@@ -751,11 +751,6 @@ export interface ColumnMetadata {
   comment: string;
   /** The user_comment is the user comment of a column parsed from the comment. */
   userComment: string;
-  /**
-   * The effective_masking_level is the effective masking level of the column,
-   * evaluate from the column masking data and global masking rules.
-   */
-  effectiveMaskingLevel: MaskingLevel;
   /** The generation is the generation of a column. */
   generation: GenerationMetadata | undefined;
 }
@@ -5198,7 +5193,6 @@ function createBaseColumnMetadata(): ColumnMetadata {
     collation: "",
     comment: "",
     userComment: "",
-    effectiveMaskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
     generation: undefined,
   };
 }
@@ -5243,9 +5237,6 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     }
     if (message.userComment !== "") {
       writer.uint32(106).string(message.userComment);
-    }
-    if (message.effectiveMaskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
-      writer.uint32(112).int32(maskingLevelToNumber(message.effectiveMaskingLevel));
     }
     if (message.generation !== undefined) {
       GenerationMetadata.encode(message.generation, writer.uint32(130).fork()).join();
@@ -5364,14 +5355,6 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
           message.userComment = reader.string();
           continue;
         }
-        case 14: {
-          if (tag !== 112) {
-            break;
-          }
-
-          message.effectiveMaskingLevel = maskingLevelFromJSON(reader.int32());
-          continue;
-        }
         case 16: {
           if (tag !== 130) {
             break;
@@ -5404,9 +5387,6 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
       collation: isSet(object.collation) ? globalThis.String(object.collation) : "",
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
       userComment: isSet(object.userComment) ? globalThis.String(object.userComment) : "",
-      effectiveMaskingLevel: isSet(object.effectiveMaskingLevel)
-        ? maskingLevelFromJSON(object.effectiveMaskingLevel)
-        : MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
       generation: isSet(object.generation) ? GenerationMetadata.fromJSON(object.generation) : undefined,
     };
   },
@@ -5452,9 +5432,6 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     if (message.userComment !== "") {
       obj.userComment = message.userComment;
     }
-    if (message.effectiveMaskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
-      obj.effectiveMaskingLevel = maskingLevelToJSON(message.effectiveMaskingLevel);
-    }
     if (message.generation !== undefined) {
       obj.generation = GenerationMetadata.toJSON(message.generation);
     }
@@ -5479,7 +5456,6 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     message.collation = object.collation ?? "";
     message.comment = object.comment ?? "";
     message.userComment = object.userComment ?? "";
-    message.effectiveMaskingLevel = object.effectiveMaskingLevel ?? MaskingLevel.MASKING_LEVEL_UNSPECIFIED;
     message.generation = (object.generation !== undefined && object.generation !== null)
       ? GenerationMetadata.fromPartial(object.generation)
       : undefined;
