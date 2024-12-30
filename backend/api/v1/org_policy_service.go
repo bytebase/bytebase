@@ -506,12 +506,6 @@ func validatePolicyPayload(policyType api.PolicyType, policy *v1pb.Policy) error
 			if exception.Action == v1pb.MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED {
 				return status.Errorf(codes.InvalidArgument, "masking exception must have action set")
 			}
-			if exception.MaskingLevel == v1pb.MaskingLevel_FULL {
-				return status.Errorf(codes.InvalidArgument, "masking exception cannot have full masking level")
-			}
-			if exception.MaskingLevel == v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED {
-				return status.Errorf(codes.InvalidArgument, "masking exception must have masking level set")
-			}
 			if _, err := common.ValidateMaskingExceptionCELExpr(exception.Condition); err != nil {
 				return status.Error(codes.InvalidArgument, fmt.Sprintf("invalid masking exception expression: %v", err))
 			}
@@ -972,9 +966,8 @@ func (s *OrgPolicyService) convertToStorePBMaskingExceptionPolicyPayload(ctx con
 			return nil, err
 		}
 		exceptions = append(exceptions, &storepb.MaskingExceptionPolicy_MaskingException{
-			Action:       convertToStorePBAction(exception.Action),
-			MaskingLevel: convertToStorePBMaskingLevel(exception.MaskingLevel),
-			Member:       member,
+			Action: convertToStorePBAction(exception.Action),
+			Member: member,
 			Condition: &expr.Expr{
 				Title:       exception.Condition.Title,
 				Expression:  exception.Condition.Expression,
@@ -998,9 +991,8 @@ func (s *OrgPolicyService) convertToV1PBMaskingExceptionPolicyPayload(ctx contex
 		}
 
 		exceptions = append(exceptions, &v1pb.MaskingExceptionPolicy_MaskingException{
-			Action:       convertToV1PBAction(exception.Action),
-			MaskingLevel: convertToV1PBMaskingLevel(exception.MaskingLevel),
-			Member:       memberInBinding,
+			Action: convertToV1PBAction(exception.Action),
+			Member: memberInBinding,
 			Condition: &expr.Expr{
 				Title:       exception.Condition.Title,
 				Expression:  exception.Condition.Expression,

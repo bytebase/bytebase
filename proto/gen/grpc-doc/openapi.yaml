@@ -11887,15 +11887,6 @@ components:
                     type: string
                     description: action is the action that the user can access sensitive data.
                     format: enum
-                maskingLevel:
-                    enum:
-                        - MASKING_LEVEL_UNSPECIFIED
-                        - NONE
-                        - PARTIAL
-                        - FULL
-                    type: string
-                    description: Level is the masking level that the user can access sensitive data.
-                    format: enum
                 member:
                     type: string
                     description: |-
