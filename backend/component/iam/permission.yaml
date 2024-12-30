@@ -7,8 +7,6 @@ permissions:
   - bb.branches.get
   - bb.branches.list
   - bb.branches.update
-  - bb.changeHistories.get
-  - bb.changeHistories.list
   - bb.changelists.create
   - bb.changelists.delete
   - bb.changelists.get

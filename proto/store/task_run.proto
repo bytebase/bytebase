@@ -9,9 +9,6 @@ option go_package = "generated-go/store";
 
 message TaskRunResult {
   string detail = 1;
-  // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
-  // Deprecated.
-  string change_history = 2;
   // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
   string changelog = 8;
   string version = 3;
