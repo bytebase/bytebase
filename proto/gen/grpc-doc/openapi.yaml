@@ -9653,17 +9653,6 @@ components:
                 userComment:
                     type: string
                     description: The user_comment is the user comment of a column parsed from the comment.
-                effectiveMaskingLevel:
-                    enum:
-                        - MASKING_LEVEL_UNSPECIFIED
-                        - NONE
-                        - PARTIAL
-                        - FULL
-                    type: string
-                    description: |-
-                        The effective_masking_level is the effective masking level of the column,
-                         evaluate from the column masking data and global masking rules.
-                    format: enum
                 generation:
                     allOf:
                         - $ref: '#/components/schemas/GenerationMetadata'
