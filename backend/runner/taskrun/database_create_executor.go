@@ -590,6 +590,7 @@ func getLatestDoneSchemaVersion(ctx context.Context, stores *store.Store, instan
 	// TODO(d): support semantic versioning.
 	limit := 1
 	done := db.Done
+	// TODO(p0ny): use changelog
 	history, err := stores.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
 		InstanceID: &instanceID,
 		DatabaseID: &databaseID,

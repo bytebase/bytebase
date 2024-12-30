@@ -130,7 +130,7 @@ export interface Changelist_Change {
   sheet: string;
   /**
    * The source of origin.
-   * 1) changelog: instances/{instance}/databases/{database}/changelog/{changeHistory}.
+   * 1) changelog: instances/{instance}/databases/{database}/changelogs/{changelog}.
    * 2) raw SQL if empty.
    */
   source: string;

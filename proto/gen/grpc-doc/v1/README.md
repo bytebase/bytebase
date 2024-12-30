@@ -89,7 +89,6 @@
     - [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse)
     - [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest)
     - [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse)
-    - [ChangeHistory](#bytebase-v1-ChangeHistory)
     - [ChangedResourceDatabase](#bytebase-v1-ChangedResourceDatabase)
     - [ChangedResourceFunction](#bytebase-v1-ChangedResourceFunction)
     - [ChangedResourceProcedure](#bytebase-v1-ChangedResourceProcedure)
@@ -121,15 +120,12 @@
     - [FunctionConfig](#bytebase-v1-FunctionConfig)
     - [FunctionMetadata](#bytebase-v1-FunctionMetadata)
     - [GenerationMetadata](#bytebase-v1-GenerationMetadata)
-    - [GetChangeHistoryRequest](#bytebase-v1-GetChangeHistoryRequest)
     - [GetChangelogRequest](#bytebase-v1-GetChangelogRequest)
     - [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest)
     - [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest)
     - [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest)
     - [GetRevisionRequest](#bytebase-v1-GetRevisionRequest)
     - [IndexMetadata](#bytebase-v1-IndexMetadata)
-    - [ListChangeHistoriesRequest](#bytebase-v1-ListChangeHistoriesRequest)
-    - [ListChangeHistoriesResponse](#bytebase-v1-ListChangeHistoriesResponse)
     - [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest)
     - [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse)
     - [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest)
@@ -167,10 +163,6 @@
     - [ViewConfig](#bytebase-v1-ViewConfig)
     - [ViewMetadata](#bytebase-v1-ViewMetadata)
   
-    - [ChangeHistory.Source](#bytebase-v1-ChangeHistory-Source)
-    - [ChangeHistory.Status](#bytebase-v1-ChangeHistory-Status)
-    - [ChangeHistory.Type](#bytebase-v1-ChangeHistory-Type)
-    - [ChangeHistoryView](#bytebase-v1-ChangeHistoryView)
     - [Changelog.Status](#bytebase-v1-Changelog-Status)
     - [Changelog.Type](#bytebase-v1-Changelog-Type)
     - [ChangelogView](#bytebase-v1-ChangelogView)
@@ -1971,41 +1963,6 @@ AdviseIndexResponse is the response of advising index.
 
 
 
-<a name="bytebase-v1-ChangeHistory"></a>
-
-### ChangeHistory
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
-| creator | [string](#string) |  | Format: users/hello@world.com |
-| updater | [string](#string) |  | Format: users/hello@world.com |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| release_version | [string](#string) |  | release version of Bytebase |
-| source | [ChangeHistory.Source](#bytebase-v1-ChangeHistory-Source) |  |  |
-| type | [ChangeHistory.Type](#bytebase-v1-ChangeHistory-Type) |  |  |
-| status | [ChangeHistory.Status](#bytebase-v1-ChangeHistory-Status) |  |  |
-| version | [string](#string) |  |  |
-| description | [string](#string) |  |  |
-| statement | [string](#string) |  | The statement is used for preview purpose. |
-| statement_size | [int64](#int64) |  |  |
-| statement_sheet | [string](#string) |  | The name of the sheet resource. Format: projects/{project}/sheets/{sheet} |
-| schema | [string](#string) |  |  |
-| schema_size | [int64](#int64) |  |  |
-| prev_schema | [string](#string) |  |  |
-| prev_schema_size | [int64](#int64) |  |  |
-| execution_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
-| issue | [string](#string) |  | Format: projects/{project}/issues/{issue} |
-| changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-ChangedResourceDatabase"></a>
 
 ### ChangedResourceDatabase
@@ -2140,7 +2097,7 @@ AdviseIndexResponse is the response of advising index.
 | prev_schema | [string](#string) |  |  |
 | prev_schema_size | [int64](#int64) |  |  |
 | issue | [string](#string) |  | Format: projects/{project}/issues/{issue} |
-| task_run | [string](#string) |  | Could be empty TODO(p0ny): We will migrate ChangeHistory to Changelog, and they won&#39;t have task_run. |
+| task_run | [string](#string) |  | Format: projects/{projects}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 | version | [string](#string) |  | Could be empty |
 | revision | [string](#string) |  | Could be empty Or present but not found if deleted |
 | changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
@@ -2398,9 +2355,9 @@ DependentColumn is the metadata for dependent columns.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the database or change history. Format: database: instances/{instance}/databases/{database} change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
+| name | [string](#string) |  | The name of the database or changelog. Format: database: instances/{instance}/databases/{database} changelog: instances/{instance}/databases/{database}/changelogs/{changelog} |
 | schema | [string](#string) |  | The target schema. |
-| change_history | [string](#string) |  | The resource name of the change history Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
+| changelog | [string](#string) |  | The resource name of the changelog Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
 | sdl_format | [bool](#bool) |  | Format the schema dump into SDL format. |
 
 
@@ -2574,24 +2531,6 @@ FunctionMetadata is the metadata for functions.
 
 
 
-<a name="bytebase-v1-GetChangeHistoryRequest"></a>
-
-### GetChangeHistoryRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the change history to retrieve. Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
-| view | [ChangeHistoryView](#bytebase-v1-ChangeHistoryView) |  |  |
-| sdl_format | [bool](#bool) |  | Format the schema dump into SDL format. |
-| concise | [bool](#bool) |  | When true, the schema dump will be concise. For Oracle, there will be tables and indexes only for Sync Schema. For Postgres, we&#39;ll filter the backup schema. |
-
-
-
-
-
-
 <a name="bytebase-v1-GetChangelogRequest"></a>
 
 ### GetChangelogRequest
@@ -2695,49 +2634,6 @@ IndexMetadata is the metadata for indexes.
 | parent_index_schema | [string](#string) |  | The schema name of the parent index. |
 | parent_index_name | [string](#string) |  | The index name of the parent index. |
 | granularity | [int64](#int64) |  | The number of granules in the block. It&#39;s a ClickHouse specific field. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListChangeHistoriesRequest"></a>
-
-### ListChangeHistoriesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent of the change histories. Format: instances/{instance}/databases/{database} |
-| page_size | [int32](#int32) |  | The maximum number of change histories to return. The service may return fewer than this value. If unspecified, at most 10 change histories will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListChangeHistories` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListChangeHistories` must match the call that provided the page token. |
-| view | [ChangeHistoryView](#bytebase-v1-ChangeHistoryView) |  |  |
-| filter | [string](#string) |  | The filter of the change histories. follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Support filter by type, source or table. For example: table = &#34;tableExists(&#39;{database}&#39;, &#39;{schema}&#39;, &#39;{table}&#39;)&#34; table = &#34;tableExists(&#39;db&#39;, &#39;public&#39;, &#39;table1&#39;) || tableExists(&#39;db&#39;, &#39;public&#39;, &#39;table2&#39;)&#34; type = &#34;MIGRATE | DATA&#34; source = &#34;UI&#34; source = &#34;VCS&#34;
-
-The table filter follow the CEL syntax. currently, we have one function for CEL: - tableExists(database, schema, table): return true if the table exists in changed resources.
-
-examples: Use tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table1&#34;) to filter the change histories which have the table &#34;table1&#34; in the schema &#34;public&#34; of the database &#34;db&#34;. For MySQL, the schema is always &#34;&#34;, such as tableExists(&#34;db&#34;, &#34;&#34;, &#34;table1&#34;).
-
-Combine multiple functions with &#34;&amp;&amp;&#34; and &#34;||&#34;, we MUST use the Disjunctive Normal Form(DNF). In other words, the CEL expression consists of several parts connected by OR operators. For example, the following expression is valid: ( tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table1&#34;) &amp;&amp; tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table2&#34;) ) || ( tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table3&#34;) ) |
-
-
-
-
-
-
-<a name="bytebase-v1-ListChangeHistoriesResponse"></a>
-
-### ListChangeHistoriesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| change_histories | [ChangeHistory](#bytebase-v1-ChangeHistory) | repeated | The list of change histories. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -3462,63 +3358,6 @@ ViewMetadata is the metadata for views.
  
 
 
-<a name="bytebase-v1-ChangeHistory-Source"></a>
-
-### ChangeHistory.Source
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| SOURCE_UNSPECIFIED | 0 |  |
-| UI | 1 |  |
-| VCS | 2 |  |
-| LIBRARY | 3 |  |
-
-
-
-<a name="bytebase-v1-ChangeHistory-Status"></a>
-
-### ChangeHistory.Status
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| PENDING | 1 |  |
-| DONE | 2 |  |
-| FAILED | 3 |  |
-
-
-
-<a name="bytebase-v1-ChangeHistory-Type"></a>
-
-### ChangeHistory.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| BASELINE | 1 |  |
-| MIGRATE | 2 |  |
-| MIGRATE_SDL | 3 |  |
-| MIGRATE_GHOST | 4 |  |
-| DATA | 6 |  |
-
-
-
-<a name="bytebase-v1-ChangeHistoryView"></a>
-
-### ChangeHistoryView
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| CHANGE_HISTORY_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
-| CHANGE_HISTORY_VIEW_BASIC | 1 |  |
-| CHANGE_HISTORY_VIEW_FULL | 2 |  |
-
-
-
 <a name="bytebase-v1-Changelog-Status"></a>
 
 ### Changelog.Status
@@ -3677,8 +3516,6 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | UpdateSecret | [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest) | [Secret](#bytebase-v1-Secret) |  |
 | DeleteSecret | [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | AdviseIndex | [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest) | [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse) |  |
-| ListChangeHistories | [ListChangeHistoriesRequest](#bytebase-v1-ListChangeHistoriesRequest) | [ListChangeHistoriesResponse](#bytebase-v1-ListChangeHistoriesResponse) |  |
-| GetChangeHistory | [GetChangeHistoryRequest](#bytebase-v1-GetChangeHistoryRequest) | [ChangeHistory](#bytebase-v1-ChangeHistory) |  |
 | ListRevisions | [ListRevisionsRequest](#bytebase-v1-ListRevisionsRequest) | [ListRevisionsResponse](#bytebase-v1-ListRevisionsResponse) |  |
 | GetRevision | [GetRevisionRequest](#bytebase-v1-GetRevisionRequest) | [Revision](#bytebase-v1-Revision) |  |
 | CreateRevision | [CreateRevisionRequest](#bytebase-v1-CreateRevisionRequest) | [Revision](#bytebase-v1-Revision) |  |
@@ -6730,7 +6567,7 @@ The branch&#39;s `name` field is used to identify the branch to update. Format: 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | sheet | [string](#string) |  | The name of a sheet. |
-| source | [string](#string) |  | The source of origin. 1) changelog: instances/{instance}/databases/{database}/changelog/{changeHistory}. 2) raw SQL if empty. |
+| source | [string](#string) |  | The source of origin. 1) changelog: instances/{instance}/databases/{database}/changelogs/{changelog}. 2) raw SQL if empty. |
 | version | [string](#string) |  | The migration version for a change. |
 
 
@@ -11206,7 +11043,6 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | title | [string](#string) |  |  |
 | status | [TaskRun.Status](#bytebase-v1-TaskRun-Status) |  |  |
 | detail | [string](#string) |  | Below are the results of a task run. |
-| change_history | [string](#string) |  | The resource name of the change history Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 | changelog | [string](#string) |  | The resource name of the changelog. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
 | schema_version | [string](#string) |  |  |
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |

@@ -475,7 +475,7 @@ type Changelist_Change struct {
 	// The name of a sheet.
 	Sheet string `protobuf:"bytes,1,opt,name=sheet,proto3" json:"sheet,omitempty"`
 	// The source of origin.
-	// 1) changelog: instances/{instance}/databases/{database}/changelog/{changeHistory}.
+	// 1) changelog: instances/{instance}/databases/{database}/changelogs/{changelog}.
 	// 2) raw SQL if empty.
 	Source string `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
 	// The migration version for a change.

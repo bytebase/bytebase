@@ -506,10 +506,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ChangeHistory"><span class="badge">M</span>ChangeHistory</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.ChangedResourceDatabase"><span class="badge">M</span>ChangedResourceDatabase</a>
                 </li>
               
@@ -634,10 +630,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.GetChangeHistoryRequest"><span class="badge">M</span>GetChangeHistoryRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.GetChangelogRequest"><span class="badge">M</span>GetChangelogRequest</a>
                 </li>
               
@@ -659,14 +651,6 @@
               
                 <li>
                   <a href="#bytebase.v1.IndexMetadata"><span class="badge">M</span>IndexMetadata</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListChangeHistoriesRequest"><span class="badge">M</span>ListChangeHistoriesRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListChangeHistoriesResponse"><span class="badge">M</span>ListChangeHistoriesResponse</a>
                 </li>
               
                 <li>
@@ -813,22 +797,6 @@
                   <a href="#bytebase.v1.ViewMetadata"><span class="badge">M</span>ViewMetadata</a>
                 </li>
               
-              
-                <li>
-                  <a href="#bytebase.v1.ChangeHistory.Source"><span class="badge">E</span>ChangeHistory.Source</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ChangeHistory.Status"><span class="badge">E</span>ChangeHistory.Status</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ChangeHistory.Type"><span class="badge">E</span>ChangeHistory.Type</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ChangeHistoryView"><span class="badge">E</span>ChangeHistoryView</a>
-                </li>
               
                 <li>
                   <a href="#bytebase.v1.Changelog.Status"><span class="badge">E</span>Changelog.Status</a>
@@ -6262,172 +6230,6 @@ A maximum of 1000 databases can be modified in a batch. </p></td>
 
         
       
-        <h3 id="bytebase.v1.ChangeHistory">ChangeHistory</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format:
-instances/{instance}/databases/{database}/changeHistories/{changeHistory} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>creator</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: users/hello@world.com </p></td>
-                </tr>
-              
-                <tr>
-                  <td>updater</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: users/hello@world.com </p></td>
-                </tr>
-              
-                <tr>
-                  <td>create_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>release_version</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>release version of Bytebase </p></td>
-                </tr>
-              
-                <tr>
-                  <td>source</td>
-                  <td><a href="#bytebase.v1.ChangeHistory.Source">ChangeHistory.Source</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.ChangeHistory.Type">ChangeHistory.Type</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>status</td>
-                  <td><a href="#bytebase.v1.ChangeHistory.Status">ChangeHistory.Status</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>version</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>description</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>statement</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The statement is used for preview purpose. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>statement_size</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>statement_sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the sheet resource.
-Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema_size</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>prev_schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>prev_schema_size</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>execution_duration</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>issue</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: projects/{project}/issues/{issue} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>changed_resources</td>
-                  <td><a href="#bytebase.v1.ChangedResources">ChangedResources</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.ChangedResourceDatabase">ChangedResourceDatabase</h3>
         <p></p>
 
@@ -6758,9 +6560,7 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td>task_run</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Could be empty
-TODO(p0ny): We will migrate ChangeHistory to Changelog, and they won&#39;t have
-task_run. </p></td>
+                  <td><p>Format: projects/{projects}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
                 </tr>
               
                 <tr>
@@ -7434,11 +7234,10 @@ instances/{instance}/databases/{database}/secrets/{secret} </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the database or change history.
+                  <td><p>The name of the database or changelog.
 Format:
 database: instances/{instance}/databases/{database}
-change history:
-instances/{instance}/databases/{database}/changeHistories/{changeHistory} </p></td>
+changelog: instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
                 </tr>
               
                 <tr>
@@ -7449,12 +7248,12 @@ instances/{instance}/databases/{database}/changeHistories/{changeHistory} </p></
                 </tr>
               
                 <tr>
-                  <td>change_history</td>
+                  <td>changelog</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The resource name of the change history
+                  <td><p>The resource name of the changelog
 Format:
-instances/{instance}/databases/{database}/changeHistories/{changeHistory} </p></td>
+instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
                 </tr>
               
                 <tr>
@@ -7911,55 +7710,6 @@ function takes. </p></td>
 
         
       
-        <h3 id="bytebase.v1.GetChangeHistoryRequest">GetChangeHistoryRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the change history to retrieve.
-Format:
-instances/{instance}/databases/{database}/changeHistories/{changeHistory} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>view</td>
-                  <td><a href="#bytebase.v1.ChangeHistoryView">ChangeHistoryView</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sdl_format</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Format the schema dump into SDL format. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>concise</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>When true, the schema dump will be concise.
-For Oracle, there will be tables and indexes only for Sync Schema.
-For Postgres, we&#39;ll filter the backup schema. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.GetChangelogRequest">GetChangelogRequest</h3>
         <p></p>
 
@@ -8241,127 +7991,6 @@ If the key length is not specified, it&#39;s -1. </p></td>
                   <td><a href="#int64">int64</a></td>
                   <td></td>
                   <td><p>The number of granules in the block. It&#39;s a ClickHouse specific field. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListChangeHistoriesRequest">ListChangeHistoriesRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent of the change histories.
-Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The maximum number of change histories to return. The service may return
-fewer than this value. If unspecified, at most 10 change histories will be
-returned. The maximum value is 1000; values above 1000 will be coerced to
-1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A page token, received from a previous `ListChangeHistories` call.
-Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListChangeHistories`
-must match the call that provided the page token. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>view</td>
-                  <td><a href="#bytebase.v1.ChangeHistoryView">ChangeHistoryView</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The filter of the change histories.
-follow the
-[ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
-syntax. Support filter by type, source or table. For example: table =
-&#34;tableExists(&#39;{database}&#39;, &#39;{schema}&#39;, &#39;{table}&#39;)&#34; table =
-&#34;tableExists(&#39;db&#39;, &#39;public&#39;, &#39;table1&#39;) || tableExists(&#39;db&#39;, &#39;public&#39;,
-&#39;table2&#39;)&#34; type = &#34;MIGRATE | DATA&#34; source = &#34;UI&#34; source = &#34;VCS&#34;
-
-The table filter follow the CEL syntax.
-currently, we have one function for CEL:
-- tableExists(database, schema, table): return true if the table exists in
-changed resources.
-
-examples:
-Use
-  tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table1&#34;)
-to filter the change histories which have the table &#34;table1&#34; in the schema
-&#34;public&#34; of the database &#34;db&#34;. For MySQL, the schema is always &#34;&#34;, such as
-tableExists(&#34;db&#34;, &#34;&#34;, &#34;table1&#34;).
-
-Combine multiple functions with &#34;&amp;&amp;&#34; and &#34;||&#34;, we MUST use the Disjunctive
-Normal Form(DNF). In other words, the CEL expression consists of several
-parts connected by OR operators. For example, the following expression is
-valid:
-(
- tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table1&#34;) &amp;&amp;
- tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table2&#34;)
-) || (
- tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table3&#34;)
-) </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListChangeHistoriesResponse">ListChangeHistoriesResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>change_histories</td>
-                  <td><a href="#bytebase.v1.ChangeHistory">ChangeHistory</a></td>
-                  <td>repeated</td>
-                  <td><p>The list of change histories. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
-If this field is omitted, there are no subsequent pages. </p></td>
                 </tr>
               
             </tbody>
@@ -10498,153 +10127,6 @@ Format: projcets/{project}/branches/{branch} </p></td>
       
 
       
-        <h3 id="bytebase.v1.ChangeHistory.Source">ChangeHistory.Source</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>SOURCE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>UI</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>VCS</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>LIBRARY</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.ChangeHistory.Status">ChangeHistory.Status</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PENDING</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DONE</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>FAILED</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.ChangeHistory.Type">ChangeHistory.Type</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>BASELINE</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE_SDL</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE_GHOST</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DATA</td>
-                <td>6</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.ChangeHistoryView">ChangeHistoryView</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>CHANGE_HISTORY_VIEW_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>The default / unset value.
-The API will default to the BASIC view.</p></td>
-              </tr>
-            
-              <tr>
-                <td>CHANGE_HISTORY_VIEW_BASIC</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>CHANGE_HISTORY_VIEW_FULL</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
         <h3 id="bytebase.v1.Changelog.Status">Changelog.Status</h3>
         <p></p>
         <table class="enum-table">
@@ -11080,20 +10562,6 @@ view, function names.</p></td>
               </tr>
             
               <tr>
-                <td>ListChangeHistories</td>
-                <td><a href="#bytebase.v1.ListChangeHistoriesRequest">ListChangeHistoriesRequest</a></td>
-                <td><a href="#bytebase.v1.ListChangeHistoriesResponse">ListChangeHistoriesResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>GetChangeHistory</td>
-                <td><a href="#bytebase.v1.GetChangeHistoryRequest">GetChangeHistoryRequest</a></td>
-                <td><a href="#bytebase.v1.ChangeHistory">ChangeHistory</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>ListRevisions</td>
                 <td><a href="#bytebase.v1.ListRevisionsRequest">ListRevisionsRequest</a></td>
                 <td><a href="#bytebase.v1.ListRevisionsResponse">ListRevisionsResponse</a></td>
@@ -11252,7 +10720,7 @@ view, function names.</p></td>
               <tr>
                 <td>DiffSchema</td>
                 <td>POST</td>
-                <td>/v1/{name=instances/*/databases/*/changeHistories/*}:diffSchema</td>
+                <td>/v1/{name=instances/*/databases/*/changelogs/*}:diffSchema</td>
                 <td>*</td>
               </tr>
               
@@ -11303,26 +10771,6 @@ view, function names.</p></td>
                 <td>AdviseIndex</td>
                 <td>POST</td>
                 <td>/v1/{parent=instances/*/databases/*}:adviseIndex</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>ListChangeHistories</td>
-                <td>GET</td>
-                <td>/v1/{parent=instances/*/databases/*}/changeHistories</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>GetChangeHistory</td>
-                <td>GET</td>
-                <td>/v1/{name=instances/*/databases/*/changeHistories/*}</td>
                 <td></td>
               </tr>
               
@@ -19187,7 +18635,7 @@ Format: users/{email} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The source of origin.
-1) changelog: instances/{instance}/databases/{database}/changelog/{changeHistory}.
+1) changelog: instances/{instance}/databases/{database}/changelogs/{changelog}.
 2) raw SQL if empty. </p></td>
                 </tr>
               
@@ -30882,14 +30330,6 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Below are the results of a task run. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>change_history</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource name of the change history
-Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} </p></td>
                 </tr>
               
                 <tr>
