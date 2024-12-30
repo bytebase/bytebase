@@ -22,6 +22,9 @@
             <NTag v-if="changelog.version" round>
               {{ $t("common.version") }} {{ changelog.version }}
             </NTag>
+            <span class="text-xl">{{
+              getDateForPbTimestamp(changelog.createTime)?.toLocaleString()
+            }}</span>
           </div>
           <dl
             class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
@@ -47,13 +50,6 @@
               >
               {{ creator.title }}
             </dd>
-            <dt class="sr-only">{{ $t("common.created-at") }}</dt>
-            <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel"
-                >{{ $t("common.created-at") }}&nbsp;-&nbsp;</span
-              >
-              {{ humanizeDate(getDateForPbTimestamp(changelog.createTime)) }}
-            </dd>
           </dl>
         </div>
       </div>
@@ -78,11 +74,7 @@
           </div>
         </div>
         <div class="flex flex-col gap-y-2">
-          <a
-            id="statement"
-            href="#statement"
-            class="w-auto flex items-center text-lg text-main mb-2 hover:underline"
-          >
+          <p class="flex items-center text-lg text-main capitalize">
             {{ $t("common.statement") }}
             <button
               tabindex="-1"
@@ -91,7 +83,7 @@
             >
               <ClipboardIcon class="w-5 h-5" />
             </button>
-          </a>
+          </p>
           <MonacoEditor
             class="h-auto max-h-[480px] min-h-[120px] border rounded-[3px] text-sm overflow-clip relative"
             :content="changelogStatement"
@@ -100,11 +92,7 @@
           />
         </div>
         <div v-if="showSchemaSnapshot" class="flex flex-col gap-y-2">
-          <a
-            id="schema"
-            href="#schema"
-            class="flex items-center text-lg text-main hover:underline capitalize"
-          >
+          <p class="flex items-center text-lg text-main capitalize">
             Schema {{ $t("common.snapshot") }}
             <button
               tabindex="-1"
@@ -113,8 +101,7 @@
             >
               <ClipboardIcon class="w-5 h-5" />
             </button>
-          </a>
-
+          </p>
           <div class="flex flex-row items-center gap-x-2">
             <div v-if="allowShowDiff" class="flex space-x-1 items-center">
               <NSwitch
