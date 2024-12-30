@@ -17,16 +17,12 @@
               :level="state.maskingLevel"
               :level-list="MASKING_LEVELS"
               :disabled="!hasPermissionToUpdateConfig || state.processing"
-              :effective-masking-level="columnMetadata?.effectiveMaskingLevel"
               @update:level="onMaskingLevelUpdate($event)"
             />
           </div>
           <div class="w-full">
             <div
-              v-if="
-                state.maskingLevel === MaskingLevel.FULL ||
-                columnMetadata?.effectiveMaskingLevel === MaskingLevel.FULL
-              "
+              v-if="state.maskingLevel === MaskingLevel.FULL"
               class="flex flex-col space-y-2"
             >
               <h1 class="font-semibold">
@@ -62,10 +58,7 @@
               />
             </div>
             <div
-              v-else-if="
-                state.maskingLevel === MaskingLevel.PARTIAL ||
-                columnMetadata?.effectiveMaskingLevel === MaskingLevel.PARTIAL
-              "
+              v-else-if="state.maskingLevel === MaskingLevel.PARTIAL"
               class="flex flex-col space-y-2"
             >
               <h1 class="font-semibold">
@@ -166,7 +159,6 @@
 </template>
 
 <script lang="tsx" setup>
-import { computedAsync } from "@vueuse/core";
 import type { SelectOption } from "naive-ui";
 import { NSelect, NButton } from "naive-ui";
 import { computed, reactive, onMounted } from "vue";
@@ -281,19 +273,6 @@ const onColumnMaskingUpdate = async () => {
     state.processing = false;
   }
 };
-
-const columnMetadata = computedAsync(async () => {
-  const { mask, database } = props;
-  if (mask.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
-    return undefined;
-  }
-  const table = await dbSchemaStore.getOrFetchTableMetadata({
-    database: database.name,
-    schema: mask.schema,
-    table: mask.table,
-  });
-  return table?.columns.find((c) => c.name === mask.column);
-}, undefined);
 
 const algorithmList = computed((): SelectOption[] => {
   const list = (
