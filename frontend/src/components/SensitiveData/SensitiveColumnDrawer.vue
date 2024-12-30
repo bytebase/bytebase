@@ -159,7 +159,6 @@
 </template>
 
 <script lang="tsx" setup>
-import { computedAsync } from "@vueuse/core";
 import type { SelectOption } from "naive-ui";
 import { NSelect, NButton } from "naive-ui";
 import { computed, reactive, onMounted } from "vue";
@@ -274,19 +273,6 @@ const onColumnMaskingUpdate = async () => {
     state.processing = false;
   }
 };
-
-const columnMetadata = computedAsync(async () => {
-  const { mask, database } = props;
-  if (mask.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
-    return undefined;
-  }
-  const table = await dbSchemaStore.getOrFetchTableMetadata({
-    database: database.name,
-    schema: mask.schema,
-    table: mask.table,
-  });
-  return table?.columns.find((c) => c.name === mask.column);
-}, undefined);
 
 const algorithmList = computed((): SelectOption[] => {
   const list = (
