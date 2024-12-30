@@ -306,7 +306,7 @@ func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, inst
 	return columnMetadata, columnConfig, nil
 }
 
-func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.MaskingAlgorithmSetting_Algorithm, level storepb.MaskingLevel) masker.Masker {
+func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.Algorithm, level storepb.MaskingLevel) masker.Masker {
 	if algorithm == nil {
 		switch level {
 		case storepb.MaskingLevel_FULL:
@@ -319,19 +319,19 @@ func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.MaskingAlgorithmSett
 	}
 
 	switch m := algorithm.Mask.(type) {
-	case *storepb.MaskingAlgorithmSetting_Algorithm_FullMask_:
+	case *storepb.Algorithm_FullMask_:
 		return masker.NewFullMasker(m.FullMask.Substitution)
-	case *storepb.MaskingAlgorithmSetting_Algorithm_RangeMask_:
+	case *storepb.Algorithm_RangeMask_:
 		return masker.NewRangeMasker(convertRangeMaskSlices(m.RangeMask.Slices))
-	case *storepb.MaskingAlgorithmSetting_Algorithm_Md5Mask:
+	case *storepb.Algorithm_Md5Mask:
 		return masker.NewMD5Masker(m.Md5Mask.Salt)
-	case *storepb.MaskingAlgorithmSetting_Algorithm_InnerOuterMask_:
+	case *storepb.Algorithm_InnerOuterMask_:
 		return masker.NewInnerOuterMasker(m.InnerOuterMask.Type, m.InnerOuterMask.PrefixLen, m.InnerOuterMask.SuffixLen, m.InnerOuterMask.Substitution)
 	}
 	return masker.NewNoneMasker()
 }
 
-func convertRangeMaskSlices(slices []*storepb.MaskingAlgorithmSetting_Algorithm_RangeMask_Slice) []*masker.MaskRangeSlice {
+func convertRangeMaskSlices(slices []*storepb.Algorithm_RangeMask_Slice) []*masker.MaskRangeSlice {
 	var result []*masker.MaskRangeSlice
 	for _, slice := range slices {
 		result = append(result, &masker.MaskRangeSlice{

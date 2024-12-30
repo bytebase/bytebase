@@ -1,6 +1,6 @@
 import { computed } from "vue";
 import { useDatabaseCatalog, useSettingV1Store, getColumnCatalog } from "@/store";
-import { MaskingAlgorithmSetting_Algorithm as Algorithm } from "@/types/proto/v1/setting_service";
+import { Algorithm } from "@/types/proto/v1/setting_service";
 
 export const useColumnMasking = ({
   database,

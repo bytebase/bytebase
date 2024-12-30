@@ -46,7 +46,7 @@ import { BBGrid } from "@/bbkit";
 import type { BBGridColumn, BBGridRow } from "@/bbkit/types";
 import { MiniActionButton } from "@/components/v2";
 import { useSettingV1Store, pushNotification } from "@/store";
-import { MaskingAlgorithmSetting_Algorithm as Algorithm } from "@/types/proto/v1/setting_service";
+import { Algorithm } from "@/types/proto/v1/setting_service";
 import { getMaskingType } from "./utils";
 
 type AlgorithmRow = BBGridRow<Algorithm>;
