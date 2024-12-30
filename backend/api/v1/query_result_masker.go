@@ -209,8 +209,8 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 					Table:                     tableConfig.Name,
 					Column:                    columnConfig.Name,
 					MaskingLevel:              columnConfig.MaskingLevel,
-					FullMaskingAlgorithmId:    columnConfig.FullMaskingAlgorithmId,
-					PartialMaskingAlgorithmId: columnConfig.PartialMaskingAlgorithmId,
+					FullMaskingAlgorithmID:    columnConfig.FullMaskingAlgorithmId,
+					PartialMaskingAlgorithmID: columnConfig.PartialMaskingAlgorithmId,
 				}
 			}
 		}

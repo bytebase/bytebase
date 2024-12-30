@@ -88,8 +88,8 @@ type maskData struct {
 	Table                     string
 	Column                    string
 	MaskingLevel              storepb.MaskingLevel
-	FullMaskingAlgorithmId    string
-	PartialMaskingAlgorithmId string
+	FullMaskingAlgorithmID    string
+	PartialMaskingAlgorithmID string
 }
 
 // nolint
@@ -110,9 +110,9 @@ func (m *maskingLevelEvaluator) evaluateMaskingAlgorithmOfColumn(databaseMessage
 		algorithmID := ""
 		switch maskingLevel {
 		case storepb.MaskingLevel_PARTIAL:
-			algorithmID = maskingData.PartialMaskingAlgorithmId
+			algorithmID = maskingData.PartialMaskingAlgorithmID
 		case storepb.MaskingLevel_FULL:
-			algorithmID = maskingData.FullMaskingAlgorithmId
+			algorithmID = maskingData.FullMaskingAlgorithmID
 		}
 		if algorithmID != "" {
 			if v, ok := m.maskingAlgorithms[algorithmID]; ok {
