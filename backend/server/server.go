@@ -206,14 +206,14 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		if err := demo.LoadDemoDataIfNeeded(ctx, storeDB, s.pgBinDir, profile.DemoName, profile.Mode); err != nil {
 			return nil, errors.Wrapf(err, "failed to load demo data")
 		}
-		if err := s.migrateMaskingData(ctx); err != nil {
-			return nil, errors.Wrap(err, "failed to migrate database masking policy")
-		}
 		if _, err := migrator.MigrateSchema(ctx, storeDB, storeInstance, s.pgBinDir, profile.Version, profile.Mode); err != nil {
 			return nil, err
 		}
 	}
-	s.store = storeInstance
+	if err := s.migrateMaskingData(ctx); err != nil {
+		return nil, errors.Wrap(err, "failed to migrate database masking policy")
+	}
+
 	s.sheetManager = sheet.NewManager(storeInstance)
 
 	s.stateCfg, err = state.New()
