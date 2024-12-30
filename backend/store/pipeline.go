@@ -46,6 +46,7 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to SELECT plan FOR UPDATE")
 	}
+	invalidateCacheF := func() {}
 	if pipelineUIDMaybe == nil {
 		createdPipeline, err := s.createPipeline(ctx, tx, pipeline, creatorUID)
 		if err != nil {
@@ -54,7 +55,7 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 		createdPipelineUID = createdPipeline.ID
 
 		// update pipeline uid of associated issue and plan
-		if err := updatePipelineUIDOfIssueAndPlan(ctx, tx, planUID, createdPipelineUID); err != nil {
+		if invalidateCacheF, err = s.updatePipelineUIDOfIssueAndPlan(ctx, tx, planUID, createdPipelineUID); err != nil {
 			return 0, errors.Wrapf(err, "failed to update associated plan or issue")
 		}
 	} else {
@@ -110,26 +111,32 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 	if err := tx.Commit(); err != nil {
 		return 0, errors.Wrapf(err, "failed to commit tx")
 	}
+	invalidateCacheF()
 
 	return createdPipelineUID, nil
 }
 
-func updatePipelineUIDOfIssueAndPlan(ctx context.Context, tx *Tx, planUID int64, pipelineUID int) error {
+// returns func() to invalidate cache.
+func (s *Store) updatePipelineUIDOfIssueAndPlan(ctx context.Context, tx *Tx, planUID int64, pipelineUID int) (func(), error) {
 	if _, err := tx.ExecContext(ctx, `
 		UPDATE plan
 		SET pipeline_id = $1
 		WHERE id = $2
 	`, pipelineUID, planUID); err != nil {
-		return errors.Wrapf(err, "failed to update plan pipeline_id")
+		return nil, errors.Wrapf(err, "failed to update plan pipeline_id")
 	}
-	if _, err := tx.ExecContext(ctx, `
+	var issueUID int
+	if err := tx.QueryRowContext(ctx, `
 		UPDATE issue
 		SET pipeline_id = $1
 		WHERE plan_id = $2
-	`, pipelineUID, planUID); err != nil {
-		return errors.Wrapf(err, "failed to update issue pipeline_id")
+		RETURNING id
+	`, pipelineUID, planUID).Scan(&issueUID); err != nil {
+		return nil, errors.Wrapf(err, "failed to update issue pipeline_id")
 	}
-	return nil
+	return func() {
+		s.issueCache.Remove(issueUID)
+	}, nil
 }
 
 func lockPlanAndGetPipelineUID(ctx context.Context, tx *Tx, planUID int64) (*int, error) {
