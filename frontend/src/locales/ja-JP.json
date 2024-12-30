@@ -1493,6 +1493,7 @@
     "account": "アカウント",
     "name": "名前",
     "host-or-socket": "ホストまたはソケット",
+    "endpoint": "終点",
     "project-id-and-instance-id": "プロジェクト ID とインスタンス ID",
     "project-id": "プロジェクトID",
     "instance-id": "インスタンスID",

@@ -90,6 +90,7 @@ export enum Engine {
   DYNAMODB = "DYNAMODB",
   DATABRICKS = "DATABRICKS",
   COCKROACHDB = "COCKROACHDB",
+  COSMOSDB = "COSMOSDB",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -173,6 +174,9 @@ export function engineFromJSON(object: any): Engine {
     case 25:
     case "COCKROACHDB":
       return Engine.COCKROACHDB;
+    case 26:
+    case "COSMOSDB":
+      return Engine.COSMOSDB;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -234,6 +238,8 @@ export function engineToJSON(object: Engine): string {
       return "DATABRICKS";
     case Engine.COCKROACHDB:
       return "COCKROACHDB";
+    case Engine.COSMOSDB:
+      return "COSMOSDB";
     case Engine.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -294,6 +300,8 @@ export function engineToNumber(object: Engine): number {
       return 24;
     case Engine.COCKROACHDB:
       return 25;
+    case Engine.COSMOSDB:
+      return 26;
     case Engine.UNRECOGNIZED:
     default:
       return -1;
@@ -521,7 +529,10 @@ function createBasePosition(): Position {
 }
 
 export const Position: MessageFns<Position> = {
-  encode(message: Position, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: Position,
+    writer: BinaryWriter = new BinaryWriter()
+  ): BinaryWriter {
     if (message.line !== 0) {
       writer.uint32(8).int32(message.line);
     }
@@ -532,7 +543,8 @@ export const Position: MessageFns<Position> = {
   },
 
   decode(input: BinaryReader | Uint8Array, length?: number): Position {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePosition();
     while (reader.pos < end) {
@@ -597,7 +609,10 @@ function createBaseRange(): Range {
 }
 
 export const Range: MessageFns<Range> = {
-  encode(message: Range, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: Range,
+    writer: BinaryWriter = new BinaryWriter()
+  ): BinaryWriter {
     if (message.start !== 0) {
       writer.uint32(8).int32(message.start);
     }
@@ -608,7 +623,8 @@ export const Range: MessageFns<Range> = {
   },
 
   decode(input: BinaryReader | Uint8Array, length?: number): Range {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseRange();
     while (reader.pos < end) {
@@ -668,13 +684,26 @@ export const Range: MessageFns<Range> = {
   },
 };
 
-type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+type Builtin =
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | boolean
+  | undefined;
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends Long
+    ? string | number | Long
+    : T extends globalThis.Array<infer U>
+      ? globalThis.Array<DeepPartial<U>>
+      : T extends ReadonlyArray<infer U>
+        ? ReadonlyArray<DeepPartial<U>>
+        : T extends {}
+          ? { [K in keyof T]?: DeepPartial<T[K]> }
+          : Partial<T>;
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;
