@@ -18,14 +18,14 @@ type maskingLevelEvaluator struct {
 	maskingRules            []*storepb.MaskingRulePolicy_MaskingRule
 	dataClassificationIDMap map[string]*storepb.DataClassificationSetting_DataClassificationConfig
 	semanticTypesMap        map[string]*storepb.SemanticTypeSetting_SemanticType
-	maskingAlgorithms       map[string]*storepb.MaskingAlgorithmSetting_Algorithm
+	maskingAlgorithms       map[string]*storepb.Algorithm
 }
 
 func newEmptyMaskingLevelEvaluator() *maskingLevelEvaluator {
 	return &maskingLevelEvaluator{
 		dataClassificationIDMap: make(map[string]*storepb.DataClassificationSetting_DataClassificationConfig),
 		semanticTypesMap:        make(map[string]*storepb.SemanticTypeSetting_SemanticType),
-		maskingAlgorithms:       make(map[string]*storepb.MaskingAlgorithmSetting_Algorithm),
+		maskingAlgorithms:       make(map[string]*storepb.Algorithm),
 	}
 }
 
@@ -84,7 +84,7 @@ type maskingPolicyKey struct {
 }
 
 // nolint
-func (m *maskingLevelEvaluator) evaluateMaskingAlgorithmOfColumn(databaseMessage *store.DatabaseMessage, schemaName, tableName, columnName, columnSemanticTypeID, columnClassification string, databaseProjectDataClassificationID string, maskingPolicyMap map[maskingPolicyKey]*storepb.MaskData, filteredMaskingExceptions []*storepb.MaskingExceptionPolicy_MaskingException) (*storepb.MaskingAlgorithmSetting_Algorithm, storepb.MaskingLevel, error) {
+func (m *maskingLevelEvaluator) evaluateMaskingAlgorithmOfColumn(databaseMessage *store.DatabaseMessage, schemaName, tableName, columnName, columnSemanticTypeID, columnClassification string, databaseProjectDataClassificationID string, maskingPolicyMap map[maskingPolicyKey]*storepb.MaskData, filteredMaskingExceptions []*storepb.MaskingExceptionPolicy_MaskingException) (*storepb.Algorithm, storepb.MaskingLevel, error) {
 	maskingLevel, err := m.evaluateMaskingLevelOfColumn(databaseMessage, schemaName, tableName, columnName, columnClassification, databaseProjectDataClassificationID, maskingPolicyMap, filteredMaskingExceptions)
 	if err != nil {
 		return nil, storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to evaluate masking level of column")

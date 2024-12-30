@@ -1111,6 +1111,30 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.Algorithm"><span class="badge">M</span>Algorithm</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Algorithm.FullMask"><span class="badge">M</span>Algorithm.FullMask</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Algorithm.InnerOuterMask"><span class="badge">M</span>Algorithm.InnerOuterMask</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Algorithm.MD5Mask"><span class="badge">M</span>Algorithm.MD5Mask</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Algorithm.RangeMask"><span class="badge">M</span>Algorithm.RangeMask</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Algorithm.RangeMask.Slice"><span class="badge">M</span>Algorithm.RangeMask.Slice</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Announcement"><span class="badge">M</span>Announcement</a>
                 </li>
               
@@ -1183,30 +1207,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm"><span class="badge">M</span>MaskingAlgorithmSetting.Algorithm</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.FullMask"><span class="badge">M</span>MaskingAlgorithmSetting.Algorithm.FullMask</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask"><span class="badge">M</span>MaskingAlgorithmSetting.Algorithm.InnerOuterMask</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.MD5Mask"><span class="badge">M</span>MaskingAlgorithmSetting.Algorithm.MD5Mask</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.RangeMask"><span class="badge">M</span>MaskingAlgorithmSetting.Algorithm.RangeMask</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.RangeMask.Slice"><span class="badge">M</span>MaskingAlgorithmSetting.Algorithm.RangeMask.Slice</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.MaximumSQLResultSizeSetting"><span class="badge">M</span>MaximumSQLResultSizeSetting</a>
                 </li>
               
@@ -1276,15 +1276,15 @@
               
               
                 <li>
+                  <a href="#bytebase.v1.Algorithm.InnerOuterMask.MaskType"><span class="badge">E</span>Algorithm.InnerOuterMask.MaskType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Announcement.AlertLevel"><span class="badge">E</span>Announcement.AlertLevel</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.v1.DatabaseChangeMode"><span class="badge">E</span>DatabaseChangeMode</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType"><span class="badge">E</span>MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType</a>
                 </li>
               
                 <li>
@@ -13728,6 +13728,239 @@ The access is based on approval flow.</p></td>
 
         
       
+        <h3 id="bytebase.v1.Algorithm">Algorithm</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>id is the uuid for masking algorithm. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>title is the title for masking algorithm. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>description</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>description is the description for masking algorithm. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>category</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASK and HASH.
+The range of accepted Payload is decided by the category.
+MASK: FullMask, RangeMask
+HASH: MD5Mask </p></td>
+                </tr>
+              
+                <tr>
+                  <td>full_mask</td>
+                  <td><a href="#bytebase.v1.Algorithm.FullMask">Algorithm.FullMask</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>range_mask</td>
+                  <td><a href="#bytebase.v1.Algorithm.RangeMask">Algorithm.RangeMask</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>md5_mask</td>
+                  <td><a href="#bytebase.v1.Algorithm.MD5Mask">Algorithm.MD5Mask</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>inner_outer_mask</td>
+                  <td><a href="#bytebase.v1.Algorithm.InnerOuterMask">Algorithm.InnerOuterMask</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Algorithm.FullMask">Algorithm.FullMask</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>substitution</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>substitution is the string used to replace the original value, the
+max length of the string is 16 bytes. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Algorithm.InnerOuterMask">Algorithm.InnerOuterMask</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>prefix_len</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>suffix_len</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.Algorithm.InnerOuterMask.MaskType">Algorithm.InnerOuterMask.MaskType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>substitution</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Algorithm.MD5Mask">Algorithm.MD5Mask</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>salt</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>salt is the salt value to generate a different hash that with the word alone. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Algorithm.RangeMask">Algorithm.RangeMask</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>slices</td>
+                  <td><a href="#bytebase.v1.Algorithm.RangeMask.Slice">Algorithm.RangeMask.Slice</a></td>
+                  <td>repeated</td>
+                  <td><p>We store it as a repeated field to face the fact that the original value may have multiple parts should be masked.
+But frontend can be started with a single rule easily. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Algorithm.RangeMask.Slice">Algorithm.RangeMask.Slice</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>start is the start index of the original value, start from 0 and should be less than stop. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>stop is the stop index of the original value, should be less than the length of the original value. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>substitution</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>substitution is the string used to replace the OriginalValue[start:end). </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.Announcement">Announcement</h3>
         <p></p>
 
@@ -14352,242 +14585,9 @@ If this field is omitted, there are no subsequent pages. </p></td>
               
                 <tr>
                   <td>algorithms</td>
-                  <td><a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm">MaskingAlgorithmSetting.Algorithm</a></td>
+                  <td><a href="#bytebase.v1.Algorithm">Algorithm</a></td>
                   <td>repeated</td>
                   <td><p>algorithms is the list of masking algorithms. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.MaskingAlgorithmSetting.Algorithm">MaskingAlgorithmSetting.Algorithm</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>id is the uuid for masking algorithm. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>title is the title for masking algorithm. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>description</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>description is the description for masking algorithm. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>category</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASK and HASH.
-The range of accepted Payload is decided by the category.
-MASK: FullMask, RangeMask
-HASH: MD5Mask </p></td>
-                </tr>
-              
-                <tr>
-                  <td>full_mask</td>
-                  <td><a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.FullMask">MaskingAlgorithmSetting.Algorithm.FullMask</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>range_mask</td>
-                  <td><a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.RangeMask">MaskingAlgorithmSetting.Algorithm.RangeMask</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>md5_mask</td>
-                  <td><a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.MD5Mask">MaskingAlgorithmSetting.Algorithm.MD5Mask</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>inner_outer_mask</td>
-                  <td><a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask">MaskingAlgorithmSetting.Algorithm.InnerOuterMask</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.MaskingAlgorithmSetting.Algorithm.FullMask">MaskingAlgorithmSetting.Algorithm.FullMask</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>substitution</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>substitution is the string used to replace the original value, the
-max length of the string is 16 bytes. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask">MaskingAlgorithmSetting.Algorithm.InnerOuterMask</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>prefix_len</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>suffix_len</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType">MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>substitution</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.MaskingAlgorithmSetting.Algorithm.MD5Mask">MaskingAlgorithmSetting.Algorithm.MD5Mask</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>salt</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>salt is the salt value to generate a different hash that with the word alone. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.MaskingAlgorithmSetting.Algorithm.RangeMask">MaskingAlgorithmSetting.Algorithm.RangeMask</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>slices</td>
-                  <td><a href="#bytebase.v1.MaskingAlgorithmSetting.Algorithm.RangeMask.Slice">MaskingAlgorithmSetting.Algorithm.RangeMask.Slice</a></td>
-                  <td>repeated</td>
-                  <td><p>We store it as a repeated field to face the fact that the original value may have multiple parts should be masked.
-But frontend can be started with a single rule easily. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.MaskingAlgorithmSetting.Algorithm.RangeMask.Slice">MaskingAlgorithmSetting.Algorithm.RangeMask.Slice</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>start</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>start is the start index of the original value, start from 0 and should be less than stop. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>end</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>stop is the stop index of the original value, should be less than the length of the original value. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>substitution</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>substitution is the string used to replace the OriginalValue[start:end). </p></td>
                 </tr>
               
             </tbody>
@@ -15486,6 +15486,35 @@ The external URL is used for:
       
 
       
+        <h3 id="bytebase.v1.Algorithm.InnerOuterMask.MaskType">Algorithm.InnerOuterMask.MaskType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>MASK_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>INNER</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OUTER</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.Announcement.AlertLevel">Announcement.AlertLevel</h3>
         <p>We support three levels of AlertLevel: INFO, WARNING, and ERROR.</p>
         <table class="enum-table">
@@ -15546,35 +15575,6 @@ Default to this mode.</p></td>
                 <td>EDITOR</td>
                 <td>2</td>
                 <td><p>A simple database change process in SQL editor. Users can execute SQL directly.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType">MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>MASK_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>INNER</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>OUTER</td>
-                <td>2</td>
-                <td><p></p></td>
               </tr>
             
           </tbody>
