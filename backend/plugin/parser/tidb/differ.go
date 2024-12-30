@@ -75,7 +75,7 @@ func (diff *diffNode) diffSupportedStatement(oldStatement, newStatement string) 
 		if truncated {
 			sqlForComment += "..."
 		}
-		return errors.Wrapf(err, "failed to parse new statement %q", newStatement)
+		return errors.Wrapf(err, "failed to parse new statement %q", sqlForComment)
 	}
 
 	oldSchemaInfo, err := diff.buildSchemaInfo(oldNodeList)
