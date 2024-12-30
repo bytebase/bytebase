@@ -68,8 +68,8 @@ import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, useSettingV1Store, pushNotification } from "@/store";
 import {
-  MaskingAlgorithmSetting_Algorithm as Algorithm,
-  MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType,
+  Algorithm,
+  Algorithm_InnerOuterMask_MaskType,
 } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import DataExampleModal from "./components/DataExampleModal.vue";
@@ -254,7 +254,7 @@ const example: Algorithm[] = [
       prefixLen: 1,
       suffixLen: 2,
       substitution: "***",
-      type: MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.INNER,
+      type: Algorithm_InnerOuterMask_MaskType.INNER,
     },
   },
   {
@@ -267,7 +267,7 @@ const example: Algorithm[] = [
       prefixLen: 1,
       suffixLen: 2,
       substitution: "***",
-      type: MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.OUTER,
+      type: Algorithm_InnerOuterMask_MaskType.OUTER,
     },
   },
 ];

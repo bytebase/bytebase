@@ -9,7 +9,7 @@ import {
   useSettingV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_NAME } from "@/types";
-import type { MaskingAlgorithmSetting_Algorithm } from "@/types/proto/v1/setting_service";
+import type { Algorithm } from "@/types/proto/v1/setting_service";
 import {
   extractEnvironmentResourceName,
   extractInstanceResourceName,
@@ -88,7 +88,7 @@ export type MaskingType =
   | "inner-outer-mask";
 
 export const getMaskingType = (
-  algorithm: MaskingAlgorithmSetting_Algorithm
+  algorithm: Algorithm
 ): MaskingType | undefined => {
   switch (algorithm.category) {
     case "HASH":

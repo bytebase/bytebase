@@ -268,6 +268,12 @@
   
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
+    - [Algorithm](#bytebase-store-Algorithm)
+    - [Algorithm.FullMask](#bytebase-store-Algorithm-FullMask)
+    - [Algorithm.InnerOuterMask](#bytebase-store-Algorithm-InnerOuterMask)
+    - [Algorithm.MD5Mask](#bytebase-store-Algorithm-MD5Mask)
+    - [Algorithm.RangeMask](#bytebase-store-Algorithm-RangeMask)
+    - [Algorithm.RangeMask.Slice](#bytebase-store-Algorithm-RangeMask-Slice)
     - [Announcement](#bytebase-store-Announcement)
     - [AppIMSetting](#bytebase-store-AppIMSetting)
     - [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu)
@@ -283,12 +289,6 @@
     - [ExternalApprovalSetting](#bytebase-store-ExternalApprovalSetting)
     - [ExternalApprovalSetting.Node](#bytebase-store-ExternalApprovalSetting-Node)
     - [MaskingAlgorithmSetting](#bytebase-store-MaskingAlgorithmSetting)
-    - [MaskingAlgorithmSetting.Algorithm](#bytebase-store-MaskingAlgorithmSetting-Algorithm)
-    - [MaskingAlgorithmSetting.Algorithm.FullMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-FullMask)
-    - [MaskingAlgorithmSetting.Algorithm.InnerOuterMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask)
-    - [MaskingAlgorithmSetting.Algorithm.MD5Mask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-MD5Mask)
-    - [MaskingAlgorithmSetting.Algorithm.RangeMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-RangeMask)
-    - [MaskingAlgorithmSetting.Algorithm.RangeMask.Slice](#bytebase-store-MaskingAlgorithmSetting-Algorithm-RangeMask-Slice)
     - [MaximumSQLResultSizeSetting](#bytebase-store-MaximumSQLResultSizeSetting)
     - [PasswordRestrictionSetting](#bytebase-store-PasswordRestrictionSetting)
     - [SCIMSetting](#bytebase-store-SCIMSetting)
@@ -303,9 +303,9 @@
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
   
+    - [Algorithm.InnerOuterMask.MaskType](#bytebase-store-Algorithm-InnerOuterMask-MaskType)
     - [Announcement.AlertLevel](#bytebase-store-Announcement-AlertLevel)
     - [DatabaseChangeMode](#bytebase-store-DatabaseChangeMode)
-    - [MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType](#bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-MaskType)
     - [SMTPMailDeliverySetting.Authentication](#bytebase-store-SMTPMailDeliverySetting-Authentication)
     - [SMTPMailDeliverySetting.Encryption](#bytebase-store-SMTPMailDeliverySetting-Encryption)
   
@@ -4174,6 +4174,108 @@ SlowQueryPolicy is the policy configuration for slow query.
 
 
 
+<a name="bytebase-store-Algorithm"></a>
+
+### Algorithm
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | id is the uuid for masking algorithm. |
+| title | [string](#string) |  | title is the title for masking algorithm. |
+| description | [string](#string) |  | description is the description for masking algorithm. |
+| category | [string](#string) |  | Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASK and HASH. The range of accepted Payload is decided by the category. MASK: FullMask, RangeMask HASH: MD5Mask |
+| full_mask | [Algorithm.FullMask](#bytebase-store-Algorithm-FullMask) |  |  |
+| range_mask | [Algorithm.RangeMask](#bytebase-store-Algorithm-RangeMask) |  |  |
+| md5_mask | [Algorithm.MD5Mask](#bytebase-store-Algorithm-MD5Mask) |  |  |
+| inner_outer_mask | [Algorithm.InnerOuterMask](#bytebase-store-Algorithm-InnerOuterMask) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-Algorithm-FullMask"></a>
+
+### Algorithm.FullMask
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| substitution | [string](#string) |  | substitution is the string used to replace the original value, the max length of the string is 16 bytes. |
+
+
+
+
+
+
+<a name="bytebase-store-Algorithm-InnerOuterMask"></a>
+
+### Algorithm.InnerOuterMask
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| prefix_len | [int32](#int32) |  |  |
+| suffix_len | [int32](#int32) |  |  |
+| substitution | [string](#string) |  |  |
+| type | [Algorithm.InnerOuterMask.MaskType](#bytebase-store-Algorithm-InnerOuterMask-MaskType) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-Algorithm-MD5Mask"></a>
+
+### Algorithm.MD5Mask
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| salt | [string](#string) |  | salt is the salt value to generate a different hash that with the word alone. |
+
+
+
+
+
+
+<a name="bytebase-store-Algorithm-RangeMask"></a>
+
+### Algorithm.RangeMask
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| slices | [Algorithm.RangeMask.Slice](#bytebase-store-Algorithm-RangeMask-Slice) | repeated | We store it as a repeated field to face the fact that the original value may have multiple parts should be masked. But frontend can be started with a single rule easily. |
+
+
+
+
+
+
+<a name="bytebase-store-Algorithm-RangeMask-Slice"></a>
+
+### Algorithm.RangeMask.Slice
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start | [int32](#int32) |  | start is the start index of the original value, start from 0 and should be less than stop. |
+| end | [int32](#int32) |  | stop is the stop index of the original value, should be less than the length of the original value. |
+| substitution | [string](#string) |  | OriginalValue[start:end) would be replaced with replace_with. |
+
+
+
+
+
+
 <a name="bytebase-store-Announcement"></a>
 
 ### Announcement
@@ -4418,109 +4520,7 @@ SlowQueryPolicy is the policy configuration for slow query.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| algorithms | [MaskingAlgorithmSetting.Algorithm](#bytebase-store-MaskingAlgorithmSetting-Algorithm) | repeated | algorithms is the list of masking algorithms. |
-
-
-
-
-
-
-<a name="bytebase-store-MaskingAlgorithmSetting-Algorithm"></a>
-
-### MaskingAlgorithmSetting.Algorithm
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | id is the uuid for masking algorithm. |
-| title | [string](#string) |  | title is the title for masking algorithm. |
-| description | [string](#string) |  | description is the description for masking algorithm. |
-| category | [string](#string) |  | Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASK and HASH. The range of accepted Payload is decided by the category. MASK: FullMask, RangeMask HASH: MD5Mask |
-| full_mask | [MaskingAlgorithmSetting.Algorithm.FullMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-FullMask) |  |  |
-| range_mask | [MaskingAlgorithmSetting.Algorithm.RangeMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-RangeMask) |  |  |
-| md5_mask | [MaskingAlgorithmSetting.Algorithm.MD5Mask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-MD5Mask) |  |  |
-| inner_outer_mask | [MaskingAlgorithmSetting.Algorithm.InnerOuterMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-MaskingAlgorithmSetting-Algorithm-FullMask"></a>
-
-### MaskingAlgorithmSetting.Algorithm.FullMask
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| substitution | [string](#string) |  | substitution is the string used to replace the original value, the max length of the string is 16 bytes. |
-
-
-
-
-
-
-<a name="bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask"></a>
-
-### MaskingAlgorithmSetting.Algorithm.InnerOuterMask
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| prefix_len | [int32](#int32) |  |  |
-| suffix_len | [int32](#int32) |  |  |
-| substitution | [string](#string) |  |  |
-| type | [MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType](#bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-MaskType) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-MaskingAlgorithmSetting-Algorithm-MD5Mask"></a>
-
-### MaskingAlgorithmSetting.Algorithm.MD5Mask
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| salt | [string](#string) |  | salt is the salt value to generate a different hash that with the word alone. |
-
-
-
-
-
-
-<a name="bytebase-store-MaskingAlgorithmSetting-Algorithm-RangeMask"></a>
-
-### MaskingAlgorithmSetting.Algorithm.RangeMask
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| slices | [MaskingAlgorithmSetting.Algorithm.RangeMask.Slice](#bytebase-store-MaskingAlgorithmSetting-Algorithm-RangeMask-Slice) | repeated | We store it as a repeated field to face the fact that the original value may have multiple parts should be masked. But frontend can be started with a single rule easily. |
-
-
-
-
-
-
-<a name="bytebase-store-MaskingAlgorithmSetting-Algorithm-RangeMask-Slice"></a>
-
-### MaskingAlgorithmSetting.Algorithm.RangeMask.Slice
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| start | [int32](#int32) |  | start is the start index of the original value, start from 0 and should be less than stop. |
-| end | [int32](#int32) |  | stop is the stop index of the original value, should be less than the length of the original value. |
-| substitution | [string](#string) |  | OriginalValue[start:end) would be replaced with replace_with. |
+| algorithms | [Algorithm](#bytebase-store-Algorithm) | repeated | algorithms is the list of masking algorithms. |
 
 
 
@@ -4770,6 +4770,19 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
  
 
 
+<a name="bytebase-store-Algorithm-InnerOuterMask-MaskType"></a>
+
+### Algorithm.InnerOuterMask.MaskType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MASK_TYPE_UNSPECIFIED | 0 |  |
+| INNER | 1 |  |
+| OUTER | 2 |  |
+
+
+
 <a name="bytebase-store-Announcement-AlertLevel"></a>
 
 ### Announcement.AlertLevel
@@ -4794,19 +4807,6 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | DATABASE_CHANGE_MODE_UNSPECIFIED | 0 |  |
 | PIPELINE | 1 | A more advanced database change process, including custom approval workflows and other advanced features. Default to this mode. |
 | EDITOR | 2 | A simple database change process in SQL editor. Users can execute SQL directly. |
-
-
-
-<a name="bytebase-store-MaskingAlgorithmSetting-Algorithm-InnerOuterMask-MaskType"></a>
-
-### MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MASK_TYPE_UNSPECIFIED | 0 |  |
-| INNER | 1 |  |
-| OUTER | 2 |  |
 
 
 

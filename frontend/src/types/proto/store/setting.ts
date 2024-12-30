@@ -479,10 +479,10 @@ export interface SemanticTypeSetting_SemanticType {
 
 export interface MaskingAlgorithmSetting {
   /** algorithms is the list of masking algorithms. */
-  algorithms: MaskingAlgorithmSetting_Algorithm[];
+  algorithms: Algorithm[];
 }
 
-export interface MaskingAlgorithmSetting_Algorithm {
+export interface Algorithm {
   /** id is the uuid for masking algorithm. */
   id: string;
   /** title is the title for masking algorithm. */
@@ -496,13 +496,13 @@ export interface MaskingAlgorithmSetting_Algorithm {
    * HASH: MD5Mask
    */
   category: string;
-  fullMask?: MaskingAlgorithmSetting_Algorithm_FullMask | undefined;
-  rangeMask?: MaskingAlgorithmSetting_Algorithm_RangeMask | undefined;
-  md5Mask?: MaskingAlgorithmSetting_Algorithm_MD5Mask | undefined;
-  innerOuterMask?: MaskingAlgorithmSetting_Algorithm_InnerOuterMask | undefined;
+  fullMask?: Algorithm_FullMask | undefined;
+  rangeMask?: Algorithm_RangeMask | undefined;
+  md5Mask?: Algorithm_MD5Mask | undefined;
+  innerOuterMask?: Algorithm_InnerOuterMask | undefined;
 }
 
-export interface MaskingAlgorithmSetting_Algorithm_FullMask {
+export interface Algorithm_FullMask {
   /**
    * substitution is the string used to replace the original value, the
    * max length of the string is 16 bytes.
@@ -510,15 +510,15 @@ export interface MaskingAlgorithmSetting_Algorithm_FullMask {
   substitution: string;
 }
 
-export interface MaskingAlgorithmSetting_Algorithm_RangeMask {
+export interface Algorithm_RangeMask {
   /**
    * We store it as a repeated field to face the fact that the original value may have multiple parts should be masked.
    * But frontend can be started with a single rule easily.
    */
-  slices: MaskingAlgorithmSetting_Algorithm_RangeMask_Slice[];
+  slices: Algorithm_RangeMask_Slice[];
 }
 
-export interface MaskingAlgorithmSetting_Algorithm_RangeMask_Slice {
+export interface Algorithm_RangeMask_Slice {
   /** start is the start index of the original value, start from 0 and should be less than stop. */
   start: number;
   /** stop is the stop index of the original value, should be less than the length of the original value. */
@@ -527,72 +527,66 @@ export interface MaskingAlgorithmSetting_Algorithm_RangeMask_Slice {
   substitution: string;
 }
 
-export interface MaskingAlgorithmSetting_Algorithm_MD5Mask {
+export interface Algorithm_MD5Mask {
   /** salt is the salt value to generate a different hash that with the word alone. */
   salt: string;
 }
 
-export interface MaskingAlgorithmSetting_Algorithm_InnerOuterMask {
+export interface Algorithm_InnerOuterMask {
   prefixLen: number;
   suffixLen: number;
   substitution: string;
-  type: MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType;
+  type: Algorithm_InnerOuterMask_MaskType;
 }
 
-export enum MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType {
+export enum Algorithm_InnerOuterMask_MaskType {
   MASK_TYPE_UNSPECIFIED = "MASK_TYPE_UNSPECIFIED",
   INNER = "INNER",
   OUTER = "OUTER",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
-export function maskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskTypeFromJSON(
-  object: any,
-): MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType {
+export function algorithm_InnerOuterMask_MaskTypeFromJSON(object: any): Algorithm_InnerOuterMask_MaskType {
   switch (object) {
     case 0:
     case "MASK_TYPE_UNSPECIFIED":
-      return MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.MASK_TYPE_UNSPECIFIED;
+      return Algorithm_InnerOuterMask_MaskType.MASK_TYPE_UNSPECIFIED;
     case 1:
     case "INNER":
-      return MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.INNER;
+      return Algorithm_InnerOuterMask_MaskType.INNER;
     case 2:
     case "OUTER":
-      return MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.OUTER;
+      return Algorithm_InnerOuterMask_MaskType.OUTER;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.UNRECOGNIZED;
+      return Algorithm_InnerOuterMask_MaskType.UNRECOGNIZED;
   }
 }
 
-export function maskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskTypeToJSON(
-  object: MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType,
-): string {
+export function algorithm_InnerOuterMask_MaskTypeToJSON(object: Algorithm_InnerOuterMask_MaskType): string {
   switch (object) {
-    case MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.MASK_TYPE_UNSPECIFIED:
+    case Algorithm_InnerOuterMask_MaskType.MASK_TYPE_UNSPECIFIED:
       return "MASK_TYPE_UNSPECIFIED";
-    case MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.INNER:
+    case Algorithm_InnerOuterMask_MaskType.INNER:
       return "INNER";
-    case MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.OUTER:
+    case Algorithm_InnerOuterMask_MaskType.OUTER:
       return "OUTER";
-    case MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.UNRECOGNIZED:
+    case Algorithm_InnerOuterMask_MaskType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
 }
 
-export function maskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskTypeToNumber(
-  object: MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType,
-): number {
+export function algorithm_InnerOuterMask_MaskTypeToNumber(object: Algorithm_InnerOuterMask_MaskType): number {
   switch (object) {
-    case MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.MASK_TYPE_UNSPECIFIED:
+    case Algorithm_InnerOuterMask_MaskType.MASK_TYPE_UNSPECIFIED:
       return 0;
-    case MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.INNER:
+    case Algorithm_InnerOuterMask_MaskType.INNER:
       return 1;
-    case MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.OUTER:
+    case Algorithm_InnerOuterMask_MaskType.OUTER:
       return 2;
-    case MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.UNRECOGNIZED:
+    case Algorithm_InnerOuterMask_MaskType.UNRECOGNIZED:
     default:
       return -1;
   }
@@ -2897,7 +2891,7 @@ function createBaseMaskingAlgorithmSetting(): MaskingAlgorithmSetting {
 export const MaskingAlgorithmSetting: MessageFns<MaskingAlgorithmSetting> = {
   encode(message: MaskingAlgorithmSetting, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     for (const v of message.algorithms) {
-      MaskingAlgorithmSetting_Algorithm.encode(v!, writer.uint32(10).fork()).join();
+      Algorithm.encode(v!, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -2914,7 +2908,7 @@ export const MaskingAlgorithmSetting: MessageFns<MaskingAlgorithmSetting> = {
             break;
           }
 
-          message.algorithms.push(MaskingAlgorithmSetting_Algorithm.decode(reader, reader.uint32()));
+          message.algorithms.push(Algorithm.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -2929,7 +2923,7 @@ export const MaskingAlgorithmSetting: MessageFns<MaskingAlgorithmSetting> = {
   fromJSON(object: any): MaskingAlgorithmSetting {
     return {
       algorithms: globalThis.Array.isArray(object?.algorithms)
-        ? object.algorithms.map((e: any) => MaskingAlgorithmSetting_Algorithm.fromJSON(e))
+        ? object.algorithms.map((e: any) => Algorithm.fromJSON(e))
         : [],
     };
   },
@@ -2937,7 +2931,7 @@ export const MaskingAlgorithmSetting: MessageFns<MaskingAlgorithmSetting> = {
   toJSON(message: MaskingAlgorithmSetting): unknown {
     const obj: any = {};
     if (message.algorithms?.length) {
-      obj.algorithms = message.algorithms.map((e) => MaskingAlgorithmSetting_Algorithm.toJSON(e));
+      obj.algorithms = message.algorithms.map((e) => Algorithm.toJSON(e));
     }
     return obj;
   },
@@ -2947,12 +2941,12 @@ export const MaskingAlgorithmSetting: MessageFns<MaskingAlgorithmSetting> = {
   },
   fromPartial(object: DeepPartial<MaskingAlgorithmSetting>): MaskingAlgorithmSetting {
     const message = createBaseMaskingAlgorithmSetting();
-    message.algorithms = object.algorithms?.map((e) => MaskingAlgorithmSetting_Algorithm.fromPartial(e)) || [];
+    message.algorithms = object.algorithms?.map((e) => Algorithm.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseMaskingAlgorithmSetting_Algorithm(): MaskingAlgorithmSetting_Algorithm {
+function createBaseAlgorithm(): Algorithm {
   return {
     id: "",
     title: "",
@@ -2965,8 +2959,8 @@ function createBaseMaskingAlgorithmSetting_Algorithm(): MaskingAlgorithmSetting_
   };
 }
 
-export const MaskingAlgorithmSetting_Algorithm: MessageFns<MaskingAlgorithmSetting_Algorithm> = {
-  encode(message: MaskingAlgorithmSetting_Algorithm, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Algorithm: MessageFns<Algorithm> = {
+  encode(message: Algorithm, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
@@ -2980,24 +2974,24 @@ export const MaskingAlgorithmSetting_Algorithm: MessageFns<MaskingAlgorithmSetti
       writer.uint32(34).string(message.category);
     }
     if (message.fullMask !== undefined) {
-      MaskingAlgorithmSetting_Algorithm_FullMask.encode(message.fullMask, writer.uint32(42).fork()).join();
+      Algorithm_FullMask.encode(message.fullMask, writer.uint32(42).fork()).join();
     }
     if (message.rangeMask !== undefined) {
-      MaskingAlgorithmSetting_Algorithm_RangeMask.encode(message.rangeMask, writer.uint32(50).fork()).join();
+      Algorithm_RangeMask.encode(message.rangeMask, writer.uint32(50).fork()).join();
     }
     if (message.md5Mask !== undefined) {
-      MaskingAlgorithmSetting_Algorithm_MD5Mask.encode(message.md5Mask, writer.uint32(58).fork()).join();
+      Algorithm_MD5Mask.encode(message.md5Mask, writer.uint32(58).fork()).join();
     }
     if (message.innerOuterMask !== undefined) {
-      MaskingAlgorithmSetting_Algorithm_InnerOuterMask.encode(message.innerOuterMask, writer.uint32(66).fork()).join();
+      Algorithm_InnerOuterMask.encode(message.innerOuterMask, writer.uint32(66).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): MaskingAlgorithmSetting_Algorithm {
+  decode(input: BinaryReader | Uint8Array, length?: number): Algorithm {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMaskingAlgorithmSetting_Algorithm();
+    const message = createBaseAlgorithm();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3038,7 +3032,7 @@ export const MaskingAlgorithmSetting_Algorithm: MessageFns<MaskingAlgorithmSetti
             break;
           }
 
-          message.fullMask = MaskingAlgorithmSetting_Algorithm_FullMask.decode(reader, reader.uint32());
+          message.fullMask = Algorithm_FullMask.decode(reader, reader.uint32());
           continue;
         }
         case 6: {
@@ -3046,7 +3040,7 @@ export const MaskingAlgorithmSetting_Algorithm: MessageFns<MaskingAlgorithmSetti
             break;
           }
 
-          message.rangeMask = MaskingAlgorithmSetting_Algorithm_RangeMask.decode(reader, reader.uint32());
+          message.rangeMask = Algorithm_RangeMask.decode(reader, reader.uint32());
           continue;
         }
         case 7: {
@@ -3054,7 +3048,7 @@ export const MaskingAlgorithmSetting_Algorithm: MessageFns<MaskingAlgorithmSetti
             break;
           }
 
-          message.md5Mask = MaskingAlgorithmSetting_Algorithm_MD5Mask.decode(reader, reader.uint32());
+          message.md5Mask = Algorithm_MD5Mask.decode(reader, reader.uint32());
           continue;
         }
         case 8: {
@@ -3062,7 +3056,7 @@ export const MaskingAlgorithmSetting_Algorithm: MessageFns<MaskingAlgorithmSetti
             break;
           }
 
-          message.innerOuterMask = MaskingAlgorithmSetting_Algorithm_InnerOuterMask.decode(reader, reader.uint32());
+          message.innerOuterMask = Algorithm_InnerOuterMask.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -3074,26 +3068,22 @@ export const MaskingAlgorithmSetting_Algorithm: MessageFns<MaskingAlgorithmSetti
     return message;
   },
 
-  fromJSON(object: any): MaskingAlgorithmSetting_Algorithm {
+  fromJSON(object: any): Algorithm {
     return {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       description: isSet(object.description) ? globalThis.String(object.description) : "",
       category: isSet(object.category) ? globalThis.String(object.category) : "",
-      fullMask: isSet(object.fullMask)
-        ? MaskingAlgorithmSetting_Algorithm_FullMask.fromJSON(object.fullMask)
-        : undefined,
-      rangeMask: isSet(object.rangeMask)
-        ? MaskingAlgorithmSetting_Algorithm_RangeMask.fromJSON(object.rangeMask)
-        : undefined,
-      md5Mask: isSet(object.md5Mask) ? MaskingAlgorithmSetting_Algorithm_MD5Mask.fromJSON(object.md5Mask) : undefined,
+      fullMask: isSet(object.fullMask) ? Algorithm_FullMask.fromJSON(object.fullMask) : undefined,
+      rangeMask: isSet(object.rangeMask) ? Algorithm_RangeMask.fromJSON(object.rangeMask) : undefined,
+      md5Mask: isSet(object.md5Mask) ? Algorithm_MD5Mask.fromJSON(object.md5Mask) : undefined,
       innerOuterMask: isSet(object.innerOuterMask)
-        ? MaskingAlgorithmSetting_Algorithm_InnerOuterMask.fromJSON(object.innerOuterMask)
+        ? Algorithm_InnerOuterMask.fromJSON(object.innerOuterMask)
         : undefined,
     };
   },
 
-  toJSON(message: MaskingAlgorithmSetting_Algorithm): unknown {
+  toJSON(message: Algorithm): unknown {
     const obj: any = {};
     if (message.id !== "") {
       obj.id = message.id;
@@ -3108,61 +3098,61 @@ export const MaskingAlgorithmSetting_Algorithm: MessageFns<MaskingAlgorithmSetti
       obj.category = message.category;
     }
     if (message.fullMask !== undefined) {
-      obj.fullMask = MaskingAlgorithmSetting_Algorithm_FullMask.toJSON(message.fullMask);
+      obj.fullMask = Algorithm_FullMask.toJSON(message.fullMask);
     }
     if (message.rangeMask !== undefined) {
-      obj.rangeMask = MaskingAlgorithmSetting_Algorithm_RangeMask.toJSON(message.rangeMask);
+      obj.rangeMask = Algorithm_RangeMask.toJSON(message.rangeMask);
     }
     if (message.md5Mask !== undefined) {
-      obj.md5Mask = MaskingAlgorithmSetting_Algorithm_MD5Mask.toJSON(message.md5Mask);
+      obj.md5Mask = Algorithm_MD5Mask.toJSON(message.md5Mask);
     }
     if (message.innerOuterMask !== undefined) {
-      obj.innerOuterMask = MaskingAlgorithmSetting_Algorithm_InnerOuterMask.toJSON(message.innerOuterMask);
+      obj.innerOuterMask = Algorithm_InnerOuterMask.toJSON(message.innerOuterMask);
     }
     return obj;
   },
 
-  create(base?: DeepPartial<MaskingAlgorithmSetting_Algorithm>): MaskingAlgorithmSetting_Algorithm {
-    return MaskingAlgorithmSetting_Algorithm.fromPartial(base ?? {});
+  create(base?: DeepPartial<Algorithm>): Algorithm {
+    return Algorithm.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<MaskingAlgorithmSetting_Algorithm>): MaskingAlgorithmSetting_Algorithm {
-    const message = createBaseMaskingAlgorithmSetting_Algorithm();
+  fromPartial(object: DeepPartial<Algorithm>): Algorithm {
+    const message = createBaseAlgorithm();
     message.id = object.id ?? "";
     message.title = object.title ?? "";
     message.description = object.description ?? "";
     message.category = object.category ?? "";
     message.fullMask = (object.fullMask !== undefined && object.fullMask !== null)
-      ? MaskingAlgorithmSetting_Algorithm_FullMask.fromPartial(object.fullMask)
+      ? Algorithm_FullMask.fromPartial(object.fullMask)
       : undefined;
     message.rangeMask = (object.rangeMask !== undefined && object.rangeMask !== null)
-      ? MaskingAlgorithmSetting_Algorithm_RangeMask.fromPartial(object.rangeMask)
+      ? Algorithm_RangeMask.fromPartial(object.rangeMask)
       : undefined;
     message.md5Mask = (object.md5Mask !== undefined && object.md5Mask !== null)
-      ? MaskingAlgorithmSetting_Algorithm_MD5Mask.fromPartial(object.md5Mask)
+      ? Algorithm_MD5Mask.fromPartial(object.md5Mask)
       : undefined;
     message.innerOuterMask = (object.innerOuterMask !== undefined && object.innerOuterMask !== null)
-      ? MaskingAlgorithmSetting_Algorithm_InnerOuterMask.fromPartial(object.innerOuterMask)
+      ? Algorithm_InnerOuterMask.fromPartial(object.innerOuterMask)
       : undefined;
     return message;
   },
 };
 
-function createBaseMaskingAlgorithmSetting_Algorithm_FullMask(): MaskingAlgorithmSetting_Algorithm_FullMask {
+function createBaseAlgorithm_FullMask(): Algorithm_FullMask {
   return { substitution: "" };
 }
 
-export const MaskingAlgorithmSetting_Algorithm_FullMask: MessageFns<MaskingAlgorithmSetting_Algorithm_FullMask> = {
-  encode(message: MaskingAlgorithmSetting_Algorithm_FullMask, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Algorithm_FullMask: MessageFns<Algorithm_FullMask> = {
+  encode(message: Algorithm_FullMask, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.substitution !== "") {
       writer.uint32(10).string(message.substitution);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): MaskingAlgorithmSetting_Algorithm_FullMask {
+  decode(input: BinaryReader | Uint8Array, length?: number): Algorithm_FullMask {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMaskingAlgorithmSetting_Algorithm_FullMask();
+    const message = createBaseAlgorithm_FullMask();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3183,11 +3173,11 @@ export const MaskingAlgorithmSetting_Algorithm_FullMask: MessageFns<MaskingAlgor
     return message;
   },
 
-  fromJSON(object: any): MaskingAlgorithmSetting_Algorithm_FullMask {
+  fromJSON(object: any): Algorithm_FullMask {
     return { substitution: isSet(object.substitution) ? globalThis.String(object.substitution) : "" };
   },
 
-  toJSON(message: MaskingAlgorithmSetting_Algorithm_FullMask): unknown {
+  toJSON(message: Algorithm_FullMask): unknown {
     const obj: any = {};
     if (message.substitution !== "") {
       obj.substitution = message.substitution;
@@ -3195,37 +3185,32 @@ export const MaskingAlgorithmSetting_Algorithm_FullMask: MessageFns<MaskingAlgor
     return obj;
   },
 
-  create(base?: DeepPartial<MaskingAlgorithmSetting_Algorithm_FullMask>): MaskingAlgorithmSetting_Algorithm_FullMask {
-    return MaskingAlgorithmSetting_Algorithm_FullMask.fromPartial(base ?? {});
+  create(base?: DeepPartial<Algorithm_FullMask>): Algorithm_FullMask {
+    return Algorithm_FullMask.fromPartial(base ?? {});
   },
-  fromPartial(
-    object: DeepPartial<MaskingAlgorithmSetting_Algorithm_FullMask>,
-  ): MaskingAlgorithmSetting_Algorithm_FullMask {
-    const message = createBaseMaskingAlgorithmSetting_Algorithm_FullMask();
+  fromPartial(object: DeepPartial<Algorithm_FullMask>): Algorithm_FullMask {
+    const message = createBaseAlgorithm_FullMask();
     message.substitution = object.substitution ?? "";
     return message;
   },
 };
 
-function createBaseMaskingAlgorithmSetting_Algorithm_RangeMask(): MaskingAlgorithmSetting_Algorithm_RangeMask {
+function createBaseAlgorithm_RangeMask(): Algorithm_RangeMask {
   return { slices: [] };
 }
 
-export const MaskingAlgorithmSetting_Algorithm_RangeMask: MessageFns<MaskingAlgorithmSetting_Algorithm_RangeMask> = {
-  encode(
-    message: MaskingAlgorithmSetting_Algorithm_RangeMask,
-    writer: BinaryWriter = new BinaryWriter(),
-  ): BinaryWriter {
+export const Algorithm_RangeMask: MessageFns<Algorithm_RangeMask> = {
+  encode(message: Algorithm_RangeMask, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     for (const v of message.slices) {
-      MaskingAlgorithmSetting_Algorithm_RangeMask_Slice.encode(v!, writer.uint32(10).fork()).join();
+      Algorithm_RangeMask_Slice.encode(v!, writer.uint32(10).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): MaskingAlgorithmSetting_Algorithm_RangeMask {
+  decode(input: BinaryReader | Uint8Array, length?: number): Algorithm_RangeMask {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMaskingAlgorithmSetting_Algorithm_RangeMask();
+    const message = createBaseAlgorithm_RangeMask();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3234,7 +3219,7 @@ export const MaskingAlgorithmSetting_Algorithm_RangeMask: MessageFns<MaskingAlgo
             break;
           }
 
-          message.slices.push(MaskingAlgorithmSetting_Algorithm_RangeMask_Slice.decode(reader, reader.uint32()));
+          message.slices.push(Algorithm_RangeMask_Slice.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -3246,45 +3231,38 @@ export const MaskingAlgorithmSetting_Algorithm_RangeMask: MessageFns<MaskingAlgo
     return message;
   },
 
-  fromJSON(object: any): MaskingAlgorithmSetting_Algorithm_RangeMask {
+  fromJSON(object: any): Algorithm_RangeMask {
     return {
       slices: globalThis.Array.isArray(object?.slices)
-        ? object.slices.map((e: any) => MaskingAlgorithmSetting_Algorithm_RangeMask_Slice.fromJSON(e))
+        ? object.slices.map((e: any) => Algorithm_RangeMask_Slice.fromJSON(e))
         : [],
     };
   },
 
-  toJSON(message: MaskingAlgorithmSetting_Algorithm_RangeMask): unknown {
+  toJSON(message: Algorithm_RangeMask): unknown {
     const obj: any = {};
     if (message.slices?.length) {
-      obj.slices = message.slices.map((e) => MaskingAlgorithmSetting_Algorithm_RangeMask_Slice.toJSON(e));
+      obj.slices = message.slices.map((e) => Algorithm_RangeMask_Slice.toJSON(e));
     }
     return obj;
   },
 
-  create(base?: DeepPartial<MaskingAlgorithmSetting_Algorithm_RangeMask>): MaskingAlgorithmSetting_Algorithm_RangeMask {
-    return MaskingAlgorithmSetting_Algorithm_RangeMask.fromPartial(base ?? {});
+  create(base?: DeepPartial<Algorithm_RangeMask>): Algorithm_RangeMask {
+    return Algorithm_RangeMask.fromPartial(base ?? {});
   },
-  fromPartial(
-    object: DeepPartial<MaskingAlgorithmSetting_Algorithm_RangeMask>,
-  ): MaskingAlgorithmSetting_Algorithm_RangeMask {
-    const message = createBaseMaskingAlgorithmSetting_Algorithm_RangeMask();
-    message.slices = object.slices?.map((e) => MaskingAlgorithmSetting_Algorithm_RangeMask_Slice.fromPartial(e)) || [];
+  fromPartial(object: DeepPartial<Algorithm_RangeMask>): Algorithm_RangeMask {
+    const message = createBaseAlgorithm_RangeMask();
+    message.slices = object.slices?.map((e) => Algorithm_RangeMask_Slice.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseMaskingAlgorithmSetting_Algorithm_RangeMask_Slice(): MaskingAlgorithmSetting_Algorithm_RangeMask_Slice {
+function createBaseAlgorithm_RangeMask_Slice(): Algorithm_RangeMask_Slice {
   return { start: 0, end: 0, substitution: "" };
 }
 
-export const MaskingAlgorithmSetting_Algorithm_RangeMask_Slice: MessageFns<
-  MaskingAlgorithmSetting_Algorithm_RangeMask_Slice
-> = {
-  encode(
-    message: MaskingAlgorithmSetting_Algorithm_RangeMask_Slice,
-    writer: BinaryWriter = new BinaryWriter(),
-  ): BinaryWriter {
+export const Algorithm_RangeMask_Slice: MessageFns<Algorithm_RangeMask_Slice> = {
+  encode(message: Algorithm_RangeMask_Slice, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.start !== 0) {
       writer.uint32(8).int32(message.start);
     }
@@ -3297,10 +3275,10 @@ export const MaskingAlgorithmSetting_Algorithm_RangeMask_Slice: MessageFns<
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): MaskingAlgorithmSetting_Algorithm_RangeMask_Slice {
+  decode(input: BinaryReader | Uint8Array, length?: number): Algorithm_RangeMask_Slice {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMaskingAlgorithmSetting_Algorithm_RangeMask_Slice();
+    const message = createBaseAlgorithm_RangeMask_Slice();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3337,7 +3315,7 @@ export const MaskingAlgorithmSetting_Algorithm_RangeMask_Slice: MessageFns<
     return message;
   },
 
-  fromJSON(object: any): MaskingAlgorithmSetting_Algorithm_RangeMask_Slice {
+  fromJSON(object: any): Algorithm_RangeMask_Slice {
     return {
       start: isSet(object.start) ? globalThis.Number(object.start) : 0,
       end: isSet(object.end) ? globalThis.Number(object.end) : 0,
@@ -3345,7 +3323,7 @@ export const MaskingAlgorithmSetting_Algorithm_RangeMask_Slice: MessageFns<
     };
   },
 
-  toJSON(message: MaskingAlgorithmSetting_Algorithm_RangeMask_Slice): unknown {
+  toJSON(message: Algorithm_RangeMask_Slice): unknown {
     const obj: any = {};
     if (message.start !== 0) {
       obj.start = Math.round(message.start);
@@ -3359,15 +3337,11 @@ export const MaskingAlgorithmSetting_Algorithm_RangeMask_Slice: MessageFns<
     return obj;
   },
 
-  create(
-    base?: DeepPartial<MaskingAlgorithmSetting_Algorithm_RangeMask_Slice>,
-  ): MaskingAlgorithmSetting_Algorithm_RangeMask_Slice {
-    return MaskingAlgorithmSetting_Algorithm_RangeMask_Slice.fromPartial(base ?? {});
+  create(base?: DeepPartial<Algorithm_RangeMask_Slice>): Algorithm_RangeMask_Slice {
+    return Algorithm_RangeMask_Slice.fromPartial(base ?? {});
   },
-  fromPartial(
-    object: DeepPartial<MaskingAlgorithmSetting_Algorithm_RangeMask_Slice>,
-  ): MaskingAlgorithmSetting_Algorithm_RangeMask_Slice {
-    const message = createBaseMaskingAlgorithmSetting_Algorithm_RangeMask_Slice();
+  fromPartial(object: DeepPartial<Algorithm_RangeMask_Slice>): Algorithm_RangeMask_Slice {
+    const message = createBaseAlgorithm_RangeMask_Slice();
     message.start = object.start ?? 0;
     message.end = object.end ?? 0;
     message.substitution = object.substitution ?? "";
@@ -3375,22 +3349,22 @@ export const MaskingAlgorithmSetting_Algorithm_RangeMask_Slice: MessageFns<
   },
 };
 
-function createBaseMaskingAlgorithmSetting_Algorithm_MD5Mask(): MaskingAlgorithmSetting_Algorithm_MD5Mask {
+function createBaseAlgorithm_MD5Mask(): Algorithm_MD5Mask {
   return { salt: "" };
 }
 
-export const MaskingAlgorithmSetting_Algorithm_MD5Mask: MessageFns<MaskingAlgorithmSetting_Algorithm_MD5Mask> = {
-  encode(message: MaskingAlgorithmSetting_Algorithm_MD5Mask, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Algorithm_MD5Mask: MessageFns<Algorithm_MD5Mask> = {
+  encode(message: Algorithm_MD5Mask, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.salt !== "") {
       writer.uint32(10).string(message.salt);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): MaskingAlgorithmSetting_Algorithm_MD5Mask {
+  decode(input: BinaryReader | Uint8Array, length?: number): Algorithm_MD5Mask {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMaskingAlgorithmSetting_Algorithm_MD5Mask();
+    const message = createBaseAlgorithm_MD5Mask();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3411,11 +3385,11 @@ export const MaskingAlgorithmSetting_Algorithm_MD5Mask: MessageFns<MaskingAlgori
     return message;
   },
 
-  fromJSON(object: any): MaskingAlgorithmSetting_Algorithm_MD5Mask {
+  fromJSON(object: any): Algorithm_MD5Mask {
     return { salt: isSet(object.salt) ? globalThis.String(object.salt) : "" };
   },
 
-  toJSON(message: MaskingAlgorithmSetting_Algorithm_MD5Mask): unknown {
+  toJSON(message: Algorithm_MD5Mask): unknown {
     const obj: any = {};
     if (message.salt !== "") {
       obj.salt = message.salt;
@@ -3423,34 +3397,27 @@ export const MaskingAlgorithmSetting_Algorithm_MD5Mask: MessageFns<MaskingAlgori
     return obj;
   },
 
-  create(base?: DeepPartial<MaskingAlgorithmSetting_Algorithm_MD5Mask>): MaskingAlgorithmSetting_Algorithm_MD5Mask {
-    return MaskingAlgorithmSetting_Algorithm_MD5Mask.fromPartial(base ?? {});
+  create(base?: DeepPartial<Algorithm_MD5Mask>): Algorithm_MD5Mask {
+    return Algorithm_MD5Mask.fromPartial(base ?? {});
   },
-  fromPartial(
-    object: DeepPartial<MaskingAlgorithmSetting_Algorithm_MD5Mask>,
-  ): MaskingAlgorithmSetting_Algorithm_MD5Mask {
-    const message = createBaseMaskingAlgorithmSetting_Algorithm_MD5Mask();
+  fromPartial(object: DeepPartial<Algorithm_MD5Mask>): Algorithm_MD5Mask {
+    const message = createBaseAlgorithm_MD5Mask();
     message.salt = object.salt ?? "";
     return message;
   },
 };
 
-function createBaseMaskingAlgorithmSetting_Algorithm_InnerOuterMask(): MaskingAlgorithmSetting_Algorithm_InnerOuterMask {
+function createBaseAlgorithm_InnerOuterMask(): Algorithm_InnerOuterMask {
   return {
     prefixLen: 0,
     suffixLen: 0,
     substitution: "",
-    type: MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.MASK_TYPE_UNSPECIFIED,
+    type: Algorithm_InnerOuterMask_MaskType.MASK_TYPE_UNSPECIFIED,
   };
 }
 
-export const MaskingAlgorithmSetting_Algorithm_InnerOuterMask: MessageFns<
-  MaskingAlgorithmSetting_Algorithm_InnerOuterMask
-> = {
-  encode(
-    message: MaskingAlgorithmSetting_Algorithm_InnerOuterMask,
-    writer: BinaryWriter = new BinaryWriter(),
-  ): BinaryWriter {
+export const Algorithm_InnerOuterMask: MessageFns<Algorithm_InnerOuterMask> = {
+  encode(message: Algorithm_InnerOuterMask, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.prefixLen !== 0) {
       writer.uint32(8).int32(message.prefixLen);
     }
@@ -3460,16 +3427,16 @@ export const MaskingAlgorithmSetting_Algorithm_InnerOuterMask: MessageFns<
     if (message.substitution !== "") {
       writer.uint32(26).string(message.substitution);
     }
-    if (message.type !== MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.MASK_TYPE_UNSPECIFIED) {
-      writer.uint32(32).int32(maskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskTypeToNumber(message.type));
+    if (message.type !== Algorithm_InnerOuterMask_MaskType.MASK_TYPE_UNSPECIFIED) {
+      writer.uint32(32).int32(algorithm_InnerOuterMask_MaskTypeToNumber(message.type));
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): MaskingAlgorithmSetting_Algorithm_InnerOuterMask {
+  decode(input: BinaryReader | Uint8Array, length?: number): Algorithm_InnerOuterMask {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMaskingAlgorithmSetting_Algorithm_InnerOuterMask();
+    const message = createBaseAlgorithm_InnerOuterMask();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3502,7 +3469,7 @@ export const MaskingAlgorithmSetting_Algorithm_InnerOuterMask: MessageFns<
             break;
           }
 
-          message.type = maskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskTypeFromJSON(reader.int32());
+          message.type = algorithm_InnerOuterMask_MaskTypeFromJSON(reader.int32());
           continue;
         }
       }
@@ -3514,18 +3481,18 @@ export const MaskingAlgorithmSetting_Algorithm_InnerOuterMask: MessageFns<
     return message;
   },
 
-  fromJSON(object: any): MaskingAlgorithmSetting_Algorithm_InnerOuterMask {
+  fromJSON(object: any): Algorithm_InnerOuterMask {
     return {
       prefixLen: isSet(object.prefixLen) ? globalThis.Number(object.prefixLen) : 0,
       suffixLen: isSet(object.suffixLen) ? globalThis.Number(object.suffixLen) : 0,
       substitution: isSet(object.substitution) ? globalThis.String(object.substitution) : "",
       type: isSet(object.type)
-        ? maskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskTypeFromJSON(object.type)
-        : MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.MASK_TYPE_UNSPECIFIED,
+        ? algorithm_InnerOuterMask_MaskTypeFromJSON(object.type)
+        : Algorithm_InnerOuterMask_MaskType.MASK_TYPE_UNSPECIFIED,
     };
   },
 
-  toJSON(message: MaskingAlgorithmSetting_Algorithm_InnerOuterMask): unknown {
+  toJSON(message: Algorithm_InnerOuterMask): unknown {
     const obj: any = {};
     if (message.prefixLen !== 0) {
       obj.prefixLen = Math.round(message.prefixLen);
@@ -3536,25 +3503,21 @@ export const MaskingAlgorithmSetting_Algorithm_InnerOuterMask: MessageFns<
     if (message.substitution !== "") {
       obj.substitution = message.substitution;
     }
-    if (message.type !== MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.MASK_TYPE_UNSPECIFIED) {
-      obj.type = maskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskTypeToJSON(message.type);
+    if (message.type !== Algorithm_InnerOuterMask_MaskType.MASK_TYPE_UNSPECIFIED) {
+      obj.type = algorithm_InnerOuterMask_MaskTypeToJSON(message.type);
     }
     return obj;
   },
 
-  create(
-    base?: DeepPartial<MaskingAlgorithmSetting_Algorithm_InnerOuterMask>,
-  ): MaskingAlgorithmSetting_Algorithm_InnerOuterMask {
-    return MaskingAlgorithmSetting_Algorithm_InnerOuterMask.fromPartial(base ?? {});
+  create(base?: DeepPartial<Algorithm_InnerOuterMask>): Algorithm_InnerOuterMask {
+    return Algorithm_InnerOuterMask.fromPartial(base ?? {});
   },
-  fromPartial(
-    object: DeepPartial<MaskingAlgorithmSetting_Algorithm_InnerOuterMask>,
-  ): MaskingAlgorithmSetting_Algorithm_InnerOuterMask {
-    const message = createBaseMaskingAlgorithmSetting_Algorithm_InnerOuterMask();
+  fromPartial(object: DeepPartial<Algorithm_InnerOuterMask>): Algorithm_InnerOuterMask {
+    const message = createBaseAlgorithm_InnerOuterMask();
     message.prefixLen = object.prefixLen ?? 0;
     message.suffixLen = object.suffixLen ?? 0;
     message.substitution = object.substitution ?? "";
-    message.type = object.type ?? MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.MASK_TYPE_UNSPECIFIED;
+    message.type = object.type ?? Algorithm_InnerOuterMask_MaskType.MASK_TYPE_UNSPECIFIED;
     return message;
   },
 };
