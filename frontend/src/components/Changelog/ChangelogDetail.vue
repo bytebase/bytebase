@@ -202,8 +202,7 @@ const state = reactive<LocalState>({
 const { database } = useDatabaseV1ByName(props.database);
 
 const hasPermission = computed(() =>
-  // TODO: update permissions.
-  hasProjectPermissionV2(database.value.projectEntity, "bb.changeHistories.get")
+  hasProjectPermissionV2(database.value.projectEntity, "bb.changelogs.get")
 );
 
 const changelogName = computed(() => {
