@@ -199,6 +199,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to new store")
 	}
+	s.store = storeInstance
 	if profile.Readonly {
 		slog.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
 	} else {
