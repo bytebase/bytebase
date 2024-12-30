@@ -7880,7 +7880,6 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | action | [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action) |  | action is the action that the user can access sensitive data. |
-| masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  | Level is the masking level that the user can access sensitive data. |
 | member | [string](#string) |  | Member is the principal who bind to this exception policy instance.
 
 - `user:{email}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. - `group:{email}`: An email address for group. |

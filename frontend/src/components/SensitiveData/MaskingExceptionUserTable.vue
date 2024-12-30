@@ -40,7 +40,6 @@ import {
   groupBindingPrefix,
 } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
-import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
 import { MaskingExceptionPolicy_MaskingException_Action } from "@/types/proto/v1/org_policy_service";
 import type {
   Policy,
@@ -50,7 +49,6 @@ import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { autoDatabaseRoute, hasWorkspacePermissionV2 } from "@/utils";
 import { convertFromCELString } from "@/utils/issue/cel";
 import UserAvatar from "../User/UserAvatar.vue";
-import MaskingLevelDropdown from "./components/MaskingLevelDropdown.vue";
 import { type AccessUser } from "./types";
 
 interface LocalState {
@@ -156,7 +154,6 @@ const getAccessUsers = async (
   const access: AccessUser = {
     type: "user",
     key: exception.member,
-    maskingLevel: exception.maskingLevel,
     expirationTimestamp,
     supportActions: new Set([exception.action]),
     rawExpression: expression,
@@ -185,7 +182,6 @@ const getExceptionIdentifier = (
 ): string => {
   const expression = exception.condition?.expression ?? "";
   const res: string[] = [
-    `level:"${maskingLevelToJSON(exception.maskingLevel)}"`,
     expression,
   ];
   return res.join(" && ");
@@ -368,24 +364,6 @@ const accessTableColumns = computed(
         },
       },
       {
-        key: "level",
-        title: t("settings.sensitive-data.masking-level.self"),
-        render: (item: AccessUser, row: number) => {
-          return (
-            <MaskingLevelDropdown
-              disabled={!hasPermission.value || props.disabled}
-              level={item.maskingLevel}
-              levelList={[MaskingLevel.PARTIAL, MaskingLevel.NONE]}
-              onUpdate:level={(e) => {
-                if (e) {
-                  onAccessControlUpdate(row, (item) => (item.maskingLevel = e));
-                }
-              }}
-            />
-          );
-        },
-      },
-      {
         key: "expire",
         title: t("common.expiration"),
         render: (item: AccessUser, row: number) => {
@@ -546,7 +524,6 @@ const updateExceptionPolicy = async () => {
     }
     for (const action of accessUser.supportActions) {
       unChangedExceptions.push({
-        maskingLevel: accessUser.maskingLevel,
         action,
         member: getMemberBinding(accessUser),
         condition: Expr.fromPartial({

@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"cmp"
 	"log/slog"
 	"reflect"
 	"time"
@@ -239,13 +238,8 @@ func (m *maskingLevelEvaluator) evaluateMaskingLevelOfColumn(databaseMessage *st
 		if err != nil {
 			return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to evaluate masking exception policy condition")
 		}
-		if !hit {
-			continue
-		}
-		// TODO(zp): Expectedly, a column should hit only one exception,
-		// but we can take the strictest level here to make the whole program more robust.
-		if cmp.Less[storepb.MaskingLevel](filteredMaskingException.MaskingLevel, finalLevel) {
-			finalLevel = filteredMaskingException.MaskingLevel
+		if hit {
+			return storepb.MaskingLevel_NONE, nil
 		}
 	}
 	return finalLevel, nil
