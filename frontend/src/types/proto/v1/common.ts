@@ -529,10 +529,7 @@ function createBasePosition(): Position {
 }
 
 export const Position: MessageFns<Position> = {
-  encode(
-    message: Position,
-    writer: BinaryWriter = new BinaryWriter()
-  ): BinaryWriter {
+  encode(message: Position, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.line !== 0) {
       writer.uint32(8).int32(message.line);
     }
@@ -543,8 +540,7 @@ export const Position: MessageFns<Position> = {
   },
 
   decode(input: BinaryReader | Uint8Array, length?: number): Position {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePosition();
     while (reader.pos < end) {
@@ -609,10 +605,7 @@ function createBaseRange(): Range {
 }
 
 export const Range: MessageFns<Range> = {
-  encode(
-    message: Range,
-    writer: BinaryWriter = new BinaryWriter()
-  ): BinaryWriter {
+  encode(message: Range, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.start !== 0) {
       writer.uint32(8).int32(message.start);
     }
@@ -623,8 +616,7 @@ export const Range: MessageFns<Range> = {
   },
 
   decode(input: BinaryReader | Uint8Array, length?: number): Range {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseRange();
     while (reader.pos < end) {
@@ -684,26 +676,13 @@ export const Range: MessageFns<Range> = {
   },
 };
 
-type Builtin =
-  | Date
-  | Function
-  | Uint8Array
-  | string
-  | number
-  | boolean
-  | undefined;
+type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
-export type DeepPartial<T> = T extends Builtin
-  ? T
-  : T extends Long
-    ? string | number | Long
-    : T extends globalThis.Array<infer U>
-      ? globalThis.Array<DeepPartial<U>>
-      : T extends ReadonlyArray<infer U>
-        ? ReadonlyArray<DeepPartial<U>>
-        : T extends {}
-          ? { [K in keyof T]?: DeepPartial<T[K]> }
-          : Partial<T>;
+export type DeepPartial<T> = T extends Builtin ? T
+  : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
+  : Partial<T>;
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

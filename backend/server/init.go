@@ -270,7 +270,7 @@ func (s *Server) migrateMaskingData(ctx context.Context) error {
 	}
 
 	for _, policy := range policies {
-		p := new(storepb.MaskingPolicy)
+		p := new(storepb.DeprecatedMaskingPolicy)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
 			return errors.Wrapf(err, "failed to unmarshal masking policy")
 		}
