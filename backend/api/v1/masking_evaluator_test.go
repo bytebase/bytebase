@@ -108,13 +108,13 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 					Condition: &expr.Expr{
 						Expression: `(resource.instance_id == "neon-host") && (resource.database_name == "bb") && (resource.schema_name == "hiring") && (resource.table_name == "employees") && (resource.column_name == "salary")`,
 					},
-					Member:       "users/1234",
+					Member: "users/1234",
 				},
 			},
 			dataClassification:                      defaultClassification,
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
-			want: storepb.MaskingLevel_PARTIAL,
+			want: storepb.MaskingLevel_NONE,
 		},
 		{
 			description:          "Only Find The Lower Level in Exception",
@@ -140,13 +140,13 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 					Condition: &expr.Expr{
 						Expression: `(resource.instance_id == "neon-host") && (resource.database_name == "bb") && (resource.schema_name == "hiring") && (resource.table_name == "employees") && (resource.column_name == "salary")`,
 					},
-					Member:       "users/1234",
+					Member: "users/1234",
 				},
 			},
 			dataClassification:                      defaultClassification,
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
-			want: storepb.MaskingLevel_PARTIAL,
+			want: storepb.MaskingLevel_NONE,
 		},
 		{
 			description:          "Respect The Column Masking Policy",
@@ -175,13 +175,13 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 					Condition: &expr.Expr{
 						Expression: `(resource.instance_id == "neon-host") && (resource.database_name == "bb") && (resource.schema_name == "hiring") && (resource.table_name == "employees") && (resource.column_name == "salary")`,
 					},
-					Member:       "users/1234",
+					Member: "users/1234",
 				},
 			},
 			dataClassification:                      defaultClassification,
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
-			want: storepb.MaskingLevel_PARTIAL,
+			want: storepb.MaskingLevel_NONE,
 		},
 	}
 

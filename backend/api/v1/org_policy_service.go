@@ -966,8 +966,8 @@ func (s *OrgPolicyService) convertToStorePBMaskingExceptionPolicyPayload(ctx con
 			return nil, err
 		}
 		exceptions = append(exceptions, &storepb.MaskingExceptionPolicy_MaskingException{
-			Action:       convertToStorePBAction(exception.Action),
-			Member:       member,
+			Action: convertToStorePBAction(exception.Action),
+			Member: member,
 			Condition: &expr.Expr{
 				Title:       exception.Condition.Title,
 				Expression:  exception.Condition.Expression,
@@ -991,8 +991,8 @@ func (s *OrgPolicyService) convertToV1PBMaskingExceptionPolicyPayload(ctx contex
 		}
 
 		exceptions = append(exceptions, &v1pb.MaskingExceptionPolicy_MaskingException{
-			Action:       convertToV1PBAction(exception.Action),
-			Member:       memberInBinding,
+			Action: convertToV1PBAction(exception.Action),
+			Member: memberInBinding,
 			Condition: &expr.Expr{
 				Title:       exception.Condition.Title,
 				Expression:  exception.Condition.Expression,
