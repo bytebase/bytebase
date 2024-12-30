@@ -36,7 +36,7 @@ func newDriver(_ db.DriverConfig) db.Driver {
 }
 
 // Open opens a CosmosDB driver.
-func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, _ storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
 	endpoint := connCfg.Host
 	credential, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
@@ -53,12 +53,12 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, connCfg db.Con
 }
 
 // Close closes the CosmosDB driver.
-func (driver *Driver) Close(ctx context.Context) error {
+func (driver *Driver) Close(_ context.Context) error {
 	return nil
 }
 
 // Ping pings the database.
-func (driver *Driver) Ping(ctx context.Context) error {
+func (driver *Driver) Ping(_ context.Context) error {
 	queryPager := driver.client.NewQueryDatabasesPager("select 1", nil)
 	for queryPager.More() {
 		_, err := queryPager.NextPage(context.Background())
@@ -75,7 +75,7 @@ func (*Driver) GetDB() *sql.DB {
 	return nil
 }
 
-func (driver *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
+func (*Driver) Execute(_ context.Context, _ string, _ db.ExecuteOptions) (int64, error) {
 	return 0, status.Errorf(codes.Unimplemented, "method Execute unimplemented")
 }
 
@@ -85,6 +85,6 @@ func (*Driver) Dump(_ context.Context, _ io.Writer, _ *storepb.DatabaseSchemaMet
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (*Driver) QueryConn(_ context.Context, _ *sql.Conn, _ string, _ db.QueryContext) ([]*v1pb.QueryResult, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryConn unimplemented")
 }
