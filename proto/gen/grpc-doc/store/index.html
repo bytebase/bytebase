@@ -342,11 +342,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.ColumnConfig"><span class="badge">M</span>ColumnConfig</a>
+                  <a href="#bytebase.store.ColumnCatalog"><span class="badge">M</span>ColumnCatalog</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.ColumnConfig.LabelsEntry"><span class="badge">M</span>ColumnConfig.LabelsEntry</a>
+                  <a href="#bytebase.store.ColumnCatalog.LabelsEntry"><span class="badge">M</span>ColumnCatalog.LabelsEntry</a>
                 </li>
               
                 <li>
@@ -422,6 +422,22 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.ObjectSchema"><span class="badge">M</span>ObjectSchema</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ObjectSchema.ArrayKind"><span class="badge">M</span>ObjectSchema.ArrayKind</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ObjectSchema.StructKind"><span class="badge">M</span>ObjectSchema.StructKind</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ObjectSchema.StructKind.PropertiesEntry"><span class="badge">M</span>ObjectSchema.StructKind.PropertiesEntry</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.PackageMetadata"><span class="badge">M</span>PackageMetadata</a>
                 </li>
               
@@ -434,7 +450,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.SchemaConfig"><span class="badge">M</span>SchemaConfig</a>
+                  <a href="#bytebase.store.SchemaCatalog"><span class="badge">M</span>SchemaCatalog</a>
                 </li>
               
                 <li>
@@ -458,7 +474,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.TableConfig"><span class="badge">M</span>TableConfig</a>
+                  <a href="#bytebase.store.TableCatalog"><span class="badge">M</span>TableCatalog</a>
                 </li>
               
                 <li>
@@ -488,6 +504,10 @@
               
                 <li>
                   <a href="#bytebase.store.GenerationMetadata.Type"><span class="badge">E</span>GenerationMetadata.Type</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ObjectSchema.Type"><span class="badge">E</span>ObjectSchema.Type</a>
                 </li>
               
                 <li>
@@ -2882,7 +2902,7 @@ This information is not authenticated and should be treated accordingly. </p></t
 
         
       
-        <h3 id="bytebase.store.ColumnConfig">ColumnConfig</h3>
+        <h3 id="bytebase.store.ColumnCatalog">ColumnCatalog</h3>
         <p></p>
 
         
@@ -2908,7 +2928,7 @@ This information is not authenticated and should be treated accordingly. </p></t
               
                 <tr>
                   <td>labels</td>
-                  <td><a href="#bytebase.store.ColumnConfig.LabelsEntry">ColumnConfig.LabelsEntry</a></td>
+                  <td><a href="#bytebase.store.ColumnCatalog.LabelsEntry">ColumnCatalog.LabelsEntry</a></td>
                   <td>repeated</td>
                   <td><p>The user labels for a column. </p></td>
                 </tr>
@@ -2941,6 +2961,13 @@ This information is not authenticated and should be treated accordingly. </p></t
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>object_schema</td>
+                  <td><a href="#bytebase.store.ObjectSchema">ObjectSchema</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -2948,7 +2975,7 @@ This information is not authenticated and should be treated accordingly. </p></t
 
         
       
-        <h3 id="bytebase.store.ColumnConfig.LabelsEntry">ColumnConfig.LabelsEntry</h3>
+        <h3 id="bytebase.store.ColumnCatalog.LabelsEntry">ColumnCatalog.LabelsEntry</h3>
         <p></p>
 
         
@@ -3109,8 +3136,8 @@ classification and user_comment is parsed from the comment. </p></td>
                 </tr>
               
                 <tr>
-                  <td>schema_configs</td>
-                  <td><a href="#bytebase.store.SchemaConfig">SchemaConfig</a></td>
+                  <td>schemas</td>
+                  <td><a href="#bytebase.store.SchemaCatalog">SchemaCatalog</a></td>
                   <td>repeated</td>
                   <td><p>The schema_configs is the list of configs for schemas in a database. </p></td>
                 </tr>
@@ -3331,6 +3358,13 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p>The enum values of a type. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -3673,6 +3707,13 @@ function takes. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -3929,6 +3970,137 @@ engine. </p></td>
                   <td><p>The dependent_columns is the list of dependent columns of a view. </p></td>
                 </tr>
               
+                <tr>
+                  <td>triggers</td>
+                  <td><a href="#bytebase.store.TriggerMetadata">TriggerMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The columns is the ordered list of columns in a table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>indexes</td>
+                  <td><a href="#bytebase.store.IndexMetadata">IndexMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The indexes is the list of indexes in a table. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.ObjectSchema">ObjectSchema</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.ObjectSchema.Type">ObjectSchema.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>struct_kind</td>
+                  <td><a href="#bytebase.store.ObjectSchema.StructKind">ObjectSchema.StructKind</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>array_kind</td>
+                  <td><a href="#bytebase.store.ObjectSchema.ArrayKind">ObjectSchema.ArrayKind</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.ObjectSchema.ArrayKind">ObjectSchema.ArrayKind</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>kind</td>
+                  <td><a href="#bytebase.store.ObjectSchema">ObjectSchema</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.ObjectSchema.StructKind">ObjectSchema.StructKind</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>properties</td>
+                  <td><a href="#bytebase.store.ObjectSchema.StructKind.PropertiesEntry">ObjectSchema.StructKind.PropertiesEntry</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.ObjectSchema.StructKind.PropertiesEntry">ObjectSchema.StructKind.PropertiesEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#bytebase.store.ObjectSchema">ObjectSchema</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -4081,7 +4253,7 @@ function takes. </p></td>
 
         
       
-        <h3 id="bytebase.store.SchemaConfig">SchemaConfig</h3>
+        <h3 id="bytebase.store.SchemaCatalog">SchemaCatalog</h3>
         <p></p>
 
         
@@ -4100,8 +4272,8 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                 </tr>
               
                 <tr>
-                  <td>table_configs</td>
-                  <td><a href="#bytebase.store.TableConfig">TableConfig</a></td>
+                  <td>tables</td>
+                  <td><a href="#bytebase.store.TableCatalog">TableCatalog</a></td>
                   <td>repeated</td>
                   <td><p>The table_configs is the list of configs for tables in a schema. </p></td>
                 </tr>
@@ -4229,14 +4401,6 @@ Snowflake. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>triggers</td>
-                  <td><a href="#bytebase.store.TriggerMetadata">TriggerMetadata</a></td>
-                  <td>repeated</td>
-                  <td><p>The triggers is the list of triggers in a schema, triggers are sorted by
-table_name, event, timing, action_order. </p></td>
                 </tr>
               
                 <tr>
@@ -4409,6 +4573,13 @@ table_name, event, timing, action_order. </p></td>
                   <td><p>The owner column of the sequence. </p></td>
                 </tr>
               
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -4489,7 +4660,7 @@ table_name, event, timing, action_order. </p></td>
 
         
       
-        <h3 id="bytebase.store.TableConfig">TableConfig</h3>
+        <h3 id="bytebase.store.TableCatalog">TableCatalog</h3>
         <p></p>
 
         
@@ -4507,10 +4678,17 @@ table_name, event, timing, action_order. </p></td>
                 </tr>
               
                 <tr>
-                  <td>column_configs</td>
-                  <td><a href="#bytebase.store.ColumnConfig">ColumnConfig</a></td>
+                  <td>columns</td>
+                  <td><a href="#bytebase.store.ColumnCatalog">ColumnCatalog</a></td>
                   <td>repeated</td>
                   <td><p>The column_configs is the ordered list of configs for columns in a table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>object_schema</td>
+                  <td><a href="#bytebase.store.ObjectSchema">ObjectSchema</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
                 </tr>
               
                 <tr>
@@ -4677,6 +4855,21 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td>owner</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sorting_keys</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.
+Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by </p></td>
+                </tr>
+              
+                <tr>
+                  <td>triggers</td>
+                  <td><a href="#bytebase.store.TriggerMetadata">TriggerMetadata</a></td>
+                  <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
               
@@ -4878,14 +5071,6 @@ Example: 01ad32a0-1bb6-5e93-0000-000000000001 </p></td>
                 </tr>
               
                 <tr>
-                  <td>table_name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The table_name is the name of the table/view that the trigger is created
-on. </p></td>
-                </tr>
-              
-                <tr>
                   <td>event</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -4923,6 +5108,13 @@ TRUNCATE. </p></td>
               
                 <tr>
                   <td>collation_connection</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -5027,6 +5219,13 @@ Format: projcets/{project}/branches/{branch} </p></td>
                   <td><p>The columns is the ordered list of columns in a table. </p></td>
                 </tr>
               
+                <tr>
+                  <td>triggers</td>
+                  <td><a href="#bytebase.store.TriggerMetadata">TriggerMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The triggers is the list of triggers in a view. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5059,6 +5258,53 @@ Format: projcets/{project}/branches/{branch} </p></td>
               <tr>
                 <td>TYPE_STORED</td>
                 <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.ObjectSchema.Type">ObjectSchema.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>STRING</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>NUMBER</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>BOOLEAN</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OBJECT</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ARRAY</td>
+                <td>5</td>
                 <td><p></p></td>
               </tr>
             
@@ -5362,9 +5608,8 @@ Example: projects/project-id/branches/branch-id. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The source of origin.
-1) change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}.
-2) branch: projects/{project}/branches/{branch}.
-3) raw SQL if empty. </p></td>
+1) changes: instances/{instance}/databases/{database}/changelogs/{changelog}.
+2) raw SQL if empty. </p></td>
                 </tr>
               
                 <tr>
@@ -11432,8 +11677,8 @@ The default value is 100MB, we will use the default value if the setting not exi
                 </tr>
               
                 <tr>
-                  <td>config</td>
-                  <td><a href="#bytebase.store.ColumnConfig">ColumnConfig</a></td>
+                  <td>catalog</td>
+                  <td><a href="#bytebase.store.ColumnCatalog">ColumnCatalog</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -11484,8 +11729,8 @@ The default value is 100MB, we will use the default value if the setting not exi
                 </tr>
               
                 <tr>
-                  <td>config</td>
-                  <td><a href="#bytebase.store.TableConfig">TableConfig</a></td>
+                  <td>catalog</td>
+                  <td><a href="#bytebase.store.TableCatalog">TableCatalog</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -12674,7 +12919,15 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>change_history</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} </p></td>
+                  <td><p>Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+Deprecated. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>changelog</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
                 </tr>
               
                 <tr>

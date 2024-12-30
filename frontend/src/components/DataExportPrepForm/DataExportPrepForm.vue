@@ -28,6 +28,7 @@
           mode="ALL_SHORT"
           :database-list="filteredDatabaseList"
           :single-selection="true"
+          :keyword="state.params.query.trim().toLowerCase()"
           @update:selected-databases="handleDatabasesSelectionChanged"
         />
       </div>

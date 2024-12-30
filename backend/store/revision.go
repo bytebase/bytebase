@@ -20,11 +20,11 @@ type RevisionMessage struct {
 	Payload     *storepb.RevisionPayload
 
 	// output only
-	UID         int64
-	CreatorUID  int
-	CreatedTime time.Time
-	DeleterUID  *int
-	DeletedTime *time.Time
+	UID        int64
+	CreatorUID int
+	CreateTime time.Time
+	DeleterUID *int
+	DeleteTime *time.Time
 }
 
 type FindRevisionMessage struct {
@@ -74,6 +74,7 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 			created_ts,
 			deleter_id,
 			deleted_ts,
+			version,
 			payload
 		FROM revision
 		WHERE %s
@@ -103,9 +104,10 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 			&r.UID,
 			&r.DatabaseUID,
 			&r.CreatorUID,
-			&r.CreatedTime,
+			&r.CreateTime,
 			&r.DeleterUID,
-			&r.DeletedTime,
+			&r.DeleteTime,
+			&r.Version,
 			&p,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")
@@ -171,13 +173,13 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage, c
 	defer tx.Rollback()
 
 	var id int64
-	var createdTime time.Time
+	var createTime time.Time
 	if err := tx.QueryRowContext(ctx, query,
 		revision.DatabaseUID,
 		creatorUID,
 		revision.Version,
 		p,
-	).Scan(&id, &createdTime); err != nil {
+	).Scan(&id, &createTime); err != nil {
 		return nil, errors.Wrapf(err, "failed to query and scan")
 	}
 
@@ -186,7 +188,7 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage, c
 	}
 
 	revision.UID = id
-	revision.CreatedTime = createdTime
+	revision.CreateTime = createTime
 
 	return revision, nil
 }

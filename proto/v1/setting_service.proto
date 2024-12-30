@@ -12,6 +12,7 @@ import "google/protobuf/timestamp.proto";
 import "google/type/expr.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
+import "v1/database_catalog_service.proto";
 import "v1/database_service.proto";
 import "v1/issue_service.proto";
 import "v1/subscription_service.proto";
@@ -310,7 +311,7 @@ message SchemaTemplateSetting {
 
     ColumnMetadata column = 4;
 
-    ColumnConfig config = 5;
+    ColumnCatalog catalog = 5;
   }
 
   repeated FieldTemplate field_templates = 1;
@@ -334,7 +335,7 @@ message SchemaTemplateSetting {
 
     TableMetadata table = 4;
 
-    TableConfig config = 5;
+    TableCatalog catalog = 5;
   }
 
   repeated TableTemplate table_templates = 3;

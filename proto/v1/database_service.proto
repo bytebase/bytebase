@@ -79,16 +79,6 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  rpc UpdateDatabaseMetadata(UpdateDatabaseMetadataRequest) returns (DatabaseMetadata) {
-    option (google.api.http) = {
-      patch: "/v1/{database_metadata.name=instances/*/databases/*/metadata}"
-      body: "database_metadata"
-    };
-    option (bytebase.v1.permission) = "bb.databases.update";
-    option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
-  }
-
   rpc GetDatabaseSchema(GetDatabaseSchemaRequest) returns (DatabaseSchema) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schema}"};
     option (bytebase.v1.permission) = "bb.databases.getSchema";
@@ -164,30 +154,42 @@ service DatabaseService {
   rpc ListRevisions(ListRevisionsRequest) returns (ListRevisionsResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/revisions"};
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.revisions.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
   rpc GetRevision(GetRevisionRequest) returns (Revision) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/revisions/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.revisions.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
   rpc CreateRevision(CreateRevisionRequest) returns (Revision) {
     option (google.api.http) = {
       post: "/v1/{parent=instances/*/databases/*}/revisions"
       body: "revision"
     };
+    option (bytebase.v1.permission) = "bb.revisions.create";
+    option (bytebase.v1.auth_method) = IAM;
   }
   rpc DeleteRevision(DeleteRevisionRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=instances/*/databases/*/revisions/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.revisions.delete";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListChangelogs(ListChangelogsRequest) returns (ListChangelogsResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/changelogs"};
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.changelogs.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc GetChangelog(GetChangelogRequest) returns (Changelog) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/changelogs/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.changelogs.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 
@@ -333,18 +335,6 @@ message GetDatabaseMetadataRequest {
   // "schemas/schema-a/tables/table-a".
   // The column masking level will only be returned when a table filter is used.
   string filter = 3;
-}
-
-message UpdateDatabaseMetadataRequest {
-  // The database metadata to update.
-  //
-  // The database_metadata's `name` field is used to identify the database
-  // metadata to update. Format:
-  // instances/{instance}/databases/{database}/metadata
-  DatabaseMetadata database_metadata = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The list of fields to update.
-  google.protobuf.FieldMask update_mask = 2;
 }
 
 message GetDatabaseSchemaRequest {
@@ -506,10 +496,6 @@ message SchemaMetadata {
 
   string owner = 11;
 
-  // The triggers is the list of triggers in a schema, triggers are sorted by
-  // table_name, name, event, timing, action_order.
-  repeated TriggerMetadata triggers = 12;
-
   // The sequences is the list of sequences in a schema, sorted by name.
   repeated SequenceMetadata sequences = 13;
 
@@ -524,6 +510,8 @@ message EnumTypeMetadata {
 
   // The enum values of a type.
   repeated string values = 2;
+
+  string comment = 3;
 }
 
 message EventMetadata {
@@ -576,15 +564,13 @@ message SequenceMetadata {
 
   // The owner column of the sequence.
   string owner_column = 11;
+
+  string comment = 12;
 }
 
 message TriggerMetadata {
   // The name is the name of the trigger.
   string name = 1;
-
-  // The table_name is the name of the table/view that the trigger is created
-  // on.
-  string table_name = 2;
 
   // The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
   // TRUNCATE.
@@ -601,6 +587,8 @@ message TriggerMetadata {
   string character_set_client = 7;
 
   string collation_connection = 8;
+
+  string comment = 9;
 }
 
 message ExternalTableMetadata {
@@ -669,6 +657,12 @@ message TableMetadata {
   repeated CheckConstraintMetadata check_constraints = 16;
 
   string owner = 18;
+
+  // The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.
+  // Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by
+  repeated string sorting_keys = 19;
+
+  repeated TriggerMetadata triggers = 20;
 }
 
 // CheckConstraintMetadata is the metadata for check constraints.
@@ -817,6 +811,9 @@ message ViewMetadata {
 
   // The columns is the ordered list of columns in a table.
   repeated ColumnMetadata columns = 5;
+
+  // The triggers is the list of triggers in a view.
+  repeated TriggerMetadata triggers = 6;
 }
 
 // DependentColumn is the metadata for dependent columns.
@@ -845,6 +842,12 @@ message MaterializedViewMetadata {
   // The dependent_columns is the list of dependent columns of a materialized
   // view.
   repeated DependentColumn dependent_columns = 4;
+
+  // The columns is the ordered list of columns in a table.
+  repeated TriggerMetadata triggers = 5;
+
+  // The indexes is the list of indexes in a table.
+  repeated IndexMetadata indexes = 6;
 }
 
 // FunctionMetadata is the metadata for functions.
@@ -867,6 +870,8 @@ message FunctionMetadata {
   string database_collation = 6;
 
   string sql_mode = 7;
+
+  string comment = 8;
 }
 
 // ProcedureMetadata is the metadata for procedures.
@@ -1858,26 +1863,14 @@ message Changelog {
   string revision = 15;
 
   ChangedResources changed_resources = 16;
-}
 
-message ObjectSchema {
   enum Type {
     TYPE_UNSPECIFIED = 0;
-    STRING = 1;
-    NUMBER = 2;
-    BOOLEAN = 3;
-    OBJECT = 4;
-    ARRAY = 5;
+    BASELINE = 1;
+    MIGRATE = 2;
+    MIGRATE_SDL = 3;
+    MIGRATE_GHOST = 4;
+    DATA = 6;
   }
-  Type type = 1;
-  message StructKind {
-    map<string, ObjectSchema> properties = 2;
-  }
-  message ArrayKind {
-    ObjectSchema kind = 1;
-  }
-  oneof kind {
-    StructKind struct_kind = 2;
-    ArrayKind array_kind = 3;
-  }
+  Type type = 17;
 }

@@ -111,11 +111,19 @@ onMounted(async () => {
 watchEffect(async () => {
   // Override app profile
   overrideAppProfile();
-
-  if (authStore.currentUserId) {
-    await workspaceStore.fetchIamPolicy();
-  }
 });
+
+watch(
+  () => authStore.currentUserId,
+  async (currentUserId) => {
+    if (currentUserId) {
+      await workspaceStore.fetchIamPolicy();
+    }
+  },
+  {
+    immediate: true,
+  }
+);
 
 onErrorCaptured((error: any /* , _, info */) => {
   // Handle grpc request error.

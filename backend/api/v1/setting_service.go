@@ -523,7 +523,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, err
 		}
 
-		payload, err := convertV1SchemaTemplateSetting(ctx, schemaTemplateSetting)
+		payload, err := convertV1SchemaTemplateSetting(schemaTemplateSetting)
 		if err != nil {
 			return nil, err
 		}
@@ -823,7 +823,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 
-		sts, err := convertSchemaTemplateSetting(ctx, value)
+		sts, err := convertSchemaTemplateSetting(value)
 		if err != nil {
 			return nil, err
 		}
@@ -942,7 +942,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(settingValue), value); err != nil {
 		return status.Errorf(codes.Internal, "failed to unmarshal setting value for %v with error: %v", api.SettingSchemaTemplate, err)
 	}
-	v1Value, err := convertSchemaTemplateSetting(ctx, value)
+	v1Value, err := convertSchemaTemplateSetting(value)
 	if err != nil {
 		return err
 	}
@@ -1247,7 +1247,7 @@ func stripSensitiveData(setting *v1pb.Setting) (*v1pb.Setting, error) {
 	return setting, nil
 }
 
-func convertSchemaTemplateSetting(ctx context.Context, template *storepb.SchemaTemplateSetting) (*v1pb.SchemaTemplateSetting, error) {
+func convertSchemaTemplateSetting(template *storepb.SchemaTemplateSetting) (*v1pb.SchemaTemplateSetting, error) {
 	v1Setting := new(v1pb.SchemaTemplateSetting)
 	for _, v := range template.ColumnTypes {
 		v1Setting.ColumnTypes = append(v1Setting.ColumnTypes, &v1pb.SchemaTemplateSetting_ColumnType{
@@ -1268,8 +1268,8 @@ func convertSchemaTemplateSetting(ctx context.Context, template *storepb.SchemaT
 		if v.Column != nil {
 			t.Column = convertStoreColumnMetadata(v.Column)
 		}
-		if v.Config != nil {
-			t.Config = convertStoreColumnConfig(v.Config)
+		if v.Catalog != nil {
+			t.Catalog = convertColumnCatalog(v.Catalog)
 		}
 		v1Setting.FieldTemplates = append(v1Setting.FieldTemplates, t)
 	}
@@ -1285,8 +1285,8 @@ func convertSchemaTemplateSetting(ctx context.Context, template *storepb.SchemaT
 		if v.Table != nil {
 			t.Table = convertStoreTableMetadata(v.Table)
 		}
-		if v.Config != nil {
-			t.Config = convertStoreTableConfig(ctx, v.Config, nil /* optionalStores */)
+		if v.Catalog != nil {
+			t.Catalog = convertTableCatalog(v.Catalog)
 		}
 		v1Setting.TableTemplates = append(v1Setting.TableTemplates, t)
 	}
@@ -1294,7 +1294,7 @@ func convertSchemaTemplateSetting(ctx context.Context, template *storepb.SchemaT
 	return v1Setting, nil
 }
 
-func convertV1SchemaTemplateSetting(ctx context.Context, template *v1pb.SchemaTemplateSetting) (*storepb.SchemaTemplateSetting, error) {
+func convertV1SchemaTemplateSetting(template *v1pb.SchemaTemplateSetting) (*storepb.SchemaTemplateSetting, error) {
 	v1Setting := new(storepb.SchemaTemplateSetting)
 	for _, v := range template.ColumnTypes {
 		v1Setting.ColumnTypes = append(v1Setting.ColumnTypes, &storepb.SchemaTemplateSetting_ColumnType{
@@ -1315,8 +1315,8 @@ func convertV1SchemaTemplateSetting(ctx context.Context, template *v1pb.SchemaTe
 		if v.Column != nil {
 			t.Column = convertV1ColumnMetadata(v.Column)
 		}
-		if v.Config != nil {
-			t.Config = convertV1ColumnConfig(v.Config)
+		if v.Catalog != nil {
+			t.Catalog = convertV1ColumnCatalog(v.Catalog)
 		}
 		v1Setting.FieldTemplates = append(v1Setting.FieldTemplates, t)
 	}
@@ -1332,8 +1332,8 @@ func convertV1SchemaTemplateSetting(ctx context.Context, template *v1pb.SchemaTe
 		if v.Table != nil {
 			t.Table = convertV1TableMetadata(v.Table)
 		}
-		if v.Config != nil {
-			t.Config = convertV1TableConfig(ctx, v.Config, nil /* optionalStores */)
+		if v.Catalog != nil {
+			t.Catalog = convertV1TableCatalog(v.Catalog)
 		}
 		v1Setting.TableTemplates = append(v1Setting.TableTemplates, t)
 	}

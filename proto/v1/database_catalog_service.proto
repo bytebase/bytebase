@@ -1,0 +1,127 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/field_mask.proto";
+import "v1/annotation.proto";
+import "v1/common.proto";
+
+option go_package = "generated-go/v1";
+
+service DatabaseCatalogService {
+  rpc GetDatabaseCatalog(GetDatabaseCatalogRequest) returns (DatabaseCatalog) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/catalog}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.databaseCatalogs.get";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
+  rpc UpdateDatabaseCatalog(UpdateDatabaseCatalogRequest) returns (DatabaseCatalog) {
+    option (google.api.http) = {
+      patch: "/v1/{catalog.name=instances/*/databases/*/catalog}"
+      body: "catalog"
+    };
+    option (google.api.method_signature) = "catalog,update_mask";
+    option (bytebase.v1.permission) = "bb.databaseCatalogs.update";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+  }
+}
+
+message GetDatabaseCatalogRequest {
+  // The name of the database catalog to retrieve.
+  // Format: instances/{instance}/databases/{database}/catalog
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/DatabaseCatalog"}
+  ];
+}
+
+message UpdateDatabaseCatalogRequest {
+  // The database catalog to update.
+  //
+  // The catalog's `name` field is used to identify the database catalog to update.
+  // Format: instances/{instance}/databases/{database}/catalog
+  DatabaseCatalog catalog = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to update.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DatabaseCatalog {
+  option (google.api.resource) = {
+    type: "bytebase.com/DatabaseCatalog"
+    pattern: "instances/{instance}/databases/{database}/catalog"
+  };
+
+  // The name of the database catalog.
+  // Format: instances/{instance}/databases/{database}/catalog
+  string name = 1;
+
+  repeated SchemaCatalog schemas = 2;
+}
+
+message SchemaCatalog {
+  string name = 1;
+
+  repeated TableCatalog tables = 2;
+}
+
+message TableCatalog {
+  string name = 1;
+
+  message Columns {
+    repeated ColumnCatalog columns = 1;
+  }
+  oneof kind {
+    Columns columns = 2;
+    ObjectSchema object_schema = 3;
+  }
+
+  string classification_id = 4;
+}
+
+message ColumnCatalog {
+  string name = 1;
+
+  string semantic_type_id = 2;
+
+  // The user labels for a column.
+  map<string, string> labels = 3;
+
+  string classification_id = 4;
+
+  MaskingLevel masking_level = 5;
+
+  string full_masking_algorithm_id = 6;
+
+  string partial_masking_algorithm_id = 7;
+
+  optional ObjectSchema object_schema = 8;
+}
+
+message ObjectSchema {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    STRING = 1;
+    NUMBER = 2;
+    BOOLEAN = 3;
+    OBJECT = 4;
+    ARRAY = 5;
+  }
+  Type type = 1;
+  message StructKind {
+    map<string, ObjectSchema> properties = 1;
+  }
+  message ArrayKind {
+    ObjectSchema kind = 1;
+  }
+  oneof kind {
+    StructKind struct_kind = 2;
+    ArrayKind array_kind = 3;
+  }
+}

@@ -1,7 +1,7 @@
-import ChangeHistoryDetail from "./ChangeHistoryDetail.vue";
+import ChangelogDetail from "./ChangelogDetail.vue";
 import DatabaseDetail from "./DatabaseDetail.vue";
 import RevisionDetail from "./RevisionDetail.vue";
 
-export { ChangeHistoryDetail, RevisionDetail };
+export { RevisionDetail, ChangelogDetail };
 
 export default DatabaseDetail;

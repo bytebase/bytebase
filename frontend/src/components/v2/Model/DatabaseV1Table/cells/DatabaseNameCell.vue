@@ -1,6 +1,11 @@
 <template>
   <div class="flex items-center space-x-2">
-    <DatabaseV1Name :database="database" :link="false" tag="span" />
+    <DatabaseV1Name
+      :database="database"
+      :link="false"
+      tag="span"
+      :keyword="keyword"
+    />
   </div>
 </template>
 
@@ -8,7 +13,13 @@
 import { DatabaseV1Name } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
 
-defineProps<{
-  database: ComposedDatabase;
-}>();
+withDefaults(
+  defineProps<{
+    database: ComposedDatabase;
+    keyword?: string;
+  }>(),
+  {
+    keyword: undefined,
+  }
+);
 </script>

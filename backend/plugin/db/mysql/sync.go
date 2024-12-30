@@ -470,11 +470,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 
 	// Query triggers.
-	triggerList, err := driver.getTriggerList(ctx, driver.databaseName)
+	triggerMap, err := driver.getTriggerList(ctx, driver.databaseName)
 	if err != nil {
 		return nil, err
 	}
-	schemaMetadata.Triggers = triggerList
 
 	// Query events.
 	eventList, err := driver.getEventList(ctx, driver.databaseName)
@@ -571,6 +570,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 				Partitions:       partitionTables[key],
 				CheckConstraints: checkMap[key],
 				Charset:          charset,
+				Triggers:         triggerMap[key],
 			}
 			if tableCollation.Valid {
 				tableMetadata.Collation = tableCollation.String
@@ -721,7 +721,7 @@ func (driver *Driver) getCreateEventStmt(ctx context.Context, databaseName strin
 	return "", nil
 }
 
-func (driver *Driver) getTriggerList(ctx context.Context, databaseName string) ([]*storepb.TriggerMetadata, error) {
+func (driver *Driver) getTriggerList(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.TriggerMetadata, error) {
 	triggersQuery := `
 	SELECT 
 		TRIGGER_NAME,
@@ -741,7 +741,7 @@ func (driver *Driver) getTriggerList(ctx context.Context, databaseName string) (
 		return nil, util.FormatErrorWithQuery(err, triggersQuery)
 	}
 	defer triggerRows.Close()
-	var triggers []*storepb.TriggerMetadata
+	triggerMap := make(map[db.TableKey][]*storepb.TriggerMetadata)
 	for triggerRows.Next() {
 		var name, table, event, timing, statement, sqlMode, charsetClient, collationConnection string
 		if err := triggerRows.Scan(
@@ -758,7 +758,6 @@ func (driver *Driver) getTriggerList(ctx context.Context, databaseName string) (
 		}
 		trigger := &storepb.TriggerMetadata{
 			Name:                name,
-			TableName:           table,
 			Event:               event,
 			Timing:              timing,
 			Body:                statement,
@@ -766,12 +765,13 @@ func (driver *Driver) getTriggerList(ctx context.Context, databaseName string) (
 			CharacterSetClient:  charsetClient,
 			CollationConnection: collationConnection,
 		}
-		triggers = append(triggers, trigger)
+		tableKey := db.TableKey{Schema: "", Table: table}
+		triggerMap[tableKey] = append(triggerMap[tableKey], trigger)
 	}
 	if err := triggerRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, triggersQuery)
 	}
-	return triggers, nil
+	return triggerMap, nil
 }
 
 func (driver *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*storepb.FunctionMetadata, []*storepb.ProcedureMetadata, error) {

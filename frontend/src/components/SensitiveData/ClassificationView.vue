@@ -103,13 +103,12 @@ import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, useSettingV1Store, pushNotification } from "@/store";
-import { PresetRoleType } from "@/types";
 import {
   DataClassificationSetting_DataClassificationConfig_Level as ClassificationLevel,
   DataClassificationSetting_DataClassificationConfig_DataClassification as DataClassification,
 } from "@/types/proto/v1/setting_service";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
-import { hasWorkspaceLevelRole } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import ClassificationTree from "../SchemaTemplate/ClassificationTree.vue";
 import SingleFileSelector from "../SingleFileSelector.vue";
@@ -210,8 +209,7 @@ const upsertSetting = async () => {
 };
 
 const allowEdit = computed(() => {
-  // Only allow workspace admin to manage user.
-  return hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN);
+  return hasWorkspacePermissionV2("bb.settings.set");
 });
 
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");

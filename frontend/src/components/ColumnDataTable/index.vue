@@ -19,7 +19,8 @@ import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite"
 import {
   useSettingV1Store,
   useSubscriptionV1Store,
-  useDBSchemaV1Store,
+  useDatabaseCatalog,
+  getColumnCatalog,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
@@ -65,7 +66,6 @@ const engine = computed(() => {
   return props.database.instanceResource.engine;
 });
 const subscriptionV1Store = useSubscriptionV1Store();
-const dbSchemaStore = useDBSchemaV1Store();
 const settingStore = useSettingV1Store();
 
 const hasSensitiveDataFeature = computed(() => {
@@ -124,6 +124,8 @@ const hasSensitiveDataPermission = computed(() => {
   );
 });
 
+const databaseCatalog = useDatabaseCatalog(props.database.name, false);
+
 const columns = computed(() => {
   const columns: (DataTableColumn<ColumnMetadata> & { hide?: boolean })[] = [
     {
@@ -175,14 +177,9 @@ const columns = computed(() => {
       width: 140,
       resizable: true,
       render: (column) => {
-        const columnConfig = dbSchemaStore.getColumnConfig({
-          database: props.database.name,
-          schema: props.schema,
-          table: props.table.name,
-          column: column.name,
-        });
+        const columnCatalog = getColumnCatalog(databaseCatalog.value, props.schema, props.table.name, column.name);
         return h(ClassificationCell, {
-          classification: columnConfig.classificationId,
+          classification: columnCatalog.classificationId,
           classificationConfig:
             props.classificationConfig ??
             DataClassificationConfig.fromPartial({}),
@@ -294,7 +291,7 @@ const onClassificationIdApply = async (
     schema: props.schema,
     table: props.table.name,
     column,
-    config: { classificationId },
+    columnCatalog: { classificationId },
   });
 };
 </script>

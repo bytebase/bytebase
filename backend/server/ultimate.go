@@ -45,6 +45,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/tidb"
 
 	// Schema designer.
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/clickhouse"
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/oracle"
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/pg"

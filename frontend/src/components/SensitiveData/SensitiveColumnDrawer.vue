@@ -271,7 +271,7 @@ const onColumnMaskingUpdate = async () => {
       schema: props.mask.schema,
       table: props.mask.table,
       column: props.mask.column,
-      config: {
+      columnCatalog: {
         maskingLevel: state.maskingLevel,
         fullMaskingAlgorithmId: state.fullMaskingAlgorithmId,
         partialMaskingAlgorithmId: state.partialMaskingAlgorithmId,

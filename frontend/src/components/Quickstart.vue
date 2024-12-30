@@ -122,16 +122,16 @@ import {
   WORKSPACE_ROUTE_USERS,
 } from "@/router/dashboard/workspaceRoutes";
 import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
-import { pushNotification, useUIStateStore, useProjectV1Store } from "@/store";
+import {
+  pushNotification,
+  useUIStateStore,
+  useProjectV1Store,
+  useActiveUsers,
+} from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Permission } from "@/types";
+import { UNKNOWN_PROJECT_NAME, isValidProjectName } from "@/types";
 import {
-  PresetRoleType,
-  UNKNOWN_PROJECT_NAME,
-  isValidProjectName,
-} from "@/types";
-import {
-  hasWorkspaceLevelRole,
   hasWorkspacePermissionV2,
   hasProjectPermissionV2,
   extractProjectResourceName,
@@ -261,13 +261,11 @@ const introList = computed(() => {
   );
 });
 
-const isWorkspaceAdmin = computed(() =>
-  hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN)
-);
+const isFirstUser = computed(() => useActiveUsers().length === 1);
 
 const showQuickstart = computed(() => {
-  // Only show quickstart for those who have workspace admin role.
-  if (!isWorkspaceAdmin.value) {
+  // Only show quickstart for the first user.
+  if (!isFirstUser.value) {
     return false;
   }
   if (!show.value) return false;
@@ -278,7 +276,7 @@ const showQuickstart = computed(() => {
 const showBookDemo = computed(() => {
   if (!show.value) return false;
   if (showQuickstart.value) return false;
-  return isWorkspaceAdmin.value;
+  return isFirstUser.value;
 });
 
 const currentStep = computed(() => {

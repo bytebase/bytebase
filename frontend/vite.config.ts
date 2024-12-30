@@ -1,5 +1,6 @@
 import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
 import yaml from "@rollup/plugin-yaml";
+import legacy from "@vitejs/plugin-legacy";
 import vue from "@vitejs/plugin-vue";
 import vueJsx from "@vitejs/plugin-vue-jsx";
 import { CodeInspectorPlugin } from "code-inspector-plugin";
@@ -27,6 +28,10 @@ const extractHostPort = (url: string) => {
 
 export default defineConfig({
   plugins: [
+    legacy({
+      targets: ["> 0.08%, not dead"],
+      additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
+    }),
     vue(),
     vueJsx(),
     // https://github.com/intlify/vite-plugin-vue-i18n

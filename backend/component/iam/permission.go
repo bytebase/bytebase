@@ -18,6 +18,10 @@ const (
 	PermissionChangelistsGet             Permission = "bb.changelists.get"
 	PermissionChangelistsList            Permission = "bb.changelists.list"
 	PermissionChangelistsUpdate          Permission = "bb.changelists.update"
+	PermissionChangelogsGet              Permission = "bb.changelogs.get"
+	PermissionChangelogsList             Permission = "bb.changelogs.list"
+	PermissionDatabaseCatalogsGet        Permission = "bb.databaseCatalogs.get"
+	PermissionDatabaseCatalogsUpdate     Permission = "bb.databaseCatalogs.update"
 	PermissionDatabaseSecretsDelete      Permission = "bb.databaseSecrets.delete"
 	PermissionDatabaseSecretsList        Permission = "bb.databaseSecrets.list"
 	PermissionDatabaseSecretsUpdate      Permission = "bb.databaseSecrets.update"
@@ -79,6 +83,10 @@ const (
 	PermissionReviewConfigsGet           Permission = "bb.reviewConfigs.get"
 	PermissionReviewConfigsList          Permission = "bb.reviewConfigs.list"
 	PermissionReviewConfigsUpdate        Permission = "bb.reviewConfigs.update"
+	PermissionRevisionsCreate            Permission = "bb.revisions.create"
+	PermissionRevisionsDelete            Permission = "bb.revisions.delete"
+	PermissionRevisionsGet               Permission = "bb.revisions.get"
+	PermissionRevisionsList              Permission = "bb.revisions.list"
 	PermissionRisksCreate                Permission = "bb.risks.create"
 	PermissionRisksDelete                Permission = "bb.risks.delete"
 	PermissionRisksList                  Permission = "bb.risks.list"
@@ -149,6 +157,10 @@ var allPermissions = []Permission{
 	PermissionChangelistsGet,
 	PermissionChangelistsList,
 	PermissionChangelistsUpdate,
+	PermissionChangelogsGet,
+	PermissionChangelogsList,
+	PermissionDatabaseCatalogsGet,
+	PermissionDatabaseCatalogsUpdate,
 	PermissionDatabaseSecretsDelete,
 	PermissionDatabaseSecretsList,
 	PermissionDatabaseSecretsUpdate,
@@ -210,6 +222,10 @@ var allPermissions = []Permission{
 	PermissionReviewConfigsGet,
 	PermissionReviewConfigsList,
 	PermissionReviewConfigsUpdate,
+	PermissionRevisionsCreate,
+	PermissionRevisionsDelete,
+	PermissionRevisionsGet,
+	PermissionRevisionsList,
 	PermissionRisksCreate,
 	PermissionRisksDelete,
 	PermissionRisksList,

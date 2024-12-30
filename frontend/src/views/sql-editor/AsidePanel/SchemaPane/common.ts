@@ -75,15 +75,15 @@ export type RichPartitionTableMetadata = RichTableMetadata & {
   parentPartition?: TablePartitionMetadata;
   partition: TablePartitionMetadata;
 };
+export type RichTriggerMetadata = RichTableMetadata & {
+  trigger: TriggerMetadata;
+  position: number;
+};
 export type RichViewMetadata = RichSchemaMetadata & {
   view: ViewMetadata;
 };
 export type RichSequenceMetadata = RichSchemaMetadata & {
   sequence: SequenceMetadata;
-  position: number;
-};
-export type RichTriggerMetadata = RichSchemaMetadata & {
-  trigger: TriggerMetadata;
   position: number;
 };
 export type RichProcedureMetadata = RichSchemaMetadata & {
@@ -310,10 +310,12 @@ export const keyForNodeTarget = <T extends NodeType>(
     ].join("/");
   }
   if (type === "trigger") {
-    const { db, schema, trigger, position } = target as NodeTarget<"trigger">;
+    const { db, schema, table, trigger, position } =
+      target as NodeTarget<"trigger">;
     return [
       db.name,
       `schemas/${schema.name}`,
+      `tables/${table.name}`,
       `triggers/${keyWithPosition(trigger.name, position)}`,
     ].join("/");
   }
@@ -583,6 +585,15 @@ const mapTableNodes = (target: NodeTarget<"schema">, parent: TreeNode) => {
       node.children.push(foreignKeysFolderNode);
     }
 
+    // Show "Triggers" if there's at least 1 function
+    if (table.triggers.length > 0) {
+      const triggerNode = createExpandableTextNode("trigger", parent, () =>
+        t("db.triggers")
+      );
+      triggerNode.children = mapTriggerNodes(node.meta.target, triggerNode);
+      node.children.push(triggerNode);
+    }
+
     // Map table-level partitions.
     if (table.partitions.length > 0) {
       const partitionsFolderNode = createExpandableTextNode(
@@ -760,11 +771,11 @@ const mapSequenceNodes = (
   return children;
 };
 const mapTriggerNodes = (
-  target: NodeTarget<"schema">,
+  target: NodeTarget<"table">,
   parent: TreeNode<"expandable-text">
 ) => {
-  const { schema } = target;
-  const children = schema.triggers.map((trigger, position) =>
+  const { table } = target;
+  const children = table.triggers.map((trigger, position) =>
     mapTreeNodeByType("trigger", { ...target, trigger, position }, parent)
   );
   if (children.length === 0) {
@@ -854,15 +865,6 @@ const buildSchemaNodeChildren = (
     );
     sequenceNode.children = mapSequenceNodes(target, sequenceNode);
     children.push(sequenceNode);
-  }
-
-  // Show "Triggers" if there's at least 1 function
-  if (schema.triggers.length > 0) {
-    const triggerNode = createExpandableTextNode("trigger", parent, () =>
-      t("db.triggers")
-    );
-    triggerNode.children = mapTriggerNodes(target, triggerNode);
-    children.push(triggerNode);
   }
 
   return children;

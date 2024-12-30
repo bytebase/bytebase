@@ -117,7 +117,7 @@ const params = computed(() => {
     issueSlug: route.params.issueSlug as string | undefined,
     instanceId: route.params.instanceId as string | undefined,
     databaseName: route.params.databaseName as string | undefined,
-    changeHistoryId: route.params.changeHistoryId as string | undefined,
+    changelogId: route.params.changelogId as string | undefined,
   };
 });
 

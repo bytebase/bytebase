@@ -535,9 +535,9 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 
 		// Convert the maskingPolicy to a map to reduce the time complexity of searching.
 		maskingPolicyMap := make(map[maskingPolicyKey]*storepb.MaskData)
-		for _, schemaConfig := range dbSchema.GetConfig().SchemaConfigs {
-			for _, tableConfig := range schemaConfig.GetTableConfigs() {
-				for _, columnConfig := range tableConfig.GetColumnConfigs() {
+		for _, schemaConfig := range dbSchema.GetConfig().Schemas {
+			for _, tableConfig := range schemaConfig.GetTables() {
+				for _, columnConfig := range tableConfig.GetColumns() {
 					if columnConfig.MaskingLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED {
 						continue
 					}
@@ -582,86 +582,6 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		}
 	}
 
-	return v1pbMetadata, nil
-}
-
-// UpdateDatabaseMetadata updates the metadata config of a database.
-func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v1pb.UpdateDatabaseMetadataRequest) (*v1pb.DatabaseMetadata, error) {
-	// TODO(ed): check subscripion? FeatureSensitiveData etc
-	if request.DatabaseMetadata == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "empty database config")
-	}
-	if request.UpdateMask == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
-	}
-
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	instanceID, databaseName, err := common.TrimSuffixAndGetInstanceDatabaseID(request.DatabaseMetadata.Name, common.MetadataSuffix)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
-	}
-	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
-	}
-
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
-	})
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if database == nil {
-		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
-	}
-
-	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if dbSchema == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "database schema metadata not found")
-	}
-
-	for _, path := range request.UpdateMask.Paths {
-		if path == "schema_configs" {
-			databaseMetadata := request.GetDatabaseMetadata()
-			databaseConfig := convertV1DatabaseConfig(ctx, &v1pb.DatabaseConfig{
-				Name:          databaseName,
-				SchemaConfigs: databaseMetadata.GetSchemaConfigs(),
-			}, nil /* optionalStores */)
-			if err := s.store.UpdateDBSchema(ctx, database.UID, &store.UpdateDBSchemaMessage{Config: databaseConfig}, principalID); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	dbSchema, err = s.store.GetDBSchema(ctx, database.UID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if dbSchema == nil {
-		return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
-	}
-
-	v1pbMetadata, err := convertStoreDatabaseMetadata(dbSchema.GetMetadata(), nil /* filter */)
-	if err != nil {
-		return nil, err
-	}
-	dbConfig := convertStoreDatabaseConfig(ctx, dbSchema.GetConfig(), nil /* filter */, nil /* optionalStores */)
-	if dbConfig != nil {
-		v1pbMetadata.SchemaConfigs = dbConfig.SchemaConfigs
-	}
-	v1pbMetadata.Name = fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix)
 	return v1pbMetadata, nil
 }
 

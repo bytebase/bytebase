@@ -17,6 +17,10 @@ roles:
       - bb.changelists.get
       - bb.changelists.list
       - bb.changelists.update
+      - bb.changelogs.get
+      - bb.changelogs.list
+      - bb.databaseCatalogs.get
+      - bb.databaseCatalogs.update
       - bb.databaseSecrets.delete
       - bb.databaseSecrets.list
       - bb.databaseSecrets.update
@@ -78,6 +82,10 @@ roles:
       - bb.reviewConfigs.get
       - bb.reviewConfigs.list
       - bb.reviewConfigs.update
+      - bb.revisions.create
+      - bb.revisions.delete
+      - bb.revisions.get
+      - bb.revisions.list
       - bb.risks.create
       - bb.risks.delete
       - bb.risks.list
@@ -148,6 +156,10 @@ roles:
       - bb.changelists.get
       - bb.changelists.list
       - bb.changelists.update
+      - bb.changelogs.get
+      - bb.changelogs.list
+      - bb.databaseCatalogs.get
+      - bb.databaseCatalogs.update
       - bb.databaseSecrets.delete
       - bb.databaseSecrets.list
       - bb.databaseSecrets.update
@@ -209,6 +221,10 @@ roles:
       - bb.reviewConfigs.get
       - bb.reviewConfigs.list
       - bb.reviewConfigs.update
+      - bb.revisions.create
+      - bb.revisions.delete
+      - bb.revisions.get
+      - bb.revisions.list
       - bb.risks.create
       - bb.risks.delete
       - bb.risks.list
@@ -294,6 +310,10 @@ roles:
       - bb.changelists.get
       - bb.changelists.list
       - bb.changelists.update
+      - bb.changelogs.get
+      - bb.changelogs.list
+      - bb.databaseCatalogs.get
+      - bb.databaseCatalogs.update
       - bb.databaseSecrets.delete
       - bb.databaseSecrets.list
       - bb.databaseSecrets.update
@@ -321,6 +341,10 @@ roles:
       - bb.projects.getIamPolicy
       - bb.projects.setIamPolicy
       - bb.projects.update
+      - bb.revisions.create
+      - bb.revisions.delete
+      - bb.revisions.get
+      - bb.revisions.list
       - bb.rollouts.create
       - bb.rollouts.get
       - bb.rollouts.list
@@ -357,6 +381,9 @@ roles:
       - bb.changelists.get
       - bb.changelists.list
       - bb.changelists.update
+      - bb.changelogs.get
+      - bb.changelogs.list
+      - bb.databaseCatalogs.get
       - bb.databases.check
       - bb.databases.get
       - bb.databases.getSchema
@@ -376,6 +403,8 @@ roles:
       - bb.plans.list
       - bb.projects.get
       - bb.projects.getIamPolicy
+      - bb.revisions.get
+      - bb.revisions.list
       - bb.rollouts.create
       - bb.rollouts.get
       - bb.rollouts.list
@@ -390,6 +419,7 @@ roles:
   - name: roles/sqlEditorUser
     title: SQL Editor User
     permissions:
+      - bb.databaseCatalogs.get
       - bb.databases.check
       - bb.databases.get
       - bb.databases.getSchema
@@ -405,6 +435,7 @@ roles:
   - name: roles/projectExporter
     title: Project exporter
     permissions:
+      - bb.databaseCatalogs.get
       - bb.databases.check
       - bb.databases.get
       - bb.databases.getSchema
@@ -418,6 +449,8 @@ roles:
     permissions:
       - bb.branches.get
       - bb.changeHistories.get
+      - bb.databaseCatalogs.get
+      - bb.changelogs.get
       - bb.databases.check
       - bb.databases.get
       - bb.databases.getSchema
@@ -433,6 +466,8 @@ roles:
       - bb.plans.list
       - bb.projects.get
       - bb.projects.getIamPolicy
+      - bb.revisions.get
+      - bb.revisions.list
       - bb.rollouts.get
       - bb.rollouts.list
       - bb.sheets.get
@@ -440,6 +475,7 @@ roles:
   - name: roles/projectViewer
     title: Project viewer
     permissions:
+      - bb.databaseCatalogs.get
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list

@@ -124,6 +124,11 @@ export interface CreateRolloutRequest {
    * If unspecified, all stages are created.
    */
   stageId: string;
+  /**
+   * If set, validate the request and preview the rollout, but
+   * do not actually create it.
+   */
+  validateOnly: boolean;
 }
 
 export interface PreviewRolloutRequest {
@@ -215,6 +220,12 @@ export interface Rollout {
 export interface Stage {
   /** Format: projects/{project}/rollouts/{rollout}/stages/{stage} */
   name: string;
+  /**
+   * The id comes from the deployment config.
+   * Format: UUID
+   * Empty for legacy stages.
+   */
+  id: string;
   title: string;
   tasks: Task[];
 }
@@ -533,6 +544,11 @@ export interface TaskRun {
    * Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
    */
   changeHistory: string;
+  /**
+   * The resource name of the changelog.
+   * Format: instances/{instance}/databases/{database}/changelogs/{changelog}
+   */
+  changelog: string;
   schemaVersion: string;
   startTime: Timestamp | undefined;
   exportArchiveStatus: TaskRun_ExportArchiveStatus;
@@ -1673,7 +1689,7 @@ export const ListRolloutsResponse: MessageFns<ListRolloutsResponse> = {
 };
 
 function createBaseCreateRolloutRequest(): CreateRolloutRequest {
-  return { parent: "", rollout: undefined, stageId: "" };
+  return { parent: "", rollout: undefined, stageId: "", validateOnly: false };
 }
 
 export const CreateRolloutRequest: MessageFns<CreateRolloutRequest> = {
@@ -1686,6 +1702,9 @@ export const CreateRolloutRequest: MessageFns<CreateRolloutRequest> = {
     }
     if (message.stageId !== "") {
       writer.uint32(26).string(message.stageId);
+    }
+    if (message.validateOnly !== false) {
+      writer.uint32(32).bool(message.validateOnly);
     }
     return writer;
   },
@@ -1721,6 +1740,14 @@ export const CreateRolloutRequest: MessageFns<CreateRolloutRequest> = {
           message.stageId = reader.string();
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.validateOnly = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1735,6 +1762,7 @@ export const CreateRolloutRequest: MessageFns<CreateRolloutRequest> = {
       parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       rollout: isSet(object.rollout) ? Rollout.fromJSON(object.rollout) : undefined,
       stageId: isSet(object.stageId) ? globalThis.String(object.stageId) : "",
+      validateOnly: isSet(object.validateOnly) ? globalThis.Boolean(object.validateOnly) : false,
     };
   },
 
@@ -1749,6 +1777,9 @@ export const CreateRolloutRequest: MessageFns<CreateRolloutRequest> = {
     if (message.stageId !== "") {
       obj.stageId = message.stageId;
     }
+    if (message.validateOnly !== false) {
+      obj.validateOnly = message.validateOnly;
+    }
     return obj;
   },
 
@@ -1762,6 +1793,7 @@ export const CreateRolloutRequest: MessageFns<CreateRolloutRequest> = {
       ? Rollout.fromPartial(object.rollout)
       : undefined;
     message.stageId = object.stageId ?? "";
+    message.validateOnly = object.validateOnly ?? false;
     return message;
   },
 };
@@ -2312,13 +2344,16 @@ export const Rollout: MessageFns<Rollout> = {
 };
 
 function createBaseStage(): Stage {
-  return { name: "", title: "", tasks: [] };
+  return { name: "", id: "", title: "", tasks: [] };
 }
 
 export const Stage: MessageFns<Stage> = {
   encode(message: Stage, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.id !== "") {
+      writer.uint32(26).string(message.id);
     }
     if (message.title !== "") {
       writer.uint32(34).string(message.title);
@@ -2342,6 +2377,14 @@ export const Stage: MessageFns<Stage> = {
           }
 
           message.name = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.id = reader.string();
           continue;
         }
         case 4: {
@@ -2372,6 +2415,7 @@ export const Stage: MessageFns<Stage> = {
   fromJSON(object: any): Stage {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       tasks: globalThis.Array.isArray(object?.tasks) ? object.tasks.map((e: any) => Task.fromJSON(e)) : [],
     };
@@ -2381,6 +2425,9 @@ export const Stage: MessageFns<Stage> = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
+    }
+    if (message.id !== "") {
+      obj.id = message.id;
     }
     if (message.title !== "") {
       obj.title = message.title;
@@ -2397,6 +2444,7 @@ export const Stage: MessageFns<Stage> = {
   fromPartial(object: DeepPartial<Stage>): Stage {
     const message = createBaseStage();
     message.name = object.name ?? "";
+    message.id = object.id ?? "";
     message.title = object.title ?? "";
     message.tasks = object.tasks?.map((e) => Task.fromPartial(e)) || [];
     return message;
@@ -3295,6 +3343,7 @@ function createBaseTaskRun(): TaskRun {
     status: TaskRun_Status.STATUS_UNSPECIFIED,
     detail: "",
     changeHistory: "",
+    changelog: "",
     schemaVersion: "",
     startTime: undefined,
     exportArchiveStatus: TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED,
@@ -3332,6 +3381,9 @@ export const TaskRun: MessageFns<TaskRun> = {
     }
     if (message.changeHistory !== "") {
       writer.uint32(82).string(message.changeHistory);
+    }
+    if (message.changelog !== "") {
+      writer.uint32(162).string(message.changelog);
     }
     if (message.schemaVersion !== "") {
       writer.uint32(90).string(message.schemaVersion);
@@ -3433,6 +3485,14 @@ export const TaskRun: MessageFns<TaskRun> = {
           message.changeHistory = reader.string();
           continue;
         }
+        case 20: {
+          if (tag !== 162) {
+            break;
+          }
+
+          message.changelog = reader.string();
+          continue;
+        }
         case 11: {
           if (tag !== 90) {
             break;
@@ -3501,6 +3561,7 @@ export const TaskRun: MessageFns<TaskRun> = {
       status: isSet(object.status) ? taskRun_StatusFromJSON(object.status) : TaskRun_Status.STATUS_UNSPECIFIED,
       detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
       changeHistory: isSet(object.changeHistory) ? globalThis.String(object.changeHistory) : "",
+      changelog: isSet(object.changelog) ? globalThis.String(object.changelog) : "",
       schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "",
       startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
       exportArchiveStatus: isSet(object.exportArchiveStatus)
@@ -3543,6 +3604,9 @@ export const TaskRun: MessageFns<TaskRun> = {
     if (message.changeHistory !== "") {
       obj.changeHistory = message.changeHistory;
     }
+    if (message.changelog !== "") {
+      obj.changelog = message.changelog;
+    }
     if (message.schemaVersion !== "") {
       obj.schemaVersion = message.schemaVersion;
     }
@@ -3582,6 +3646,7 @@ export const TaskRun: MessageFns<TaskRun> = {
     message.status = object.status ?? TaskRun_Status.STATUS_UNSPECIFIED;
     message.detail = object.detail ?? "";
     message.changeHistory = object.changeHistory ?? "";
+    message.changelog = object.changelog ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
     message.startTime = (object.startTime !== undefined && object.startTime !== null)
       ? Timestamp.fromPartial(object.startTime)

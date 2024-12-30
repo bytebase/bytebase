@@ -1,5 +1,5 @@
 import { computed } from "vue";
-import { useDBSchemaV1Store, useSettingV1Store } from "@/store";
+import { useSettingV1Store, useDatabaseCatalog, getColumnCatalog } from "@/store";
 
 export const useSemanticType = ({
   database,
@@ -13,7 +13,6 @@ export const useSemanticType = ({
   column: string;
 }) => {
   const settingV1Store = useSettingV1Store();
-  const dbSchemaV1Store = useDBSchemaV1Store();
 
   const semanticTypeList = computed(() => {
     return (
@@ -22,18 +21,15 @@ export const useSemanticType = ({
     );
   });
 
+  const databaseCatalog = useDatabaseCatalog(database, false);
+
   const semanticType = computed(() => {
-    const config = dbSchemaV1Store.getColumnConfig({
-      database,
-      schema,
-      table,
-      column,
-    });
-    if (!config.semanticTypeId) {
+    const columnCatalog = getColumnCatalog(databaseCatalog.value, schema, table, column)
+    if (!columnCatalog.semanticTypeId) {
       return;
     }
     return semanticTypeList.value.find(
-      (data) => data.id === config.semanticTypeId
+      (data) => data.id === columnCatalog.semanticTypeId
     );
   });
 

@@ -1,0 +1,346 @@
+<template>
+  <div
+    class="w-full mx-auto flex flex-col justify-start items-start space-y-3 mb-6"
+  >
+    <div
+      class="w-full flex flex-col gap-y-2 lg:flex-row justify-start items-start lg:items-center"
+    >
+      <span class="flex w-40 items-center shrink-0 text-sm">
+        {{ $t("common.database") }}
+      </span>
+      <EnvironmentSelect
+        class="!w-60 mr-3 shrink-0"
+        name="environment"
+        :environment-name="state.environmentName"
+        @update:environment-name="handleEnvironmentSelect"
+      />
+      <DatabaseSelect
+        class="!w-128 max-w-full"
+        :project-name="project.name"
+        :database-name="state.databaseName"
+        :environment-name="state.environmentName"
+        :placeholder="$t('db.select')"
+        :allowed-engine-type-list="ALLOWED_ENGINES"
+        :fallback-option="false"
+        @update:database-name="handleDatabaseSelect"
+      />
+    </div>
+    <div
+      class="w-full flex flex-col gap-y-2 lg:flex-row justify-start items-start lg:items-center"
+    >
+      <span class="flex w-40 items-center shrink-0 text-sm">
+        {{ $t("database.sync-schema.schema-version.self") }}
+      </span>
+      <div
+        class="w-192 max-w-full flex flex-row justify-start items-center relative"
+      >
+        <NSelect
+          :loading="isPreparingSchemaVersionOptions"
+          :value="state.changelogName"
+          :options="schemaVersionOptions"
+          :placeholder="$t('changelog.select')"
+          :disabled="schemaVersionOptions.length === 0"
+          :render-label="renderSchemaVersionLabel"
+          :fallback-option="
+            isMockLatestSchemaChangelogSelected
+              ? fallbackSchemaVersionOption
+              : false
+          "
+          @update:value="handleSchemaVersionSelect"
+        />
+      </div>
+    </div>
+  </div>
+
+  <FeatureModal
+    feature="bb.feature.sync-schema-all-versions"
+    :open="state.showFeatureModal"
+    :instance="database?.instanceResource"
+    @cancel="state.showFeatureModal = false"
+  />
+</template>
+
+<script lang="tsx" setup>
+import { head } from "lodash-es";
+import type { SelectOption } from "naive-ui";
+import { NSelect, NTag } from "naive-ui";
+import { computed, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { EnvironmentSelect, DatabaseSelect } from "@/components/v2";
+import {
+  useDatabaseV1Store,
+  useSubscriptionV1Store,
+  useDBSchemaV1Store,
+  useChangelogStore,
+} from "@/store";
+import {
+  UNKNOWN_ID,
+  getDateForPbTimestamp,
+  isValidDatabaseName,
+  type ComposedProject,
+} from "@/types";
+import type { Changelog } from "@/types/proto/v1/database_service";
+import {
+  Changelog_Type,
+  DatabaseMetadataView,
+  changelog_TypeToJSON,
+} from "@/types/proto/v1/database_service";
+import {
+  extractChangelogUID,
+  isValidChangelogName,
+  mockLatestChangelog,
+} from "@/utils/v1/changelog";
+import { FeatureModal } from "../FeatureGuard";
+import FeatureBadge from "../FeatureGuard/FeatureBadge.vue";
+import HumanizeDate from "../misc/HumanizeDate.vue";
+import { ALLOWED_ENGINES, type ChangelogSourceSchema } from "./types";
+
+const ALLOWED_CHANGELOG_TYPES: Changelog_Type[] = [
+  Changelog_Type.BASELINE,
+  Changelog_Type.MIGRATE,
+];
+
+const props = defineProps<{
+  project: ComposedProject;
+  sourceSchema?: ChangelogSourceSchema;
+}>();
+
+const emit = defineEmits<{
+  (event: "update", sourceSchema: ChangelogSourceSchema): void;
+}>();
+
+interface LocalState {
+  showFeatureModal: boolean;
+  environmentName?: string;
+  databaseName?: string;
+  changelogName?: string;
+}
+
+const { t } = useI18n();
+const state = reactive<LocalState>({
+  showFeatureModal: false,
+  environmentName: props.sourceSchema?.environmentName,
+  databaseName: props.sourceSchema?.databaseName,
+  changelogName: props.sourceSchema?.changelogName,
+});
+const databaseStore = useDatabaseV1Store();
+const dbSchemaStore = useDBSchemaV1Store();
+const changelogStore = useChangelogStore();
+
+const database = computed(() => {
+  return isValidDatabaseName(state.databaseName)
+    ? databaseStore.getDatabaseByName(state.databaseName)
+    : undefined;
+});
+
+const isPreparingSchemaVersionOptions = ref(false);
+
+const hasSyncSchemaFeature = computed(() => {
+  return useSubscriptionV1Store().hasInstanceFeature(
+    "bb.feature.sync-schema-all-versions",
+    database.value?.instanceResource
+  );
+});
+
+const handleEnvironmentSelect = async (name: string | undefined) => {
+  if (name !== state.environmentName) {
+    state.databaseName = undefined;
+  }
+  state.environmentName = name;
+};
+
+const handleDatabaseSelect = async (name: string | undefined) => {
+  if (isValidDatabaseName(name)) {
+    const database = databaseStore.getDatabaseByName(name);
+    if (!database) {
+      return;
+    }
+    state.environmentName = database.effectiveEnvironment;
+    state.databaseName = name;
+    dbSchemaStore.getOrFetchDatabaseMetadata({
+      database: database.name,
+      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+    });
+  } else {
+    state.databaseName = undefined;
+  }
+};
+
+const databaseChangelogList = (databaseName: string) => {
+  return changelogStore
+    .changelogListByDatabase(databaseName)
+    .filter((changelog) => ALLOWED_CHANGELOG_TYPES.includes(changelog.type));
+};
+
+const schemaVersionOptions = computed(() => {
+  const { databaseName } = state;
+  if (!isValidDatabaseName(databaseName)) {
+    return [];
+  }
+  const changelogs = databaseChangelogList(databaseName);
+  if (changelogs.length === 0) return [];
+  const options: SelectOption[] = [
+    {
+      value: "PLACEHOLDER",
+      label: t("changelog.select"),
+      disabled: true,
+      style: "cursor: default",
+    },
+  ];
+  options.push(
+    ...changelogs.map<SelectOption>((changelog, index) => {
+      return {
+        changelog,
+        index,
+        value: changelog.name,
+        label: changelog.name,
+      };
+    })
+  );
+  return options;
+});
+
+const renderSchemaVersionLabel = (option: SelectOption) => {
+  if (option.disabled || !option.changelog) {
+    return option.label as string;
+  }
+  const changelog = option.changelog as Changelog;
+  if (!isValidChangelogName(changelog.name)) {
+    return "Latest version";
+  }
+
+  const index = option.index as number;
+  return (
+    <div class="flex flex-row justify-start items-center truncate gap-1">
+      {index > 0 && (
+        <FeatureBadge
+          feature="bb.feature.sync-schema-all-versions"
+          instance={database.value?.instanceResource}
+        />
+      )}
+      <HumanizeDate
+        class="text-control-light"
+        date={getDateForPbTimestamp(changelog.createTime)}
+      />
+      <NTag round size="small">
+        {changelog_TypeToJSON(changelog.type)}
+      </NTag>
+      {changelog.version && (
+        <NTag round size="small">
+          {changelog.version}
+        </NTag>
+      )}
+      {changelog.statement ? (
+        <span class="truncate">{changelog.statement}</span>
+      ) : (
+        <span class="text-gray-400">{t("common.empty")}</span>
+      )}
+    </div>
+  );
+};
+
+const isMockLatestSchemaChangelogSelected = computed(() => {
+  if (!state.changelogName) return false;
+  return extractChangelogUID(state.changelogName) === String(UNKNOWN_ID);
+});
+
+const fallbackSchemaVersionOption = (value: string): SelectOption => {
+  if (extractChangelogUID(value) === String(UNKNOWN_ID)) {
+    const { databaseName } = state;
+    if (isValidDatabaseName(databaseName)) {
+      const db = databaseStore.getDatabaseByName(databaseName);
+      const changelog = mockLatestChangelog(db);
+      return {
+        changelog,
+        index: 0,
+        value: changelog.name,
+        label: changelog.name,
+      };
+    }
+  }
+  return {
+    value: "PLACEHOLDER",
+    disabled: true,
+    label: t("changelog.select"),
+    style: "cursor: default",
+  };
+};
+
+const handleSchemaVersionSelect = async (_: string, option: SelectOption) => {
+  const changelog = option.changelog as Changelog;
+  const index = databaseChangelogList(state.databaseName as string).findIndex(
+    (c) => c.name === changelog.name
+  );
+  if (index > 0 && !hasSyncSchemaFeature.value) {
+    state.showFeatureModal = true;
+    return;
+  }
+  state.changelogName = changelog.name;
+};
+
+watch(
+  () => state.databaseName,
+  async (databaseName) => {
+    if (!isValidDatabaseName(databaseName)) {
+      state.changelogName = undefined;
+      return;
+    }
+
+    const database = databaseStore.getDatabaseByName(databaseName);
+    if (database) {
+      try {
+        isPreparingSchemaVersionOptions.value = true;
+        const changelogList = (
+          await changelogStore.getOrFetchChangelogListOfDatabase(database.name)
+        ).filter((changelog) =>
+          ALLOWED_CHANGELOG_TYPES.includes(changelog.type)
+        );
+
+        if (!state.changelogName) {
+          if (changelogList.length > 0) {
+            // Default select the first changelog.
+            state.changelogName = head(changelogList)?.name;
+          } else {
+            // If database has no changelog, we will use its latest schema.
+            state.changelogName = mockLatestChangelog(database).name;
+          }
+        }
+      } finally {
+        isPreparingSchemaVersionOptions.value = false;
+      }
+    } else {
+      state.changelogName = undefined;
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  [
+    () => state.environmentName,
+    () => state.databaseName,
+    () => state.changelogName,
+  ],
+  ([environmentName, databaseName, changelogName]) => {
+    const params: ChangelogSourceSchema = {
+      environmentName,
+      databaseName,
+      changelogName,
+    };
+    emit("update", params);
+  }
+);
+
+watch(
+  [
+    () => props.sourceSchema?.environmentName,
+    () => props.sourceSchema?.databaseName,
+    () => props.sourceSchema?.changelogName,
+  ],
+  ([environmentName, databaseName, changelogName]) => {
+    state.environmentName = environmentName;
+    state.databaseName = databaseName;
+    state.changelogName = changelogName;
+  }
+);
+</script>

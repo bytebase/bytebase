@@ -10,7 +10,7 @@
     :row-key="(data: ComposedDatabase) => data.name"
     :checked-row-keys="Array.from(state.selectedDatabaseNameList)"
     :row-props="rowProps"
-    :pagination="{ pageSize: 20 }"
+    :pagination="{ pageSize: 60 }"
     :paginate-single-page="false"
     @update:checked-row-keys="
         (val) => (state.selectedDatabaseNameList = new Set(val as string[]))
@@ -57,12 +57,14 @@ const props = withDefaults(
     customClick?: boolean;
     rowClickable?: boolean;
     selectedDatabaseNames?: string[];
+    keyword?: string;
   }>(),
   {
     mode: "ALL",
     bordered: true,
     showSelection: true,
     rowClickable: true,
+    keyword: undefined,
     selectedDatabaseNames: () => [],
   }
 );
@@ -95,7 +97,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     title: t("common.name"),
     resizable: true,
     render: (data) => {
-      return <DatabaseNameCell database={data} />;
+      return <DatabaseNameCell database={data} keyword={props.keyword} />;
     },
   };
   const ENVIRONMENT: DatabaseDataTableColumn = {
@@ -108,6 +110,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
         environment={data.effectiveEnvironmentEntity}
         link={false}
         tag="div"
+        keyword={props.keyword}
       />
     ),
   };
@@ -123,7 +126,11 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     title: t("common.project"),
     resizable: true,
     render: (data) => (
-      <ProjectNameCell project={data.projectEntity} mode={props.mode} />
+      <ProjectNameCell
+        project={data.projectEntity}
+        mode={props.mode}
+        keyword={props.keyword}
+      />
     ),
   };
   const INSTANCE: DatabaseDataTableColumn = {

@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -18,6 +19,7 @@ type SyncHistory struct {
 	Metadata    *storepb.DatabaseSchemaMetadata
 
 	CreatorUID int
+	CreateTime time.Time
 }
 
 func (s *Store) GetSyncHistoryByUID(ctx context.Context, uid int64) (*SyncHistory, error) {
@@ -25,6 +27,7 @@ func (s *Store) GetSyncHistoryByUID(ctx context.Context, uid int64) (*SyncHistor
 		SELECT
 			id,
 			creator_id,
+			created_ts,
 			database_id,
 			metadata,
 			raw_dump
@@ -39,6 +42,7 @@ func (s *Store) GetSyncHistoryByUID(ctx context.Context, uid int64) (*SyncHistor
 	if err := s.db.db.QueryRowContext(ctx, query, uid).Scan(
 		&h.UID,
 		&h.CreatorUID,
+		&h.CreateTime,
 		&h.DatabaseUID,
 		&m,
 		&h.Schema,

@@ -150,7 +150,7 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 		where, args = append(where, fmt.Sprintf("changelog.database_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ResourcesFilter; v != nil {
-		text, err := generateResourceFilter(*v, "(changelog.payload->'task')")
+		text, err := generateResourceFilter(*v, "changelog.payload")
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to generate resource filter from %q", *v)
 		}
@@ -159,7 +159,7 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 		}
 	}
 	if len(find.TypeList) > 0 {
-		where = append(where, fmt.Sprintf("changelog.payload->'task'->>'type' = ANY($%d)", len(args)+1))
+		where = append(where, fmt.Sprintf("changelog.payload->>'type' = ANY($%d)", len(args)+1))
 		args = append(args, find.TypeList)
 	}
 

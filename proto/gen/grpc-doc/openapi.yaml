@@ -1394,6 +1394,79 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/instances/{instance}/databases/{database}/catalog:
+        get:
+            tags:
+                - DatabaseCatalogService
+            operationId: DatabaseCatalogService_GetDatabaseCatalog
+            parameters:
+                - name: instance
+                  in: path
+                  description: The instance id.
+                  required: true
+                  schema:
+                    type: string
+                - name: database
+                  in: path
+                  description: The database id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DatabaseCatalog'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        patch:
+            tags:
+                - DatabaseCatalogService
+            operationId: DatabaseCatalogService_UpdateDatabaseCatalog
+            parameters:
+                - name: instance
+                  in: path
+                  description: The instance id.
+                  required: true
+                  schema:
+                    type: string
+                - name: database
+                  in: path
+                  description: The database id.
+                  required: true
+                  schema:
+                    type: string
+                - name: updateMask
+                  in: query
+                  description: The list of fields to update.
+                  schema:
+                    type: string
+                    format: field-mask
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/DatabaseCatalog'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DatabaseCatalog'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}/databases/{database}/changeHistories:
         get:
             tags:
@@ -1780,48 +1853,6 @@ paths:
                      The column masking level will only be returned when a table filter is used.
                   schema:
                     type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/DatabaseMetadata'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        patch:
-            tags:
-                - DatabaseService
-            operationId: DatabaseService_UpdateDatabaseMetadata
-            parameters:
-                - name: instance
-                  in: path
-                  description: The instance id.
-                  required: true
-                  schema:
-                    type: string
-                - name: database
-                  in: path
-                  description: The database id.
-                  required: true
-                  schema:
-                    type: string
-                - name: updateMask
-                  in: query
-                  description: The list of fields to update.
-                  schema:
-                    type: string
-                    format: field-mask
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/DatabaseMetadata'
-                required: true
             responses:
                 "200":
                     description: OK
@@ -5847,6 +5878,13 @@ paths:
                      If unspecified, all stages are created.
                   schema:
                     type: string
+                - name: validateOnly
+                  in: query
+                  description: |-
+                    If set, validate the request and preview the rollout, but
+                     do not actually create it.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -9562,9 +9600,8 @@ components:
                     type: string
                     description: |-
                         The source of origin.
-                         1) change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}.
-                         2) branch: projects/{project}/branches/{branch}.
-                         3) raw SQL if empty.
+                         1) changelog: instances/{instance}/databases/{database}/changelog/{changeHistory}.
+                         2) raw SQL if empty.
                 version:
                     type: string
                     description: The migration version for a change.
@@ -9625,6 +9662,16 @@ components:
                          Or present but not found if deleted
                 changedResources:
                     $ref: '#/components/schemas/ChangedResources'
+                type:
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - BASELINE
+                        - MIGRATE
+                        - MIGRATE_SDL
+                        - MIGRATE_GHOST
+                        - DATA
+                    type: string
+                    format: enum
         CheckConstraintMetadata:
             type: object
             properties:
@@ -9709,12 +9756,11 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Advice'
-        ColumnConfig:
+        ColumnCatalog:
             type: object
             properties:
                 name:
                     type: string
-                    description: The name is the name of a column.
                 semanticTypeId:
                     type: string
                 labels:
@@ -9736,6 +9782,8 @@ components:
                     type: string
                 partialMaskingAlgorithmId:
                     type: string
+                objectSchema:
+                    $ref: '#/components/schemas/ObjectSchema'
         ColumnMetadata:
             type: object
             properties:
@@ -10127,15 +10175,27 @@ components:
                     readOnly: true
                     type: boolean
                     description: The database is available for DML prior backup.
+        DatabaseCatalog:
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: |-
+                        The name of the database catalog.
+                         Format: instances/{instance}/databases/{database}/catalog
+                schemas:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/SchemaCatalog'
         DatabaseConfig:
             type: object
             properties:
                 name:
                     type: string
-                schemaConfigs:
+                schemas:
                     type: array
                     items:
-                        $ref: '#/components/schemas/SchemaConfig'
+                        $ref: '#/components/schemas/SchemaCatalog'
                     description: The schema_configs is the list of configs for schemas in a database.
         DatabaseGroup:
             type: object
@@ -10594,29 +10654,6 @@ components:
                          The match_type is the PostgreSQL specific field.
                          It's empty string for other databases.
             description: ForeignKeyMetadata is the metadata for foreign keys.
-        FunctionConfig:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: The name is the name of a function.
-                updater:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The last updater of the function in branch.
-                         Format: users/{userUID}.
-                sourceBranch:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The last change come from branch.
-                         Format: projcets/{project}/branches/{branch}
-                updateTime:
-                    readOnly: true
-                    type: string
-                    description: The timestamp when the function is updated in branch.
-                    format: date-time
         GenerationMetadata:
             type: object
             properties:
@@ -11978,6 +12015,35 @@ components:
         OIDCIdentityProviderContext:
             type: object
             properties: {}
+        ObjectSchema:
+            type: object
+            properties:
+                type:
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - STRING
+                        - NUMBER
+                        - BOOLEAN
+                        - OBJECT
+                        - ARRAY
+                    type: string
+                    format: enum
+                structKind:
+                    $ref: '#/components/schemas/ObjectSchema_StructKind'
+                arrayKind:
+                    $ref: '#/components/schemas/ObjectSchema_ArrayKind'
+        ObjectSchema_ArrayKind:
+            type: object
+            properties:
+                kind:
+                    $ref: '#/components/schemas/ObjectSchema'
+        ObjectSchema_StructKind:
+            type: object
+            properties:
+                properties:
+                    type: object
+                    additionalProperties:
+                        $ref: '#/components/schemas/ObjectSchema'
         ParseMyBatisMapperRequest:
             type: object
             properties:
@@ -12576,29 +12642,6 @@ components:
                     $ref: '#/components/schemas/Position'
                 endPosition:
                     $ref: '#/components/schemas/Position'
-        ProcedureConfig:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: The name is the name of a procedure.
-                updater:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The last updater of the procedure in branch.
-                         Format: users/{userUID}.
-                sourceBranch:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The last change come from branch.
-                         Format: projcets/{project}/branches/{branch}
-                updateTime:
-                    readOnly: true
-                    type: string
-                    description: The timestamp when the procedure is updated in branch.
-                    format: date-time
         Project:
             type: object
             properties:
@@ -13471,31 +13514,15 @@ components:
                 taskUid:
                     type: integer
                     format: int32
-        SchemaConfig:
+        SchemaCatalog:
             type: object
             properties:
                 name:
                     type: string
-                    description: |-
-                        The name is the schema name.
-                         It is an empty string for databases without such concept such as MySQL.
-                tableConfigs:
+                tables:
                     type: array
                     items:
-                        $ref: '#/components/schemas/TableConfig'
-                    description: The table_configs is the list of configs for tables in a schema.
-                functionConfigs:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/FunctionConfig'
-                procedureConfigs:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ProcedureConfig'
-                viewConfigs:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ViewConfig'
+                        $ref: '#/components/schemas/TableCatalog'
         SchemaTemplateSetting:
             type: object
             properties:
@@ -13589,8 +13616,8 @@ components:
                     type: string
                 column:
                     $ref: '#/components/schemas/ColumnMetadata'
-                config:
-                    $ref: '#/components/schemas/ColumnConfig'
+                catalog:
+                    $ref: '#/components/schemas/ColumnCatalog'
         SchemaTemplateSetting_TableTemplate:
             type: object
             properties:
@@ -13630,8 +13657,8 @@ components:
                     type: string
                 table:
                     $ref: '#/components/schemas/TableMetadata'
-                config:
-                    $ref: '#/components/schemas/TableConfig'
+                catalog:
+                    $ref: '#/components/schemas/TableCatalog'
         SearchAnomaliesRequest:
             type: object
             properties:
@@ -14242,6 +14269,13 @@ components:
                 name:
                     type: string
                     description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}'
+                id:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The id comes from the deployment config.
+                         Format: UUID
+                         Empty for legacy stages.
                 title:
                     type: string
                 tasks:
@@ -14395,36 +14429,24 @@ components:
                         The name of the instance to sync slow queries.
                          Format: instances/{instance} for one instance
                               or projects/{project} for one project.
-        TableConfig:
+        TableCatalog:
             type: object
             properties:
                 name:
                     type: string
-                    description: The name is the name of a table.
-                columnConfigs:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ColumnConfig'
-                    description: The column_configs is the ordered list of configs for columns in a table.
+                columns:
+                    $ref: '#/components/schemas/TableCatalog_Columns'
+                objectSchema:
+                    $ref: '#/components/schemas/ObjectSchema'
                 classificationId:
                     type: string
-                updater:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The last updater of the table in branch.
-                         Format: users/{userUID}.
-                sourceBranch:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The last change come from branch.
-                         Format: projcets/{project}/branches/{branch}
-                updateTime:
-                    readOnly: true
-                    type: string
-                    description: The timestamp when the table is updated in branch.
-                    format: date-time
+        TableCatalog_Columns:
+            type: object
+            properties:
+                columns:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ColumnCatalog'
         TableMetadata:
             type: object
             properties:
@@ -14490,6 +14512,17 @@ components:
                     description: The check_constraints is the list of check constraints in a table.
                 owner:
                     type: string
+                sortingKeys:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.
+                         Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by
+                triggers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TriggerMetadata'
             description: TableMetadata is the metadata for tables.
         TablePartitionMetadata:
             type: object
@@ -14671,6 +14704,12 @@ components:
                     description: |-
                         The resource name of the change history
                          Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+                changelog:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The resource name of the changelog.
+                         Format: instances/{instance}/databases/{database}/changelogs/{changelog}
                 schemaVersion:
                     type: string
                 startTime:
@@ -14965,6 +15004,31 @@ components:
                 error:
                     type: string
                     description: The result of the test, empty if the test is successful.
+        TriggerMetadata:
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: The name is the name of the trigger.
+                event:
+                    type: string
+                    description: |-
+                        The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
+                         TRUNCATE.
+                timing:
+                    type: string
+                    description: The timing is the timing of the trigger, such as BEFORE, AFTER.
+                body:
+                    type: string
+                    description: The body is the body of the trigger.
+                sqlMode:
+                    type: string
+                characterSetClient:
+                    type: string
+                collationConnection:
+                    type: string
+                comment:
+                    type: string
         UndeleteEnvironmentRequest:
             required:
                 - name
@@ -15263,29 +15327,6 @@ components:
                 passwordRestrictionSetting:
                     $ref: '#/components/schemas/PasswordRestrictionSetting'
             description: The data in setting value.
-        ViewConfig:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: The name is the name of a view.
-                updater:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The last updater of the view in branch.
-                         Format: users/{userUID}.
-                sourceBranch:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The last change come from branch.
-                         Format: projcets/{project}/branches/{branch}
-                updateTime:
-                    readOnly: true
-                    type: string
-                    description: The timestamp when the view is updated in branch.
-                    format: date-time
         Webhook:
             required:
                 - type
@@ -15547,6 +15588,7 @@ tags:
     - name: BranchService
     - name: CelService
     - name: ChangelistService
+    - name: DatabaseCatalogService
     - name: DatabaseGroupService
     - name: DatabaseService
     - name: EnvironmentService

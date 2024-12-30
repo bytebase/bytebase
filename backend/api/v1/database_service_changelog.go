@@ -212,6 +212,7 @@ func (s *DatabaseService) convertToChangelog(ctx context.Context, d *store.Datab
 		Version:          c.Payload.GetVersion(),
 		Revision:         "",
 		ChangedResources: convertToChangedResources(c.Payload.GetChangedResources()),
+		Type:             convertToChangelogType(c.Payload.GetType()),
 	}
 
 	if sheet := c.Payload.GetSheet(); sheet != "" {
@@ -275,5 +276,22 @@ func convertToChangelogStatus(s store.ChangelogStatus) v1pb.Changelog_Status {
 		return v1pb.Changelog_PENDING
 	default:
 		return v1pb.Changelog_STATUS_UNSPECIFIED
+	}
+}
+
+func convertToChangelogType(t storepb.ChangelogPayload_Type) v1pb.Changelog_Type {
+	switch t {
+	case storepb.ChangelogPayload_BASELINE:
+		return v1pb.Changelog_BASELINE
+	case storepb.ChangelogPayload_MIGRATE:
+		return v1pb.Changelog_MIGRATE
+	case storepb.ChangelogPayload_MIGRATE_SDL:
+		return v1pb.Changelog_MIGRATE_SDL
+	case storepb.ChangelogPayload_MIGRATE_GHOST:
+		return v1pb.Changelog_MIGRATE_GHOST
+	case storepb.ChangelogPayload_DATA:
+		return v1pb.Changelog_DATA
+	default:
+		return v1pb.Changelog_TYPE_UNSPECIFIED
 	}
 }

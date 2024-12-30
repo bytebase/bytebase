@@ -118,12 +118,12 @@
       <NTabPane
         v-if="
           databaseChangeMode === DatabaseChangeMode.PIPELINE &&
-          allowListChangeHistories
+          allowListChangelogs
         "
-        name="change-history"
-        :tab="$t('change-history.self')"
+        name="changelog"
+        :tab="$t('common.changelog')"
       >
-        <DatabaseChangeHistoryPanel class="mt-2" :database="database" />
+        <DatabaseChangelogPanel class="mt-2" :database="database" />
       </NTabPane>
       <NTabPane
         v-if="isDev() && databaseChangeMode === DatabaseChangeMode.PIPELINE"
@@ -205,11 +205,10 @@ import dayjs from "dayjs";
 import { ArrowRightLeftIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, watch, ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
-import { useRoute } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { BBModal } from "@/bbkit";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
-import DatabaseChangeHistoryPanel from "@/components/Database/DatabaseChangeHistoryPanel.vue";
+import DatabaseChangelogPanel from "@/components/Database/DatabaseChangelogPanel.vue";
 import DatabaseOverviewPanel from "@/components/Database/DatabaseOverviewPanel.vue";
 import DatabaseRevisionPanel from "@/components/Database/DatabaseRevisionPanel.vue";
 import DatabaseSensitiveDataPanel from "@/components/Database/DatabaseSensitiveDataPanel.vue";
@@ -254,7 +253,7 @@ import {
 
 const databaseHashList = [
   "overview",
-  "change-history",
+  "changelog",
   "revision",
   "slow-query",
   "setting",
@@ -298,7 +297,7 @@ const {
   allowTransferDatabase,
   allowChangeData,
   allowAlterSchema,
-  allowListChangeHistories,
+  allowListChangelogs,
   allowListSlowQueries,
 } = useDatabaseDetailContext();
 const disableSchemaEditor = useAppFeature(
@@ -330,7 +329,8 @@ watch(
       hash: `#${tab}`,
       query: route.query,
     });
-  }
+  },
+  { immediate: true }
 );
 
 const database = computed(() => {

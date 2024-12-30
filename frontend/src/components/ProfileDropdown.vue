@@ -21,6 +21,7 @@ import { computed, ref, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useLanguage } from "@/composables/useLanguage";
 import {
+  useActiveUsers,
   useActuatorV1Store,
   useAppFeature,
   useAuthStore,
@@ -28,13 +29,8 @@ import {
   useSubscriptionV1Store,
   useUIStateStore,
 } from "@/store";
-import { PresetRoleType } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import {
-  hasWorkspacePermissionV2,
-  isDev,
-  hasWorkspaceLevelRole,
-} from "@/utils";
+import { hasWorkspacePermissionV2, isDev } from "@/utils";
 import ProfilePreview from "./ProfilePreview.vue";
 import UserAvatar from "./User/UserAvatar.vue";
 import Version from "./misc/Version.vue";
@@ -56,10 +52,8 @@ const hideQuickstart = computed(() => {
   if (useAppFeature("bb.feature.hide-quick-start").value) {
     return true;
   }
-  return !(
-    hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN) ||
-    hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_DBA)
-  );
+  // Hide quickstart if there are more than 1 active users.
+  return useActiveUsers().length > 1;
 });
 const hideHelp = useAppFeature("bb.feature.hide-help");
 

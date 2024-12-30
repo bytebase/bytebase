@@ -25,7 +25,7 @@
 import { computed } from "vue";
 import { reactive } from "vue";
 import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
-import { useDBSchemaV1Store } from "@/store";
+import { useDatabaseCatalog, getColumnCatalog } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
@@ -46,21 +46,17 @@ const props = defineProps<{
   readonly?: boolean;
 }>();
 
-const dbSchemaV1Store = useDBSchemaV1Store();
 const state = reactive<LocalState>({
   showLabelsDrawer: false,
 });
 
-const columnConfig = computed(() =>
-  dbSchemaV1Store.getColumnConfig({
-    database: props.database.name,
-    schema: props.schema,
-    table: props.table.name,
-    column: props.column.name,
-  })
+const databaseCatalog = useDatabaseCatalog(props.database.name, false);
+
+const columnCatalog = computed(() =>
+  getColumnCatalog(databaseCatalog.value, props.schema, props.table.name, props.column.name)
 );
 
-const labels = computed(() => columnConfig.value?.labels ?? {});
+const labels = computed(() => columnCatalog.value?.labels ?? {});
 
 const openLabelsDrawer = () => {
   state.showLabelsDrawer = true;
@@ -72,7 +68,7 @@ const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
     schema: props.schema,
     table: props.table.name,
     column: props.column.name,
-    config: { labels: labelsList[0] },
+    columnCatalog: { labels: labelsList[0] },
   });
 };
 </script>

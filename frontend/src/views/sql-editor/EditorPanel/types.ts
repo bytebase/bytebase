@@ -6,7 +6,6 @@ export type EditorPanelView =
   | "FUNCTIONS"
   | "PROCEDURES"
   | "SEQUENCES"
-  | "TRIGGERS"
   | "EXTERNAL_TABLES"
   | "PACKAGES"
   | "DIAGRAM";
@@ -45,6 +44,7 @@ export const typeToView = (type: string): EditorPanelView => {
     type === "column" ||
     type === "index" ||
     type === "foreign-key" ||
+    type === "trigger" ||
     type === "partition-table"
   ) {
     return "TABLES";
@@ -57,6 +57,5 @@ export const typeToView = (type: string): EditorPanelView => {
   if (type === "external-table") return "EXTERNAL_TABLES";
   if (type === "package") return "PACKAGES";
   if (type === "sequence") return "SEQUENCES";
-  if (type === "trigger") return "TRIGGERS";
   throw new Error(`unsupported type: "${type}"`);
 };

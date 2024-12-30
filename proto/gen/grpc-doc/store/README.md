@@ -45,8 +45,8 @@
   
 - [store/database.proto](#store_database-proto)
     - [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata)
-    - [ColumnConfig](#bytebase-store-ColumnConfig)
-    - [ColumnConfig.LabelsEntry](#bytebase-store-ColumnConfig-LabelsEntry)
+    - [ColumnCatalog](#bytebase-store-ColumnCatalog)
+    - [ColumnCatalog.LabelsEntry](#bytebase-store-ColumnCatalog-LabelsEntry)
     - [ColumnMetadata](#bytebase-store-ColumnMetadata)
     - [DatabaseConfig](#bytebase-store-DatabaseConfig)
     - [DatabaseMetadata](#bytebase-store-DatabaseMetadata)
@@ -65,16 +65,20 @@
     - [InstanceRoleMetadata](#bytebase-store-InstanceRoleMetadata)
     - [LinkedDatabaseMetadata](#bytebase-store-LinkedDatabaseMetadata)
     - [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata)
+    - [ObjectSchema](#bytebase-store-ObjectSchema)
+    - [ObjectSchema.ArrayKind](#bytebase-store-ObjectSchema-ArrayKind)
+    - [ObjectSchema.StructKind](#bytebase-store-ObjectSchema-StructKind)
+    - [ObjectSchema.StructKind.PropertiesEntry](#bytebase-store-ObjectSchema-StructKind-PropertiesEntry)
     - [PackageMetadata](#bytebase-store-PackageMetadata)
     - [ProcedureConfig](#bytebase-store-ProcedureConfig)
     - [ProcedureMetadata](#bytebase-store-ProcedureMetadata)
-    - [SchemaConfig](#bytebase-store-SchemaConfig)
+    - [SchemaCatalog](#bytebase-store-SchemaCatalog)
     - [SchemaMetadata](#bytebase-store-SchemaMetadata)
     - [SecretItem](#bytebase-store-SecretItem)
     - [Secrets](#bytebase-store-Secrets)
     - [SequenceMetadata](#bytebase-store-SequenceMetadata)
     - [StreamMetadata](#bytebase-store-StreamMetadata)
-    - [TableConfig](#bytebase-store-TableConfig)
+    - [TableCatalog](#bytebase-store-TableCatalog)
     - [TableMetadata](#bytebase-store-TableMetadata)
     - [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata)
     - [TaskMetadata](#bytebase-store-TaskMetadata)
@@ -83,6 +87,7 @@
     - [ViewMetadata](#bytebase-store-ViewMetadata)
   
     - [GenerationMetadata.Type](#bytebase-store-GenerationMetadata-Type)
+    - [ObjectSchema.Type](#bytebase-store-ObjectSchema-Type)
     - [StreamMetadata.Mode](#bytebase-store-StreamMetadata-Mode)
     - [StreamMetadata.Type](#bytebase-store-StreamMetadata-Type)
     - [TablePartitionMetadata.Type](#bytebase-store-TablePartitionMetadata-Type)
@@ -910,9 +915,9 @@ Metadata about the request.
 
 
 
-<a name="bytebase-store-ColumnConfig"></a>
+<a name="bytebase-store-ColumnCatalog"></a>
 
-### ColumnConfig
+### ColumnCatalog
 
 
 
@@ -920,20 +925,21 @@ Metadata about the request.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a column. |
 | semantic_type_id | [string](#string) |  |  |
-| labels | [ColumnConfig.LabelsEntry](#bytebase-store-ColumnConfig-LabelsEntry) | repeated | The user labels for a column. |
+| labels | [ColumnCatalog.LabelsEntry](#bytebase-store-ColumnCatalog-LabelsEntry) | repeated | The user labels for a column. |
 | classification_id | [string](#string) |  |  |
 | masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
 | full_masking_algorithm_id | [string](#string) |  |  |
 | partial_masking_algorithm_id | [string](#string) |  |  |
+| object_schema | [ObjectSchema](#bytebase-store-ObjectSchema) | optional |  |
 
 
 
 
 
 
-<a name="bytebase-store-ColumnConfig-LabelsEntry"></a>
+<a name="bytebase-store-ColumnCatalog-LabelsEntry"></a>
 
-### ColumnConfig.LabelsEntry
+### ColumnCatalog.LabelsEntry
 
 
 
@@ -983,7 +989,7 @@ ColumnMetadata is the metadata for columns.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
-| schema_configs | [SchemaConfig](#bytebase-store-SchemaConfig) | repeated | The schema_configs is the list of configs for schemas in a database. |
+| schemas | [SchemaCatalog](#bytebase-store-SchemaCatalog) | repeated | The schema_configs is the list of configs for schemas in a database. |
 
 
 
@@ -1073,6 +1079,7 @@ DependentColumn is the metadata for dependent columns.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of a type. |
 | values | [string](#string) | repeated | The enum values of a type. |
+| comment | [string](#string) |  |  |
 
 
 
@@ -1190,6 +1197,7 @@ FunctionMetadata is the metadata for functions.
 | collation_connection | [string](#string) |  |  |
 | database_collation | [string](#string) |  |  |
 | sql_mode | [string](#string) |  |  |
+| comment | [string](#string) |  |  |
 
 
 
@@ -1284,6 +1292,71 @@ MaterializedViewMetadata is the metadata for materialized views.
 | definition | [string](#string) |  | The definition is the definition of a view. |
 | comment | [string](#string) |  | The comment is the comment of a view. |
 | dependent_columns | [DependentColumn](#bytebase-store-DependentColumn) | repeated | The dependent_columns is the list of dependent columns of a view. |
+| triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The columns is the ordered list of columns in a table. |
+| indexes | [IndexMetadata](#bytebase-store-IndexMetadata) | repeated | The indexes is the list of indexes in a table. |
+
+
+
+
+
+
+<a name="bytebase-store-ObjectSchema"></a>
+
+### ObjectSchema
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [ObjectSchema.Type](#bytebase-store-ObjectSchema-Type) |  |  |
+| struct_kind | [ObjectSchema.StructKind](#bytebase-store-ObjectSchema-StructKind) |  |  |
+| array_kind | [ObjectSchema.ArrayKind](#bytebase-store-ObjectSchema-ArrayKind) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ObjectSchema-ArrayKind"></a>
+
+### ObjectSchema.ArrayKind
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| kind | [ObjectSchema](#bytebase-store-ObjectSchema) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ObjectSchema-StructKind"></a>
+
+### ObjectSchema.StructKind
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| properties | [ObjectSchema.StructKind.PropertiesEntry](#bytebase-store-ObjectSchema-StructKind-PropertiesEntry) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ObjectSchema-StructKind-PropertiesEntry"></a>
+
+### ObjectSchema.StructKind.PropertiesEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [ObjectSchema](#bytebase-store-ObjectSchema) |  |  |
 
 
 
@@ -1345,16 +1418,16 @@ ProcedureMetadata is the metadata for procedures.
 
 
 
-<a name="bytebase-store-SchemaConfig"></a>
+<a name="bytebase-store-SchemaCatalog"></a>
 
-### SchemaConfig
+### SchemaCatalog
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the schema name. It is an empty string for databases without such concept such as MySQL. |
-| table_configs | [TableConfig](#bytebase-store-TableConfig) | repeated | The table_configs is the list of configs for tables in a schema. |
+| tables | [TableCatalog](#bytebase-store-TableCatalog) | repeated | The table_configs is the list of configs for tables in a schema. |
 | function_configs | [FunctionConfig](#bytebase-store-FunctionConfig) | repeated |  |
 | procedure_configs | [ProcedureConfig](#bytebase-store-ProcedureConfig) | repeated |  |
 | view_configs | [ViewConfig](#bytebase-store-ViewConfig) | repeated |  |
@@ -1385,7 +1458,6 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | sequences | [SequenceMetadata](#bytebase-store-SequenceMetadata) | repeated | The sequences is the list of sequences in a schema. |
 | packages | [PackageMetadata](#bytebase-store-PackageMetadata) | repeated | The packages is the list of packages in a schema. |
 | owner | [string](#string) |  |  |
-| triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The triggers is the list of triggers in a schema, triggers are sorted by table_name, event, timing, action_order. |
 | events | [EventMetadata](#bytebase-store-EventMetadata) | repeated |  |
 | enum_types | [EnumTypeMetadata](#bytebase-store-EnumTypeMetadata) | repeated |  |
 
@@ -1445,6 +1517,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | last_value | [string](#string) |  | Last value of a sequence. |
 | owner_table | [string](#string) |  | The owner table of the sequence. |
 | owner_column | [string](#string) |  | The owner column of the sequence. |
+| comment | [string](#string) |  |  |
 
 
 
@@ -1473,16 +1546,17 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 
 
 
-<a name="bytebase-store-TableConfig"></a>
+<a name="bytebase-store-TableCatalog"></a>
 
-### TableConfig
+### TableCatalog
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a table. |
-| column_configs | [ColumnConfig](#bytebase-store-ColumnConfig) | repeated | The column_configs is the ordered list of configs for columns in a table. |
+| columns | [ColumnCatalog](#bytebase-store-ColumnCatalog) | repeated | The column_configs is the ordered list of configs for columns in a table. |
+| object_schema | [ObjectSchema](#bytebase-store-ObjectSchema) | optional |  |
 | classification_id | [string](#string) |  |  |
 | updater | [string](#string) |  | The last updater of the table in branch. Format: users/{userUID}. |
 | source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
@@ -1518,6 +1592,8 @@ TableMetadata is the metadata for tables.
 | partitions | [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata) | repeated | The partitions is the list of partitions in a table. |
 | check_constraints | [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata) | repeated | The check_constraints is the list of check constraints in a table. |
 | owner | [string](#string) |  |  |
+| sorting_keys | [string](#string) | repeated | The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field. Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by |
+| triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated |  |
 
 
 
@@ -1578,13 +1654,13 @@ TablePartitionMetadata is the metadata for table partitions.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of the trigger. |
-| table_name | [string](#string) |  | The table_name is the name of the table/view that the trigger is created on. |
 | event | [string](#string) |  | The event is the event of the trigger, such as INSERT, UPDATE, DELETE, TRUNCATE. |
 | timing | [string](#string) |  | The timing is the timing of the trigger, such as BEFORE, AFTER. |
 | body | [string](#string) |  | The body is the body of the trigger. |
 | sql_mode | [string](#string) |  |  |
 | character_set_client | [string](#string) |  |  |
 | collation_connection | [string](#string) |  |  |
+| comment | [string](#string) |  |  |
 
 
 
@@ -1622,6 +1698,7 @@ ViewMetadata is the metadata for views.
 | comment | [string](#string) |  | The comment is the comment of a view. |
 | dependent_columns | [DependentColumn](#bytebase-store-DependentColumn) | repeated | The dependent_columns is the list of dependent columns of a view. |
 | columns | [ColumnMetadata](#bytebase-store-ColumnMetadata) | repeated | The columns is the ordered list of columns in a table. |
+| triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The triggers is the list of triggers in a view. |
 
 
 
@@ -1640,6 +1717,22 @@ ViewMetadata is the metadata for views.
 | TYPE_UNSPECIFIED | 0 |  |
 | TYPE_VIRTUAL | 1 |  |
 | TYPE_STORED | 2 |  |
+
+
+
+<a name="bytebase-store-ObjectSchema-Type"></a>
+
+### ObjectSchema.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| STRING | 1 |  |
+| NUMBER | 2 |  |
+| BOOLEAN | 3 |  |
+| OBJECT | 4 |  |
+| ARRAY | 5 |  |
 
 
 
@@ -1794,7 +1887,7 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | sheet | [string](#string) |  | The name of a sheet. |
-| source | [string](#string) |  | The source of origin. 1) change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}. 2) branch: projects/{project}/branches/{branch}. 3) raw SQL if empty. |
+| source | [string](#string) |  | The source of origin. 1) changes: instances/{instance}/databases/{database}/changelogs/{changelog}. 2) raw SQL if empty. |
 | version | [string](#string) |  | The migration version for a change. |
 
 
@@ -4556,7 +4649,7 @@ SlowQueryPolicy is the policy configuration for slow query.
 | engine | [Engine](#bytebase-store-Engine) |  |  |
 | category | [string](#string) |  |  |
 | column | [ColumnMetadata](#bytebase-store-ColumnMetadata) |  |  |
-| config | [ColumnConfig](#bytebase-store-ColumnConfig) |  |  |
+| catalog | [ColumnCatalog](#bytebase-store-ColumnCatalog) |  |  |
 
 
 
@@ -4575,7 +4668,7 @@ SlowQueryPolicy is the policy configuration for slow query.
 | engine | [Engine](#bytebase-store-Engine) |  |  |
 | category | [string](#string) |  |  |
 | table | [TableMetadata](#bytebase-store-TableMetadata) |  |  |
-| config | [TableConfig](#bytebase-store-TableConfig) |  |  |
+| catalog | [TableCatalog](#bytebase-store-TableCatalog) |  |  |
 
 
 
@@ -5090,7 +5183,8 @@ TaskDatabaseUpdatePayload is the task payload for updating database (DDL &amp; D
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | detail | [string](#string) |  |  |
-| change_history | [string](#string) |  | Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
+| change_history | [string](#string) |  | Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} Deprecated. |
+| changelog | [string](#string) |  | Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
 | version | [string](#string) |  |  |
 | start_position | [TaskRunResult.Position](#bytebase-store-TaskRunResult-Position) |  |  |
 | end_position | [TaskRunResult.Position](#bytebase-store-TaskRunResult-Position) |  |  |
