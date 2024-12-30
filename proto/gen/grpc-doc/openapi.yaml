@@ -8793,6 +8793,33 @@ components:
                 token:
                     type: string
                     description: The token for the agent.
+        Algorithm:
+            type: object
+            properties:
+                id:
+                    type: string
+                    description: id is the uuid for masking algorithm.
+                title:
+                    type: string
+                    description: title is the title for masking algorithm.
+                description:
+                    type: string
+                    description: description is the description for masking algorithm.
+                category:
+                    type: string
+                    description: |-
+                        Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASK and HASH.
+                         The range of accepted Payload is decided by the category.
+                         MASK: FullMask, RangeMask
+                         HASH: MD5Mask
+                fullMask:
+                    $ref: '#/components/schemas/Algorithm_FullMask'
+                rangeMask:
+                    $ref: '#/components/schemas/Algorithm_RangeMask'
+                md5Mask:
+                    $ref: '#/components/schemas/Algorithm_MD5Mask'
+                innerOuterMask:
+                    $ref: '#/components/schemas/Algorithm_InnerOuterMask'
         Algorithm_FullMask:
             type: object
             properties:
@@ -8810,6 +8837,8 @@ components:
                 suffixLen:
                     type: integer
                     format: int32
+                substitution:
+                    type: string
                 type:
                     enum:
                         - MASK_TYPE_UNSPECIFIED
@@ -8817,8 +8846,6 @@ components:
                         - OUTER
                     type: string
                     format: enum
-                substitution:
-                    type: string
         Algorithm_MD5Mask:
             type: object
             properties:
@@ -11893,35 +11920,8 @@ components:
                 algorithms:
                     type: array
                     items:
-                        $ref: '#/components/schemas/MaskingAlgorithmSetting_Algorithm'
+                        $ref: '#/components/schemas/Algorithm'
                     description: algorithms is the list of masking algorithms.
-        MaskingAlgorithmSetting_Algorithm:
-            type: object
-            properties:
-                id:
-                    type: string
-                    description: id is the uuid for masking algorithm.
-                title:
-                    type: string
-                    description: title is the title for masking algorithm.
-                description:
-                    type: string
-                    description: description is the description for masking algorithm.
-                category:
-                    type: string
-                    description: |-
-                        Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASK and HASH.
-                         The range of accepted Payload is decided by the category.
-                         MASK: FullMask, RangeMask
-                         HASH: MD5Mask
-                fullMask:
-                    $ref: '#/components/schemas/Algorithm_FullMask'
-                rangeMask:
-                    $ref: '#/components/schemas/Algorithm_RangeMask'
-                md5Mask:
-                    $ref: '#/components/schemas/Algorithm_MD5Mask'
-                innerOuterMask:
-                    $ref: '#/components/schemas/Algorithm_InnerOuterMask'
         MaskingExceptionPolicy:
             type: object
             properties:
@@ -12929,7 +12929,7 @@ components:
                     format: int32
                 substitution:
                     type: string
-                    description: OriginalValue[start:end) would be replaced with replace_with.
+                    description: substitution is the string used to replace the OriginalValue[start:end).
         RebaseBranchResponse:
             type: object
             properties:
