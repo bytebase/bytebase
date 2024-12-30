@@ -53,7 +53,7 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, connCfg db.Conne
 }
 
 // Close closes the CosmosDB driver.
-func (driver *Driver) Close(_ context.Context) error {
+func (*Driver) Close(_ context.Context) error {
 	return nil
 }
 
