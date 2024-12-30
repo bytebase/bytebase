@@ -114,7 +114,7 @@ export const provideDatabaseDetailContext = (
   );
 
   const allowListChangelogs = computed(() =>
-    checkPermission("bb.changeHistories.list")
+    checkPermission("bb.changelogs.list")
   );
   const allowListSlowQueries = computed(
     () =>
