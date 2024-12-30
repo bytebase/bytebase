@@ -199,7 +199,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to new store")
 	}
-	s.store = storeInstance
 	if profile.Readonly {
 		slog.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
 	} else {
@@ -210,10 +209,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 			return nil, err
 		}
 	}
-	if err := s.migrateMaskingData(ctx); err != nil {
-		return nil, errors.Wrap(err, "failed to migrate database masking policy")
-	}
-
+	s.store = storeInstance
 	s.sheetManager = sheet.NewManager(storeInstance)
 
 	s.stateCfg, err = state.New()
@@ -235,6 +231,9 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	secret, err := s.getInitSetting(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init config")
+	}
+	if err := s.migrateMaskingData(ctx); err != nil {
+		return nil, errors.Wrap(err, "failed to migrate database masking policy")
 	}
 	s.secret = secret
 	s.iamManager, err = iam.NewManager(storeInstance, s.licenseService)
