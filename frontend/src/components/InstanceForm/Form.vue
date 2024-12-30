@@ -544,7 +544,6 @@ const {
   adminDataSource,
   editingDataSource,
   testConnection,
-  pendingCreateInstance,
 } = context;
 const { isEngineBeta, defaultPort, instanceLink, allowEditPort } = specs;
 

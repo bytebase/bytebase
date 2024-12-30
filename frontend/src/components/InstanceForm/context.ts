@@ -302,8 +302,7 @@ export const provideInstanceFormContext = (baseContext: {
   };
 
   const pendingCreateInstance = computed(() => {
-    // When creating new instance, use
-    // adminDataSource + CreateInstanceRequest.validateOnly = true
+    // When creating new instance, use the adminDataSource.
     const instance: Instance = {
       ...basicInfo.value,
       engineVersion: "",
