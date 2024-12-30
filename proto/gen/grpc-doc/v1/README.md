@@ -892,6 +892,7 @@
 | DYNAMODB | 23 |  |
 | DATABRICKS | 24 |  |
 | COCKROACHDB | 25 |  |
+| COSMOSDB | 26 |  |
 
 
 

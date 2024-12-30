@@ -1493,6 +1493,7 @@
     "account": "Cuenta",
     "name": "Nombre",
     "host-or-socket": "Host o Socket",
+    "endpoint": "Punto final",
     "project-id-and-instance-id": "ID del proyecto e ID de la instancia",
     "project-id": "ID del proyecto",
     "instance-id": "ID de la instancia",

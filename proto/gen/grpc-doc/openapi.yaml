@@ -9282,6 +9282,7 @@ components:
                         - DYNAMODB
                         - DATABRICKS
                         - COCKROACHDB
+                        - COSMOSDB
                     type: string
                     description: The database engine of the branch.
                     format: enum
@@ -10122,6 +10123,7 @@ components:
                         - DYNAMODB
                         - DATABRICKS
                         - COCKROACHDB
+                        - COSMOSDB
                     type: string
                     description: The database engine of the schema.
                     format: enum
@@ -10707,6 +10709,7 @@ components:
                         - DYNAMODB
                         - DATABRICKS
                         - COCKROACHDB
+                        - COSMOSDB
                     type: string
                     format: enum
                 engineVersion:
@@ -10786,6 +10789,7 @@ components:
                         - DYNAMODB
                         - DATABRICKS
                         - COCKROACHDB
+                        - COSMOSDB
                     type: string
                     format: enum
                 engineVersion:
@@ -12309,6 +12313,7 @@ components:
                         - DYNAMODB
                         - DATABRICKS
                         - COCKROACHDB
+                        - COSMOSDB
                     type: string
                     format: enum
                 currentSchema:
@@ -13271,6 +13276,7 @@ components:
                         - DYNAMODB
                         - DATABRICKS
                         - COCKROACHDB
+                        - COSMOSDB
                     type: string
                     format: enum
                 comment:
@@ -13356,6 +13362,7 @@ components:
                         - DYNAMODB
                         - DATABRICKS
                         - COCKROACHDB
+                        - COSMOSDB
                     type: string
                     format: enum
                 enabled:
@@ -13397,6 +13404,7 @@ components:
                         - DYNAMODB
                         - DATABRICKS
                         - COCKROACHDB
+                        - COSMOSDB
                     type: string
                     format: enum
                 category:
@@ -13438,6 +13446,7 @@ components:
                         - DYNAMODB
                         - DATABRICKS
                         - COCKROACHDB
+                        - COSMOSDB
                     type: string
                     format: enum
                 category:
@@ -13914,6 +13923,7 @@ components:
                         - DYNAMODB
                         - DATABRICKS
                         - COCKROACHDB
+                        - COSMOSDB
                     type: string
                     description: The SQL dialect.
                     format: enum
@@ -14124,6 +14134,7 @@ components:
                         - DYNAMODB
                         - DATABRICKS
                         - COCKROACHDB
+                        - COSMOSDB
                     type: string
                     description: The database engine of the schema string.
                     format: enum
