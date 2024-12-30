@@ -140,6 +140,10 @@
   
     - [LabelSelectorRequirement.OperatorType](#bytebase-store-LabelSelectorRequirement-OperatorType)
   
+- [store/deprecated.proto](#store_deprecated-proto)
+    - [DeprecatedMaskData](#bytebase-store-DeprecatedMaskData)
+    - [DeprecatedMaskingPolicy](#bytebase-store-DeprecatedMaskingPolicy)
+  
 - [store/export_archive.proto](#store_export_archive-proto)
     - [ExportArchivePayload](#bytebase-store-ExportArchivePayload)
   
@@ -222,10 +226,8 @@
     - [EnvironmentTierPolicy](#bytebase-store-EnvironmentTierPolicy)
     - [ExportDataPolicy](#bytebase-store-ExportDataPolicy)
     - [IamPolicy](#bytebase-store-IamPolicy)
-    - [MaskData](#bytebase-store-MaskData)
     - [MaskingExceptionPolicy](#bytebase-store-MaskingExceptionPolicy)
     - [MaskingExceptionPolicy.MaskingException](#bytebase-store-MaskingExceptionPolicy-MaskingException)
-    - [MaskingPolicy](#bytebase-store-MaskingPolicy)
     - [MaskingRulePolicy](#bytebase-store-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
     - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-store-RestrictIssueCreationForSQLReviewPolicy)
@@ -2442,6 +2444,57 @@ Schedule is the message for deployment schedule.
 
 
 
+<a name="store_deprecated-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/deprecated.proto
+
+
+
+<a name="bytebase-store-DeprecatedMaskData"></a>
+
+### DeprecatedMaskData
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  |  |
+| table | [string](#string) |  |  |
+| column | [string](#string) |  |  |
+| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
+| full_masking_algorithm_id | [string](#string) |  |  |
+| partial_masking_algorithm_id | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-DeprecatedMaskingPolicy"></a>
+
+### DeprecatedMaskingPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| mask_data | [DeprecatedMaskData](#bytebase-store-DeprecatedMaskData) | repeated |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="store_export_archive-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -3595,26 +3648,6 @@ ExportDataPolicy is the policy configuration for export data.
 
 
 
-<a name="bytebase-store-MaskData"></a>
-
-### MaskData
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  |  |
-| table | [string](#string) |  |  |
-| column | [string](#string) |  |  |
-| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
-| full_masking_algorithm_id | [string](#string) |  |  |
-| partial_masking_algorithm_id | [string](#string) |  |  |
-
-
-
-
-
-
 <a name="bytebase-store-MaskingExceptionPolicy"></a>
 
 ### MaskingExceptionPolicy
@@ -3643,21 +3676,6 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 
 Format: users/{userUID} or groups/{group email} |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. |
-
-
-
-
-
-
-<a name="bytebase-store-MaskingPolicy"></a>
-
-### MaskingPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| mask_data | [MaskData](#bytebase-store-MaskData) | repeated |  |
 
 
 
