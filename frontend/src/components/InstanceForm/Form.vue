@@ -118,6 +118,10 @@
                   class="text-sm"
                 />
               </template>
+              <template v-else-if="basicInfo.engine === Engine.COSMOSDB">
+                {{ $t("instance.endpoint") }}
+                <span class="text-red-600 mr-2">*</span>
+              </template>
               <div
                 v-else-if="
                   adminDataSource.authenticationType ===
@@ -168,6 +172,7 @@
             basicInfo.engine !== Engine.SPANNER &&
             basicInfo.engine !== Engine.BIGQUERY &&
             basicInfo.engine !== Engine.DATABRICKS &&
+            basicInfo.engine !== Engine.COSMOSDB &&
             adminDataSource.authenticationType !==
               DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
           "
@@ -408,7 +413,12 @@
       </div>
 
       <!-- Connection Info -->
-      <template v-if="basicInfo.engine !== Engine.DYNAMODB">
+      <template
+        v-if="
+          basicInfo.engine !== Engine.DYNAMODB &&
+          basicInfo.engine !== Engine.COSMOSDB
+        "
+      >
         <p class="mt-6 pt-4 w-full text-lg leading-6 font-medium text-gray-900">
           {{ $t("instance.connection-info") }}
         </p>
