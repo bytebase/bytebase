@@ -11,13 +11,13 @@ const (
 	PermissionBranchesGet                Permission = "bb.branches.get"
 	PermissionBranchesList               Permission = "bb.branches.list"
 	PermissionBranchesUpdate             Permission = "bb.branches.update"
-	PermissionChangeHistoriesGet         Permission = "bb.changeHistories.get"
-	PermissionChangeHistoriesList        Permission = "bb.changeHistories.list"
 	PermissionChangelistsCreate          Permission = "bb.changelists.create"
 	PermissionChangelistsDelete          Permission = "bb.changelists.delete"
 	PermissionChangelistsGet             Permission = "bb.changelists.get"
 	PermissionChangelistsList            Permission = "bb.changelists.list"
 	PermissionChangelistsUpdate          Permission = "bb.changelists.update"
+	PermissionChangelogsGet              Permission = "bb.changelogs.get"
+	PermissionChangelogsList             Permission = "bb.changelogs.list"
 	PermissionDatabaseCatalogsGet        Permission = "bb.databaseCatalogs.get"
 	PermissionDatabaseCatalogsUpdate     Permission = "bb.databaseCatalogs.update"
 	PermissionDatabaseSecretsDelete      Permission = "bb.databaseSecrets.delete"
@@ -81,6 +81,10 @@ const (
 	PermissionReviewConfigsGet           Permission = "bb.reviewConfigs.get"
 	PermissionReviewConfigsList          Permission = "bb.reviewConfigs.list"
 	PermissionReviewConfigsUpdate        Permission = "bb.reviewConfigs.update"
+	PermissionRevisionsCreate            Permission = "bb.revisions.create"
+	PermissionRevisionsDelete            Permission = "bb.revisions.delete"
+	PermissionRevisionsGet               Permission = "bb.revisions.get"
+	PermissionRevisionsList              Permission = "bb.revisions.list"
 	PermissionRisksCreate                Permission = "bb.risks.create"
 	PermissionRisksDelete                Permission = "bb.risks.delete"
 	PermissionRisksList                  Permission = "bb.risks.list"
@@ -144,13 +148,13 @@ var allPermissions = []Permission{
 	PermissionBranchesGet,
 	PermissionBranchesList,
 	PermissionBranchesUpdate,
-	PermissionChangeHistoriesGet,
-	PermissionChangeHistoriesList,
 	PermissionChangelistsCreate,
 	PermissionChangelistsDelete,
 	PermissionChangelistsGet,
 	PermissionChangelistsList,
 	PermissionChangelistsUpdate,
+	PermissionChangelogsGet,
+	PermissionChangelogsList,
 	PermissionDatabaseCatalogsGet,
 	PermissionDatabaseCatalogsUpdate,
 	PermissionDatabaseSecretsDelete,
@@ -214,6 +218,10 @@ var allPermissions = []Permission{
 	PermissionReviewConfigsGet,
 	PermissionReviewConfigsList,
 	PermissionReviewConfigsUpdate,
+	PermissionRevisionsCreate,
+	PermissionRevisionsDelete,
+	PermissionRevisionsGet,
+	PermissionRevisionsList,
 	PermissionRisksCreate,
 	PermissionRisksDelete,
 	PermissionRisksList,

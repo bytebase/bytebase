@@ -6,7 +6,7 @@ categoryList:
       - state-based-change
       - migration-based-change
       - sql-check
-      - change-history
+      - changelog
       - terraform-provider
       - schedule-change
       - rollout-policy
@@ -83,7 +83,7 @@ planList:
       - type: batch-change
         content: batch-change-basic
         tooltip: batch-change-basic-tooltip
-      - type: change-history
+      - type: changelog
       - type: sync-schema
         content: sync-schema-basic
         tooltip: sync-schema-basic-tooltip
@@ -153,7 +153,7 @@ planList:
       - type: batch-change
         content: batch-change-basic
         tooltip: batch-change-basic-tooltip
-      - type: change-history
+      - type: changelog
       - type: sync-schema
         content: sync-schema-advanced
         tooltip: sync-schema-advanced-tooltip
@@ -227,7 +227,7 @@ planList:
       - type: batch-change
         content: batch-change-advanced
         tooltip: batch-change-advanced-tooltip
-      - type: change-history
+      - type: changelog
       - type: sync-schema
         content: sync-schema-advanced
         tooltip: sync-schema-advanced-tooltip

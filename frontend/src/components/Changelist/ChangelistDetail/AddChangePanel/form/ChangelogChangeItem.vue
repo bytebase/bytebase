@@ -1,6 +1,11 @@
 <template>
   <div class="flex flex-row items-center justify-between gap-x-2 group">
     <div class="flex flex-row items-center gap-x-2">
+      <NTag>
+        <span class="inline-block w-[30px] text-center">
+          {{ getChangelogChangeType(changelog.type) }}
+        </span>
+      </NTag>
       <div
         class="flex flex-row items-center gap-x-1 border-b border-transparent group-hover:border-control-border cursor-pointer"
         @click="$emit('click-item', change)"
@@ -13,9 +18,17 @@
           tooltip="instance"
         />
         <span>@</span>
-        <div>
-          {{ branch.branchId }}
-        </div>
+        <span class="text-sm">{{ changelog.version }}</span>
+        <router-link
+          :to="{
+            path: `/${changelog.issue}`,
+          }"
+          class="normal-link text-sm hover:!no-underline"
+          target="_blank"
+          @click.stop
+        >
+          #{{ extractIssueUID(changelog.issue) }}
+        </router-link>
       </div>
     </div>
     <div
@@ -36,16 +49,17 @@
 </template>
 
 <script setup lang="ts">
-import { NButton } from "naive-ui";
+import { NButton, NTag } from "naive-ui";
 import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
-import { useDatabaseV1Store } from "@/store";
-import { Branch } from "@/types/proto/v1/branch_service";
+import { useChangelogStore, useDatabaseV1Store } from "@/store";
 import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import { Changelog } from "@/types/proto/v1/database_service";
+import { extractDatabaseResourceName, extractIssueUID } from "@/utils";
+import { getChangelogChangeType } from "@/utils/v1/changelog";
 
 const props = defineProps<{
   change: Change;
-  branch: Branch | undefined;
 }>();
 
 defineEmits<{
@@ -53,17 +67,19 @@ defineEmits<{
   (event: "remove-item", change: Change): void;
 }>();
 
-const branch = computed(() => {
+const changelog = computed(() => {
+  const name = props.change.source;
   return (
-    props.branch ??
-    Branch.fromPartial({
-      name: props.change.source,
-      branchId: "<<Unknown Branch>>",
+    useChangelogStore().getChangelogByName(name) ??
+    Changelog.fromPartial({
+      name,
+      version: "<<Unknown Changelog>>",
     })
   );
 });
 
 const database = computed(() => {
-  return useDatabaseV1Store().getDatabaseByName(branch.value.baselineDatabase);
+  const { database } = extractDatabaseResourceName(changelog.value.name);
+  return useDatabaseV1Store().getDatabaseByName(database);
 });
 </script>

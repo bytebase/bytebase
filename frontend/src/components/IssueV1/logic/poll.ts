@@ -3,9 +3,9 @@ import { databaseForTask } from "@/components/IssueV1/logic";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
 import {
   experimentalFetchIssueByUID,
-  useChangeHistoryStore,
   useInstanceV1Store,
   useDBSchemaV1Store,
+  useChangelogStore,
 } from "@/store";
 import { useListCache } from "@/store/modules/v1/cache";
 import type { ComposedIssue } from "@/types";
@@ -16,7 +16,7 @@ import { flattenTaskV1List } from "@/utils";
 import { useIssueContext } from "./context";
 
 const clearCache = (issue: ComposedIssue) => {
-  const changeHistoryStore = useChangeHistoryStore();
+  const changelogStore = useChangelogStore();
   const tasks = flattenTaskV1List(issue.rolloutEntity);
 
   for (const task of tasks) {
@@ -36,11 +36,11 @@ const clearCache = (issue: ComposedIssue) => {
       case Task_Type.TYPE_UNSPECIFIED:
         continue;
       case Task_Type.DATABASE_DATA_UPDATE:
-        changeHistoryStore.clearCache(database.name);
+        changelogStore.clearCache(database.name);
         break;
       default:
         useDBSchemaV1Store().removeCache(database.name);
-        changeHistoryStore.clearCache(database.name);
+        changelogStore.clearCache(database.name);
     }
   }
 };

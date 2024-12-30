@@ -13,7 +13,7 @@ export const unknownChangelist = () => {
 };
 
 export const Changelist_Change_Source_List = [
-  "CHANGE_HISTORY",
+  "CHANGELOG",
   "BRANCH",
   "RAW_SQL",
 ] as const;

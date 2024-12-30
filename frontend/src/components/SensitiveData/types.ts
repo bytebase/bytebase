@@ -24,7 +24,6 @@ export interface AccessUser {
   group?: Group;
   user?: User;
   supportActions: Set<MaskingExceptionPolicy_MaskingException_Action>;
-  maskingLevel: MaskingLevel;
   expirationTimestamp?: number;
   rawExpression: string;
   databaseResource?: DatabaseResource;

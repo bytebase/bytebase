@@ -571,7 +571,7 @@
         
           
           <li>
-            <a href="#store%2finstance_change_history.proto">store/instance_change_history.proto</a>
+            <a href="#store%2fchangelog.proto">store/changelog.proto</a>
             <ul>
               
                 <li>
@@ -601,21 +601,6 @@
                 <li>
                   <a href="#bytebase.store.ChangedResources"><span class="badge">M</span>ChangedResources</a>
                 </li>
-              
-                <li>
-                  <a href="#bytebase.store.InstanceChangeHistoryPayload"><span class="badge">M</span>InstanceChangeHistoryPayload</a>
-                </li>
-              
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
-            <a href="#store%2fchangelog.proto">store/changelog.proto</a>
-            <ul>
               
                 <li>
                   <a href="#bytebase.store.ChangelogPayload"><span class="badge">M</span>ChangelogPayload</a>
@@ -836,6 +821,21 @@
               
                 <li>
                   <a href="#bytebase.store.InstanceRole"><span class="badge">M</span>InstanceRole</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#store%2finstance_change_history.proto">store/instance_change_history.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.InstanceChangeHistoryPayload"><span class="badge">M</span>InstanceChangeHistoryPayload</a>
                 </li>
               
               
@@ -1262,6 +1262,30 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.Algorithm"><span class="badge">M</span>Algorithm</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.Algorithm.FullMask"><span class="badge">M</span>Algorithm.FullMask</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.Algorithm.InnerOuterMask"><span class="badge">M</span>Algorithm.InnerOuterMask</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.Algorithm.MD5Mask"><span class="badge">M</span>Algorithm.MD5Mask</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.Algorithm.RangeMask"><span class="badge">M</span>Algorithm.RangeMask</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.Algorithm.RangeMask.Slice"><span class="badge">M</span>Algorithm.RangeMask.Slice</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.Announcement"><span class="badge">M</span>Announcement</a>
                 </li>
               
@@ -1322,30 +1346,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm"><span class="badge">M</span>MaskingAlgorithmSetting.Algorithm</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm.FullMask"><span class="badge">M</span>MaskingAlgorithmSetting.Algorithm.FullMask</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm.InnerOuterMask"><span class="badge">M</span>MaskingAlgorithmSetting.Algorithm.InnerOuterMask</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm.MD5Mask"><span class="badge">M</span>MaskingAlgorithmSetting.Algorithm.MD5Mask</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm.RangeMask"><span class="badge">M</span>MaskingAlgorithmSetting.Algorithm.RangeMask</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm.RangeMask.Slice"><span class="badge">M</span>MaskingAlgorithmSetting.Algorithm.RangeMask.Slice</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.MaximumSQLResultSizeSetting"><span class="badge">M</span>MaximumSQLResultSizeSetting</a>
                 </li>
               
@@ -1399,15 +1399,15 @@
               
               
                 <li>
+                  <a href="#bytebase.store.Algorithm.InnerOuterMask.MaskType"><span class="badge">E</span>Algorithm.InnerOuterMask.MaskType</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.Announcement.AlertLevel"><span class="badge">E</span>Announcement.AlertLevel</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.store.DatabaseChangeMode"><span class="badge">E</span>DatabaseChangeMode</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType"><span class="badge">E</span>MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType</a>
                 </li>
               
                 <li>
@@ -3983,6 +3983,13 @@ engine. </p></td>
                   <td><p>The columns is the ordered list of columns in a table. </p></td>
                 </tr>
               
+                <tr>
+                  <td>indexes</td>
+                  <td><a href="#bytebase.store.IndexMetadata">IndexMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The indexes is the list of indexes in a table. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5112,6 +5119,13 @@ TRUNCATE. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5600,9 +5614,8 @@ Example: projects/project-id/branches/branch-id. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The source of origin.
-1) change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}.
-2) branch: projects/{project}/branches/{branch}.
-3) raw SQL if empty. </p></td>
+1) changes: instances/{instance}/databases/{database}/changelogs/{changelog}.
+2) raw SQL if empty. </p></td>
                 </tr>
               
                 <tr>
@@ -5628,7 +5641,7 @@ Example: projects/project-id/branches/branch-id. </p></td>
     
       
       <div class="file-heading">
-        <h2 id="store/instance_change_history.proto">store/instance_change_history.proto</h2><a href="#title">Top</a>
+        <h2 id="store/changelog.proto">store/changelog.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
 
@@ -5870,44 +5883,6 @@ Example: projects/project-id/branches/branch-id. </p></td>
           
 
         
-      
-        <h3 id="bytebase.store.InstanceChangeHistoryPayload">InstanceChangeHistoryPayload</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>changed_resources</td>
-                  <td><a href="#bytebase.store.ChangedResources">ChangedResources</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
-        <h2 id="store/changelog.proto">store/changelog.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
       
         <h3 id="bytebase.store.ChangelogPayload">ChangelogPayload</h3>
         <p></p>
@@ -7596,6 +7571,44 @@ Default empty, means sync all schemas &amp; databases. </p></td>
                   <td><p>The role attribute.
 For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
 For MySQL, it&#39;s the global privileges as GRANT statements, which means it only contains &#34;GRANT ... ON *.* TO ...&#34;. Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/instance_change_history.proto">store/instance_change_history.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.InstanceChangeHistoryPayload">InstanceChangeHistoryPayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>changed_resources</td>
+                  <td><a href="#bytebase.store.ChangedResources">ChangedResources</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -9563,13 +9576,6 @@ A binding binds one or more members or groups to a single role. </p></td>
                 </tr>
               
                 <tr>
-                  <td>masking_level</td>
-                  <td><a href="#bytebase.store.MaskingLevel">MaskingLevel</a></td>
-                  <td></td>
-                  <td><p>Level is the masking level that the user can access sensitive data. </p></td>
-                </tr>
-              
-                <tr>
                   <td>member</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -10571,6 +10577,239 @@ Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRu
 
         
       
+        <h3 id="bytebase.store.Algorithm">Algorithm</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>id is the uuid for masking algorithm. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>title is the title for masking algorithm. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>description</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>description is the description for masking algorithm. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>category</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASK and HASH.
+The range of accepted Payload is decided by the category.
+MASK: FullMask, RangeMask
+HASH: MD5Mask </p></td>
+                </tr>
+              
+                <tr>
+                  <td>full_mask</td>
+                  <td><a href="#bytebase.store.Algorithm.FullMask">Algorithm.FullMask</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>range_mask</td>
+                  <td><a href="#bytebase.store.Algorithm.RangeMask">Algorithm.RangeMask</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>md5_mask</td>
+                  <td><a href="#bytebase.store.Algorithm.MD5Mask">Algorithm.MD5Mask</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>inner_outer_mask</td>
+                  <td><a href="#bytebase.store.Algorithm.InnerOuterMask">Algorithm.InnerOuterMask</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Algorithm.FullMask">Algorithm.FullMask</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>substitution</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>substitution is the string used to replace the original value, the
+max length of the string is 16 bytes. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Algorithm.InnerOuterMask">Algorithm.InnerOuterMask</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>prefix_len</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>suffix_len</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>substitution</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.Algorithm.InnerOuterMask.MaskType">Algorithm.InnerOuterMask.MaskType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Algorithm.MD5Mask">Algorithm.MD5Mask</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>salt</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>salt is the salt value to generate a different hash that with the word alone. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Algorithm.RangeMask">Algorithm.RangeMask</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>slices</td>
+                  <td><a href="#bytebase.store.Algorithm.RangeMask.Slice">Algorithm.RangeMask.Slice</a></td>
+                  <td>repeated</td>
+                  <td><p>We store it as a repeated field to face the fact that the original value may have multiple parts should be masked.
+But frontend can be started with a single rule easily. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Algorithm.RangeMask.Slice">Algorithm.RangeMask.Slice</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>start is the start index of the original value, start from 0 and should be less than stop. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>stop is the stop index of the original value, should be less than the length of the original value. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>substitution</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>OriginalValue[start:end) would be replaced with replace_with. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.Announcement">Announcement</h3>
         <p></p>
 
@@ -11108,242 +11347,9 @@ service to identify the node. </p></td>
               
                 <tr>
                   <td>algorithms</td>
-                  <td><a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm">MaskingAlgorithmSetting.Algorithm</a></td>
+                  <td><a href="#bytebase.store.Algorithm">Algorithm</a></td>
                   <td>repeated</td>
                   <td><p>algorithms is the list of masking algorithms. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.MaskingAlgorithmSetting.Algorithm">MaskingAlgorithmSetting.Algorithm</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>id is the uuid for masking algorithm. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>title is the title for masking algorithm. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>description</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>description is the description for masking algorithm. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>category</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASK and HASH.
-The range of accepted Payload is decided by the category.
-MASK: FullMask, RangeMask
-HASH: MD5Mask </p></td>
-                </tr>
-              
-                <tr>
-                  <td>full_mask</td>
-                  <td><a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm.FullMask">MaskingAlgorithmSetting.Algorithm.FullMask</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>range_mask</td>
-                  <td><a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm.RangeMask">MaskingAlgorithmSetting.Algorithm.RangeMask</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>md5_mask</td>
-                  <td><a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm.MD5Mask">MaskingAlgorithmSetting.Algorithm.MD5Mask</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>inner_outer_mask</td>
-                  <td><a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm.InnerOuterMask">MaskingAlgorithmSetting.Algorithm.InnerOuterMask</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.MaskingAlgorithmSetting.Algorithm.FullMask">MaskingAlgorithmSetting.Algorithm.FullMask</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>substitution</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>substitution is the string used to replace the original value, the
-max length of the string is 16 bytes. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.MaskingAlgorithmSetting.Algorithm.InnerOuterMask">MaskingAlgorithmSetting.Algorithm.InnerOuterMask</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>prefix_len</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>suffix_len</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>substitution</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType">MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.MaskingAlgorithmSetting.Algorithm.MD5Mask">MaskingAlgorithmSetting.Algorithm.MD5Mask</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>salt</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>salt is the salt value to generate a different hash that with the word alone. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.MaskingAlgorithmSetting.Algorithm.RangeMask">MaskingAlgorithmSetting.Algorithm.RangeMask</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>slices</td>
-                  <td><a href="#bytebase.store.MaskingAlgorithmSetting.Algorithm.RangeMask.Slice">MaskingAlgorithmSetting.Algorithm.RangeMask.Slice</a></td>
-                  <td>repeated</td>
-                  <td><p>We store it as a repeated field to face the fact that the original value may have multiple parts should be masked.
-But frontend can be started with a single rule easily. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.MaskingAlgorithmSetting.Algorithm.RangeMask.Slice">MaskingAlgorithmSetting.Algorithm.RangeMask.Slice</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>start</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>start is the start index of the original value, start from 0 and should be less than stop. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>end</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>stop is the stop index of the original value, should be less than the length of the original value. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>substitution</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>OriginalValue[start:end) would be replaced with replace_with. </p></td>
                 </tr>
               
             </tbody>
@@ -11794,7 +11800,8 @@ The default value is 100MB, we will use the default value if the setting not exi
                   <td>partial_mask_algorithm_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>the partial mask algorithm id for the semantic type, if it is empty,
+                  <td><p>Deprecated.
+the partial mask algorithm id for the semantic type, if it is empty,
 should use the default partial mask algorithm. </p></td>
                 </tr>
               
@@ -11802,8 +11809,16 @@ should use the default partial mask algorithm. </p></td>
                   <td>full_mask_algorithm_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>the full mask algorithm id for the semantic type, if it is empty, should
+                  <td><p>Deprecated.
+the full mask algorithm id for the semantic type, if it is empty, should
 use the default full mask algorithm. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>algorithms</td>
+                  <td><a href="#bytebase.store.Algorithm">Algorithm</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -11984,6 +11999,35 @@ GitOps workflow. The webhook endpoint points to the backend. </p></td>
       
 
       
+        <h3 id="bytebase.store.Algorithm.InnerOuterMask.MaskType">Algorithm.InnerOuterMask.MaskType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>MASK_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>INNER</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OUTER</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.store.Announcement.AlertLevel">Announcement.AlertLevel</h3>
         <p>We support three levels of AlertLevel: INFO, WARNING, and ERROR.</p>
         <table class="enum-table">
@@ -12044,35 +12088,6 @@ Default to this mode.</p></td>
                 <td>EDITOR</td>
                 <td>2</td>
                 <td><p>A simple database change process in SQL editor. Users can execute SQL directly.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType">MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>MASK_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>INNER</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>OUTER</td>
-                <td>2</td>
-                <td><p></p></td>
               </tr>
             
           </tbody>
@@ -12909,10 +12924,10 @@ Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
-                  <td>change_history</td>
+                  <td>changelog</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} </p></td>
+                  <td><p>Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></td>
                 </tr>
               
                 <tr>

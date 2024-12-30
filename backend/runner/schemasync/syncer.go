@@ -253,25 +253,19 @@ func (s *Syncer) SyncDatabasesAsync(databases []*store.DatabaseMessage) {
 	}
 }
 
-// SyncInstance syncs the schema for all databases in an instance.
-func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessage) (*store.InstanceMessage, []*storepb.DatabaseSchemaMetadata, []*store.DatabaseMessage, error) {
-	if s.profile.Readonly {
-		return nil, nil, nil, nil
-	}
-
+// GetInstanceMeta gets the instance metadata.
+func (s *Syncer) GetInstanceMeta(ctx context.Context, instance *store.InstanceMessage) (*db.InstanceMetadata, error) {
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err != nil {
-		s.upsertInstanceConnectionAnomaly(ctx, instance, err)
-		return nil, nil, nil, err
+		return nil, err
 	}
 	defer driver.Close(ctx)
-	s.upsertInstanceConnectionAnomaly(ctx, instance, nil)
 
 	deadlineCtx, cancelFunc := context.WithDeadline(ctx, time.Now().Add(syncTimeout))
 	defer cancelFunc()
 	instanceMeta, err := driver.SyncInstance(deadlineCtx)
 	if err != nil {
-		return nil, nil, nil, errors.Wrapf(err, "failed to sync instance: %s", instance.ResourceID)
+		return nil, errors.Wrapf(err, "failed to sync instance: %s", instance.ResourceID)
 	}
 
 	if instanceMeta.Metadata == nil {
@@ -279,6 +273,23 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	}
 
 	instanceMeta.Metadata.LastSyncTime = timestamppb.Now()
+
+	return instanceMeta, nil
+}
+
+// SyncInstance syncs the schema for all databases in an instance.
+func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessage) (*store.InstanceMessage, []*storepb.DatabaseSchemaMetadata, []*store.DatabaseMessage, error) {
+	if s.profile.Readonly {
+		return nil, nil, nil, nil
+	}
+
+	instanceMeta, err := s.GetInstanceMeta(ctx, instance)
+	if err != nil {
+		s.upsertInstanceConnectionAnomaly(ctx, instance, err)
+		return nil, nil, nil, err
+	}
+	s.upsertInstanceConnectionAnomaly(ctx, instance, nil)
+
 	updateInstance := &store.UpdateInstanceMessage{
 		ResourceID: instance.ResourceID,
 		Metadata:   instanceMeta.Metadata,
@@ -571,6 +582,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 			return nil
 		}
 		limit := 1
+		// TODO(p0ny): use changelog
 		list, err := s.store.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
 			InstanceID: &instance.UID,
 			DatabaseID: &database.UID,

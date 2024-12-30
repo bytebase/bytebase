@@ -260,39 +260,37 @@ func TestVCS(t *testing.T) {
 			a.NoError(err)
 			a.Equal(want2BookSchema, dbMetadata.Schema)
 
-			// Get migration history.
-			resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
+			resp, err := ctl.databaseServiceClient.ListChangelogs(ctx, &v1pb.ListChangelogsRequest{
 				Parent: database.Name,
-				View:   v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
 			})
 			a.NoError(err)
-			histories := resp.ChangeHistories
-			wantHistories := []*v1pb.ChangeHistory{
+			changelogs := resp.Changelogs
+			wantChangelogs := []*v1pb.Changelog{
 				{
-					Type:       v1pb.ChangeHistory_MIGRATE,
-					Status:     v1pb.ChangeHistory_DONE,
+					Type:       v1pb.Changelog_MIGRATE,
+					Status:     v1pb.Changelog_DONE,
 					Schema:     dumpedSchema2,
 					PrevSchema: dumpedSchema,
 					Version:    "0002",
 				},
 				{
-					Type:       v1pb.ChangeHistory_MIGRATE,
-					Status:     v1pb.ChangeHistory_DONE,
+					Type:       v1pb.Changelog_MIGRATE,
+					Status:     v1pb.Changelog_DONE,
 					Schema:     dumpedSchema,
 					PrevSchema: "",
 					Version:    "0001",
 				},
 			}
-			a.Equal(len(wantHistories), len(histories))
-			for i, history := range histories {
-				got := &v1pb.ChangeHistory{
-					Type:       history.Type,
-					Status:     history.Status,
-					Schema:     history.Schema,
-					PrevSchema: history.PrevSchema,
-					Version:    history.Version,
+			a.Equal(len(wantChangelogs), len(changelogs))
+			for i, changelog := range changelogs {
+				got := &v1pb.Changelog{
+					Type:       changelog.Type,
+					Status:     changelog.Status,
+					Schema:     changelog.Schema,
+					PrevSchema: changelog.PrevSchema,
+					Version:    changelog.Version,
 				}
-				want := wantHistories[i]
+				want := wantChangelogs[i]
 				a.Equal(got, want)
 			}
 

@@ -11,8 +11,7 @@ export type AddChangeEvents = Emittery<{}>;
 
 export type AddChangeContext = {
   changeSource: Ref<ChangeSource>;
-  changesFromChangeHistory: Ref<Change[]>;
-  changesFromBranch: Ref<Change[]>;
+  changesFromChangelog: Ref<Change[]>;
   changeFromRawSQL: Ref<Change>;
 
   events: AddChangeEvents;
@@ -30,9 +29,8 @@ export const provideAddChangeContext = () => {
   const { project } = useChangelistDetailContext();
 
   const context: AddChangeContext = {
-    changeSource: ref("CHANGE_HISTORY"),
-    changesFromChangeHistory: ref([]),
-    changesFromBranch: ref([]),
+    changeSource: ref("CHANGELOG"),
+    changesFromChangelog: ref([]),
     changeFromRawSQL: ref(emptyRawSQLChange(project.value.name)),
 
     events: new Emittery(),

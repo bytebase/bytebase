@@ -16,22 +16,22 @@
               {{ $t("changelist.change-source.self") }}
             </div>
             <NRadioGroup v-model:value="changeSource">
-              <NRadio value="CHANGE_HISTORY">
+              <NRadio value="CHANGELOG">
                 <div class="flex items-center">
-                  <History :size="16" class="mr-1" />
-                  {{ $t("common.change-history") }}
+                  <HistoryIcon :size="16" class="mr-1" />
+                  {{ $t("common.changelog") }}
                 </div>
               </NRadio>
               <NRadio value="RAW_SQL">
                 <div class="flex items-center">
-                  <File :size="16" class="mr-1" />
+                  <FileIcon :size="16" class="mr-1" />
                   {{ $t("changelist.change-source.raw-sql") }}
                 </div>
               </NRadio>
             </NRadioGroup>
           </div>
 
-          <ChangeHistoryForm v-if="changeSource === 'CHANGE_HISTORY'" />
+          <ChangelogForm v-if="changeSource === 'CHANGELOG'" />
           <RawSQLForm v-if="changeSource === 'RAW_SQL'" />
         </div>
 
@@ -73,24 +73,22 @@
 
 <script setup lang="ts">
 import { asyncComputed } from "@vueuse/core";
-import { File, History } from "lucide-vue-next";
+import { FileIcon, HistoryIcon } from "lucide-vue-next";
 import { NButton, NRadio, NRadioGroup } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
-import { branchServiceClient } from "@/grpcweb";
 import {
   pushNotification,
-  useChangeHistoryStore,
   useChangelistStore,
+  useChangelogStore,
   useLocalSheetStore,
-  useSettingV1Store,
 } from "@/store";
-import { useBranchStore } from "@/store/modules/branch";
 import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import { Changelist } from "@/types/proto/v1/changelist_service";
+import { ChangelogView } from "@/types/proto/v1/database_service";
 import {
   getChangelistChangeSourceType,
   getSheetStatement,
@@ -100,27 +98,20 @@ import {
 import { fallbackVersionForChange } from "../../common";
 import { useChangelistDetailContext } from "../context";
 import { provideAddChangeContext } from "./context";
-import { ChangeHistoryForm, RawSQLForm } from "./form";
+import { ChangelogForm, RawSQLForm } from "./form";
 import { emptyRawSQLChange } from "./utils";
 
 const { t } = useI18n();
-const settingStore = useSettingV1Store();
 const { project, changelist, showAddChangePanel } =
   useChangelistDetailContext();
-const {
-  changeSource,
-  changesFromChangeHistory,
-  changesFromBranch,
-  changeFromRawSQL,
-} = provideAddChangeContext();
+const { changeSource, changesFromChangelog, changeFromRawSQL } =
+  provideAddChangeContext();
 const isLoading = ref(false);
 
 const pendingAddChanges = computed(() => {
   switch (changeSource.value) {
-    case "CHANGE_HISTORY":
-      return changesFromChangeHistory.value;
-    case "BRANCH":
-      return changesFromBranch.value;
+    case "CHANGELOG":
+      return changesFromChangelog.value;
     case "RAW_SQL":
       return [changeFromRawSQL.value];
   }
@@ -156,44 +147,24 @@ const doAddChange = async () => {
       const localSheetStore = useLocalSheetStore();
       const sheet = localSheetStore.getOrCreateSheetByName(change.sheet);
       const sourceType = getChangelistChangeSourceType(change);
-      if (sourceType === "CHANGE_HISTORY") {
-        const { changeHistory, statement } =
-          await useChangeHistoryStore().exportChangeHistoryFullStatementByName(
-            change.source
-          );
-        setSheetStatement(sheet, statement);
-        change.version = changeHistory?.version || "";
-      }
-      if (sourceType === "BRANCH") {
-        // For branch changes, use its diff DDL
-        const branch = await useBranchStore().fetchBranchByName(
+      if (sourceType === "CHANGELOG") {
+        const changelog = await useChangelogStore().getOrFetchChangelogByName(
           change.source,
-          false /* !useCache */
+          ChangelogView.CHANGELOG_VIEW_FULL
         );
-
-        const classificationConfig = settingStore.getProjectClassification(
-          project.value.dataClassificationConfigId
-        );
-        const { diff } = await branchServiceClient.diffMetadata({
-          sourceMetadata: branch.baselineSchemaMetadata,
-          targetMetadata: branch.schemaMetadata,
-          engine: branch.engine,
-          classificationFromConfig:
-            classificationConfig?.classificationFromConfig ?? false,
-        });
-        setSheetStatement(sheet, diff);
+        setSheetStatement(sheet, changelog?.statement || "");
+        change.version = changelog?.version || "";
       }
       const created = await localSheetStore.saveLocalSheetToRemote(sheet);
       change.sheet = created.name;
     }
 
     const sourceType = getChangelistChangeSourceType(change);
-    if (sourceType === "CHANGE_HISTORY") {
-      const { changeHistory } =
-        await useChangeHistoryStore().exportChangeHistoryFullStatementByName(
-          change.source
-        );
-      change.version = changeHistory?.version || "";
+    if (sourceType === "CHANGELOG") {
+      const changelog = await useChangelogStore().getOrFetchChangelogByName(
+        change.source
+      );
+      change.version = changelog?.version || "";
     }
     if (change.version === "") {
       change.version = fallbackVersionForChange();
@@ -225,9 +196,8 @@ const doAddChange = async () => {
 };
 
 const reset = () => {
-  changeSource.value = "CHANGE_HISTORY";
-  changesFromChangeHistory.value = [];
-  changesFromBranch.value = [];
+  changeSource.value = "CHANGELOG";
+  changesFromChangelog.value = [];
   changeFromRawSQL.value = emptyRawSQLChange(project.value.name);
 };
 

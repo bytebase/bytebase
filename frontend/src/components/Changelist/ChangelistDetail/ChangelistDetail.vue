@@ -23,13 +23,9 @@
       <BBSpin />
     </div>
 
-    <ChangeHistoryDetailPanel
-      :change-history-name="state.detailChangeHistoryName"
-      @close="state.detailChangeHistoryName = undefined"
-    />
-    <BranchDetailPanel
-      :branch-name="state.detailBranchName"
-      @close="state.detailBranchName = undefined"
+    <ChangelogDetailPanel
+      :changelog-name="state.detailChangelogName"
+      @close="state.detailChangelogName = undefined"
     />
     <RawSQLPanel
       :sheet-name="state.detailRawSQLSheetName"
@@ -53,9 +49,8 @@ import { Changelist } from "@/types/proto/v1/changelist_service";
 import { getChangelistChangeSourceType } from "@/utils";
 import AddChangePanel from "./AddChangePanel";
 import ApplyToDatabasePanel from "./ApplyToDatabasePanel";
-import BranchDetailPanel from "./BranchDetailPanel";
-import ChangeHistoryDetailPanel from "./ChangeHistoryDetailPanel";
 import ChangeTable from "./ChangeTable";
+import ChangelogDetailPanel from "./ChangelogDetailPanel/";
 import DeleteChangelistButton from "./DeleteChangelistButton.vue";
 import NavBar from "./NavBar";
 import RawSQLPanel from "./RawSQLPanel";
@@ -68,8 +63,7 @@ const { changelist, reorderMode, isUpdating, events, allowDelete } =
 
 const state = reactive({
   changes: [] as Change[],
-  detailChangeHistoryName: undefined as string | undefined,
-  detailBranchName: undefined as string | undefined,
+  detailChangelogName: undefined as string | undefined,
   detailRawSQLSheetName: undefined as string | undefined,
 });
 
@@ -102,11 +96,8 @@ const handleRemoveChange = async (change: Change) => {
 };
 const handleSelectChange = async (change: Change) => {
   const sourceType = getChangelistChangeSourceType(change);
-  if (sourceType === "CHANGE_HISTORY") {
-    state.detailChangeHistoryName = change.source;
-  }
-  if (sourceType === "BRANCH") {
-    state.detailBranchName = change.source;
+  if (sourceType === "CHANGELOG") {
+    state.detailChangelogName = change.source;
   }
   if (sourceType === "RAW_SQL") {
     state.detailRawSQLSheetName = change.sheet;

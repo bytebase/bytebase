@@ -10,13 +10,13 @@ roles:
       - bb.branches.get
       - bb.branches.list
       - bb.branches.update
-      - bb.changeHistories.get
-      - bb.changeHistories.list
       - bb.changelists.create
       - bb.changelists.delete
       - bb.changelists.get
       - bb.changelists.list
       - bb.changelists.update
+      - bb.changelogs.get
+      - bb.changelogs.list
       - bb.databaseCatalogs.get
       - bb.databaseCatalogs.update
       - bb.databaseSecrets.delete
@@ -80,6 +80,10 @@ roles:
       - bb.reviewConfigs.get
       - bb.reviewConfigs.list
       - bb.reviewConfigs.update
+      - bb.revisions.create
+      - bb.revisions.delete
+      - bb.revisions.get
+      - bb.revisions.list
       - bb.risks.create
       - bb.risks.delete
       - bb.risks.list
@@ -143,13 +147,13 @@ roles:
       - bb.branches.get
       - bb.branches.list
       - bb.branches.update
-      - bb.changeHistories.get
-      - bb.changeHistories.list
       - bb.changelists.create
       - bb.changelists.delete
       - bb.changelists.get
       - bb.changelists.list
       - bb.changelists.update
+      - bb.changelogs.get
+      - bb.changelogs.list
       - bb.databaseCatalogs.get
       - bb.databaseCatalogs.update
       - bb.databaseSecrets.delete
@@ -213,6 +217,10 @@ roles:
       - bb.reviewConfigs.get
       - bb.reviewConfigs.list
       - bb.reviewConfigs.update
+      - bb.revisions.create
+      - bb.revisions.delete
+      - bb.revisions.get
+      - bb.revisions.list
       - bb.risks.create
       - bb.risks.delete
       - bb.risks.list
@@ -291,13 +299,13 @@ roles:
       - bb.branches.get
       - bb.branches.list
       - bb.branches.update
-      - bb.changeHistories.get
-      - bb.changeHistories.list
       - bb.changelists.create
       - bb.changelists.delete
       - bb.changelists.get
       - bb.changelists.list
       - bb.changelists.update
+      - bb.changelogs.get
+      - bb.changelogs.list
       - bb.databaseCatalogs.get
       - bb.databaseCatalogs.update
       - bb.databaseSecrets.delete
@@ -327,6 +335,10 @@ roles:
       - bb.projects.getIamPolicy
       - bb.projects.setIamPolicy
       - bb.projects.update
+      - bb.revisions.create
+      - bb.revisions.delete
+      - bb.revisions.get
+      - bb.revisions.list
       - bb.rollouts.create
       - bb.rollouts.get
       - bb.rollouts.list
@@ -357,12 +369,12 @@ roles:
       - bb.branches.get
       - bb.branches.list
       - bb.branches.update
-      - bb.changeHistories.get
-      - bb.changeHistories.list
       - bb.changelists.create
       - bb.changelists.get
       - bb.changelists.list
       - bb.changelists.update
+      - bb.changelogs.get
+      - bb.changelogs.list
       - bb.databaseCatalogs.get
       - bb.databases.check
       - bb.databases.get
@@ -383,6 +395,8 @@ roles:
       - bb.plans.list
       - bb.projects.get
       - bb.projects.getIamPolicy
+      - bb.revisions.get
+      - bb.revisions.list
       - bb.rollouts.create
       - bb.rollouts.get
       - bb.rollouts.list
@@ -426,8 +440,8 @@ roles:
     title: Project releaser
     permissions:
       - bb.branches.get
-      - bb.changeHistories.get
       - bb.databaseCatalogs.get
+      - bb.changelogs.get
       - bb.databases.check
       - bb.databases.get
       - bb.databases.getSchema
@@ -443,6 +457,8 @@ roles:
       - bb.plans.list
       - bb.projects.get
       - bb.projects.getIamPolicy
+      - bb.revisions.get
+      - bb.revisions.list
       - bb.rollouts.get
       - bb.rollouts.list
       - bb.sheets.get

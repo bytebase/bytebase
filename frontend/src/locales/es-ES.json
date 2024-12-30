@@ -14,7 +14,7 @@
     "custom": "Personalizado",
     "im": "IM",
     "overview": "Resumen",
-    "change-history": "Historial de cambios",
+    "changelog": "Historial de cambios",
     "webhook": "Webhook",
     "webhooks": "Webhooks",
     "key": "Clave",
@@ -350,7 +350,7 @@
     "started": "Iniciado",
     "ended": "Finalizado",
     "view-change": "Ver cambio",
-    "view-change-history": "Ver historial de cambios",
+    "view-changelog": "Ver historial de cambios",
     "status": {
       "running": "Ejecutándose",
       "failed": "Fallido",
@@ -1230,7 +1230,6 @@
     },
     "sql-hint": {
       "change-will-apply-to-all-tasks-in-tenant-mode": "El cambio se aplicará a todas las tareas",
-      "dont-apply-to-database-in-baseline-migration": "La creación de la línea base solo registra el esquema actual en el historial de cambios y no aplica SQL a la base de datos",
       "snowflake": "Use <<schema>>.<<table>> para especificar una tabla Snowflake"
     },
     "will-rollback": "Esta tarea revertirá {link}",
@@ -1776,7 +1775,7 @@
       "mark-env-as-production": "Marcar como entorno de producción"
     }
   },
-  "change-history": {
+  "changelog": {
     "self": "Historial de cambios",
     "select": "La versión del esquema se registra cada vez que se aplica un cambio de esquema a través de Bytebase",
     "workflow": "Flujo de trabajo",
@@ -1787,23 +1786,17 @@
     "schema-drift-detected": "Se detectó una desviación de esquema.",
     "view-drift": "Ver desviación",
     "before-left-schema-choice": "Comparar el esquema",
-    "left-schema-choice-prev-history-schema": "después del cambio anterior",
-    "left-schema-choice-current-history-schema-prev": "antes de este cambio",
     "after-left-schema-choice": "y después de este cambio",
     "show-diff": "Mostrar diferencias",
     "left-vs-right": "Anterior {prevLink} vs Esta versión",
     "schema-snapshot-after-change": "La instantánea de esquema registrada después de aplicar este cambio",
     "current-schema-empty": "El esquema actual está vacío",
-    "list-limit": "Para la base de datos que tiene historial de cambios, listamos hasta 5 historiales más recientes a continuación. Puede hacer clic en el nombre de la base de datos para ver todos los historiales.",
-    "no-history-in-project": "No se encontró historial de cambios en ninguna base de datos en este proyecto.",
-    "recording-info": "El historial de cambios se registra cada vez que se altera el esquema de la base de datos.",
     "establish-baseline": "Establecer nueva línea base",
-    "refreshing-history": "Refrescando historial...",
+    "refreshing": "Refrescando historial...",
     "config-instance": "Configurar instancia",
     "establish-baseline-description": "Bytebase usará el esquema actual como la nueva línea base. Esto reconciliará el estado actual del esquema con el estado del esquema registrado en Bytebase y corregirá la deriva del esquema informado. Solo debe hacer esto si el esquema actual refleja el estado deseado.",
     "establish-database-baseline": "Establecer línea base de \"{name}\"",
     "instance-missing-change-schema": "Esquema de historial de cambios faltante en la instancia \"{name}\".",
-    "instance-bad-connection": "No se pudo conectar la instancia \"{name}\" para recuperar el historial de cambios.",
     "contact-dba": "Por favor, contacte a su DBA para configurarlo",
     "export": "Exportar historial de cambios",
     "need-to-select-first": "Necesita seleccionar primero el historial de cambios",
@@ -3760,8 +3753,8 @@
     "apply-to-database": "Aplicar a la base de datos",
     "add-change": {
       "self": "Agregar cambio",
-      "change-history": {
-        "select-at-least-one-history-below": "Seleccione al menos un historial a continuación"
+      "changelog": {
+        "select-at-least-one-changelog-below": "Seleccione al menos un historial a continuación"
       },
       "branch": {
         "select-at-least-one-branch-below": "Seleccione al menos una sucursal a continuación"
@@ -3770,9 +3763,6 @@
     "change-source": {
       "self": "Cambiar fuente",
       "raw-sql": "SQL sin formato",
-      "change-history": {
-        "tables": "Mesas"
-      },
       "source": "Fuente",
       "filter": "Filtrar por problema o versión"
     },

@@ -71,7 +71,7 @@
         "batch-change-basic-tooltip": "Multi-environment change",
         "batch-change-advanced": "Advanced",
         "batch-change-advanced-tooltip": "Multi-environment + Multi-region / Multi-tenancy change",
-        "change-history": "Change history",
+        "changelog": "Changelog",
         "rollout-policy": "Rollout policy",
         "rollout-policy-basic": "Basic",
         "rollout-policy-basic-tooltip": "Automatic rollout",

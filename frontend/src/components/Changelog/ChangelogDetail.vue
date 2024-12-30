@@ -1,6 +1,12 @@
 <template>
   <div class="focus:outline-none" tabindex="0" v-bind="$attrs">
     <NoPermissionPlaceholder v-if="!hasPermission" />
+    <div
+      v-if="state.loading"
+      class="flex items-center justify-center py-2 text-gray-400 text-sm"
+    >
+      <BBSpin />
+    </div>
     <main v-else-if="changelog" class="flex flex-col relative gap-y-6">
       <!-- Highlight Panel -->
       <div
@@ -10,12 +16,15 @@
           <!-- Summary -->
           <div class="flex items-center space-x-2">
             <ChangelogStatusIcon :status="changelog.status" />
-            <h1 class="text-xl font-bold leading-6 text-main truncate">
-              {{ $t("common.version") }} {{ changelog.version }}
-            </h1>
             <NTag round>
               {{ changelog_TypeToJSON(changelog.type) }}
             </NTag>
+            <NTag v-if="changelog.version" round>
+              {{ $t("common.version") }} {{ changelog.version }}
+            </NTag>
+            <span class="text-xl">{{
+              getDateForPbTimestamp(changelog.createTime)?.toLocaleString()
+            }}</span>
           </div>
           <dl
             class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
@@ -41,141 +50,75 @@
               >
               {{ creator.title }}
             </dd>
-            <dt class="sr-only">{{ $t("common.created-at") }}</dt>
-            <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel"
-                >{{ $t("common.created-at") }}&nbsp;-&nbsp;</span
-              >
-              {{ humanizeDate(getDateForPbTimestamp(changelog.createTime)) }}
-            </dd>
           </dl>
         </div>
       </div>
 
-      <div v-if="affectedTables.length > 0">
-        <span class="flex items-center text-lg text-main capitalize">
-          {{ $t("change-history.affected-tables") }}
-        </span>
-        <div>
-          <span
-            v-for="(affectedTable, i) in affectedTables"
-            :key="`${i}.${affectedTable.schema}.${affectedTable.table}`"
-            :class="[
-              'mr-3 mb-2',
-              !affectedTable.dropped
-                ? 'text-blue-600 cursor-pointer hover:opacity-80'
-                : 'mb-2 text-gray-400 italic',
-            ]"
-            @click="handleAffectedTableClick(affectedTable)"
-            >{{ getAffectedTableDisplayName(affectedTable) }}</span
-          >
-        </div>
-      </div>
-
       <div class="flex flex-col gap-y-6">
+        <div v-if="affectedTables.length > 0">
+          <span class="flex items-center text-lg text-main capitalize">
+            {{ $t("changelog.affected-tables") }}
+          </span>
+          <div class="flex flex-wrap gap-x-3 gap-y-2">
+            <span
+              v-for="(affectedTable, i) in affectedTables"
+              :key="`${i}.${affectedTable.schema}.${affectedTable.table}`"
+              :class="[
+                !affectedTable.dropped
+                  ? 'text-blue-600 cursor-pointer'
+                  : 'mb-2 text-gray-400 italic',
+              ]"
+            >
+              {{ getAffectedTableDisplayName(affectedTable) }}
+            </span>
+          </div>
+        </div>
         <div class="flex flex-col gap-y-2">
-          <a
-            id="statement"
-            href="#statement"
-            class="w-auto flex items-center text-lg text-main mb-2 hover:underline"
-          >
+          <p class="flex items-center text-lg text-main capitalize">
             {{ $t("common.statement") }}
             <button
               tabindex="-1"
               class="btn-icon ml-1"
               @click.prevent="copyStatement"
             >
-              <heroicons-outline:clipboard class="w-6 h-6" />
+              <ClipboardIcon class="w-5 h-5" />
             </button>
-          </a>
+          </p>
           <MonacoEditor
             class="h-auto max-h-[480px] min-h-[120px] border rounded-[3px] text-sm overflow-clip relative"
             :content="changelogStatement"
             :readonly="true"
             :auto-height="{ min: 120, max: 480 }"
           />
-          <div v-if="guessedIsBasicView">
-            <NButton
-              quaternary
-              size="small"
-              :disabled="state.loading"
-              @click="fetchFullChangelogs"
-            >
-              <template #icon>
-                <BBSpin v-if="state.loading" />
-                <ChevronDownIcon v-else class="w-5" />
-              </template>
-              {{ $t("change-history.view-full") }}
-            </NButton>
-          </div>
         </div>
         <div v-if="showSchemaSnapshot" class="flex flex-col gap-y-2">
-          <a
-            id="schema"
-            href="#schema"
-            class="flex items-center text-lg text-main hover:underline capitalize"
-          >
+          <p class="flex items-center text-lg text-main capitalize">
             Schema {{ $t("common.snapshot") }}
             <button
               tabindex="-1"
               class="btn-icon ml-1"
               @click.prevent="copySchema"
             >
-              <heroicons-outline:clipboard class="w-6 h-6" />
+              <ClipboardIcon class="w-5 h-5" />
             </button>
-          </a>
-
-          <div v-if="hasDrift" class="flex items-center gap-x-2">
-            <div class="flex items-center text-sm font-normal">
-              <heroicons-outline:exclamation-circle
-                class="w-5 h-5 mr-0.5 text-error"
-              />
-              <span>{{ $t("change-history.schema-drift-detected") }}</span>
-            </div>
-            <div
-              class="normal-link text-sm"
-              data-label="bb-changelog-view-drift-button"
-              @click="state.viewDrift = true"
-            >
-              {{ $t("change-history.view-drift") }}
-            </div>
-          </div>
-
+          </p>
           <div class="flex flex-row items-center gap-x-2">
             <div v-if="allowShowDiff" class="flex space-x-1 items-center">
               <NSwitch
                 :value="state.showDiff"
                 size="small"
-                :disabled="state.loading"
                 data-label="bb-changelog-diff-switch"
-                @update:value="switchShowDiff"
+                @update:value="state.showDiff = $event"
               />
               <span class="text-sm font-semibold">
-                {{ $t("change-history.show-diff") }}
+                {{ $t("changelog.show-diff") }}
               </span>
             </div>
             <div class="textinfolabel">
-              <i18n-t
-                v-if="state.showDiff"
-                tag="span"
-                keypath="change-history.left-vs-right"
-              >
-                <template #prevLink>
-                  <router-link
-                    v-if="previousChangelog"
-                    class="normal-link"
-                    :to="previousChangelogLink"
-                  >
-                    ({{ previousChangelog.version }})
-                  </router-link>
-                </template>
-              </i18n-t>
-              <template v-else>
-                {{ $t("change-history.schema-snapshot-after-change") }}
-              </template>
+              {{ $t("changelog.schema-snapshot-after-change") }}
             </div>
             <div v-if="!allowShowDiff" class="text-sm font-normal text-accent">
-              ({{ $t("change-history.no-schema-change") }})
+              ({{ $t("changelog.no-schema-change") }})
             </div>
           </div>
 
@@ -187,107 +130,39 @@
             :readonly="true"
             :auto-height="{ min: 120, max: 600 }"
           />
-          <template v-else>
-            <div v-if="changelog.schema" class="space-y-2">
-              <MonacoEditor
-                class="h-auto max-h-[600px] min-h-[120px] border rounded-md text-sm overflow-clip relative"
-                :content="changelogSchema"
-                :readonly="true"
-                :auto-height="{ min: 120, max: 600 }"
-              />
-              <div
-                v-if="
-                  getStatementSize(changelog.schema).ne(changelog.schemaSize)
-                "
-              >
-                <NButton
-                  quaternary
-                  size="small"
-                  :disabled="state.loading"
-                  @click="fetchFullChangelogs"
-                >
-                  <template #icon>
-                    <BBSpin v-if="state.loading" />
-                    <ChevronDownIcon v-else class="w-5" />
-                  </template>
-                  {{ $t("change-history.view-full") }}
-                </NButton>
-              </div>
-            </div>
-            <div v-else>
-              {{ $t("change-history.current-schema-empty") }}
-            </div>
-          </template>
+          <MonacoEditor
+            v-else-if="changelog.schema"
+            class="h-auto max-h-[600px] min-h-[120px] border rounded-md text-sm overflow-clip relative"
+            :content="changelogSchema"
+            :readonly="true"
+            :auto-height="{ min: 120, max: 600 }"
+          />
+          <div v-else>
+            {{ $t("changelog.current-schema-empty") }}
+          </div>
         </div>
       </div>
     </main>
-
-    <BBModal
-      v-if="changelog && previousChangelog && state.viewDrift"
-      @close="state.viewDrift = false"
-    >
-      <template #title>
-        <span>{{ $t("change-history.schema-drift") }}</span>
-        <span class="mx-2">-</span>
-        <i18n-t tag="span" keypath="change-history.left-vs-right">
-          <template #prevLink>
-            <router-link class="normal-link" :to="previousChangelogLink">
-              ({{ previousChangelog.version }})
-            </router-link>
-          </template>
-        </i18n-t>
-      </template>
-
-      <div
-        class="space-y-4 flex flex-col overflow-hidden"
-        style="width: calc(100vw - 10rem); height: calc(100vh - 12rem)"
-      >
-        <DiffEditor
-          class="flex-1 w-full border rounded-md overflow-clip"
-          :original="previousChangelog.schema"
-          :modified="changelog.schema"
-          :readonly="true"
-        />
-        <div class="flex justify-end">
-          <NButton type="primary" @click.prevent="state.viewDrift = false">
-            {{ $t("common.close") }}
-          </NButton>
-        </div>
-      </div>
-    </BBModal>
   </div>
-
-  <TableDetailDrawer
-    :show="!!selectedAffectedTable"
-    :database-name="database.name"
-    :schema-name="selectedAffectedTable?.schema ?? ''"
-    :table-name="selectedAffectedTable?.table ?? ''"
-    :classification-config="classificationConfig"
-    @dismiss="selectedAffectedTable = undefined"
-  />
 </template>
 
 <script lang="ts" setup>
-import { useTitle } from "@vueuse/core";
-import { ChevronDownIcon } from "lucide-vue-next";
-import { NButton, NSwitch, NTag } from "naive-ui";
-import { computed, reactive, watch, ref, unref } from "vue";
-import { BBModal, BBSpin } from "@/bbkit";
+import { ClipboardIcon } from "lucide-vue-next";
+import { NSwitch, NTag } from "naive-ui";
+import { computed, reactive, watch, unref } from "vue";
+import { BBSpin } from "@/bbkit";
 import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
-import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
 import {
   pushNotification,
   useChangelogStore,
   useDBSchemaV1Store,
   useUserStore,
-  useSettingV1Store,
   useDatabaseV1ByName,
 } from "@/store";
-import { getDateForPbTimestamp, type AffectedTable } from "@/types";
+import { getDateForPbTimestamp } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { Changelog } from "@/types/proto/v1/database_service";
 import {
-  Changelog_Type,
   changelog_TypeToJSON,
   ChangelogView,
 } from "@/types/proto/v1/database_service";
@@ -300,17 +175,15 @@ import {
   getAffectedTableDisplayName,
 } from "@/utils";
 import {
-  changelogLink,
-  extractChangelogUID,
   getAffectedTablesOfChangelog,
+  getChangelogChangeType,
 } from "@/utils/v1/changelog";
 import NoPermissionPlaceholder from "../misc/NoPermissionPlaceholder.vue";
 import ChangelogStatusIcon from "./ChangelogStatusIcon.vue";
 
 interface LocalState {
-  showDiff: boolean;
-  viewDrift: boolean;
   loading: boolean;
+  showDiff: boolean;
 }
 
 const props = defineProps<{
@@ -319,103 +192,41 @@ const props = defineProps<{
   changelogId: string;
 }>();
 
-const state = reactive<LocalState>({
-  showDiff: false,
-  viewDrift: false,
-  loading: false,
-});
-
 const dbSchemaStore = useDBSchemaV1Store();
-const settingStore = useSettingV1Store();
 const changelogStore = useChangelogStore();
-const selectedAffectedTable = ref<AffectedTable | undefined>();
+const state = reactive<LocalState>({
+  loading: false,
+  showDiff: false,
+});
 
 const { database } = useDatabaseV1ByName(props.database);
 
 const hasPermission = computed(() =>
-  hasProjectPermissionV2(database.value.projectEntity, "bb.changeHistories.get")
+  hasProjectPermissionV2(database.value.projectEntity, "bb.changelogs.get")
 );
-
-const classificationConfig = computed(() => {
-  return settingStore.getProjectClassification(
-    database.value.projectEntity.dataClassificationConfigId
-  );
-});
 
 const changelogName = computed(() => {
   return `${props.database}/changelogs/${props.changelogId}`;
-});
-
-const affectedTables = computed(() => {
-  if (changelog.value === undefined) {
-    return [];
-  }
-  return getAffectedTablesOfChangelog(changelog.value);
-});
-
-const showSchemaSnapshot = computed(() => {
-  return database.value.instanceResource.engine !== Engine.RISINGWAVE;
-});
-
-watch(
-  [database.value.name, changelogName],
-  async ([_, name]) => {
-    await Promise.all([
-      dbSchemaStore.getOrFetchDatabaseMetadata({
-        database: database.value.name,
-        skipCache: false,
-      }),
-      changelogStore.getOrFetchChangelogByName(
-        unref(name),
-        ChangelogView.CHANGELOG_VIEW_FULL
-      ),
-    ]);
-  },
-  { immediate: true }
-);
-
-const switchShowDiff = async (showDiff: boolean) => {
-  await fetchFullChangelogs();
-  state.showDiff = showDiff;
-};
-
-const handleAffectedTableClick = (affectedTable: AffectedTable): void => {
-  if (affectedTable.dropped) {
-    return;
-  }
-  selectedAffectedTable.value = affectedTable;
-};
-
-// get all change histories before (include) the one of given id, ordered by descending version.
-const prevChangelogList = computed(() => {
-  const changelogList = changelogStore.changelogListByDatabase(
-    database.value.name
-  );
-
-  // The returned changelog list has been ordered by `id` DESC or (`namespace` ASC, `sequence` DESC) .
-  // We can obtain prevChangelogList by cutting up the array by the `changeHistoryId`.
-  const idx = changelogList.findIndex(
-    (changelog) => extractChangelogUID(changelog.name) === props.changelogId
-  );
-  if (idx === -1) {
-    return [];
-  }
-  return changelogList.slice(idx);
 });
 
 const changelog = computed((): Changelog | undefined => {
   return changelogStore.getChangelogByName(changelogName.value);
 });
 
+const creator = computed(() => {
+  if (!changelog.value) {
+    return undefined;
+  }
+  return useUserStore().getUserByEmail(
+    extractUserResourceName(changelog.value.creator)
+  );
+});
+
 const changelogSchema = computed(() => {
   if (!changelog.value) {
     return "";
   }
-  let schema = changelog.value.schema;
-  if (guessedIsBasicView.value) {
-    schema = `${schema}${schema.endsWith("\n") ? "" : "\n"}...`;
-  }
-  return schema;
+  return changelog.value.schema;
 });
 
 const changelogStatement = computed(() => {
@@ -433,46 +244,15 @@ const changelogStatement = computed(() => {
   return statement;
 });
 
-// previousChangelog is the last changelog before the one of given id.
-// Only referenced if hasDrift is true.
-const previousChangelog = computed((): Changelog | undefined => {
-  const prev = prevChangelogList.value[1];
-  if (!prev) return undefined;
-  return changelogStore.getChangelogByName(prev.name) ?? prev;
+const affectedTables = computed(() => {
+  if (changelog.value === undefined) {
+    return [];
+  }
+  return getAffectedTablesOfChangelog(changelog.value);
 });
 
-const fetchFullPreviousChangelog = async () => {
-  const prev = previousChangelog.value;
-  if (!prev) return;
-  await changelogStore.getOrFetchChangelogByName(
-    prev.name,
-    ChangelogView.CHANGELOG_VIEW_FULL
-  );
-};
-
-const fetchFullChangelogs = async () => {
-  if (state.loading) {
-    return;
-  }
-  state.loading = true;
-  try {
-    await Promise.all([
-      changelogStore.getOrFetchChangelogByName(
-        changelogName.value,
-        ChangelogView.CHANGELOG_VIEW_FULL
-      ),
-      fetchFullPreviousChangelog(),
-    ]);
-  } finally {
-    state.loading = false;
-  }
-};
-
-const guessedIsBasicView = computed(() => {
-  if (!changelog.value) return true;
-  return getStatementSize(changelog.value.statement).ne(
-    changelog.value.statementSize
-  );
+const showSchemaSnapshot = computed(() => {
+  return database.value.instanceResource.engine !== Engine.RISINGWAVE;
 });
 
 // "Show diff" feature is enabled when current migration has changed the schema.
@@ -480,45 +260,10 @@ const allowShowDiff = computed((): boolean => {
   if (!changelog.value) {
     return false;
   }
-  return true;
-});
-
-// A schema drift is detected when the schema AFTER previousChangelog has been
-// changed unexpectedly BEFORE current changelog.
-const hasDrift = computed((): boolean => {
-  if (!changelog.value) {
-    return false;
-  }
-  if (changelog.value.type === Changelog_Type.BASELINE) {
-    return false;
-  }
-  if (guessedIsBasicView.value) {
-    return false;
-  }
-
-  return (
-    prevChangelogList.value.length > 1 && // no drift if no previous changelog
-    previousChangelog.value?.schema !== changelog.value.prevSchema
-  );
-});
-
-const creator = computed(() => {
-  if (!changelog.value) {
-    return undefined;
-  }
-  const email = extractUserResourceName(changelog.value.creator);
-  return useUserStore().getUserByEmail(email);
-});
-
-const previousChangelogLink = computed(() => {
-  const previous = previousChangelog.value;
-  if (!previous) return "";
-  return changelogLink(previous);
+  return getChangelogChangeType(changelog.value.type) === "DDL";
 });
 
 const copyStatement = async () => {
-  await fetchFullChangelogs();
-
   if (!changelogStatement.value) {
     return false;
   }
@@ -532,8 +277,6 @@ const copyStatement = async () => {
 };
 
 const copySchema = async () => {
-  await fetchFullChangelogs();
-
   if (!changelogSchema.value) {
     return false;
   }
@@ -547,16 +290,21 @@ const copySchema = async () => {
 };
 
 watch(
-  guessedIsBasicView,
-  (basic) => {
-    if (!basic) {
-      fetchFullPreviousChangelog();
-    }
+  [database.value.name, changelogName],
+  async ([_, name]) => {
+    state.loading = true;
+    await Promise.all([
+      dbSchemaStore.getOrFetchDatabaseMetadata({
+        database: database.value.name,
+        skipCache: false,
+      }),
+      changelogStore.getOrFetchChangelogByName(
+        unref(name),
+        ChangelogView.CHANGELOG_VIEW_FULL
+      ),
+    ]);
+    state.loading = false;
   },
-  {
-    immediate: true,
-  }
+  { immediate: true }
 );
-
-useTitle(changelog.value?.version || "Changelog");
 </script>

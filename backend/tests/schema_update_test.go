@@ -91,41 +91,38 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_DATA)
 	a.NoError(err)
 
-	// Get migration history.
-	resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
+	resp, err := ctl.databaseServiceClient.ListChangelogs(ctx, &v1pb.ListChangelogsRequest{
 		Parent: database.Name,
-		View:   v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
 	})
 	a.NoError(err)
-	histories := resp.ChangeHistories
-	wantHistories := []*v1pb.ChangeHistory{
+	changelogs := resp.Changelogs
+	wantChangelogs := []*v1pb.Changelog{
 		{
-			Source:     v1pb.ChangeHistory_UI,
-			Type:       v1pb.ChangeHistory_DATA,
-			Status:     v1pb.ChangeHistory_DONE,
+			Type:       v1pb.Changelog_DATA,
+			Status:     v1pb.Changelog_DONE,
 			Schema:     "",
 			PrevSchema: "",
+			Version:    "",
 		},
 		{
-			Source:     v1pb.ChangeHistory_UI,
-			Type:       v1pb.ChangeHistory_MIGRATE,
-			Status:     v1pb.ChangeHistory_DONE,
+			Type:       v1pb.Changelog_MIGRATE,
+			Status:     v1pb.Changelog_DONE,
 			Schema:     dumpedSchema,
 			PrevSchema: "",
+			Version:    "",
 		},
 	}
-	a.Equal(len(wantHistories), len(histories))
-	for i, history := range histories {
-		got := &v1pb.ChangeHistory{
-			Source:     history.Source,
-			Type:       history.Type,
-			Status:     history.Status,
-			Schema:     history.Schema,
-			PrevSchema: history.PrevSchema,
+	a.Equal(len(wantChangelogs), len(changelogs))
+	for i, changelog := range changelogs {
+		got := &v1pb.Changelog{
+			Type:       changelog.Type,
+			Status:     changelog.Status,
+			Schema:     changelog.Schema,
+			PrevSchema: changelog.PrevSchema,
+			Version:    changelog.Version,
 		}
-		want := wantHistories[i]
+		want := wantChangelogs[i]
 		a.Equal(want, got)
-		a.NotEqual(history.Version, "")
 	}
 }
 

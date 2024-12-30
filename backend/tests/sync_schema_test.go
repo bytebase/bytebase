@@ -105,15 +105,12 @@ DROP SCHEMA "schema_a";
 	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 	a.NoError(err)
 
-	resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
+	resp, err := ctl.databaseServiceClient.ListChangelogs(ctx, &v1pb.ListChangelogsRequest{
 		Parent: database.Name,
-		View:   v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
 	})
 	a.NoError(err)
-	histories := resp.ChangeHistories
-	// history[0] is SchemaUpdate.
-	a.Equal(1, len(histories))
-	latest := histories[0]
+	changelogs := resp.Changelogs
+	a.Equal(1, len(changelogs))
 
 	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, newDatabaseName, "bytebase", nil)
 	a.NoError(err)
@@ -129,7 +126,7 @@ DROP SCHEMA "schema_a";
 	a.NoError(err)
 
 	diff, err := ctl.getSchemaDiff(ctx, &v1pb.DiffSchemaRequest{
-		Name: latest.Name,
+		Name: database.Name,
 		Target: &v1pb.DiffSchemaRequest_Schema{
 			Schema: newDatabaseSchema.Schema,
 		},

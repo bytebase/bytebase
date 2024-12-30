@@ -92,11 +92,6 @@ type migrateContext struct {
 }
 
 func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int, taskRunUID int, dbFactory *dbfactory.DBFactory) (*db.MigrationInfo, *migrateContext, error) {
-	if !(common.IsDev() && profile.DevelopmentVersioned) {
-		if schemaVersion.Version == "" {
-			return nil, nil, errors.Errorf("empty schema version")
-		}
-	}
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return nil, nil, err
@@ -351,7 +346,7 @@ func doMigration(
 	return migrationID, schema, nil
 }
 
-func postMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInfo, mc *migrateContext, migrationID string, sheetID *int) (bool, *storepb.TaskRunResult, error) {
+func postMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInfo, mc *migrateContext) (bool, *storepb.TaskRunResult, error) {
 	instance := mc.instance
 	database := mc.database
 
@@ -371,23 +366,19 @@ func postMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInf
 	)
 
 	// Set schema config.
-	if sheetID != nil && mc.task.DatabaseID != nil {
-		sheet, err := stores.GetSheet(ctx, &store.FindSheetMessage{
-			UID: sheetID,
-		})
-		if err != nil {
-			slog.Error("Failed to get sheet from store", slog.Int("sheetID", *sheetID), log.BBError(err))
-		} else if sheet.Payload != nil && (sheet.Payload.DatabaseConfig != nil || sheet.Payload.BaselineDatabaseConfig != nil) {
+	if mc.sheet != nil && mc.task.DatabaseID != nil {
+		sheet := mc.sheet
+		if sheet.Payload != nil && (sheet.Payload.DatabaseConfig != nil || sheet.Payload.BaselineDatabaseConfig != nil) {
 			databaseSchema, err := stores.GetDBSchema(ctx, *mc.task.DatabaseID)
 			if err != nil {
-				slog.Error("Failed to get database config from store", slog.Int("sheetID", *sheetID), slog.Int("databaseUID", *mc.task.DatabaseID), log.BBError(err))
+				slog.Error("Failed to get database config from store", slog.Int("sheetID", sheet.UID), slog.Int("databaseUID", *mc.task.DatabaseID), log.BBError(err))
 			} else {
 				updatedDatabaseConfig := utils.MergeDatabaseConfig(sheet.Payload.DatabaseConfig, sheet.Payload.BaselineDatabaseConfig, databaseSchema.GetConfig())
 				err = stores.UpdateDBSchema(ctx, *mc.task.DatabaseID, &store.UpdateDBSchemaMessage{
 					Config: updatedDatabaseConfig,
 				}, api.SystemBotID)
 				if err != nil {
-					slog.Error("Failed to update database config", slog.Int("sheetID", *sheetID), slog.Int("databaseUID", *mc.task.DatabaseID), log.BBError(err))
+					slog.Error("Failed to update database config", slog.Int("sheetID", sheet.UID), slog.Int("databaseUID", *mc.task.DatabaseID), log.BBError(err))
 				}
 			}
 		}
@@ -418,9 +409,9 @@ func postMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInf
 		)
 	}
 	return true, &storepb.TaskRunResult{
-		Detail:        detail,
-		ChangeHistory: fmt.Sprintf("instances/%s/databases/%s/changeHistories/%s", instance.ResourceID, database.DatabaseName, migrationID),
-		Version:       storedVersion,
+		Detail:    detail,
+		Changelog: common.FormatChangelog(instance.ResourceID, database.DatabaseName, mc.changelog),
+		Version:   storedVersion,
 	}, nil
 }
 
@@ -430,11 +421,11 @@ func runMigration(ctx context.Context, driverCtx context.Context, store *store.S
 		return true, nil, err
 	}
 
-	migrationID, _, err := doMigration(ctx, driverCtx, store, stateCfg, profile, statement, mi, mc)
+	_, _, err = doMigration(ctx, driverCtx, store, stateCfg, profile, statement, mi, mc)
 	if err != nil {
 		return true, nil, err
 	}
-	return postMigration(ctx, store, mi, mc, migrationID, sheetID)
+	return postMigration(ctx, store, mi, mc)
 }
 
 // executeMigrationDefault executes migration.
@@ -450,46 +441,13 @@ func executeMigrationDefault(ctx context.Context, driverCtx context.Context, sto
 
 // executeMigrationWithFunc executes the migration with custom migration function.
 func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, driver db.Driver, mi *db.MigrationInfo, mc *migrateContext, statement string, execFunc func(ctx context.Context, execStatement string) error, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
-	var prevSchemaBuf bytes.Buffer
-	if mi.Type.NeedDump() {
-		opts.LogDatabaseSyncStart()
-		// Use new driver to sync the schema to avoid the session state change, such as SET ROLE in PostgreSQL.
-		syncDriver, err := mc.dbFactory.GetAdminDatabaseDriver(ctx, mc.instance, mc.database, db.ConnectionContext{})
-		if err != nil {
-			return "", "", errors.Wrapf(err, "failed to get driver connection for instance %q", mc.instance.ResourceID)
-		}
-		defer syncDriver.Close(ctx)
-		dbSchema, err := syncDriver.SyncDBSchema(ctx)
-		if err != nil {
-			opts.LogDatabaseSyncEnd(err.Error())
-			return "", "", errors.Wrapf(err, "failed to sync database schema")
-		}
-		opts.LogDatabaseSyncEnd("")
-		// Don't record schema if the database hasn't existed yet or is schemaless, e.g. MongoDB.
-		// For baseline migration, we also record the live schema to detect the schema drift.
-		// See https://bytebase.com/blog/what-is-database-schema-drift
-		opts.LogSchemaDumpStart()
-		if err := driver.Dump(ctx, &prevSchemaBuf, dbSchema); err != nil {
-			opts.LogSchemaDumpEnd(err.Error())
-			return "", "", err
-		}
-		opts.LogSchemaDumpEnd("")
-	}
-
-	var sheetID *int
-	if mc.sheet != nil {
-		sheetID = &mc.sheet.UID
-	}
-
-	insertedID, err := beginMigration(ctx, s, mi, mc, prevSchemaBuf.String(), statement, sheetID)
+	insertedID, err := beginMigration(ctx, s, mi, mc, opts)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to begin migration")
 	}
 
-	startedNs := time.Now().UnixNano()
-
 	defer func() {
-		if err := endMigration(ctx, s, startedNs, insertedID, updatedSchema, prevSchemaBuf.String(), mi, mc, sheetID, resErr == nil /* isDone */); err != nil {
+		if err := endMigration(ctx, s, mi, mc, resErr == nil /* isDone */); err != nil {
 			slog.Error("Failed to update migration history record",
 				log.BBError(err),
 				slog.String("migration_id", migrationHistoryID),
@@ -560,7 +518,7 @@ func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 }
 
 // beginMigration checks before executing migration and inserts a migration history record with pending status.
-func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInfo, mc *migrateContext, prevSchema, statement string, sheetID *int) (string, error) {
+func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInfo, mc *migrateContext, opts db.ExecuteOptions) (string, error) {
 	// list revisions and see if it has been applied
 	// we can do this because
 	// versioned migrations are executed one by one
@@ -569,163 +527,106 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 	// users can create revisions though via API
 	// however we can warn users not to unless they know
 	// what they are doing
-	if common.IsDev() && mc.profile.DevelopmentVersioned {
-		if mc.version != "" {
-			list, err := stores.ListRevisions(ctx, &store.FindRevisionMessage{
-				DatabaseUID: &mc.database.UID,
-				Version:     &mc.version,
-			})
-			if err != nil {
-				return "", errors.Wrapf(err, "failed to list revisions")
-			}
-			if len(list) > 0 {
-				return "", errors.Errorf("database %q has already applied version %s, hint: please check the database revisions and the version", mc.database.DatabaseName, mc.version)
-			}
-		}
-
-		// sync history
-		var syncHistoryPrevUID *int64
-		if mi.Type.NeedDump() {
-			syncHistoryPrev, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database, false)
-			if err != nil {
-				return "", errors.Wrapf(err, "failed to sync database metadata and schema")
-			}
-			syncHistoryPrevUID = &syncHistoryPrev
-		}
-
-		// changelog
-		changelogUID, err := stores.CreateChangelog(ctx, &store.ChangelogMessage{
-			DatabaseUID:        mc.database.UID,
-			Status:             store.ChangelogStatusPending,
-			PrevSyncHistoryUID: syncHistoryPrevUID,
-			SyncHistoryUID:     nil,
-			Payload: &storepb.ChangelogPayload{
-				TaskRun:          mc.taskRunName,
-				Issue:            mc.issueName,
-				Revision:         0,
-				ChangedResources: mi.Payload.ChangedResources,
-				Sheet:            mc.sheetName,
-				Version:          mc.version,
-				Type:             convertTaskType(mc.task.Type),
-			}}, api.SystemBotID)
+	if mc.version != "" {
+		list, err := stores.ListRevisions(ctx, &store.FindRevisionMessage{
+			DatabaseUID: &mc.database.UID,
+			Version:     &mc.version,
+		})
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to create changelog")
+			return "", errors.Wrapf(err, "failed to list revisions")
 		}
-		mc.changelog = changelogUID
-
-		return "", nil
-	}
-
-	// Phase 1 - Pre-check before executing migration
-	// Check if the same migration version has already been applied.
-	if list, err := stores.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
-		InstanceID: mi.InstanceID,
-		DatabaseID: mi.DatabaseID,
-		Version:    &mi.Version,
-	}); err != nil {
-		return "", errors.Wrap(err, "failed to check duplicate version")
-	} else if len(list) > 0 {
-		migrationHistory := list[0]
-		switch migrationHistory.Status {
-		case db.Done:
-			return "", common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s, hint: the version might be duplicate, please check the version", mi.Database, mi.Version.Version)
-		case db.Pending:
-			err := errors.Errorf("database %q version %s migration is already in progress", mi.Database, mi.Version.Version)
-			slog.Debug(err.Error())
-			// For force migration, we will ignore the existing migration history and continue to migration.
-			return migrationHistory.UID, nil
-		case db.Failed:
-			err := errors.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version", mi.Database, mi.Version.Version)
-			slog.Debug(err.Error())
-			// For force migration, we will ignore the existing migration history and continue to migration.
-			return migrationHistory.UID, nil
+		if len(list) > 0 {
+			return "", errors.Errorf("database %q has already applied version %s, hint: please check the database revisions and the version", mc.database.DatabaseName, mc.version)
 		}
 	}
 
-	// Phase 2 - Record migration history as PENDING.
-	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
-	insertedID, err := stores.CreatePendingInstanceChangeHistory(ctx, prevSchema, mi, statementRecord, sheetID)
+	// sync history
+	var syncHistoryPrevUID *int64
+	if mi.Type.NeedDump() {
+		opts.LogDatabaseSyncStart()
+		syncHistoryPrev, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database, false)
+		if err != nil {
+			opts.LogDatabaseSyncEnd(err.Error())
+			return "", errors.Wrapf(err, "failed to sync database metadata and schema")
+		}
+		opts.LogDatabaseSyncEnd("")
+		syncHistoryPrevUID = &syncHistoryPrev
+	}
+
+	// create pending changelog
+	changelogUID, err := stores.CreateChangelog(ctx, &store.ChangelogMessage{
+		DatabaseUID:        mc.database.UID,
+		Status:             store.ChangelogStatusPending,
+		PrevSyncHistoryUID: syncHistoryPrevUID,
+		SyncHistoryUID:     nil,
+		Payload: &storepb.ChangelogPayload{
+			TaskRun:          mc.taskRunName,
+			Issue:            mc.issueName,
+			Revision:         0,
+			ChangedResources: mi.Payload.ChangedResources,
+			Sheet:            mc.sheetName,
+			Version:          mc.version,
+			Type:             convertTaskType(mc.task.Type),
+		}}, mi.CreatorID)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "failed to create changelog")
 	}
+	mc.changelog = changelogUID
 
-	return insertedID, nil
+	return "", nil
 }
 
 // endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func endMigration(ctx context.Context, storeInstance *store.Store, startedNs int64, insertedID string, updatedSchema, schemaPrev string, mi *db.MigrationInfo, mc *migrateContext, sheetID *int, isDone bool) error {
-	if common.IsDev() && mc.profile.DevelopmentVersioned {
-		update := &store.UpdateChangelogMessage{
-			UID: mc.changelog,
-		}
-
-		if mi.Type.NeedDump() {
-			syncHistory, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database, false)
-			if err != nil {
-				return errors.Wrapf(err, "failed to sync database metadata and schema")
-			}
-			update.SyncHistoryUID = &syncHistory
-		}
-
-		if isDone {
-			// if isDone, record in revision
-			if mc.version != "" {
-				r := &store.RevisionMessage{
-					DatabaseUID: mc.database.UID,
-					Version:     mc.version,
-					Payload: &storepb.RevisionPayload{
-						Release:     mc.release.release,
-						File:        mc.release.file,
-						Sheet:       "",
-						SheetSha256: "",
-						TaskRun:     mc.taskRunName,
-					},
-				}
-				if mc.sheet != nil {
-					r.Payload.Sheet = mc.sheetName
-					r.Payload.SheetSha256 = mc.sheet.GetSha256Hex()
-				}
-
-				revision, err := storeInstance.CreateRevision(ctx, r, mc.task.CreatorID)
-				if err != nil {
-					return errors.Wrapf(err, "failed to create revision")
-				}
-				update.RevisionUID = &revision.UID
-			}
-			status := store.ChangelogStatusDone
-			update.Status = &status
-		} else {
-			status := store.ChangelogStatusFailed
-			update.Status = &status
-		}
-
-		if err := storeInstance.UpdateChangelog(ctx, update); err != nil {
-			return errors.Wrapf(err, "failed to update changelog")
-		}
-
-		return nil
+func endMigration(ctx context.Context, storeInstance *store.Store, mi *db.MigrationInfo, mc *migrateContext, isDone bool) error {
+	update := &store.UpdateChangelogMessage{
+		UID: mc.changelog,
 	}
 
-	migrationDurationNs := time.Now().UnixNano() - startedNs
-	update := &store.UpdateInstanceChangeHistoryMessage{
-		ID:                  insertedID,
-		ExecutionDurationNs: &migrationDurationNs,
-		// Update the sheet ID just in case it has been updated.
-		Sheet: sheetID,
-		// Update schemaPrev because we might be re-using a previous change history entry.
-		SchemaPrev: &schemaPrev,
+	if mi.Type.NeedDump() {
+		syncHistory, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database, false)
+		if err != nil {
+			return errors.Wrapf(err, "failed to sync database metadata and schema")
+		}
+		update.SyncHistoryUID = &syncHistory
 	}
+
 	if isDone {
-		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
-		status := db.Done
+		// if isDone, record in revision
+		if mc.version != "" {
+			r := &store.RevisionMessage{
+				DatabaseUID: mc.database.UID,
+				Version:     mc.version,
+				Payload: &storepb.RevisionPayload{
+					Release:     mc.release.release,
+					File:        mc.release.file,
+					Sheet:       "",
+					SheetSha256: "",
+					TaskRun:     mc.taskRunName,
+				},
+			}
+			if mc.sheet != nil {
+				r.Payload.Sheet = mc.sheetName
+				r.Payload.SheetSha256 = mc.sheet.GetSha256Hex()
+			}
+
+			revision, err := storeInstance.CreateRevision(ctx, r, mi.CreatorID)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create revision")
+			}
+			update.RevisionUID = &revision.UID
+		}
+		status := store.ChangelogStatusDone
 		update.Status = &status
-		update.Schema = &updatedSchema
 	} else {
-		// Otherwise, update the migration history as 'FAILED', execution_duration.
-		status := db.Failed
+		status := store.ChangelogStatusFailed
 		update.Status = &status
 	}
-	return storeInstance.UpdateInstanceChangeHistory(ctx, update)
+
+	if err := storeInstance.UpdateChangelog(ctx, update); err != nil {
+		return errors.Wrapf(err, "failed to update changelog")
+	}
+
+	return nil
 }
 
 func convertTaskType(t api.TaskType) storepb.ChangelogPayload_Type {

@@ -30,8 +30,7 @@ import { stringify } from "qs";
 import type { PropType } from "vue";
 import { computed, reactive, watch } from "vue";
 import { BBSpin } from "@/bbkit";
-import { databaseServiceClient } from "@/grpcweb";
-import { useIsLoggedIn } from "@/store";
+import { useChangelogStore, useIsLoggedIn } from "@/store";
 import type { ComposedDatabase, SearchChangeLogParams } from "@/types";
 import type { Changelog } from "@/types/proto/v1/database_service";
 
@@ -84,6 +83,7 @@ const state = reactive<LocalState>({
   changelogList: [],
   paginationToken: "",
 });
+const changelogStore = useChangelogStore();
 
 const sessionState = useSessionStorage<SessionState>(props.sessionKey, {
   page: 1,
@@ -132,7 +132,7 @@ const fetchData = async (refresh = false) => {
 
   try {
     const { nextPageToken, changelogs } =
-      await databaseServiceClient.listChangelogs({
+      await changelogStore.fetchChangelogList({
         parent: props.database.name,
         filter: buildFilter(props.searchChangelogs),
         pageSize: expectedRowCount,
