@@ -109,6 +109,7 @@ const {
   testConnection,
   checkDataSource,
   extractDataSourceFromEdit,
+  pendingCreateInstance,
 } = context;
 
 const router = useRouter();
@@ -261,18 +262,8 @@ const doCreate = async () => {
   if (!isCreating.value) {
     return;
   }
-  const instanceCreate: Instance = {
-    ...basicInfo.value,
-    engineVersion: "",
-    dataSources: [],
-  };
-  const adminDataSourceCreate = extractDataSourceFromEdit(
-    instanceCreate,
-    adminDataSource.value
-  );
-  instanceCreate.dataSources = [adminDataSourceCreate];
 
-  if (!checkExternalSecretFeature(instanceCreate.dataSources)) {
+  if (!checkExternalSecretFeature(pendingCreateInstance.value.dataSources)) {
     missingFeature.value = "bb.feature.external-secret-manager";
     return;
   }
@@ -280,8 +271,9 @@ const doCreate = async () => {
   state.value.isRequesting = true;
   try {
     await useGracefulRequest(async () => {
-      const createdInstance =
-        await instanceV1Store.createInstance(instanceCreate);
+      const createdInstance = await instanceV1Store.createInstance(
+        pendingCreateInstance.value
+      );
       // Sync the database list after instance is created.
       useDatabaseV1List(createdInstance.name);
       if (props.onCreated) {

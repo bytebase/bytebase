@@ -301,6 +301,24 @@ export const provideInstanceFormContext = (baseContext: {
     return ds;
   };
 
+  const pendingCreateInstance = computed(() => {
+    // When creating new instance, use
+    // adminDataSource + CreateInstanceRequest.validateOnly = true
+    const instance: Instance = {
+      ...basicInfo.value,
+      engineVersion: "",
+      dataSources: [],
+    };
+    if (editingDataSource.value) {
+      const dataSourceCreate = extractDataSourceFromEdit(
+        instance,
+        adminDataSource.value
+      );
+      instance.dataSources = [dataSourceCreate];
+    }
+    return instance;
+  });
+
   const testConnection = async (
     editingDS: EditDataSource,
     silent = false
@@ -439,6 +457,7 @@ export const provideInstanceFormContext = (baseContext: {
     resetDataSource,
     extractDataSourceFromEdit,
     testConnection,
+    pendingCreateInstance,
   };
   provide(KEY, context);
 

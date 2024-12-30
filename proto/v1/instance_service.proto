@@ -79,6 +79,15 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  rpc ListInstanceDatabase(ListInstanceDatabaseRequest) returns (ListInstanceDatabaseResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=instances/*}:databases"
+      body: "*"
+    };
+    option (bytebase.v1.permission) = "bb.instances.get";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
   rpc BatchSyncInstances(BatchSyncInstancesRequest) returns (BatchSyncInstancesResponse) {
     option (google.api.http) = {
       post: "/v1/instances:batchSync"
@@ -230,6 +239,23 @@ message SyncInstanceRequest {
   // When full sync is enabled, all databases in the instance will be synchronized. Otherwise, only
   // the instance metadata (such as the database list) and any newly discovered instances will be synced.
   bool enable_full_sync = 2;
+}
+
+message ListInstanceDatabaseRequest {
+  // The name of the instance.
+  // Format: instances/{instance}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Instance"}
+  ];
+
+  // The target instance. We need to set this field if the target instance is not created yet.
+  optional Instance instance = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListInstanceDatabaseResponse {
+  // All database name list in the instance.
+  repeated string databases = 1;
 }
 
 message SyncInstanceResponse {

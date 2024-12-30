@@ -352,7 +352,9 @@
         />
 
         <SyncDatabases
-          v-if="!isCreating && instance"
+          v-if="!isCreating"
+          :is-creating="false"
+          :show-label="true"
           :allow-edit="allowEdit"
           :sync-databases="basicInfo.options?.syncDatabases"
           @update:sync-databases="handleChangeSyncDatabases"
@@ -435,6 +437,23 @@
             <span>{{ $t("instance.test-connection") }}</span>
           </NButton>
         </div>
+      </div>
+
+      <div
+        v-if="basicInfo.engine !== Engine.DYNAMODB && isCreating"
+        class="mt-6 pt-4 space-y-1"
+      >
+        <p class="w-full text-lg leading-6 font-medium text-gray-900">
+          {{ $t("instance.sync-databases.self") }}
+        </p>
+
+        <SyncDatabases
+          :is-creating="true"
+          :show-label="false"
+          :allow-edit="allowEdit && !!allowCreate"
+          :sync-databases="basicInfo.options?.syncDatabases"
+          @update:sync-databases="handleChangeSyncDatabases"
+        />
       </div>
     </div>
 
@@ -525,6 +544,7 @@ const {
   adminDataSource,
   editingDataSource,
   testConnection,
+  pendingCreateInstance,
 } = context;
 const { isEngineBeta, defaultPort, instanceLink, allowEditPort } = specs;
 

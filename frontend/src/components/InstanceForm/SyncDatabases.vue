@@ -3,7 +3,7 @@
     v-if="!hideAdvancedFeatures"
     class="sm:col-span-4 sm:col-start-1 flex flex-col gap-y-2"
   >
-    <div class="flex items-center space-x-2">
+    <div v-if="showLabel" class="flex items-center space-x-2">
       <label class="textlabel">
         {{ $t("instance.sync-databases.self") }}
       </label>
@@ -62,7 +62,7 @@
 <script lang="tsx" setup>
 import { NInput, NCheckbox, NTree } from "naive-ui";
 import type { TreeOption } from "naive-ui";
-import { computed, reactive, watch, h, onMounted } from "vue";
+import { computed, reactive, watch, h } from "vue";
 import { BBSpin } from "@/bbkit";
 import { SearchBox } from "@/components/v2";
 import { useInstanceV1Store, useSubscriptionV1Store } from "@/store";
@@ -72,7 +72,9 @@ import { useInstanceFormContext } from "./context";
 
 const props = withDefaults(
   defineProps<{
+    showLabel: boolean;
     allowEdit: boolean;
+    isCreating: boolean;
     syncDatabases?: string[];
   }>(),
   {
@@ -94,7 +96,9 @@ interface LocalState {
 }
 
 const subscriptionStore = useSubscriptionV1Store();
-const { instance, hideAdvancedFeatures } = useInstanceFormContext();
+const { hideAdvancedFeatures, pendingCreateInstance, instance } =
+  useInstanceFormContext();
+const instanceStore = useInstanceV1Store();
 
 const state = reactive<LocalState>({
   syncAll: props.syncDatabases.length === 0,
@@ -105,20 +109,27 @@ const state = reactive<LocalState>({
   inputDatabase: "",
 });
 
+const targetInstance = computed(() => {
+  return props.isCreating ? pendingCreateInstance.value : instance.value;
+});
+
 const hasFeature = computed(() => {
   return subscriptionStore.hasInstanceFeature(
     "bb.feature.custom-instance-synchronization",
-    instance.value
+    targetInstance.value
   );
 });
 
 const fetchAllDatabases = async () => {
-  if (!instance.value) {
+  if (!targetInstance.value) {
     return;
   }
   state.loading = true;
   try {
-    const resp = await instanceStore.syncInstance(instance.value.name, false);
+    const resp = await instanceStore.listInstanceDatabases(
+      targetInstance.value.name,
+      props.isCreating ? targetInstance.value : undefined
+    );
     state.databaseList = new Set([
       ...resp.databases,
       ...state.selectedDatabases,
@@ -128,9 +139,15 @@ const fetchAllDatabases = async () => {
   }
 };
 
-onMounted(fetchAllDatabases);
-
-const instanceStore = useInstanceV1Store();
+watch(
+  () => state.syncAll,
+  async (syncAll) => {
+    if (!syncAll) {
+      await fetchAllDatabases();
+    }
+  },
+  { immediate: true }
+);
 
 const treeData = computed((): TreeOption[] => {
   return [...state.databaseList].map((database) => {
@@ -153,9 +170,6 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
 watch(
   () => state.syncAll,
   async (syncAll) => {
-    if (!instance.value) {
-      return;
-    }
     if (syncAll) {
       emit("update:sync-databases", []);
     } else {
