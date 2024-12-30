@@ -2137,9 +2137,6 @@ CheckConstraintMetadata is the metadata for check constraints.
 | semantic_type_id | [string](#string) |  |  |
 | labels | [ColumnConfig.LabelsEntry](#bytebase-v1-ColumnConfig-LabelsEntry) | repeated | The user labels for a column. |
 | classification_id | [string](#string) |  |  |
-| masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
-| full_masking_algorithm_id | [string](#string) |  |  |
-| partial_masking_algorithm_id | [string](#string) |  |  |
 
 
 
