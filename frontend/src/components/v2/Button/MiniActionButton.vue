@@ -1,5 +1,11 @@
 <template>
-  <NButton quaternary size="tiny" style="--n-padding: 4px" :disabled="disabled">
+  <NButton
+    quaternary
+    size="tiny"
+    style="--n-padding: 4px"
+    :disabled="disabled"
+    v-bind="$attrs"
+  >
     <template #icon>
       <slot />
     </template>

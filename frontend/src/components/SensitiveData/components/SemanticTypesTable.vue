@@ -1,153 +1,36 @@
 <template>
-  <BBGrid
-    :column-list="columnList"
-    :data-source="semanticItemList"
-    :row-clickable="rowClickable"
-    class="border compact"
-    @click-row="(item: SemanticItem) => $emit('select', item.item.id)"
-  >
-    <template #item="{ item, row }: SemanticItemRow">
-      <div class="bb-grid-cell">
-        <h3 v-if="item.mode === 'NORMAL'" class="break-normal">
-          {{ item.item.title }}
-        </h3>
-        <NInput
-          v-else
-          :value="item.item.title"
-          size="small"
-          type="text"
-          :placeholder="
-            $t('settings.sensitive-data.semantic-types.table.semantic-type')
-          "
-          @input="
-            (val: string) => onInput(row, (data) => (data.item.title = val))
-          "
-        />
-      </div>
-      <div class="bb-grid-cell">
-        <h3 v-if="item.mode === 'NORMAL'">
-          {{ item.item.description }}
-        </h3>
-        <NInput
-          v-else
-          :value="item.item.description"
-          size="small"
-          type="text"
-          :placeholder="
-            $t('settings.sensitive-data.semantic-types.table.description')
-          "
-          @input="
-            (val: string) =>
-              onInput(row, (data) => (data.item.description = val))
-          "
-        />
-      </div>
-      <div class="bb-grid-cell">
-        <h3 v-if="item.mode === 'NORMAL'">
-          {{
-            getAlgorithmById(item.item.fullMaskAlgorithmId)?.label ??
-            $t("settings.sensitive-data.algorithms.default")
-          }}
-        </h3>
-        <NSelect
-          v-else
-          :value="item.item.fullMaskAlgorithmId"
-          :options="algorithmList"
-          :consistent-menu-width="false"
-          :placeholder="$t('settings.sensitive-data.algorithms.default')"
-          :fallback-option="
-            (_: string) => ({
-              label: $t('settings.sensitive-data.algorithms.default'),
-              value: '',
-            })
-          "
-          clearable
-          size="small"
-          style="min-width: 7rem; width: auto; overflow-x: hidden"
-          @update:value="
-            onInput(row, (data) => (data.item.fullMaskAlgorithmId = $event))
-          "
-        />
-      </div>
-      <div class="bb-grid-cell">
-        <h3 v-if="item.mode === 'NORMAL'">
-          {{
-            getAlgorithmById(item.item.partialMaskAlgorithmId)?.label ??
-            $t("settings.sensitive-data.algorithms.default")
-          }}
-        </h3>
-        <NSelect
-          v-else
-          :value="item.item.partialMaskAlgorithmId"
-          :options="algorithmList"
-          :consistent-menu-width="false"
-          :placeholder="$t('settings.sensitive-data.algorithms.default')"
-          :fallback-option="
-            (_: string) => ({
-              label: $t('settings.sensitive-data.algorithms.default'),
-              value: '',
-            })
-          "
-          clearable
-          size="small"
-          style="min-width: 7rem; width: auto; overflow-x: hidden"
-          @update:value="
-            onInput(row, (data) => (data.item.partialMaskAlgorithmId = $event))
-          "
-        />
-      </div>
-      <div v-if="!props.readonly" class="bb-grid-cell justify-end">
-        <NPopconfirm
-          v-if="item.mode === 'EDIT'"
-          @positive-click="$emit('remove', row)"
-        >
-          <template #trigger>
-            <MiniActionButton tag="div" @click.stop="">
-              <TrashIcon class="w-4 h-4" />
-            </MiniActionButton>
-          </template>
-          <div class="whitespace-nowrap">
-            {{ $t("settings.sensitive-data.semantic-types.table.delete") }}
-          </div>
-        </NPopconfirm>
+  <NDataTable
+    :data="semanticItemList"
+    :columns="columnList"
+    :striped="true"
+    :bordered="true"
+    :row-props="rowProps"
+    :row-key="(item: SemanticItem) => item.item.id"
+  />
 
-        <MiniActionButton
-          v-if="item.mode !== 'NORMAL'"
-          @click="$emit('cancel', row)"
-        >
-          <Undo2Icon class="w-4 h-4" />
-        </MiniActionButton>
-        <MiniActionButton
-          v-if="item.mode !== 'NORMAL'"
-          type="primary"
-          :disabled="isConfirmDisabled(item)"
-          @click.stop="$emit('confirm', row)"
-        >
-          <CheckIcon class="w-4 h-4" />
-        </MiniActionButton>
-
-        <MiniActionButton
-          v-if="item.mode === 'NORMAL'"
-          @click.stop="item.mode = 'EDIT'"
-        >
-          <PencilIcon class="w-4 h-4" />
-        </MiniActionButton>
-      </div>
-    </template>
-  </BBGrid>
+  <MaskingAlgorithmsCreateDrawer
+    :show="state.showAlgorithmDrawer"
+    :algorithm="state.pendingEditAlgorithm"
+    :readonly="readonly"
+    @apply="onAlgorithmUpsert"
+    @dismiss="onDrawerDismiss"
+  />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { CheckIcon, PencilIcon, TrashIcon, Undo2Icon } from "lucide-vue-next";
-import { NPopconfirm, NSelect, NInput } from "naive-ui";
-import type { SelectOption } from "naive-ui";
-import { computed } from "vue";
+import { NPopconfirm, NSelect, NInput, NDataTable } from "naive-ui";
+import type { SelectOption, DataTableColumn } from "naive-ui";
+import { v4 as uuidv4 } from "uuid";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid } from "@/bbkit";
-import type { BBGridColumn, BBGridRow } from "@/bbkit/types";
 import { MiniActionButton } from "@/components/v2";
 import { useSettingV1Store } from "@/store";
-import type { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
+import {
+  Algorithm,
+  type SemanticTypeSetting_SemanticType,
+} from "@/types/proto/v1/setting_service";
+import { isDev } from "@/utils";
 
 type SemanticItemMode = "NORMAL" | "CREATE" | "EDIT";
 
@@ -157,7 +40,12 @@ export interface SemanticItem {
   item: SemanticTypeSetting_SemanticType;
 }
 
-type SemanticItemRow = BBGridRow<SemanticItem>;
+interface LocalState {
+  showAlgorithmDrawer: boolean;
+  pendingEditAlgorithm: Algorithm;
+  pendingEditSemanticIndex?: number;
+  processing: boolean;
+}
 
 const props = defineProps<{
   readonly: boolean;
@@ -165,48 +53,263 @@ const props = defineProps<{
   rowClickable: boolean;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "select", id: string): void;
   (event: "remove", index: number): void;
   (event: "cancel", index: number): void;
   (event: "confirm", index: number): void;
 }>();
 
+const state = reactive<LocalState>({
+  showAlgorithmDrawer: false,
+  pendingEditAlgorithm: Algorithm.fromPartial({
+    id: uuidv4(),
+  }),
+  processing: false,
+});
+
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
 
+const onDrawerDismiss = () => {
+  state.pendingEditSemanticIndex = undefined;
+  state.showAlgorithmDrawer = false;
+};
+
+const onAlgorithmUpsert = async (maskingAlgorithm: Algorithm) => {
+  if (state.pendingEditSemanticIndex === undefined) {
+    return;
+  }
+  onInput(
+    state.pendingEditSemanticIndex,
+    (data) => (data.item.algorithms = maskingAlgorithm)
+  );
+  emit("confirm", state.pendingEditSemanticIndex);
+  onDrawerDismiss();
+};
+
 const columnList = computed(() => {
-  const columns: BBGridColumn[] = [
+  const columns: DataTableColumn<SemanticItem>[] = [
     {
+      key: "title",
       title: t("settings.sensitive-data.semantic-types.table.semantic-type"),
-      width: "minmax(min-content, auto)",
+      render: (item, row) => {
+        if (item.mode === "NORMAL") {
+          return <h3 class="break-normal">{item.item.title}</h3>;
+        }
+        return (
+          <NInput
+            value={item.item.title}
+            size="small"
+            type="text"
+            placeholder={t(
+              "settings.sensitive-data.semantic-types.table.semantic-type"
+            )}
+            onInput={(val: string) =>
+              onInput(row, (data) => (data.item.title = val))
+            }
+          />
+        );
+      },
     },
     {
+      key: "description",
       title: t("settings.sensitive-data.semantic-types.table.description"),
       width: "minmax(min-content, auto)",
-    },
-    {
-      title: t(
-        "settings.sensitive-data.semantic-types.table.full-masking-algorithm"
-      ),
-      width: "minmax(min-content, auto)",
-    },
-    {
-      title: t(
-        "settings.sensitive-data.semantic-types.table.partial-masking-algorithm"
-      ),
-      width: "minmax(min-content, auto)",
+      render: (item, row) => {
+        if (item.mode === "NORMAL") {
+          return <h3>{item.item.description}</h3>;
+        }
+        return (
+          <NInput
+            value={item.item.description}
+            size="small"
+            type="text"
+            placeholder={t(
+              "settings.sensitive-data.semantic-types.table.description"
+            )}
+            onInput={(val: string) =>
+              onInput(row, (data) => (data.item.description = val))
+            }
+          />
+        );
+      },
     },
   ];
+  if (isDev()) {
+    columns.push({
+      key: "algorithm",
+      title: t(
+        "settings.sensitive-data.semantic-types.table.masking-algorithm"
+      ),
+      width: "minmax(min-content, auto)",
+      render: (item, row) => {
+        return (
+          <div class="flex items-center space-x-1">
+            <h3>
+              {item.item.algorithms?.title ??
+                t("settings.sensitive-data.algorithms.default")}
+            </h3>
+            {!props.readonly && (
+              <MiniActionButton
+                onClick={() => {
+                  state.pendingEditAlgorithm =
+                    item.item.algorithms ??
+                    Algorithm.fromPartial({
+                      id: uuidv4(),
+                    });
+                  state.pendingEditSemanticIndex = row;
+                  state.showAlgorithmDrawer = true;
+                }}
+              >
+                <PencilIcon class="w-4 h-4" />
+              </MiniActionButton>
+            )}
+          </div>
+        );
+      },
+    });
+  } else {
+    columns.push(
+      {
+        key: "full-masking-algorithm",
+        title: t(
+          "settings.sensitive-data.semantic-types.table.full-masking-algorithm"
+        ),
+        width: "minmax(min-content, auto)",
+        render: (item, row) => {
+          if (item.mode === "NORMAL") {
+            return (
+              <h3>
+                {getAlgorithmById(item.item.fullMaskAlgorithmId)?.label ??
+                  t("settings.sensitive-data.algorithms.default")}
+              </h3>
+            );
+          }
+
+          return (
+            <NSelect
+              value={item.item.fullMaskAlgorithmId}
+              options={algorithmList.value}
+              consistentMenuWidth={false}
+              placeholder={t("settings.sensitive-data.algorithms.default")}
+              fallbackOption={(_: string) => ({
+                label: t("settings.sensitive-data.algorithms.default"),
+                value: "",
+              })}
+              clearable
+              size="small"
+              style="min-width: 7rem; width: auto; overflow-x: hidden"
+              onUpdateValue={(val) =>
+                onInput(row, (data) => (data.item.fullMaskAlgorithmId = val))
+              }
+            />
+          );
+        },
+      },
+      {
+        key: "partial-masking-algorithm",
+        title: t(
+          "settings.sensitive-data.semantic-types.table.partial-masking-algorithm"
+        ),
+        width: "minmax(min-content, auto)",
+        render: (item, row) => {
+          if (item.mode === "NORMAL") {
+            return (
+              <h3>
+                {getAlgorithmById(item.item.partialMaskAlgorithmId)?.label ??
+                  t("settings.sensitive-data.algorithms.default")}
+              </h3>
+            );
+          }
+
+          return (
+            <NSelect
+              value={item.item.partialMaskAlgorithmId}
+              options={algorithmList.value}
+              consistentMenuWidth={false}
+              placeholder={t("settings.sensitive-data.algorithms.default")}
+              fallbackOption={(_: string) => ({
+                label: t("settings.sensitive-data.algorithms.default"),
+                value: "",
+              })}
+              clearable
+              size="small"
+              style="min-width: 7rem; width: auto; overflow-x: hidden"
+              onUpdateValue={(val) =>
+                onInput(row, (data) => (data.item.partialMaskAlgorithmId = val))
+              }
+            />
+          );
+        },
+      }
+    );
+  }
   if (!props.readonly) {
     // operation.
     columns.push({
+      key: "operation",
       title: "",
       width: "minmax(min-content, auto)",
+      render: (item, row) => {
+        return (
+          <div>
+            {item.mode === "EDIT" && (
+              <NPopconfirm onPositiveClick={() => emit("remove", row)}>
+                {{
+                  trigger: () => {
+                    return (
+                      <MiniActionButton>
+                        <TrashIcon class="w-4 h-4" />
+                      </MiniActionButton>
+                    );
+                  },
+                  default: () => (
+                    <div class="whitespace-nowrap">
+                      {t("settings.sensitive-data.semantic-types.table.delete")}
+                    </div>
+                  ),
+                }}
+              </NPopconfirm>
+            )}
+            {item.mode !== "NORMAL" && (
+              <MiniActionButton onClick={() => emit("cancel", row)}>
+                <Undo2Icon class="w-4 h-4" />
+              </MiniActionButton>
+            )}
+            {item.mode !== "NORMAL" && (
+              <MiniActionButton
+                type={"primary"}
+                disabled={isConfirmDisabled(item)}
+                onClick={() => emit("confirm", row)}
+              >
+                <CheckIcon class="w-4 h-4" />
+              </MiniActionButton>
+            )}
+            {item.mode === "NORMAL" && (
+              <MiniActionButton onClick={() => (item.mode = "EDIT")}>
+                <PencilIcon class="w-4 h-4" />
+              </MiniActionButton>
+            )}
+          </div>
+        );
+      },
     });
   }
   return columns;
 });
+
+const rowProps = (item: SemanticItem) => {
+  return {
+    style: props.rowClickable ? "cursor: pointer;" : "",
+    onClick: (e: MouseEvent) => {
+      if (!props.rowClickable) {
+        return;
+      }
+      emit("select", item.item.id);
+    },
+  };
+};
 
 const onInput = (index: number, callback: (item: SemanticItem) => void) => {
   const item = props.semanticItemList[index];

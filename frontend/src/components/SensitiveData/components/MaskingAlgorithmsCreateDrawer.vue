@@ -1,6 +1,8 @@
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
-    <DrawerContent :title="$t('common.add')">
+    <DrawerContent
+      :title="algorithm.title ? $t('common.edit') : $t('common.add')"
+    >
       <div
         class="w-[40rem] max-w-[calc(100vw-5rem)] space-y-6 divide-y divide-block-border"
       >
@@ -206,22 +208,14 @@
               v-model:value="state.innerOuterMask.type"
               :disabled="state.processing || readonly"
             >
-              <NRadio
-                :value="
-                  Algorithm_InnerOuterMask_MaskType.INNER
-                "
-              >
+              <NRadio :value="Algorithm_InnerOuterMask_MaskType.INNER">
                 {{
                   $t(
                     "settings.sensitive-data.algorithms.inner-outer-mask.inner-mask"
                   )
                 }}
               </NRadio>
-              <NRadio
-                :value="
-                  Algorithm_InnerOuterMask_MaskType.OUTER
-                "
-              >
+              <NRadio :value="Algorithm_InnerOuterMask_MaskType.OUTER">
                 {{
                   $t(
                     "settings.sensitive-data.algorithms.inner-outer-mask.outer-mask"
@@ -307,7 +301,7 @@
                   v-if="!readonly"
                   :disabled="isSubmitDisabled"
                   type="primary"
-                  @click.prevent="onUpsert"
+                  @click.prevent="() => $emit('apply', maskingAlgorithm)"
                 >
                   {{ $t("common.confirm") }}
                 </NButton>
@@ -340,7 +334,6 @@ import {
   RadioGrid,
   MiniActionButton,
 } from "@/components/v2";
-import { pushNotification, useSettingV1Store } from "@/store";
 import {
   Algorithm,
   Algorithm_FullMask as FullMask,
@@ -375,14 +368,15 @@ const props = defineProps<{
   algorithm: Algorithm;
 }>();
 
-const emit = defineEmits<{
+defineEmits<{
   (event: "dismiss"): void;
+  (event: "apply", algorithm: Algorithm): void;
 }>();
 
 const defaultRangeMask = computed(() =>
   RangeMask.fromPartial({
     slices: [
-    Algorithm_RangeMask_Slice.fromPartial({
+      Algorithm_RangeMask_Slice.fromPartial({
         start: 0,
         end: 1,
         substitution: "*",
@@ -412,7 +406,6 @@ const state = reactive<LocalState>({
 });
 
 const { t } = useI18n();
-const settingStore = useSettingV1Store();
 
 const maskingTypeList = computed((): MaskingTypeOption[] => [
   {
@@ -432,13 +425,6 @@ const maskingTypeList = computed((): MaskingTypeOption[] => [
     label: t("settings.sensitive-data.algorithms.inner-outer-mask.self"),
   },
 ]);
-
-const algorithmList = computed((): Algorithm[] => {
-  return (
-    settingStore.getSettingByName("bb.workspace.masking-algorithm")?.value
-      ?.maskingAlgorithmSettingValue?.algorithms ?? []
-  );
-});
 
 watch(
   () => props.algorithm,
@@ -561,40 +547,6 @@ const isSubmitDisabled = computed(() => {
 
   return !!errorMessage.value;
 });
-
-const onUpsert = async () => {
-  state.processing = true;
-
-  const index = algorithmList.value.findIndex(
-    (item) => item.id === maskingAlgorithm.value.id
-  );
-  const newList = [...algorithmList.value];
-  if (index < 0) {
-    newList.push(maskingAlgorithm.value);
-  } else {
-    newList[index] = maskingAlgorithm.value;
-  }
-
-  try {
-    await settingStore.upsertSetting({
-      name: "bb.workspace.masking-algorithm",
-      value: {
-        maskingAlgorithmSettingValue: {
-          algorithms: newList,
-        },
-      },
-    });
-
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.updated"),
-    });
-    emit("dismiss");
-  } finally {
-    state.processing = false;
-  }
-};
 
 const onMaskingTypeChange = (maskingType: MaskingType) => {
   if (state.processing || props.readonly) {

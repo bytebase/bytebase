@@ -831,6 +831,7 @@
         "table": {
           "semantic-type": "Tipo Semántico",
           "description": "Descripción",
+          "masking-algorithm": "Algoritmo de enmascaramiento",
           "full-masking-algorithm": "Algoritmo De Enmascaramiento Completo",
           "partial-masking-algorithm": "Algoritmo De Enmascaramiento Parcial",
           "delete": "¿Eliminar este tipo semántico?"

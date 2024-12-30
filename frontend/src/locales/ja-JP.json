@@ -831,6 +831,7 @@
         "table": {
           "semantic-type": "セマンティックタイプ",
           "description": "説明する",
+          "masking-algorithm": "マスキングアルゴリズム",
           "full-masking-algorithm": "完全マスクのアルゴリズム",
           "partial-masking-algorithm": "部分マスクのアルゴリズム",
           "delete": "このセマンティック タイプを削除しますか?"
