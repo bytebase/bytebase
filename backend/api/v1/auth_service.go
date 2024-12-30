@@ -172,7 +172,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	if setting.EnforceIdentityDomain {
 		allowedDomains = setting.Domains
 	}
-	if err := validateEmail(request.User.Email, allowedDomains, principalType == api.ServiceAccount); err != nil {
+	if err := validateEmailWithDomains(request.User.Email, allowedDomains, principalType == api.ServiceAccount); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", request.User.Email, err)
 	}
 	existingUser, err := s.store.GetUserByEmail(ctx, request.User.Email)
@@ -341,7 +341,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			if setting.EnforceIdentityDomain {
 				allowedDomains = setting.Domains
 			}
-			if err := validateEmail(request.User.Email, allowedDomains, user.Type == api.ServiceAccount); err != nil {
+			if err := validateEmailWithDomains(request.User.Email, allowedDomains, user.Type == api.ServiceAccount); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", request.User.Email, err)
 			}
 			existedUser, err := s.store.GetUserByEmail(ctx, request.User.Email)
@@ -740,7 +740,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		if setting.EnforceIdentityDomain {
 			allowedDomains = setting.Domains
 		}
-		if err := validateEmail(loginUser.Email, allowedDomains, false); err != nil {
+		if err := validateEmailWithDomains(loginUser.Email, allowedDomains, false); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", loginUser.Email, err)
 		}
 	}
@@ -958,18 +958,20 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	if setting.EnforceIdentityDomain {
 		allowedDomains = setting.Domains
 	}
-	if err := validateEmail(email, allowedDomains, false /* isServiceAccount */); err != nil {
+	if err := validateEmail(email); err != nil {
 		// If the email is invalid, we will try to use the domain and identifier to construct the email.
-		if idp.Domain != "" {
-			domain := extractDomain(idp.Domain)
-			email = strings.ToLower(fmt.Sprintf("%s@%s", userInfo.Identifier, domain))
+		domain := extractDomain(idp.Domain)
+		if domain != "" {
+			email = strings.ToLower(fmt.Sprintf("%s@%s", email, domain))
+		} else {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", userInfo.Identifier, err)
 		}
 	}
-
 	// If the email is still invalid, we will return an error.
-	if err := validateEmail(email, allowedDomains, false /* isServiceAccount */); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", email, err)
+	if err := validateEmailWithDomains(email, allowedDomains, false /* isServiceAccount */); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", userInfo.Identifier, err)
 	}
+
 	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list users by email %s: %v", email, err)
@@ -1037,12 +1039,19 @@ func (s *AuthService) challengeRecoveryCode(ctx context.Context, user *store.Use
 	return status.Errorf(codes.Unauthenticated, "invalid recovery code")
 }
 
-func validateEmail(email string, allowedDomains []string, isServiceAccount bool) error {
-	formattedEmail := strings.ToLower(email)
-	if email != formattedEmail {
+func validateEmail(email string) error {
+	if email != strings.ToLower(email) {
 		return errors.New("email should be lowercase")
 	}
 	if _, err := mail.ParseAddress(email); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateEmailWithDomains(email string, allowedDomains []string, isServiceAccount bool) error {
+	// Check if the email is valid.
+	if err := validateEmail(email); err != nil {
 		return err
 	}
 	// Domain restrictions are not applied to service account.
