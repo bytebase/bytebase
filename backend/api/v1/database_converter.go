@@ -564,13 +564,10 @@ func convertStoreTableConfig(ctx context.Context, table *storepb.TableCatalog, o
 
 func convertStoreColumnConfig(column *storepb.ColumnCatalog) *v1pb.ColumnConfig {
 	return &v1pb.ColumnConfig{
-		Name:                      column.Name,
-		SemanticTypeId:            column.SemanticTypeId,
-		Labels:                    column.Labels,
-		ClassificationId:          column.ClassificationId,
-		MaskingLevel:              convertToV1PBMaskingLevel(column.MaskingLevel),
-		FullMaskingAlgorithmId:    column.FullMaskingAlgorithmId,
-		PartialMaskingAlgorithmId: column.PartialMaskingAlgorithmId,
+		Name:             column.Name,
+		SemanticTypeId:   column.SemanticTypeId,
+		Labels:           column.Labels,
+		ClassificationId: column.ClassificationId,
 	}
 }
 
@@ -1075,13 +1072,10 @@ func convertV1TableConfig(ctx context.Context, table *v1pb.TableConfig, optional
 
 func convertV1ColumnConfig(column *v1pb.ColumnConfig) *storepb.ColumnCatalog {
 	return &storepb.ColumnCatalog{
-		Name:                      column.Name,
-		SemanticTypeId:            column.SemanticTypeId,
-		Labels:                    column.Labels,
-		ClassificationId:          column.ClassificationId,
-		MaskingLevel:              convertToStorePBMaskingLevel(column.MaskingLevel),
-		FullMaskingAlgorithmId:    column.FullMaskingAlgorithmId,
-		PartialMaskingAlgorithmId: column.PartialMaskingAlgorithmId,
+		Name:             column.Name,
+		SemanticTypeId:   column.SemanticTypeId,
+		Labels:           column.Labels,
+		ClassificationId: column.ClassificationId,
 	}
 }
 
