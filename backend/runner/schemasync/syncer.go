@@ -582,6 +582,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 			return nil
 		}
 		limit := 1
+		// TODO(p0ny): use changelog
 		list, err := s.store.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
 			InstanceID: &instance.UID,
 			DatabaseID: &database.UID,

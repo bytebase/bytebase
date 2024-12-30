@@ -10,8 +10,6 @@ roles:
       - bb.branches.get
       - bb.branches.list
       - bb.branches.update
-      - bb.changeHistories.get
-      - bb.changeHistories.list
       - bb.changelists.create
       - bb.changelists.delete
       - bb.changelists.get
@@ -149,8 +147,6 @@ roles:
       - bb.branches.get
       - bb.branches.list
       - bb.branches.update
-      - bb.changeHistories.get
-      - bb.changeHistories.list
       - bb.changelists.create
       - bb.changelists.delete
       - bb.changelists.get
@@ -303,8 +299,6 @@ roles:
       - bb.branches.get
       - bb.branches.list
       - bb.branches.update
-      - bb.changeHistories.get
-      - bb.changeHistories.list
       - bb.changelists.create
       - bb.changelists.delete
       - bb.changelists.get
@@ -375,8 +369,6 @@ roles:
       - bb.branches.get
       - bb.branches.list
       - bb.branches.update
-      - bb.changeHistories.get
-      - bb.changeHistories.list
       - bb.changelists.create
       - bb.changelists.get
       - bb.changelists.list
@@ -448,7 +440,6 @@ roles:
     title: Project releaser
     permissions:
       - bb.branches.get
-      - bb.changeHistories.get
       - bb.databaseCatalogs.get
       - bb.changelogs.get
       - bb.databases.check

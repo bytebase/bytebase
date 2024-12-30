@@ -11,8 +11,6 @@ const (
 	PermissionBranchesGet                Permission = "bb.branches.get"
 	PermissionBranchesList               Permission = "bb.branches.list"
 	PermissionBranchesUpdate             Permission = "bb.branches.update"
-	PermissionChangeHistoriesGet         Permission = "bb.changeHistories.get"
-	PermissionChangeHistoriesList        Permission = "bb.changeHistories.list"
 	PermissionChangelistsCreate          Permission = "bb.changelists.create"
 	PermissionChangelistsDelete          Permission = "bb.changelists.delete"
 	PermissionChangelistsGet             Permission = "bb.changelists.get"
@@ -150,8 +148,6 @@ var allPermissions = []Permission{
 	PermissionBranchesGet,
 	PermissionBranchesList,
 	PermissionBranchesUpdate,
-	PermissionChangeHistoriesGet,
-	PermissionChangeHistoriesList,
 	PermissionChangelistsCreate,
 	PermissionChangelistsDelete,
 	PermissionChangelistsGet,

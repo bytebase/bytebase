@@ -11,7 +11,6 @@ import (
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 )
@@ -106,68 +105,33 @@ DROP SCHEMA "schema_a";
 	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, v1pb.Plan_ChangeDatabaseConfig_MIGRATE)
 	a.NoError(err)
 
-	if common.IsDev() {
-		resp, err := ctl.databaseServiceClient.ListChangelogs(ctx, &v1pb.ListChangelogsRequest{
-			Parent: database.Name,
-		})
-		a.NoError(err)
-		changelogs := resp.Changelogs
-		a.Equal(1, len(changelogs))
+	resp, err := ctl.databaseServiceClient.ListChangelogs(ctx, &v1pb.ListChangelogsRequest{
+		Parent: database.Name,
+	})
+	a.NoError(err)
+	changelogs := resp.Changelogs
+	a.Equal(1, len(changelogs))
 
-		err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, newDatabaseName, "bytebase", nil)
-		a.NoError(err)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, newDatabaseName, "bytebase", nil)
+	a.NoError(err)
 
-		newDatabase, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
-			Name: fmt.Sprintf("%s/databases/%s", instance.Name, newDatabaseName),
-		})
-		a.NoError(err)
+	newDatabase, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
+		Name: fmt.Sprintf("%s/databases/%s", instance.Name, newDatabaseName),
+	})
+	a.NoError(err)
 
-		newDatabaseSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
-			Name: fmt.Sprintf("%s/schema", newDatabase.Name),
-		})
-		a.NoError(err)
+	newDatabaseSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
+		Name: fmt.Sprintf("%s/schema", newDatabase.Name),
+	})
+	a.NoError(err)
 
-		diff, err := ctl.getSchemaDiff(ctx, &v1pb.DiffSchemaRequest{
-			Name: database.Name,
-			Target: &v1pb.DiffSchemaRequest_Schema{
-				Schema: newDatabaseSchema.Schema,
-			},
-		})
+	diff, err := ctl.getSchemaDiff(ctx, &v1pb.DiffSchemaRequest{
+		Name: database.Name,
+		Target: &v1pb.DiffSchemaRequest_Schema{
+			Schema: newDatabaseSchema.Schema,
+		},
+	})
 
-		a.NoError(err)
-		a.Equal(expectedDiff, diff)
-	} else {
-		resp, err := ctl.databaseServiceClient.ListChangeHistories(ctx, &v1pb.ListChangeHistoriesRequest{
-			Parent: database.Name,
-			View:   v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
-		})
-		a.NoError(err)
-		histories := resp.ChangeHistories
-		// history[0] is SchemaUpdate.
-		a.Equal(1, len(histories))
-		latest := histories[0]
-
-		err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, newDatabaseName, "bytebase", nil)
-		a.NoError(err)
-
-		newDatabase, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
-			Name: fmt.Sprintf("%s/databases/%s", instance.Name, newDatabaseName),
-		})
-		a.NoError(err)
-
-		newDatabaseSchema, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
-			Name: fmt.Sprintf("%s/schema", newDatabase.Name),
-		})
-		a.NoError(err)
-
-		diff, err := ctl.getSchemaDiff(ctx, &v1pb.DiffSchemaRequest{
-			Name: latest.Name,
-			Target: &v1pb.DiffSchemaRequest_Schema{
-				Schema: newDatabaseSchema.Schema,
-			},
-		})
-
-		a.NoError(err)
-		a.Equal(expectedDiff, diff)
-	}
+	a.NoError(err)
+	a.Equal(expectedDiff, diff)
 }

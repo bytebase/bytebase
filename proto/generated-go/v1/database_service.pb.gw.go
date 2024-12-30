@@ -831,106 +831,6 @@ func local_request_DatabaseService_AdviseIndex_0(ctx context.Context, marshaler 
 	return msg, metadata, err
 }
 
-var filter_DatabaseService_ListChangeHistories_0 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-
-func request_DatabaseService_ListChangeHistories_0(ctx context.Context, marshaler runtime.Marshaler, client DatabaseServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var (
-		protoReq ListChangeHistoriesRequest
-		metadata runtime.ServerMetadata
-		err      error
-	)
-	val, ok := pathParams["parent"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
-	}
-	protoReq.Parent, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
-	}
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_DatabaseService_ListChangeHistories_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	msg, err := client.ListChangeHistories(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-}
-
-func local_request_DatabaseService_ListChangeHistories_0(ctx context.Context, marshaler runtime.Marshaler, server DatabaseServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var (
-		protoReq ListChangeHistoriesRequest
-		metadata runtime.ServerMetadata
-		err      error
-	)
-	val, ok := pathParams["parent"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
-	}
-	protoReq.Parent, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
-	}
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_DatabaseService_ListChangeHistories_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	msg, err := server.ListChangeHistories(ctx, &protoReq)
-	return msg, metadata, err
-}
-
-var filter_DatabaseService_GetChangeHistory_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-
-func request_DatabaseService_GetChangeHistory_0(ctx context.Context, marshaler runtime.Marshaler, client DatabaseServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var (
-		protoReq GetChangeHistoryRequest
-		metadata runtime.ServerMetadata
-		err      error
-	)
-	val, ok := pathParams["name"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
-	}
-	protoReq.Name, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
-	}
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_DatabaseService_GetChangeHistory_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	msg, err := client.GetChangeHistory(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-}
-
-func local_request_DatabaseService_GetChangeHistory_0(ctx context.Context, marshaler runtime.Marshaler, server DatabaseServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var (
-		protoReq GetChangeHistoryRequest
-		metadata runtime.ServerMetadata
-		err      error
-	)
-	val, ok := pathParams["name"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
-	}
-	protoReq.Name, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
-	}
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_DatabaseService_GetChangeHistory_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	msg, err := server.GetChangeHistory(ctx, &protoReq)
-	return msg, metadata, err
-}
-
 var filter_DatabaseService_ListRevisions_0 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 
 func request_DatabaseService_ListRevisions_0(ctx context.Context, marshaler runtime.Marshaler, client DatabaseServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -1407,7 +1307,7 @@ func RegisterDatabaseServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/DiffSchema", runtime.WithHTTPPathPattern("/v1/{name=instances/*/databases/*/changeHistories/*}:diffSchema"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/DiffSchema", runtime.WithHTTPPathPattern("/v1/{name=instances/*/databases/*/changelogs/*}:diffSchema"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1520,46 +1420,6 @@ func RegisterDatabaseServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 			return
 		}
 		forward_DatabaseService_AdviseIndex_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-	})
-	mux.Handle(http.MethodGet, pattern_DatabaseService_ListChangeHistories_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		var stream runtime.ServerTransportStream
-		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/ListChangeHistories", runtime.WithHTTPPathPattern("/v1/{parent=instances/*/databases/*}/changeHistories"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_DatabaseService_ListChangeHistories_0(annotatedContext, inboundMarshaler, server, req, pathParams)
-		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		forward_DatabaseService_ListChangeHistories_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-	})
-	mux.Handle(http.MethodGet, pattern_DatabaseService_GetChangeHistory_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		var stream runtime.ServerTransportStream
-		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseService/GetChangeHistory", runtime.WithHTTPPathPattern("/v1/{name=instances/*/databases/*/changeHistories/*}"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_DatabaseService_GetChangeHistory_0(annotatedContext, inboundMarshaler, server, req, pathParams)
-		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		forward_DatabaseService_GetChangeHistory_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 	mux.Handle(http.MethodGet, pattern_DatabaseService_ListRevisions_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
@@ -1895,7 +1755,7 @@ func RegisterDatabaseServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/DiffSchema", runtime.WithHTTPPathPattern("/v1/{name=instances/*/databases/*/changeHistories/*}:diffSchema"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/DiffSchema", runtime.WithHTTPPathPattern("/v1/{name=instances/*/databases/*/changelogs/*}:diffSchema"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1992,40 +1852,6 @@ func RegisterDatabaseServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			return
 		}
 		forward_DatabaseService_AdviseIndex_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-	})
-	mux.Handle(http.MethodGet, pattern_DatabaseService_ListChangeHistories_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/ListChangeHistories", runtime.WithHTTPPathPattern("/v1/{parent=instances/*/databases/*}/changeHistories"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_DatabaseService_ListChangeHistories_0(annotatedContext, inboundMarshaler, client, req, pathParams)
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		forward_DatabaseService_ListChangeHistories_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-	})
-	mux.Handle(http.MethodGet, pattern_DatabaseService_GetChangeHistory_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseService/GetChangeHistory", runtime.WithHTTPPathPattern("/v1/{name=instances/*/databases/*/changeHistories/*}"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_DatabaseService_GetChangeHistory_0(annotatedContext, inboundMarshaler, client, req, pathParams)
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		forward_DatabaseService_GetChangeHistory_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 	mux.Handle(http.MethodGet, pattern_DatabaseService_ListRevisions_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
@@ -2143,14 +1969,12 @@ var (
 	pattern_DatabaseService_GetDatabaseMetadata_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 4, 5, 5, 4}, []string{"v1", "instances", "databases", "metadata", "name"}, ""))
 	pattern_DatabaseService_GetDatabaseSchema_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 4, 5, 5, 4}, []string{"v1", "instances", "databases", "schema", "name"}, ""))
 	pattern_DatabaseService_DiffSchema_0            = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "instances", "databases", "name"}, "diffSchema"))
-	pattern_DatabaseService_DiffSchema_1            = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "instances", "databases", "changeHistories", "name"}, "diffSchema"))
+	pattern_DatabaseService_DiffSchema_1            = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "instances", "databases", "changelogs", "name"}, "diffSchema"))
 	pattern_DatabaseService_ListSlowQueries_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "slowQueries"}, ""))
 	pattern_DatabaseService_ListSecrets_0           = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "instances", "databases", "parent", "secrets"}, ""))
 	pattern_DatabaseService_UpdateSecret_0          = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "instances", "databases", "secrets", "secret.name"}, ""))
 	pattern_DatabaseService_DeleteSecret_0          = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "instances", "databases", "secrets", "name"}, ""))
 	pattern_DatabaseService_AdviseIndex_0           = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "instances", "databases", "parent"}, "adviseIndex"))
-	pattern_DatabaseService_ListChangeHistories_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "instances", "databases", "parent", "changeHistories"}, ""))
-	pattern_DatabaseService_GetChangeHistory_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "instances", "databases", "changeHistories", "name"}, ""))
 	pattern_DatabaseService_ListRevisions_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "instances", "databases", "parent", "revisions"}, ""))
 	pattern_DatabaseService_GetRevision_0           = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 2, 3, 1, 0, 4, 6, 5, 4}, []string{"v1", "instances", "databases", "revisions", "name"}, ""))
 	pattern_DatabaseService_CreateRevision_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3, 2, 4}, []string{"v1", "instances", "databases", "parent", "revisions"}, ""))
@@ -2176,8 +2000,6 @@ var (
 	forward_DatabaseService_UpdateSecret_0          = runtime.ForwardResponseMessage
 	forward_DatabaseService_DeleteSecret_0          = runtime.ForwardResponseMessage
 	forward_DatabaseService_AdviseIndex_0           = runtime.ForwardResponseMessage
-	forward_DatabaseService_ListChangeHistories_0   = runtime.ForwardResponseMessage
-	forward_DatabaseService_GetChangeHistory_0      = runtime.ForwardResponseMessage
 	forward_DatabaseService_ListRevisions_0         = runtime.ForwardResponseMessage
 	forward_DatabaseService_GetRevision_0           = runtime.ForwardResponseMessage
 	forward_DatabaseService_CreateRevision_0        = runtime.ForwardResponseMessage

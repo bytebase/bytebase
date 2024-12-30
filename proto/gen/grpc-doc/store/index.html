@@ -571,7 +571,7 @@
         
           
           <li>
-            <a href="#store%2finstance_change_history.proto">store/instance_change_history.proto</a>
+            <a href="#store%2fchangelog.proto">store/changelog.proto</a>
             <ul>
               
                 <li>
@@ -601,21 +601,6 @@
                 <li>
                   <a href="#bytebase.store.ChangedResources"><span class="badge">M</span>ChangedResources</a>
                 </li>
-              
-                <li>
-                  <a href="#bytebase.store.InstanceChangeHistoryPayload"><span class="badge">M</span>InstanceChangeHistoryPayload</a>
-                </li>
-              
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
-            <a href="#store%2fchangelog.proto">store/changelog.proto</a>
-            <ul>
               
                 <li>
                   <a href="#bytebase.store.ChangelogPayload"><span class="badge">M</span>ChangelogPayload</a>
@@ -836,6 +821,21 @@
               
                 <li>
                   <a href="#bytebase.store.InstanceRole"><span class="badge">M</span>InstanceRole</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#store%2finstance_change_history.proto">store/instance_change_history.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.InstanceChangeHistoryPayload"><span class="badge">M</span>InstanceChangeHistoryPayload</a>
                 </li>
               
               
@@ -5635,7 +5635,7 @@ Example: projects/project-id/branches/branch-id. </p></td>
     
       
       <div class="file-heading">
-        <h2 id="store/instance_change_history.proto">store/instance_change_history.proto</h2><a href="#title">Top</a>
+        <h2 id="store/changelog.proto">store/changelog.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
 
@@ -5877,44 +5877,6 @@ Example: projects/project-id/branches/branch-id. </p></td>
           
 
         
-      
-        <h3 id="bytebase.store.InstanceChangeHistoryPayload">InstanceChangeHistoryPayload</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>changed_resources</td>
-                  <td><a href="#bytebase.store.ChangedResources">ChangedResources</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
-        <h2 id="store/changelog.proto">store/changelog.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
       
         <h3 id="bytebase.store.ChangelogPayload">ChangelogPayload</h3>
         <p></p>
@@ -7603,6 +7565,44 @@ Default empty, means sync all schemas &amp; databases. </p></td>
                   <td><p>The role attribute.
 For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html
 For MySQL, it&#39;s the global privileges as GRANT statements, which means it only contains &#34;GRANT ... ON *.* TO ...&#34;. Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/instance_change_history.proto">store/instance_change_history.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.InstanceChangeHistoryPayload">InstanceChangeHistoryPayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>changed_resources</td>
+                  <td><a href="#bytebase.store.ChangedResources">ChangedResources</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -12906,14 +12906,6 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>change_history</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
-Deprecated. </p></td>
                 </tr>
               
                 <tr>
