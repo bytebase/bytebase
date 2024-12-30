@@ -598,10 +598,17 @@ export interface SemanticTypeSetting_SemanticType {
   title: string;
   /** the description of the semantic type, it can be empty. */
   description: string;
-  /** the partial mask algorithm id for the semantic type, if it is empty, should use the default partial mask algorithm. */
+  /**
+   * Deprecated.
+   * the partial mask algorithm id for the semantic type, if it is empty, should use the default partial mask algorithm.
+   */
   partialMaskAlgorithmId: string;
-  /** the full mask algorithm id for the semantic type, if it is empty, should use the default full mask algorithm. */
+  /**
+   * Deprecated.
+   * the full mask algorithm id for the semantic type, if it is empty, should use the default full mask algorithm.
+   */
   fullMaskAlgorithmId: string;
+  algorithms: Algorithm | undefined;
 }
 
 export interface MaskingAlgorithmSetting {
@@ -4232,7 +4239,14 @@ export const SemanticTypeSetting: MessageFns<SemanticTypeSetting> = {
 };
 
 function createBaseSemanticTypeSetting_SemanticType(): SemanticTypeSetting_SemanticType {
-  return { id: "", title: "", description: "", partialMaskAlgorithmId: "", fullMaskAlgorithmId: "" };
+  return {
+    id: "",
+    title: "",
+    description: "",
+    partialMaskAlgorithmId: "",
+    fullMaskAlgorithmId: "",
+    algorithms: undefined,
+  };
 }
 
 export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_SemanticType> = {
@@ -4251,6 +4265,9 @@ export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_Se
     }
     if (message.fullMaskAlgorithmId !== "") {
       writer.uint32(42).string(message.fullMaskAlgorithmId);
+    }
+    if (message.algorithms !== undefined) {
+      Algorithm.encode(message.algorithms, writer.uint32(50).fork()).join();
     }
     return writer;
   },
@@ -4302,6 +4319,14 @@ export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_Se
           message.fullMaskAlgorithmId = reader.string();
           continue;
         }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.algorithms = Algorithm.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4320,6 +4345,7 @@ export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_Se
         ? globalThis.String(object.partialMaskAlgorithmId)
         : "",
       fullMaskAlgorithmId: isSet(object.fullMaskAlgorithmId) ? globalThis.String(object.fullMaskAlgorithmId) : "",
+      algorithms: isSet(object.algorithms) ? Algorithm.fromJSON(object.algorithms) : undefined,
     };
   },
 
@@ -4340,6 +4366,9 @@ export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_Se
     if (message.fullMaskAlgorithmId !== "") {
       obj.fullMaskAlgorithmId = message.fullMaskAlgorithmId;
     }
+    if (message.algorithms !== undefined) {
+      obj.algorithms = Algorithm.toJSON(message.algorithms);
+    }
     return obj;
   },
 
@@ -4353,6 +4382,9 @@ export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_Se
     message.description = object.description ?? "";
     message.partialMaskAlgorithmId = object.partialMaskAlgorithmId ?? "";
     message.fullMaskAlgorithmId = object.fullMaskAlgorithmId ?? "";
+    message.algorithms = (object.algorithms !== undefined && object.algorithms !== null)
+      ? Algorithm.fromPartial(object.algorithms)
+      : undefined;
     return message;
   },
 };
