@@ -55,8 +55,8 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 	defaultSemanticType := &storepb.SemanticTypeSetting{
 		Types: []*storepb.SemanticTypeSetting_SemanticType{
 			{
-				Id:         "salary-amount",
-				Algorithms: defaultAlgorithm,
+				Id:        "salary-amount",
+				Algorithm: defaultAlgorithm,
 			},
 		},
 	}
