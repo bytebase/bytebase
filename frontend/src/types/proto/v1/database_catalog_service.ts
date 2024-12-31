@@ -8,6 +8,7 @@
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import Long from "long";
 import { FieldMask } from "../google/protobuf/field_mask";
+import { MaskingLevel, maskingLevelFromJSON, maskingLevelToJSON, maskingLevelToNumber } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -64,6 +65,9 @@ export interface ColumnCatalog {
   /** The user labels for a column. */
   labels: { [key: string]: string };
   classificationId: string;
+  maskingLevel: MaskingLevel;
+  fullMaskingAlgorithmId: string;
+  partialMaskingAlgorithmId: string;
   objectSchema?: ObjectSchema | undefined;
 }
 
@@ -633,7 +637,16 @@ export const TableCatalog_Columns: MessageFns<TableCatalog_Columns> = {
 };
 
 function createBaseColumnCatalog(): ColumnCatalog {
-  return { name: "", semanticTypeId: "", labels: {}, classificationId: "", objectSchema: undefined };
+  return {
+    name: "",
+    semanticTypeId: "",
+    labels: {},
+    classificationId: "",
+    maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
+    fullMaskingAlgorithmId: "",
+    partialMaskingAlgorithmId: "",
+    objectSchema: undefined,
+  };
 }
 
 export const ColumnCatalog: MessageFns<ColumnCatalog> = {
@@ -649,6 +662,15 @@ export const ColumnCatalog: MessageFns<ColumnCatalog> = {
     });
     if (message.classificationId !== "") {
       writer.uint32(34).string(message.classificationId);
+    }
+    if (message.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
+      writer.uint32(40).int32(maskingLevelToNumber(message.maskingLevel));
+    }
+    if (message.fullMaskingAlgorithmId !== "") {
+      writer.uint32(50).string(message.fullMaskingAlgorithmId);
+    }
+    if (message.partialMaskingAlgorithmId !== "") {
+      writer.uint32(58).string(message.partialMaskingAlgorithmId);
     }
     if (message.objectSchema !== undefined) {
       ObjectSchema.encode(message.objectSchema, writer.uint32(66).fork()).join();
@@ -698,6 +720,30 @@ export const ColumnCatalog: MessageFns<ColumnCatalog> = {
           message.classificationId = reader.string();
           continue;
         }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.maskingLevel = maskingLevelFromJSON(reader.int32());
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.fullMaskingAlgorithmId = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.partialMaskingAlgorithmId = reader.string();
+          continue;
+        }
         case 8: {
           if (tag !== 66) {
             break;
@@ -726,6 +772,15 @@ export const ColumnCatalog: MessageFns<ColumnCatalog> = {
         }, {})
         : {},
       classificationId: isSet(object.classificationId) ? globalThis.String(object.classificationId) : "",
+      maskingLevel: isSet(object.maskingLevel)
+        ? maskingLevelFromJSON(object.maskingLevel)
+        : MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
+      fullMaskingAlgorithmId: isSet(object.fullMaskingAlgorithmId)
+        ? globalThis.String(object.fullMaskingAlgorithmId)
+        : "",
+      partialMaskingAlgorithmId: isSet(object.partialMaskingAlgorithmId)
+        ? globalThis.String(object.partialMaskingAlgorithmId)
+        : "",
       objectSchema: isSet(object.objectSchema) ? ObjectSchema.fromJSON(object.objectSchema) : undefined,
     };
   },
@@ -750,6 +805,15 @@ export const ColumnCatalog: MessageFns<ColumnCatalog> = {
     if (message.classificationId !== "") {
       obj.classificationId = message.classificationId;
     }
+    if (message.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
+      obj.maskingLevel = maskingLevelToJSON(message.maskingLevel);
+    }
+    if (message.fullMaskingAlgorithmId !== "") {
+      obj.fullMaskingAlgorithmId = message.fullMaskingAlgorithmId;
+    }
+    if (message.partialMaskingAlgorithmId !== "") {
+      obj.partialMaskingAlgorithmId = message.partialMaskingAlgorithmId;
+    }
     if (message.objectSchema !== undefined) {
       obj.objectSchema = ObjectSchema.toJSON(message.objectSchema);
     }
@@ -770,6 +834,9 @@ export const ColumnCatalog: MessageFns<ColumnCatalog> = {
       return acc;
     }, {});
     message.classificationId = object.classificationId ?? "";
+    message.maskingLevel = object.maskingLevel ?? MaskingLevel.MASKING_LEVEL_UNSPECIFIED;
+    message.fullMaskingAlgorithmId = object.fullMaskingAlgorithmId ?? "";
+    message.partialMaskingAlgorithmId = object.partialMaskingAlgorithmId ?? "";
     message.objectSchema = (object.objectSchema !== undefined && object.objectSchema !== null)
       ? ObjectSchema.fromPartial(object.objectSchema)
       : undefined;

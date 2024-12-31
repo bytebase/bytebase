@@ -9596,6 +9596,18 @@ components:
                     description: The user labels for a column.
                 classificationId:
                     type: string
+                maskingLevel:
+                    enum:
+                        - MASKING_LEVEL_UNSPECIFIED
+                        - NONE
+                        - PARTIAL
+                        - FULL
+                    type: string
+                    format: enum
+                fullMaskingAlgorithmId:
+                    type: string
+                partialMaskingAlgorithmId:
+                    type: string
                 objectSchema:
                     $ref: '#/components/schemas/ObjectSchema'
         ColumnMetadata:
