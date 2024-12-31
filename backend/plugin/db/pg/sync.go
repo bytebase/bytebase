@@ -1190,7 +1190,7 @@ func getIndexes(txn *sql.Tx, indexInheritanceMap map[db.IndexKey]*db.IndexKey) (
 		if !ok {
 			return nil, errors.Errorf("statement %q is not index statement", statement)
 		}
-		index.Definition = statement
+		index.Definition = statement + ";" // Add semicolon to the end of the statement.
 
 		index.Type = getIndexMethodType(statement)
 		index.Unique = node.Index.Unique
