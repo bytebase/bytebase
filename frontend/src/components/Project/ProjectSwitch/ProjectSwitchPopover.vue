@@ -27,8 +27,23 @@
       </NButton>
     </template>
 
-    <ProjectSwitchContent />
+    <ProjectSwitchContent
+      @on-create="
+        () => {
+          state.showCreateDrawer = true;
+          state.showPopover = false;
+        }
+      "
+    />
   </NPopover>
+  <Drawer
+    :auto-focus="true"
+    :close-on-esc="true"
+    :show="state.showCreateDrawer"
+    @close="state.showCreateDrawer = false"
+  >
+    <ProjectCreatePanel @dismiss="state.showCreateDrawer = false" />
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
@@ -43,10 +58,12 @@ import ProjectSwitchContent from "./ProjectSwitchContent.vue";
 
 interface LocalState {
   showPopover: boolean;
+  showCreateDrawer: boolean;
 }
 
 const state = reactive<LocalState>({
   showPopover: false,
+  showCreateDrawer: false,
 });
 const router = useRouter();
 

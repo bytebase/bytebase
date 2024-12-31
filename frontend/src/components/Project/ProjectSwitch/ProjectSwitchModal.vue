@@ -8,11 +8,27 @@
     class="w-[48rem] max-w-full h-auto max-h-full"
     @close="$emit('dismiss')"
   >
-    <ProjectSwitchContent />
+    <ProjectSwitchContent
+      @on-create="
+        () => {
+          showCreateDrawer = true;
+        }
+      "
+    />
   </BBModal>
+
+  <Drawer
+    :auto-focus="true"
+    :close-on-esc="true"
+    :show="showCreateDrawer"
+    @close="showCreateDrawer = false"
+  >
+    <ProjectCreatePanel @dismiss="showCreateDrawer = false" />
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
+import { ref } from "vue";
 import { BBModal } from "@/bbkit";
 import ProjectSwitchContent from "./ProjectSwitchContent.vue";
 
@@ -23,4 +39,6 @@ defineProps<{
 defineEmits<{
   (event: "dismiss"): void;
 }>();
+
+const showCreateDrawer = ref<boolean>(false);
 </script>
