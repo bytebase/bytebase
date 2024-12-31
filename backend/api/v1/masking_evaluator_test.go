@@ -46,6 +46,20 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			},
 		},
 	}
+	defaultAlgorithm := &storepb.Algorithm{
+		Id: "hash",
+		Mask: &storepb.Algorithm_Md5Mask{
+			Md5Mask: &storepb.Algorithm_MD5Mask{Salt: "123"},
+		},
+	}
+	defaultSemanticType := &storepb.SemanticTypeSetting{
+		Types: []*storepb.SemanticTypeSetting_SemanticType{
+			{
+				Id:         "salary-amount",
+				Algorithms: defaultAlgorithm,
+			},
+		},
+	}
 
 	testCases := []struct {
 		description                             string
@@ -59,7 +73,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 		filteredMaskingExceptions               []*storepb.MaskingExceptionPolicy_MaskingException
 		dataClassification                      *storepb.DataClassificationSetting
 
-		want storepb.MaskingLevel
+		want *storepb.Algorithm
 	}{
 		{
 			description:     "Follow The Global Masking Rule",
@@ -69,7 +83,6 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			columnName:      "salary",
 			columnCatalog: &storepb.ColumnCatalog{
 				ClassificationId: "1-1-1",
-				MaskingLevel:     storepb.MaskingLevel_NONE,
 			},
 			maskingRulePolicy: &storepb.MaskingRulePolicy{
 				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
@@ -84,7 +97,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			dataClassification:                      defaultClassification,
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
-			want: storepb.MaskingLevel_FULL,
+			want: defaultFullAlgorithm,
 		},
 		{
 			description:     "Respect The Exception",
@@ -116,7 +129,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			dataClassification:                      defaultClassification,
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
-			want: storepb.MaskingLevel_NONE,
+			want: nil,
 		},
 		{
 			description:     "Column Catalog",
@@ -125,22 +138,21 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			tableName:       "employees",
 			columnName:      "salary",
 			columnCatalog: &storepb.ColumnCatalog{
-				ClassificationId: "1-1-1",
-				MaskingLevel:     storepb.MaskingLevel_FULL,
+				SemanticTypeId: "salary-amount",
 			},
 			maskingRulePolicy:                       &storepb.MaskingRulePolicy{},
 			dataClassification:                      defaultClassification,
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
-			want: storepb.MaskingLevel_FULL,
+			want: defaultAlgorithm,
 		},
 	}
 
 	a := require.New(t)
 
 	for _, tc := range testCases {
-		m := newEmptyMaskingLevelEvaluator().withMaskingRulePolicy(tc.maskingRulePolicy).withDataClassificationSetting(tc.dataClassification)
-		_, result, err := m.evaluateMaskingAlgorithmOfColumn(tc.databaseMessage, tc.schemaName, tc.tableName, tc.columnName, tc.databaseProjectDatabaseClassificationID, tc.columnCatalog, tc.filteredMaskingExceptions)
+		m := newEmptyMaskingLevelEvaluator().withMaskingRulePolicy(tc.maskingRulePolicy).withDataClassificationSetting(tc.dataClassification).withSemanticTypeSetting(defaultSemanticType)
+		result, err := m.evaluateMaskingAlgorithmOfColumn(tc.databaseMessage, tc.schemaName, tc.tableName, tc.columnName, tc.databaseProjectDatabaseClassificationID, tc.columnCatalog, tc.filteredMaskingExceptions)
 		a.NoError(err, tc.description)
 		a.Equal(tc.want, result, tc.description)
 	}
