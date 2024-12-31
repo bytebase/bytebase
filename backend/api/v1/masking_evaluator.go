@@ -76,25 +76,12 @@ func (m *maskingLevelEvaluator) getDataClassificationConfig(classificationID str
 	return m.dataClassificationIDMap[classificationID]
 }
 
-// TODO(d): redefine default algorithm later.
 var (
 	defaultFullAlgorithm = &storepb.Algorithm{
-		Id: "default",
-		Mask: &storepb.Algorithm_FullMask_{FullMask: &storepb.Algorithm_FullMask{
-			Substitution: "******",
-		}},
+		Id: "default-full",
 	}
 	defaultPartialAlgorithm = &storepb.Algorithm{
-		Id: "default",
-		Mask: &storepb.Algorithm_RangeMask_{RangeMask: &storepb.Algorithm_RangeMask{
-			Slices: []*storepb.Algorithm_RangeMask_Slice{
-				{
-					Start:        0,
-					End:          4,
-					Substitution: "****",
-				},
-			},
-		}},
+		Id: "default-partial",
 	}
 )
 

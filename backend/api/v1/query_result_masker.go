@@ -285,6 +285,12 @@ func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.Algorithm, level sto
 			return masker.NewNoneMasker()
 		}
 	}
+	switch algorithm.GetId() {
+	case "default-full":
+		return masker.NewDefaultFullMasker()
+	case "default-partial":
+		return masker.NewDefaultRangeMasker()
+	}
 
 	switch m := algorithm.Mask.(type) {
 	case *storepb.Algorithm_FullMask_:
