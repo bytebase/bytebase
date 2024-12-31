@@ -58,6 +58,11 @@ func (s *DatabaseCatalogService) GetDatabaseCatalog(ctx context.Context, request
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+	if dbSchema == nil {
+		return &v1pb.DatabaseCatalog{
+			Name: fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.CatalogSuffix),
+		}, nil
+	}
 
 	return convertDatabaseConfig(database, dbSchema.GetConfig()), nil
 }
