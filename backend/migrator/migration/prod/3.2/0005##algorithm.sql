@@ -14,7 +14,7 @@ transformed_algorithms AS (
         'id', algorithm_record->>'id',
         'title', algorithm_record->>'title',
         'description', algorithm_record->>'description',
-        'algorithm', algorithm_record                                            
+        'algorithm', algorithm_record
     ) AS transformed_algorithm
     FROM algorithms_expanded
 ),
