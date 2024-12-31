@@ -277,12 +277,13 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 			name,
 			sync_status,
 			last_successful_sync_ts,
+			schema_version,
 			secrets,
 			datashare,
 			service_name,
 			metadata
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '', $9, $10, $11, $12)
 		ON CONFLICT (instance_id, name) DO UPDATE SET
 			project_id = EXCLUDED.project_id,
 			environment = EXCLUDED.environment,
