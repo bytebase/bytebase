@@ -1,11 +1,7 @@
 <template>
   <div class="space-y-4">
     <div v-if="allowEdit" class="flex items-center justify-end">
-      <NButton
-        type="primary"
-        class="capitalize"
-        @click.prevent="addProjectWebhook"
-      >
+      <NButton type="primary" @click.prevent="addProjectWebhook">
         <template #icon>
           <PlusIcon class="h-4 w-4" />
         </template>
