@@ -30,6 +30,8 @@
 <script lang="ts" setup>
 import { ref } from "vue";
 import { BBModal } from "@/bbkit";
+import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
+import { Drawer } from "@/components/v2";
 import ProjectSwitchContent from "./ProjectSwitchContent.vue";
 
 defineProps<{

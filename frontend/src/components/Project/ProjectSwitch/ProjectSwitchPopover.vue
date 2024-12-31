@@ -51,6 +51,8 @@ import { ChevronDownIcon } from "lucide-vue-next";
 import { NButton, NPopover } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
+import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
+import { Drawer } from "@/components/v2";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { isValidProjectName } from "@/types";
 import { useCurrentProject } from "../useCurrentProject";
