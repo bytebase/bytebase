@@ -1113,6 +1113,37 @@ func getTriggers(txn *sql.Tx, extensionDepend map[int]bool) (map[db.TableKey][]*
 	return triggersMap, nil
 }
 
+func getUniqueConstraints(txn *sql.Tx) (map[db.IndexKey]bool, error) {
+	query := `
+	SELECT
+		pn.nspname as schema_name,
+		pg_constraint.conname as constraint_name
+	FROM pg_constraint
+		LEFT JOIN pg_class as pc ON pc.oid = pg_constraint.conrelid
+		LEFT JOIN pg_namespace as pn ON pn.oid = pc.relnamespace
+	WHERE pn.nspname NOT IN (%s) AND pg_constraint.contype = 'u';`
+	rows, err := txn.Query(fmt.Sprintf(query, pgparser.SystemSchemaWhereClause))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[db.IndexKey]bool)
+	for rows.Next() {
+		var schemaName, constraintName string
+		if err := rows.Scan(&schemaName, &constraintName); err != nil {
+			return nil, err
+		}
+		indexKey := db.IndexKey{Schema: schemaName, Index: constraintName}
+		result[indexKey] = true
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 var listIndexQuery = `
 SELECT idx.schemaname, idx.tablename, idx.indexname, idx.indexdef, (SELECT 1
 	FROM information_schema.table_constraints
@@ -1127,6 +1158,11 @@ ORDER BY idx.schemaname, idx.tablename, idx.indexname;`, pgparser.SystemSchemaWh
 
 // getIndexes gets all indices of a database.
 func getIndexes(txn *sql.Tx, indexInheritanceMap map[db.IndexKey]*db.IndexKey) (map[db.TableKey][]*storepb.IndexMetadata, error) {
+	uniqueConstraintMap, err := getUniqueConstraints(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get unique constraints")
+	}
+
 	indexMap := make(map[db.TableKey][]*storepb.IndexMetadata)
 
 	rows, err := txn.Query(listIndexQuery)
@@ -1154,18 +1190,14 @@ func getIndexes(txn *sql.Tx, indexInheritanceMap map[db.IndexKey]*db.IndexKey) (
 		if !ok {
 			return nil, errors.Errorf("statement %q is not index statement", statement)
 		}
-		deparsed, err := pgrawparser.Deparse(pgrawparser.DeparseContext{}, node)
-		if err != nil {
-			return nil, err
-		}
-		// Instead of using indexdef, we use deparsed format so that the definition has quoted identifiers.
-		index.Definition = deparsed
+		index.Definition = statement
 
 		index.Type = getIndexMethodType(statement)
 		index.Unique = node.Index.Unique
 		index.Expressions = node.Index.GetKeyNameList()
 		if primary.Valid && primary.Int32 == 1 {
 			index.Primary = true
+			index.IsConstraint = true
 		}
 		if comment.Valid {
 			index.Comment = comment.String
@@ -1173,6 +1205,11 @@ func getIndexes(txn *sql.Tx, indexInheritanceMap map[db.IndexKey]*db.IndexKey) (
 		if parentKey, ok := indexInheritanceMap[db.IndexKey{Schema: schemaName, Index: index.Name}]; ok && parentKey != nil {
 			index.ParentIndexSchema = parentKey.Schema
 			index.ParentIndexName = parentKey.Index
+		}
+
+		indexKey := db.IndexKey{Schema: schemaName, Index: index.Name}
+		if uniqueConstraintMap[indexKey] {
+			index.IsConstraint = true
 		}
 
 		key := db.TableKey{Schema: schemaName, Table: tableName}
