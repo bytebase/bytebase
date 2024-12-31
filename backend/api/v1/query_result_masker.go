@@ -184,38 +184,6 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 		return masker.NewNoneMasker(), nil
 	}
 
-	semanticTypeID := ""
-	if config != nil {
-		semanticTypeID = config.SemanticTypeId
-	}
-
-	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	maskingPolicyMap := make(map[maskingPolicyKey]*maskData)
-	for _, schemaConfig := range dbSchema.GetConfig().Schemas {
-		for _, tableConfig := range schemaConfig.GetTables() {
-			for _, columnConfig := range tableConfig.GetColumns() {
-				if columnConfig.MaskingLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED {
-					continue
-				}
-				maskingPolicyMap[maskingPolicyKey{
-					schema: schemaConfig.Name,
-					table:  tableConfig.Name,
-					column: columnConfig.Name,
-				}] = &maskData{
-					Schema:                    schemaConfig.Name,
-					Table:                     tableConfig.Name,
-					Column:                    columnConfig.Name,
-					MaskingLevel:              columnConfig.MaskingLevel,
-					FullMaskingAlgorithmID:    columnConfig.FullMaskingAlgorithmId,
-					PartialMaskingAlgorithmID: columnConfig.PartialMaskingAlgorithmId,
-				}
-			}
-		}
-	}
-
 	var maskingExceptionPolicy *storepb.MaskingExceptionPolicy
 	// If we cannot find the maskingExceptionPolicy before, we need to find it from the database and record it in cache.
 
@@ -247,7 +215,7 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 		}
 	}
 
-	maskingAlgorithm, maskingLevel, err := m.evaluateMaskingAlgorithmOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, semanticTypeID, config.ClassificationId, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
+	maskingAlgorithm, maskingLevel, err := m.evaluateMaskingAlgorithmOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, project.DataClassificationConfigID, config, maskingExceptionContainsCurrentPrincipal)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", sourceColumn.Database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column)
 	}
@@ -316,6 +284,12 @@ func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.Algorithm, level sto
 		default:
 			return masker.NewNoneMasker()
 		}
+	}
+	switch algorithm.GetId() {
+	case "default-full":
+		return masker.NewDefaultFullMasker()
+	case "default-partial":
+		return masker.NewDefaultRangeMasker()
 	}
 
 	switch m := algorithm.Mask.(type) {
