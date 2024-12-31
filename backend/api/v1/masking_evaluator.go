@@ -103,8 +103,11 @@ func (m *maskingLevelEvaluator) evaluateMaskingAlgorithmOfColumn(
 			return defaultPartialAlgorithm, nil
 		}
 	}
-	if columnConfig.GetSemanticTypeId() == "default-static" {
+	if columnConfig.GetSemanticTypeId() == "default" {
 		return defaultFullAlgorithm, nil
+	}
+	if columnConfig.GetSemanticTypeId() == "default-partial" {
+		return defaultPartialAlgorithm, nil
 	}
 	semanticType, ok := m.semanticTypesMap[columnConfig.GetSemanticTypeId()]
 	if ok {
