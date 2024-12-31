@@ -10663,6 +10663,11 @@ components:
                 granularity:
                     type: string
                     description: The number of granules in the block. It's a ClickHouse specific field.
+                isConstraint:
+                    type: boolean
+                    description: |-
+                        It's a PostgreSQL specific field.
+                         The unique constraint and unique index are not the same thing in PostgreSQL.
             description: IndexMetadata is the metadata for indexes.
         Instance:
             type: object
