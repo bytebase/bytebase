@@ -281,6 +281,7 @@ func convertStoreIndexMetadata(index *storepb.IndexMetadata) *v1pb.IndexMetadata
 		ParentIndexSchema: index.ParentIndexSchema,
 		ParentIndexName:   index.ParentIndexName,
 		Granularity:       index.Granularity,
+		IsConstraint:      index.IsConstraint,
 	}
 }
 
@@ -815,6 +816,7 @@ func convertV1IndexMetadata(index *v1pb.IndexMetadata) *storepb.IndexMetadata {
 		ParentIndexSchema: index.ParentIndexSchema,
 		ParentIndexName:   index.ParentIndexName,
 		Granularity:       index.Granularity,
+		IsConstraint:      index.IsConstraint,
 	}
 }
 

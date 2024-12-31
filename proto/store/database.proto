@@ -611,6 +611,10 @@ message IndexMetadata {
 
   // The number of granules in the block. It's a ClickHouse specific field.
   int64 granularity = 13;
+
+  // It's a PostgreSQL specific field.
+  // The unique constraint and unique index are not the same thing in PostgreSQL.
+  bool is_constraint = 14;
 }
 
 // ExtensionMetadata is the metadata for extensions.

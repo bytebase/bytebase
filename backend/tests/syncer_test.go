@@ -164,11 +164,12 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 						},
 						Indexes: []*v1pb.IndexMetadata{
 							{
-								Name:        "trd_A_B_c_key",
-								Expressions: []string{`A`, `B`, "c"},
-								Type:        "btree",
-								Unique:      true,
-								Definition:  `CREATE UNIQUE INDEX "trd_A_B_c_key" ON "schema1"."trd" USING btree (A, B, c);`,
+								Name:         "trd_A_B_c_key",
+								Expressions:  []string{`A`, `B`, "c"},
+								Type:         "btree",
+								Unique:       true,
+								Definition:   `CREATE UNIQUE INDEX "trd_A_B_c_key" ON schema1.trd USING btree ("A", "B", c);`,
+								IsConstraint: true,
 							},
 						},
 						IndexSize: 8192,
