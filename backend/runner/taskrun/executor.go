@@ -350,16 +350,6 @@ func postMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInf
 	instance := mc.instance
 	database := mc.database
 
-	if mi.Type == db.Migrate || mi.Type == db.MigrateSDL {
-		if _, err := stores.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-			InstanceID:    instance.ResourceID,
-			DatabaseName:  database.DatabaseName,
-			SchemaVersion: &mi.Version,
-		}, api.SystemBotID); err != nil {
-			return true, nil, errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, instance.ResourceID)
-		}
-	}
-
 	slog.Debug("Post migration...",
 		slog.String("instance", instance.ResourceID),
 		slog.String("database", database.DatabaseName),
@@ -401,17 +391,10 @@ func postMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInf
 		detail = fmt.Sprintf("Established baseline version %s for database %q.", mi.Version.Version, database.DatabaseName)
 	}
 
-	storedVersion, err := mi.Version.Marshal()
-	if err != nil {
-		slog.Error("failed to convert database schema version",
-			slog.String("version", mi.Version.Version),
-			log.BBError(err),
-		)
-	}
 	return true, &storepb.TaskRunResult{
 		Detail:    detail,
 		Changelog: common.FormatChangelog(instance.ResourceID, database.DatabaseName, mc.changelog),
-		Version:   storedVersion,
+		Version:   mc.version,
 	}, nil
 }
 
