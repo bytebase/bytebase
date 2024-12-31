@@ -505,6 +505,15 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 
 func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMessage, task *store.TaskMessage, executor Executor) {
 	defer func() {
+		if r := recover(); r != nil {
+			err, ok := r.(error)
+			if !ok {
+				err = errors.Errorf("%v", r)
+			}
+			slog.Error("Task scheduler V2 runTaskRunOnce PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
+		}
+	}()
+	defer func() {
 		// We don't need to do s.stateCfg.RunningTaskRuns.Delete(taskRun.ID) to avoid race condition.
 		s.stateCfg.RunningTaskRunsCancelFunc.Delete(taskRun.ID)
 		if task.DatabaseID != nil {
@@ -538,8 +547,8 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		)
 		resultBytes, marshalErr := protojson.Marshal(&storepb.TaskRunResult{
 			Detail:    "The task run is canceled",
-			Changelog: result.Changelog,
-			Version:   result.Version,
+			Changelog: "",
+			Version:   "",
 		})
 		if marshalErr != nil {
 			slog.Error("Failed to marshal task run result",
@@ -580,7 +589,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 
 		taskRunResult := &storepb.TaskRunResult{
 			Detail:    err.Error(),
-			Changelog: result.Changelog,
+			Changelog: "",
 			Version:   "",
 		}
 
