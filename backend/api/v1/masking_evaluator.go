@@ -65,7 +65,7 @@ func (m *maskingLevelEvaluator) getDataClassificationConfig(classificationID str
 
 var (
 	defaultFullAlgorithm = &storepb.Algorithm{
-		Id: "default-full",
+		Id: "default",
 	}
 	defaultPartialAlgorithm = &storepb.Algorithm{
 		Id: "default-partial",
