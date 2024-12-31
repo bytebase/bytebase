@@ -20,16 +20,6 @@
     >
       <SearchBox v-model:value="state.searchText" style="max-width: 100%" />
       <div class="flex items-center space-x-2">
-        <MaskingLevelDropdown
-          v-model:level="state.selectedMaskLevel"
-          style="width: 12rem"
-          :clearable="true"
-          :level-list="[
-            MaskingLevel.FULL,
-            MaskingLevel.PARTIAL,
-            MaskingLevel.NONE,
-          ]"
-        />
         <NButton
           type="primary"
           :disabled="
@@ -125,7 +115,6 @@ import {
 } from "@/components/FeatureGuard";
 import GrantAccessDrawer from "@/components/SensitiveData/GrantAccessDrawer.vue";
 import SensitiveColumnDrawer from "@/components/SensitiveData/SensitiveColumnDrawer.vue";
-import MaskingLevelDropdown from "@/components/SensitiveData/components/MaskingLevelDropdown.vue";
 import SensitiveColumnTable from "@/components/SensitiveData/components/SensitiveColumnTable.vue";
 import type { MaskData } from "@/components/SensitiveData/types";
 import { isCurrentColumnException } from "@/components/SensitiveData/utils";
@@ -138,7 +127,6 @@ import {
   useDatabaseCatalog,
 } from "@/store";
 import { type ComposedDatabase } from "@/types";
-import { MaskingLevel } from "@/types/proto/v1/common";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { autoDatabaseRoute, hasProjectPermissionV2 } from "@/utils";
 import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";
@@ -155,7 +143,6 @@ interface LocalState {
   pendingGrantAccessColumn: MaskData[];
   showGrantAccessDrawer: boolean;
   showSensitiveColumnDrawer: boolean;
-  selectedMaskLevel?: MaskingLevel;
 }
 
 const state = reactive<LocalState>({
@@ -199,18 +186,10 @@ const updateList = async () => {
   for (const schema of databaseCatalog.value.schemas) {
     for (const table of schema.tables) {
       for (const column of table.columns?.columns ?? []) {
-        if (
-          column.maskingLevel === MaskingLevel.MASKING_LEVEL_UNSPECIFIED
-        ) {
-          continue;
-        }
         sensitiveColumnList.push({
           schema: schema.name,
           table: table.name,
           column: column.name,
-          maskingLevel: column.maskingLevel,
-          fullMaskingAlgorithmId: column.fullMaskingAlgorithmId,
-          partialMaskingAlgorithmId: column.partialMaskingAlgorithmId,
         });
       }
     }
@@ -224,9 +203,6 @@ watch(databaseCatalog, updateList, { immediate: true, deep: true });
 
 const filteredColumnList = computed(() => {
   let list = state.sensitiveColumnList;
-  if (state.selectedMaskLevel) {
-    list = list.filter((item) => item.maskingLevel === state.selectedMaskLevel);
-  }
   const searchText = state.searchText.trim().toLowerCase();
   if (searchText) {
     list = list.filter(
@@ -246,7 +222,6 @@ const removeSensitiveColumn = async (sensitiveColumn: MaskData) => {
     table: sensitiveColumn.table,
     column: sensitiveColumn.column,
     columnCatalog: {
-      maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
     },
   });
   await removeMaskingExceptions(sensitiveColumn);
