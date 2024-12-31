@@ -19,18 +19,16 @@
 
 <script lang="tsx" setup>
 import { CheckIcon, PencilIcon, TrashIcon, Undo2Icon } from "lucide-vue-next";
-import { NPopconfirm, NSelect, NInput, NDataTable } from "naive-ui";
-import type { SelectOption, DataTableColumn } from "naive-ui";
+import { NPopconfirm, NInput, NDataTable } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { MiniActionButton } from "@/components/v2";
-import { useSettingV1Store } from "@/store";
 import {
   Algorithm,
   type SemanticTypeSetting_SemanticType,
 } from "@/types/proto/v1/setting_service";
-import { isDev } from "@/utils";
 import MaskingAlgorithmsCreateDrawer from "./MaskingAlgorithmsCreateDrawer.vue";
 
 type SemanticItemMode = "NORMAL" | "CREATE" | "EDIT";
@@ -70,7 +68,6 @@ const state = reactive<LocalState>({
 });
 
 const { t } = useI18n();
-const settingStore = useSettingV1Store();
 
 const onDrawerDismiss = () => {
   state.pendingEditSemanticIndex = undefined;
@@ -137,115 +134,40 @@ const columnList = computed(() => {
       },
     },
   ];
-  if (isDev()) {
-    columns.push({
-      key: "algorithm",
-      title: t(
-        "settings.sensitive-data.semantic-types.table.masking-algorithm"
-      ),
-      width: "minmax(min-content, auto)",
-      render: (item, row) => {
-        return (
-          <div class="flex items-center space-x-1">
-            <h3>
-              {item.item.algorithms?.title ??
-                t("settings.sensitive-data.algorithms.default")}
-            </h3>
-            {!props.readonly && (
-              <MiniActionButton
-                onClick={() => {
-                  state.pendingEditAlgorithm =
-                    item.item.algorithms ??
-                    Algorithm.fromPartial({
-                      id: uuidv4(),
-                    });
-                  state.pendingEditSemanticIndex = row;
-                  state.showAlgorithmDrawer = true;
-                }}
-              >
-                <PencilIcon class="w-4 h-4" />
-              </MiniActionButton>
-            )}
-          </div>
-        );
-      },
-    });
-  } else {
-    columns.push(
-      {
-        key: "full-masking-algorithm",
-        title: t(
-          "settings.sensitive-data.semantic-types.table.full-masking-algorithm"
-        ),
-        width: "minmax(min-content, auto)",
-        render: (item, row) => {
-          if (item.mode === "NORMAL") {
-            return (
-              <h3>
-                {getAlgorithmById(item.item.fullMaskAlgorithmId)?.label ??
-                  t("settings.sensitive-data.algorithms.default")}
-              </h3>
-            );
-          }
-
-          return (
-            <NSelect
-              value={item.item.fullMaskAlgorithmId}
-              options={algorithmList.value}
-              consistentMenuWidth={false}
-              placeholder={t("settings.sensitive-data.algorithms.default")}
-              fallbackOption={(_: string) => ({
-                label: t("settings.sensitive-data.algorithms.default"),
-                value: "",
-              })}
-              clearable
-              size="small"
-              style="min-width: 7rem; width: auto; overflow-x: hidden"
-              onUpdateValue={(val) =>
-                onInput(row, (data) => (data.item.fullMaskAlgorithmId = val))
-              }
-            />
-          );
-        },
-      },
-      {
-        key: "partial-masking-algorithm",
-        title: t(
-          "settings.sensitive-data.semantic-types.table.partial-masking-algorithm"
-        ),
-        width: "minmax(min-content, auto)",
-        render: (item, row) => {
-          if (item.mode === "NORMAL") {
-            return (
-              <h3>
-                {getAlgorithmById(item.item.partialMaskAlgorithmId)?.label ??
-                  t("settings.sensitive-data.algorithms.default")}
-              </h3>
-            );
-          }
-
-          return (
-            <NSelect
-              value={item.item.partialMaskAlgorithmId}
-              options={algorithmList.value}
-              consistentMenuWidth={false}
-              placeholder={t("settings.sensitive-data.algorithms.default")}
-              fallbackOption={(_: string) => ({
-                label: t("settings.sensitive-data.algorithms.default"),
-                value: "",
-              })}
-              clearable
-              size="small"
-              style="min-width: 7rem; width: auto; overflow-x: hidden"
-              onUpdateValue={(val) =>
-                onInput(row, (data) => (data.item.partialMaskAlgorithmId = val))
-              }
-            />
-          );
-        },
-      }
-    );
-  }
+  
+  columns.push({
+    key: "algorithm",
+    title: t(
+      "settings.sensitive-data.semantic-types.table.masking-algorithm"
+    ),
+    width: "minmax(min-content, auto)",
+    render: (item, row) => {
+      return (
+        <div class="flex items-center space-x-1">
+          <h3>
+            {item.item.algorithms?.title ??
+              t("settings.sensitive-data.algorithms.default")}
+          </h3>
+          {!props.readonly && (
+            <MiniActionButton
+              onClick={() => {
+                state.pendingEditAlgorithm =
+                  item.item.algorithms ??
+                  Algorithm.fromPartial({
+                    id: uuidv4(),
+                  });
+                state.pendingEditSemanticIndex = row;
+                state.showAlgorithmDrawer = true;
+              }}
+            >
+              <PencilIcon class="w-4 h-4" />
+            </MiniActionButton>
+          )}
+        </div>
+      );
+    },
+  });
+  
   if (!props.readonly) {
     // operation.
     columns.push({
@@ -319,27 +241,6 @@ const onInput = (index: number, callback: (item: SemanticItem) => void) => {
   }
   callback(item);
   item.dirty = true;
-};
-
-const algorithmList = computed((): SelectOption[] => {
-  const list = (
-    settingStore.getSettingByName("bb.workspace.masking-algorithm")?.value
-      ?.maskingAlgorithmSettingValue?.algorithms ?? []
-  ).map((algorithm) => ({
-    label: algorithm.title,
-    value: algorithm.id,
-  }));
-
-  list.unshift({
-    label: t("settings.sensitive-data.algorithms.default"),
-    value: "",
-  });
-
-  return list;
-});
-
-const getAlgorithmById = (algorithmId: string) => {
-  return algorithmList.value.find((a) => a.value === algorithmId);
 };
 
 const isConfirmDisabled = (data: SemanticItem): boolean => {

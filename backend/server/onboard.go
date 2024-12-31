@@ -319,7 +319,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	schemaConfig := dbModelConfig.CreateOrGetSchemaConfig("public")
 	tableConfig := schemaConfig.CreateOrGetTableConfig("salary")
 	columnConfig := tableConfig.CreateOrGetColumnConfig("amount")
-	columnConfig.MaskingLevel = storepb.MaskingLevel_FULL
+	columnConfig.SemanticTypeId = "default-static"
 
 	if err := s.store.UpdateDBSchema(ctx, prodDatabase.UID, &store.UpdateDBSchemaMessage{Config: dbModelConfig.BuildDatabaseConfig()}, userID); err != nil {
 		return errors.Wrapf(err, "failed to update db config for database %v", prodDatabase.UID)
