@@ -979,9 +979,6 @@
 | semantic_type_id | [string](#string) |  |  |
 | labels | [ColumnCatalog.LabelsEntry](#bytebase-v1-ColumnCatalog-LabelsEntry) | repeated | The user labels for a column. |
 | classification_id | [string](#string) |  |  |
-| masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
-| full_masking_algorithm_id | [string](#string) |  |  |
-| partial_masking_algorithm_id | [string](#string) |  |  |
 | object_schema | [ObjectSchema](#bytebase-v1-ObjectSchema) | optional |  |
 
 
