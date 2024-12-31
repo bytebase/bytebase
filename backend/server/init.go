@@ -287,9 +287,11 @@ func (s *Server) migrateMaskingData(ctx context.Context) error {
 			schemaConfig := dbModelConfig.CreateOrGetSchemaConfig(mask.Schema)
 			tableConfig := schemaConfig.CreateOrGetTableConfig(mask.Table)
 			columnConfig := tableConfig.CreateOrGetColumnConfig(mask.Column)
-			columnConfig.MaskingLevel = mask.MaskingLevel
-			columnConfig.FullMaskingAlgorithmId = mask.FullMaskingAlgorithmId
-			columnConfig.PartialMaskingAlgorithmId = mask.PartialMaskingAlgorithmId
+			if mask.FullMaskingAlgorithmId != "" {
+				columnConfig.SemanticTypeId = mask.FullMaskingAlgorithmId
+			} else if mask.PartialMaskingAlgorithmId != "" {
+				columnConfig.SemanticTypeId = mask.PartialMaskingAlgorithmId
+			}
 		}
 
 		if err := s.store.UpdateDBSchema(ctx, policy.ResourceUID, &store.UpdateDBSchemaMessage{Config: dbModelConfig.BuildDatabaseConfig()}, api.SystemBotID); err != nil {

@@ -465,18 +465,6 @@ export interface SemanticTypeSetting_SemanticType {
   title: string;
   /** the description of the semantic type, it can be empty. */
   description: string;
-  /**
-   * Deprecated.
-   * the partial mask algorithm id for the semantic type, if it is empty,
-   * should use the default partial mask algorithm.
-   */
-  partialMaskAlgorithmId: string;
-  /**
-   * Deprecated.
-   * the full mask algorithm id for the semantic type, if it is empty, should
-   * use the default full mask algorithm.
-   */
-  fullMaskAlgorithmId: string;
   algorithms: Algorithm | undefined;
 }
 
@@ -2762,14 +2750,7 @@ export const SemanticTypeSetting: MessageFns<SemanticTypeSetting> = {
 };
 
 function createBaseSemanticTypeSetting_SemanticType(): SemanticTypeSetting_SemanticType {
-  return {
-    id: "",
-    title: "",
-    description: "",
-    partialMaskAlgorithmId: "",
-    fullMaskAlgorithmId: "",
-    algorithms: undefined,
-  };
+  return { id: "", title: "", description: "", algorithms: undefined };
 }
 
 export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_SemanticType> = {
@@ -2782,12 +2763,6 @@ export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_Se
     }
     if (message.description !== "") {
       writer.uint32(26).string(message.description);
-    }
-    if (message.partialMaskAlgorithmId !== "") {
-      writer.uint32(34).string(message.partialMaskAlgorithmId);
-    }
-    if (message.fullMaskAlgorithmId !== "") {
-      writer.uint32(42).string(message.fullMaskAlgorithmId);
     }
     if (message.algorithms !== undefined) {
       Algorithm.encode(message.algorithms, writer.uint32(50).fork()).join();
@@ -2826,22 +2801,6 @@ export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_Se
           message.description = reader.string();
           continue;
         }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.partialMaskAlgorithmId = reader.string();
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.fullMaskAlgorithmId = reader.string();
-          continue;
-        }
         case 6: {
           if (tag !== 50) {
             break;
@@ -2864,10 +2823,6 @@ export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_Se
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       description: isSet(object.description) ? globalThis.String(object.description) : "",
-      partialMaskAlgorithmId: isSet(object.partialMaskAlgorithmId)
-        ? globalThis.String(object.partialMaskAlgorithmId)
-        : "",
-      fullMaskAlgorithmId: isSet(object.fullMaskAlgorithmId) ? globalThis.String(object.fullMaskAlgorithmId) : "",
       algorithms: isSet(object.algorithms) ? Algorithm.fromJSON(object.algorithms) : undefined,
     };
   },
@@ -2883,12 +2838,6 @@ export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_Se
     if (message.description !== "") {
       obj.description = message.description;
     }
-    if (message.partialMaskAlgorithmId !== "") {
-      obj.partialMaskAlgorithmId = message.partialMaskAlgorithmId;
-    }
-    if (message.fullMaskAlgorithmId !== "") {
-      obj.fullMaskAlgorithmId = message.fullMaskAlgorithmId;
-    }
     if (message.algorithms !== undefined) {
       obj.algorithms = Algorithm.toJSON(message.algorithms);
     }
@@ -2903,8 +2852,6 @@ export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_Se
     message.id = object.id ?? "";
     message.title = object.title ?? "";
     message.description = object.description ?? "";
-    message.partialMaskAlgorithmId = object.partialMaskAlgorithmId ?? "";
-    message.fullMaskAlgorithmId = object.fullMaskAlgorithmId ?? "";
     message.algorithms = (object.algorithms !== undefined && object.algorithms !== null)
       ? Algorithm.fromPartial(object.algorithms)
       : undefined;

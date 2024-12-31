@@ -139,14 +139,11 @@ func convertTableCatalog(t *storepb.TableCatalog) *v1pb.TableCatalog {
 
 func convertColumnCatalog(c *storepb.ColumnCatalog) *v1pb.ColumnCatalog {
 	return &v1pb.ColumnCatalog{
-		Name:                      c.Name,
-		SemanticTypeId:            c.SemanticTypeId,
-		Labels:                    c.Labels,
-		ClassificationId:          c.ClassificationId,
-		MaskingLevel:              convertToV1PBMaskingLevel(c.MaskingLevel),
-		FullMaskingAlgorithmId:    c.FullMaskingAlgorithmId,
-		PartialMaskingAlgorithmId: c.PartialMaskingAlgorithmId,
-		ObjectSchema:              convertStoreObjectSchema(c.ObjectSchema),
+		Name:             c.Name,
+		SemanticTypeId:   c.SemanticTypeId,
+		Labels:           c.Labels,
+		ClassificationId: c.ClassificationId,
+		ObjectSchema:     convertStoreObjectSchema(c.ObjectSchema),
 	}
 }
 
@@ -215,14 +212,11 @@ func convertV1TableCatalog(t *v1pb.TableCatalog) *storepb.TableCatalog {
 
 func convertV1ColumnCatalog(c *v1pb.ColumnCatalog) *storepb.ColumnCatalog {
 	return &storepb.ColumnCatalog{
-		Name:                      c.Name,
-		SemanticTypeId:            c.SemanticTypeId,
-		Labels:                    c.Labels,
-		ClassificationId:          c.ClassificationId,
-		MaskingLevel:              convertToStorePBMaskingLevel(c.MaskingLevel),
-		FullMaskingAlgorithmId:    c.FullMaskingAlgorithmId,
-		PartialMaskingAlgorithmId: c.PartialMaskingAlgorithmId,
-		ObjectSchema:              convertV1ObjectSchema(c.GetObjectSchema()),
+		Name:             c.Name,
+		SemanticTypeId:   c.SemanticTypeId,
+		Labels:           c.Labels,
+		ClassificationId: c.ClassificationId,
+		ObjectSchema:     convertV1ObjectSchema(c.GetObjectSchema()),
 	}
 }
 
