@@ -910,8 +910,11 @@ export interface ColumnCatalog {
   /** The user labels for a column. */
   labels: { [key: string]: string };
   classificationId: string;
+  /** Deprecated. */
   maskingLevel: MaskingLevel;
+  /** Deprecated. */
   fullMaskingAlgorithmId: string;
+  /** Deprecated. */
   partialMaskingAlgorithmId: string;
   objectSchema?: ObjectSchema | undefined;
 }

@@ -39,11 +39,6 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*base.Query
 		return errors.Wrapf(err, "failed to find masking rule policy")
 	}
 
-	algorithmSetting, err := s.store.GetMaskingAlgorithmSetting(ctx)
-	if err != nil {
-		return errors.Wrapf(err, "failed to find masking algorithm setting")
-	}
-
 	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "failed to find semantic types setting")
@@ -52,7 +47,6 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*base.Query
 	m := newEmptyMaskingLevelEvaluator().
 		withMaskingRulePolicy(maskingRulePolicy).
 		withDataClassificationSetting(classificationSetting).
-		withMaskingAlgorithmSetting(algorithmSetting).
 		withSemanticTypeSetting(semanticTypesSetting)
 
 	// We expect the len(spans) == len(results), but to avoid NPE, we use the min(len(spans), len(results)) here.
@@ -215,11 +209,11 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 		}
 	}
 
-	maskingAlgorithm, maskingLevel, err := m.evaluateMaskingAlgorithmOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, project.DataClassificationConfigID, config, maskingExceptionContainsCurrentPrincipal)
+	maskingAlgorithm, err := m.evaluateMaskingAlgorithmOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, project.DataClassificationConfigID, config, maskingExceptionContainsCurrentPrincipal)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", sourceColumn.Database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column)
 	}
-	return getMaskerByMaskingAlgorithmAndLevel(maskingAlgorithm, maskingLevel), nil
+	return getMaskerByMaskingAlgorithmAndLevel(maskingAlgorithm), nil
 }
 
 func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, instanceID string, sourceColumn *base.ColumnResource) (*storepb.ColumnMetadata, *storepb.ColumnCatalog, error) {
@@ -274,16 +268,9 @@ func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, inst
 	return columnMetadata, columnConfig, nil
 }
 
-func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.Algorithm, level storepb.MaskingLevel) masker.Masker {
+func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.Algorithm) masker.Masker {
 	if algorithm == nil {
-		switch level {
-		case storepb.MaskingLevel_FULL:
-			return masker.NewDefaultFullMasker()
-		case storepb.MaskingLevel_PARTIAL:
-			return masker.NewDefaultRangeMasker()
-		default:
-			return masker.NewNoneMasker()
-		}
+		return masker.NewNoneMasker()
 	}
 	switch algorithm.GetId() {
 	case "default-full":
