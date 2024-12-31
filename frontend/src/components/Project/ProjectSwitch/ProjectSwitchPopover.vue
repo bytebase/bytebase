@@ -27,8 +27,23 @@
       </NButton>
     </template>
 
-    <ProjectSwitchContent />
+    <ProjectSwitchContent
+      @on-create="
+        () => {
+          state.showCreateDrawer = true;
+          state.showPopover = false;
+        }
+      "
+    />
   </NPopover>
+  <Drawer
+    :auto-focus="true"
+    :close-on-esc="true"
+    :show="state.showCreateDrawer"
+    @close="state.showCreateDrawer = false"
+  >
+    <ProjectCreatePanel @dismiss="state.showCreateDrawer = false" />
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
@@ -36,6 +51,8 @@ import { ChevronDownIcon } from "lucide-vue-next";
 import { NButton, NPopover } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
+import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
+import { Drawer } from "@/components/v2";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { isValidProjectName } from "@/types";
 import { useCurrentProject } from "../useCurrentProject";
@@ -43,10 +60,12 @@ import ProjectSwitchContent from "./ProjectSwitchContent.vue";
 
 interface LocalState {
   showPopover: boolean;
+  showCreateDrawer: boolean;
 }
 
 const state = reactive<LocalState>({
   showPopover: false,
+  showCreateDrawer: false,
 });
 const router = useRouter();
 
