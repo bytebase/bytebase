@@ -108,7 +108,7 @@ func (m *maskingLevelEvaluator) evaluateMaskingAlgorithmOfColumn(
 	}
 	semanticType, ok := m.semanticTypesMap[columnConfig.GetSemanticTypeId()]
 	if ok {
-		return semanticType.GetAlgorithms(), nil
+		return semanticType.GetAlgorithm(), nil
 	}
 	return nil, nil
 }

@@ -4719,7 +4719,7 @@ SlowQueryPolicy is the policy configuration for slow query.
 | id | [string](#string) |  | id is the uuid for semantic type. |
 | title | [string](#string) |  | the title of the semantic type, it should not be empty. |
 | description | [string](#string) |  | the description of the semantic type, it can be empty. |
-| algorithms | [Algorithm](#bytebase-store-Algorithm) |  |  |
+| algorithm | [Algorithm](#bytebase-store-Algorithm) |  |  |
 
 
 
