@@ -13803,7 +13803,7 @@ components:
                 description:
                     type: string
                     description: the description of the semantic type, it can be empty.
-                algorithms:
+                algorithm:
                     $ref: '#/components/schemas/Algorithm'
         SetIamPolicyRequest:
             required:

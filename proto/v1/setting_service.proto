@@ -401,7 +401,7 @@ message SemanticTypeSetting {
     // the description of the semantic type, it can be empty.
     string description = 3;
 
-    Algorithm algorithms = 6;
+    Algorithm algorithm = 6;
   }
 
   repeated SemanticType types = 1;

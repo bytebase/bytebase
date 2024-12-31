@@ -5007,7 +5007,7 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 | id | [string](#string) |  | id is the uuid for semantic type. |
 | title | [string](#string) |  | the title of the semantic type, it should not be empty. |
 | description | [string](#string) |  | the description of the semantic type, it can be empty. |
-| algorithms | [Algorithm](#bytebase-v1-Algorithm) |  |  |
+| algorithm | [Algorithm](#bytebase-v1-Algorithm) |  |  |
 
 
 

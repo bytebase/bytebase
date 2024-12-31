@@ -18,7 +18,7 @@ export const getSemanticTemplateList = () => {
       description: t(
         `settings.sensitive-data.semantic-types.template.${buildInSemantic.id}.description`
       ),
-      algorithms: buildInSemantic.algorithm,
+      algorithm: buildInSemantic.algorithm,
     })
   );
 };

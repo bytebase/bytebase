@@ -80,7 +80,7 @@ const onAlgorithmUpsert = async (maskingAlgorithm: Algorithm) => {
   }
   onInput(
     state.pendingEditSemanticIndex,
-    (data) => (data.item.algorithms = maskingAlgorithm)
+    (data) => (data.item.algorithm = maskingAlgorithm)
   );
   emit("confirm", state.pendingEditSemanticIndex);
   onDrawerDismiss();
@@ -145,14 +145,14 @@ const columnList = computed(() => {
       return (
         <div class="flex items-center space-x-1">
           <h3>
-            {item.item.algorithms?.title ??
+            {item.item.algorithm?.title ??
               t("settings.sensitive-data.algorithms.default")}
           </h3>
           {!props.readonly && (
             <MiniActionButton
               onClick={() => {
                 state.pendingEditAlgorithm =
-                  item.item.algorithms ??
+                  item.item.algorithm ??
                   Algorithm.fromPartial({
                     id: uuidv4(),
                   });
