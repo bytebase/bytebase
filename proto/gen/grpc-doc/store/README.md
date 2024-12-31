@@ -930,6 +930,9 @@ Metadata about the request.
 | semantic_type_id | [string](#string) |  |  |
 | labels | [ColumnCatalog.LabelsEntry](#bytebase-store-ColumnCatalog-LabelsEntry) | repeated | The user labels for a column. |
 | classification_id | [string](#string) |  |  |
+| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  | Deprecated. |
+| full_masking_algorithm_id | [string](#string) |  | Deprecated. |
+| partial_masking_algorithm_id | [string](#string) |  | Deprecated. |
 | object_schema | [ObjectSchema](#bytebase-store-ObjectSchema) | optional |  |
 
 
