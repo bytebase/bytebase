@@ -9,6 +9,8 @@ import (
 
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -152,6 +154,9 @@ func (s *Store) ListLegacyCatalog(ctx context.Context) ([]int, error) {
 			return nil, err
 		}
 		ids = append(ids, databaseID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "rows err")
 	}
 
 	return ids, nil
