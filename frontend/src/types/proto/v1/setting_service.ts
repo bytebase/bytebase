@@ -598,7 +598,7 @@ export interface SemanticTypeSetting_SemanticType {
   title: string;
   /** the description of the semantic type, it can be empty. */
   description: string;
-  algorithms: Algorithm | undefined;
+  algorithm: Algorithm | undefined;
 }
 
 export interface MaskingAlgorithmSetting {
@@ -4229,7 +4229,7 @@ export const SemanticTypeSetting: MessageFns<SemanticTypeSetting> = {
 };
 
 function createBaseSemanticTypeSetting_SemanticType(): SemanticTypeSetting_SemanticType {
-  return { id: "", title: "", description: "", algorithms: undefined };
+  return { id: "", title: "", description: "", algorithm: undefined };
 }
 
 export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_SemanticType> = {
@@ -4243,8 +4243,8 @@ export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_Se
     if (message.description !== "") {
       writer.uint32(26).string(message.description);
     }
-    if (message.algorithms !== undefined) {
-      Algorithm.encode(message.algorithms, writer.uint32(50).fork()).join();
+    if (message.algorithm !== undefined) {
+      Algorithm.encode(message.algorithm, writer.uint32(50).fork()).join();
     }
     return writer;
   },
@@ -4285,7 +4285,7 @@ export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_Se
             break;
           }
 
-          message.algorithms = Algorithm.decode(reader, reader.uint32());
+          message.algorithm = Algorithm.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -4302,7 +4302,7 @@ export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_Se
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       description: isSet(object.description) ? globalThis.String(object.description) : "",
-      algorithms: isSet(object.algorithms) ? Algorithm.fromJSON(object.algorithms) : undefined,
+      algorithm: isSet(object.algorithm) ? Algorithm.fromJSON(object.algorithm) : undefined,
     };
   },
 
@@ -4317,8 +4317,8 @@ export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_Se
     if (message.description !== "") {
       obj.description = message.description;
     }
-    if (message.algorithms !== undefined) {
-      obj.algorithms = Algorithm.toJSON(message.algorithms);
+    if (message.algorithm !== undefined) {
+      obj.algorithm = Algorithm.toJSON(message.algorithm);
     }
     return obj;
   },
@@ -4331,8 +4331,8 @@ export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_Se
     message.id = object.id ?? "";
     message.title = object.title ?? "";
     message.description = object.description ?? "";
-    message.algorithms = (object.algorithms !== undefined && object.algorithms !== null)
-      ? Algorithm.fromPartial(object.algorithms)
+    message.algorithm = (object.algorithm !== undefined && object.algorithm !== null)
+      ? Algorithm.fromPartial(object.algorithm)
       : undefined;
     return message;
   },
