@@ -141,7 +141,7 @@
     "micromark": "^4.0.0",
     "micromark-util-sanitize-uri": "^2.0.0",
     "postcss": "8.4.47",
-    "prettier": "3.4.1",
+    "prettier": "3.4.2",
     "protobufjs": "^7.2.5",
     "remark-gfm": "^4.0.0",
     "remark-parse": "^11.0.0",
