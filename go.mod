@@ -39,7 +39,7 @@ require (
 	github.com/epiclabs-io/diff3 v0.0.0-20241115194849-280ec18688b6
 	github.com/github/gh-ost v1.1.6
 	github.com/go-ego/gse v0.80.3
-	github.com/go-ldap/ldap/v3 v3.4.9
+	github.com/go-ldap/ldap/v3 v3.4.10
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/golang-sql/sqlexp v0.1.0
