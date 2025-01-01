@@ -210,8 +210,8 @@ cloud.google.com/go/datacatalog v1.8.0/go.mod h1:KYuoVOv9BM8EYz/4eMFxrr4DUKhGIOX
 cloud.google.com/go/datacatalog v1.8.1/go.mod h1:RJ58z4rMp3gvETA465Vg+ag8BGgBdnRPEMMSTr5Uv+M=
 cloud.google.com/go/datacatalog v1.12.0/go.mod h1:CWae8rFkfp6LzLumKOnmVh4+Zle4A3NXLzVJ1d1mRm0=
 cloud.google.com/go/datacatalog v1.13.0/go.mod h1:E4Rj9a5ZtAxcQJlEBTLgMTphfP11/lNaAshpoBgemX8=
-cloud.google.com/go/datacatalog v1.24.0 h1:wHW0Tm1OBvqrLF4+nS7xDrEsElTe1eAJopkfVGWY/Xo=
-cloud.google.com/go/datacatalog v1.24.0/go.mod h1:9Wamq8TDfL2680Sav7q3zEhBJSPBrDxJU8WtPJ25dBM=
+cloud.google.com/go/datacatalog v1.24.1 h1:sCt0QyOFkFf0Z+i+HkwyCdfD9FlA1zymteiX2dlAUWM=
+cloud.google.com/go/datacatalog v1.24.1/go.mod h1:f5hViO0pHZ46BDJ78HtwJ225NX4rQgVseLxNW73TDAs=
 cloud.google.com/go/dataflow v0.6.0/go.mod h1:9QwV89cGoxjjSR9/r7eFDqqjtvbKxAK2BaYU6PVk9UM=
 cloud.google.com/go/dataflow v0.7.0/go.mod h1:PX526vb4ijFMesO1o202EaUmouZKBpjHsTlCtB4parQ=
 cloud.google.com/go/dataflow v0.8.0/go.mod h1:Rcf5YgTKPtQyYz8bLYhFoIV/vP39eL7fWNcSOyFfLJE=
@@ -2795,8 +2795,8 @@ google.golang.org/genproto v0.0.0-20230323212658-478b75c54725/go.mod h1:UUQDJDOl
 google.golang.org/genproto v0.0.0-20230330154414-c0448cd141ea/go.mod h1:UUQDJDOlWu4KYeJZffbWgBkS1YFobzKbLVfK69pe0Ak=
 google.golang.org/genproto v0.0.0-20230331144136-dcfb400f0633/go.mod h1:UUQDJDOlWu4KYeJZffbWgBkS1YFobzKbLVfK69pe0Ak=
 google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1/go.mod h1:nKE/iIaLqn2bQwXBg8f1g2Ylh6r5MN5CmZvuzZCgsCU=
-google.golang.org/genproto v0.0.0-20241219192143-6b3ec007d9bb h1:JGs+s1Q6osip3cDY197L1HmkuPn8wPp9Hfy9jl+Uz+U=
-google.golang.org/genproto v0.0.0-20241219192143-6b3ec007d9bb/go.mod h1:o8GgNarfULyZPNaIY8RDfXM7AZcmcKC/tbMWp/ZOFDw=
+google.golang.org/genproto v0.0.0-20241230172942-26aa7a208def h1:uz2w9bZTljGBXc3ugqrL/KOsVhQuODYyLNYXUTKrh6M=
+google.golang.org/genproto v0.0.0-20241230172942-26aa7a208def/go.mod h1:zNtPaqLK0Wbf5PaSZDYDR+1t5rQoBAIMh06tpzkjvY8=
 google.golang.org/genproto/googleapis/api v0.0.0-20241230172942-26aa7a208def h1:0Km0hi+g2KXbXL0+riZzSCKz23f4MmwicuEb00JeonI=
 google.golang.org/genproto/googleapis/api v0.0.0-20241230172942-26aa7a208def/go.mod h1:u2DoMSpCXjrzqLdobRccQMc9wrnMAJ1DLng0a2yqM2Q=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20241223144023-3abc09e42ca8 h1:TqExAhdPaB60Ux47Cn0oLV07rGnxZzIsaRhQaqS666A=
