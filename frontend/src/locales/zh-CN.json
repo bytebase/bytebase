@@ -1494,6 +1494,7 @@
     "account": "账户",
     "name": "名称",
     "host-or-socket": "Host 或 Socket",
+    "endpoint": "端点",
     "project-id-and-instance-id": "项目 ID 与实例 ID",
     "project-id": "项目 ID",
     "instance-id": "实例 ID",
@@ -2086,7 +2087,7 @@
       },
       "direct-messages": "私信通知",
       "enable-direct-messages": "启用私信通知",
-      "direct-messages-tip": "启用后，Bytebase 将私信通知相关用户（通过电子邮箱匹配）。",
+      "direct-messages-tip": "启用后，Bytebase 将私信通知相关用户（通过电子邮箱匹配）。仅支持：{events}",
       "direct-messages-warning": "您需要配置 {im} 才能使其正常工作。",
       "activity-support-direct-message": "支持向相关用户发送私信通知",
       "activity-item": {

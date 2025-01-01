@@ -727,6 +727,25 @@
         
           
           <li>
+            <a href="#store%2fdeprecated.proto">store/deprecated.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.DeprecatedMaskData"><span class="badge">M</span>DeprecatedMaskData</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.DeprecatedMaskingPolicy"><span class="badge">M</span>DeprecatedMaskingPolicy</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2fexport_archive.proto">store/export_archive.proto</a>
             <ul>
               
@@ -1062,19 +1081,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.MaskData"><span class="badge">M</span>MaskData</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.MaskingExceptionPolicy"><span class="badge">M</span>MaskingExceptionPolicy</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.store.MaskingExceptionPolicy.MaskingException"><span class="badge">M</span>MaskingExceptionPolicy.MaskingException</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.MaskingPolicy"><span class="badge">M</span>MaskingPolicy</a>
                 </li>
               
                 <li>
@@ -1935,6 +1946,12 @@
               <tr>
                 <td>COCKROACHDB</td>
                 <td>25</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>COSMOSDB</td>
+                <td>26</td>
                 <td><p></p></td>
               </tr>
             
@@ -2944,21 +2961,21 @@ This information is not authenticated and should be treated accordingly. </p></t
                   <td>masking_level</td>
                   <td><a href="#bytebase.store.MaskingLevel">MaskingLevel</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Deprecated. </p></td>
                 </tr>
               
                 <tr>
                   <td>full_masking_algorithm_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Deprecated. </p></td>
                 </tr>
               
                 <tr>
                   <td>partial_masking_algorithm_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Deprecated. </p></td>
                 </tr>
               
                 <tr>
@@ -3853,6 +3870,14 @@ If the key length is not specified, it&#39;s -1. </p></td>
                   <td><a href="#int64">int64</a></td>
                   <td></td>
                   <td><p>The number of granules in the block. It&#39;s a ClickHouse specific field. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>is_constraint</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>It&#39;s a PostgreSQL specific field.
+The unique constraint and unique index are not the same thing in PostgreSQL. </p></td>
                 </tr>
               
             </tbody>
@@ -6864,6 +6889,103 @@ Used for authentication when connecting to the data source. </p></td>
     
       
       <div class="file-heading">
+        <h2 id="store/deprecated.proto">store/deprecated.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.DeprecatedMaskData">DeprecatedMaskData</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>schema</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>table</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>column</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>masking_level</td>
+                  <td><a href="#bytebase.store.MaskingLevel">MaskingLevel</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>full_masking_algorithm_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>partial_masking_algorithm_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.DeprecatedMaskingPolicy">DeprecatedMaskingPolicy</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>mask_data</td>
+                  <td><a href="#bytebase.store.DeprecatedMaskData">DeprecatedMaskData</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
         <h2 id="store/export_archive.proto">store/export_archive.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -9469,65 +9591,6 @@ A binding binds one or more members or groups to a single role. </p></td>
 
         
       
-        <h3 id="bytebase.store.MaskData">MaskData</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>table</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>column</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>masking_level</td>
-                  <td><a href="#bytebase.store.MaskingLevel">MaskingLevel</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>full_masking_algorithm_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>partial_masking_algorithm_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.MaskingExceptionPolicy">MaskingExceptionPolicy</h3>
         <p>MaskingExceptionPolicy is the allowlist of users who can access sensitive data.</p>
 
@@ -9583,30 +9646,6 @@ Format: users/{userUID} or groups/{group email} </p></td>
                   <td><a href="#google.type.Expr">google.type.Expr</a></td>
                   <td></td>
                   <td><p>The condition that is associated with this exception policy instance. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.MaskingPolicy">MaskingPolicy</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>mask_data</td>
-                  <td><a href="#bytebase.store.MaskData">MaskData</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -11791,25 +11830,7 @@ The default value is 100MB, we will use the default value if the setting not exi
                 </tr>
               
                 <tr>
-                  <td>partial_mask_algorithm_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Deprecated.
-the partial mask algorithm id for the semantic type, if it is empty,
-should use the default partial mask algorithm. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>full_mask_algorithm_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Deprecated.
-the full mask algorithm id for the semantic type, if it is empty, should
-use the default full mask algorithm. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>algorithms</td>
+                  <td>algorithm</td>
                   <td><a href="#bytebase.store.Algorithm">Algorithm</a></td>
                   <td></td>
                   <td><p> </p></td>

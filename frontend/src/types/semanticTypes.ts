@@ -1,12 +1,11 @@
 import { v4 as uuidv4 } from "uuid";
 import { t } from "@/plugins/i18n";
-import { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
+import { SemanticTypeSetting_SemanticType, Algorithm } from "@/types/proto/v1/setting_service";
 import buildInSemanticTypes from "./semantic-types.yaml";
 
 interface BuildInSemantic {
   id: string;
-  fullMaskAlgorithmId?: string;
-  partialMaskAlgorithmId?: string;
+  algorithm: Algorithm;
 }
 
 export const getSemanticTemplateList = () => {
@@ -19,8 +18,7 @@ export const getSemanticTemplateList = () => {
       description: t(
         `settings.sensitive-data.semantic-types.template.${buildInSemantic.id}.description`
       ),
-      fullMaskAlgorithmId: buildInSemantic.fullMaskAlgorithmId,
-      partialMaskAlgorithmId: buildInSemantic.partialMaskAlgorithmId,
+      algorithm: buildInSemantic.algorithm,
     })
   );
 };

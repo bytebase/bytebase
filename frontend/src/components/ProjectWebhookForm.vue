@@ -86,6 +86,53 @@
             :disabled="!allowEdit"
           />
         </div>
+        <div v-if="webhookSupportDirectMessage">
+          <div class="text-md leading-6 font-medium text-main">
+            {{ $t("project.webhook.direct-messages") }}
+          </div>
+          <BBAttention v-if="!imApp?.enabled" class="my-2" type="warning">
+            <template #default>
+              <i18n-t
+                class="textinfolabel"
+                tag="div"
+                keypath="project.webhook.direct-messages-warning"
+              >
+                <template #im>
+                  <router-link
+                    target="_blank"
+                    class="normal-link"
+                    :to="{ name: WORKSPACE_ROUTE_IM }"
+                  >
+                    {{ $t("settings.sidebar.im-integration") }}
+                  </router-link>
+                </template>
+              </i18n-t>
+            </template>
+          </BBAttention>
+          <span class="mt-1 textinfolabel">
+            <i18n-t keypath="project.webhook.direct-messages-tip" tag="span">
+              <template #events>
+                <ul class="list-disc pl-4">
+                  <li
+                    v-for="(item, index) in webhookActivityItemList.filter(
+                      (item) => item.supportDirectMessage
+                    )"
+                    :key="index"
+                  >
+                    {{ item.title }}
+                  </li>
+                </ul>
+              </template>
+            </i18n-t>
+          </span>
+          <div class="flex items-center mt-2">
+            <NCheckbox
+              v-model:checked="state.webhook.directMessage"
+              :disabled="!activitySupportDirectMessage"
+              :label="$t('project.webhook.enable-direct-messages')"
+            />
+          </div>
+        </div>
         <div>
           <div class="text-md leading-6 font-medium text-main">
             {{ $t("project.webhook.triggering-activity") }}
@@ -123,39 +170,6 @@
             <NButton @click.prevent="testWebhook">
               {{ $t("project.webhook.test-webhook") }}
             </NButton>
-          </div>
-        </div>
-        <div v-if="webhookSupportDirectMessage && activitySupportDirectMessage">
-          <div class="text-md leading-6 font-medium text-main">
-            {{ $t("project.webhook.direct-messages") }}
-          </div>
-          <span class="mt-1 textinfolabel">
-            {{ $t("project.webhook.direct-messages-tip") }}
-          </span>
-          <BBAttention v-if="!imApp?.enabled" class="mt-2 mb-4" type="warning">
-            <template #default>
-              <i18n-t
-                class="textinfolabel"
-                tag="div"
-                keypath="project.webhook.direct-messages-warning"
-              >
-                <template #im>
-                  <router-link
-                    target="_blank"
-                    class="normal-link"
-                    :to="{ name: WORKSPACE_ROUTE_IM }"
-                  >
-                    {{ $t("settings.sidebar.im-integration") }}
-                  </router-link>
-                </template>
-              </i18n-t>
-            </template>
-          </BBAttention>
-          <div class="flex items-center mt-2">
-            <NCheckbox
-              v-model:checked="state.webhook.directMessage"
-              :label="$t('project.webhook.enable-direct-messages')"
-            />
           </div>
         </div>
       </div>

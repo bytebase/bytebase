@@ -140,6 +140,10 @@
   
     - [LabelSelectorRequirement.OperatorType](#bytebase-store-LabelSelectorRequirement-OperatorType)
   
+- [store/deprecated.proto](#store_deprecated-proto)
+    - [DeprecatedMaskData](#bytebase-store-DeprecatedMaskData)
+    - [DeprecatedMaskingPolicy](#bytebase-store-DeprecatedMaskingPolicy)
+  
 - [store/export_archive.proto](#store_export_archive-proto)
     - [ExportArchivePayload](#bytebase-store-ExportArchivePayload)
   
@@ -222,10 +226,8 @@
     - [EnvironmentTierPolicy](#bytebase-store-EnvironmentTierPolicy)
     - [ExportDataPolicy](#bytebase-store-ExportDataPolicy)
     - [IamPolicy](#bytebase-store-IamPolicy)
-    - [MaskData](#bytebase-store-MaskData)
     - [MaskingExceptionPolicy](#bytebase-store-MaskingExceptionPolicy)
     - [MaskingExceptionPolicy.MaskingException](#bytebase-store-MaskingExceptionPolicy-MaskingException)
-    - [MaskingPolicy](#bytebase-store-MaskingPolicy)
     - [MaskingRulePolicy](#bytebase-store-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
     - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-store-RestrictIssueCreationForSQLReviewPolicy)
@@ -468,6 +470,7 @@ Used internally for obfuscating the page token.
 | DYNAMODB | 23 |  |
 | DATABRICKS | 24 |  |
 | COCKROACHDB | 25 |  |
+| COSMOSDB | 26 |  |
 
 
 
@@ -927,9 +930,9 @@ Metadata about the request.
 | semantic_type_id | [string](#string) |  |  |
 | labels | [ColumnCatalog.LabelsEntry](#bytebase-store-ColumnCatalog-LabelsEntry) | repeated | The user labels for a column. |
 | classification_id | [string](#string) |  |  |
-| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
-| full_masking_algorithm_id | [string](#string) |  |  |
-| partial_masking_algorithm_id | [string](#string) |  |  |
+| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  | Deprecated. |
+| full_masking_algorithm_id | [string](#string) |  | Deprecated. |
+| partial_masking_algorithm_id | [string](#string) |  | Deprecated. |
 | object_schema | [ObjectSchema](#bytebase-store-ObjectSchema) | optional |  |
 
 
@@ -1241,6 +1244,7 @@ IndexMetadata is the metadata for indexes.
 | parent_index_schema | [string](#string) |  | The schema name of the parent index. |
 | parent_index_name | [string](#string) |  | The index name of the parent index. |
 | granularity | [int64](#int64) |  | The number of granules in the block. It&#39;s a ClickHouse specific field. |
+| is_constraint | [bool](#bool) |  | It&#39;s a PostgreSQL specific field. The unique constraint and unique index are not the same thing in PostgreSQL. |
 
 
 
@@ -2441,6 +2445,57 @@ Schedule is the message for deployment schedule.
 
 
 
+<a name="store_deprecated-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/deprecated.proto
+
+
+
+<a name="bytebase-store-DeprecatedMaskData"></a>
+
+### DeprecatedMaskData
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  |  |
+| table | [string](#string) |  |  |
+| column | [string](#string) |  |  |
+| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
+| full_masking_algorithm_id | [string](#string) |  |  |
+| partial_masking_algorithm_id | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-DeprecatedMaskingPolicy"></a>
+
+### DeprecatedMaskingPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| mask_data | [DeprecatedMaskData](#bytebase-store-DeprecatedMaskData) | repeated |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="store_export_archive-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -3594,26 +3649,6 @@ ExportDataPolicy is the policy configuration for export data.
 
 
 
-<a name="bytebase-store-MaskData"></a>
-
-### MaskData
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  |  |
-| table | [string](#string) |  |  |
-| column | [string](#string) |  |  |
-| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
-| full_masking_algorithm_id | [string](#string) |  |  |
-| partial_masking_algorithm_id | [string](#string) |  |  |
-
-
-
-
-
-
 <a name="bytebase-store-MaskingExceptionPolicy"></a>
 
 ### MaskingExceptionPolicy
@@ -3642,21 +3677,6 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 
 Format: users/{userUID} or groups/{group email} |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. |
-
-
-
-
-
-
-<a name="bytebase-store-MaskingPolicy"></a>
-
-### MaskingPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| mask_data | [MaskData](#bytebase-store-MaskData) | repeated |  |
 
 
 
@@ -4700,9 +4720,7 @@ SlowQueryPolicy is the policy configuration for slow query.
 | id | [string](#string) |  | id is the uuid for semantic type. |
 | title | [string](#string) |  | the title of the semantic type, it should not be empty. |
 | description | [string](#string) |  | the description of the semantic type, it can be empty. |
-| partial_mask_algorithm_id | [string](#string) |  | Deprecated. the partial mask algorithm id for the semantic type, if it is empty, should use the default partial mask algorithm. |
-| full_mask_algorithm_id | [string](#string) |  | Deprecated. the full mask algorithm id for the semantic type, if it is empty, should use the default full mask algorithm. |
-| algorithms | [Algorithm](#bytebase-store-Algorithm) |  |  |
+| algorithm | [Algorithm](#bytebase-store-Algorithm) |  |  |
 
 
 

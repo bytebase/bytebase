@@ -270,7 +270,7 @@ func (s *Server) migrateMaskingData(ctx context.Context) error {
 	}
 
 	for _, policy := range policies {
-		p := new(storepb.MaskingPolicy)
+		p := new(storepb.DeprecatedMaskingPolicy)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
 			return errors.Wrapf(err, "failed to unmarshal masking policy")
 		}
@@ -287,9 +287,11 @@ func (s *Server) migrateMaskingData(ctx context.Context) error {
 			schemaConfig := dbModelConfig.CreateOrGetSchemaConfig(mask.Schema)
 			tableConfig := schemaConfig.CreateOrGetTableConfig(mask.Table)
 			columnConfig := tableConfig.CreateOrGetColumnConfig(mask.Column)
-			columnConfig.MaskingLevel = mask.MaskingLevel
-			columnConfig.FullMaskingAlgorithmId = mask.FullMaskingAlgorithmId
-			columnConfig.PartialMaskingAlgorithmId = mask.PartialMaskingAlgorithmId
+			if mask.FullMaskingAlgorithmId != "" {
+				columnConfig.SemanticTypeId = mask.FullMaskingAlgorithmId
+			} else if mask.PartialMaskingAlgorithmId != "" {
+				columnConfig.SemanticTypeId = mask.PartialMaskingAlgorithmId
+			}
 		}
 
 		if err := s.store.UpdateDBSchema(ctx, policy.ResourceUID, &store.UpdateDBSchemaMessage{Config: dbModelConfig.BuildDatabaseConfig()}, api.SystemBotID); err != nil {
