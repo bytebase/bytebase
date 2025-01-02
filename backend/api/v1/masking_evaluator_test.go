@@ -89,7 +89,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 					{
 						// Classification hit.
 						Condition:    &expr.Expr{Expression: `(table_name == "no_table") || (classification_level == "S2")`},
-						MaskingLevel: storepb.MaskingLevel_FULL,
+						SemanticType: "default",
 					},
 				},
 			},
@@ -113,7 +113,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 					{
 						// Classification hit.
 						Condition:    &expr.Expr{Expression: `(table_name == "no_table") || (classification_level == "S2")`},
-						MaskingLevel: storepb.MaskingLevel_FULL,
+						SemanticType: "default",
 					},
 				},
 			},

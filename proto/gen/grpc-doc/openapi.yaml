@@ -11717,14 +11717,8 @@ components:
                     description: A unique identifier for a node in UUID format.
                 condition:
                     $ref: '#/components/schemas/Expr'
-                maskingLevel:
-                    enum:
-                        - MASKING_LEVEL_UNSPECIFIED
-                        - NONE
-                        - PARTIAL
-                        - FULL
+                semanticType:
                     type: string
-                    format: enum
         MaximumSQLResultSizeSetting:
             type: object
             properties:
