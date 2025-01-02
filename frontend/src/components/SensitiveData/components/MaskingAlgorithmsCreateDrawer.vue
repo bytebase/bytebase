@@ -445,7 +445,6 @@ const maskingAlgorithm = computed((): Algorithm => {
     id: props.algorithm.id,
     title: state.title,
     description: state.description,
-    category: state.maskingType === "md5-mask" ? "HASH" : "MASK",
   });
 
   switch (state.maskingType) {
