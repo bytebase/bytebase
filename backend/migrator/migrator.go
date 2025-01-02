@@ -595,7 +595,7 @@ func executeMigrationDefault(ctx context.Context, driverCtx context.Context, sto
 }
 
 // ExecuteMigrationWithFunc executes the migration with custom migration function.
-func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, _ int, _ dbdriver.Driver, m *dbdriver.MigrationInfo, statement string, sheetID *int, execFunc func(ctx context.Context, execStatement string) error, opts dbdriver.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
+func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, _ int, _ dbdriver.Driver, m *dbdriver.MigrationInfo, statement string, sheetID *int, execFunc func(ctx context.Context, execStatement string) error, _ dbdriver.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
 	insertedID, err := BeginMigration(ctx, s, m, "", statement, sheetID)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to begin migration")
