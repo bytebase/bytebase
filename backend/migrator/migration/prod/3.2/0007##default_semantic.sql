@@ -1,0 +1,3 @@
+UPDATE setting
+SET value = jsonb_build_object('types', '[{"id":"default","title":"Default","description":"Default type with full masking","algorithm":{"id":"default","title":"Default","fullMask":{"substitution":"******"}}},{"id":"default-partial","title":"Default Partial","description":"Default partial type with partial masking","algorithm":{"id":"default-partial","title":"Default Partial"}}]'::jsonb || (value::jsonb->'types'))
+WHERE name = 'bb.workspace.semantic-types';
