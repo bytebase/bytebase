@@ -929,7 +929,7 @@ func convertToStorePBMskingRulePolicy(policy *v1pb.MaskingRulePolicy) (*storepb.
 				Description: rule.Condition.Description,
 				Location:    rule.Condition.Location,
 			},
-			MaskingLevel: convertToStorePBMaskingLevel(rule.MaskingLevel),
+			SemanticType: rule.SemanticType,
 		})
 	}
 
@@ -949,7 +949,7 @@ func convertToV1PBMaskingRulePolicy(policy *storepb.MaskingRulePolicy) (*v1pb.Ma
 				Description: rule.Condition.Description,
 				Location:    rule.Condition.Location,
 			},
-			MaskingLevel: convertToV1PBMaskingLevel(rule.MaskingLevel),
+			SemanticType: rule.SemanticType,
 		})
 	}
 

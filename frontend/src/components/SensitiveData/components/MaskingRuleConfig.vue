@@ -34,7 +34,7 @@
           {{ $t("settings.sensitive-data.masking-level.self") }}
         </h3>
         <NSelect
-          v-model:value="state.maskingLevel"
+          v-model:value="state.semanticType"
           style="min-width: 10rem"
           :options="options"
           :placeholder="$t('settings.sensitive-data.masking-level.selet-level')"
@@ -124,7 +124,7 @@ const emit = defineEmits<{
 type LocalState = {
   title: string;
   expr: ConditionGroupExpr;
-  maskingLevel: MaskingLevel;
+  semanticType: string;
   dirty: boolean;
 };
 
@@ -132,7 +132,7 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   title: "",
   expr: wrapAsGroup(emptySimpleExpr()),
-  maskingLevel: MaskingLevel.FULL,
+  semanticType: "default",
   dirty: false,
 });
 
@@ -151,7 +151,7 @@ const resetLocalState = async (rule: MaskingRulePolicy_MaskingRule) => {
   state.dirty = false;
   state.title = rule.condition?.title ?? "";
   state.expr = wrapAsGroup(expr);
-  state.maskingLevel = rule.maskingLevel;
+  state.semanticType = rule.semanticType;
 };
 
 onMounted(async () => {
@@ -199,7 +199,7 @@ const onConfirm = async () => {
   const expressions = await batchConvertParsedExprToCELString([celexpr]);
   emit("confirm", {
     ...props.maskingRule,
-    maskingLevel: state.maskingLevel,
+    semanticType: state.semanticType,
     condition: Expr.fromJSON({
       expression: expressions[0],
       title: state.title,
