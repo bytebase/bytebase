@@ -429,14 +429,14 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 		}, nil
 	} else if v := identityProviderConfig.GetOidcConfig(); v != nil {
 		// Fetch openid configuration to get the auth endpoint and supported scopes.
-		openidConfigration, err := oidc.GetOpenIDConfiguration(v.Issuer)
+		openidConfiguration, err := oidc.GetOpenIDConfiguration(v.Issuer)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to fetch openid configuration")
 		}
 		scopes := oidc.DefaultScopes
 		// Some IdPs like authning.cn doesn't expose "username" as part of standard claims.
 		// We need to check if it's supported by the IdP and add it to the scopes.
-		if slices.Contains(openidConfigration.ScopesSupported, "username") {
+		if slices.Contains(openidConfiguration.ScopesSupported, "username") {
 			scopes = append(scopes, "username")
 		}
 		fieldMapping := v1pb.FieldMapping{
@@ -455,7 +455,7 @@ func convertIdentityProviderConfigFromStore(identityProviderConfig *storepb.Iden
 					SkipTlsVerify: v.SkipTlsVerify,
 					AuthStyle:     v1pb.OAuth2AuthStyle(v.AuthStyle),
 					Scopes:        scopes,
-					AuthEndpoint:  openidConfigration.AuthorizationEndpoint,
+					AuthEndpoint:  openidConfiguration.AuthorizationEndpoint,
 				},
 			},
 		}, nil
