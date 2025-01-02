@@ -1352,62 +1352,6 @@ func validateMaskingAlgorithm(algorithm *v1pb.Algorithm) error {
 		return status.Errorf(codes.InvalidArgument, "masking algorithm title cannot be empty: %s", algorithm.Id)
 	}
 
-	switch algorithm.Category {
-	case "MASK":
-		if algorithm.Mask == nil {
-			return nil
-		}
-		switch m := algorithm.Mask.(type) {
-		case *v1pb.Algorithm_FullMask_:
-			if err := checkSubstitution(m.FullMask.Substitution); err != nil {
-				return err
-			}
-		case *v1pb.Algorithm_RangeMask_:
-			for i, slice := range m.RangeMask.Slices {
-				if slice.Substitution == "" {
-					return status.Errorf(codes.InvalidArgument, "the substitution for slice is required")
-				}
-				if len(slice.Substitution) > 16 {
-					return status.Errorf(codes.InvalidArgument, "the substitution should less than 16 bytes")
-				}
-				for j := 0; j < i; j++ {
-					pre := m.RangeMask.Slices[j]
-					if slice.Start >= pre.End || pre.Start >= slice.End {
-						continue
-					}
-					return status.Errorf(codes.InvalidArgument, "the slice range cannot overlap: [%d,%d) and [%d,%d)", pre.Start, pre.End, slice.Start, slice.End)
-				}
-			}
-		case *v1pb.Algorithm_InnerOuterMask_:
-			if err := checkSubstitution(m.InnerOuterMask.Substitution); err != nil {
-				return err
-			}
-		default:
-			return status.Errorf(codes.InvalidArgument, "mismatch masking algorithm category and mask type: %T, %s", algorithm.Mask, algorithm.Category)
-		}
-	case "HASH":
-		if algorithm.Mask == nil {
-			return nil
-		}
-		switch algorithm.Mask.(type) {
-		case *v1pb.Algorithm_Md5Mask:
-		default:
-			return status.Errorf(codes.InvalidArgument, "mismatch masking algorithm category and mask type: %T, %s", algorithm.Mask, algorithm.Category)
-		}
-	default:
-		return status.Errorf(codes.InvalidArgument, "invalid masking algorithm category: %s", algorithm.Category)
-	}
-
-	return nil
-}
-
-func checkSubstitution(substitution string) error {
-	if substitution == "" {
-		return status.Errorf(codes.InvalidArgument, "the substitution for inner or outer masks is required")
-	}
-	if len(substitution) > 16 {
-		return status.Errorf(codes.InvalidArgument, "the substitution should less than 16 bytes")
-	}
 	return nil
 }
 
