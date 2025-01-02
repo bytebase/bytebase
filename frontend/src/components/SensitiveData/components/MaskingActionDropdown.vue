@@ -4,7 +4,7 @@
     :options="options"
     :disabled="disabled"
     :clearable="clearable"
-    :placeholder="$t('settings.sensitive-data.action.selet-action')"
+    :placeholder="$t('settings.sensitive-data.action.select-action')"
     @update:value="$emit('update:action', $event)"
   />
 </template>

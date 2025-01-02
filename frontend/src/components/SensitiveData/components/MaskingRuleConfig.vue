@@ -31,13 +31,15 @@
       </div>
       <div>
         <h3 class="font-medium text-sm text-main py-2">
-          {{ $t("settings.sensitive-data.masking-level.self") }}
+          {{ $t("settings.sensitive-data.semantic-types.table.semantic-type") }}
         </h3>
         <NSelect
           v-model:value="state.semanticType"
           style="min-width: 10rem"
+          :filterable="true"
           :options="options"
-          :placeholder="$t('settings.sensitive-data.masking-level.selet-level')"
+          :filter="filterByTitle"
+          :placeholder="$t('settings.sensitive-data.semantic-types.select')"
           :consistent-menu-width="false"
           :disabled="disabled || readonly"
           @update:value="state.dirty = true"
@@ -96,14 +98,20 @@ import {
   validateSimpleExpr,
   emptySimpleExpr,
 } from "@/plugins/cel";
+import { useSettingV1Store } from "@/store";
 import { Expr } from "@/types/proto/google/type/expr";
-import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
 import type { MaskingRulePolicy_MaskingRule } from "@/types/proto/v1/org_policy_service";
+import type { SemanticTypeSetting_SemanticType as SemanticType } from "@/types/proto/v1/setting_service";
 import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,
 } from "@/utils";
 import { factorSupportDropdown, factorOperatorOverrideMap } from "./utils";
+
+export interface SemanticTypeSelectOption extends SelectOption {
+  value: string;
+  semanticType: SemanticType;
+}
 
 const props = defineProps<{
   index: number;
@@ -124,7 +132,7 @@ const emit = defineEmits<{
 type LocalState = {
   title: string;
   expr: ConditionGroupExpr;
-  semanticType: string;
+  semanticType?: string;
   dirty: boolean;
 };
 
@@ -132,9 +140,32 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   title: "",
   expr: wrapAsGroup(emptySimpleExpr()),
-  semanticType: "default",
   dirty: false,
 });
+const settingStore = useSettingV1Store();
+
+const semanticTypeSettingValue = computed(() => {
+  const semanticTypeSetting = settingStore.getSettingByName(
+    "bb.workspace.semantic-types"
+  );
+  return semanticTypeSetting?.value?.semanticTypeSettingValue?.types ?? [];
+});
+
+const options = computed(() => {
+  return semanticTypeSettingValue.value.map<SemanticTypeSelectOption>(
+    (semanticType) => ({
+      value: semanticType.id,
+      label: semanticType.title,
+      semanticType,
+    })
+  );
+});
+
+const filterByTitle = (pattern: string, option: SelectOption) => {
+  const { semanticType } = option as SemanticTypeSelectOption;
+  pattern = pattern.toLowerCase();
+  return semanticType.title.toLowerCase().includes(pattern);
+};
 
 const resetLocalState = async (rule: MaskingRulePolicy_MaskingRule) => {
   let expr: SimpleExpr = emptySimpleExpr();
@@ -151,7 +182,7 @@ const resetLocalState = async (rule: MaskingRulePolicy_MaskingRule) => {
   state.dirty = false;
   state.title = rule.condition?.title ?? "";
   state.expr = wrapAsGroup(expr);
-  state.semanticType = rule.semanticType;
+  state.semanticType = rule.semanticType ? rule.semanticType : undefined;
 };
 
 onMounted(async () => {
@@ -164,21 +195,6 @@ const defaultTitle = computed(() => {
   }`;
 });
 
-const options = computed(() => {
-  return [
-    MaskingLevel.FULL,
-    MaskingLevel.PARTIAL,
-    MaskingLevel.NONE,
-  ].map<SelectOption>((level) => ({
-    label: t(
-      `settings.sensitive-data.masking-level.${maskingLevelToJSON(
-        level
-      ).toLowerCase()}`
-    ),
-    value: level,
-  }));
-});
-
 const onCancel = async () => {
   await resetLocalState(props.maskingRule);
   emit("cancel");
@@ -186,8 +202,8 @@ const onCancel = async () => {
 };
 
 const isValid = computed(() => {
-  const { expr } = state;
-  if (!expr) return false;
+  const { expr, semanticType } = state;
+  if (!expr || !semanticType) return false;
   return validateSimpleExpr(expr);
 });
 
@@ -199,7 +215,7 @@ const onConfirm = async () => {
   const expressions = await batchConvertParsedExprToCELString([celexpr]);
   emit("confirm", {
     ...props.maskingRule,
-    semanticType: state.semanticType,
+    semanticType: state.semanticType!,
     condition: Expr.fromJSON({
       expression: expressions[0],
       title: state.title,

@@ -877,7 +877,8 @@
             "title": "Phone number",
             "description": ""
           }
-        }
+        },
+        "select": "Select semantic type"
       },
       "column-detail": {
         "masking-setting-for-column": "Masking Setting for \"{column}\"",
@@ -948,7 +949,7 @@
       },
       "masking-level": {
         "self": "Masking Level",
-        "selet-level": "Select masking level",
+        "select-level": "Select masking level",
         "masking_level_unspecified": "Follow global rules",
         "none": "None",
         "partial": "Partial",
@@ -956,7 +957,7 @@
       },
       "action": {
         "self": "Action",
-        "selet-action": "Select action",
+        "select-action": "Select action",
         "query": "Query",
         "export": "Export"
       },

@@ -877,7 +877,8 @@
             "title": "Número de teléfono",
             "description": ""
           }
-        }
+        },
+        "select": "Seleccionar tipo semántico"
       },
       "column-detail": {
         "masking-setting-for-column": "Configuración de enmascaramiento para \"{columna}\"",
@@ -948,7 +949,7 @@
       },
       "masking-level": {
         "self": "Nivel de enmascaramiento",
-        "selet-level": "Seleccionar el nivel de enmascaramiento",
+        "select-level": "Seleccionar el nivel de enmascaramiento",
         "masking_level_unspecified": "Sigue las reglas globales",
         "none": "Ninguna",
         "partial": "Parcial",
@@ -956,7 +957,7 @@
       },
       "action": {
         "self": "Acción",
-        "selet-action": "Seleccionar acción",
+        "select-action": "Seleccionar acción",
         "query": "Consulta",
         "export": "Exportar"
       },
