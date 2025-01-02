@@ -3708,7 +3708,7 @@ Format: users/{userUID} or groups/{group email} |
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | A unique identifier for a node in UUID format. |
 | condition | [google.type.Expr](#google-type-Expr) |  |  |
-| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  |  |
+| semantic_type | [string](#string) |  |  |
 
 
 
