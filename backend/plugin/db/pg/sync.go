@@ -87,6 +87,18 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 	defer txn.Rollback()
 
+	// We set the search path to empty before the column sync.
+	// The reason is that we can get the expression with default schema name.
+	originSearchPath, err := setSearchPath(txn, "")
+	if err != nil {
+		return nil, errors.Errorf("failed to set search path: %v", err)
+	}
+	defer func() {
+		if _, err := setSearchPath(txn, originSearchPath); err != nil {
+			slog.Error("failed to restore search path: %v", log.BBError(err))
+		}
+	}()
+
 	schemas, schemaOwners, err := getSchemas(txn)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
@@ -239,6 +251,7 @@ FROM
 WHERE
 	n.nspname NOT IN(%s)
 	AND c.contype = 'f'
+	AND c.conparentid = 0
 ORDER BY fk_schema, fk_table, fk_name;`, pgparser.SystemSchemaWhereClause)
 
 func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
@@ -611,6 +624,21 @@ func getIndexInheritance(txn *sql.Tx) (map[db.IndexKey]*db.IndexKey, error) {
 	}
 
 	return result, nil
+}
+
+var showSearchPathQuery = `SELECT pg_catalog.current_setting('search_path');`
+
+var setSearchPathQuery = `SELECT pg_catalog.set_config('search_path', $1, false);`
+
+func setSearchPath(txn *sql.Tx, searchPath string) (string, error) {
+	var originSearchPath string
+	if err := txn.QueryRow(showSearchPathQuery).Scan(&originSearchPath); err != nil {
+		return "", err
+	}
+	if _, err := txn.Exec(setSearchPathQuery, searchPath); err != nil {
+		return "", err
+	}
+	return originSearchPath, nil
 }
 
 var listColumnQuery = `

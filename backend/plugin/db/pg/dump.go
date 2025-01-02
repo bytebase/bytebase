@@ -189,6 +189,16 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 		}
 	}
 
+	// Construct foreign keys.
+	for _, schema := range metadata.Schemas {
+		for _, table := range schema.Tables {
+			for _, fk := range table.ForeignKeys {
+				if err := writeForeignKey(out, schema.Name, table.Name, fk); err != nil {
+					return err
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -263,7 +273,7 @@ func writeEnum(out io.Writer, schema string, enum *storepb.EnumTypeMetadata) err
 	if _, err := io.WriteString(out, enum.Name); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, `" AS ENUM (\n`); err != nil {
+	if _, err := io.WriteString(out, "\" AS ENUM (\n"); err != nil {
 		return err
 	}
 	for i, value := range enum.Values {
@@ -283,7 +293,7 @@ func writeEnum(out io.Writer, schema string, enum *storepb.EnumTypeMetadata) err
 		}
 	}
 
-	if _, err := io.WriteString(out, ");\n\n"); err != nil {
+	if _, err := io.WriteString(out, "\n);\n\n"); err != nil {
 		return err
 	}
 
@@ -349,7 +359,7 @@ func writeMaterializedView(out io.Writer, schema string, view *storepb.Materiali
 	if _, err := io.WriteString(out, "\" AS \n"); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, view.Definition); err != nil {
+	if _, err := io.WriteString(out, strings.TrimRight(view.Definition, ";")); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, "\n  WITH NO DATA;\n\n"); err != nil {
@@ -423,7 +433,7 @@ func writeView(out io.Writer, schema string, view *storepb.ViewMetadata) error {
 	if _, err := io.WriteString(out, view.Definition); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, ";\n\n"); err != nil {
+	if _, err := io.WriteString(out, "\n\n"); err != nil {
 		return err
 	}
 
@@ -669,12 +679,6 @@ func writeCreateTable(out io.Writer, schema string, tableName string, columns []
 			return err
 		}
 
-		if !column.Nullable {
-			if _, err := io.WriteString(out, ` NOT NULL`); err != nil {
-				return err
-			}
-		}
-
 		if column.DefaultValue != nil {
 			if defaultValue, ok := column.DefaultValue.(*storepb.ColumnMetadata_DefaultExpression); ok {
 				if _, err := io.WriteString(out, ` DEFAULT `); err != nil {
@@ -683,6 +687,12 @@ func writeCreateTable(out io.Writer, schema string, tableName string, columns []
 				if _, err := io.WriteString(out, defaultValue.DefaultExpression); err != nil {
 					return err
 				}
+			}
+		}
+
+		if !column.Nullable {
+			if _, err := io.WriteString(out, ` NOT NULL`); err != nil {
+				return err
 			}
 		}
 	}
@@ -735,13 +745,13 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequ
 
 	// Construct partition tables.
 	for _, partition := range table.Partitions {
-		if err := writePartitionTable(out, schema, table, partition); err != nil {
+		if err := writePartitionTable(out, schema, table.Columns, partition); err != nil {
 			return err
 		}
 	}
 
 	for _, partition := range table.Partitions {
-		if err := writeAttachPartition(out, schema, table, partition); err != nil {
+		if err := writeAttachPartition(out, schema, table.Name, partition); err != nil {
 			return err
 		}
 	}
@@ -797,13 +807,6 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequ
 	// Construct index attach partition.
 	for _, partition := range table.Partitions {
 		if err := writeAttachPartitionIndex(out, schema, partition); err != nil {
-			return err
-		}
-	}
-
-	// Construct foreign key constraints.
-	for _, fk := range table.ForeignKeys {
-		if err := writeForeignKey(out, schema, table.Name, fk); err != nil {
 			return err
 		}
 	}
@@ -962,7 +965,7 @@ func writeIndex(out io.Writer, schema string, table string, index *storepb.Index
 	if _, err := io.WriteString(out, index.Name); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, `" ON "`); err != nil {
+	if _, err := io.WriteString(out, `" ON ONLY "`); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, schema); err != nil {
@@ -979,16 +982,6 @@ func writeIndex(out io.Writer, schema string, table string, index *storepb.Index
 	}
 	if err := writeIndexKeyList(out, index); err != nil {
 		return err
-	}
-	for i, expression := range index.Expressions {
-		if i > 0 {
-			if _, err := io.WriteString(out, ", "); err != nil {
-				return err
-			}
-		}
-		if _, err := io.WriteString(out, expression); err != nil {
-			return err
-		}
 	}
 	if _, err := io.WriteString(out, ";\n\n"); err != nil {
 		return err
@@ -1139,7 +1132,13 @@ func writeUniqueKey(out io.Writer, schema string, table string, index *storepb.I
 				return err
 			}
 		}
+		if _, err := io.WriteString(out, "\""); err != nil {
+			return err
+		}
 		if _, err := io.WriteString(out, expression); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, "\""); err != nil {
 			return err
 		}
 	}
@@ -1201,7 +1200,13 @@ func writePrimaryKey(out io.Writer, schema string, table string, index *storepb.
 				return err
 			}
 		}
+		if _, err := io.WriteString(out, "\""); err != nil {
+			return err
+		}
 		if _, err := io.WriteString(out, expression); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, "\""); err != nil {
 			return err
 		}
 	}
@@ -1320,7 +1325,7 @@ func writePartitionClause(out io.Writer, partition *storepb.TablePartitionMetada
 	return err
 }
 
-func writeAttachPartition(out io.Writer, schema string, table *storepb.TableMetadata, partition *storepb.TablePartitionMetadata) error {
+func writeAttachPartition(out io.Writer, schema string, tableName string, partition *storepb.TablePartitionMetadata) error {
 	if _, err := io.WriteString(out, `ALTER TABLE ONLY "`); err != nil {
 		return err
 	}
@@ -1330,7 +1335,7 @@ func writeAttachPartition(out io.Writer, schema string, table *storepb.TableMeta
 	if _, err := io.WriteString(out, `"."`); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, table.Name); err != nil {
+	if _, err := io.WriteString(out, tableName); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, `" ATTACH PARTITION "`); err != nil {
@@ -1345,7 +1350,7 @@ func writeAttachPartition(out io.Writer, schema string, table *storepb.TableMeta
 	if _, err := io.WriteString(out, partition.Name); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, " "); err != nil {
+	if _, err := io.WriteString(out, "\" "); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, partition.Value); err != nil {
@@ -1355,8 +1360,8 @@ func writeAttachPartition(out io.Writer, schema string, table *storepb.TableMeta
 	return err
 }
 
-func writePartitionTable(out io.Writer, schema string, table *storepb.TableMetadata, partition *storepb.TablePartitionMetadata) error {
-	if err := writeCreateTable(out, schema, partition.Name, table.Columns); err != nil {
+func writePartitionTable(out io.Writer, schema string, columns []*storepb.ColumnMetadata, partition *storepb.TablePartitionMetadata) error {
+	if err := writeCreateTable(out, schema, partition.Name, columns); err != nil {
 		return err
 	}
 
@@ -1372,13 +1377,13 @@ func writePartitionTable(out io.Writer, schema string, table *storepb.TableMetad
 
 	// Construct subpartition tables.
 	for _, subpartition := range partition.Subpartitions {
-		if err := writePartitionTable(out, schema, table, subpartition); err != nil {
+		if err := writePartitionTable(out, schema, columns, subpartition); err != nil {
 			return err
 		}
 	}
 
 	for _, subpartition := range partition.Subpartitions {
-		if err := writeAttachPartition(out, schema, table, subpartition); err != nil {
+		if err := writeAttachPartition(out, schema, partition.Name, subpartition); err != nil {
 			return err
 		}
 	}
@@ -1391,7 +1396,7 @@ func writeFunction(out io.Writer, schema string, function *storepb.FunctionMetad
 		return err
 	}
 
-	if _, err := io.WriteString(out, "\n\n"); err != nil {
+	if _, err := io.WriteString(out, ";\n\n"); err != nil {
 		return err
 	}
 
@@ -1413,15 +1418,15 @@ func writeFunctionComment(out io.Writer, schema string, function *storepb.Functi
 		return err
 	}
 
-	if _, err := io.WriteString(out, `"."`); err != nil {
+	if _, err := io.WriteString(out, `".`); err != nil {
 		return err
 	}
 
-	if _, err := io.WriteString(out, function.Name); err != nil {
+	if _, err := io.WriteString(out, function.Signature); err != nil {
 		return err
 	}
 
-	if _, err := io.WriteString(out, `" IS '`); err != nil {
+	if _, err := io.WriteString(out, ` IS '`); err != nil {
 		return err
 	}
 
@@ -1429,7 +1434,7 @@ func writeFunctionComment(out io.Writer, schema string, function *storepb.Functi
 		return err
 	}
 
-	_, err := io.WriteString(out, `';\n\n`)
+	_, err := io.WriteString(out, "';\n\n")
 	return err
 }
 
