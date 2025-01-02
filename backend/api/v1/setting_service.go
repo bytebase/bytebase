@@ -556,9 +556,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		}
 		idMap := make(map[string]struct{})
 		for _, tp := range storeSemanticTypeSetting.Types {
-			if !isValidUUID(tp.Id) {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid semantic type id format: %s", tp.Id)
-			}
 			if tp.Title == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "category title cannot be empty: %s", tp.Id)
 			}
@@ -1342,9 +1339,6 @@ func convertV1SchemaTemplateSetting(template *v1pb.SchemaTemplateSetting) (*stor
 }
 
 func validateMaskingAlgorithm(algorithm *v1pb.Algorithm) error {
-	if !isValidUUID(algorithm.Id) {
-		return status.Errorf(codes.InvalidArgument, "invalid masking algorithm id format: %s", algorithm.Id)
-	}
 	if preservedMaskingAlgorithmIDMatcher.MatchString(algorithm.Id) {
 		return status.Errorf(codes.InvalidArgument, "masking algorithm id cannot be preserved id: %s", algorithm.Id)
 	}
