@@ -41,6 +41,11 @@ export async function openWindowForSSO(
     if (!oidcConfig) {
       return null;
     }
+    if (oidcConfig.authEndpoint === "") {
+      throw new Error(
+        `Invalid authentication URL from issuer ${oidcConfig.issuer}, please check your configuration`
+      );
+    }
     uri.basePath = oidcConfig.authEndpoint;
     Object.assign(uri.query, {
       client_id: oidcConfig.clientId,
