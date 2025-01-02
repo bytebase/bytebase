@@ -126,7 +126,7 @@
         <DatabaseChangelogPanel class="mt-2" :database="database" />
       </NTabPane>
       <NTabPane
-        v-if="isDev() && databaseChangeMode === DatabaseChangeMode.PIPELINE"
+        v-if="databaseChangeMode === DatabaseChangeMode.PIPELINE"
         name="revision"
         :tab="$t('database.revision.self')"
       >
@@ -248,7 +248,6 @@ import {
   isDatabaseV1Queryable,
   allowUsingSchemaEditor,
   extractProjectResourceName,
-  isDev,
 } from "@/utils";
 
 const databaseHashList = [
