@@ -1355,16 +1355,6 @@ func validateMaskingAlgorithm(algorithm *v1pb.Algorithm) error {
 	return nil
 }
 
-func checkSubstitution(substitution string) error {
-	if substitution == "" {
-		return status.Errorf(codes.InvalidArgument, "the substitution for inner or outer masks is required")
-	}
-	if len(substitution) > 16 {
-		return status.Errorf(codes.InvalidArgument, "the substitution should less than 16 bytes")
-	}
-	return nil
-}
-
 var domainRegexp = regexp.MustCompile(`^(?i:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$`)
 var disallowedDomains = map[string]bool{
 	"gmail.com":      true,
