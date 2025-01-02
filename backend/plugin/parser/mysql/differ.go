@@ -13,9 +13,14 @@ import (
 	mysql "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+)
+
+const (
+	maxErrorStatementSize = 1 << 8 // 256
 )
 
 func init() {
@@ -90,7 +95,11 @@ func (diff *diffNode) diffStatement(oldStatement string, newStatement string) er
 
 	newDatabaseDef, err := diff.buildSchemaInfo(newStatement)
 	if err != nil {
-		return errors.Wrapf(err, "failed to parse new statement %q", newStatement)
+		sqlForComment, truncated := common.TruncateString(newStatement, maxErrorStatementSize)
+		if truncated {
+			sqlForComment += "..."
+		}
+		return errors.Wrapf(err, "failed to parse new statement %q", sqlForComment)
 	}
 
 	if err := diff.diffTables(oldDatabaseDef, newDatabaseDef); err != nil {

@@ -45,7 +45,7 @@
           "
           :project="project"
           :source-schema="changelogSourceSchemaState"
-          @update="handleChangeHistorySchemaVersionChanges"
+          @update="handleChangelogSchemaVersionChanges"
         />
         <RawSQLEditor
           v-if="state.sourceSchemaType === SourceSchemaType.RAW_SQL"
@@ -73,7 +73,7 @@ import { asyncComputed } from "@vueuse/core";
 import { isUndefined } from "lodash-es";
 import { NRadioGroup, NRadio, useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
@@ -176,7 +176,7 @@ const sourceEngine = computed(() => {
   }
 });
 
-const handleChangeHistorySchemaVersionChanges = (
+const handleChangelogSchemaVersionChanges = (
   schemaVersion: ChangelogSourceSchema
 ) => {
   Object.assign(changelogSourceSchemaState, schemaVersion);
@@ -192,20 +192,32 @@ onMounted(async () => {
     );
     const { databaseName } = extractDatabaseNameAndChangelogUID(changelogName);
     const database = await databaseStore.getOrFetchDatabaseByName(databaseName);
-    handleChangeHistorySchemaVersionChanges({
+    handleChangelogSchemaVersionChanges({
       environmentName: database.effectiveEnvironment,
       databaseName: databaseName,
       changelogName: changelogName,
     });
-    state.currentStep = Step.SELECT_TARGET_DATABASE_LIST;
+    nextTick(() => {
+      state.currentStep = Step.SELECT_TARGET_DATABASE_LIST;
+    });
   }
   state.isLoading = false;
 });
 
 const stepTabList = computed(() => {
   return [
-    { title: t("database.sync-schema.select-source-schema") },
-    { title: t("database.sync-schema.select-target-databases") },
+    {
+      title: t("database.sync-schema.select-source-schema"),
+      description:
+        state.currentStep === Step.SELECT_TARGET_DATABASE_LIST
+          ? state.sourceSchemaType === SourceSchemaType.SCHEMA_HISTORY_VERSION
+            ? t("database.sync-schema.schema-history-version")
+            : t("database.sync-schema.copy-schema")
+          : undefined,
+    },
+    {
+      title: t("database.sync-schema.select-target-databases"),
+    },
   ];
 });
 

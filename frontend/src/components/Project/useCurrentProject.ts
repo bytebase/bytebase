@@ -21,7 +21,7 @@ export const useCurrentProject = (
     issueSlug?: string;
     instanceId?: string;
     databaseName?: string;
-    changeHistoryId?: string;
+    changelogId?: string;
   }>
 ) => {
   const route = useRoute();
@@ -37,7 +37,7 @@ export const useCurrentProject = (
   });
 
   const database = computed(() => {
-    if (unref(params).changeHistoryId) {
+    if (unref(params).changelogId) {
       const parent = `${instanceNamePrefix}${route.params.instanceId}/${databaseNamePrefix}${route.params.databaseName}`;
       return useDatabaseV1Store().getDatabaseByName(parent);
     } else if (unref(params).databaseName) {
@@ -55,7 +55,7 @@ export const useCurrentProject = (
       return useProjectV1Store().getProjectByName(
         `${projectNamePrefix}${unref(params).projectId}`
       );
-    } else if (unref(params).databaseName || unref(params).changeHistoryId) {
+    } else if (unref(params).databaseName || unref(params).changelogId) {
       return database.value.projectEntity;
     } else if (issueUID.value !== String(UNKNOWN_ID)) {
       if (issueUID.value === String(EMPTY_ID)) {

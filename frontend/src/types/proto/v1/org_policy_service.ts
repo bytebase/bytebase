@@ -10,16 +10,7 @@ import Long from "long";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Expr } from "../google/type/expr";
-import {
-  Engine,
-  engineFromJSON,
-  engineToJSON,
-  engineToNumber,
-  MaskingLevel,
-  maskingLevelFromJSON,
-  maskingLevelToJSON,
-  maskingLevelToNumber,
-} from "./common";
+import { Engine, engineFromJSON, engineToJSON, engineToNumber } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -434,8 +425,6 @@ export interface MaskingExceptionPolicy {
 export interface MaskingExceptionPolicy_MaskingException {
   /** action is the action that the user can access sensitive data. */
   action: MaskingExceptionPolicy_MaskingException_Action;
-  /** Level is the masking level that the user can access sensitive data. */
-  maskingLevel: MaskingLevel;
   /**
    * Member is the principal who bind to this exception policy instance.
    *
@@ -514,7 +503,7 @@ export interface MaskingRulePolicy_MaskingRule {
   /** A unique identifier for a node in UUID format. */
   id: string;
   condition: Expr | undefined;
-  maskingLevel: MaskingLevel;
+  semanticType: string;
 }
 
 export interface RestrictIssueCreationForSQLReviewPolicy {
@@ -1912,7 +1901,6 @@ export const MaskingExceptionPolicy: MessageFns<MaskingExceptionPolicy> = {
 function createBaseMaskingExceptionPolicy_MaskingException(): MaskingExceptionPolicy_MaskingException {
   return {
     action: MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED,
-    maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
     member: "",
     condition: undefined,
   };
@@ -1922,9 +1910,6 @@ export const MaskingExceptionPolicy_MaskingException: MessageFns<MaskingExceptio
   encode(message: MaskingExceptionPolicy_MaskingException, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.action !== MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED) {
       writer.uint32(8).int32(maskingExceptionPolicy_MaskingException_ActionToNumber(message.action));
-    }
-    if (message.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
-      writer.uint32(16).int32(maskingLevelToNumber(message.maskingLevel));
     }
     if (message.member !== "") {
       writer.uint32(26).string(message.member);
@@ -1948,14 +1933,6 @@ export const MaskingExceptionPolicy_MaskingException: MessageFns<MaskingExceptio
           }
 
           message.action = maskingExceptionPolicy_MaskingException_ActionFromJSON(reader.int32());
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.maskingLevel = maskingLevelFromJSON(reader.int32());
           continue;
         }
         case 3: {
@@ -1988,9 +1965,6 @@ export const MaskingExceptionPolicy_MaskingException: MessageFns<MaskingExceptio
       action: isSet(object.action)
         ? maskingExceptionPolicy_MaskingException_ActionFromJSON(object.action)
         : MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED,
-      maskingLevel: isSet(object.maskingLevel)
-        ? maskingLevelFromJSON(object.maskingLevel)
-        : MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
       member: isSet(object.member) ? globalThis.String(object.member) : "",
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
     };
@@ -2000,9 +1974,6 @@ export const MaskingExceptionPolicy_MaskingException: MessageFns<MaskingExceptio
     const obj: any = {};
     if (message.action !== MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED) {
       obj.action = maskingExceptionPolicy_MaskingException_ActionToJSON(message.action);
-    }
-    if (message.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
-      obj.maskingLevel = maskingLevelToJSON(message.maskingLevel);
     }
     if (message.member !== "") {
       obj.member = message.member;
@@ -2019,7 +1990,6 @@ export const MaskingExceptionPolicy_MaskingException: MessageFns<MaskingExceptio
   fromPartial(object: DeepPartial<MaskingExceptionPolicy_MaskingException>): MaskingExceptionPolicy_MaskingException {
     const message = createBaseMaskingExceptionPolicy_MaskingException();
     message.action = object.action ?? MaskingExceptionPolicy_MaskingException_Action.ACTION_UNSPECIFIED;
-    message.maskingLevel = object.maskingLevel ?? MaskingLevel.MASKING_LEVEL_UNSPECIFIED;
     message.member = object.member ?? "";
     message.condition = (object.condition !== undefined && object.condition !== null)
       ? Expr.fromPartial(object.condition)
@@ -2091,7 +2061,7 @@ export const MaskingRulePolicy: MessageFns<MaskingRulePolicy> = {
 };
 
 function createBaseMaskingRulePolicy_MaskingRule(): MaskingRulePolicy_MaskingRule {
-  return { id: "", condition: undefined, maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED };
+  return { id: "", condition: undefined, semanticType: "" };
 }
 
 export const MaskingRulePolicy_MaskingRule: MessageFns<MaskingRulePolicy_MaskingRule> = {
@@ -2102,8 +2072,8 @@ export const MaskingRulePolicy_MaskingRule: MessageFns<MaskingRulePolicy_Masking
     if (message.condition !== undefined) {
       Expr.encode(message.condition, writer.uint32(18).fork()).join();
     }
-    if (message.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
-      writer.uint32(24).int32(maskingLevelToNumber(message.maskingLevel));
+    if (message.semanticType !== "") {
+      writer.uint32(26).string(message.semanticType);
     }
     return writer;
   },
@@ -2132,11 +2102,11 @@ export const MaskingRulePolicy_MaskingRule: MessageFns<MaskingRulePolicy_Masking
           continue;
         }
         case 3: {
-          if (tag !== 24) {
+          if (tag !== 26) {
             break;
           }
 
-          message.maskingLevel = maskingLevelFromJSON(reader.int32());
+          message.semanticType = reader.string();
           continue;
         }
       }
@@ -2152,9 +2122,7 @@ export const MaskingRulePolicy_MaskingRule: MessageFns<MaskingRulePolicy_Masking
     return {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
-      maskingLevel: isSet(object.maskingLevel)
-        ? maskingLevelFromJSON(object.maskingLevel)
-        : MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
+      semanticType: isSet(object.semanticType) ? globalThis.String(object.semanticType) : "",
     };
   },
 
@@ -2166,8 +2134,8 @@ export const MaskingRulePolicy_MaskingRule: MessageFns<MaskingRulePolicy_Masking
     if (message.condition !== undefined) {
       obj.condition = Expr.toJSON(message.condition);
     }
-    if (message.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
-      obj.maskingLevel = maskingLevelToJSON(message.maskingLevel);
+    if (message.semanticType !== "") {
+      obj.semanticType = message.semanticType;
     }
     return obj;
   },
@@ -2181,7 +2149,7 @@ export const MaskingRulePolicy_MaskingRule: MessageFns<MaskingRulePolicy_Masking
     message.condition = (object.condition !== undefined && object.condition !== null)
       ? Expr.fromPartial(object.condition)
       : undefined;
-    message.maskingLevel = object.maskingLevel ?? MaskingLevel.MASKING_LEVEL_UNSPECIFIED;
+    message.semanticType = object.semanticType ?? "";
     return message;
   },
 };

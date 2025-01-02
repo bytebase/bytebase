@@ -130,9 +130,8 @@ export interface Changelist_Change {
   sheet: string;
   /**
    * The source of origin.
-   * 1) change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}.
-   * 2) branch: projects/{project}/branches/{branch}.
-   * 3) raw SQL if empty.
+   * 1) changelog: instances/{instance}/databases/{database}/changelogs/{changelog}.
+   * 2) raw SQL if empty.
    */
   source: string;
   /** The migration version for a change. */

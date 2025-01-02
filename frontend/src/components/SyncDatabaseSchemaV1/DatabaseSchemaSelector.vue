@@ -38,7 +38,7 @@
           :loading="isPreparingSchemaVersionOptions"
           :value="state.changelogName"
           :options="schemaVersionOptions"
-          :placeholder="$t('change-history.select')"
+          :placeholder="$t('changelog.select')"
           :disabled="schemaVersionOptions.length === 0"
           :render-label="renderSchemaVersionLabel"
           :fallback-option="
@@ -182,7 +182,7 @@ const schemaVersionOptions = computed(() => {
   const options: SelectOption[] = [
     {
       value: "PLACEHOLDER",
-      label: t("change-history.select"),
+      label: t("changelog.select"),
       disabled: true,
       style: "cursor: default",
     },
@@ -211,27 +211,30 @@ const renderSchemaVersionLabel = (option: SelectOption) => {
 
   const index = option.index as number;
   return (
-    <div class="w-full flex flex-row justify-start items-center truncate">
+    <div class="flex flex-row justify-start items-center truncate gap-1">
       {index > 0 && (
         <FeatureBadge
           feature="bb.feature.sync-schema-all-versions"
-          customClass="mr-1"
           instance={database.value?.instanceResource}
         />
       )}
       <HumanizeDate
-        class="text-control-light mr-1"
+        class="text-control-light"
         date={getDateForPbTimestamp(changelog.createTime)}
       />
-      <NTag class="mr-1" round size="small">
+      <NTag round size="small">
         {changelog_TypeToJSON(changelog.type)}
       </NTag>
       {changelog.version && (
-        <NTag class="mr-1" round size="small">
+        <NTag round size="small">
           {changelog.version}
         </NTag>
       )}
-      <span class="truncate">{changelog.statement}</span>
+      {changelog.statement ? (
+        <span class="truncate">{changelog.statement}</span>
+      ) : (
+        <span class="text-gray-400">{t("common.empty")}</span>
+      )}
     </div>
   );
 };
@@ -258,7 +261,7 @@ const fallbackSchemaVersionOption = (value: string): SelectOption => {
   return {
     value: "PLACEHOLDER",
     disabled: true,
-    label: t("change-history.select"),
+    label: t("changelog.select"),
     style: "cursor: default",
   };
 };

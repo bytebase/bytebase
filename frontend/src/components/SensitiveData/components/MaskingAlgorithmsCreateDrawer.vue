@@ -1,6 +1,8 @@
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
-    <DrawerContent :title="$t('common.add')">
+    <DrawerContent
+      :title="algorithm.title ? $t('common.edit') : $t('common.add')"
+    >
       <div
         class="w-[40rem] max-w-[calc(100vw-5rem)] space-y-6 divide-y divide-block-border"
       >
@@ -192,7 +194,7 @@
               <p class="textinfolabel">
                 {{
                   state.innerOuterMask.type ==
-                  MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.INNER
+                  Algorithm_InnerOuterMask_MaskType.INNER
                     ? $t(
                         "settings.sensitive-data.algorithms.inner-outer-mask.inner-label"
                       )
@@ -206,22 +208,14 @@
               v-model:value="state.innerOuterMask.type"
               :disabled="state.processing || readonly"
             >
-              <NRadio
-                :value="
-                  MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.INNER
-                "
-              >
+              <NRadio :value="Algorithm_InnerOuterMask_MaskType.INNER">
                 {{
                   $t(
                     "settings.sensitive-data.algorithms.inner-outer-mask.inner-mask"
                   )
                 }}
               </NRadio>
-              <NRadio
-                :value="
-                  MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.OUTER
-                "
-              >
+              <NRadio :value="Algorithm_InnerOuterMask_MaskType.OUTER">
                 {{
                   $t(
                     "settings.sensitive-data.algorithms.inner-outer-mask.outer-mask"
@@ -307,7 +301,7 @@
                   v-if="!readonly"
                   :disabled="isSubmitDisabled"
                   type="primary"
-                  @click.prevent="onUpsert"
+                  @click.prevent="() => $emit('apply', maskingAlgorithm)"
                 >
                   {{ $t("common.confirm") }}
                 </NButton>
@@ -340,15 +334,14 @@ import {
   RadioGrid,
   MiniActionButton,
 } from "@/components/v2";
-import { pushNotification, useSettingV1Store } from "@/store";
 import {
-  MaskingAlgorithmSetting_Algorithm as Algorithm,
-  MaskingAlgorithmSetting_Algorithm_FullMask as FullMask,
-  MaskingAlgorithmSetting_Algorithm_RangeMask as RangeMask,
-  MaskingAlgorithmSetting_Algorithm_MD5Mask as MD5Mask,
-  MaskingAlgorithmSetting_Algorithm_InnerOuterMask as InnerOuterMask,
-  MaskingAlgorithmSetting_Algorithm_RangeMask_Slice as RangeMask_Slice,
-  MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType,
+  Algorithm,
+  Algorithm_FullMask as FullMask,
+  Algorithm_RangeMask as RangeMask,
+  Algorithm_MD5Mask as MD5Mask,
+  Algorithm_InnerOuterMask,
+  Algorithm_RangeMask_Slice,
+  Algorithm_InnerOuterMask_MaskType,
 } from "@/types/proto/v1/setting_service";
 import type { MaskingType } from "./utils";
 import { getMaskingType } from "./utils";
@@ -366,7 +359,7 @@ interface LocalState {
   fullMask: FullMask;
   rangeMask: RangeMask;
   md5Mask: MD5Mask;
-  innerOuterMask: InnerOuterMask;
+  innerOuterMask: Algorithm_InnerOuterMask;
 }
 
 const props = defineProps<{
@@ -375,14 +368,15 @@ const props = defineProps<{
   algorithm: Algorithm;
 }>();
 
-const emit = defineEmits<{
+defineEmits<{
   (event: "dismiss"): void;
+  (event: "apply", algorithm: Algorithm): void;
 }>();
 
 const defaultRangeMask = computed(() =>
   RangeMask.fromPartial({
     slices: [
-      RangeMask_Slice.fromPartial({
+      Algorithm_RangeMask_Slice.fromPartial({
         start: 0,
         end: 1,
         substitution: "*",
@@ -392,10 +386,10 @@ const defaultRangeMask = computed(() =>
 );
 
 const defaultInnerOuterMask = computed(() =>
-  InnerOuterMask.fromPartial({
+  Algorithm_InnerOuterMask.fromPartial({
     prefixLen: 0,
     suffixLen: 0,
-    type: MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.INNER,
+    type: Algorithm_InnerOuterMask_MaskType.INNER,
     substitution: "*",
   })
 );
@@ -412,7 +406,6 @@ const state = reactive<LocalState>({
 });
 
 const { t } = useI18n();
-const settingStore = useSettingV1Store();
 
 const maskingTypeList = computed((): MaskingTypeOption[] => [
   {
@@ -433,13 +426,6 @@ const maskingTypeList = computed((): MaskingTypeOption[] => [
   },
 ]);
 
-const algorithmList = computed((): Algorithm[] => {
-  return (
-    settingStore.getSettingByName("bb.workspace.masking-algorithm")?.value
-      ?.maskingAlgorithmSettingValue?.algorithms ?? []
-  );
-});
-
 watch(
   () => props.algorithm,
   (algorithm) => {
@@ -459,7 +445,6 @@ const maskingAlgorithm = computed((): Algorithm => {
     id: props.algorithm.id,
     title: state.title,
     description: state.description,
-    category: state.maskingType === "md5-mask" ? "HASH" : "MASK",
   });
 
   switch (state.maskingType) {
@@ -562,40 +547,6 @@ const isSubmitDisabled = computed(() => {
   return !!errorMessage.value;
 });
 
-const onUpsert = async () => {
-  state.processing = true;
-
-  const index = algorithmList.value.findIndex(
-    (item) => item.id === maskingAlgorithm.value.id
-  );
-  const newList = [...algorithmList.value];
-  if (index < 0) {
-    newList.push(maskingAlgorithm.value);
-  } else {
-    newList[index] = maskingAlgorithm.value;
-  }
-
-  try {
-    await settingStore.upsertSetting({
-      name: "bb.workspace.masking-algorithm",
-      value: {
-        maskingAlgorithmSettingValue: {
-          algorithms: newList,
-        },
-      },
-    });
-
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.updated"),
-    });
-    emit("dismiss");
-  } finally {
-    state.processing = false;
-  }
-};
-
 const onMaskingTypeChange = (maskingType: MaskingType) => {
   if (state.processing || props.readonly) {
     return;
@@ -620,7 +571,7 @@ const onMaskingTypeChange = (maskingType: MaskingType) => {
 const addSlice = () => {
   const last = state.rangeMask.slices[state.rangeMask.slices.length - 1];
   state.rangeMask.slices.push(
-    RangeMask_Slice.fromPartial({
+    Algorithm_RangeMask_Slice.fromPartial({
       start: (last?.start ?? -1) + 1,
       end: (last?.end ?? 0) + 1,
       substitution: "*",

@@ -179,6 +179,21 @@ export interface SyncInstanceRequest {
   enableFullSync: boolean;
 }
 
+export interface ListInstanceDatabaseRequest {
+  /**
+   * The name of the instance.
+   * Format: instances/{instance}
+   */
+  name: string;
+  /** The target instance. We need to set this field if the target instance is not created yet. */
+  instance?: Instance | undefined;
+}
+
+export interface ListInstanceDatabaseResponse {
+  /** All database name list in the instance. */
+  databases: string[];
+}
+
 export interface SyncInstanceResponse {
   /** All database name list in the instance. */
   databases: string[];
@@ -1329,6 +1344,146 @@ export const SyncInstanceRequest: MessageFns<SyncInstanceRequest> = {
     const message = createBaseSyncInstanceRequest();
     message.name = object.name ?? "";
     message.enableFullSync = object.enableFullSync ?? false;
+    return message;
+  },
+};
+
+function createBaseListInstanceDatabaseRequest(): ListInstanceDatabaseRequest {
+  return { name: "", instance: undefined };
+}
+
+export const ListInstanceDatabaseRequest: MessageFns<ListInstanceDatabaseRequest> = {
+  encode(message: ListInstanceDatabaseRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.instance !== undefined) {
+      Instance.encode(message.instance, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListInstanceDatabaseRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListInstanceDatabaseRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.instance = Instance.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListInstanceDatabaseRequest {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      instance: isSet(object.instance) ? Instance.fromJSON(object.instance) : undefined,
+    };
+  },
+
+  toJSON(message: ListInstanceDatabaseRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.instance !== undefined) {
+      obj.instance = Instance.toJSON(message.instance);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListInstanceDatabaseRequest>): ListInstanceDatabaseRequest {
+    return ListInstanceDatabaseRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListInstanceDatabaseRequest>): ListInstanceDatabaseRequest {
+    const message = createBaseListInstanceDatabaseRequest();
+    message.name = object.name ?? "";
+    message.instance = (object.instance !== undefined && object.instance !== null)
+      ? Instance.fromPartial(object.instance)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseListInstanceDatabaseResponse(): ListInstanceDatabaseResponse {
+  return { databases: [] };
+}
+
+export const ListInstanceDatabaseResponse: MessageFns<ListInstanceDatabaseResponse> = {
+  encode(message: ListInstanceDatabaseResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.databases) {
+      writer.uint32(10).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListInstanceDatabaseResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListInstanceDatabaseResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.databases.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListInstanceDatabaseResponse {
+    return {
+      databases: globalThis.Array.isArray(object?.databases)
+        ? object.databases.map((e: any) => globalThis.String(e))
+        : [],
+    };
+  },
+
+  toJSON(message: ListInstanceDatabaseResponse): unknown {
+    const obj: any = {};
+    if (message.databases?.length) {
+      obj.databases = message.databases;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListInstanceDatabaseResponse>): ListInstanceDatabaseResponse {
+    return ListInstanceDatabaseResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListInstanceDatabaseResponse>): ListInstanceDatabaseResponse {
+    const message = createBaseListInstanceDatabaseResponse();
+    message.databases = object.databases?.map((e) => e) || [];
     return message;
   },
 };
@@ -3993,6 +4148,61 @@ export const InstanceServiceDefinition = {
               121,
               110,
               99,
+            ]),
+          ],
+        },
+      },
+    },
+    listInstanceDatabase: {
+      name: "ListInstanceDatabase",
+      requestType: ListInstanceDatabaseRequest,
+      requestStream: false,
+      responseType: ListInstanceDatabaseResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          800010: [new Uint8Array([16, 98, 98, 46, 105, 110, 115, 116, 97, 110, 99, 101, 115, 46, 103, 101, 116])],
+          800016: [new Uint8Array([1])],
+          578365826: [
+            new Uint8Array([
+              37,
+              58,
+              1,
+              42,
+              34,
+              32,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
             ]),
           ],
         },

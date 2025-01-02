@@ -260,9 +260,11 @@ import {
 } from "@/components/v2";
 import { useSettingV1Store, useNotificationStore } from "@/store";
 import {
-  ColumnConfig,
   ColumnMetadata,
 } from "@/types/proto/v1/database_service";
+import {
+  ColumnCatalog,
+} from "@/types/proto/v1/database_catalog_service";
 import {
   SchemaTemplateSetting,
   SchemaTemplateSetting_FieldTemplate,
@@ -301,7 +303,7 @@ const state = reactive<LocalState>({
   showClassificationDrawer: false,
   showSemanticTypesDrawer: false,
   showColumnDefaultValueExpressionModal: false,
-  catalog: ColumnConfig.fromPartial({
+  catalog: ColumnCatalog.fromPartial({
     ...(props.template.catalog ?? {}),
   }),
   kvList: [],
@@ -412,7 +414,7 @@ const submitDisabled = computed(() => {
 const submit = async () => {
   const template = SchemaTemplateSetting_FieldTemplate.fromPartial({
     ...state,
-    catalog: ColumnConfig.fromPartial({
+    catalog: ColumnCatalog.fromPartial({
       ...state.catalog,
       name: state.column?.name,
       labels: convertKVListToLabels(state.kvList, false /* !omitEmpty */),
@@ -524,7 +526,7 @@ const handleSelectedColumnDefaultValueExpressionChange = (
 };
 
 const onSemanticTypeApply = async (semanticTypeId: string) => {
-  state.catalog = ColumnConfig.fromPartial({
+  state.catalog = ColumnCatalog.fromPartial({
     ...state.catalog,
     semanticTypeId,
   });

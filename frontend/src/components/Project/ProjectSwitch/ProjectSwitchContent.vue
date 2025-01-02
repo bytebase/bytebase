@@ -24,7 +24,7 @@
           />
           <NTooltip v-if="allowToCreateProject" trigger="hover">
             <template #trigger>
-              <NButton size="small" @click="state.showCreateDrawer = true">
+              <NButton size="small" @click="$emit('on-create')">
                 <template #icon>
                   <PlusIcon class="w-4 h-auto" />
                 </template>
@@ -57,15 +57,6 @@
       </NTabPane>
     </NTabs>
   </div>
-
-  <Drawer
-    :auto-focus="true"
-    :close-on-esc="true"
-    :show="state.showCreateDrawer"
-    @close="state.showCreateDrawer = false"
-  >
-    <ProjectCreatePanel @dismiss="onCreate" />
-  </Drawer>
 </template>
 
 <script lang="ts" setup>
@@ -74,11 +65,9 @@ import { NButton, NTabPane, NTabs, NTooltip } from "naive-ui";
 import { computed, reactive, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import { useCurrentProject } from "@/components/Project/useCurrentProject";
 import { useRecentProjects } from "@/components/Project/useRecentProjects";
 import { SearchBox, ProjectV1Table } from "@/components/v2";
-import { Drawer } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
@@ -94,15 +83,17 @@ import {
 interface LocalState {
   showPopover: boolean;
   searchText: string;
-  showCreateDrawer: boolean;
   selectedTab: "recent" | "all";
 }
+
+defineEmits<{
+  (event: "on-create"): void;
+}>();
 
 const { t } = useI18n();
 const state = reactive<LocalState>({
   showPopover: false,
   searchText: "",
-  showCreateDrawer: false,
   selectedTab: "all",
 });
 const { projectList } = useProjectV1List();
@@ -117,7 +108,7 @@ const params = computed(() => {
     issueSlug: route.params.issueSlug as string | undefined,
     instanceId: route.params.instanceId as string | undefined,
     databaseName: route.params.databaseName as string | undefined,
-    changeHistoryId: route.params.changeHistoryId as string | undefined,
+    changelogId: route.params.changelogId as string | undefined,
   };
 });
 
@@ -170,10 +161,6 @@ const actualSelectedTab = computed((): LocalState["selectedTab"] => {
   }
   return state.selectedTab;
 });
-
-const onCreate = () => {
-  state.showCreateDrawer = false;
-};
 
 const onProjectSelect = (project: ComposedProject) => {
   const route = router.resolve({

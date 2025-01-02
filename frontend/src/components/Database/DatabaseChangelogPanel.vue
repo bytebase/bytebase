@@ -16,7 +16,7 @@
         <BBSpin
           v-if="state.loading"
           :size="20"
-          :title="$t('change-history.refreshing-history')"
+          :title="$t('changelog.refreshing')"
         />
         <TooltipButton
           tooltip-mode="DISABLED-ONLY"
@@ -25,11 +25,11 @@
           @click="handleExportChangelogs"
         >
           <template #default>
-            {{ $t("change-history.export") }}
+            {{ $t("changelog.export") }}
           </template>
           <template #tooltip>
             <div class="whitespace-pre-line">
-              {{ $t("change-history.need-to-select-first") }}
+              {{ $t("changelog.need-to-select-first") }}
             </div>
           </template>
         </TooltipButton>
@@ -47,7 +47,7 @@
           </template>
           <template #tooltip>
             <div class="whitespace-pre-line">
-              {{ $t("change-history.rollback-tip") }}
+              {{ $t("changelog.rollback-tip") }}
             </div>
           </template>
         </TooltipButton>
@@ -59,15 +59,13 @@
           @click="state.showBaselineModal = true"
         >
           <template #default>
-            {{ $t("change-history.establish-baseline") }}
+            {{ $t("changelog.establish-baseline") }}
           </template>
           <template v-if="database.project === DEFAULT_PROJECT_NAME" #tooltip>
             <div class="whitespace-pre-line">
               {{
                 $t("issue.not-allowed-to-operate-unassigned-database", {
-                  operation: $t(
-                    "change-history.establish-baseline"
-                  ).toLowerCase(),
+                  operation: $t("changelog.establish-baseline").toLowerCase(),
                 })
               }}
             </div>
@@ -100,16 +98,16 @@
 
   <BBAlert
     v-model:show="state.showBaselineModal"
-    data-label="bb-change-history-establish-baseline-alert"
+    data-label="bb-changelog-establish-baseline-alert"
     type="info"
-    :ok-text="$t('change-history.establish-baseline')"
+    :ok-text="$t('changelog.establish-baseline')"
     :cancel-text="$t('common.cancel')"
     :title="
-      $t('change-history.establish-database-baseline', {
+      $t('changelog.establish-database-baseline', {
         name: database.databaseName,
       })
     "
-    :description="$t('change-history.establish-baseline-description')"
+    :description="$t('changelog.establish-baseline-description')"
     @ok="doCreateBaseline"
     @cancel="state.showBaselineModal = false"
   />
@@ -262,7 +260,7 @@ const doCreateBaseline = () => {
     },
     query: {
       template: "bb.issue.database.schema.baseline",
-      name: t("change-history.establish-database-baseline", {
+      name: t("changelog.establish-database-baseline", {
         name: props.database.databaseName,
       }),
       databaseList: props.database.name,

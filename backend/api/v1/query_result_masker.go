@@ -39,11 +39,6 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*base.Query
 		return errors.Wrapf(err, "failed to find masking rule policy")
 	}
 
-	algorithmSetting, err := s.store.GetMaskingAlgorithmSetting(ctx)
-	if err != nil {
-		return errors.Wrapf(err, "failed to find masking algorithm setting")
-	}
-
 	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "failed to find semantic types setting")
@@ -52,7 +47,6 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*base.Query
 	m := newEmptyMaskingLevelEvaluator().
 		withMaskingRulePolicy(maskingRulePolicy).
 		withDataClassificationSetting(classificationSetting).
-		withMaskingAlgorithmSetting(algorithmSetting).
 		withSemanticTypeSetting(semanticTypesSetting)
 
 	// We expect the len(spans) == len(results), but to avoid NPE, we use the min(len(spans), len(results)) here.
@@ -184,38 +178,6 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 		return masker.NewNoneMasker(), nil
 	}
 
-	semanticTypeID := ""
-	if config != nil {
-		semanticTypeID = config.SemanticTypeId
-	}
-
-	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	maskingPolicyMap := make(map[maskingPolicyKey]*storepb.MaskData)
-	for _, schemaConfig := range dbSchema.GetConfig().Schemas {
-		for _, tableConfig := range schemaConfig.GetTables() {
-			for _, columnConfig := range tableConfig.GetColumns() {
-				if columnConfig.MaskingLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED {
-					continue
-				}
-				maskingPolicyMap[maskingPolicyKey{
-					schema: schemaConfig.Name,
-					table:  tableConfig.Name,
-					column: columnConfig.Name,
-				}] = &storepb.MaskData{
-					Schema:                    schemaConfig.Name,
-					Table:                     tableConfig.Name,
-					Column:                    columnConfig.Name,
-					MaskingLevel:              columnConfig.MaskingLevel,
-					FullMaskingAlgorithmId:    columnConfig.FullMaskingAlgorithmId,
-					PartialMaskingAlgorithmId: columnConfig.PartialMaskingAlgorithmId,
-				}
-			}
-		}
-	}
-
 	var maskingExceptionPolicy *storepb.MaskingExceptionPolicy
 	// If we cannot find the maskingExceptionPolicy before, we need to find it from the database and record it in cache.
 
@@ -247,11 +209,11 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 		}
 	}
 
-	maskingAlgorithm, maskingLevel, err := m.evaluateMaskingAlgorithmOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, semanticTypeID, config.ClassificationId, project.DataClassificationConfigID, maskingPolicyMap, maskingExceptionContainsCurrentPrincipal)
+	maskingAlgorithm, err := m.evaluateMaskingAlgorithmOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, project.DataClassificationConfigID, config, maskingExceptionContainsCurrentPrincipal)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", sourceColumn.Database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column)
 	}
-	return getMaskerByMaskingAlgorithmAndLevel(maskingAlgorithm, maskingLevel), nil
+	return getMaskerByMaskingAlgorithmAndLevel(maskingAlgorithm), nil
 }
 
 func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, instanceID string, sourceColumn *base.ColumnResource) (*storepb.ColumnMetadata, *storepb.ColumnCatalog, error) {
@@ -306,32 +268,31 @@ func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, inst
 	return columnMetadata, columnConfig, nil
 }
 
-func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.MaskingAlgorithmSetting_Algorithm, level storepb.MaskingLevel) masker.Masker {
+func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.Algorithm) masker.Masker {
 	if algorithm == nil {
-		switch level {
-		case storepb.MaskingLevel_FULL:
-			return masker.NewDefaultFullMasker()
-		case storepb.MaskingLevel_PARTIAL:
-			return masker.NewDefaultRangeMasker()
-		default:
-			return masker.NewNoneMasker()
-		}
+		return masker.NewNoneMasker()
+	}
+	switch algorithm.GetId() {
+	case "default":
+		return masker.NewDefaultFullMasker()
+	case "default-partial":
+		return masker.NewDefaultRangeMasker()
 	}
 
 	switch m := algorithm.Mask.(type) {
-	case *storepb.MaskingAlgorithmSetting_Algorithm_FullMask_:
+	case *storepb.Algorithm_FullMask_:
 		return masker.NewFullMasker(m.FullMask.Substitution)
-	case *storepb.MaskingAlgorithmSetting_Algorithm_RangeMask_:
+	case *storepb.Algorithm_RangeMask_:
 		return masker.NewRangeMasker(convertRangeMaskSlices(m.RangeMask.Slices))
-	case *storepb.MaskingAlgorithmSetting_Algorithm_Md5Mask:
+	case *storepb.Algorithm_Md5Mask:
 		return masker.NewMD5Masker(m.Md5Mask.Salt)
-	case *storepb.MaskingAlgorithmSetting_Algorithm_InnerOuterMask_:
+	case *storepb.Algorithm_InnerOuterMask_:
 		return masker.NewInnerOuterMasker(m.InnerOuterMask.Type, m.InnerOuterMask.PrefixLen, m.InnerOuterMask.SuffixLen, m.InnerOuterMask.Substitution)
 	}
 	return masker.NewNoneMasker()
 }
 
-func convertRangeMaskSlices(slices []*storepb.MaskingAlgorithmSetting_Algorithm_RangeMask_Slice) []*masker.MaskRangeSlice {
+func convertRangeMaskSlices(slices []*storepb.Algorithm_RangeMask_Slice) []*masker.MaskRangeSlice {
 	var result []*masker.MaskRangeSlice
 	for _, slice := range slices {
 		result = append(result, &masker.MaskRangeSlice{

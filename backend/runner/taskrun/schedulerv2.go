@@ -330,46 +330,44 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 		}
 	}
 
-	if common.IsDev() {
-		doSchedule, err := func() (bool, error) {
-			if task.DatabaseID == nil {
-				return true, nil
-			}
-
-			var version struct {
-				Version string `json:"schemaVersion"`
-			}
-			if err := json.Unmarshal([]byte(task.Payload), &version); err != nil {
-				return false, errors.Wrapf(err, "failed to unmarshal task payload")
-			}
-			if version.Version == "" {
-				return true, nil
-			}
-
-			taskIDs, err := s.store.FindBlockingTasksByVersion(ctx, *task.DatabaseID, version.Version)
-			if err != nil {
-				return false, errors.Wrapf(err, "failed to find blocking versioned tasks")
-			}
-			if len(taskIDs) > 0 {
-				s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
-					ReportTime: timestamppb.Now(),
-					WaitingCause: &storepb.SchedulerInfo_WaitingCause{
-						Cause: &storepb.SchedulerInfo_WaitingCause_TaskUid{
-							TaskUid: int32(taskIDs[0]),
-						},
-					},
-				})
-				return false, nil
-			}
-			s.stateCfg.TaskRunSchedulerInfo.Delete(taskRun.ID)
+	doSchedule, err := func() (bool, error) {
+		if task.DatabaseID == nil {
 			return true, nil
-		}()
+		}
+
+		var version struct {
+			Version string `json:"schemaVersion"`
+		}
+		if err := json.Unmarshal([]byte(task.Payload), &version); err != nil {
+			return false, errors.Wrapf(err, "failed to unmarshal task payload")
+		}
+		if version.Version == "" {
+			return true, nil
+		}
+
+		taskIDs, err := s.store.FindBlockingTasksByVersion(ctx, *task.DatabaseID, version.Version)
 		if err != nil {
-			return errors.Wrapf(err, "failed to check blocking versioned tasks")
+			return false, errors.Wrapf(err, "failed to find blocking versioned tasks")
 		}
-		if !doSchedule {
-			return nil
+		if len(taskIDs) > 0 {
+			s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
+				ReportTime: timestamppb.Now(),
+				WaitingCause: &storepb.SchedulerInfo_WaitingCause{
+					Cause: &storepb.SchedulerInfo_WaitingCause_TaskUid{
+						TaskUid: int32(taskIDs[0]),
+					},
+				},
+			})
+			return false, nil
 		}
+		s.stateCfg.TaskRunSchedulerInfo.Delete(taskRun.ID)
+		return true, nil
+	}()
+	if err != nil {
+		return errors.Wrapf(err, "failed to check blocking versioned tasks")
+	}
+	if !doSchedule {
+		return nil
 	}
 
 	if _, err := s.store.UpdateTaskRunStatus(ctx, &store.TaskRunStatusPatch{
@@ -507,6 +505,15 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 
 func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMessage, task *store.TaskMessage, executor Executor) {
 	defer func() {
+		if r := recover(); r != nil {
+			err, ok := r.(error)
+			if !ok {
+				err = errors.Errorf("%v", r)
+			}
+			slog.Error("Task scheduler V2 runTaskRunOnce PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
+		}
+	}()
+	defer func() {
 		// We don't need to do s.stateCfg.RunningTaskRuns.Delete(taskRun.ID) to avoid race condition.
 		s.stateCfg.RunningTaskRunsCancelFunc.Delete(taskRun.ID)
 		if task.DatabaseID != nil {
@@ -539,9 +546,9 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 			log.BBError(err),
 		)
 		resultBytes, marshalErr := protojson.Marshal(&storepb.TaskRunResult{
-			Detail:        "The task run is canceled",
-			ChangeHistory: "",
-			Version:       "",
+			Detail:    "The task run is canceled",
+			Changelog: "",
+			Version:   "",
 		})
 		if marshalErr != nil {
 			slog.Error("Failed to marshal task run result",
@@ -581,9 +588,9 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		)
 
 		taskRunResult := &storepb.TaskRunResult{
-			Detail:        err.Error(),
-			ChangeHistory: "",
-			Version:       "",
+			Detail:    err.Error(),
+			Changelog: "",
+			Version:   "",
 		}
 
 		var errWithPosition *db.ErrorWithPosition

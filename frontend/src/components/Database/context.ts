@@ -28,7 +28,7 @@ export type DatabaseDetailContext = {
   allowListSecrets: Ref<boolean>;
   allowUpdateSecrets: Ref<boolean>;
   allowDeleteSecrets: Ref<boolean>;
-  allowListChangeHistories: Ref<boolean>;
+  allowListChangelogs: Ref<boolean>;
   allowListSlowQueries: Ref<boolean>;
 };
 
@@ -113,8 +113,8 @@ export const provideDatabaseDetailContext = (
     checkPermission("bb.databaseSecrets.delete")
   );
 
-  const allowListChangeHistories = computed(() =>
-    checkPermission("bb.changeHistories.list")
+  const allowListChangelogs = computed(() =>
+    checkPermission("bb.changelogs.list")
   );
   const allowListSlowQueries = computed(
     () =>
@@ -135,7 +135,7 @@ export const provideDatabaseDetailContext = (
     allowListSecrets,
     allowUpdateSecrets,
     allowDeleteSecrets,
-    allowListChangeHistories,
+    allowListChangelogs,
     allowListSlowQueries,
   };
 

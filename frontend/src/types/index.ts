@@ -24,7 +24,6 @@ export * from "./review";
 export * from "./slowQuery";
 export * from "./dbGroup";
 export * from "./setting";
-export * from "./changeHistory";
 export * from "./changelog";
 export * from "./semanticTypes";
 export * from "./iam";

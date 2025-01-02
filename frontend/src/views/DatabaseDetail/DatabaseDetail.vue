@@ -118,22 +118,10 @@
       <NTabPane
         v-if="
           databaseChangeMode === DatabaseChangeMode.PIPELINE &&
-          allowListChangeHistories
-        "
-        name="change-history"
-        :tab="$t('change-history.self')"
-      >
-        <DatabaseChangeHistoryPanel class="mt-2" :database="database" />
-      </NTabPane>
-      <NTabPane
-        v-if="
-          // TODO: Remove me please.
-          isDev() &&
-          databaseChangeMode === DatabaseChangeMode.PIPELINE &&
-          allowListChangeHistories
+          allowListChangelogs
         "
         name="changelog"
-        :tab="'Changelog'"
+        :tab="$t('common.changelog')"
       >
         <DatabaseChangelogPanel class="mt-2" :database="database" />
       </NTabPane>
@@ -220,7 +208,6 @@ import { computed, reactive, watch, ref, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { BBModal } from "@/bbkit";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
-import DatabaseChangeHistoryPanel from "@/components/Database/DatabaseChangeHistoryPanel.vue";
 import DatabaseChangelogPanel from "@/components/Database/DatabaseChangelogPanel.vue";
 import DatabaseOverviewPanel from "@/components/Database/DatabaseOverviewPanel.vue";
 import DatabaseRevisionPanel from "@/components/Database/DatabaseRevisionPanel.vue";
@@ -266,7 +253,6 @@ import {
 
 const databaseHashList = [
   "overview",
-  "change-history",
   "changelog",
   "revision",
   "slow-query",
@@ -311,7 +297,7 @@ const {
   allowTransferDatabase,
   allowChangeData,
   allowAlterSchema,
-  allowListChangeHistories,
+  allowListChangelogs,
   allowListSlowQueries,
 } = useDatabaseDetailContext();
 const disableSchemaEditor = useAppFeature(

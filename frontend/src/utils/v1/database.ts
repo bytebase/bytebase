@@ -60,10 +60,6 @@ export const sortDatabaseV1List = (databaseList: ComposedDatabase[]) => {
 };
 
 export const isArchivedDatabaseV1 = (db: ComposedDatabase): boolean => {
-  // TODO(steven): check if the related instance is deleted.
-  // if (db.instanceEntity.state === State.DELETED) {
-  //   return true;
-  // }
   if (db.effectiveEnvironmentEntity.state === State.DELETED) {
     return true;
   }

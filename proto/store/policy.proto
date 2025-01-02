@@ -16,19 +16,6 @@ message RolloutPolicy {
   repeated string issue_roles = 4;
 }
 
-message MaskingPolicy {
-  repeated MaskData mask_data = 1;
-}
-
-message MaskData {
-  string schema = 1;
-  string table = 2;
-  string column = 3;
-  MaskingLevel masking_level = 4;
-  string full_masking_algorithm_id = 5;
-  string partial_masking_algorithm_id = 6;
-}
-
 // MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 message MaskingExceptionPolicy {
   message MaskingException {
@@ -39,9 +26,6 @@ message MaskingExceptionPolicy {
     }
     // action is the action that the user can access sensitive data.
     Action action = 1;
-
-    // Level is the masking level that the user can access sensitive data.
-    MaskingLevel masking_level = 2;
 
     // Member is the principal who bind to this exception policy instance.
     //
@@ -62,7 +46,7 @@ message MaskingRulePolicy {
 
     google.type.Expr condition = 2;
 
-    MaskingLevel masking_level = 3;
+    string semantic_type = 3;
   }
   repeated MaskingRule rules = 1;
 }

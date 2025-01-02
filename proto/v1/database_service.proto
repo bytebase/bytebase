@@ -91,7 +91,7 @@ service DatabaseService {
       body: "*"
 
       additional_bindings: {
-        post: "/v1/{name=instances/*/databases/*/changeHistories/*}:diffSchema"
+        post: "/v1/{name=instances/*/databases/*/changelogs/*}:diffSchema"
         body: "*"
       }
     };
@@ -138,46 +138,45 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  rpc ListChangeHistories(ListChangeHistoriesRequest) returns (ListChangeHistoriesResponse) {
-    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/changeHistories"};
-    option (google.api.method_signature) = "parent";
-    option (bytebase.v1.permission) = "bb.changeHistories.list";
-    option (bytebase.v1.auth_method) = IAM;
-  }
-  rpc GetChangeHistory(GetChangeHistoryRequest) returns (ChangeHistory) {
-    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/changeHistories/*}"};
-    option (google.api.method_signature) = "name";
-    option (bytebase.v1.permission) = "bb.changeHistories.get";
-    option (bytebase.v1.auth_method) = IAM;
-  }
-
   rpc ListRevisions(ListRevisionsRequest) returns (ListRevisionsResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/revisions"};
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.revisions.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
   rpc GetRevision(GetRevisionRequest) returns (Revision) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/revisions/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.revisions.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
   rpc CreateRevision(CreateRevisionRequest) returns (Revision) {
     option (google.api.http) = {
       post: "/v1/{parent=instances/*/databases/*}/revisions"
       body: "revision"
     };
+    option (bytebase.v1.permission) = "bb.revisions.create";
+    option (bytebase.v1.auth_method) = IAM;
   }
   rpc DeleteRevision(DeleteRevisionRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=instances/*/databases/*/revisions/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.revisions.delete";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListChangelogs(ListChangelogsRequest) returns (ListChangelogsResponse) {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/changelogs"};
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.changelogs.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc GetChangelog(GetChangelogRequest) returns (Changelog) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/changelogs/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.changelogs.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 
@@ -343,11 +342,10 @@ message GetDatabaseSchemaRequest {
 }
 
 message DiffSchemaRequest {
-  // The name of the database or change history.
+  // The name of the database or changelog.
   // Format:
   // database: instances/{instance}/databases/{database}
-  // change history:
-  // instances/{instance}/databases/{database}/changeHistories/{changeHistory}
+  // changelog: instances/{instance}/databases/{database}/changelogs/{changelog}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
@@ -357,10 +355,10 @@ message DiffSchemaRequest {
     // The target schema.
     string schema = 2;
 
-    // The resource name of the change history
+    // The resource name of the changelog
     // Format:
-    // instances/{instance}/databases/{database}/changeHistories/{changeHistory}
-    string change_history = 3;
+    // instances/{instance}/databases/{database}/changelogs/{changelog}
+    string changelog = 3;
   }
 
   // Format the schema dump into SDL format.
@@ -764,10 +762,6 @@ message ColumnMetadata {
   // The user_comment is the user comment of a column parsed from the comment.
   string user_comment = 13;
 
-  // The effective_masking_level is the effective masking level of the column,
-  // evaluate from the column masking data and global masking rules.
-  MaskingLevel effective_masking_level = 14;
-
   // The generation is the generation of a column.
   GenerationMetadata generation = 16;
 }
@@ -1009,6 +1003,10 @@ message IndexMetadata {
 
   // The number of granules in the block. It's a ClickHouse specific field.
   int64 granularity = 13;
+
+  // It's a PostgreSQL specific field.
+  // The unique constraint and unique index are not the same thing in PostgreSQL.
+  bool is_constraint = 14;
 }
 
 // ExtensionMetadata is the metadata for extensions.
@@ -1160,12 +1158,6 @@ message ColumnConfig {
   map<string, string> labels = 3;
 
   string classification_id = 4;
-
-  MaskingLevel masking_level = 5;
-
-  string full_masking_algorithm_id = 6;
-
-  string partial_masking_algorithm_id = 7;
 }
 
 // DatabaseSchema is the metadata for databases.
@@ -1343,7 +1335,7 @@ message DeleteSecretRequest {
 // Secret is the secret of the database now.
 message Secret {
   option (google.api.resource) = {
-    type: "bytebase.com/DatabaseChangeHistory"
+    type: "bytebase.com/DatabaseSecret"
     pattern: "instances/{instance}/databases/{database}/secrets/{secret}"
   };
 
@@ -1387,76 +1379,6 @@ message AdviseIndexResponse {
 
   // The create index statement of the suggested index.
   string create_index_statement = 3;
-}
-
-message ChangeHistory {
-  option (google.api.resource) = {
-    type: "bytebase.com/DatabaseChangeHistory"
-    pattern:
-      "instances/{instance}/databases/{database}/changeHistories/"
-      "{changeHistory}"
-  };
-
-  reserved 2;
-
-  // Format:
-  // instances/{instance}/databases/{database}/changeHistories/{changeHistory}
-  string name = 1;
-
-  // Format: users/hello@world.com
-  string creator = 3;
-  // Format: users/hello@world.com
-  string updater = 4;
-  google.protobuf.Timestamp create_time = 5;
-  google.protobuf.Timestamp update_time = 6;
-
-  // release version of Bytebase
-  string release_version = 7;
-
-  enum Source {
-    SOURCE_UNSPECIFIED = 0;
-    UI = 1;
-    VCS = 2;
-    LIBRARY = 3;
-  }
-  Source source = 8;
-
-  enum Type {
-    TYPE_UNSPECIFIED = 0;
-    BASELINE = 1;
-    MIGRATE = 2;
-    MIGRATE_SDL = 3;
-    MIGRATE_GHOST = 4;
-    DATA = 6;
-  }
-  Type type = 9;
-
-  enum Status {
-    STATUS_UNSPECIFIED = 0;
-    PENDING = 1;
-    DONE = 2;
-    FAILED = 3;
-  }
-  Status status = 10;
-
-  string version = 11;
-
-  string description = 12;
-  // The statement is used for preview purpose.
-  string statement = 13;
-  int64 statement_size = 21;
-  // The name of the sheet resource.
-  // Format: projects/{project}/sheets/{sheet}
-  string statement_sheet = 20;
-  string schema = 14;
-  int64 schema_size = 22;
-  string prev_schema = 15;
-  int64 prev_schema_size = 23;
-  google.protobuf.Duration execution_duration = 16;
-  // Format: projects/{project}/issues/{issue}
-  string issue = 17;
-
-  ChangedResources changed_resources = 19;
 }
 
 message ChangedResources {
@@ -1507,99 +1429,6 @@ message ChangedResourceProcedure {
 
   // The ranges of sub-strings correspond to the statements on the sheet.
   repeated Range ranges = 2;
-}
-
-enum ChangeHistoryView {
-  // The default / unset value.
-  // The API will default to the BASIC view.
-  CHANGE_HISTORY_VIEW_UNSPECIFIED = 0;
-  CHANGE_HISTORY_VIEW_BASIC = 1;
-  CHANGE_HISTORY_VIEW_FULL = 2;
-}
-
-message ListChangeHistoriesRequest {
-  // The parent of the change histories.
-  // Format: instances/{instance}/databases/{database}
-  string parent = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Database"}
-  ];
-
-  // The maximum number of change histories to return. The service may return
-  // fewer than this value. If unspecified, at most 10 change histories will be
-  // returned. The maximum value is 1000; values above 1000 will be coerced to
-  // 1000.
-  int32 page_size = 2;
-
-  // A page token, received from a previous `ListChangeHistories` call.
-  // Provide this to retrieve the subsequent page.
-  //
-  // When paginating, all other parameters provided to `ListChangeHistories`
-  // must match the call that provided the page token.
-  string page_token = 3;
-
-  ChangeHistoryView view = 4;
-
-  // The filter of the change histories.
-  // follow the
-  // [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
-  // syntax. Support filter by type, source or table. For example: table =
-  // "tableExists('{database}', '{schema}', '{table}')" table =
-  // "tableExists('db', 'public', 'table1') || tableExists('db', 'public',
-  // 'table2')" type = "MIGRATE | DATA" source = "UI" source = "VCS"
-  //
-  // The table filter follow the CEL syntax.
-  // currently, we have one function for CEL:
-  // - tableExists(database, schema, table): return true if the table exists in
-  // changed resources.
-  //
-  // examples:
-  // Use
-  //   tableExists("db", "public", "table1")
-  // to filter the change histories which have the table "table1" in the schema
-  // "public" of the database "db". For MySQL, the schema is always "", such as
-  // tableExists("db", "", "table1").
-  //
-  // Combine multiple functions with "&&" and "||", we MUST use the Disjunctive
-  // Normal Form(DNF). In other words, the CEL expression consists of several
-  // parts connected by OR operators. For example, the following expression is
-  // valid:
-  // (
-  //  tableExists("db", "public", "table1") &&
-  //  tableExists("db", "public", "table2")
-  // ) || (
-  //  tableExists("db", "public", "table3")
-  // )
-  string filter = 5;
-}
-
-message ListChangeHistoriesResponse {
-  // The list of change histories.
-  repeated ChangeHistory change_histories = 1;
-
-  // A token, which can be sent as `page_token` to retrieve the next page.
-  // If this field is omitted, there are no subsequent pages.
-  string next_page_token = 2;
-}
-
-message GetChangeHistoryRequest {
-  // The name of the change history to retrieve.
-  // Format:
-  // instances/{instance}/databases/{database}/changeHistories/{changeHistory}
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/DatabaseChangeHistory"}
-  ];
-
-  ChangeHistoryView view = 2;
-
-  // Format the schema dump into SDL format.
-  bool sdl_format = 3;
-
-  // When true, the schema dump will be concise.
-  // For Oracle, there will be tables and indexes only for Sync Schema.
-  // For Postgres, we'll filter the backup schema.
-  bool concise = 4;
 }
 
 message ListRevisionsRequest {
@@ -1839,9 +1668,7 @@ message Changelog {
 
   // Format: projects/{project}/issues/{issue}
   string issue = 12;
-  // Could be empty
-  // TODO(p0ny): We will migrate ChangeHistory to Changelog, and they won't have
-  // task_run.
+  // Format: projects/{projects}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string task_run = 13;
 
   // Could be empty

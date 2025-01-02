@@ -794,6 +794,11 @@ export interface IndexMetadata {
   parentIndexName: string;
   /** The number of granules in the block. It's a ClickHouse specific field. */
   granularity: Long;
+  /**
+   * It's a PostgreSQL specific field.
+   * The unique constraint and unique index are not the same thing in PostgreSQL.
+   */
+  isConstraint: boolean;
 }
 
 /** ExtensionMetadata is the metadata for extensions. */
@@ -910,8 +915,11 @@ export interface ColumnCatalog {
   /** The user labels for a column. */
   labels: { [key: string]: string };
   classificationId: string;
+  /** Deprecated. */
   maskingLevel: MaskingLevel;
+  /** Deprecated. */
   fullMaskingAlgorithmId: string;
+  /** Deprecated. */
   partialMaskingAlgorithmId: string;
   objectSchema?: ObjectSchema | undefined;
 }
@@ -4824,6 +4832,7 @@ function createBaseIndexMetadata(): IndexMetadata {
     parentIndexSchema: "",
     parentIndexName: "",
     granularity: Long.ZERO,
+    isConstraint: false,
   };
 }
 
@@ -4871,6 +4880,9 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
     }
     if (!message.granularity.equals(Long.ZERO)) {
       writer.uint32(104).int64(message.granularity.toString());
+    }
+    if (message.isConstraint !== false) {
+      writer.uint32(112).bool(message.isConstraint);
     }
     return writer;
   },
@@ -5006,6 +5018,14 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
           message.granularity = Long.fromString(reader.int64().toString());
           continue;
         }
+        case 14: {
+          if (tag !== 112) {
+            break;
+          }
+
+          message.isConstraint = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5034,6 +5054,7 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
       parentIndexSchema: isSet(object.parentIndexSchema) ? globalThis.String(object.parentIndexSchema) : "",
       parentIndexName: isSet(object.parentIndexName) ? globalThis.String(object.parentIndexName) : "",
       granularity: isSet(object.granularity) ? Long.fromValue(object.granularity) : Long.ZERO,
+      isConstraint: isSet(object.isConstraint) ? globalThis.Boolean(object.isConstraint) : false,
     };
   },
 
@@ -5078,6 +5099,9 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
     if (!message.granularity.equals(Long.ZERO)) {
       obj.granularity = (message.granularity || Long.ZERO).toString();
     }
+    if (message.isConstraint !== false) {
+      obj.isConstraint = message.isConstraint;
+    }
     return obj;
   },
 
@@ -5101,6 +5125,7 @@ export const IndexMetadata: MessageFns<IndexMetadata> = {
     message.granularity = (object.granularity !== undefined && object.granularity !== null)
       ? Long.fromValue(object.granularity)
       : Long.ZERO;
+    message.isConstraint = object.isConstraint ?? false;
     return message;
   },
 };

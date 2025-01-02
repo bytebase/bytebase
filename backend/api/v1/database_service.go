@@ -17,7 +17,6 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -26,7 +25,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
@@ -480,12 +478,6 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &database.ProjectID,
-	})
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
 	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -521,66 +513,6 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		v1pbMetadata.SchemaConfigs = dbConfig.SchemaConfigs
 	}
 	v1pbMetadata.Name = fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix)
-
-	// Set effective masking level only if filter is set for a table.
-	if filter != nil && request.View == v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL {
-		dataClassificationSetting, err := s.store.GetDataClassificationSetting(ctx)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get data classification setting, error: %v", err)
-		}
-		maskingRulePolicy, err := s.store.GetMaskingRulePolicy(ctx)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get masking rule policy, error: %v", err)
-		}
-
-		// Convert the maskingPolicy to a map to reduce the time complexity of searching.
-		maskingPolicyMap := make(map[maskingPolicyKey]*storepb.MaskData)
-		for _, schemaConfig := range dbSchema.GetConfig().Schemas {
-			for _, tableConfig := range schemaConfig.GetTables() {
-				for _, columnConfig := range tableConfig.GetColumns() {
-					if columnConfig.MaskingLevel == storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED {
-						continue
-					}
-					maskingPolicyMap[maskingPolicyKey{
-						schema: schemaConfig.Name,
-						table:  tableConfig.Name,
-						column: columnConfig.Name,
-					}] = &storepb.MaskData{
-						Schema:                    schemaConfig.Name,
-						Table:                     tableConfig.Name,
-						Column:                    columnConfig.Name,
-						MaskingLevel:              columnConfig.MaskingLevel,
-						FullMaskingAlgorithmId:    columnConfig.FullMaskingAlgorithmId,
-						PartialMaskingAlgorithmId: columnConfig.PartialMaskingAlgorithmId,
-					}
-				}
-			}
-		}
-
-		evaluator := newEmptyMaskingLevelEvaluator().withDataClassificationSetting(dataClassificationSetting).withMaskingRulePolicy(maskingRulePolicy)
-		dbModelConfig := dbSchema.GetInternalConfig()
-		for _, schema := range v1pbMetadata.Schemas {
-			if filter.schema != schema.Name {
-				continue
-			}
-			schemaConfig := dbModelConfig.CreateOrGetSchemaConfig(schema.Name)
-			for _, table := range schema.Tables {
-				if filter.table != table.Name {
-					continue
-				}
-				tableConfig := schemaConfig.CreateOrGetTableConfig(table.Name)
-				for _, column := range table.Columns {
-					colConfig := tableConfig.CreateOrGetColumnConfig(column.Name)
-					maskingLevel, err := evaluator.evaluateMaskingLevelOfColumn(database, schema.Name, table.Name, column.Name, colConfig.ClassificationId, project.DataClassificationConfigID, maskingPolicyMap, nil /* Exceptions*/)
-					if err != nil {
-						return nil, status.Errorf(codes.Internal, "failed to evaluate masking level of column %q, error: %v", column.Name, err)
-					}
-					v1pbMaskingLevel := convertToV1PBMaskingLevel(maskingLevel)
-					column.EffectiveMaskingLevel = v1pbMaskingLevel
-				}
-			}
-		}
-	}
 
 	return v1pbMetadata, nil
 }
@@ -659,199 +591,6 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 	return &v1pb.DatabaseSchema{Schema: schema}, nil
 }
 
-// ListChangeHistories lists the change histories of a database.
-func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb.ListChangeHistoriesRequest) (*v1pb.ListChangeHistoriesResponse, error) {
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Parent)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		ResourceID: &instanceID,
-	})
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
-	}
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
-	})
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if database == nil {
-		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
-	}
-
-	offset, err := parseLimitAndOffset(&pageSize{
-		token:   request.PageToken,
-		limit:   int(request.PageSize),
-		maximum: 1000,
-	})
-	if err != nil {
-		return nil, err
-	}
-	limitPlusOne := offset.limit + 1
-
-	truncateSize := 512
-	// We apply small truncate size in dev environment (not demo) for finding incorrect usage of views
-	if s.profile.Mode == common.ReleaseModeDev && s.profile.DemoName == "" {
-		truncateSize = 4
-	}
-	find := &store.FindInstanceChangeHistoryMessage{
-		InstanceID:   &instance.UID,
-		DatabaseID:   &database.UID,
-		Limit:        &limitPlusOne,
-		Offset:       &offset.offset,
-		TruncateSize: truncateSize,
-	}
-	if request.View == v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL {
-		find.ShowFull = true
-	}
-
-	filters, err := ParseFilter(request.Filter)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	for _, expr := range filters {
-		if expr.Operator != ComparatorTypeEqual {
-			return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for filter`)
-		}
-		switch expr.Key {
-		case "source":
-			changeSource := db.MigrationSource(expr.Value)
-			find.Source = &changeSource
-		case "type":
-			for _, changeType := range strings.Split(expr.Value, " | ") {
-				find.TypeList = append(find.TypeList, db.MigrationType(changeType))
-			}
-		case "table":
-			resourcesFilter := expr.Value
-			find.ResourcesFilter = &resourcesFilter
-		default:
-			return nil, status.Errorf(codes.InvalidArgument, "invalid filter key %q", expr.Key)
-		}
-	}
-
-	changeHistories, err := s.store.ListInstanceChangeHistory(ctx, find)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list change history, error: %v", err)
-	}
-
-	nextPageToken := ""
-	if len(changeHistories) == limitPlusOne {
-		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
-		}
-		changeHistories = changeHistories[:offset.limit]
-	}
-
-	// no subsequent pages
-	converted, err := s.convertToChangeHistories(ctx, changeHistories)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert change histories, error: %v", err)
-	}
-	return &v1pb.ListChangeHistoriesResponse{
-		ChangeHistories: converted,
-		NextPageToken:   nextPageToken,
-	}, nil
-}
-
-// GetChangeHistory gets a change history.
-func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.GetChangeHistoryRequest) (*v1pb.ChangeHistory, error) {
-	instanceID, databaseName, changeHistoryIDStr, err := common.GetInstanceDatabaseIDChangeHistory(request.Name)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		ResourceID: &instanceID,
-	})
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
-	}
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
-	})
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	if database == nil {
-		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
-	}
-
-	truncateSize := 4 * 1024 * 1024
-	// We apply small truncate size in dev environment (not demo) for finding incorrect usage of views
-	if s.profile.Mode == common.ReleaseModeDev && s.profile.DemoName == "" {
-		truncateSize = 64
-	}
-	find := &store.FindInstanceChangeHistoryMessage{
-		InstanceID:   &instance.UID,
-		DatabaseID:   &database.UID,
-		ID:           &changeHistoryIDStr,
-		TruncateSize: truncateSize,
-	}
-	if request.View == v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL {
-		find.ShowFull = true
-	}
-
-	changeHistory, err := s.store.ListInstanceChangeHistory(ctx, find)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list change history, error: %v", err)
-	}
-	if len(changeHistory) == 0 {
-		return nil, status.Errorf(codes.NotFound, "change history %q not found", changeHistoryIDStr)
-	}
-	if len(changeHistory) > 1 {
-		return nil, status.Errorf(codes.Internal, "expect to find one change history, got %d", len(changeHistory))
-	}
-	converted, err := s.convertToChangeHistory(ctx, changeHistory[0])
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert change history, error: %v", err)
-	}
-	if request.SdlFormat {
-		switch instance.Engine {
-		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-			sdlSchema, err := transform.SchemaTransform(storepb.Engine_MYSQL, converted.Schema)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to convert schema to sdl format, error %v", err.Error())
-			}
-			converted.Schema = sdlSchema
-			sdlSchema, err = transform.SchemaTransform(storepb.Engine_MYSQL, converted.PrevSchema)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to convert previous schema to sdl format, error %v", err.Error())
-			}
-			converted.PrevSchema = sdlSchema
-		}
-	}
-	if request.Concise {
-		switch instance.Engine {
-		case storepb.Engine_ORACLE:
-			conciseSchema, err := plsql.GetConciseSchema(converted.Schema)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get concise schema, error %v", err.Error())
-			}
-			converted.Schema = conciseSchema
-		case storepb.Engine_POSTGRES:
-			conciseSchema, err := pg.FilterBackupSchema(converted.Schema)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to filter the backup schema, error %v", err.Error())
-			}
-			converted.Schema = conciseSchema
-		default:
-			return nil, status.Errorf(codes.Unimplemented, "concise schema is not supported for engine %q", instance.Engine.String())
-		}
-	}
-	return converted, nil
-}
-
 // DiffSchema diff the database schema.
 func (s *DatabaseService) DiffSchema(ctx context.Context, request *v1pb.DiffSchemaRequest) (*v1pb.DiffSchemaResponse, error) {
 	source, err := s.getSourceSchema(ctx, request)
@@ -899,10 +638,10 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, request *v1pb.DiffSche
 }
 
 func (s *DatabaseService) getSourceSchema(ctx context.Context, request *v1pb.DiffSchemaRequest) (string, error) {
-	if strings.Contains(request.Name, common.ChangeHistoryPrefix) {
-		changeHistory, err := s.GetChangeHistory(ctx, &v1pb.GetChangeHistoryRequest{
+	if strings.Contains(request.Name, common.ChangelogPrefix) {
+		changeHistory, err := s.GetChangelog(ctx, &v1pb.GetChangelogRequest{
 			Name:      request.Name,
-			View:      v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
+			View:      v1pb.ChangelogView_CHANGELOG_VIEW_FULL,
 			SdlFormat: true,
 		})
 		if err != nil {
@@ -923,7 +662,7 @@ func (s *DatabaseService) getSourceSchema(ctx context.Context, request *v1pb.Dif
 
 func (s *DatabaseService) getTargetSchema(ctx context.Context, request *v1pb.DiffSchemaRequest) (string, error) {
 	schema := request.GetSchema()
-	changeHistoryID := request.GetChangeHistory()
+	changeHistoryID := request.GetChangelog()
 	// TODO: maybe we will support an empty schema as the target.
 	if schema == "" && changeHistoryID == "" {
 		return "", status.Errorf(codes.InvalidArgument, "must set the schema or change history id as the target")
@@ -931,9 +670,9 @@ func (s *DatabaseService) getTargetSchema(ctx context.Context, request *v1pb.Dif
 
 	// If the change history id is set, use the schema of the change history as the target.
 	if changeHistoryID != "" {
-		changeHistory, err := s.GetChangeHistory(ctx, &v1pb.GetChangeHistoryRequest{
-			Name:      request.Name,
-			View:      v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL,
+		changeHistory, err := s.GetChangelog(ctx, &v1pb.GetChangelogRequest{
+			Name:      changeHistoryID,
+			View:      v1pb.ChangelogView_CHANGELOG_VIEW_FULL,
 			SdlFormat: true,
 		})
 		if err != nil {
@@ -949,8 +688,8 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 	var instanceID string
 	var engine storepb.Engine
 
-	if strings.Contains(request.Name, common.ChangeHistoryPrefix) {
-		insID, _, _, err := common.GetInstanceDatabaseIDChangeHistory(request.Name)
+	if strings.Contains(request.Name, common.ChangelogPrefix) {
+		insID, _, _, err := common.GetInstanceDatabaseChangelogUID(request.Name)
 		if err != nil {
 			return engine, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -987,60 +726,6 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 	}
 
 	return engine, nil
-}
-
-func (s *DatabaseService) convertToChangeHistories(ctx context.Context, h []*store.InstanceChangeHistoryMessage) ([]*v1pb.ChangeHistory, error) {
-	var changeHistories []*v1pb.ChangeHistory
-	for _, history := range h {
-		converted, err := s.convertToChangeHistory(ctx, history)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert change history")
-		}
-		changeHistories = append(changeHistories, converted)
-	}
-	return changeHistories, nil
-}
-
-func (s *DatabaseService) convertToChangeHistory(ctx context.Context, h *store.InstanceChangeHistoryMessage) (*v1pb.ChangeHistory, error) {
-	v1pbHistory := &v1pb.ChangeHistory{
-		Name:              fmt.Sprintf("%s%s/%s%s/%s%v", common.InstanceNamePrefix, h.InstanceID, common.DatabaseIDPrefix, h.DatabaseName, common.ChangeHistoryPrefix, h.UID),
-		Creator:           fmt.Sprintf("users/%s", h.Creator.Email),
-		Updater:           fmt.Sprintf("users/%s", h.Updater.Email),
-		CreateTime:        timestamppb.New(time.Unix(h.CreatedTs, 0)),
-		UpdateTime:        timestamppb.New(time.Unix(h.UpdatedTs, 0)),
-		ReleaseVersion:    h.ReleaseVersion,
-		Source:            convertToChangeHistorySource(h.Source),
-		Type:              convertToChangeHistoryType(h.Type),
-		Status:            convertToChangeHistoryStatus(h.Status),
-		Version:           h.Version.Version,
-		Description:       h.Description,
-		Statement:         h.Statement,
-		StatementSize:     h.StatementSize,
-		Schema:            h.Schema,
-		SchemaSize:        h.SchemaSize,
-		PrevSchema:        h.SchemaPrev,
-		PrevSchemaSize:    h.SchemaPrevSize,
-		ExecutionDuration: durationpb.New(time.Duration(h.ExecutionDurationNs)),
-		Issue:             "",
-	}
-	var projectID string
-	if h.ProjectUID != nil {
-		p, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: h.ProjectUID})
-		if err != nil {
-			return nil, err
-		}
-		projectID = p.ResourceID
-	}
-	if h.SheetID != nil && projectID != "" {
-		v1pbHistory.StatementSheet = common.FormatSheet(projectID, *h.SheetID)
-	}
-	if h.IssueUID != nil && projectID != "" {
-		v1pbHistory.Issue = common.FormatIssue(projectID, *h.IssueUID)
-	}
-	if h.Payload != nil && h.Payload.ChangedResources != nil {
-		v1pbHistory.ChangedResources = convertToChangedResources(h.Payload.ChangedResources)
-	}
-	return v1pbHistory, nil
 }
 
 func convertToChangedResources(r *storepb.ChangedResources) *v1pb.ChangedResources {
@@ -1083,47 +768,6 @@ func convertToChangedResources(r *storepb.ChangedResources) *v1pb.ChangedResourc
 		return result.Databases[i].Name < result.Databases[j].Name
 	})
 	return result
-}
-
-func convertToChangeHistorySource(source db.MigrationSource) v1pb.ChangeHistory_Source {
-	switch source {
-	case db.UI:
-		return v1pb.ChangeHistory_UI
-	case db.VCS:
-		return v1pb.ChangeHistory_VCS
-	case db.LIBRARY:
-		return v1pb.ChangeHistory_LIBRARY
-	default:
-		return v1pb.ChangeHistory_SOURCE_UNSPECIFIED
-	}
-}
-
-func convertToChangeHistoryType(t db.MigrationType) v1pb.ChangeHistory_Type {
-	switch t {
-	case db.Baseline:
-		return v1pb.ChangeHistory_BASELINE
-	case db.Migrate:
-		return v1pb.ChangeHistory_MIGRATE
-	case db.MigrateSDL:
-		return v1pb.ChangeHistory_MIGRATE_SDL
-	case db.Data:
-		return v1pb.ChangeHistory_DATA
-	default:
-		return v1pb.ChangeHistory_TYPE_UNSPECIFIED
-	}
-}
-
-func convertToChangeHistoryStatus(s db.MigrationStatus) v1pb.ChangeHistory_Status {
-	switch s {
-	case db.Pending:
-		return v1pb.ChangeHistory_PENDING
-	case db.Done:
-		return v1pb.ChangeHistory_DONE
-	case db.Failed:
-		return v1pb.ChangeHistory_FAILED
-	default:
-		return v1pb.ChangeHistory_STATUS_UNSPECIFIED
-	}
 }
 
 // ListSecrets lists the secrets of a database.
@@ -1650,7 +1294,7 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 		Project:              common.FormatProject(database.ProjectID),
 		Environment:          environment,
 		EffectiveEnvironment: effectiveEnvironment,
-		SchemaVersion:        database.SchemaVersion.Version,
+		SchemaVersion:        database.SchemaVersion,
 		Labels:               database.Metadata.Labels,
 		InstanceResource:     instanceResource,
 		BackupAvailable:      database.Metadata.GetBackupAvailable(),

@@ -196,12 +196,12 @@ func TestSensitiveData(t *testing.T) {
 								Columns: &v1pb.TableCatalog_Columns{
 									Columns: []*v1pb.ColumnCatalog{
 										{
-											Name:         "id",
-											MaskingLevel: v1pb.MaskingLevel_FULL,
+											Name:           "id",
+											SemanticTypeId: "default",
 										},
 										{
-											Name:         "author",
-											MaskingLevel: v1pb.MaskingLevel_FULL,
+											Name:           "author",
+											SemanticTypeId: "default",
 										},
 									},
 								},

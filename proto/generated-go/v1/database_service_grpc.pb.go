@@ -34,8 +34,6 @@ const (
 	DatabaseService_UpdateSecret_FullMethodName          = "/bytebase.v1.DatabaseService/UpdateSecret"
 	DatabaseService_DeleteSecret_FullMethodName          = "/bytebase.v1.DatabaseService/DeleteSecret"
 	DatabaseService_AdviseIndex_FullMethodName           = "/bytebase.v1.DatabaseService/AdviseIndex"
-	DatabaseService_ListChangeHistories_FullMethodName   = "/bytebase.v1.DatabaseService/ListChangeHistories"
-	DatabaseService_GetChangeHistory_FullMethodName      = "/bytebase.v1.DatabaseService/GetChangeHistory"
 	DatabaseService_ListRevisions_FullMethodName         = "/bytebase.v1.DatabaseService/ListRevisions"
 	DatabaseService_GetRevision_FullMethodName           = "/bytebase.v1.DatabaseService/GetRevision"
 	DatabaseService_CreateRevision_FullMethodName        = "/bytebase.v1.DatabaseService/CreateRevision"
@@ -62,8 +60,6 @@ type DatabaseServiceClient interface {
 	UpdateSecret(ctx context.Context, in *UpdateSecretRequest, opts ...grpc.CallOption) (*Secret, error)
 	DeleteSecret(ctx context.Context, in *DeleteSecretRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	AdviseIndex(ctx context.Context, in *AdviseIndexRequest, opts ...grpc.CallOption) (*AdviseIndexResponse, error)
-	ListChangeHistories(ctx context.Context, in *ListChangeHistoriesRequest, opts ...grpc.CallOption) (*ListChangeHistoriesResponse, error)
-	GetChangeHistory(ctx context.Context, in *GetChangeHistoryRequest, opts ...grpc.CallOption) (*ChangeHistory, error)
 	ListRevisions(ctx context.Context, in *ListRevisionsRequest, opts ...grpc.CallOption) (*ListRevisionsResponse, error)
 	GetRevision(ctx context.Context, in *GetRevisionRequest, opts ...grpc.CallOption) (*Revision, error)
 	CreateRevision(ctx context.Context, in *CreateRevisionRequest, opts ...grpc.CallOption) (*Revision, error)
@@ -220,26 +216,6 @@ func (c *databaseServiceClient) AdviseIndex(ctx context.Context, in *AdviseIndex
 	return out, nil
 }
 
-func (c *databaseServiceClient) ListChangeHistories(ctx context.Context, in *ListChangeHistoriesRequest, opts ...grpc.CallOption) (*ListChangeHistoriesResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListChangeHistoriesResponse)
-	err := c.cc.Invoke(ctx, DatabaseService_ListChangeHistories_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *databaseServiceClient) GetChangeHistory(ctx context.Context, in *GetChangeHistoryRequest, opts ...grpc.CallOption) (*ChangeHistory, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ChangeHistory)
-	err := c.cc.Invoke(ctx, DatabaseService_GetChangeHistory_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *databaseServiceClient) ListRevisions(ctx context.Context, in *ListRevisionsRequest, opts ...grpc.CallOption) (*ListRevisionsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListRevisionsResponse)
@@ -318,8 +294,6 @@ type DatabaseServiceServer interface {
 	UpdateSecret(context.Context, *UpdateSecretRequest) (*Secret, error)
 	DeleteSecret(context.Context, *DeleteSecretRequest) (*emptypb.Empty, error)
 	AdviseIndex(context.Context, *AdviseIndexRequest) (*AdviseIndexResponse, error)
-	ListChangeHistories(context.Context, *ListChangeHistoriesRequest) (*ListChangeHistoriesResponse, error)
-	GetChangeHistory(context.Context, *GetChangeHistoryRequest) (*ChangeHistory, error)
 	ListRevisions(context.Context, *ListRevisionsRequest) (*ListRevisionsResponse, error)
 	GetRevision(context.Context, *GetRevisionRequest) (*Revision, error)
 	CreateRevision(context.Context, *CreateRevisionRequest) (*Revision, error)
@@ -377,12 +351,6 @@ func (UnimplementedDatabaseServiceServer) DeleteSecret(context.Context, *DeleteS
 }
 func (UnimplementedDatabaseServiceServer) AdviseIndex(context.Context, *AdviseIndexRequest) (*AdviseIndexResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AdviseIndex not implemented")
-}
-func (UnimplementedDatabaseServiceServer) ListChangeHistories(context.Context, *ListChangeHistoriesRequest) (*ListChangeHistoriesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListChangeHistories not implemented")
-}
-func (UnimplementedDatabaseServiceServer) GetChangeHistory(context.Context, *GetChangeHistoryRequest) (*ChangeHistory, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetChangeHistory not implemented")
 }
 func (UnimplementedDatabaseServiceServer) ListRevisions(context.Context, *ListRevisionsRequest) (*ListRevisionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRevisions not implemented")
@@ -675,42 +643,6 @@ func _DatabaseService_AdviseIndex_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DatabaseService_ListChangeHistories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListChangeHistoriesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DatabaseServiceServer).ListChangeHistories(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DatabaseService_ListChangeHistories_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).ListChangeHistories(ctx, req.(*ListChangeHistoriesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DatabaseService_GetChangeHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetChangeHistoryRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DatabaseServiceServer).GetChangeHistory(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DatabaseService_GetChangeHistory_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).GetChangeHistory(ctx, req.(*GetChangeHistoryRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _DatabaseService_ListRevisions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListRevisionsRequest)
 	if err := dec(in); err != nil {
@@ -881,14 +813,6 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AdviseIndex",
 			Handler:    _DatabaseService_AdviseIndex_Handler,
-		},
-		{
-			MethodName: "ListChangeHistories",
-			Handler:    _DatabaseService_ListChangeHistories_Handler,
-		},
-		{
-			MethodName: "GetChangeHistory",
-			Handler:    _DatabaseService_GetChangeHistory_Handler,
 		},
 		{
 			MethodName: "ListRevisions",
