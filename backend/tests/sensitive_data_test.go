@@ -197,11 +197,11 @@ func TestSensitiveData(t *testing.T) {
 									Columns: []*v1pb.ColumnCatalog{
 										{
 											Name:           "id",
-											SemanticTypeId: "default-static",
+											SemanticTypeId: "default",
 										},
 										{
 											Name:           "author",
-											SemanticTypeId: "default-static",
+											SemanticTypeId: "default",
 										},
 									},
 								},

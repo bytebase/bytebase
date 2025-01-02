@@ -46,6 +46,7 @@ import {
   instanceV1HasAlterSchema,
   keyForDependentColumn,
   sortByDictionary,
+  supportStringifyMetadata,
   toClipboard,
 } from "@/utils";
 import { keyWithPosition } from "../../EditorCommon";
@@ -60,12 +61,6 @@ type DropdownOptionWithTreeNode = DropdownOption & {
   onSelect?: () => void;
 };
 const SELECT_ALL_LIMIT = 50; // default pagesize of SQL Editor
-const VIEW_SCHEMA_ACTION_ENABLED_ENGINES = [
-  Engine.MYSQL,
-  Engine.OCEANBASE,
-  Engine.POSTGRES,
-  Engine.TIDB,
-];
 
 const confirmOverrideStatement = async (
   $d: ReturnType<typeof useDialog>,
@@ -425,11 +420,7 @@ export const useDropdown = () => {
           },
         });
 
-        if (
-          VIEW_SCHEMA_ACTION_ENABLED_ENGINES.includes(
-            db.instanceResource.engine
-          )
-        ) {
+        if (supportStringifyMetadata(db.instanceResource.engine)) {
           items.push({
             key: "view-schema-text",
             label: t("sql-editor.view-schema-text"),

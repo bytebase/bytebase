@@ -273,7 +273,7 @@ func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.Algorithm) masker.Ma
 		return masker.NewNoneMasker()
 	}
 	switch algorithm.GetId() {
-	case "default-full":
+	case "default":
 		return masker.NewDefaultFullMasker()
 	case "default-partial":
 		return masker.NewDefaultRangeMasker()
