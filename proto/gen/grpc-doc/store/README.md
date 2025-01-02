@@ -290,7 +290,6 @@
     - [ExternalApprovalPayload](#bytebase-store-ExternalApprovalPayload)
     - [ExternalApprovalSetting](#bytebase-store-ExternalApprovalSetting)
     - [ExternalApprovalSetting.Node](#bytebase-store-ExternalApprovalSetting-Node)
-    - [MaskingAlgorithmSetting](#bytebase-store-MaskingAlgorithmSetting)
     - [MaximumSQLResultSizeSetting](#bytebase-store-MaximumSQLResultSizeSetting)
     - [PasswordRestrictionSetting](#bytebase-store-PasswordRestrictionSetting)
     - [SCIMSetting](#bytebase-store-SCIMSetting)
@@ -4525,21 +4524,6 @@ SlowQueryPolicy is the policy configuration for slow query.
 | id | [string](#string) |  | A unique identifier for a node in UUID format. We will also include the id in the message sending to the external relay service to identify the node. |
 | title | [string](#string) |  | The title of the node. |
 | endpoint | [string](#string) |  | The external endpoint for the relay service, e.g. &#34;http://hello:1234&#34;. |
-
-
-
-
-
-
-<a name="bytebase-store-MaskingAlgorithmSetting"></a>
-
-### MaskingAlgorithmSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| algorithms | [Algorithm](#bytebase-store-Algorithm) | repeated | algorithms is the list of masking algorithms. |
 
 
 

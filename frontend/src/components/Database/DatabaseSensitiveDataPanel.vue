@@ -209,8 +209,6 @@ const updateList = async () => {
           table: table.name,
           column: column.name,
           maskingLevel: column.maskingLevel,
-          fullMaskingAlgorithmId: column.fullMaskingAlgorithmId,
-          partialMaskingAlgorithmId: column.partialMaskingAlgorithmId,
         });
       }
     }

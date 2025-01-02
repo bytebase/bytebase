@@ -48,8 +48,6 @@
       table: table.name,
       column: column.name,
       maskingLevel,
-      fullMaskingAlgorithmId: fullMaskingAlgorithm?.id ?? '',
-      partialMaskingAlgorithmId: partialMaskingAlgorithm?.id ?? '',
     }"
     :database="database"
     @dismiss="state.showSensitiveDataDrawer = false"
@@ -92,7 +90,7 @@ const state = reactive<LocalState>({
   showSensitiveDataDrawer: false,
 });
 const subscriptionV1Store = useSubscriptionV1Store();
-const { maskingLevel, fullMaskingAlgorithm, partialMaskingAlgorithm } =
+const { maskingLevel } =
   useColumnMasking({
     database: props.database.name,
     schema: props.schema,

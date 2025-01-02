@@ -8676,8 +8676,6 @@ components:
                 suffixLen:
                     type: integer
                     format: int32
-                substitution:
-                    type: string
                 type:
                     enum:
                         - MASK_TYPE_UNSPECIFIED
@@ -8685,6 +8683,8 @@ components:
                         - OUTER
                     type: string
                     format: enum
+                substitution:
+                    type: string
         Algorithm_MD5Mask:
             type: object
             properties:
@@ -11658,14 +11658,6 @@ components:
         LogoutRequest:
             type: object
             properties: {}
-        MaskingAlgorithmSetting:
-            type: object
-            properties:
-                algorithms:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Algorithm'
-                    description: algorithms is the list of masking algorithms.
         MaskingExceptionPolicy:
             type: object
             properties:
@@ -12668,7 +12660,7 @@ components:
                     format: int32
                 substitution:
                     type: string
-                    description: substitution is the string used to replace the OriginalValue[start:end).
+                    description: OriginalValue[start:end) would be replaced with replace_with.
         RebaseBranchResponse:
             type: object
             properties:
@@ -15095,8 +15087,6 @@ components:
                     $ref: '#/components/schemas/DataClassificationSetting'
                 semanticTypeSettingValue:
                     $ref: '#/components/schemas/SemanticTypeSetting'
-                maskingAlgorithmSettingValue:
-                    $ref: '#/components/schemas/MaskingAlgorithmSetting'
                 maximumSqlResultSizeSetting:
                     $ref: '#/components/schemas/MaximumSQLResultSizeSetting'
                 scimSetting:

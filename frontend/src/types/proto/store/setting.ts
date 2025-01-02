@@ -468,11 +468,6 @@ export interface SemanticTypeSetting_SemanticType {
   algorithm: Algorithm | undefined;
 }
 
-export interface MaskingAlgorithmSetting {
-  /** algorithms is the list of masking algorithms. */
-  algorithms: Algorithm[];
-}
-
 export interface Algorithm {
   /** id is the uuid for masking algorithm. */
   id: string;
@@ -2848,68 +2843,6 @@ export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_Se
     message.algorithm = (object.algorithm !== undefined && object.algorithm !== null)
       ? Algorithm.fromPartial(object.algorithm)
       : undefined;
-    return message;
-  },
-};
-
-function createBaseMaskingAlgorithmSetting(): MaskingAlgorithmSetting {
-  return { algorithms: [] };
-}
-
-export const MaskingAlgorithmSetting: MessageFns<MaskingAlgorithmSetting> = {
-  encode(message: MaskingAlgorithmSetting, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.algorithms) {
-      Algorithm.encode(v!, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): MaskingAlgorithmSetting {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMaskingAlgorithmSetting();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.algorithms.push(Algorithm.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): MaskingAlgorithmSetting {
-    return {
-      algorithms: globalThis.Array.isArray(object?.algorithms)
-        ? object.algorithms.map((e: any) => Algorithm.fromJSON(e))
-        : [],
-    };
-  },
-
-  toJSON(message: MaskingAlgorithmSetting): unknown {
-    const obj: any = {};
-    if (message.algorithms?.length) {
-      obj.algorithms = message.algorithms.map((e) => Algorithm.toJSON(e));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<MaskingAlgorithmSetting>): MaskingAlgorithmSetting {
-    return MaskingAlgorithmSetting.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<MaskingAlgorithmSetting>): MaskingAlgorithmSetting {
-    const message = createBaseMaskingAlgorithmSetting();
-    message.algorithms = object.algorithms?.map((e) => Algorithm.fromPartial(e)) || [];
     return message;
   },
 };
