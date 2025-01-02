@@ -877,7 +877,8 @@
             "title": "电话号码",
             "description": ""
           }
-        }
+        },
+        "select": "选择语义类型"
       },
       "column-detail": {
         "masking-setting-for-column": "\"{column}\" 脱敏设置",
@@ -948,7 +949,7 @@
       },
       "masking-level": {
         "self": "脱敏程度",
-        "selet-level": "选择掩蔽级别",
+        "select-level": "选择掩蔽级别",
         "masking_level_unspecified": "遵循全局",
         "none": "明文",
         "partial": "半脱敏",
@@ -956,7 +957,7 @@
       },
       "action": {
         "self": "操作类型",
-        "selet-action": "选择操作",
+        "select-action": "选择操作",
         "query": "查询",
         "export": "导出"
       },
