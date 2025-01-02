@@ -73,7 +73,7 @@ import { asyncComputed } from "@vueuse/core";
 import { isUndefined } from "lodash-es";
 import { NRadioGroup, NRadio, useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
@@ -197,7 +197,9 @@ onMounted(async () => {
       databaseName: databaseName,
       changelogName: changelogName,
     });
-    state.currentStep = Step.SELECT_TARGET_DATABASE_LIST;
+    nextTick(() => {
+      state.currentStep = Step.SELECT_TARGET_DATABASE_LIST;
+    });
   }
   state.isLoading = false;
 });
