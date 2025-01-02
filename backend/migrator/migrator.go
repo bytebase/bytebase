@@ -2,7 +2,6 @@
 package migrator
 
 import (
-	"bytes"
 	"context"
 	"embed"
 	"fmt"
@@ -597,20 +596,7 @@ func executeMigrationDefault(ctx context.Context, driverCtx context.Context, sto
 
 // ExecuteMigrationWithFunc executes the migration with custom migration function.
 func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, _ int, driver dbdriver.Driver, m *dbdriver.MigrationInfo, statement string, sheetID *int, execFunc func(ctx context.Context, execStatement string) error, opts dbdriver.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
-	var prevSchemaBuf bytes.Buffer
-	if m.Type.NeedDump() {
-		opts.LogSchemaDumpStart()
-		// Don't record schema if the database hasn't existed yet or is schemaless, e.g. MongoDB.
-		// For baseline migration, we also record the live schema to detect the schema drift.
-		// See https://bytebase.com/blog/what-is-database-schema-drift
-		if err := driver.Dump(ctx, &prevSchemaBuf, nil); err != nil {
-			opts.LogSchemaDumpEnd(err.Error())
-			return "", "", err
-		}
-		opts.LogSchemaDumpEnd("")
-	}
-
-	insertedID, err := BeginMigration(ctx, s, m, prevSchemaBuf.String(), statement, sheetID)
+	insertedID, err := BeginMigration(ctx, s, m, "", statement, sheetID)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to begin migration")
 	}
@@ -618,7 +604,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 	startedNs := time.Now().UnixNano()
 
 	defer func() {
-		if err := EndMigration(ctx, s, startedNs, insertedID, updatedSchema, prevSchemaBuf.String(), sheetID, resErr == nil /* isDone */); err != nil {
+		if err := EndMigration(ctx, s, startedNs, insertedID, updatedSchema, "", sheetID, resErr == nil /* isDone */); err != nil {
 			slog.Error("Failed to update migration history record",
 				log.BBError(err),
 				slog.String("migration_id", migrationHistoryID),
@@ -657,22 +643,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 		}
 	}
 
-	// Phase 4 - Dump the schema after migration
-	var afterSchemaBuf bytes.Buffer
-	if m.Type.NeedDump() {
-		opts.LogSchemaDumpStart()
-		if err := driver.Dump(ctx, &afterSchemaBuf, nil); err != nil {
-			// We will ignore the dump error if the database is dropped.
-			if strings.Contains(err.Error(), "not found") {
-				return insertedID, "", nil
-			}
-			opts.LogSchemaDumpEnd(err.Error())
-			return "", "", err
-		}
-		opts.LogSchemaDumpEnd("")
-	}
-
-	return insertedID, afterSchemaBuf.String(), nil
+	return insertedID, "", nil
 }
 
 // BeginMigration checks before executing migration and inserts a migration history record with pending status.
