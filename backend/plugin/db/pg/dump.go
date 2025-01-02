@@ -16,6 +16,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -762,7 +764,7 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequ
 
 	// Construct Unique Key.
 	for _, index := range table.Indexes {
-		if index.Unique && !index.Primary {
+		if index.Unique && !index.Primary && index.IsConstraint {
 			if err := writeUniqueKey(out, schema, table.Name, index); err != nil {
 				return err
 			}
@@ -778,7 +780,7 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequ
 
 	// Construct Index.
 	for _, index := range table.Indexes {
-		if !index.Unique && !index.Primary {
+		if !index.Primary && !index.IsConstraint {
 			if err := writeIndex(out, schema, table.Name, index); err != nil {
 				return err
 			}
@@ -932,7 +934,7 @@ func writeAttachIndex(out io.Writer, schema string, index *storepb.IndexMetadata
 
 func writePartitionIndex(out io.Writer, schema string, partition *storepb.TablePartitionMetadata) error {
 	for _, index := range partition.Indexes {
-		if !index.Unique && !index.Primary {
+		if !index.IsConstraint && !index.Primary {
 			if err := writeIndex(out, schema, partition.Name, index); err != nil {
 				return err
 			}
@@ -972,7 +974,10 @@ func writeIndex(out io.Writer, schema string, table string, index *storepb.Index
 	if _, err := io.WriteString(out, table); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, `" (`); err != nil {
+	if _, err := io.WriteString(out, `" `); err != nil {
+		return err
+	}
+	if err := writeIndexKeyList(out, index); err != nil {
 		return err
 	}
 	for i, expression := range index.Expressions {
@@ -985,7 +990,7 @@ func writeIndex(out io.Writer, schema string, table string, index *storepb.Index
 			return err
 		}
 	}
-	if _, err := io.WriteString(out, ");\n\n"); err != nil {
+	if _, err := io.WriteString(out, ";\n\n"); err != nil {
 		return err
 	}
 
@@ -996,6 +1001,68 @@ func writeIndex(out io.Writer, schema string, table string, index *storepb.Index
 	}
 
 	return nil
+}
+
+func writeIndexKeyList(out io.Writer, index *storepb.IndexMetadata) error {
+	if _, err := io.WriteString(out, `(`); err != nil {
+		return err
+	}
+
+	nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, index.Definition)
+	if err != nil {
+		return err
+	}
+
+	node, ok := nodes[0].(*ast.CreateIndexStmt)
+	if !ok {
+		return errors.Errorf("failed to parse create index statement")
+	}
+
+	for i, key := range node.Index.KeyList {
+		if i > 0 {
+			if _, err := io.WriteString(out, ", "); err != nil {
+				return err
+			}
+		}
+		if key.Type == ast.IndexKeyTypeExpression {
+			if _, err := io.WriteString(out, "("); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, key.Key); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, ")"); err != nil {
+				return err
+			}
+		} else {
+			if _, err := io.WriteString(out, "\""); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, key.Key); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, "\""); err != nil {
+				return err
+			}
+		}
+		if key.SortOrder == ast.SortOrderTypeDescending {
+			if _, err := io.WriteString(out, " DESC"); err != nil {
+				return err
+			}
+		}
+		if key.NullOrder == ast.NullOrderTypeFirst {
+			if _, err := io.WriteString(out, " NULLS FIRST"); err != nil {
+				return err
+			}
+		} else if key.NullOrder == ast.NullOrderTypeLast {
+			if _, err := io.WriteString(out, " NULLS LAST"); err != nil {
+				return err
+			}
+		}
+	}
+
+	_, err = io.WriteString(out, ")")
+	return err
 }
 
 func writeIndexComment(out io.Writer, schema string, index *storepb.IndexMetadata) error {
@@ -1029,7 +1096,7 @@ func writeIndexComment(out io.Writer, schema string, index *storepb.IndexMetadat
 
 func writePartitionUniqueKey(out io.Writer, schema string, partition *storepb.TablePartitionMetadata) error {
 	for _, index := range partition.Indexes {
-		if index.Unique {
+		if index.Unique && !index.Primary && index.IsConstraint {
 			if err := writeUniqueKey(out, schema, partition.Name, index); err != nil {
 				return err
 			}
