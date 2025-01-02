@@ -82,7 +82,11 @@ const onAlgorithmUpsert = async (maskingAlgorithm: Algorithm) => {
     state.pendingEditSemanticIndex,
     (data) => (data.item.algorithm = maskingAlgorithm)
   );
-  emit("confirm", state.pendingEditSemanticIndex);
+  if (
+    !isConfirmDisabled(props.semanticItemList[state.pendingEditSemanticIndex])
+  ) {
+    emit("confirm", state.pendingEditSemanticIndex);
+  }
   onDrawerDismiss();
 };
 
@@ -91,6 +95,7 @@ const columnList = computed(() => {
     {
       key: "title",
       title: t("settings.sensitive-data.semantic-types.table.semantic-type"),
+      width: 300,
       render: (item, row) => {
         if (item.mode === "NORMAL") {
           return <h3 class="break-normal">{item.item.title}</h3>;
@@ -113,6 +118,7 @@ const columnList = computed(() => {
     {
       key: "description",
       title: t("settings.sensitive-data.semantic-types.table.description"),
+      resizable: true,
       width: "minmax(min-content, auto)",
       render: (item, row) => {
         if (item.mode === "NORMAL") {
@@ -134,12 +140,11 @@ const columnList = computed(() => {
       },
     },
   ];
-  
+
   columns.push({
     key: "algorithm",
-    title: t(
-      "settings.sensitive-data.semantic-types.table.masking-algorithm"
-    ),
+    title: t("settings.sensitive-data.semantic-types.table.masking-algorithm"),
+    resizable: true,
     width: "minmax(min-content, auto)",
     render: (item, row) => {
       return (
@@ -167,12 +172,12 @@ const columnList = computed(() => {
       );
     },
   });
-  
+
   if (!props.readonly) {
     // operation.
     columns.push({
       key: "operation",
-      title: "",
+      title: t("common.edit"),
       width: "minmax(min-content, auto)",
       render: (item, row) => {
         return (

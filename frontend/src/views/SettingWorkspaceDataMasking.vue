@@ -17,12 +17,6 @@
       >
         <SemanticTypesView />
       </NTabPane>
-      <NTabPane
-        name="masking-algorithms"
-        :tab="$t('settings.sensitive-data.algorithms.self')"
-      >
-        <MaskingAlgorithmsView />
-      </NTabPane>
     </NTabs>
   </div>
 </template>
@@ -36,14 +30,9 @@ import {
   GlobalMaskingRulesView,
   SemanticTypesView,
 } from "@/components/SensitiveData";
-import MaskingAlgorithmsView from "@/components/SensitiveData/MaskingAlgorithmsView.vue";
 import { featureToRef } from "@/store";
 
-const dataMaskingTabList = [
-  "global-masking-rule",
-  "semantic-types",
-  "masking-algorithms",
-] as const;
+const dataMaskingTabList = ["global-masking-rule", "semantic-types"] as const;
 type DataMaskingTab = (typeof dataMaskingTabList)[number];
 const isDataMaskingTab = (tab: any): tab is DataMaskingTab =>
   dataMaskingTabList.includes(tab);
