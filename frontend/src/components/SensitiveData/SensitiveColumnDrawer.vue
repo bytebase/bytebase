@@ -201,8 +201,6 @@ const state = reactive<LocalState>({
 
 const MASKING_LEVELS = [
   MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
-  MaskingLevel.FULL,
-  MaskingLevel.PARTIAL,
   MaskingLevel.NONE,
 ];
 
