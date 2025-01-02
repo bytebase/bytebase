@@ -37,11 +37,6 @@ const (
 	SampleDatabaseProd = "hr_prod"
 )
 
-var dbsPerEnv = map[string][]string{
-	"test": {SampleDatabaseTest},
-	"prod": {SampleDatabaseProd, SampleDatabaseProd + "_vcs", SampleDatabaseProd + "_1", SampleDatabaseProd + "_2", SampleDatabaseProd + "_3", SampleDatabaseProd + "_4", SampleDatabaseProd + "_5", SampleDatabaseProd + "_6"},
-}
-
 // StartAllSampleInstances starts all postgres sample instances.
 func StartAllSampleInstances(ctx context.Context, pgBinDir, dataDir string, port int, includeBatch bool) []func() {
 	// Load sample data
@@ -51,21 +46,29 @@ func StartAllSampleInstances(ctx context.Context, pgBinDir, dataDir string, port
 		return nil
 	}
 
+	envs := []string{"test", "prod"}
+	dbsPerEnv := map[string][]string{
+		"test": {SampleDatabaseTest},
+		"prod": {SampleDatabaseProd, SampleDatabaseProd + "_vcs", SampleDatabaseProd + "_1", SampleDatabaseProd + "_2", SampleDatabaseProd + "_3", SampleDatabaseProd + "_4", SampleDatabaseProd + "_5", SampleDatabaseProd + "_6"},
+	}
+
 	slog.Info("-----Sample Postgres Instance BEGIN-----")
 	i := 0
-	for k, v := range dbsPerEnv {
-		slog.Info(fmt.Sprintf("Setup sample instance %v", k))
-		if err := setupOneSampleInstance(ctx, pgBinDir, path.Join(dataDir, "pgdata-sample", k), v, port+i, includeBatch, sampleData); err != nil {
+	for _, env := range envs {
+		dbs := dbsPerEnv[env]
+		slog.Info(fmt.Sprintf("Setup sample instance %v", env))
+		if err := setupOneSampleInstance(ctx, pgBinDir, path.Join(dataDir, "pgdata-sample", env), dbs, port+i, includeBatch, sampleData); err != nil {
 			slog.Error("failed to init sample instance", log.BBError(err))
 			continue
 		}
+		i++
 	}
 
 	i = 0
 	stoppers := []func(){}
-	for k := range dbsPerEnv {
-		slog.Info(fmt.Sprintf("Start sample instance %v at port %d", k, port+i))
-		stopper, err := startOneSampleInstance(pgBinDir, path.Join(dataDir, "pgdata-sample", k), port+i)
+	for _, env := range envs {
+		slog.Info(fmt.Sprintf("Start sample instance %v at port %d", env, port+i))
+		stopper, err := startOneSampleInstance(pgBinDir, path.Join(dataDir, "pgdata-sample", env), port+i)
 		i++
 		if err != nil {
 			slog.Error("failed to init sample instance", log.BBError(err))
