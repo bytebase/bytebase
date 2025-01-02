@@ -311,6 +311,59 @@ func (s *Server) migrateMaskingData(ctx context.Context) error {
 	return nil
 }
 
+func (s *Server) migrateCatalog(ctx context.Context) error {
+	databaseIDs, err := s.store.ListLegacyCatalog(ctx)
+	if err != nil {
+		return err
+	}
+	for _, databaseID := range databaseIDs {
+		dbSchema, err := s.store.GetDBSchema(ctx, databaseID)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get schema for database %v", databaseID)
+		}
+		if dbSchema == nil {
+			continue
+		}
+		if dbSchema.GetConfig() == nil {
+			continue
+		}
+		cfg := dbSchema.GetConfig()
+		updated := false
+		for _, s := range cfg.Schemas {
+			for _, t := range s.Tables {
+				for _, col := range t.Columns {
+					switch col.GetMaskingLevel() {
+					case storepb.MaskingLevel_FULL:
+						if col.GetFullMaskingAlgorithmId() != "" {
+							col.SemanticTypeId = col.GetFullMaskingAlgorithmId()
+						} else {
+							col.SemanticTypeId = "default"
+						}
+						updated = true
+					case storepb.MaskingLevel_PARTIAL:
+						if col.GetPartialMaskingAlgorithmId() != "" {
+							col.SemanticTypeId = col.GetPartialMaskingAlgorithmId()
+						} else {
+							col.SemanticTypeId = "default-partial"
+						}
+						updated = true
+					}
+					col.MaskingLevel = storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED
+					col.FullMaskingAlgorithmId = ""
+					col.PartialMaskingAlgorithmId = ""
+				}
+			}
+		}
+		if updated {
+			if err := s.store.UpdateDBSchema(ctx, databaseID, &store.UpdateDBSchemaMessage{Config: cfg}, api.SystemBotID); err != nil {
+				return errors.Wrapf(err, "failed to update db config for database %v", databaseID)
+			}
+			slog.Info("migrated catalog for database", slog.Int("databaseID", databaseID))
+		}
+	}
+	return nil
+}
+
 // initMetricReporter will initial the metric scheduler.
 func (s *Server) initMetricReporter() {
 	metricReporter := metricreport.NewReporter(s.store, s.licenseService, s.profile, s.profile.EnableMetric)

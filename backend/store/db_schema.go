@@ -9,6 +9,8 @@ import (
 
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -127,6 +129,37 @@ func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *mo
 
 	s.dbSchemaCache.Add(databaseID, updatedDBSchema)
 	return nil
+}
+
+func (s *Store) ListLegacyCatalog(ctx context.Context) ([]int, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	rows, err := tx.QueryContext(ctx, `
+		SELECT database_id FROM db_schema WHERE config::text LIKE '%maskingLevel%';
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ids []int
+	for rows.Next() {
+		var databaseID int
+		if err := rows.Scan(
+			&databaseID,
+		); err != nil {
+			return nil, err
+		}
+		ids = append(ids, databaseID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "rows err")
+	}
+
+	return ids, nil
 }
 
 // UpdateDBSchema updates a database schema.
