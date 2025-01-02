@@ -154,23 +154,6 @@ func (s *Store) GetWorkspaceExternalApprovalSetting(ctx context.Context) (*store
 	return payload, nil
 }
 
-// GetMaskingAlgorithmSetting gets the masking algorithm setting.
-func (s *Store) GetMaskingAlgorithmSetting(ctx context.Context) (*storepb.MaskingAlgorithmSetting, error) {
-	setting, err := s.GetSettingV2(ctx, api.SettingMaskingAlgorithm)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get setting %v", api.SettingMaskingAlgorithm)
-	}
-	if setting == nil {
-		return &storepb.MaskingAlgorithmSetting{}, nil
-	}
-
-	payload := new(storepb.MaskingAlgorithmSetting)
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), payload); err != nil {
-		return nil, err
-	}
-	return payload, nil
-}
-
 // GetSemanticTypesSetting gets the semantic types setting.
 func (s *Store) GetSemanticTypesSetting(ctx context.Context) (*storepb.SemanticTypeSetting, error) {
 	setting, err := s.GetSettingV2(ctx, api.SettingSemanticTypes)

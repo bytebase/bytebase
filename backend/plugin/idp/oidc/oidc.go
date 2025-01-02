@@ -184,10 +184,16 @@ var openidConfigResponseCache = make(map[string]*OpenIDConfigurationResponse)
 
 // GetOpenIDConfiguration fetches the OpenID Configuration from the given issuer.
 func GetOpenIDConfiguration(issuer string) (*OpenIDConfigurationResponse, error) {
+	// Return from cache if available.
 	if config, found := openidConfigResponseCache[issuer]; found {
 		return config, nil
 	}
 
+	req, err := http.NewRequest(http.MethodGet, strings.TrimSuffix(issuer, "/")+"/.well-known/openid-configuration", nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "construct GET request")
+	}
+	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -195,16 +201,16 @@ func GetOpenIDConfiguration(issuer string) (*OpenIDConfigurationResponse, error)
 			},
 		},
 	}
-	resp, err := client.Get(strings.TrimSuffix(issuer, "/") + "/.well-known/openid-configuration")
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetch openid configuration")
 	}
-	defer resp.Body.Close()
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read body")
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.Errorf("received non-200 response code, code: %d, body: %s", resp.StatusCode, string(b))
