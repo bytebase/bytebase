@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"io"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -200,9 +201,18 @@ func GetOpenIDConfiguration(issuer string) (*OpenIDConfigurationResponse, error)
 	}
 	defer resp.Body.Close()
 
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read body")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("received non-200 response code, code: %d, body: %s", resp.StatusCode, string(b))
+	}
+
 	var config OpenIDConfigurationResponse
-	if err := json.NewDecoder(resp.Body).Decode(&config); err != nil {
-		return nil, errors.Wrap(err, "unmarshal openid configuration")
+	if err := json.Unmarshal(b, &config); err != nil {
+		return nil, errors.Wrapf(err, "unmarshal openid configuration, body: %s", string(b))
 	}
 
 	openidConfigResponseCache[issuer] = &config
