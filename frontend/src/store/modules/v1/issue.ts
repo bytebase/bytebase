@@ -7,6 +7,7 @@ import { issueServiceClient } from "@/grpcweb";
 import type { ComposedIssue, IssueFilter } from "@/types";
 import { isValidProjectName, PresetRoleType } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
+import { State } from "@/types/proto/v1/common";
 import type { ApprovalStep } from "@/types/proto/v1/issue_service";
 import {
   issueStatusToJSON,
@@ -163,59 +164,64 @@ export const candidatesOfApprovalStepV1 = (
     (member) => member.user.userType === UserType.USER
   );
 
-  const candidates = step.nodes
-    .flatMap((node) => {
-      const {
-        type,
-        groupValue = ApprovalNode_GroupValue.UNRECOGNIZED,
-        role,
-      } = node;
-      if (type !== ApprovalNode_Type.ANY_IN_GROUP) return [];
+  const candidates = step.nodes.flatMap((node) => {
+    const {
+      type,
+      groupValue = ApprovalNode_GroupValue.UNRECOGNIZED,
+      role,
+    } = node;
+    if (type !== ApprovalNode_Type.ANY_IN_GROUP) return [];
 
-      const candidatesForSystemRoles = (
-        groupValue: ApprovalNode_GroupValue
-      ) => {
-        if (
-          groupValue === ApprovalNode_GroupValue.PROJECT_MEMBER ||
-          groupValue === ApprovalNode_GroupValue.PROJECT_OWNER
-        ) {
-          const targetRole = convertApprovalNodeGroupToRole(groupValue);
-          return projectMemberList
-            .filter((member) => member.roleList.includes(targetRole))
-            .map((member) => member.user);
-        }
-        if (
-          groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA ||
-          groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER
-        ) {
-          return workspaceMemberList.filter(
-            (member) =>
-              workspaceStore.emailMapToRoles
-                .get(member.email)
-                ?.has(convertApprovalNodeGroupToRole(groupValue)) ?? false
-          );
-        }
-        return [];
-      };
-      const candidatesForCustomRoles = (role: string) => {
-        const memberList = memberListInProjectIAM(project.iamPolicy, role);
-        return memberList
-          .filter((member) => member.user.userType === UserType.USER)
+    const candidatesForSystemRoles = (groupValue: ApprovalNode_GroupValue) => {
+      if (
+        groupValue === ApprovalNode_GroupValue.PROJECT_MEMBER ||
+        groupValue === ApprovalNode_GroupValue.PROJECT_OWNER
+      ) {
+        const targetRole = convertApprovalNodeGroupToRole(groupValue);
+        return projectMemberList
+          .filter((member) => member.roleList.includes(targetRole))
           .map((member) => member.user);
-      };
-
-      if (groupValue !== ApprovalNode_GroupValue.UNRECOGNIZED) {
-        return candidatesForSystemRoles(groupValue);
       }
-      if (role) {
-        return candidatesForCustomRoles(role);
+      if (
+        groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA ||
+        groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER
+      ) {
+        return workspaceMemberList.filter(
+          (member) =>
+            workspaceStore.emailMapToRoles
+              .get(member.email)
+              ?.has(convertApprovalNodeGroupToRole(groupValue)) ?? false
+        );
       }
       return [];
-    })
-    // do not show the creator in the candidate list.
-    .filter((user) => user.email !== extractUserEmail(issue.creator));
+    };
+    const candidatesForCustomRoles = (role: string) => {
+      const memberList = memberListInProjectIAM(project.iamPolicy, role);
+      return memberList
+        .filter((member) => member.user.userType === UserType.USER)
+        .map((member) => member.user);
+    };
 
-  return uniq(candidates.map((user) => user.name));
+    if (groupValue !== ApprovalNode_GroupValue.UNRECOGNIZED) {
+      return candidatesForSystemRoles(groupValue);
+    }
+    if (role) {
+      return candidatesForCustomRoles(role);
+    }
+    return [];
+  });
+
+  return uniq(
+    candidates
+      .filter(
+        (user) =>
+          user.userType === UserType.USER &&
+          user.state === State.ACTIVE &&
+          // TODO(steven): handle this with project setting about whether to include creator.
+          user.email !== extractUserEmail(issue.creator)
+      )
+      .map((user) => user.name)
+  );
 };
 
 // expose global list refresh features
