@@ -415,6 +415,7 @@ export const getFixedPrimaryKey = (engine: Engine) => {
   return undefined;
 };
 
+// supportStringifyMetadata returns true if the engine supports stringify metadata.
 export const supportStringifyMetadata = (engine: Engine) => {
   return [
     Engine.MYSQL,
