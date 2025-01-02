@@ -90,20 +90,14 @@ export type MaskingType =
 export const getMaskingType = (
   algorithm: Algorithm
 ): MaskingType | undefined => {
-  switch (algorithm.category) {
-    case "HASH":
-      return "md5-mask";
-    case "MASK":
-      if (algorithm.fullMask) {
-        return "full-mask";
-      } else if (algorithm.rangeMask) {
-        return "range-mask";
-      } else if (algorithm.innerOuterMask) {
-        return "inner-outer-mask";
-      }
-      break;
-    default:
-      return;
+  if (algorithm.fullMask) {
+    return "full-mask";
+  } else if (algorithm.rangeMask) {
+    return "range-mask";
+  } else if (algorithm.innerOuterMask) {
+    return "inner-outer-mask";
+  } else if (algorithm.md5Mask) {
+    return "md5-mask";
   }
   return;
 };
