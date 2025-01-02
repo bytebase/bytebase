@@ -119,7 +119,8 @@ func TestSensitiveData(t *testing.T) {
 					SemanticTypeSettingValue: &v1pb.SemanticTypeSetting{
 						Types: []*v1pb.SemanticTypeSetting_SemanticType{
 							{
-								Id: "default",
+								Id:    "default",
+								Title: "Default",
 								Algorithm: &v1pb.Algorithm{
 									Mask: &v1pb.Algorithm_FullMask_{FullMask: &v1pb.Algorithm_FullMask{Substitution: "******"}},
 								},
