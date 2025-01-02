@@ -31,10 +31,8 @@ const (
 
 var (
 	resourceIDMatcher = regexp.MustCompile("^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$")
-	// https://datatracker.ietf.org/doc/html/rfc4122#section-4.1
-	uuidMatcher   = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
-	deletePatch   = true
-	undeletePatch = false
+	deletePatch       = true
+	undeletePatch     = false
 )
 
 func convertDeletedToState(deleted bool) v1pb.State {
@@ -469,12 +467,6 @@ func parseLimitAndOffset(size *pageSize) (*pageOffset, error) {
 		offset.limit = size.maximum
 	}
 	return offset, nil
-}
-
-// isValidUUID validates that the id is the valid UUID format.
-// https://datatracker.ietf.org/doc/html/rfc4122#section-4.1
-func isValidUUID(id string) bool {
-	return uuidMatcher.MatchString(id)
 }
 
 func convertExportFormat(format storepb.ExportFormat) v1pb.ExportFormat {

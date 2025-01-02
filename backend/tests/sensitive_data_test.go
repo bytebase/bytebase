@@ -111,6 +111,28 @@ func TestSensitiveData(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, &v1pb.UpdateSettingRequest{
+		Setting: &v1pb.Setting{
+			Name: "settings/bb.workspace.semantic-types",
+			Value: &v1pb.Value{
+				Value: &v1pb.Value_SemanticTypeSettingValue{
+					SemanticTypeSettingValue: &v1pb.SemanticTypeSetting{
+						Types: []*v1pb.SemanticTypeSetting_SemanticType{
+							{
+								Id: "default",
+								Algorithm: &v1pb.Algorithm{
+									Mask: &v1pb.Algorithm_FullMask_{FullMask: &v1pb.Algorithm_FullMask{Substitution: "******"}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		AllowMissing: true,
+	})
+	a.NoError(err)
+
 	// Create a MySQL instance.
 	mysqlPort := getTestPort()
 	stopInstance := mysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
