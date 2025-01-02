@@ -8,8 +8,6 @@ export interface MaskData {
   table: string;
   column: string;
   maskingLevel: MaskingLevel;
-  fullMaskingAlgorithmId: string;
-  partialMaskingAlgorithmId: string;
 }
 
 export interface SensitiveColumn {
