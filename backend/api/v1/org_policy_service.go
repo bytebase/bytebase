@@ -815,36 +815,6 @@ func convertToStorePBAction(action v1pb.MaskingExceptionPolicy_MaskingException_
 	return storepb.MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED
 }
 
-func convertToV1PBMaskingLevel(level storepb.MaskingLevel) v1pb.MaskingLevel {
-	switch level {
-	case storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED:
-		return v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED
-	case storepb.MaskingLevel_NONE:
-		return v1pb.MaskingLevel_NONE
-	case storepb.MaskingLevel_PARTIAL:
-		return v1pb.MaskingLevel_PARTIAL
-	case storepb.MaskingLevel_FULL:
-		return v1pb.MaskingLevel_FULL
-	default:
-		return v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED
-	}
-}
-
-func convertToStorePBMaskingLevel(level v1pb.MaskingLevel) storepb.MaskingLevel {
-	switch level {
-	case v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED:
-		return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED
-	case v1pb.MaskingLevel_NONE:
-		return storepb.MaskingLevel_NONE
-	case v1pb.MaskingLevel_PARTIAL:
-		return storepb.MaskingLevel_PARTIAL
-	case v1pb.MaskingLevel_FULL:
-		return storepb.MaskingLevel_FULL
-	default:
-		return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED
-	}
-}
-
 func convertToV1RolloutPolicyPayload(payloadStr string) (*v1pb.Policy_RolloutPolicy, error) {
 	p := &v1pb.RolloutPolicy{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), p); err != nil {
