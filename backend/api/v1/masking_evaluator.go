@@ -63,15 +63,6 @@ func (m *maskingLevelEvaluator) getDataClassificationConfig(classificationID str
 	return m.dataClassificationIDMap[classificationID]
 }
 
-var (
-	defaultFullAlgorithm = &storepb.Algorithm{
-		Id: "default",
-	}
-	defaultPartialAlgorithm = &storepb.Algorithm{
-		Id: "default-partial",
-	}
-)
-
 // nolint
 func (m *maskingLevelEvaluator) evaluateMaskingAlgorithmOfColumn(
 	databaseMessage *store.DatabaseMessage,
@@ -95,13 +86,6 @@ func (m *maskingLevelEvaluator) evaluateMaskingAlgorithmOfColumn(
 		if pass {
 			return nil, nil
 		}
-	}
-
-	switch semanticTypeID {
-	case "default":
-		return defaultFullAlgorithm, nil
-	case "default-partial":
-		return defaultPartialAlgorithm, nil
 	}
 
 	semanticType, ok := m.semanticTypesMap[semanticTypeID]
