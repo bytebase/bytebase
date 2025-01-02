@@ -344,7 +344,7 @@ message MaskingRulePolicy {
 
     google.type.Expr condition = 2;
 
-    MaskingLevel masking_level = 3;
+    string semantic_type = 3;
   }
   repeated MaskingRule rules = 1;
 }
