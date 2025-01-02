@@ -480,13 +480,6 @@ export interface Algorithm {
   title: string;
   /** description is the description for masking algorithm. */
   description: string;
-  /**
-   * Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASK and HASH.
-   * The range of accepted Payload is decided by the category.
-   * MASK: FullMask, RangeMask
-   * HASH: MD5Mask
-   */
-  category: string;
   fullMask?: Algorithm_FullMask | undefined;
   rangeMask?: Algorithm_RangeMask | undefined;
   md5Mask?: Algorithm_MD5Mask | undefined;
@@ -2926,7 +2919,6 @@ function createBaseAlgorithm(): Algorithm {
     id: "",
     title: "",
     description: "",
-    category: "",
     fullMask: undefined,
     rangeMask: undefined,
     md5Mask: undefined,
@@ -2944,9 +2936,6 @@ export const Algorithm: MessageFns<Algorithm> = {
     }
     if (message.description !== "") {
       writer.uint32(26).string(message.description);
-    }
-    if (message.category !== "") {
-      writer.uint32(34).string(message.category);
     }
     if (message.fullMask !== undefined) {
       Algorithm_FullMask.encode(message.fullMask, writer.uint32(42).fork()).join();
@@ -2992,14 +2981,6 @@ export const Algorithm: MessageFns<Algorithm> = {
           }
 
           message.description = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.category = reader.string();
           continue;
         }
         case 5: {
@@ -3048,7 +3029,6 @@ export const Algorithm: MessageFns<Algorithm> = {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       description: isSet(object.description) ? globalThis.String(object.description) : "",
-      category: isSet(object.category) ? globalThis.String(object.category) : "",
       fullMask: isSet(object.fullMask) ? Algorithm_FullMask.fromJSON(object.fullMask) : undefined,
       rangeMask: isSet(object.rangeMask) ? Algorithm_RangeMask.fromJSON(object.rangeMask) : undefined,
       md5Mask: isSet(object.md5Mask) ? Algorithm_MD5Mask.fromJSON(object.md5Mask) : undefined,
@@ -3068,9 +3048,6 @@ export const Algorithm: MessageFns<Algorithm> = {
     }
     if (message.description !== "") {
       obj.description = message.description;
-    }
-    if (message.category !== "") {
-      obj.category = message.category;
     }
     if (message.fullMask !== undefined) {
       obj.fullMask = Algorithm_FullMask.toJSON(message.fullMask);
@@ -3095,7 +3072,6 @@ export const Algorithm: MessageFns<Algorithm> = {
     message.id = object.id ?? "";
     message.title = object.title ?? "";
     message.description = object.description ?? "";
-    message.category = object.category ?? "";
     message.fullMask = (object.fullMask !== undefined && object.fullMask !== null)
       ? Algorithm_FullMask.fromPartial(object.fullMask)
       : undefined;
