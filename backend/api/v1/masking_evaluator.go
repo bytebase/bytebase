@@ -80,15 +80,14 @@ func (m *maskingLevelEvaluator) evaluateMaskingAlgorithmOfColumn(
 	columnConfig *storepb.ColumnCatalog,
 	filteredMaskingExceptions []*storepb.MaskingExceptionPolicy_MaskingException,
 ) (*storepb.Algorithm, error) {
-	// TODO(d): deprecate globalMaskingLevel.
-	globalMaskingLevel, err := m.evaluateGlobalMaskingLevelOfColumn(databaseMessage, schemaName, tableName, columnName, databaseProjectDataClassificationID, columnConfig)
+	semanticTypeID, err := m.evaluateGlobalMaskingLevelOfColumn(databaseMessage, schemaName, tableName, columnName, databaseProjectDataClassificationID, columnConfig)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to evaluate masking level of column")
 	}
-	switch globalMaskingLevel {
-	case storepb.MaskingLevel_NONE:
-		return nil, nil
-	case storepb.MaskingLevel_FULL, storepb.MaskingLevel_PARTIAL:
+	if semanticTypeID == "" {
+		semanticTypeID = columnConfig.GetSemanticTypeId()
+	}
+	if semanticTypeID != "" {
 		pass, err := evaluateExceptionOfColumn(databaseMessage, schemaName, tableName, columnName, filteredMaskingExceptions)
 		if err != nil {
 			return nil, err
@@ -96,20 +95,16 @@ func (m *maskingLevelEvaluator) evaluateMaskingAlgorithmOfColumn(
 		if pass {
 			return nil, nil
 		}
-		if globalMaskingLevel == storepb.MaskingLevel_FULL {
-			return defaultFullAlgorithm, nil
-		}
-		if globalMaskingLevel == storepb.MaskingLevel_PARTIAL {
-			return defaultPartialAlgorithm, nil
-		}
 	}
-	if columnConfig.GetSemanticTypeId() == "default" {
+
+	switch semanticTypeID {
+	case "default":
 		return defaultFullAlgorithm, nil
-	}
-	if columnConfig.GetSemanticTypeId() == "default-partial" {
+	case "default-partial":
 		return defaultPartialAlgorithm, nil
 	}
-	semanticType, ok := m.semanticTypesMap[columnConfig.GetSemanticTypeId()]
+
+	semanticType, ok := m.semanticTypesMap[semanticTypeID]
 	if ok {
 		return semanticType.GetAlgorithm(), nil
 	}
@@ -121,7 +116,7 @@ func (m *maskingLevelEvaluator) evaluateGlobalMaskingLevelOfColumn(
 	schemaName, tableName, columnName string,
 	databaseProjectDataClassificationID string,
 	columnConfig *storepb.ColumnCatalog,
-) (storepb.MaskingLevel, error) {
+) (string, error) {
 	dataClassificationConfig := m.getDataClassificationConfig(databaseProjectDataClassificationID)
 	// If the column has DEFAULT masking level in maskingPolicy or not set yet,
 	// we will eval the maskingRulePolicy to get the maskingLevel.
@@ -139,13 +134,13 @@ func (m *maskingLevelEvaluator) evaluateGlobalMaskingLevelOfColumn(
 		}
 		pass, err := evaluateMaskingRulePolicyCondition(maskingRule.Condition.Expression, maskingRuleAttributes)
 		if err != nil {
-			return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to evaluate masking rule policy condition")
+			return "", errors.Wrapf(err, "failed to evaluate masking rule policy condition")
 		}
 		if pass {
-			return maskingRule.MaskingLevel, nil
+			return maskingRule.GetSemanticType(), nil
 		}
 	}
-	return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, nil
+	return "", nil
 }
 
 func evaluateExceptionOfColumn(databaseMessage *store.DatabaseMessage, schemaName, tableName, columnName string, filteredMaskingExceptions []*storepb.MaskingExceptionPolicy_MaskingException) (bool, error) {
