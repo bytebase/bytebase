@@ -414,3 +414,14 @@ export const getFixedPrimaryKey = (engine: Engine) => {
   }
   return undefined;
 };
+
+export const supportStringifyMetadata = (engine: Engine) => {
+  return [
+    Engine.MYSQL,
+    Engine.OCEANBASE,
+    Engine.POSTGRES,
+    Engine.TIDB,
+    Engine.CLICKHOUSE,
+    Engine.REDSHIFT,
+  ].includes(engine);
+};
