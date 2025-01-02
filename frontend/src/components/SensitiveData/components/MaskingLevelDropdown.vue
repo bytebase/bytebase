@@ -4,7 +4,7 @@
     :options="options"
     :disabled="disabled"
     :clearable="clearable"
-    :placeholder="$t('settings.sensitive-data.masking-level.selet-level')"
+    :placeholder="$t('settings.sensitive-data.masking-level.select-level')"
     @update:value="$emit('update:level', $event)"
   />
 </template>

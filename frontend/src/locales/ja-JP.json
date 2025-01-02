@@ -877,7 +877,8 @@
             "title": "電話番号",
             "description": ""
           }
-        }
+        },
+        "select": "セマンティックタイプの選択"
       },
       "column-detail": {
         "masking-setting-for-column": "「{column}」の感度解除設定",
@@ -948,7 +949,7 @@
       },
       "masking-level": {
         "self": "マスキングレベル",
-        "selet-level": "マスキングレベルを選択",
+        "select-level": "マスキングレベルを選択",
         "masking_level_unspecified": "全体像に従ってください",
         "none": "マスクなし",
         "partial": "部分マスク",
@@ -956,7 +957,7 @@
       },
       "action": {
         "self": "操作の種類",
-        "selet-action": "アクションを選択",
+        "select-action": "アクションを選択",
         "query": "クエリ",
         "export": "出力"
       },
