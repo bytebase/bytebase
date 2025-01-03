@@ -890,6 +890,8 @@
       },
       "algorithms": {
         "self": "Masking Algorithm",
+        "add": "Add algorithm",
+        "edit": "Edit algorithm",
         "upload": "Upload algorithm",
         "upload-label": "You can upload algorithm file with JSON format.",
         "override-title": "Algorithm data override",

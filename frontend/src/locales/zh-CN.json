@@ -890,6 +890,8 @@
       },
       "algorithms": {
         "self": "脱敏算法",
+        "add": "添加算法",
+        "edit": "编辑算法",
         "upload": "导入算法",
         "upload-label": "您可以上传 JSON 格式的算法文件。",
         "override-title": "覆盖算法数据",
