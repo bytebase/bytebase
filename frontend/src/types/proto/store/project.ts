@@ -35,6 +35,8 @@ export interface Project {
    * If enabled, the issue will be created with the pre-appended "set role <db_owner>" statement.
    */
   postgresDatabaseTenantMode: boolean;
+  /** Whether to allow the issue creator to self-approve the issue. */
+  allowSelfApproval: boolean;
 }
 
 function createBaseLabel(): Label {
@@ -139,6 +141,7 @@ function createBaseProject(): Project {
     autoEnableBackup: false,
     skipBackupErrors: false,
     postgresDatabaseTenantMode: false,
+    allowSelfApproval: false,
   };
 }
 
@@ -167,6 +170,9 @@ export const Project: MessageFns<Project> = {
     }
     if (message.postgresDatabaseTenantMode !== false) {
       writer.uint32(72).bool(message.postgresDatabaseTenantMode);
+    }
+    if (message.allowSelfApproval !== false) {
+      writer.uint32(80).bool(message.allowSelfApproval);
     }
     return writer;
   },
@@ -242,6 +248,14 @@ export const Project: MessageFns<Project> = {
           message.postgresDatabaseTenantMode = reader.bool();
           continue;
         }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.allowSelfApproval = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -267,6 +281,7 @@ export const Project: MessageFns<Project> = {
       postgresDatabaseTenantMode: isSet(object.postgresDatabaseTenantMode)
         ? globalThis.Boolean(object.postgresDatabaseTenantMode)
         : false,
+      allowSelfApproval: isSet(object.allowSelfApproval) ? globalThis.Boolean(object.allowSelfApproval) : false,
     };
   },
 
@@ -296,6 +311,9 @@ export const Project: MessageFns<Project> = {
     if (message.postgresDatabaseTenantMode !== false) {
       obj.postgresDatabaseTenantMode = message.postgresDatabaseTenantMode;
     }
+    if (message.allowSelfApproval !== false) {
+      obj.allowSelfApproval = message.allowSelfApproval;
+    }
     return obj;
   },
 
@@ -312,6 +330,7 @@ export const Project: MessageFns<Project> = {
     message.autoEnableBackup = object.autoEnableBackup ?? false;
     message.skipBackupErrors = object.skipBackupErrors ?? false;
     message.postgresDatabaseTenantMode = object.postgresDatabaseTenantMode ?? false;
+    message.allowSelfApproval = object.allowSelfApproval ?? false;
     return message;
   },
 };
