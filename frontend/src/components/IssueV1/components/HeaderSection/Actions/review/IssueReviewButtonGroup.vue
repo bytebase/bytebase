@@ -62,9 +62,11 @@ const shouldShowApproveOrReject = computed(() => {
     return false;
   }
 
-  // Do not show review actions for the creator.
-  if (currentUser.value.email === extractUserEmail(issue.value.creator)) {
-    return false;
+  if (!issue.value.projectEntity.allowSelfApproval) {
+    // Hide review actions if self-approval is disabled.
+    if (currentUser.value.email === extractUserEmail(issue.value.creator)) {
+      return false;
+    }
   }
 
   if (phase.value !== "REVIEW") {

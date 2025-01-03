@@ -2187,6 +2187,10 @@
           "self": "Enforce issue title",
           "description": "Enforce issue title to be non-empty and created by user instead of auto generated."
         },
+        "allow-self-approval": {
+          "self": "Allow self approval",
+          "description": "Allow the issue creator to approve the issue."
+        },
         "default-backup-behavior": {
           "self": "Default backup behavior",
           "description": "The default backup behavior when creating data changing issues.",
