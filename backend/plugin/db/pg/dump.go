@@ -1282,7 +1282,6 @@ func writeColumnComment(out io.Writer, schema string, table string, column *stor
 	}
 	_, err := io.WriteString(out, "';\n\n")
 	return err
-
 }
 
 func writeTableComment(out io.Writer, schema string, table *storepb.TableMetadata) error {
