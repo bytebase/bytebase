@@ -253,6 +253,10 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 			projectSettings := project.Setting
 			projectSettings.PostgresDatabaseTenantMode = request.Project.PostgresDatabaseTenantMode
 			patch.Setting = projectSettings
+		case "allow_self_approval":
+			projectSettings := project.Setting
+			projectSettings.AllowSelfApproval = request.Project.AllowSelfApproval
+			patch.Setting = projectSettings
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -1299,6 +1303,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		AutoEnableBackup:           projectMessage.Setting.AutoEnableBackup,
 		SkipBackupErrors:           projectMessage.Setting.SkipBackupErrors,
 		PostgresDatabaseTenantMode: projectMessage.Setting.PostgresDatabaseTenantMode,
+		AllowSelfApproval:          projectMessage.Setting.AllowSelfApproval,
 	}
 }
 
@@ -1310,6 +1315,7 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.P
 		AutoEnableBackup:           project.AutoEnableBackup,
 		SkipBackupErrors:           project.SkipBackupErrors,
 		PostgresDatabaseTenantMode: project.PostgresDatabaseTenantMode,
+		AllowSelfApproval:          project.AllowSelfApproval,
 	}
 	return &store.ProjectMessage{
 		ResourceID: resourceID,
