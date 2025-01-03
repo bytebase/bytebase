@@ -15,7 +15,6 @@ export const _generateDiffDDLTimer = new TinyTimer<"generateDiffDDL">(
 export type GenerateDiffDDLResult = {
   statement: string;
   errors: string[];
-  fatal: boolean;
 };
 
 export const generateDiffDDL = async (
@@ -24,26 +23,24 @@ export const generateDiffDDL = async (
   target: DatabaseMetadata,
   allowEmptyDiffDDLWithConfigChange = true
 ): Promise<GenerateDiffDDLResult> => {
-  const finish = (statement: string, errors: string[], fatal: boolean) => {
+  const finish = (statement: string, errors: string[]) => {
     _generateDiffDDLTimer.end("generateDiffDDL");
     return {
       statement,
       errors,
-      fatal,
     };
   };
 
   if (isEqual(source, target)) {
-    return finish("", [], false);
+    return finish("", []);
   }
 
   const validationMessages = validateDatabaseMetadata(target);
   if (validationMessages.length > 0) {
-    return finish(
-      "",
-      [t("schema-editor.message.invalid-schema"), ...validationMessages],
-      true
-    );
+    return finish("", [
+      t("schema-editor.message.invalid-schema"),
+      ...validationMessages,
+    ]);
   }
   try {
     const classificationConfig = useSettingV1Store().getProjectClassification(
@@ -67,17 +64,13 @@ export const generateDiffDDL = async (
         !allowEmptyDiffDDLWithConfigChange &&
         !isEqual(source.schemaConfigs, target.schemaConfigs)
       ) {
-        return finish(
-          "",
-          [t("schema-editor.message.cannot-change-config")],
-          true
-        );
+        return finish("", [t("schema-editor.message.cannot-change-config")]);
       }
-      return finish("", [], false);
+      return finish("", []);
     }
-    return finish(diff, [], false);
+    return finish(diff, []);
   } catch (ex) {
     console.warn("[generateDiffDDL]", ex);
-    return finish("", [extractGrpcErrorMessage(ex)], true);
+    return finish("", [extractGrpcErrorMessage(ex)]);
   }
 };

@@ -38,7 +38,6 @@ const props = defineProps<{
   getStatement: () => Promise<{
     statement: string;
     errors: string[];
-    fatal: boolean;
   }>;
   useOnlineSchemaMigration: boolean;
 }>();
