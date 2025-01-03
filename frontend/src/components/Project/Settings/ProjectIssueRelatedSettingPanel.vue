@@ -83,6 +83,19 @@
       </div>
       <div>
         <NCheckbox
+          v-model:checked="state.allowSelfApproval"
+          size="large"
+          :disabled="!allowUpdateIssueProjectSetting"
+          :label="$t('project.settings.issue-related.allow-self-approval.self')"
+        />
+        <p class="text-sm text-gray-400 pl-6 ml-0.5">
+          {{
+            $t("project.settings.issue-related.allow-self-approval.description")
+          }}
+        </p>
+      </div>
+      <div>
+        <NCheckbox
           v-model:checked="state.autoEnableBackup"
           size="large"
           :disabled="!allowUpdateIssueProjectSetting"
@@ -112,11 +125,17 @@
           v-model:checked="state.postgresDatabaseTenantMode"
           size="large"
           :disabled="!allowUpdateIssueProjectSetting"
-          :label="$t('project.settings.issue-related.postgres-database-tenant-mode.self')"
+          :label="
+            $t(
+              'project.settings.issue-related.postgres-database-tenant-mode.self'
+            )
+          "
         />
         <p class="text-sm text-gray-400 pl-6 ml-0.5">
           {{
-            $t("project.settings.issue-related.postgres-database-tenant-mode.description")
+            $t(
+              "project.settings.issue-related.postgres-database-tenant-mode.description"
+            )
           }}
         </p>
       </div>
@@ -149,6 +168,7 @@ interface LocalState {
   autoResolveIssue: boolean;
   forceIssueLabels: boolean;
   enforceIssueTitle: boolean;
+  allowSelfApproval: boolean;
   autoEnableBackup: boolean;
   skipBackupErrors: boolean;
   postgresDatabaseTenantMode: boolean;
@@ -162,6 +182,7 @@ const getInitialLocalState = (): LocalState => {
     autoResolveIssue: project.autoResolveIssue,
     forceIssueLabels: project.forceIssueLabels,
     enforceIssueTitle: project.enforceIssueTitle,
+    allowSelfApproval: project.allowSelfApproval,
     autoEnableBackup: project.autoEnableBackup,
     skipBackupErrors: project.skipBackupErrors,
     postgresDatabaseTenantMode: project.postgresDatabaseTenantMode,
@@ -272,13 +293,21 @@ const getUpdateMask = () => {
   if (state.enforceIssueTitle !== props.project.enforceIssueTitle) {
     mask.push("enforce_issue_title");
   }
+  if (state.allowSelfApproval !== props.project.allowSelfApproval) {
+    mask.push("allow_self_approval");
+  }
   if (!isEqual(state.autoEnableBackup, props.project.autoEnableBackup)) {
     mask.push("auto_enable_backup");
   }
   if (!isEqual(state.skipBackupErrors, props.project.skipBackupErrors)) {
     mask.push("skip_backup_errors");
   }
-  if (!isEqual(state.postgresDatabaseTenantMode, props.project.postgresDatabaseTenantMode)) {
+  if (
+    !isEqual(
+      state.postgresDatabaseTenantMode,
+      props.project.postgresDatabaseTenantMode
+    )
+  ) {
     mask.push("postgres_database_tenant_mode");
   }
   return mask;
