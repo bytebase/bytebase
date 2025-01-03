@@ -1,10 +1,11 @@
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
     <DrawerContent :title="$t('settings.sensitive-data.semantic-types.self')">
-      <div class="divide-block-border space-y-8 w-[40rem] h-full">
+      <div class="divide-block-border space-y-8 w-[50rem] h-full">
         <SemanticTypesTable
           :readonly="true"
           :row-clickable="true"
+          :size="'small'"
           :semantic-item-list="semanticItemList"
           @select="onApply($event)"
         />
@@ -23,12 +24,12 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import type { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
 import type { SemanticItem } from "./SemanticTypesTable.vue";
 import SemanticTypesTable from "./SemanticTypesTable.vue";
-import { NButton } from "naive-ui";
 
 const props = defineProps<{
   show: boolean;
