@@ -154,11 +154,13 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, request *v1pb.GetCha
 				return nil, status.Errorf(codes.Internal, "failed to convert schema to sdl format, error %v", err.Error())
 			}
 			converted.Schema = sdlSchema
+			converted.SchemaSize = int64(len(sdlSchema))
 			sdlSchema, err = transform.SchemaTransform(storepb.Engine_MYSQL, converted.PrevSchema)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to convert previous schema to sdl format, error %v", err.Error())
 			}
 			converted.PrevSchema = sdlSchema
+			converted.PrevSchemaSize = int64(len(sdlSchema))
 		}
 	}
 	if request.Concise {
@@ -169,12 +171,14 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, request *v1pb.GetCha
 				return nil, status.Errorf(codes.Internal, "failed to get concise schema, error %v", err.Error())
 			}
 			converted.Schema = conciseSchema
+			converted.SchemaSize = int64(len(conciseSchema))
 		case storepb.Engine_POSTGRES:
 			conciseSchema, err := pg.FilterBackupSchema(converted.Schema)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to filter the backup schema, error %v", err.Error())
 			}
 			converted.Schema = conciseSchema
+			converted.SchemaSize = int64(len(conciseSchema))
 		default:
 			return nil, status.Errorf(codes.Unimplemented, "concise schema is not supported for engine %q", instance.Engine.String())
 		}
