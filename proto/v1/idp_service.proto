@@ -124,6 +124,9 @@ message CreateIdentityProviderRequest {
   // This value should be 4-63 characters, and valid characters
   // are /[a-z][0-9]-/.
   string identity_provider_id = 2;
+
+  // If set to true, the request will be validated without actually creating the identity provider.
+  bool validate_only = 3;
 }
 
 message UpdateIdentityProviderRequest {

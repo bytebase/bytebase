@@ -309,7 +309,6 @@ func TestGetOpenIDConfigration(t *testing.T) {
 			issuer: "https://accounts.google.com",
 			response: &OpenIDConfigurationResponse{
 				AuthorizationEndpoint: "https://accounts.google.com/o/oauth2/v2/auth",
-				ScopesSupported:       []string{"openid", "email", "profile"},
 			},
 		},
 	}

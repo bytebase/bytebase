@@ -1177,8 +1177,17 @@ const testConnection = async () => {
     state.type === IdentityProviderType.OAUTH2 ||
     state.type === IdentityProviderType.OIDC
   ) {
+    let idpForTesting = editedIdentityProvider.value;
+    // For OIDC, we need to obtain the auth endpoint from the issuer in backend.
+    if (isCreating.value && idpForTesting.type === IdentityProviderType.OIDC) {
+      idpForTesting = await identityProviderClient.createIdentityProvider({
+        identityProviderId: idpForTesting.name,
+        identityProvider: idpForTesting,
+        validateOnly: true,
+      });
+    }
     try {
-      await openWindowForSSO(editedIdentityProvider.value);
+      await openWindowForSSO(idpForTesting);
     } catch (error) {
       pushNotification({
         module: "bytebase",
