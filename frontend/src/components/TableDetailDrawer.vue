@@ -80,6 +80,7 @@
                 <NPopover
                   trigger="click"
                   placement="bottom"
+                  v-if="supportStringifyMetadata(instanceEngine)"
                   @update:show="(show: boolean) => show"
                 >
                   <template #trigger>
@@ -267,7 +268,12 @@ import {
   ProjectV1Name,
   SearchBox,
 } from "@/components/v2";
-import { useDatabaseV1Store, useDatabaseCatalog, useDBSchemaV1Store, getTableCatalog } from "@/store";
+import {
+  useDatabaseV1Store,
+  useDatabaseCatalog,
+  useDBSchemaV1Store,
+  getTableCatalog,
+} from "@/store";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
@@ -281,6 +287,7 @@ import {
   instanceV1SupportsTrigger,
   isDatabaseV1Queryable,
   isGhostTable,
+  supportStringifyMetadata,
 } from "@/utils";
 import ColumnDataTable from "./ColumnDataTable/index.vue";
 import { SQLEditorButtonV1 } from "./DatabaseDetail";
@@ -333,7 +340,9 @@ const table = computedAsync(
 );
 
 const databaseCatalog = useDatabaseCatalog(props.databaseName, false);
-const tableCatalog = computed(() => getTableCatalog(databaseCatalog.value, props.schemaName, props.tableName));
+const tableCatalog = computed(() =>
+  getTableCatalog(databaseCatalog.value, props.schemaName, props.tableName)
+);
 
 const database = computed(() => {
   return databaseV1Store.getDatabaseByName(props.databaseName);
