@@ -20,16 +20,6 @@
     >
       <SearchBox v-model:value="state.searchText" style="max-width: 100%" />
       <div class="flex items-center space-x-2">
-        <MaskingLevelDropdown
-          v-model:level="state.selectedMaskLevel"
-          style="width: 12rem"
-          :clearable="true"
-          :level-list="[
-            MaskingLevel.FULL,
-            MaskingLevel.PARTIAL,
-            MaskingLevel.NONE,
-          ]"
-        />
         <NButton
           type="primary"
           :disabled="
@@ -52,7 +42,8 @@
 
     <SensitiveColumnTable
       v-if="hasSensitiveDataFeature"
-      :row-clickable="true"
+      :database="database"
+      :row-clickable="false"
       :row-selectable="true"
       :show-operation="hasPermission && hasSensitiveDataFeature"
       :column-list="filteredColumnList"
@@ -116,7 +107,6 @@ import { ShieldCheckIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import { updateColumnConfig } from "@/components/ColumnDataTable/utils";
 import {
   FeatureModal,
@@ -125,7 +115,6 @@ import {
 } from "@/components/FeatureGuard";
 import GrantAccessDrawer from "@/components/SensitiveData/GrantAccessDrawer.vue";
 import SensitiveColumnDrawer from "@/components/SensitiveData/SensitiveColumnDrawer.vue";
-import MaskingLevelDropdown from "@/components/SensitiveData/components/MaskingLevelDropdown.vue";
 import SensitiveColumnTable from "@/components/SensitiveData/components/SensitiveColumnTable.vue";
 import type { MaskData } from "@/components/SensitiveData/types";
 import { isCurrentColumnException } from "@/components/SensitiveData/utils";
@@ -138,9 +127,8 @@ import {
   useDatabaseCatalog,
 } from "@/store";
 import { type ComposedDatabase } from "@/types";
-import { MaskingLevel } from "@/types/proto/v1/common";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
-import { autoDatabaseRoute, hasProjectPermissionV2 } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";
 
 const props = defineProps<{
@@ -155,7 +143,6 @@ interface LocalState {
   pendingGrantAccessColumn: MaskData[];
   showGrantAccessDrawer: boolean;
   showSensitiveColumnDrawer: boolean;
-  selectedMaskLevel?: MaskingLevel;
 }
 
 const state = reactive<LocalState>({
@@ -177,7 +164,6 @@ const hasPermission = computed(() => {
 });
 
 const { t } = useI18n();
-const router = useRouter();
 const policyStore = usePolicyV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 
@@ -199,16 +185,15 @@ const updateList = async () => {
   for (const schema of databaseCatalog.value.schemas) {
     for (const table of schema.tables) {
       for (const column of table.columns?.columns ?? []) {
-        if (
-          column.maskingLevel === MaskingLevel.MASKING_LEVEL_UNSPECIFIED
-        ) {
+        if (!column.semanticTypeId && !column.classificationId) {
           continue;
         }
         sensitiveColumnList.push({
           schema: schema.name,
           table: table.name,
           column: column.name,
-          maskingLevel: column.maskingLevel,
+          semanticTypeId: column.semanticTypeId,
+          classificationId: column.classificationId,
         });
       }
     }
@@ -222,9 +207,6 @@ watch(databaseCatalog, updateList, { immediate: true, deep: true });
 
 const filteredColumnList = computed(() => {
   let list = state.sensitiveColumnList;
-  if (state.selectedMaskLevel) {
-    list = list.filter((item) => item.maskingLevel === state.selectedMaskLevel);
-  }
   const searchText = state.searchText.trim().toLowerCase();
   if (searchText) {
     list = list.filter(
@@ -243,9 +225,7 @@ const removeSensitiveColumn = async (sensitiveColumn: MaskData) => {
     schema: sensitiveColumn.schema,
     table: sensitiveColumn.table,
     column: sensitiveColumn.column,
-    columnCatalog: {
-      maskingLevel: MaskingLevel.MASKING_LEVEL_UNSPECIFIED,
-    },
+    columnCatalog: {},
   });
   await removeMaskingExceptions(sensitiveColumn);
 };
@@ -294,19 +274,6 @@ const onRowClick = async (
   action: "VIEW" | "DELETE" | "EDIT"
 ) => {
   switch (action) {
-    case "VIEW": {
-      const query: Record<string, string> = {
-        table: item.table,
-      };
-      if (item.schema != "") {
-        query.schema = item.schema;
-      }
-      router.push({
-        ...autoDatabaseRoute(router, props.database),
-        query,
-      });
-      break;
-    }
     case "DELETE":
       await onColumnRemove(item);
       break;
