@@ -601,12 +601,6 @@ export interface SemanticTypeSetting_SemanticType {
 }
 
 export interface Algorithm {
-  /** id is the uuid for masking algorithm. */
-  id: string;
-  /** title is the title for masking algorithm. */
-  title: string;
-  /** description is the description for masking algorithm. */
-  description: string;
   fullMask?: Algorithm_FullMask | undefined;
   rangeMask?: Algorithm_RangeMask | undefined;
   md5Mask?: Algorithm_MD5Mask | undefined;
@@ -4304,28 +4298,11 @@ export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_Se
 };
 
 function createBaseAlgorithm(): Algorithm {
-  return {
-    id: "",
-    title: "",
-    description: "",
-    fullMask: undefined,
-    rangeMask: undefined,
-    md5Mask: undefined,
-    innerOuterMask: undefined,
-  };
+  return { fullMask: undefined, rangeMask: undefined, md5Mask: undefined, innerOuterMask: undefined };
 }
 
 export const Algorithm: MessageFns<Algorithm> = {
   encode(message: Algorithm, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
-    }
-    if (message.title !== "") {
-      writer.uint32(18).string(message.title);
-    }
-    if (message.description !== "") {
-      writer.uint32(26).string(message.description);
-    }
     if (message.fullMask !== undefined) {
       Algorithm_FullMask.encode(message.fullMask, writer.uint32(42).fork()).join();
     }
@@ -4348,30 +4325,6 @@ export const Algorithm: MessageFns<Algorithm> = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.id = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.title = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.description = reader.string();
-          continue;
-        }
         case 5: {
           if (tag !== 42) {
             break;
@@ -4415,9 +4368,6 @@ export const Algorithm: MessageFns<Algorithm> = {
 
   fromJSON(object: any): Algorithm {
     return {
-      id: isSet(object.id) ? globalThis.String(object.id) : "",
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
-      description: isSet(object.description) ? globalThis.String(object.description) : "",
       fullMask: isSet(object.fullMask) ? Algorithm_FullMask.fromJSON(object.fullMask) : undefined,
       rangeMask: isSet(object.rangeMask) ? Algorithm_RangeMask.fromJSON(object.rangeMask) : undefined,
       md5Mask: isSet(object.md5Mask) ? Algorithm_MD5Mask.fromJSON(object.md5Mask) : undefined,
@@ -4429,15 +4379,6 @@ export const Algorithm: MessageFns<Algorithm> = {
 
   toJSON(message: Algorithm): unknown {
     const obj: any = {};
-    if (message.id !== "") {
-      obj.id = message.id;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
-    }
-    if (message.description !== "") {
-      obj.description = message.description;
-    }
     if (message.fullMask !== undefined) {
       obj.fullMask = Algorithm_FullMask.toJSON(message.fullMask);
     }
@@ -4458,9 +4399,6 @@ export const Algorithm: MessageFns<Algorithm> = {
   },
   fromPartial(object: DeepPartial<Algorithm>): Algorithm {
     const message = createBaseAlgorithm();
-    message.id = object.id ?? "";
-    message.title = object.title ?? "";
-    message.description = object.description ?? "";
     message.fullMask = (object.fullMask !== undefined && object.fullMask !== null)
       ? Algorithm_FullMask.fromPartial(object.fullMask)
       : undefined;
