@@ -309,9 +309,10 @@ type CreateIdentityProviderRequest struct {
 	// This value should be 4-63 characters, and valid characters
 	// are /[a-z][0-9]-/.
 	IdentityProviderId string `protobuf:"bytes,2,opt,name=identity_provider_id,json=identityProviderId,proto3" json:"identity_provider_id,omitempty"`
-	ValidateOnly       bool   `protobuf:"varint,3,opt,name=validate_only,json=validateOnly,proto3" json:"validate_only,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// If set to true, the request will be validated without actually creating the identity provider.
+	ValidateOnly  bool `protobuf:"varint,3,opt,name=validate_only,json=validateOnly,proto3" json:"validate_only,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CreateIdentityProviderRequest) Reset() {

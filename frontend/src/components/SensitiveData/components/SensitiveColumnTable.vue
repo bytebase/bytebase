@@ -11,19 +11,26 @@
   />
 </template>
 
-<script lang="ts" setup>
-import { PencilIcon } from "lucide-vue-next";
-import { TrashIcon } from "lucide-vue-next";
+<script lang="tsx" setup>
+import { TrashIcon, PencilIcon } from "lucide-vue-next";
 import { NDataTable, NPopconfirm, type DataTableColumn } from "naive-ui";
 import { computed, h, ref, watch } from "vue";
 import { withModifiers } from "vue";
 import { useI18n } from "vue-i18n";
+import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
+import SemanticTypeCell from "@/components/ColumnDataTable/SemanticTypeCell.vue";
 import type { MaskData } from "@/components/SensitiveData/types";
 import { MiniActionButton } from "@/components/v2";
-import type { MaskingLevel } from "@/types/proto/v1/common";
-import { maskingLevelToJSON } from "@/types/proto/v1/common";
+import {
+  useSettingV1Store,
+  useDatabaseCatalog,
+  getColumnCatalog,
+} from "@/store";
+import type { ComposedDatabase } from "@/types";
+import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
 
 const props = defineProps<{
+  database: ComposedDatabase;
   showOperation: boolean;
   rowClickable: boolean;
   rowSelectable: boolean;
@@ -45,6 +52,7 @@ const { t } = useI18n();
 const checkedColumnIndex = ref<Set<number>>(
   new Set(props.checkedColumnIndexList)
 );
+const settingStore = useSettingV1Store();
 
 watch(
   () => props.columnList,
@@ -67,10 +75,15 @@ const itemKey = (item: MaskData) => {
   return parts.join("::");
 };
 
-const getMaskingLevelText = (maskingLevel: MaskingLevel) => {
-  const level = maskingLevelToJSON(maskingLevel);
-  return t(`settings.sensitive-data.masking-level.${level.toLowerCase()}`);
-};
+const databaseCatalog = useDatabaseCatalog(props.database.name, false);
+
+const classificationConfig = computed(() => {
+  return (
+    settingStore.getProjectClassification(
+      props.database.projectEntity.dataClassificationConfigId
+    ) ?? DataClassificationConfig.fromPartial({})
+  );
+});
 
 const checkedItemKeys = computed(() => {
   const keys: string[] = [];
@@ -86,12 +99,42 @@ const checkedItemKeys = computed(() => {
 const dataTableColumns = computed(() => {
   const columns: DataTableColumn<MaskData>[] = [
     {
-      key: "masking-level",
-      title: t("settings.sensitive-data.masking-level.self"),
+      key: "semantic-type",
+      title: t("settings.sensitive-data.semantic-types.self"),
       width: "12rem",
       resizable: true,
       render(item) {
-        return getMaskingLevelText(item.maskingLevel);
+        return (
+          <SemanticTypeCell
+            database={props.database}
+            schema={item.schema}
+            table={item.table}
+            column={item.column}
+            readonly={true}
+          />
+        );
+      },
+    },
+    {
+      key: "classification",
+      title: t("database.classification.self"),
+      width: "12rem",
+      resizable: true,
+      render(item) {
+        const columnCatalog = getColumnCatalog(
+          databaseCatalog.value,
+          item.schema,
+          item.table,
+          item.column
+        );
+
+        return (
+          <ClassificationCell
+            classification={columnCatalog.classificationId}
+            classificationConfig={classificationConfig.value}
+            readonly={true}
+          />
+        );
       },
     },
     {

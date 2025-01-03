@@ -125,7 +125,6 @@ import { useI18n } from "vue-i18n";
 import { useBodyLayoutContext } from "@/layouts/common";
 import type { Factor } from "@/plugins/cel";
 import { featureToRef, pushNotification, usePolicyV1Store } from "@/store";
-import { MaskingLevel } from "@/types/proto/v1/common";
 import type { Policy } from "@/types/proto/v1/org_policy_service";
 import {
   PolicyType,
@@ -204,9 +203,8 @@ onMounted(async () => {
 const addNewRule = () => {
   state.maskingRuleItemList.push({
     mode: "CREATE",
-    rule: MaskingRulePolicy_MaskingRule.fromJSON({
+    rule: MaskingRulePolicy_MaskingRule.fromPartial({
       id: uuidv4(),
-      maskingLevel: MaskingLevel.FULL,
     }),
   });
   nextTick(() => {

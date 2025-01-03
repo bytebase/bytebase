@@ -53,13 +53,6 @@ enum VCSType {
   AZURE_DEVOPS = 4;
 }
 
-enum MaskingLevel {
-  MASKING_LEVEL_UNSPECIFIED = 0;
-  NONE = 1;
-  PARTIAL = 2;
-  FULL = 3;
-}
-
 enum ExportFormat {
   FORMAT_UNSPECIFIED = 0;
   CSV = 1;
