@@ -577,42 +577,43 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 
 	// Check schema drift
 	if s.licenseService.IsFeatureEnabledForInstance(api.FeatureSchemaDrift, instance) == nil {
-		// Redis and MongoDB are schemaless.
-		if disableSchemaDriftAnomalyCheck(instance.Engine) {
-			return nil
-		}
-		limit := 1
-		// TODO(p0ny): use changelog
-		list, err := s.store.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
-			InstanceID: &instance.UID,
-			DatabaseID: &database.UID,
-			TypeList:   []db.MigrationType{db.Migrate, db.Baseline},
-			ShowFull:   true,
-			Limit:      &limit,
-		})
-		if err != nil {
-			slog.Error("Failed to check anomaly",
-				slog.String("instance", instance.ResourceID),
-				slog.String("database", database.DatabaseName),
-				slog.String("type", string(api.AnomalyDatabaseSchemaDrift)),
-				log.BBError(err))
-			return nil
-		}
-		latestSchema := string(rawDump)
-		if len(list) > 0 {
-			if list[0].Schema != latestSchema {
+		if err := func() error {
+			// Redis and MongoDB are schemaless.
+			if disableSchemaDriftAnomalyCheck(instance.Engine) {
+				return nil
+			}
+			limit := 1
+			list, err := s.store.ListChangelogs(ctx, &store.FindChangelogMessage{
+				DatabaseUID:    &database.UID,
+				TypeList:       []string{string(db.Migrate), string(db.Baseline)},
+				HasSyncHistory: true,
+				Limit:          &limit,
+			})
+			if err != nil {
+				return errors.Wrapf(err, "failed to list changelogs")
+			}
+			if len(list) == 0 {
+				return nil
+			}
+
+			changelog := list[0]
+			if changelog.SyncHistoryUID == nil {
+				return errors.Errorf("expect sync history but get nil")
+			}
+			syncHistory, err := s.store.GetSyncHistoryByUID(ctx, *changelog.SyncHistoryUID)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get sync history")
+			}
+			latestSchema := string(rawDump)
+			if syncHistory.Schema != latestSchema {
 				anomalyPayload := &storepb.AnomalyDatabaseSchemaDriftPayload{
-					Version: list[0].Version.Version,
-					Expect:  list[0].Schema,
+					Version: changelog.Payload.GetVersion(),
+					Expect:  syncHistory.Schema,
 					Actual:  latestSchema,
 				}
 				payload, err := protojson.Marshal(anomalyPayload)
 				if err != nil {
-					slog.Error("Failed to marshal anomaly payload",
-						slog.String("instance", instance.ResourceID),
-						slog.String("database", database.DatabaseName),
-						slog.String("type", string(api.AnomalyDatabaseSchemaDrift)),
-						log.BBError(err))
+					return errors.Wrapf(err, "failed to marshal payload")
 				} else {
 					if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
 						InstanceID:  instance.ResourceID,
@@ -620,11 +621,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 						Type:        api.AnomalyDatabaseSchemaDrift,
 						Payload:     string(payload),
 					}); err != nil {
-						slog.Error("Failed to create anomaly",
-							slog.String("instance", instance.ResourceID),
-							slog.String("database", database.DatabaseName),
-							slog.String("type", string(api.AnomalyDatabaseSchemaDrift)),
-							log.BBError(err))
+						return errors.Wrapf(err, "failed to create anomaly")
 					}
 				}
 			} else {
@@ -633,13 +630,16 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 					Type:        api.AnomalyDatabaseSchemaDrift,
 				})
 				if err != nil && common.ErrorCode(err) != common.NotFound {
-					slog.Error("Failed to close anomaly",
-						slog.String("instance", instance.ResourceID),
-						slog.String("database", database.DatabaseName),
-						slog.String("type", string(api.AnomalyDatabaseSchemaDrift)),
-						log.BBError(err))
+					return errors.Wrapf(err, "failed to close anomaly")
 				}
 			}
+			return nil
+		}(); err != nil {
+			slog.Error("failed to check anomaly",
+				slog.String("instance", instance.ResourceID),
+				slog.String("database", database.DatabaseName),
+				slog.String("type", string(api.AnomalyDatabaseSchemaDrift)),
+				log.BBError(err))
 		}
 	}
 	return nil
