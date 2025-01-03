@@ -1023,49 +1023,54 @@ func getSequences(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 		return nil, err
 	}
 
+	sequenceOwnerMap, err := getSequenceOwners(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sequence owners")
+	}
+
 	for schemaName, list := range sequenceMap {
 		for _, sequence := range list {
-			ownerTable, ownerColumn, err := getSequenceOwner(txn, schemaName, sequence.Name)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get sequence %q owner", sequence.Name)
+			if ownerColumn, ok := sequenceOwnerMap[db.SequenceKey{Schema: schemaName, Sequence: sequence.Name}]; ok {
+				sequence.OwnerTable = ownerColumn.Table
+				sequence.OwnerColumn = ownerColumn.Column
 			}
-			sequence.OwnerTable = ownerTable
-			sequence.OwnerColumn = ownerColumn
 		}
 	}
 
 	return sequenceMap, nil
 }
 
-func getSequenceOwner(txn *sql.Tx, schemaName, sequenceName string) (string, string, error) {
-	var ownerTable, ownerColumn string
-
+func getSequenceOwners(txn *sql.Tx) (map[db.SequenceKey]db.ColumnKey, error) {
 	query := fmt.Sprintf(`
-		SELECT tab.relname as table_name,
-			attr.attname as column_name
-		FROM pg_class as seq
-			JOIN pg_depend as dep ON (seq.relfilenode = dep.objid)
-			JOIN pg_class as tab ON (dep.refobjid = tab.relfilenode)
-			JOIN pg_attribute as attr ON (attr.attnum = dep.refobjsubid AND attr.attrelid = dep.refobjid)
-			JOIN pg_namespace as ns ON (tab.relnamespace = ns.oid)
-		WHERE ns.nspname = '%s' AND seq.relname = '%s';
-	`, schemaName, sequenceName)
-
+	SELECT
+		ns.nspname as schema_name,
+		seq.relname as sequence_name,
+		tab.relname as table_name,
+		attr.attname as column_name
+	FROM pg_class as seq
+		JOIN pg_depend as dep ON (seq.relfilenode = dep.objid)
+		JOIN pg_class as tab ON (dep.refobjid = tab.relfilenode)
+		JOIN pg_attribute as attr ON (attr.attnum = dep.refobjsubid AND attr.attrelid = dep.refobjid)
+		JOIN pg_namespace as ns ON (tab.relnamespace = ns.oid)
+	WHERE ns.nspname NOT IN (%s) AND seq.relkind = 'S';
+	`, pgparser.SystemSchemaWhereClause)
 	rows, err := txn.Query(query)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 	defer rows.Close()
-
+	sequenceOwnerMap := make(map[db.SequenceKey]db.ColumnKey)
 	for rows.Next() {
-		if err := rows.Scan(&ownerTable, &ownerColumn); err != nil {
-			return "", "", err
+		var schemaName, sequenceName, tableName, columnName string
+		if err := rows.Scan(&schemaName, &sequenceName, &tableName, &columnName); err != nil {
+			return nil, err
 		}
+		sequenceOwnerMap[db.SequenceKey{Schema: schemaName, Sequence: sequenceName}] = db.ColumnKey{Schema: schemaName, Table: tableName, Column: columnName}
 	}
 	if err := rows.Err(); err != nil {
-		return "", "", err
+		return nil, err
 	}
-	return ownerTable, ownerColumn, nil
+	return sequenceOwnerMap, nil
 }
 
 func getTriggers(txn *sql.Tx, extensionDepend map[int]bool) (map[db.TableKey][]*storepb.TriggerMetadata, error) {
