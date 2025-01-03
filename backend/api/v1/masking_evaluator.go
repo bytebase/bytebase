@@ -64,16 +64,16 @@ func (m *maskingLevelEvaluator) getDataClassificationConfig(classificationID str
 }
 
 // nolint
-func (m *maskingLevelEvaluator) evaluateMaskingAlgorithmOfColumn(
+func (m *maskingLevelEvaluator) evaluateSemanticTypeOfColumn(
 	databaseMessage *store.DatabaseMessage,
 	schemaName, tableName, columnName,
 	databaseProjectDataClassificationID string,
 	columnConfig *storepb.ColumnCatalog,
 	filteredMaskingExceptions []*storepb.MaskingExceptionPolicy_MaskingException,
-) (*storepb.Algorithm, error) {
+) (string, error) {
 	semanticTypeID, err := m.evaluateGlobalMaskingLevelOfColumn(databaseMessage, schemaName, tableName, columnName, databaseProjectDataClassificationID, columnConfig)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to evaluate masking level of column")
+		return "", errors.Wrapf(err, "failed to evaluate masking level of column")
 	}
 	if semanticTypeID == "" {
 		semanticTypeID = columnConfig.GetSemanticTypeId()
@@ -81,18 +81,13 @@ func (m *maskingLevelEvaluator) evaluateMaskingAlgorithmOfColumn(
 	if semanticTypeID != "" {
 		pass, err := evaluateExceptionOfColumn(databaseMessage, schemaName, tableName, columnName, filteredMaskingExceptions)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		if pass {
-			return nil, nil
+			return "", nil
 		}
 	}
-
-	semanticType, ok := m.semanticTypesMap[semanticTypeID]
-	if ok {
-		return semanticType.GetAlgorithm(), nil
-	}
-	return nil, nil
+	return semanticTypeID, nil
 }
 
 func (m *maskingLevelEvaluator) evaluateGlobalMaskingLevelOfColumn(

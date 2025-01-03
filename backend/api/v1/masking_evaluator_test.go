@@ -79,7 +79,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 		filteredMaskingExceptions               []*storepb.MaskingExceptionPolicy_MaskingException
 		dataClassification                      *storepb.DataClassificationSetting
 
-		want *storepb.Algorithm
+		want string
 	}{
 		{
 			description:     "Follow The Global Masking Rule",
@@ -103,7 +103,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			dataClassification:                      defaultClassification,
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
-			want: fullAlgorithm,
+			want: "default",
 		},
 		{
 			description:     "Respect The Exception",
@@ -135,7 +135,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			dataClassification:                      defaultClassification,
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
-			want: nil,
+			want: "",
 		},
 		{
 			description:     "Column Catalog",
@@ -150,7 +150,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			dataClassification:                      defaultClassification,
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
-			want: hashAlgorithm,
+			want: "salary-amount",
 		},
 	}
 
@@ -158,7 +158,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 
 	for _, tc := range testCases {
 		m := newEmptyMaskingLevelEvaluator().withMaskingRulePolicy(tc.maskingRulePolicy).withDataClassificationSetting(tc.dataClassification).withSemanticTypeSetting(defaultSemanticType)
-		result, err := m.evaluateMaskingAlgorithmOfColumn(tc.databaseMessage, tc.schemaName, tc.tableName, tc.columnName, tc.databaseProjectDatabaseClassificationID, tc.columnCatalog, tc.filteredMaskingExceptions)
+		result, err := m.evaluateSemanticTypeOfColumn(tc.databaseMessage, tc.schemaName, tc.tableName, tc.columnName, tc.databaseProjectDatabaseClassificationID, tc.columnCatalog, tc.filteredMaskingExceptions)
 		a.NoError(err, tc.description)
 		a.Equal(tc.want, result, tc.description)
 	}

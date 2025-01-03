@@ -209,11 +209,17 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 		}
 	}
 
-	maskingAlgorithm, err := m.evaluateMaskingAlgorithmOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, project.DataClassificationConfigID, config, maskingExceptionContainsCurrentPrincipal)
+	semanticTypeID, err := m.evaluateSemanticTypeOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, project.DataClassificationConfigID, config, maskingExceptionContainsCurrentPrincipal)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", sourceColumn.Database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column)
 	}
-	return getMaskerByMaskingAlgorithmAndLevel(maskingAlgorithm), nil
+	// TODO(d): hack about existing default-partial algorithm.
+	if semanticTypeID == "default-partial" {
+		return masker.NewDefaultRangeMasker(), nil
+	}
+
+	semanticType := m.semanticTypesMap[semanticTypeID]
+	return getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm()), nil
 }
 
 func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, instanceID string, sourceColumn *base.ColumnResource) (*storepb.ColumnMetadata, *storepb.ColumnCatalog, error) {
@@ -271,10 +277,6 @@ func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, inst
 func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.Algorithm) masker.Masker {
 	if algorithm == nil {
 		return masker.NewNoneMasker()
-	}
-	// TODO(d): hack about existing default-partial algorithm.
-	if algorithm.GetId() == "default-partial" {
-		return masker.NewDefaultRangeMasker()
 	}
 
 	switch m := algorithm.Mask.(type) {
