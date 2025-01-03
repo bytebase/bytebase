@@ -100,7 +100,7 @@ const dataTableColumns = computed(() => {
   const columns: DataTableColumn<MaskData>[] = [
     {
       key: "semantic-type",
-      title: t("settings.sensitive-data.semantic-types.self"),
+      title: t("settings.sensitive-data.semantic-types.table.semantic-type"),
       width: "12rem",
       resizable: true,
       render(item) {
