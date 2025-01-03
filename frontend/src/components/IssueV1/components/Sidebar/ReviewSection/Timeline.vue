@@ -21,7 +21,10 @@
                     </span>
                   </template>
                 </i18n-t>
-                <li class="whitespace-pre-wrap">
+                <li
+                  v-if="!issue.projectEntity.allowSelfApproval"
+                  class="whitespace-pre-wrap"
+                >
                   {{
                     $t(
                       "custom-approval.issue-review.issue-creators-cannot-approve-their-own-issue"
@@ -90,6 +93,7 @@ import {
   NPopover,
   NPerformantEllipsis,
 } from "naive-ui";
+import { useIssueContext } from "@/components/IssueV1/logic";
 import type { WrappedReviewStep } from "@/types";
 import { type User } from "@/types/proto/v1/auth_service";
 import type { ApprovalStep } from "@/types/proto/v1/issue_service";
@@ -102,6 +106,8 @@ import TimelineIcon from "./TimelineIcon.vue";
 defineProps<{
   steps: WrappedReviewStep[];
 }>();
+
+const { issue } = useIssueContext();
 
 const isExternalApprovalStep = (step: ApprovalStep) => {
   return !!step.nodes[0]?.externalNodeId;

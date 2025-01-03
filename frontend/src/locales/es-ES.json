@@ -2187,6 +2187,10 @@
           "self": "Hacer cumplir el título del problema",
           "description": "Exigir que el título del problema no esté vacío y que lo cree el usuario en lugar de generarse automáticamente."
         },
+        "allow-self-approval": {
+          "self": "Permitir la autoaprobación",
+          "description": "Permitir que el creador del problema apruebe el problema."
+        },
         "default-backup-behavior": {
           "self": "Comportamiento de copia de seguridad predeterminado",
           "description": "El comportamiento de copia de seguridad predeterminado al crear problemas de cambio de datos.",
