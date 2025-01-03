@@ -373,6 +373,7 @@ const columns = computed(() => {
       minWidth: 140,
       maxWidth: 320,
       render: (column) => {
+        // TODO(ed): use catalog
         const config = configForColumn(column);
         return h(ClassificationCell, {
           classification: config.classificationId,

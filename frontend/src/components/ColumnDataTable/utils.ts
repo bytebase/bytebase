@@ -37,12 +37,14 @@ export const updateColumnConfig = async ({
   columnCatalog: Partial<ColumnCatalog>;
 }) => {
   const dbCatalogStore = useDatabaseCatalogV1Store();
-  const catalog = await dbCatalogStore.getOrFetchDatabaseCatalog({database});
+  const catalog = await dbCatalogStore.getOrFetchDatabaseCatalog({ database });
 
   const pendingUpdateCatalog = cloneDeep(catalog);
-  let targetSchema = pendingUpdateCatalog.schemas.find((s) => s.name === schema);
+  let targetSchema = pendingUpdateCatalog.schemas.find(
+    (s) => s.name === schema
+  );
   if (!targetSchema) {
-    targetSchema = {name: schema, tables: []};
+    targetSchema = { name: schema, tables: [] };
     pendingUpdateCatalog.schemas.push(targetSchema);
   }
 
@@ -55,7 +57,7 @@ export const updateColumnConfig = async ({
   const columns = targetTable.columns?.columns || [];
   const columnIndex = columns.findIndex((c) => c.name === column);
   if (columnIndex < 0) {
-    columns.push(ColumnCatalog.fromPartial({name: column, ...columnCatalog}));
+    columns.push(ColumnCatalog.fromPartial({ name: column, ...columnCatalog }));
   } else {
     columns[columnIndex] = {
       ...columns[columnIndex],
@@ -78,21 +80,25 @@ export const updateTableConfig = async (
   tableCatalog: Partial<TableCatalog>
 ) => {
   const dbCatalogStore = useDatabaseCatalogV1Store();
-  const catalog = await dbCatalogStore.getOrFetchDatabaseCatalog({database});
+  const catalog = await dbCatalogStore.getOrFetchDatabaseCatalog({ database });
 
   const pendingUpdateCatalog = cloneDeep(catalog);
-  let targetSchema = pendingUpdateCatalog.schemas.find((s) => s.name === schema);
+  let targetSchema = pendingUpdateCatalog.schemas.find(
+    (s) => s.name === schema
+  );
   if (!targetSchema) {
-    targetSchema = {name: schema, tables: []};
+    targetSchema = { name: schema, tables: [] };
     pendingUpdateCatalog.schemas.push(targetSchema);
   }
 
   const tableIndex = targetSchema.tables.findIndex((t) => t.name === table);
   if (tableIndex < 0) {
-    targetSchema.tables.push(TableCatalog.fromPartial({
-      name: table,
-      ...tableCatalog,
-    }));
+    targetSchema.tables.push(
+      TableCatalog.fromPartial({
+        name: table,
+        ...tableCatalog,
+      })
+    );
   } else {
     targetSchema.tables[tableIndex] = {
       ...targetSchema.tables[tableIndex],
