@@ -45,6 +45,8 @@ type FindChangelogMessage struct {
 
 	Limit  *int
 	Offset *int
+
+	HasSyncHistory bool
 }
 
 type UpdateChangelogMessage struct {
@@ -157,6 +159,9 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 		if text != "" {
 			where = append(where, text)
 		}
+	}
+	if find.HasSyncHistory {
+		where = append(where, "changelog.sync_history IS NOT NULL")
 	}
 	if len(find.TypeList) > 0 {
 		where = append(where, fmt.Sprintf("changelog.payload->>'type' = ANY($%d)", len(args)+1))
