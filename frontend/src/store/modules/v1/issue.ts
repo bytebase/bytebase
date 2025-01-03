@@ -217,8 +217,8 @@ export const candidatesOfApprovalStepV1 = (
         (user) =>
           user.userType === UserType.USER &&
           user.state === State.ACTIVE &&
-          // TODO(steven): handle this with project setting about whether to include creator.
-          user.email !== extractUserEmail(issue.creator)
+          (issue.projectEntity.allowSelfApproval ||
+            user.email !== extractUserEmail(issue.creator))
       )
       .map((user) => user.name)
   );
