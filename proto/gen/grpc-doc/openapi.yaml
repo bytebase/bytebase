@@ -943,6 +943,7 @@ paths:
                     type: string
                 - name: validateOnly
                   in: query
+                  description: If set to true, the request will be validated without actually creating the identity provider.
                   schema:
                     type: boolean
             requestBody:
@@ -9592,18 +9593,6 @@ components:
                         type: string
                     description: The user labels for a column.
                 classificationId:
-                    type: string
-                maskingLevel:
-                    enum:
-                        - MASKING_LEVEL_UNSPECIFIED
-                        - NONE
-                        - PARTIAL
-                        - FULL
-                    type: string
-                    format: enum
-                fullMaskingAlgorithmId:
-                    type: string
-                partialMaskingAlgorithmId:
                     type: string
                 objectSchema:
                     $ref: '#/components/schemas/ObjectSchema'

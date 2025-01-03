@@ -184,6 +184,7 @@ export interface CreateIdentityProviderRequest {
    * are /[a-z][0-9]-/.
    */
   identityProviderId: string;
+  /** If set to true, the request will be validated without actually creating the identity provider. */
   validateOnly: boolean;
 }
 
