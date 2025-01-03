@@ -93,7 +93,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 							` SELECT a,`,
 							`    b,`,
 							`    c`,
-							`   FROM "TFK";`},
+							`   FROM public."TFK";`},
 							"\n"),
 						Columns: []*v1pb.ColumnMetadata{
 							{

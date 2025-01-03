@@ -525,7 +525,7 @@ func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.
 	}
 
 	dbSchema := (*storepb.DatabaseSchemaMetadata)(nil)
-	if instance.Engine == storepb.Engine_MYSQL {
+	if instance.Engine == storepb.Engine_MYSQL || instance.Engine == storepb.Engine_POSTGRES {
 		// Use new driver to sync the schema to avoid the session state change, such as SET ROLE in PostgreSQL.
 		syncDriver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, similarDB, db.ConnectionContext{})
 		if err != nil {
