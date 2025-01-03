@@ -61,6 +61,11 @@ type IndexKey struct {
 	Index  string
 }
 
+type SequenceKey struct {
+	Schema   string
+	Sequence string
+}
+
 var (
 	driversMu sync.RWMutex
 	drivers   = make(map[storepb.Engine]driverFunc)
