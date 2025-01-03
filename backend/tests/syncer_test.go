@@ -36,7 +36,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 			c int DEFAULT NULL,
 			CONSTRAINT tfk_ibfk_1 FOREIGN KEY (a, b, c) REFERENCES schema1.trd ("A", "B", c)
 		  );
-		CREATE VIEW "VW" AS SELECT * FROM "TFK";
+		CREATE VIEW "VW" AS SELECT * FROM public."TFK";
 		`
 	)
 	wantDatabaseMetadata := &v1pb.DatabaseMetadata{
