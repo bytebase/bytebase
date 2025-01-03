@@ -747,16 +747,14 @@ message ColumnCatalog {
 
   string classification_id = 4;
 
-  // Deprecated.
-  MaskingLevel masking_level = 5;
+  optional ObjectSchema object_schema = 5;
 
   // Deprecated.
-  string full_masking_algorithm_id = 6;
-
+  MaskingLevel masking_level = 6;
   // Deprecated.
-  string partial_masking_algorithm_id = 7;
-
-  optional ObjectSchema object_schema = 8;
+  string full_masking_algorithm_id = 7;
+  // Deprecated.
+  string partial_masking_algorithm_id = 8;
 }
 
 message ObjectSchema {

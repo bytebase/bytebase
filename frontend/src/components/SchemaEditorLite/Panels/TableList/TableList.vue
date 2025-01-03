@@ -263,6 +263,7 @@ const columns = computed(() => {
       maxWidth: 320,
       hide: !showClassification.value,
       render: (table) => {
+        // TODO(ed): use catalog
         const config = configForTable(table);
         return h(ClassificationCell, {
           classification: config.classificationId,

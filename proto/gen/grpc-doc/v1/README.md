@@ -17,7 +17,6 @@
   
     - [Engine](#bytebase-v1-Engine)
     - [ExportFormat](#bytebase-v1-ExportFormat)
-    - [MaskingLevel](#bytebase-v1-MaskingLevel)
     - [State](#bytebase-v1-State)
     - [VCSType](#bytebase-v1-VCSType)
   
@@ -910,20 +909,6 @@
 
 
 
-<a name="bytebase-v1-MaskingLevel"></a>
-
-### MaskingLevel
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MASKING_LEVEL_UNSPECIFIED | 0 |  |
-| NONE | 1 |  |
-| PARTIAL | 2 |  |
-| FULL | 3 |  |
-
-
-
 <a name="bytebase-v1-State"></a>
 
 ### State
@@ -978,9 +963,6 @@
 | semantic_type_id | [string](#string) |  |  |
 | labels | [ColumnCatalog.LabelsEntry](#bytebase-v1-ColumnCatalog-LabelsEntry) | repeated | The user labels for a column. |
 | classification_id | [string](#string) |  |  |
-| masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
-| full_masking_algorithm_id | [string](#string) |  |  |
-| partial_masking_algorithm_id | [string](#string) |  |  |
 | object_schema | [ObjectSchema](#bytebase-v1-ObjectSchema) | optional |  |
 
 
@@ -7241,6 +7223,7 @@ The group&#39;s `name` field is used to identify the group to update. Format: gr
 | identity_provider_id | [string](#string) |  | The ID to use for the identity provider, which will become the final component of the identity provider&#39;s resource name.
 
 This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+| validate_only | [bool](#bool) |  | If set to true, the request will be validated without actually creating the identity provider. |
 
 
 

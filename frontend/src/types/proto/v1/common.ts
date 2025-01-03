@@ -384,67 +384,6 @@ export function vCSTypeToNumber(object: VCSType): number {
   }
 }
 
-export enum MaskingLevel {
-  MASKING_LEVEL_UNSPECIFIED = "MASKING_LEVEL_UNSPECIFIED",
-  NONE = "NONE",
-  PARTIAL = "PARTIAL",
-  FULL = "FULL",
-  UNRECOGNIZED = "UNRECOGNIZED",
-}
-
-export function maskingLevelFromJSON(object: any): MaskingLevel {
-  switch (object) {
-    case 0:
-    case "MASKING_LEVEL_UNSPECIFIED":
-      return MaskingLevel.MASKING_LEVEL_UNSPECIFIED;
-    case 1:
-    case "NONE":
-      return MaskingLevel.NONE;
-    case 2:
-    case "PARTIAL":
-      return MaskingLevel.PARTIAL;
-    case 3:
-    case "FULL":
-      return MaskingLevel.FULL;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return MaskingLevel.UNRECOGNIZED;
-  }
-}
-
-export function maskingLevelToJSON(object: MaskingLevel): string {
-  switch (object) {
-    case MaskingLevel.MASKING_LEVEL_UNSPECIFIED:
-      return "MASKING_LEVEL_UNSPECIFIED";
-    case MaskingLevel.NONE:
-      return "NONE";
-    case MaskingLevel.PARTIAL:
-      return "PARTIAL";
-    case MaskingLevel.FULL:
-      return "FULL";
-    case MaskingLevel.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export function maskingLevelToNumber(object: MaskingLevel): number {
-  switch (object) {
-    case MaskingLevel.MASKING_LEVEL_UNSPECIFIED:
-      return 0;
-    case MaskingLevel.NONE:
-      return 1;
-    case MaskingLevel.PARTIAL:
-      return 2;
-    case MaskingLevel.FULL:
-      return 3;
-    case MaskingLevel.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
 export enum ExportFormat {
   FORMAT_UNSPECIFIED = "FORMAT_UNSPECIFIED",
   CSV = "CSV",

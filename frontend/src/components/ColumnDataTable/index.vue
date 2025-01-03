@@ -33,7 +33,6 @@ import { DataClassificationSetting_DataClassificationConfig as DataClassificatio
 import { hasProjectPermissionV2 } from "@/utils";
 import ClassificationCell from "./ClassificationCell.vue";
 import LabelsCell from "./LabelsCell.vue";
-import MaskingLevelCell from "./MaskingLevelCell.vue";
 import SemanticTypeCell from "./SemanticTypeCell.vue";
 import {
   updateColumnConfig,
@@ -139,22 +138,6 @@ const columns = computed(() => {
       },
     },
     {
-      key: "maskingLevel",
-      title: t("settings.sensitive-data.masking-level.self"),
-      hide: !showSensitiveColumn.value,
-      resizable: true,
-      width: 220,
-      render: (column) => {
-        return h(MaskingLevelCell, {
-          database: props.database,
-          schema: props.schema,
-          table: props.table,
-          column: column,
-          readonly: !hasSensitiveDataPermission.value,
-        });
-      },
-    },
-    {
       key: "semanticType",
       title: t("settings.sensitive-data.semantic-types.self"),
       hide: !showSensitiveColumn.value,
@@ -164,8 +147,8 @@ const columns = computed(() => {
         return h(SemanticTypeCell, {
           database: props.database,
           schema: props.schema,
-          table: props.table,
-          column: column,
+          table: props.table.name,
+          column: column.name,
           readonly: !hasSensitiveDataPermission.value,
         });
       },
@@ -177,7 +160,12 @@ const columns = computed(() => {
       width: 140,
       resizable: true,
       render: (column) => {
-        const columnCatalog = getColumnCatalog(databaseCatalog.value, props.schema, props.table.name, column.name);
+        const columnCatalog = getColumnCatalog(
+          databaseCatalog.value,
+          props.schema,
+          props.table.name,
+          column.name
+        );
         return h(ClassificationCell, {
           classification: columnCatalog.classificationId,
           classificationConfig:
