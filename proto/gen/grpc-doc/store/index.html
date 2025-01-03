@@ -2960,6 +2960,27 @@ This information is not authenticated and should be treated accordingly. </p></t
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>masking_level</td>
+                  <td><a href="#bytebase.store.MaskingLevel">MaskingLevel</a></td>
+                  <td></td>
+                  <td><p>Deprecated. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>full_masking_algorithm_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Deprecated. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>partial_masking_algorithm_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Deprecated. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -10135,6 +10156,13 @@ for example, the environment resource can have the sql review config tag, like &
 If enabled, the issue will be created with the pre-appended &#34;set role &lt;db_owner&gt;&#34; statement. </p></td>
                 </tr>
               
+                <tr>
+                  <td>allow_self_approval</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether to allow the issue creator to self-approve the issue. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -10594,27 +10622,6 @@ Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRu
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
-              
-                <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>id is the uuid for masking algorithm. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>title is the title for masking algorithm. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>description</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>description is the description for masking algorithm. </p></td>
-                </tr>
               
                 <tr>
                   <td>full_mask</td>

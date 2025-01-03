@@ -930,6 +930,9 @@ Metadata about the request.
 | labels | [ColumnCatalog.LabelsEntry](#bytebase-store-ColumnCatalog-LabelsEntry) | repeated | The user labels for a column. |
 | classification_id | [string](#string) |  |  |
 | object_schema | [ObjectSchema](#bytebase-store-ObjectSchema) | optional |  |
+| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  | Deprecated. |
+| full_masking_algorithm_id | [string](#string) |  | Deprecated. |
+| partial_masking_algorithm_id | [string](#string) |  | Deprecated. |
 
 
 
@@ -3911,6 +3914,7 @@ SlowQueryPolicy is the policy configuration for slow query.
 | auto_enable_backup | [bool](#bool) |  | Whether to automatically enable backup. |
 | skip_backup_errors | [bool](#bool) |  | Whether to skip backup errors and continue the data migration. |
 | postgres_database_tenant_mode | [bool](#bool) |  | Whether to enable the database tenant mode for PostgreSQL. If enabled, the issue will be created with the pre-appended &#34;set role &lt;db_owner&gt;&#34; statement. |
+| allow_self_approval | [bool](#bool) |  | Whether to allow the issue creator to self-approve the issue. |
 
 
 
@@ -4198,9 +4202,6 @@ SlowQueryPolicy is the policy configuration for slow query.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | id is the uuid for masking algorithm. |
-| title | [string](#string) |  | title is the title for masking algorithm. |
-| description | [string](#string) |  | description is the description for masking algorithm. |
 | full_mask | [Algorithm.FullMask](#bytebase-store-Algorithm-FullMask) |  |  |
 | range_mask | [Algorithm.RangeMask](#bytebase-store-Algorithm-RangeMask) |  |  |
 | md5_mask | [Algorithm.MD5Mask](#bytebase-store-Algorithm-MD5Mask) |  |  |

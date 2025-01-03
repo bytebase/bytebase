@@ -13108,27 +13108,6 @@ The access is based on approval flow.</p></td>
             <tbody>
               
                 <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>id is the uuid for masking algorithm. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>title is the title for masking algorithm. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>description</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>description is the description for masking algorithm. </p></td>
-                </tr>
-              
-                <tr>
                   <td>full_mask</td>
                   <td><a href="#bytebase.v1.Algorithm.FullMask">Algorithm.FullMask</a></td>
                   <td></td>
@@ -22997,6 +22976,13 @@ Format: projects/{project} </p></td>
                   <td></td>
                   <td><p>Whether to enable the database tenant mode for PostgreSQL.
 If enabled, the issue will be created with the pre-appended &#34;set role &lt;db_owner&gt;&#34; statement. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allow_self_approval</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether to allow the issue creator to self-approve the issue. </p></td>
                 </tr>
               
             </tbody>

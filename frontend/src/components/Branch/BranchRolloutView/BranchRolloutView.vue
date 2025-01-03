@@ -250,12 +250,12 @@ const handleChangeTab = async (tab: TabType) => {
 };
 
 const fetchRawSQLPreview = async () => {
-  const cleanup = (errors: string[], fatal: boolean) => {
+  const cleanup = (errors: string[]) => {
     if (errors.length > 0) {
       rawSQLPreviewState.value = "";
       pushNotification({
         module: "bytebase",
-        style: fatal ? "CRITICAL" : "WARN",
+        style: "CRITICAL",
         title: t("common.error"),
         description: errors.join("\n"),
       });
@@ -287,14 +287,14 @@ const fetchRawSQLPreview = async () => {
     selectedRolloutObjects.value
   );
 
-  const { statement, errors, fatal } = await generateDiffDDL(
+  const { statement, errors } = await generateDiffDDL(
     db,
     source,
     target,
     /* !allowEmptyDiffDDLWithConfigChange */ false
   );
   if (errors.length > 0) {
-    return cleanup(errors, fatal);
+    return cleanup(errors);
   }
 
   rawSQLPreviewState.value = statement;
@@ -302,11 +302,11 @@ const fetchRawSQLPreview = async () => {
 };
 
 const handlePreviewIssue = async () => {
-  const cleanup = (errors: string[], fatal: boolean) => {
+  const cleanup = (errors: string[]) => {
     if (errors.length > 0) {
       pushNotification({
         module: "bytebase",
-        style: fatal ? "CRITICAL" : "WARN",
+        style: "CRITICAL",
         title: t("common.error"),
         description: errors.join("\n"),
       });
@@ -335,18 +335,18 @@ const handlePreviewIssue = async () => {
   );
 
   isGeneratingDDL.value = true;
-  const { statement, errors, fatal } = await generateDiffDDL(
+  const { statement, errors } = await generateDiffDDL(
     db,
     source,
     target,
     /* !allowEmptyDiffDDLWithConfigChange */ false
   );
   if (errors.length > 0) {
-    return cleanup(errors, fatal);
+    return cleanup(errors);
   }
   if (statement === "") {
     if (!(await confirmCreateIssueWithEmptyStatement())) {
-      return cleanup([], false);
+      return cleanup([]);
     }
   }
   const sheet = Sheet.fromPartial({

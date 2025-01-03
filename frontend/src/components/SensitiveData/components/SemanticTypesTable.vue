@@ -21,7 +21,6 @@
 import { CheckIcon, PencilIcon, TrashIcon, Undo2Icon } from "lucide-vue-next";
 import { NPopconfirm, NInput, NDataTable } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
-import { v4 as uuidv4 } from "uuid";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { MiniActionButton } from "@/components/v2";
@@ -61,9 +60,7 @@ const emit = defineEmits<{
 
 const state = reactive<LocalState>({
   showAlgorithmDrawer: false,
-  pendingEditAlgorithm: Algorithm.fromPartial({
-    id: uuidv4(),
-  }),
+  pendingEditAlgorithm: Algorithm.fromPartial({}),
   processing: false,
 });
 
@@ -149,18 +146,12 @@ const columnList = computed(() => {
     render: (item, row) => {
       return (
         <div class="flex items-center space-x-1">
-          <h3>
-            {item.item.algorithm?.title ??
-              t("settings.sensitive-data.algorithms.default")}
-          </h3>
           {!props.readonly && (
             <MiniActionButton
               onClick={() => {
                 state.pendingEditAlgorithm =
                   item.item.algorithm ??
-                  Algorithm.fromPartial({
-                    id: uuidv4(),
-                  });
+                  Algorithm.fromPartial({});
                 state.pendingEditSemanticIndex = row;
                 state.showAlgorithmDrawer = true;
               }}

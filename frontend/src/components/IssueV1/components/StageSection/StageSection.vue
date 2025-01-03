@@ -39,8 +39,6 @@
           </div>
         </NScrollbar>
       </div>
-
-      <StageInfo class="px-4 py-2" />
     </template>
     <template v-else>
       <NoPermissionPlaceholder
@@ -60,7 +58,6 @@ import NoDataPlaceholder from "@/components/misc/NoDataPlaceholder.vue";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import { hasProjectPermissionV2 } from "@/utils";
 import StageCard from "./StageCard.vue";
-import StageInfo from "./StageInfo";
 
 const { isCreating, issue } = useIssueContext();
 

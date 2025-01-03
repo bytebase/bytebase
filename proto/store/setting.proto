@@ -244,13 +244,6 @@ message SemanticTypeSetting {
 }
 
 message Algorithm {
-  // id is the uuid for masking algorithm.
-  string id = 1;
-  // title is the title for masking algorithm.
-  string title = 2;
-  // description is the description for masking algorithm.
-  string description = 3;
-
   message FullMask {
     // substitution is the string used to replace the original value, the
     // max length of the string is 16 bytes.

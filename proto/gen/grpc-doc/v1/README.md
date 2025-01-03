@@ -4422,9 +4422,6 @@ ANY means approving any node will proceed.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | id is the uuid for masking algorithm. |
-| title | [string](#string) |  | title is the title for masking algorithm. |
-| description | [string](#string) |  | description is the description for masking algorithm. |
 | full_mask | [Algorithm.FullMask](#bytebase-v1-Algorithm-FullMask) |  |  |
 | range_mask | [Algorithm.RangeMask](#bytebase-v1-Algorithm-RangeMask) |  |  |
 | md5_mask | [Algorithm.MD5Mask](#bytebase-v1-Algorithm-MD5Mask) |  |  |
@@ -8282,6 +8279,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | auto_enable_backup | [bool](#bool) |  | Whether to automatically enable backup. |
 | skip_backup_errors | [bool](#bool) |  | Whether to skip backup errors and continue the data migration. |
 | postgres_database_tenant_mode | [bool](#bool) |  | Whether to enable the database tenant mode for PostgreSQL. If enabled, the issue will be created with the pre-appended &#34;set role &lt;db_owner&gt;&#34; statement. |
+| allow_self_approval | [bool](#bool) |  | Whether to allow the issue creator to self-approve the issue. |
 
 
 
