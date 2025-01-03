@@ -1,7 +1,6 @@
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
     <DrawerContent
-      :title="algorithm.title ? $t('common.edit') : $t('common.add')"
     >
       <div
         class="w-[40rem] max-w-[calc(100vw-5rem)] space-y-6 divide-y divide-block-border"
@@ -429,8 +428,6 @@ const maskingTypeList = computed((): MaskingTypeOption[] => [
 watch(
   () => props.algorithm,
   (algorithm) => {
-    state.title = algorithm.title;
-    state.description = algorithm.description;
     state.maskingType = getMaskingType(algorithm) ?? "full-mask";
     state.fullMask = algorithm.fullMask ?? FullMask.fromPartial({});
     state.rangeMask = algorithm.rangeMask ?? cloneDeep(defaultRangeMask.value);
@@ -442,9 +439,6 @@ watch(
 
 const maskingAlgorithm = computed((): Algorithm => {
   const result = Algorithm.fromPartial({
-    id: props.algorithm.id,
-    title: state.title,
-    description: state.description,
   });
 
   switch (state.maskingType) {

@@ -8647,15 +8647,6 @@ components:
         Algorithm:
             type: object
             properties:
-                id:
-                    type: string
-                    description: id is the uuid for masking algorithm.
-                title:
-                    type: string
-                    description: title is the title for masking algorithm.
-                description:
-                    type: string
-                    description: description is the description for masking algorithm.
                 fullMask:
                     $ref: '#/components/schemas/Algorithm_FullMask'
                 rangeMask:
