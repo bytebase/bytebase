@@ -149,8 +149,6 @@ const columnList = computed(() => {
     resizable: true,
     width: "minmax(min-content, auto)",
     render: (item, row) => {
-      console.log("item.item.algorithm");
-      console.log(item.item.algorithm);
       return (
         <div class="flex items-center space-x-1">
           <h3>
