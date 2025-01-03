@@ -88,8 +88,11 @@ export type MaskingType =
   | "inner-outer-mask";
 
 export const getMaskingType = (
-  algorithm: Algorithm
+  algorithm: Algorithm | undefined
 ): MaskingType | undefined => {
+  if (!algorithm) {
+    return;
+  }
   if (algorithm.fullMask) {
     return "full-mask";
   } else if (algorithm.rangeMask) {
