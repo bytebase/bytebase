@@ -1,34 +1,16 @@
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
     <DrawerContent
+      :title="
+        algorithm
+          ? $t('settings.sensitive-data.algorithms.edit')
+          : $t('settings.sensitive-data.algorithms.add')
+      "
     >
       <div
         class="w-[40rem] max-w-[calc(100vw-5rem)] space-y-6 divide-y divide-block-border"
       >
         <div class="space-y-6">
-          <div class="sm:col-span-2 sm:col-start-1">
-            <label for="title" class="textlabel">
-              {{ $t("settings.sensitive-data.algorithms.table.title") }}
-              <span class="text-red-600 mr-2">*</span>
-            </label>
-            <NInput
-              v-model:value="state.title"
-              :placeholder="t('settings.sensitive-data.algorithms.table.title')"
-              :disabled="state.processing || readonly"
-            />
-          </div>
-          <div class="sm:col-span-2 sm:col-start-1">
-            <label for="description" class="textlabel">
-              {{ $t("settings.sensitive-data.algorithms.table.description") }}
-            </label>
-            <NInput
-              v-model:value="state.description"
-              :placeholder="
-                t('settings.sensitive-data.algorithms.table.description')
-              "
-              :disabled="state.processing || readonly"
-            />
-          </div>
           <div class="w-full mb-6 space-y-1">
             <label for="masking-type" class="textlabel">
               {{ $t("settings.sensitive-data.algorithms.table.masking-type") }}
@@ -353,8 +335,6 @@ interface MaskingTypeOption extends RadioGridOption<MaskingType> {
 interface LocalState {
   processing: boolean;
   maskingType: MaskingType;
-  title: string;
-  description: string;
   fullMask: FullMask;
   rangeMask: RangeMask;
   md5Mask: MD5Mask;
@@ -364,7 +344,7 @@ interface LocalState {
 const props = defineProps<{
   show: boolean;
   readonly: boolean;
-  algorithm: Algorithm;
+  algorithm?: Algorithm;
 }>();
 
 defineEmits<{
@@ -396,8 +376,6 @@ const defaultInnerOuterMask = computed(() =>
 const state = reactive<LocalState>({
   processing: false,
   maskingType: "full-mask",
-  title: "",
-  description: "",
   fullMask: FullMask.fromPartial({}),
   rangeMask: cloneDeep(defaultRangeMask.value),
   md5Mask: MD5Mask.fromPartial({}),
@@ -429,17 +407,16 @@ watch(
   () => props.algorithm,
   (algorithm) => {
     state.maskingType = getMaskingType(algorithm) ?? "full-mask";
-    state.fullMask = algorithm.fullMask ?? FullMask.fromPartial({});
-    state.rangeMask = algorithm.rangeMask ?? cloneDeep(defaultRangeMask.value);
-    state.md5Mask = algorithm.md5Mask ?? MD5Mask.fromPartial({});
+    state.fullMask = algorithm?.fullMask ?? FullMask.fromPartial({});
+    state.rangeMask = algorithm?.rangeMask ?? cloneDeep(defaultRangeMask.value);
+    state.md5Mask = algorithm?.md5Mask ?? MD5Mask.fromPartial({});
     state.innerOuterMask =
-      algorithm.innerOuterMask ?? cloneDeep(defaultInnerOuterMask.value);
+      algorithm?.innerOuterMask ?? cloneDeep(defaultInnerOuterMask.value);
   }
 );
 
 const maskingAlgorithm = computed((): Algorithm => {
-  const result = Algorithm.fromPartial({
-  });
+  const result = Algorithm.fromPartial({});
 
   switch (state.maskingType) {
     case "full-mask":
@@ -489,10 +466,6 @@ const rangeMaskErrorMessage = computed(() => {
 });
 
 const errorMessage = computed(() => {
-  if (!state.title) {
-    return t("settings.sensitive-data.algorithms.error.title-required");
-  }
-
   switch (state.maskingType) {
     case "full-mask":
       if (!state.fullMask.substitution) {
@@ -531,10 +504,6 @@ const errorMessage = computed(() => {
 
 const isSubmitDisabled = computed(() => {
   if (props.readonly || state.processing) {
-    return true;
-  }
-
-  if (!state.title) {
     return true;
   }
 

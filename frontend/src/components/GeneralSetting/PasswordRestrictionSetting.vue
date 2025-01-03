@@ -1,9 +1,9 @@
 <template>
   <div class="mb-7 mt-4 lg:mt-0">
-    <p class="font-medium flex flex-row justify-start items-center mb-2">
-      <span class="mr-2">
-        {{ $t("settings.general.workspace.password-restriction.self") }}
-      </span>
+    <p
+      class="font-medium flex flex-row justify-start items-center mb-2 gap-x-2"
+    >
+      {{ $t("settings.general.workspace.password-restriction.self") }}
       <FeatureBadge feature="bb.feature.password-restriction" />
     </p>
     <div class="w-full flex flex-col space-y-3">

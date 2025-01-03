@@ -890,6 +890,8 @@
       },
       "algorithms": {
         "self": "Algoritmo De Enmascaramiento",
+        "add": "Agregar algoritmo",
+        "edit": "Editar algoritmo",
         "upload": "Subir algoritmo",
         "upload-label": "Puede cargar un archivo de algoritmo con formato JSON.",
         "override-title": "Anulación de datos de algoritmo",
