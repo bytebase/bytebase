@@ -344,7 +344,7 @@ const columns = computed(() => {
     },
     {
       key: "semantic-types",
-      title: t("settings.sensitive-data.semantic-types.self"),
+      title: t("settings.sensitive-data.semantic-types.table.semantic-type"),
       resizable: true,
       minWidth: 140,
       maxWidth: 320,
