@@ -51,7 +51,7 @@
 
           <div class="sm:col-span-1 sm:col-start-1">
             <label for="semantic-types" class="textlabel">
-              {{ $t("settings.sensitive-data.semantic-types.self") }}
+              {{ $t("settings.sensitive-data.semantic-types.table.semantic-type") }}
             </label>
             <div class="flex items-center gap-x-2 mt-3 text-sm">
               {{ columnSemanticType?.title }}

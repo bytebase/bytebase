@@ -141,11 +141,6 @@ export const useProjectSidebar = (
             type: "div",
           },
           {
-            title: t("project.masking-access.self"),
-            path: PROJECT_V1_ROUTE_MASKING_ACCESS,
-            type: "div",
-          },
-          {
             title: t("common.groups"),
             path: PROJECT_V1_ROUTE_DATABASE_GROUPS,
             type: "div",
@@ -240,6 +235,11 @@ export const useProjectSidebar = (
           {
             title: t("common.members"),
             path: PROJECT_V1_ROUTE_MEMBERS,
+            type: "div",
+          },
+          {
+            title: t("project.masking-access.self"),
+            path: PROJECT_V1_ROUTE_MASKING_ACCESS,
             type: "div",
           },
           {
