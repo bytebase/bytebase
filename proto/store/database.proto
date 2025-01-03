@@ -5,7 +5,6 @@ package bytebase.store;
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
-import "store/common.proto";
 
 option go_package = "generated-go/store";
 

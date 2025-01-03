@@ -943,6 +943,7 @@ paths:
                     type: string
                 - name: validateOnly
                   in: query
+                  description: If set to true, the request will be validated without actually creating the identity provider.
                   schema:
                     type: boolean
             requestBody:
