@@ -175,8 +175,7 @@ func (p *IdentityProvider) UserInfo(ctx context.Context, token *oauth2.Token, no
 // The common OIDC configuration response.
 // Refer to https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata.
 type OpenIDConfigurationResponse struct {
-	AuthorizationEndpoint string   `json:"authorization_endpoint"`
-	ScopesSupported       []string `json:"scopes_supported"`
+	AuthorizationEndpoint string `json:"authorization_endpoint"`
 }
 
 // openidConfigResponseCache is a cache for the OpenID Configuration Response.

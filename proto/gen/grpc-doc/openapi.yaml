@@ -941,6 +941,10 @@ paths:
                      are /[a-z][0-9]-/.
                   schema:
                     type: string
+                - name: validateOnly
+                  in: query
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:

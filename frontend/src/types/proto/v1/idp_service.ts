@@ -184,6 +184,7 @@ export interface CreateIdentityProviderRequest {
    * are /[a-z][0-9]-/.
    */
   identityProviderId: string;
+  validateOnly: boolean;
 }
 
 export interface UpdateIdentityProviderRequest {
@@ -571,7 +572,7 @@ export const ListIdentityProvidersResponse: MessageFns<ListIdentityProvidersResp
 };
 
 function createBaseCreateIdentityProviderRequest(): CreateIdentityProviderRequest {
-  return { identityProvider: undefined, identityProviderId: "" };
+  return { identityProvider: undefined, identityProviderId: "", validateOnly: false };
 }
 
 export const CreateIdentityProviderRequest: MessageFns<CreateIdentityProviderRequest> = {
@@ -581,6 +582,9 @@ export const CreateIdentityProviderRequest: MessageFns<CreateIdentityProviderReq
     }
     if (message.identityProviderId !== "") {
       writer.uint32(18).string(message.identityProviderId);
+    }
+    if (message.validateOnly !== false) {
+      writer.uint32(24).bool(message.validateOnly);
     }
     return writer;
   },
@@ -608,6 +612,14 @@ export const CreateIdentityProviderRequest: MessageFns<CreateIdentityProviderReq
           message.identityProviderId = reader.string();
           continue;
         }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.validateOnly = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -621,6 +633,7 @@ export const CreateIdentityProviderRequest: MessageFns<CreateIdentityProviderReq
     return {
       identityProvider: isSet(object.identityProvider) ? IdentityProvider.fromJSON(object.identityProvider) : undefined,
       identityProviderId: isSet(object.identityProviderId) ? globalThis.String(object.identityProviderId) : "",
+      validateOnly: isSet(object.validateOnly) ? globalThis.Boolean(object.validateOnly) : false,
     };
   },
 
@@ -631,6 +644,9 @@ export const CreateIdentityProviderRequest: MessageFns<CreateIdentityProviderReq
     }
     if (message.identityProviderId !== "") {
       obj.identityProviderId = message.identityProviderId;
+    }
+    if (message.validateOnly !== false) {
+      obj.validateOnly = message.validateOnly;
     }
     return obj;
   },
@@ -644,6 +660,7 @@ export const CreateIdentityProviderRequest: MessageFns<CreateIdentityProviderReq
       ? IdentityProvider.fromPartial(object.identityProvider)
       : undefined;
     message.identityProviderId = object.identityProviderId ?? "";
+    message.validateOnly = object.validateOnly ?? false;
     return message;
   },
 };
