@@ -1299,7 +1299,6 @@
       },
       "statement-is-too-large": "現在のステートメント サイズが 1MB を超えているため、SQL チェックはスキップされます。",
       "back-to-edit": "編集に戻る",
-      "continue-anyway": "まだ続く",
       "sql-review-violations": "SQL監査ルール違反"
     },
     "error": {

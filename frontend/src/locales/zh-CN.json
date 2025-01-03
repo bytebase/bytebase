@@ -1299,7 +1299,6 @@
       },
       "statement-is-too-large": "当前语句大小超过 2MB，将跳过 SQL 检查。",
       "back-to-edit": "返回编辑",
-      "continue-anyway": "仍然继续",
       "sql-review-violations": "违反的 SQL 审核规则"
     },
     "error": {

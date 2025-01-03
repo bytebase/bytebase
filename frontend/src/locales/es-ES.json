@@ -1299,7 +1299,6 @@
       },
       "statement-is-too-large": "Como el tamaño de la declaración actual supera 2MB, se omitirá la comprobación de SQL.",
       "back-to-edit": "Volver a editar",
-      "continue-anyway": "De todas maneras, continúe",
       "sql-review-violations": "Infracciones de revisión de SQL"
     },
     "error": {

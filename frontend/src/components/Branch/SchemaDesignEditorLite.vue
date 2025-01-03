@@ -138,7 +138,7 @@ const generateDDL = async (silent: boolean) => {
   applyMetadataEdit(database.value, editing);
 
   const result = await generateDiffDDL(database.value, source, editing);
-  if (result.fatal && !silent) {
+  if (result.errors.length > 0 && !silent) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -166,7 +166,7 @@ const fetchRawSQLPreview = async () => {
   if (result.errors.length > 0) {
     pushNotification({
       module: "bytebase",
-      style: result.fatal ? "CRITICAL" : "WARN",
+      style: "CRITICAL",
       title: t("common.error"),
       description: result.errors.join("\n"),
     });
