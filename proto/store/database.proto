@@ -5,6 +5,7 @@ package bytebase.store;
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
+import "store/common.proto";
 
 option go_package = "generated-go/store";
 
@@ -747,6 +748,13 @@ message ColumnCatalog {
   string classification_id = 4;
 
   optional ObjectSchema object_schema = 5;
+
+  // Deprecated.
+  MaskingLevel masking_level = 6;
+  // Deprecated.
+  string full_masking_algorithm_id = 7;
+  // Deprecated.
+  string partial_masking_algorithm_id = 8;
 }
 
 message ObjectSchema {
