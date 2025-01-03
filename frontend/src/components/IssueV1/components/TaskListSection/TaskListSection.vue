@@ -1,5 +1,5 @@
 <template>
-  <div v-if="shouldShowTaskBar" class="relative">
+  <div class="relative">
     <div
       ref="taskBar"
       class="task-list gap-2 px-4 py-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 overflow-y-auto"
@@ -25,17 +25,11 @@ import TaskCard from "./TaskCard.vue";
 // 3 * lines of cards + 2 * top and bottom padding + 2 * horizontal gaps + jitter
 const MAX_LIST_HEIGHT = 207;
 
-const { issue, selectedStage } = useIssueContext();
+const { selectedStage } = useIssueContext();
 const taskBar = ref<HTMLDivElement>();
 const taskBarScrollState = useVerticalScrollState(taskBar, MAX_LIST_HEIGHT);
 
-const rollout = computed(() => issue.value.rolloutEntity);
 const taskList = computed(() => selectedStage.value.tasks);
-
-// Show the task bar when some of the stages have more than one tasks.
-const shouldShowTaskBar = computed(() => {
-  return rollout.value?.stages.some((stage) => stage.tasks.length > 1);
-});
 </script>
 
 <style scoped lang="postcss">
