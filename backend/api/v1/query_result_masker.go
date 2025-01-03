@@ -209,11 +209,12 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 		}
 	}
 
-	maskingAlgorithm, err := m.evaluateMaskingAlgorithmOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, project.DataClassificationConfigID, config, maskingExceptionContainsCurrentPrincipal)
+	semanticTypeID, err := m.evaluateSemanticTypeOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, project.DataClassificationConfigID, config, maskingExceptionContainsCurrentPrincipal)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", sourceColumn.Database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column)
 	}
-	return getMaskerByMaskingAlgorithmAndLevel(maskingAlgorithm), nil
+	semanticType := m.semanticTypesMap[semanticTypeID]
+	return getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm()), nil
 }
 
 func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, instanceID string, sourceColumn *base.ColumnResource) (*storepb.ColumnMetadata, *storepb.ColumnCatalog, error) {
