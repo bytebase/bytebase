@@ -27,13 +27,13 @@
         {{ $t("settings.sso.create") }}
       </NButton>
     </div>
-
     <NDataTable
       key="sso-table"
       :data="identityProviderList"
       :columns="columnList"
       :striped="true"
       :bordered="true"
+      :loading="state.isLoading"
     />
   </div>
 
@@ -66,6 +66,7 @@ import {
 } from "@/utils";
 
 interface LocalState {
+  isLoading: boolean;
   showFeatureModal: boolean;
   showCreatingSSOModal: boolean;
   selectedIdentityProviderName: string;
@@ -79,6 +80,7 @@ const props = defineProps<{
 const { t } = useI18n();
 const router = useRouter();
 const state = reactive<LocalState>({
+  isLoading: true,
   showFeatureModal: false,
   showCreatingSSOModal: false,
   selectedIdentityProviderName: "",
@@ -100,6 +102,7 @@ const allowGetSSO = computed(() => {
 
 onMounted(() => {
   identityProviderStore.fetchIdentityProviderList();
+  state.isLoading = false;
 });
 
 const handleCreateSSO = () => {
