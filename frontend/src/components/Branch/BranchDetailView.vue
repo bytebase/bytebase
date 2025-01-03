@@ -438,7 +438,7 @@ const handleApplyToDatabase = async (databaseNameList: string[]) => {
     /* !allowEmptyDiffDDLWithConfigChange */ false
   );
 
-  if (result.fatal) {
+  if (result.errors.length > 0) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
