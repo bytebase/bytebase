@@ -129,7 +129,7 @@ const onClickTask = (task: Task) => {
 
 <style scoped lang="postcss">
 .task.selected {
-  @apply border-info;
+  @apply border-info bg-info bg-opacity-5;
 }
 .task .name {
   @apply whitespace-pre-wrap break-all;

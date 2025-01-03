@@ -9,15 +9,13 @@
 
     <div class="text" @click="handleClickStage">
       <div
-        class="text-sm min-w-32 lg:min-w-fit with-underline space-x-1 whitespace-nowrap"
+        class="text-sm min-w-32 lg:min-w-fit with-underline whitespace-nowrap"
       >
         <heroicons:arrow-small-right
           v-if="isActiveStage"
-          class="w-5 h-5 inline-block mb-0.5"
+          class="w-5 h-5 inline-block mb-0.5 mr-1"
         />
-        <span>{{ $t("common.stage") }}</span>
-        <span>-</span>
-        <span>{{ stageTitle }}</span>
+        <span>{{ $t("common.stage") }}</span> - <span>{{ stageTitle }}</span>
       </div>
       <div class="text-xs flex gap-1 flex-row items-center">
         <div class="whitespace-no-wrap with-underline">
@@ -188,7 +186,7 @@ const handleClickStage = () => {
 
 <style scoped lang="postcss">
 .stage {
-  @apply cursor-default flex items-center justify-start w-full text-sm font-medium relative;
+  @apply cursor-default flex items-center justify-start w-full text-sm relative;
   @apply lg:flex-1;
 }
 .stage.selected .text .with-underline {
