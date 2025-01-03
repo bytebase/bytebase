@@ -55,7 +55,7 @@
     </NPopover>
 
     <SQLCheckPanel
-      v-if="database && filteredAdvices && showDetailPanel"
+      v-if="filteredAdvices && showDetailPanel"
       :database="database"
       :advices="filteredAdvices"
       :confirm="confirmDialog"
@@ -99,7 +99,6 @@ const props = withDefaults(
     getStatement: () => Promise<{
       errors: string[];
       statement: string;
-      fatal?: boolean;
     }>;
     database: ComposedDatabase;
     databaseMetadata?: DatabaseMetadata;
@@ -194,14 +193,9 @@ const handleButtonClick = async () => {
 
   if (hasError.value) {
     const d = defer<boolean>();
-    confirmDialog.value = d;
     d.promise.finally(onPanelClose);
-
     showDetailPanel.value = true;
-
     return d.promise;
-  } else {
-    confirmDialog.value = undefined;
   }
 };
 
@@ -226,9 +220,8 @@ const runChecks = async () => {
   if (!rawAdvices.value) {
     rawAdvices.value = [];
   }
-  const { statement, errors, fatal } = await props.getStatement();
-  allowForceContinue.value = !fatal;
-
+  const { statement, errors } = await props.getStatement();
+  allowForceContinue.value = errors.length === 0;
   if (new Blob([statement]).size > SKIP_CHECK_THRESHOLD) {
     return handleErrors([t("issue.sql-check.statement-is-too-large")]);
   }

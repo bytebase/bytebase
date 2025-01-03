@@ -1,12 +1,10 @@
 <template>
   <BBModal
     :title="overrideTitle ?? $t('task.check-result.title-general')"
-    :show-close="!confirm"
-    :close-on-esc="!confirm"
     class="!w-[56rem]"
     header-class="whitespace-pre-wrap break-all gap-x-1"
     container-class="!pt-0 -mt-px"
-    @close="$emit('close')"
+    @close="onClose"
   >
     <PlanCheckRunDetail
       :plan-check-run="planCheckRun"
@@ -22,7 +20,7 @@
       v-if="confirm"
       class="flex flex-row justify-end items-center gap-x-3 mt-3"
     >
-      <NButton @click="confirm!.resolve(false)">
+      <NButton @click="onClose">
         {{ $t("issue.sql-check.back-to-edit") }}
       </NButton>
       <NButton
@@ -30,7 +28,7 @@
         type="primary"
         @click="confirm!.resolve(true)"
       >
-        {{ $t("issue.sql-check.continue-anyway") }}
+        {{ $t("common.continue-anyway") }}
       </NButton>
     </div>
   </BBModal>
@@ -72,7 +70,7 @@ const props = withDefaults(
   }
 );
 
-defineEmits<{
+const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
@@ -143,4 +141,9 @@ const planCheckRun = computed((): PlanCheckRun => {
     }),
   });
 });
+
+const onClose = () => {
+  props.confirm?.resolve(false);
+  emit("close");
+};
 </script>

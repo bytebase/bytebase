@@ -1299,7 +1299,6 @@
       },
       "statement-is-too-large": "As the current statement size exceeds 2MB, the SQL check will be skipped.",
       "back-to-edit": "Back to edit",
-      "continue-anyway": "Continue anyway",
       "sql-review-violations": "SQL Review Violations"
     },
     "error": {

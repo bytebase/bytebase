@@ -22,6 +22,7 @@ import {
   extractUserResourceName,
   hasProjectPermissionV2,
 } from "@/utils";
+import { DEFAULT_PAGE_SIZE } from "../common";
 
 export interface ComposeIssueConfig {
   withPlan?: boolean;
@@ -79,7 +80,7 @@ export const composeIssue = async (
     if (hasProjectPermissionV2(projectEntity, "bb.taskRuns.list")) {
       const { taskRuns } = await rolloutServiceClient.listTaskRuns({
         parent: `${issue.rollout}/stages/-/tasks/-`,
-        pageSize: 1000, // MAX
+        pageSize: DEFAULT_PAGE_SIZE,
       });
       const composedTaskRuns: ComposedTaskRun[] = [];
       for (const taskRun of taskRuns) {
