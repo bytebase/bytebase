@@ -7241,6 +7241,7 @@ The group&#39;s `name` field is used to identify the group to update. Format: gr
 | identity_provider_id | [string](#string) |  | The ID to use for the identity provider, which will become the final component of the identity provider&#39;s resource name.
 
 This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+| validate_only | [bool](#bool) |  |  |
 
 
 
