@@ -196,7 +196,7 @@ func mergeTableConfig(target, baseline, current *storepb.TableCatalog) *storepb.
 		delete(currentMap, tableName)
 	}
 
-	result := &storepb.TableCatalog{Name: current.Name, ClassificationId: current.ClassificationId}
+	result := &storepb.TableCatalog{Name: current.Name, Classification: current.Classification}
 	lastUpdater, lastUpdateTime, sourceBranch := getLastUpdaterAndSourceBranch(target.GetUpdater(), target.GetUpdateTime(), target.GetSourceBranch(), baseline.GetUpdater(), current.GetUpdater(), current.GetUpdateTime(), current.GetSourceBranch())
 	result.Updater = lastUpdater
 	result.UpdateTime = lastUpdateTime
@@ -221,11 +221,11 @@ func mergeColumnConfig(target, baseline, current *storepb.ColumnCatalog) *storep
 	// Current is never nil.
 	// If baseline = A, target = B, current = C, we should set merged value to B.
 	// If baseline = A, target = A, current = B, we should set merged value to B since there is no change intentially.
-	if target.SemanticTypeId != baseline.SemanticTypeId {
-		current.SemanticTypeId = target.SemanticTypeId
+	if target.SemanticType != baseline.SemanticType {
+		current.SemanticType = target.SemanticType
 	}
-	if target.ClassificationId != baseline.ClassificationId {
-		current.ClassificationId = target.ClassificationId
+	if target.Classification != baseline.Classification {
+		current.Classification = target.Classification
 	}
 
 	if !reflect.DeepEqual(target.Labels, baseline.Labels) {

@@ -130,7 +130,7 @@ const dataTableColumns = computed(() => {
 
         return (
           <ClassificationCell
-            classification={columnCatalog.classificationId}
+            classification={columnCatalog.classification}
             classificationConfig={classificationConfig.value}
             readonly={true}
           />

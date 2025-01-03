@@ -285,7 +285,7 @@ const tableCatalog = computed(() => {
 
 const tableClassificationId = computed({
   get() {
-    return tableCatalog.value?.classificationId;
+    return tableCatalog.value?.classification;
   },
   set(id) {
     const { schema, table } = editing.value;
@@ -307,11 +307,11 @@ const tableClassificationId = computed({
     if (!tableCatalog) {
       tableCatalog = TableCatalog.fromPartial({
         name: table.name,
-        classificationId: id,
+        classification: id,
       });
       schemaCatalog.tables.push(tableCatalog);
     }
-    tableCatalog.classificationId = id ?? "";
+    tableCatalog.classification = id ?? "";
   },
 });
 

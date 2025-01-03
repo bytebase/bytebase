@@ -291,8 +291,8 @@ func TestApplyUpdateInfoDiffRootNode(t *testing.T) {
 								UpdateTime: time1,
 								Columns: []*storepb.ColumnCatalog{
 									{
-										Name:             "t",
-										ClassificationId: "1-1-1",
+										Name:           "t",
+										Classification: "1-1-1",
 									},
 								},
 							},
@@ -317,8 +317,8 @@ func TestApplyUpdateInfoDiffRootNode(t *testing.T) {
 								SourceBranch: "feat/01",
 								Columns: []*storepb.ColumnCatalog{
 									{
-										Name:             "t",
-										ClassificationId: "1-1-1",
+										Name:           "t",
+										Classification: "1-1-1",
 									},
 								},
 							},

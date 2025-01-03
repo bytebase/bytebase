@@ -25,11 +25,11 @@ export const useSemanticType = ({
 
   const semanticType = computed(() => {
     const columnCatalog = getColumnCatalog(databaseCatalog.value, schema, table, column)
-    if (!columnCatalog.semanticTypeId) {
+    if (!columnCatalog.semanticType) {
       return;
     }
     return semanticTypeList.value.find(
-      (data) => data.id === columnCatalog.semanticTypeId
+      (data) => data.id === columnCatalog.semanticType
     );
   });
 

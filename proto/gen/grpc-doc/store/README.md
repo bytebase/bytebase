@@ -926,9 +926,9 @@ Metadata about the request.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a column. |
-| semantic_type_id | [string](#string) |  |  |
+| semantic_type | [string](#string) |  |  |
 | labels | [ColumnCatalog.LabelsEntry](#bytebase-store-ColumnCatalog-LabelsEntry) | repeated | The user labels for a column. |
-| classification_id | [string](#string) |  |  |
+| classification | [string](#string) |  |  |
 | object_schema | [ObjectSchema](#bytebase-store-ObjectSchema) | optional |  |
 | masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  | Deprecated. |
 | full_masking_algorithm_id | [string](#string) |  | Deprecated. |
@@ -1314,6 +1314,7 @@ MaterializedViewMetadata is the metadata for materialized views.
 | type | [ObjectSchema.Type](#bytebase-store-ObjectSchema-Type) |  |  |
 | struct_kind | [ObjectSchema.StructKind](#bytebase-store-ObjectSchema-StructKind) |  |  |
 | array_kind | [ObjectSchema.ArrayKind](#bytebase-store-ObjectSchema-ArrayKind) |  |  |
+| semantic_type | [string](#string) |  |  |
 
 
 
@@ -1560,7 +1561,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | name | [string](#string) |  | The name is the name of a table. |
 | columns | [ColumnCatalog](#bytebase-store-ColumnCatalog) | repeated | The column_configs is the ordered list of configs for columns in a table. |
 | object_schema | [ObjectSchema](#bytebase-store-ObjectSchema) | optional |  |
-| classification_id | [string](#string) |  |  |
+| classification | [string](#string) |  |  |
 | updater | [string](#string) |  | The last updater of the table in branch. Format: users/{userUID}. |
 | source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the table is updated in branch. |
