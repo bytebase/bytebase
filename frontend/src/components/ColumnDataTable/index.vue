@@ -139,7 +139,7 @@ const columns = computed(() => {
     },
     {
       key: "semanticType",
-      title: t("settings.sensitive-data.semantic-types.self"),
+      title: t("settings.sensitive-data.semantic-types.table.semantic-type"),
       hide: !showSensitiveColumn.value,
       resizable: true,
       width: 140,
