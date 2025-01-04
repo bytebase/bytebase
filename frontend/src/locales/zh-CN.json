@@ -817,7 +817,7 @@
       "never-expires": "无过期时间",
       "global-rules": {
         "self": "全局脱敏规则",
-        "description": "全局规则用于批量指定脱敏程度，比如所有列名是 email 的字段都被设置为半脱敏。",
+        "description": "使用全局规则批量应用屏蔽，例如所有名为“电子邮件”的列将使用特定的语义类型进行屏蔽并应用屏蔽算法。",
         "condition-order": "条件序列",
         "re-order": "排序",
         "delete-rule-tip": "删除这条规则？",

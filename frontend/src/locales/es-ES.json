@@ -817,7 +817,7 @@
       "never-expires": "Nunca expira",
       "global-rules": {
         "self": "Regla de enmascaramiento global",
-        "description": "Utilice la regla global para aplicar niveles de enmascaramiento por lotes, p. Todas las columnas denominadas \"correo electrónico\" se enmascararán con el nivel \"Parcial\".",
+        "description": "Utilice una regla global para aplicar el enmascaramiento en lote, por ejemplo, todas las columnas denominadas \"correo electrónico\" se enmascararán con el tipo semántico específico y se aplicará el algoritmo de enmascaramiento.",
         "condition-order": "Orden de condición",
         "re-order": "Reordenar",
         "delete-rule-tip": "¿Eliminar esta regla?",

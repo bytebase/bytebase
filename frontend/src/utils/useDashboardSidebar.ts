@@ -27,6 +27,7 @@ import {
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
   WORKSPACE_ROUTE_RISK_CENTER,
   WORKSPACE_ROUTE_DATA_MASKING,
+  WORKSPACE_ROUTE_SEMANTIC_TYPES,
   WORKSPACE_ROUTE_DATA_CLASSIFICATION,
   WORKSPACE_ROUTE_AUDIT_LOG,
   WORKSPACE_ROUTE_GITOPS,
@@ -271,6 +272,11 @@ export const useDashboardSidebar = () => {
           {
             title: t("settings.sidebar.data-masking"),
             name: WORKSPACE_ROUTE_DATA_MASKING,
+            type: "route",
+          },
+          {
+            title: t("settings.sensitive-data.semantic-types.self"),
+            name: WORKSPACE_ROUTE_SEMANTIC_TYPES,
             type: "route",
           },
         ],
