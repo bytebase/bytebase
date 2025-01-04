@@ -212,8 +212,8 @@ const removeSensitiveColumn = async (sensitiveColumn: MaskData) => {
     table: sensitiveColumn.table,
     column: sensitiveColumn.column,
     columnCatalog: {
-      classificationId: "",
-      semanticTypeId: "",
+      classification: "",
+      semanticType: "",
     },
   });
   await removeMaskingExceptions(sensitiveColumn);
