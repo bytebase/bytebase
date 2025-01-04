@@ -297,7 +297,8 @@
     "finish": "仕上げる",
     "title": "タイトル",
     "hide": "隠れる",
-    "text-wrap": "テキストの折り返し"
+    "text-wrap": "テキストの折り返し",
+    "catalog": "カタログ"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -809,9 +810,7 @@
       }
     },
     "sensitive-data": {
-      "description": "以下のカラムは明示的にマスキングレベルが割り当てられており、グローバルマスキングルールよりも優先されます。",
       "remove-sensitive-column-tips": "このデータ列の感度を下げなくなりますか?",
-      "sensitive-column-list": "個別マスクカラム",
       "global-masking-rule": "グローバルマスキングルール",
       "grant-access": "許可されたアクセス",
       "never-expires": "有効期限なし",
