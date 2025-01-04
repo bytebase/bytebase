@@ -297,7 +297,8 @@
     "finish": "Finalizar",
     "title": "Título",
     "hide": "Esconder",
-    "text-wrap": "Ajuste de texto"
+    "text-wrap": "Ajuste de texto",
+    "catalog": "Catálogo"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -809,9 +810,7 @@
       }
     },
     "sensitive-data": {
-      "description": "A las siguientes columnas se les asignan niveles de enmascaramiento explícitamente y tienen prioridad sobre la regla de enmascaramiento global.",
       "remove-sensitive-column-tips": "¿Exponer esta columna?",
-      "sensitive-column-list": "Columnas Explícitas Enmascaradas",
       "global-masking-rule": "Regla De Enmascaramiento Global",
       "grant-access": "Autorizará el acceso",
       "never-expires": "Nunca expira",

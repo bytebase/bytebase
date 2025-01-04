@@ -297,7 +297,8 @@
     "finish": "Finish",
     "title": "Title",
     "hide": "Hide",
-    "text-wrap": "Text wrap"
+    "text-wrap": "Text wrap",
+    "catalog": "Catalog"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -809,9 +810,7 @@
       }
     },
     "sensitive-data": {
-      "description": "Following columns are explicitly assigned masking levels and take predence over the global masking rule.",
       "remove-sensitive-column-tips": "Expose this column?",
-      "sensitive-column-list": "Explicit Masked Columns",
       "global-masking-rule": "Global Masking Rule",
       "grant-access": "Grant Access",
       "never-expires": "Never expires",

@@ -4,17 +4,6 @@
       v-if="hasSensitiveDataFeature && isMissingLicenseForInstance"
       feature="bb.feature.sensitive-data"
     />
-    <div class="textinfolabel">
-      {{ $t("settings.sensitive-data.description") }}
-      <a
-        href="https://www.bytebase.com/docs/security/mask-data?source=console"
-        class="normal-link inline-flex flex-row items-center"
-        target="_blank"
-      >
-        {{ $t("common.learn-more") }}
-        <heroicons-outline:external-link class="w-4 h-4" />
-      </a>
-    </div>
     <div
       class="flex flex-col space-x-2 lg:flex-row gap-y-4 justify-between items-end lg:items-center"
     >
