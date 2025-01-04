@@ -3431,7 +3431,7 @@
     },
     "risk": {
       "self": "Risk",
-      "risk-center": "Risk Center",
+      "risks": "Risks",
       "description": "Risk Center defines the risk levels for different database operations under different conditions. And risk levels determine the corresponding custom approval flows."
     },
     "workflow-center": {
