@@ -48,7 +48,7 @@
       :show-operation="hasPermission && hasSensitiveDataFeature"
       :column-list="filteredColumnList"
       :checked-column-index-list="checkedColumnIndexList"
-      @click="onRowClick"
+      @delete="onColumnRemove"
       @checked:update="updateCheckedColumnList($event)"
     />
 
@@ -106,7 +106,6 @@
 import { ShieldCheckIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
-import { useI18n } from "vue-i18n";
 import { updateColumnConfig } from "@/components/ColumnDataTable/utils";
 import {
   FeatureModal,
@@ -121,7 +120,6 @@ import { isCurrentColumnException } from "@/components/SensitiveData/utils";
 import { SearchBox } from "@/components/v2";
 import {
   featureToRef,
-  pushNotification,
   usePolicyV1Store,
   useSubscriptionV1Store,
   useDatabaseCatalog,
@@ -163,7 +161,6 @@ const hasPermission = computed(() => {
   );
 });
 
-const { t } = useI18n();
 const policyStore = usePolicyV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 
@@ -225,7 +222,10 @@ const removeSensitiveColumn = async (sensitiveColumn: MaskData) => {
     schema: sensitiveColumn.schema,
     table: sensitiveColumn.table,
     column: sensitiveColumn.column,
-    columnCatalog: {},
+    columnCatalog: {
+      classificationId: "",
+      semanticTypeId: "",
+    },
   });
   await removeMaskingExceptions(sensitiveColumn);
 };
@@ -261,31 +261,6 @@ const removeMaskingExceptions = async (sensitiveColumn: MaskData) => {
 
 const onColumnRemove = async (column: MaskData) => {
   await removeSensitiveColumn(column);
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("common.updated"),
-  });
-};
-
-const onRowClick = async (
-  item: MaskData,
-  row: number,
-  action: "VIEW" | "DELETE" | "EDIT"
-) => {
-  switch (action) {
-    case "DELETE":
-      await onColumnRemove(item);
-      break;
-    case "EDIT":
-      state.pendingGrantAccessColumn = [item];
-      if (isMissingLicenseForInstance.value) {
-        state.showFeatureModal = true;
-        return;
-      }
-      state.showSensitiveColumnDrawer = true;
-      break;
-  }
 };
 
 const onGrantAccessButtonClick = () => {

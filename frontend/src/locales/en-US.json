@@ -817,7 +817,7 @@
       "never-expires": "Never expires",
       "global-rules": {
         "self": "Global Masking Rule",
-        "description": "Use global rule to apply masking levels in batch, e.g. all columns named as \"email\" will be masked with \"Partial\" level.",
+        "description": "Use global rule to apply masking in batch, e.g. all columns named as \"email\" will be masked with the specific semantic type and appy the masking algorithm.",
         "condition-order": "Condition order",
         "re-order": "Re-order",
         "delete-rule-tip": "Delete this rule?",
