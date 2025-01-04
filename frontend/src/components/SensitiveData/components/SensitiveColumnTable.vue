@@ -94,6 +94,22 @@ const checkedItemKeys = computed(() => {
 const dataTableColumns = computed(() => {
   const columns: DataTableColumn<MaskData>[] = [
     {
+      key: "table",
+      title: t("common.table"),
+      resizable: true,
+      render(item) {
+        return item.schema ? `${item.schema}.${item.table}` : item.table;
+      },
+    },
+    {
+      key: "column",
+      title: t("database.column"),
+      resizable: true,
+      render(item) {
+        return item.column;
+      },
+    },
+    {
       key: "semantic-type",
       title: t("settings.sensitive-data.semantic-types.table.semantic-type"),
       width: "12rem",
@@ -129,22 +145,6 @@ const dataTableColumns = computed(() => {
             onApply={(id: string) => onClassificationIdApply(item, id)}
           />
         );
-      },
-    },
-    {
-      key: "table",
-      title: t("common.table"),
-      resizable: true,
-      render(item) {
-        return item.schema ? `${item.schema}.${item.table}` : item.table;
-      },
-    },
-    {
-      key: "column",
-      title: t("database.column"),
-      resizable: true,
-      render(item) {
-        return item.column;
       },
     },
   ];

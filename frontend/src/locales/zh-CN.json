@@ -297,7 +297,8 @@
     "finish": "完成",
     "title": "标题",
     "hide": "隐藏",
-    "text-wrap": "文本折行"
+    "text-wrap": "文本折行",
+    "catalog": "Catalog"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -809,9 +810,7 @@
       }
     },
     "sensitive-data": {
-      "description": "以下脱敏列被显示地标记了脱敏等级，优先级高于全局脱敏规则。",
       "remove-sensitive-column-tips": "不再对此列数据脱敏？",
-      "sensitive-column-list": "被显式标记的脱敏列",
       "global-masking-rule": "全局脱敏规则",
       "grant-access": "授权访问",
       "never-expires": "无过期时间",
