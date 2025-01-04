@@ -106,7 +106,6 @@
 import { ShieldCheckIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
-import { useI18n } from "vue-i18n";
 import { updateColumnConfig } from "@/components/ColumnDataTable/utils";
 import {
   FeatureModal,
@@ -121,7 +120,6 @@ import { isCurrentColumnException } from "@/components/SensitiveData/utils";
 import { SearchBox } from "@/components/v2";
 import {
   featureToRef,
-  pushNotification,
   usePolicyV1Store,
   useSubscriptionV1Store,
   useDatabaseCatalog,
@@ -163,7 +161,6 @@ const hasPermission = computed(() => {
   );
 });
 
-const { t } = useI18n();
 const policyStore = usePolicyV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 
