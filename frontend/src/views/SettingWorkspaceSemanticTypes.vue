@@ -4,18 +4,14 @@
       v-if="!hasSensitiveDataFeature"
       feature="bb.feature.sensitive-data"
     />
-    <GlobalMaskingRulesView :embedded="embedded" />
+    <SemanticTypesView />
   </div>
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { FeatureAttention } from "@/components/FeatureGuard";
-import { GlobalMaskingRulesView } from "@/components/SensitiveData";
+import { SemanticTypesView } from "@/components/SensitiveData";
 import { featureToRef } from "@/store";
-
-defineProps<{
-  embedded?: boolean;
-}>();
 
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 </script>
