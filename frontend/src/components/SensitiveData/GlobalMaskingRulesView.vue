@@ -1,11 +1,5 @@
 <template>
   <div class="w-full space-y-4">
-    <div class="textinfolabel">
-      {{ $t("settings.sensitive-data.global-rules.description") }}
-      <LearnMoreLink
-        url="https://www.bytebase.com/docs/security/mask-data?source=console"
-      />
-    </div>
     <div class="flex flex-row items-center justify-end">
       <div v-if="state.reorderRules" class="flex items-center gap-x-2">
         <NButton
@@ -55,6 +49,12 @@
           {{ $t("common.add") }}
         </NButton>
       </div>
+    </div>
+    <div class="textinfolabel">
+      {{ $t("settings.sensitive-data.global-rules.description") }}
+      <LearnMoreLink
+        url="https://www.bytebase.com/docs/security/mask-data?source=console"
+      />
     </div>
     <NoDataPlaceholder v-if="state.maskingRuleItemList.length === 0" />
     <div

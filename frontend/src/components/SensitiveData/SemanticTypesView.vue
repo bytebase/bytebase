@@ -1,8 +1,5 @@
 <template>
   <div class="w-full space-y-4">
-    <div class="textinfolabel">
-      {{ $t("settings.sensitive-data.semantic-types.label") }}
-    </div>
     <div class="flex items-center justify-end space-x-2">
       <NButton
         :disabled="!hasPermission || !hasSensitiveDataFeature"
@@ -20,6 +17,9 @@
         </template>
         {{ $t("common.add") }}
       </NButton>
+    </div>
+    <div class="textinfolabel">
+      {{ $t("settings.sensitive-data.semantic-types.label") }}
     </div>
     <SemanticTypesTable
       v-if="state.semanticItemList.length > 0"

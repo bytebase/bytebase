@@ -1,20 +1,16 @@
 <template>
-  <div class="flex items-center">
-    {{ semanticType?.title }}
-    <button
+  <div class="flex items-center gap-x-1">
+    <span v-if="semanticType?.title">{{ semanticType?.title }}</span>
+    <span v-else class="text-control-placeholder italic"> N/A </span>
+    <MiniActionButton
       v-if="!readonly && semanticType"
-      class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
-      @click.prevent="onSemanticTypeApply('')"
+      @click.prevent="() => onSemanticTypeApply('')"
     >
-      <heroicons-outline:x class="w-4 h-4" />
-    </button>
-    <button
-      v-if="!readonly"
-      class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
-      @click.prevent="openSemanticTypeDrawer()"
-    >
-      <heroicons-outline:pencil class="w-4 h-4" />
-    </button>
+      <XIcon class="w-3 h-3" />
+    </MiniActionButton>
+    <MiniActionButton v-if="!readonly" @click.prevent="openSemanticTypeDrawer">
+      <PencilIcon class="w-3 h-3" />
+    </MiniActionButton>
   </div>
 
   <FeatureModal
@@ -34,9 +30,10 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-import { reactive } from "vue";
+import { PencilIcon, XIcon } from "lucide-vue-next";
+import { computed, reactive } from "vue";
 import { useSemanticType } from "@/components/SensitiveData/useSemanticType";
+import { MiniActionButton } from "@/components/v2";
 import { useSubscriptionV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import FeatureModal from "../FeatureGuard/FeatureModal.vue";

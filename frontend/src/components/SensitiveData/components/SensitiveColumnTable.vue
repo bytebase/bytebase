@@ -3,7 +3,6 @@
     key="sensitive-column-table"
     :columns="dataTableColumns"
     :data="columnList"
-    :row-props="rowProps"
     :row-key="itemKey"
     :checked-row-keys="checkedItemKeys"
     size="small"
@@ -12,13 +11,14 @@
 </template>
 
 <script lang="tsx" setup>
-import { TrashIcon, PencilIcon } from "lucide-vue-next";
+import { TrashIcon } from "lucide-vue-next";
 import { NDataTable, NPopconfirm, type DataTableColumn } from "naive-ui";
 import { computed, h, ref, watch } from "vue";
 import { withModifiers } from "vue";
 import { useI18n } from "vue-i18n";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import SemanticTypeCell from "@/components/ColumnDataTable/SemanticTypeCell.vue";
+import { updateColumnConfig } from "@/components/ColumnDataTable/utils";
 import type { MaskData } from "@/components/SensitiveData/types";
 import { MiniActionButton } from "@/components/v2";
 import {
@@ -39,12 +39,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (
-    event: "click",
-    item: MaskData,
-    row: number,
-    action: "VIEW" | "DELETE" | "EDIT"
-  ): void;
+  (event: "delete", item: MaskData): void;
   (event: "checked:update", list: number[]): void;
 }>();
 
@@ -99,6 +94,22 @@ const checkedItemKeys = computed(() => {
 const dataTableColumns = computed(() => {
   const columns: DataTableColumn<MaskData>[] = [
     {
+      key: "table",
+      title: t("common.table"),
+      resizable: true,
+      render(item) {
+        return item.schema ? `${item.schema}.${item.table}` : item.table;
+      },
+    },
+    {
+      key: "column",
+      title: t("database.column"),
+      resizable: true,
+      render(item) {
+        return item.column;
+      },
+    },
+    {
       key: "semantic-type",
       title: t("settings.sensitive-data.semantic-types.table.semantic-type"),
       width: "12rem",
@@ -110,7 +121,6 @@ const dataTableColumns = computed(() => {
             schema={item.schema}
             table={item.table}
             column={item.column}
-            readonly={true}
           />
         );
       },
@@ -132,25 +142,9 @@ const dataTableColumns = computed(() => {
           <ClassificationCell
             classification={columnCatalog.classification}
             classificationConfig={classificationConfig.value}
-            readonly={true}
+            onApply={(id: string) => onClassificationIdApply(item, id)}
           />
         );
-      },
-    },
-    {
-      key: "table",
-      title: t("common.table"),
-      resizable: true,
-      render(item) {
-        return item.schema ? `${item.schema}.${item.table}` : item.table;
-      },
-    },
-    {
-      key: "column",
-      title: t("database.column"),
-      resizable: true,
-      render(item) {
-        return item.column;
       },
     },
   ];
@@ -159,23 +153,12 @@ const dataTableColumns = computed(() => {
       key: "operation",
       title: t("common.operation"),
       width: "6rem",
-      render(item, index) {
-        const editButton = h(
-          MiniActionButton,
-          {
-            onClick: withModifiers(() => {
-              emit("click", item, index, "EDIT");
-            }, ["prevent", "stop"]),
-          },
-          {
-            default: () => h(PencilIcon, { class: "w-4 h-4" }),
-          }
-        );
-        const deleteButton = h(
+      render(item) {
+        return h(
           NPopconfirm,
           {
             onPositiveClick: () => {
-              emit("click", item, index, "DELETE");
+              emit("delete", item);
             },
           },
           {
@@ -201,7 +184,6 @@ const dataTableColumns = computed(() => {
               ),
           }
         );
-        return [editButton, deleteButton];
       },
     });
   }
@@ -221,6 +203,19 @@ const dataTableColumns = computed(() => {
   return columns;
 });
 
+const onClassificationIdApply = async (
+  item: MaskData,
+  classificationId: string
+) => {
+  await updateColumnConfig({
+    database: props.database.name,
+    schema: item.schema,
+    table: item.table,
+    column: item.column,
+    columnCatalog: { classificationId },
+  });
+};
+
 const handleUpdateCheckedRowKeys = (keys: string[]) => {
   const keysSet = new Set(keys);
   const checkedIndexList: number[] = [];
@@ -231,14 +226,5 @@ const handleUpdateCheckedRowKeys = (keys: string[]) => {
     }
   });
   emit("checked:update", checkedIndexList);
-};
-
-const rowProps = (item: MaskData, index: number) => {
-  return {
-    style: props.rowClickable ? "cursor: pointer;" : "",
-    onClick: () => {
-      emit("click", item, index, "VIEW");
-    },
-  };
 };
 </script>

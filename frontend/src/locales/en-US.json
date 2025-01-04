@@ -297,7 +297,8 @@
     "finish": "Finish",
     "title": "Title",
     "hide": "Hide",
-    "text-wrap": "Text wrap"
+    "text-wrap": "Text wrap",
+    "catalog": "Catalog"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -809,15 +810,13 @@
       }
     },
     "sensitive-data": {
-      "description": "Following columns are explicitly assigned masking levels and take predence over the global masking rule.",
       "remove-sensitive-column-tips": "Expose this column?",
-      "sensitive-column-list": "Explicit Masked Columns",
       "global-masking-rule": "Global Masking Rule",
       "grant-access": "Grant Access",
       "never-expires": "Never expires",
       "global-rules": {
         "self": "Global Masking Rule",
-        "description": "Use global rule to apply masking levels in batch, e.g. all columns named as \"email\" will be masked with \"Partial\" level.",
+        "description": "Use global rule to apply masking in batch, e.g. all columns named as \"email\" will be masked with the specific semantic type and appy the masking algorithm.",
         "condition-order": "Condition order",
         "re-order": "Re-order",
         "delete-rule-tip": "Delete this rule?",

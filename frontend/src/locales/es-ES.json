@@ -297,7 +297,8 @@
     "finish": "Finalizar",
     "title": "Título",
     "hide": "Esconder",
-    "text-wrap": "Ajuste de texto"
+    "text-wrap": "Ajuste de texto",
+    "catalog": "Catálogo"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -809,15 +810,13 @@
       }
     },
     "sensitive-data": {
-      "description": "A las siguientes columnas se les asignan niveles de enmascaramiento explícitamente y tienen prioridad sobre la regla de enmascaramiento global.",
       "remove-sensitive-column-tips": "¿Exponer esta columna?",
-      "sensitive-column-list": "Columnas Explícitas Enmascaradas",
       "global-masking-rule": "Regla De Enmascaramiento Global",
       "grant-access": "Autorizará el acceso",
       "never-expires": "Nunca expira",
       "global-rules": {
         "self": "Regla de enmascaramiento global",
-        "description": "Utilice la regla global para aplicar niveles de enmascaramiento por lotes, p. Todas las columnas denominadas \"correo electrónico\" se enmascararán con el nivel \"Parcial\".",
+        "description": "Utilice una regla global para aplicar el enmascaramiento en lote, por ejemplo, todas las columnas denominadas \"correo electrónico\" se enmascararán con el tipo semántico específico y se aplicará el algoritmo de enmascaramiento.",
         "condition-order": "Orden de condición",
         "re-order": "Reordenar",
         "delete-rule-tip": "¿Eliminar esta regla?",

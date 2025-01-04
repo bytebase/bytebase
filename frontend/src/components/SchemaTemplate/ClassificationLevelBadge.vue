@@ -1,6 +1,11 @@
 <template>
   <NPerformantEllipsis v-if="showText" :line-clamp="1">
-    {{ columnClassification?.title || classification || placeholder }}
+    <span v-if="columnClassification">
+      {{ columnClassification.title }}
+    </span>
+    <span v-else class="text-control-placeholder italic">
+      {{ placeholder }}
+    </span>
   </NPerformantEllipsis>
   <span v-if="level" :class="['ml-1 px-1 py-0.5 rounded text-xs', levelColor]">
     {{ level.title }}
@@ -23,7 +28,7 @@ const props = withDefaults(
     showText: true,
     classification: undefined,
     classificationConfig: undefined,
-    placeholder: undefined,
+    placeholder: "N/A",
   }
 );
 
