@@ -16,6 +16,7 @@ import {
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
   WORKSPACE_ROUTE_RISK_CENTER,
   WORKSPACE_ROUTE_DATA_MASKING,
+  WORKSPACE_ROUTE_SEMANTIC_TYPES,
   WORKSPACE_ROUTE_DATA_CLASSIFICATION,
   WORKSPACE_ROUTE_AUDIT_LOG,
   WORKSPACE_ROUTE_GITOPS,
@@ -317,6 +318,16 @@ const workspaceRoutes: RouteRecordRaw[] = [
           requiredWorkspacePermissionList: () => ["bb.policies.get"],
         },
         component: () => import("@/views/SettingWorkspaceDataMasking.vue"),
+        props: true,
+      },
+      {
+        path: "semantic-types",
+        name: WORKSPACE_ROUTE_SEMANTIC_TYPES,
+        meta: {
+          title: () => t("settings.sensitive-data.semantic-types.self"),
+          requiredWorkspacePermissionList: () => ["bb.policies.get"],
+        },
+        component: () => import("@/views/SettingWorkspaceSemanticTypes.vue"),
         props: true,
       },
       {

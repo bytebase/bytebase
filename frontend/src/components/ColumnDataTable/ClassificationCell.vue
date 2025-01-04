@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-row items-center">
+  <div class="flex items-center gap-x-1">
     <ClassificationLevelBadge
       :classification="classification"
       :classification-config="classificationConfig"

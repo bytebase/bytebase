@@ -48,7 +48,7 @@
       :show-operation="hasPermission && hasSensitiveDataFeature"
       :column-list="filteredColumnList"
       :checked-column-index-list="checkedColumnIndexList"
-      @click="onRowClick"
+      @delete="onColumnRemove"
       @checked:update="updateCheckedColumnList($event)"
     />
 
@@ -225,7 +225,10 @@ const removeSensitiveColumn = async (sensitiveColumn: MaskData) => {
     schema: sensitiveColumn.schema,
     table: sensitiveColumn.table,
     column: sensitiveColumn.column,
-    columnCatalog: {},
+    columnCatalog: {
+      classificationId: "",
+      semanticTypeId: "",
+    },
   });
   await removeMaskingExceptions(sensitiveColumn);
 };
@@ -261,31 +264,6 @@ const removeMaskingExceptions = async (sensitiveColumn: MaskData) => {
 
 const onColumnRemove = async (column: MaskData) => {
   await removeSensitiveColumn(column);
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("common.updated"),
-  });
-};
-
-const onRowClick = async (
-  item: MaskData,
-  row: number,
-  action: "VIEW" | "DELETE" | "EDIT"
-) => {
-  switch (action) {
-    case "DELETE":
-      await onColumnRemove(item);
-      break;
-    case "EDIT":
-      state.pendingGrantAccessColumn = [item];
-      if (isMissingLicenseForInstance.value) {
-        state.showFeatureModal = true;
-        return;
-      }
-      state.showSensitiveColumnDrawer = true;
-      break;
-  }
 };
 
 const onGrantAccessButtonClick = () => {

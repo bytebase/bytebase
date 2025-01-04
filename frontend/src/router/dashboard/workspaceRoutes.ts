@@ -17,6 +17,7 @@ export const WORKSPACE_ROUTE_SCHEMA_TEMPLATE = "workspace.schema-template";
 export const WORKSPACE_ROUTE_CUSTOM_APPROVAL = "workspace.custom-approval";
 export const WORKSPACE_ROUTE_RISK_CENTER = "workspace.risk-center";
 export const WORKSPACE_ROUTE_DATA_MASKING = "workspace.data-masking";
+export const WORKSPACE_ROUTE_SEMANTIC_TYPES = "workspace.semantic-types";
 export const WORKSPACE_ROUTE_DATA_CLASSIFICATION =
   "workspace.data-classification";
 export const WORKSPACE_ROUTE_AUDIT_LOG = "workspace.audit-log";
