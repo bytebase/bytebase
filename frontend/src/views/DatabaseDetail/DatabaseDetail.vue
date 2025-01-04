@@ -140,8 +140,8 @@
         <DatabaseSlowQueryPanel class="mt-2" :database="database" />
       </NTabPane>
       <NTabPane
-        name="sensitive-data"
-        :tab="$t('settings.sensitive-data.sensitive-column-list')"
+        name="catalog"
+        :tab="$t('common.catalog')"
       >
         <DatabaseSensitiveDataPanel class="mt-2" :database="database" />
       </NTabPane>
@@ -256,7 +256,7 @@ const databaseHashList = [
   "revision",
   "slow-query",
   "setting",
-  "sensitive-data",
+  "catalog",
 ] as const;
 export type DatabaseHash = (typeof databaseHashList)[number];
 const isDatabaseHash = (x: any): x is DatabaseHash =>
