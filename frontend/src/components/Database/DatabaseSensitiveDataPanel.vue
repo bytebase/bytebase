@@ -4,17 +4,6 @@
       v-if="hasSensitiveDataFeature && isMissingLicenseForInstance"
       feature="bb.feature.sensitive-data"
     />
-    <div class="textinfolabel">
-      {{ $t("settings.sensitive-data.description") }}
-      <a
-        href="https://www.bytebase.com/docs/security/mask-data?source=console"
-        class="normal-link inline-flex flex-row items-center"
-        target="_blank"
-      >
-        {{ $t("common.learn-more") }}
-        <heroicons-outline:external-link class="w-4 h-4" />
-      </a>
-    </div>
     <div
       class="flex flex-col space-x-2 lg:flex-row gap-y-4 justify-between items-end lg:items-center"
     >
@@ -182,15 +171,15 @@ const updateList = async () => {
   for (const schema of databaseCatalog.value.schemas) {
     for (const table of schema.tables) {
       for (const column of table.columns?.columns ?? []) {
-        if (!column.semanticTypeId && !column.classificationId) {
+        if (!column.semanticType && !column.classification) {
           continue;
         }
         sensitiveColumnList.push({
           schema: schema.name,
           table: table.name,
           column: column.name,
-          semanticTypeId: column.semanticTypeId,
-          classificationId: column.classificationId,
+          semanticTypeId: column.semanticType,
+          classificationId: column.classification,
         });
       }
     }
@@ -223,8 +212,8 @@ const removeSensitiveColumn = async (sensitiveColumn: MaskData) => {
     table: sensitiveColumn.table,
     column: sensitiveColumn.column,
     columnCatalog: {
-      classificationId: "",
-      semanticTypeId: "",
+      classification: "",
+      semanticType: "",
     },
   });
   await removeMaskingExceptions(sensitiveColumn);

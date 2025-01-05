@@ -81,18 +81,18 @@ message TableCatalog {
     ObjectSchema object_schema = 3;
   }
 
-  string classification_id = 4;
+  string classification = 4;
 }
 
 message ColumnCatalog {
   string name = 1;
 
-  string semantic_type_id = 2;
+  string semantic_type = 2;
 
   // The user labels for a column.
   map<string, string> labels = 3;
 
-  string classification_id = 4;
+  string classification = 4;
 
   optional ObjectSchema object_schema = 5;
 }
@@ -107,6 +107,7 @@ message ObjectSchema {
     ARRAY = 5;
   }
   Type type = 1;
+
   message StructKind {
     map<string, ObjectSchema> properties = 1;
   }
@@ -117,4 +118,6 @@ message ObjectSchema {
     StructKind struct_kind = 2;
     ArrayKind array_kind = 3;
   }
+
+  string semantic_type = 4;
 }

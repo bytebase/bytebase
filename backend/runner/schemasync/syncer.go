@@ -771,14 +771,14 @@ func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchema
 			classification, userComment := common.GetClassificationAndUserComment(table.Comment, classificationConfig)
 
 			table.UserComment = userComment
-			tableConfig.ClassificationID = classification
+			tableConfig.Classification = classification
 
 			for _, col := range table.Columns {
 				columnConfig := tableConfig.CreateOrGetColumnConfig(col.Name)
 				colClassification, colUserComment := common.GetClassificationAndUserComment(col.Comment, classificationConfig)
 
 				col.UserComment = colUserComment
-				columnConfig.ClassificationId = colClassification
+				columnConfig.Classification = colClassification
 
 				if isEmptyColumnConfig(columnConfig) {
 					tableConfig.RemoveColumnConfig(col.Name)
@@ -797,8 +797,8 @@ func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchema
 
 func isEmptyColumnConfig(config *storepb.ColumnCatalog) bool {
 	return config == nil || (len(config.Labels) == 0 &&
-		config.ClassificationId == "" &&
-		config.SemanticTypeId == "")
+		config.Classification == "" &&
+		config.SemanticType == "")
 }
 
 func setUserCommentFromComment(dbSchema *storepb.DatabaseSchemaMetadata) {

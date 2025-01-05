@@ -191,8 +191,8 @@ func NewDatabaseConfig(config *storepb.DatabaseConfig) *DatabaseConfig {
 		}
 		for _, table := range schema.Tables {
 			tableConfig := &TableConfig{
-				ClassificationID: table.ClassificationId,
-				internal:         make(map[string]*storepb.ColumnCatalog),
+				Classification: table.Classification,
+				internal:       make(map[string]*storepb.ColumnCatalog),
 			}
 			for _, column := range table.Columns {
 				tableConfig.internal[column.Name] = column
@@ -227,14 +227,14 @@ func (d *DatabaseConfig) BuildDatabaseConfig() *storepb.DatabaseConfig {
 		schemaConfig := &storepb.SchemaCatalog{Name: schemaName}
 
 		for tableName, tConfig := range sConfig.internal {
-			tableConfig := &storepb.TableCatalog{Name: tableName, ClassificationId: tConfig.ClassificationID}
+			tableConfig := &storepb.TableCatalog{Name: tableName, Classification: tConfig.Classification}
 
 			for colName, colConfig := range tConfig.internal {
 				tableConfig.Columns = append(tableConfig.Columns, &storepb.ColumnCatalog{
-					Name:             colName,
-					SemanticTypeId:   colConfig.SemanticTypeId,
-					Labels:           colConfig.Labels,
-					ClassificationId: colConfig.ClassificationId,
+					Name:           colName,
+					SemanticType:   colConfig.SemanticType,
+					Labels:         colConfig.Labels,
+					Classification: colConfig.Classification,
 				})
 			}
 			schemaConfig.Tables = append(schemaConfig.Tables, tableConfig)
@@ -273,8 +273,8 @@ func (s *SchemaConfig) RemoveTableConfig(name string) {
 
 // TableConfig is the config for a table.
 type TableConfig struct {
-	ClassificationID string
-	internal         map[string]*storepb.ColumnCatalog
+	Classification string
+	internal       map[string]*storepb.ColumnCatalog
 }
 
 // CreateOrGetColumnConfig creates or gets the column config by name.
@@ -295,7 +295,7 @@ func (t *TableConfig) RemoveColumnConfig(name string) {
 
 // RemoveColumnConfig delete the column config by name.
 func (t *TableConfig) IsEmpty() bool {
-	return len(t.internal) == 0 && t.ClassificationID == ""
+	return len(t.internal) == 0 && t.Classification == ""
 }
 
 // DatabaseMetadata is the metadata for a database.

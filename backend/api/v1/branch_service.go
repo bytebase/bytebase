@@ -976,14 +976,14 @@ func sanitizeCommentForSchemaMetadata(dbSchema *storepb.DatabaseSchemaMetadata, 
 			tableConfig := schemaConfig.CreateOrGetTableConfig(table.Name)
 			classificationID := ""
 			if !classificationFromConfig {
-				classificationID = tableConfig.ClassificationID
+				classificationID = tableConfig.Classification
 			}
 			table.Comment = common.GetCommentFromClassificationAndUserComment(classificationID, table.UserComment)
 			for _, col := range table.Columns {
 				columnConfig := tableConfig.CreateOrGetColumnConfig(col.Name)
 				classificationID := ""
 				if !classificationFromConfig {
-					classificationID = columnConfig.ClassificationId
+					classificationID = columnConfig.Classification
 				}
 				col.Comment = common.GetCommentFromClassificationAndUserComment(classificationID, col.UserComment)
 			}
@@ -1634,11 +1634,11 @@ func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *store
 			}
 			//nolint
 			tableConfig := &storepb.TableCatalog{
-				Name:             tableName,
-				ClassificationId: oldTableConfig.ClassificationId,
-				Updater:          oldTableConfig.Updater,
-				UpdateTime:       oldTableConfig.UpdateTime,
-				SourceBranch:     oldTableConfig.SourceBranch,
+				Name:           tableName,
+				Classification: oldTableConfig.Classification,
+				Updater:        oldTableConfig.Updater,
+				UpdateTime:     oldTableConfig.UpdateTime,
+				SourceBranch:   oldTableConfig.SourceBranch,
 			}
 			columnConfigMap := buildMap(oldTableConfig.Columns, func(c *storepb.ColumnCatalog) string {
 				return c.Name
@@ -1651,10 +1651,10 @@ func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *store
 					})
 				} else {
 					columnConfig := &storepb.ColumnCatalog{
-						Name:             columnName,
-						ClassificationId: columnConfig.ClassificationId,
-						SemanticTypeId:   columnConfig.SemanticTypeId,
-						Labels:           columnConfig.Labels,
+						Name:           columnName,
+						Classification: columnConfig.Classification,
+						SemanticType:   columnConfig.SemanticType,
+						Labels:         columnConfig.Labels,
 					}
 					tableConfig.Columns = append(tableConfig.Columns, columnConfig)
 				}
@@ -1750,7 +1750,7 @@ func setClassificationIDToConfig(a, b *storepb.DatabaseConfig) {
 			if !ok {
 				continue
 			}
-			tableConfig.ClassificationId = aTableConfig.ClassificationId
+			tableConfig.Classification = aTableConfig.Classification
 			aColumnConfigMap := buildMap(aTableConfig.Columns, func(c *storepb.ColumnCatalog) string {
 				return c.Name
 			})
@@ -1759,7 +1759,7 @@ func setClassificationIDToConfig(a, b *storepb.DatabaseConfig) {
 				if !ok {
 					continue
 				}
-				columnConfig.ClassificationId = aColumnConfig.ClassificationId
+				columnConfig.Classification = aColumnConfig.Classification
 			}
 		}
 	}

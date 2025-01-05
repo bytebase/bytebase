@@ -94,6 +94,22 @@ const checkedItemKeys = computed(() => {
 const dataTableColumns = computed(() => {
   const columns: DataTableColumn<MaskData>[] = [
     {
+      key: "table",
+      title: t("common.table"),
+      resizable: true,
+      render(item) {
+        return item.schema ? `${item.schema}.${item.table}` : item.table;
+      },
+    },
+    {
+      key: "column",
+      title: t("database.column"),
+      resizable: true,
+      render(item) {
+        return item.column;
+      },
+    },
+    {
       key: "semantic-type",
       title: t("settings.sensitive-data.semantic-types.table.semantic-type"),
       width: "12rem",
@@ -124,27 +140,11 @@ const dataTableColumns = computed(() => {
 
         return (
           <ClassificationCell
-            classification={columnCatalog.classificationId}
+            classification={columnCatalog.classification}
             classificationConfig={classificationConfig.value}
             onApply={(id: string) => onClassificationIdApply(item, id)}
           />
         );
-      },
-    },
-    {
-      key: "table",
-      title: t("common.table"),
-      resizable: true,
-      render(item) {
-        return item.schema ? `${item.schema}.${item.table}` : item.table;
-      },
-    },
-    {
-      key: "column",
-      title: t("database.column"),
-      resizable: true,
-      render(item) {
-        return item.column;
       },
     },
   ];
@@ -205,14 +205,14 @@ const dataTableColumns = computed(() => {
 
 const onClassificationIdApply = async (
   item: MaskData,
-  classificationId: string
+  classification: string
 ) => {
   await updateColumnConfig({
     database: props.database.name,
     schema: item.schema,
     table: item.table,
     column: item.column,
-    columnCatalog: { classificationId },
+    columnCatalog: { classification },
   });
 };
 

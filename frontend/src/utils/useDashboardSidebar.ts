@@ -265,6 +265,11 @@ export const useDashboardSidebar = () => {
         type: "div",
         children: [
           {
+            title: t("settings.sensitive-data.semantic-types.self"),
+            name: WORKSPACE_ROUTE_SEMANTIC_TYPES,
+            type: "route",
+          },
+          {
             title: t("settings.sidebar.data-classification"),
             name: WORKSPACE_ROUTE_DATA_CLASSIFICATION,
             type: "route",
