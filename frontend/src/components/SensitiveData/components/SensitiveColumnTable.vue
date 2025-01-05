@@ -97,6 +97,7 @@ const dataTableColumns = computed(() => {
       key: "table",
       title: t("common.table"),
       resizable: true,
+      width: "minmax(min-content, auto)",
       render(item) {
         return item.schema ? `${item.schema}.${item.table}` : item.table;
       },
@@ -105,6 +106,7 @@ const dataTableColumns = computed(() => {
       key: "column",
       title: t("database.column"),
       resizable: true,
+      width: "minmax(min-content, auto)",
       render(item) {
         return item.column;
       },
@@ -112,7 +114,7 @@ const dataTableColumns = computed(() => {
     {
       key: "semantic-type",
       title: t("settings.sensitive-data.semantic-types.table.semantic-type"),
-      width: "12rem",
+      width: "minmax(min-content, auto)",
       resizable: true,
       render(item) {
         return (
@@ -128,7 +130,7 @@ const dataTableColumns = computed(() => {
     {
       key: "classification",
       title: t("database.classification.self"),
-      width: "12rem",
+      width: "minmax(min-content, auto)",
       resizable: true,
       render(item) {
         const columnCatalog = getColumnCatalog(
