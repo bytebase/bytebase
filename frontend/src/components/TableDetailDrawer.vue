@@ -129,7 +129,7 @@
                   </dt>
                   <dd class="mt-1 font-semibold">
                     <ClassificationLevelBadge
-                      :classification="tableCatalog.classificationId"
+                      :classification="tableCatalog.classification"
                       :classification-config="classificationConfig"
                       placeholder="-"
                     />

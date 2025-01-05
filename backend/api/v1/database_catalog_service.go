@@ -125,8 +125,8 @@ func convertDatabaseConfig(database *store.DatabaseMessage, config *storepb.Data
 
 func convertTableCatalog(t *storepb.TableCatalog) *v1pb.TableCatalog {
 	tc := &v1pb.TableCatalog{
-		Name:             t.Name,
-		ClassificationId: t.ClassificationId,
+		Name:           t.Name,
+		Classification: t.Classification,
 	}
 	if t.ObjectSchema != nil && len(t.Columns) == 0 {
 		tc.Kind = &v1pb.TableCatalog_ObjectSchema{ObjectSchema: convertStoreObjectSchema(t.ObjectSchema)}
@@ -144,11 +144,11 @@ func convertTableCatalog(t *storepb.TableCatalog) *v1pb.TableCatalog {
 
 func convertColumnCatalog(c *storepb.ColumnCatalog) *v1pb.ColumnCatalog {
 	return &v1pb.ColumnCatalog{
-		Name:             c.Name,
-		SemanticTypeId:   c.SemanticTypeId,
-		Labels:           c.Labels,
-		ClassificationId: c.ClassificationId,
-		ObjectSchema:     convertStoreObjectSchema(c.ObjectSchema),
+		Name:           c.Name,
+		SemanticType:   c.SemanticType,
+		Labels:         c.Labels,
+		Classification: c.Classification,
+		ObjectSchema:   convertStoreObjectSchema(c.ObjectSchema),
 	}
 }
 
@@ -202,8 +202,8 @@ func convertDatabaseCatalog(catalog *v1pb.DatabaseCatalog) *storepb.DatabaseConf
 
 func convertV1TableCatalog(t *v1pb.TableCatalog) *storepb.TableCatalog {
 	tc := &storepb.TableCatalog{
-		Name:             t.Name,
-		ClassificationId: t.ClassificationId,
+		Name:           t.Name,
+		Classification: t.Classification,
 	}
 	if t.GetObjectSchema() != nil && len(t.GetColumns().GetColumns()) == 0 {
 		tc.ObjectSchema = convertV1ObjectSchema(t.GetObjectSchema())
@@ -217,11 +217,11 @@ func convertV1TableCatalog(t *v1pb.TableCatalog) *storepb.TableCatalog {
 
 func convertV1ColumnCatalog(c *v1pb.ColumnCatalog) *storepb.ColumnCatalog {
 	return &storepb.ColumnCatalog{
-		Name:             c.Name,
-		SemanticTypeId:   c.SemanticTypeId,
-		Labels:           c.Labels,
-		ClassificationId: c.ClassificationId,
-		ObjectSchema:     convertV1ObjectSchema(c.GetObjectSchema()),
+		Name:           c.Name,
+		SemanticType:   c.SemanticType,
+		Labels:         c.Labels,
+		Classification: c.Classification,
+		ObjectSchema:   convertV1ObjectSchema(c.GetObjectSchema()),
 	}
 }
 

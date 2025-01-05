@@ -549,7 +549,7 @@ func convertStoreViewConfig(ctx context.Context, config *storepb.ViewConfig, opt
 func convertStoreTableConfig(ctx context.Context, table *storepb.TableCatalog, optionalStores *store.Store) *v1pb.TableConfig {
 	t := &v1pb.TableConfig{
 		Name:             table.Name,
-		ClassificationId: table.ClassificationId,
+		ClassificationId: table.Classification,
 		Updater:          getUpdaterFromUID(ctx, table.Updater, optionalStores),
 		SourceBranch:     table.SourceBranch,
 		UpdateTime:       table.UpdateTime,
@@ -566,9 +566,9 @@ func convertStoreTableConfig(ctx context.Context, table *storepb.TableCatalog, o
 func convertStoreColumnConfig(column *storepb.ColumnCatalog) *v1pb.ColumnConfig {
 	return &v1pb.ColumnConfig{
 		Name:             column.Name,
-		SemanticTypeId:   column.SemanticTypeId,
+		SemanticTypeId:   column.SemanticType,
 		Labels:           column.Labels,
-		ClassificationId: column.ClassificationId,
+		ClassificationId: column.Classification,
 	}
 }
 
@@ -1057,11 +1057,11 @@ func convertV1ProcedureConfig(ctx context.Context, procedure *v1pb.ProcedureConf
 
 func convertV1TableConfig(ctx context.Context, table *v1pb.TableConfig, optionalStores *store.Store) *storepb.TableCatalog {
 	t := &storepb.TableCatalog{
-		Name:             table.Name,
-		ClassificationId: table.ClassificationId,
-		Updater:          getUpdaterFromEmail(ctx, table.Updater, optionalStores),
-		UpdateTime:       table.UpdateTime,
-		SourceBranch:     table.SourceBranch,
+		Name:           table.Name,
+		Classification: table.ClassificationId,
+		Updater:        getUpdaterFromEmail(ctx, table.Updater, optionalStores),
+		UpdateTime:     table.UpdateTime,
+		SourceBranch:   table.SourceBranch,
 	}
 	for _, column := range table.ColumnConfigs {
 		if column == nil {
@@ -1074,10 +1074,10 @@ func convertV1TableConfig(ctx context.Context, table *v1pb.TableConfig, optional
 
 func convertV1ColumnConfig(column *v1pb.ColumnConfig) *storepb.ColumnCatalog {
 	return &storepb.ColumnCatalog{
-		Name:             column.Name,
-		SemanticTypeId:   column.SemanticTypeId,
-		Labels:           column.Labels,
-		ClassificationId: column.ClassificationId,
+		Name:           column.Name,
+		SemanticType:   column.SemanticTypeId,
+		Labels:         column.Labels,
+		Classification: column.ClassificationId,
 	}
 }
 
