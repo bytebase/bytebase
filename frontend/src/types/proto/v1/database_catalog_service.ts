@@ -51,7 +51,7 @@ export interface TableCatalog {
   name: string;
   columns?: TableCatalog_Columns | undefined;
   objectSchema?: ObjectSchema | undefined;
-  classificationId: string;
+  classification: string;
 }
 
 export interface TableCatalog_Columns {
@@ -60,10 +60,10 @@ export interface TableCatalog_Columns {
 
 export interface ColumnCatalog {
   name: string;
-  semanticTypeId: string;
+  semanticType: string;
   /** The user labels for a column. */
   labels: { [key: string]: string };
-  classificationId: string;
+  classification: string;
   objectSchema?: ObjectSchema | undefined;
 }
 
@@ -76,6 +76,7 @@ export interface ObjectSchema {
   type: ObjectSchema_Type;
   structKind?: ObjectSchema_StructKind | undefined;
   arrayKind?: ObjectSchema_ArrayKind | undefined;
+  semanticType: string;
 }
 
 export enum ObjectSchema_Type {
@@ -459,7 +460,7 @@ export const SchemaCatalog: MessageFns<SchemaCatalog> = {
 };
 
 function createBaseTableCatalog(): TableCatalog {
-  return { name: "", columns: undefined, objectSchema: undefined, classificationId: "" };
+  return { name: "", columns: undefined, objectSchema: undefined, classification: "" };
 }
 
 export const TableCatalog: MessageFns<TableCatalog> = {
@@ -473,8 +474,8 @@ export const TableCatalog: MessageFns<TableCatalog> = {
     if (message.objectSchema !== undefined) {
       ObjectSchema.encode(message.objectSchema, writer.uint32(26).fork()).join();
     }
-    if (message.classificationId !== "") {
-      writer.uint32(34).string(message.classificationId);
+    if (message.classification !== "") {
+      writer.uint32(34).string(message.classification);
     }
     return writer;
   },
@@ -515,7 +516,7 @@ export const TableCatalog: MessageFns<TableCatalog> = {
             break;
           }
 
-          message.classificationId = reader.string();
+          message.classification = reader.string();
           continue;
         }
       }
@@ -532,7 +533,7 @@ export const TableCatalog: MessageFns<TableCatalog> = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       columns: isSet(object.columns) ? TableCatalog_Columns.fromJSON(object.columns) : undefined,
       objectSchema: isSet(object.objectSchema) ? ObjectSchema.fromJSON(object.objectSchema) : undefined,
-      classificationId: isSet(object.classificationId) ? globalThis.String(object.classificationId) : "",
+      classification: isSet(object.classification) ? globalThis.String(object.classification) : "",
     };
   },
 
@@ -547,8 +548,8 @@ export const TableCatalog: MessageFns<TableCatalog> = {
     if (message.objectSchema !== undefined) {
       obj.objectSchema = ObjectSchema.toJSON(message.objectSchema);
     }
-    if (message.classificationId !== "") {
-      obj.classificationId = message.classificationId;
+    if (message.classification !== "") {
+      obj.classification = message.classification;
     }
     return obj;
   },
@@ -565,7 +566,7 @@ export const TableCatalog: MessageFns<TableCatalog> = {
     message.objectSchema = (object.objectSchema !== undefined && object.objectSchema !== null)
       ? ObjectSchema.fromPartial(object.objectSchema)
       : undefined;
-    message.classificationId = object.classificationId ?? "";
+    message.classification = object.classification ?? "";
     return message;
   },
 };
@@ -633,7 +634,7 @@ export const TableCatalog_Columns: MessageFns<TableCatalog_Columns> = {
 };
 
 function createBaseColumnCatalog(): ColumnCatalog {
-  return { name: "", semanticTypeId: "", labels: {}, classificationId: "", objectSchema: undefined };
+  return { name: "", semanticType: "", labels: {}, classification: "", objectSchema: undefined };
 }
 
 export const ColumnCatalog: MessageFns<ColumnCatalog> = {
@@ -641,14 +642,14 @@ export const ColumnCatalog: MessageFns<ColumnCatalog> = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.semanticTypeId !== "") {
-      writer.uint32(18).string(message.semanticTypeId);
+    if (message.semanticType !== "") {
+      writer.uint32(18).string(message.semanticType);
     }
     Object.entries(message.labels).forEach(([key, value]) => {
       ColumnCatalog_LabelsEntry.encode({ key: key as any, value }, writer.uint32(26).fork()).join();
     });
-    if (message.classificationId !== "") {
-      writer.uint32(34).string(message.classificationId);
+    if (message.classification !== "") {
+      writer.uint32(34).string(message.classification);
     }
     if (message.objectSchema !== undefined) {
       ObjectSchema.encode(message.objectSchema, writer.uint32(42).fork()).join();
@@ -676,7 +677,7 @@ export const ColumnCatalog: MessageFns<ColumnCatalog> = {
             break;
           }
 
-          message.semanticTypeId = reader.string();
+          message.semanticType = reader.string();
           continue;
         }
         case 3: {
@@ -695,7 +696,7 @@ export const ColumnCatalog: MessageFns<ColumnCatalog> = {
             break;
           }
 
-          message.classificationId = reader.string();
+          message.classification = reader.string();
           continue;
         }
         case 5: {
@@ -718,14 +719,14 @@ export const ColumnCatalog: MessageFns<ColumnCatalog> = {
   fromJSON(object: any): ColumnCatalog {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      semanticTypeId: isSet(object.semanticTypeId) ? globalThis.String(object.semanticTypeId) : "",
+      semanticType: isSet(object.semanticType) ? globalThis.String(object.semanticType) : "",
       labels: isObject(object.labels)
         ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
           return acc;
         }, {})
         : {},
-      classificationId: isSet(object.classificationId) ? globalThis.String(object.classificationId) : "",
+      classification: isSet(object.classification) ? globalThis.String(object.classification) : "",
       objectSchema: isSet(object.objectSchema) ? ObjectSchema.fromJSON(object.objectSchema) : undefined,
     };
   },
@@ -735,8 +736,8 @@ export const ColumnCatalog: MessageFns<ColumnCatalog> = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.semanticTypeId !== "") {
-      obj.semanticTypeId = message.semanticTypeId;
+    if (message.semanticType !== "") {
+      obj.semanticType = message.semanticType;
     }
     if (message.labels) {
       const entries = Object.entries(message.labels);
@@ -747,8 +748,8 @@ export const ColumnCatalog: MessageFns<ColumnCatalog> = {
         });
       }
     }
-    if (message.classificationId !== "") {
-      obj.classificationId = message.classificationId;
+    if (message.classification !== "") {
+      obj.classification = message.classification;
     }
     if (message.objectSchema !== undefined) {
       obj.objectSchema = ObjectSchema.toJSON(message.objectSchema);
@@ -762,14 +763,14 @@ export const ColumnCatalog: MessageFns<ColumnCatalog> = {
   fromPartial(object: DeepPartial<ColumnCatalog>): ColumnCatalog {
     const message = createBaseColumnCatalog();
     message.name = object.name ?? "";
-    message.semanticTypeId = object.semanticTypeId ?? "";
+    message.semanticType = object.semanticType ?? "";
     message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
       if (value !== undefined) {
         acc[key] = globalThis.String(value);
       }
       return acc;
     }, {});
-    message.classificationId = object.classificationId ?? "";
+    message.classification = object.classification ?? "";
     message.objectSchema = (object.objectSchema !== undefined && object.objectSchema !== null)
       ? ObjectSchema.fromPartial(object.objectSchema)
       : undefined;
@@ -854,7 +855,7 @@ export const ColumnCatalog_LabelsEntry: MessageFns<ColumnCatalog_LabelsEntry> = 
 };
 
 function createBaseObjectSchema(): ObjectSchema {
-  return { type: ObjectSchema_Type.TYPE_UNSPECIFIED, structKind: undefined, arrayKind: undefined };
+  return { type: ObjectSchema_Type.TYPE_UNSPECIFIED, structKind: undefined, arrayKind: undefined, semanticType: "" };
 }
 
 export const ObjectSchema: MessageFns<ObjectSchema> = {
@@ -867,6 +868,9 @@ export const ObjectSchema: MessageFns<ObjectSchema> = {
     }
     if (message.arrayKind !== undefined) {
       ObjectSchema_ArrayKind.encode(message.arrayKind, writer.uint32(26).fork()).join();
+    }
+    if (message.semanticType !== "") {
+      writer.uint32(34).string(message.semanticType);
     }
     return writer;
   },
@@ -902,6 +906,14 @@ export const ObjectSchema: MessageFns<ObjectSchema> = {
           message.arrayKind = ObjectSchema_ArrayKind.decode(reader, reader.uint32());
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.semanticType = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -916,6 +928,7 @@ export const ObjectSchema: MessageFns<ObjectSchema> = {
       type: isSet(object.type) ? objectSchema_TypeFromJSON(object.type) : ObjectSchema_Type.TYPE_UNSPECIFIED,
       structKind: isSet(object.structKind) ? ObjectSchema_StructKind.fromJSON(object.structKind) : undefined,
       arrayKind: isSet(object.arrayKind) ? ObjectSchema_ArrayKind.fromJSON(object.arrayKind) : undefined,
+      semanticType: isSet(object.semanticType) ? globalThis.String(object.semanticType) : "",
     };
   },
 
@@ -929,6 +942,9 @@ export const ObjectSchema: MessageFns<ObjectSchema> = {
     }
     if (message.arrayKind !== undefined) {
       obj.arrayKind = ObjectSchema_ArrayKind.toJSON(message.arrayKind);
+    }
+    if (message.semanticType !== "") {
+      obj.semanticType = message.semanticType;
     }
     return obj;
   },
@@ -945,6 +961,7 @@ export const ObjectSchema: MessageFns<ObjectSchema> = {
     message.arrayKind = (object.arrayKind !== undefined && object.arrayKind !== null)
       ? ObjectSchema_ArrayKind.fromPartial(object.arrayKind)
       : undefined;
+    message.semanticType = object.semanticType ?? "";
     return message;
   },
 };

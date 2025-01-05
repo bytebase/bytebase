@@ -140,7 +140,7 @@ const dataTableColumns = computed(() => {
 
         return (
           <ClassificationCell
-            classification={columnCatalog.classificationId}
+            classification={columnCatalog.classification}
             classificationConfig={classificationConfig.value}
             onApply={(id: string) => onClassificationIdApply(item, id)}
           />
@@ -205,14 +205,14 @@ const dataTableColumns = computed(() => {
 
 const onClassificationIdApply = async (
   item: MaskData,
-  classificationId: string
+  classification: string
 ) => {
   await updateColumnConfig({
     database: props.database.name,
     schema: item.schema,
     table: item.table,
     column: item.column,
-    columnCatalog: { classificationId },
+    columnCatalog: { classification },
   });
 };
 
