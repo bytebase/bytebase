@@ -279,11 +279,6 @@ export const useDashboardSidebar = () => {
             name: WORKSPACE_ROUTE_DATA_MASKING,
             type: "route",
           },
-          {
-            title: t("settings.sensitive-data.semantic-types.self"),
-            name: WORKSPACE_ROUTE_SEMANTIC_TYPES,
-            type: "route",
-          },
         ],
       },
       {
