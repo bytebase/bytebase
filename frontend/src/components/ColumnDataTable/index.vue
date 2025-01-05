@@ -167,7 +167,7 @@ const columns = computed(() => {
           column.name
         );
         return h(ClassificationCell, {
-          classification: columnCatalog.classificationId,
+          classification: columnCatalog.classification,
           classificationConfig:
             props.classificationConfig ??
             DataClassificationConfig.fromPartial({}),
@@ -272,14 +272,14 @@ const filteredColumnList = computed(() => {
 
 const onClassificationIdApply = async (
   column: string,
-  classificationId: string
+  classification: string
 ) => {
   await updateColumnConfig({
     database: props.database.name,
     schema: props.schema,
     table: props.table.name,
     column,
-    columnCatalog: { classificationId },
+    columnCatalog: { classification },
   });
 };
 </script>

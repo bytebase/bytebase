@@ -76,7 +76,7 @@ func (m *maskingLevelEvaluator) evaluateSemanticTypeOfColumn(
 		return "", errors.Wrapf(err, "failed to evaluate masking level of column")
 	}
 	if semanticTypeID == "" {
-		semanticTypeID = columnConfig.GetSemanticTypeId()
+		semanticTypeID = columnConfig.GetSemanticType()
 	}
 	if semanticTypeID != "" {
 		pass, err := evaluateExceptionOfColumn(databaseMessage, schemaName, tableName, columnName, filteredMaskingExceptions)
@@ -99,7 +99,7 @@ func (m *maskingLevelEvaluator) evaluateGlobalMaskingLevelOfColumn(
 	dataClassificationConfig := m.getDataClassificationConfig(databaseProjectDataClassificationID)
 	// If the column has DEFAULT masking level in maskingPolicy or not set yet,
 	// we will eval the maskingRulePolicy to get the maskingLevel.
-	classificationLevel := getClassificationLevelOfColumn(columnConfig.GetClassificationId(), dataClassificationConfig)
+	classificationLevel := getClassificationLevelOfColumn(columnConfig.GetClassification(), dataClassificationConfig)
 	for _, maskingRule := range m.maskingRules {
 		maskingRuleAttributes := map[string]any{
 			"environment_id":       databaseMessage.EffectiveEnvironmentID,

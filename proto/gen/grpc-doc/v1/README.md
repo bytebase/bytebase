@@ -960,9 +960,9 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
-| semantic_type_id | [string](#string) |  |  |
+| semantic_type | [string](#string) |  |  |
 | labels | [ColumnCatalog.LabelsEntry](#bytebase-v1-ColumnCatalog-LabelsEntry) | repeated | The user labels for a column. |
-| classification_id | [string](#string) |  |  |
+| classification | [string](#string) |  |  |
 | object_schema | [ObjectSchema](#bytebase-v1-ObjectSchema) | optional |  |
 
 
@@ -1028,6 +1028,7 @@
 | type | [ObjectSchema.Type](#bytebase-v1-ObjectSchema-Type) |  |  |
 | struct_kind | [ObjectSchema.StructKind](#bytebase-v1-ObjectSchema-StructKind) |  |  |
 | array_kind | [ObjectSchema.ArrayKind](#bytebase-v1-ObjectSchema-ArrayKind) |  |  |
+| semantic_type | [string](#string) |  |  |
 
 
 
@@ -1107,7 +1108,7 @@
 | name | [string](#string) |  |  |
 | columns | [TableCatalog.Columns](#bytebase-v1-TableCatalog-Columns) |  |  |
 | object_schema | [ObjectSchema](#bytebase-v1-ObjectSchema) |  |  |
-| classification_id | [string](#string) |  |  |
+| classification | [string](#string) |  |  |
 
 
 

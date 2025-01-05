@@ -9576,14 +9576,14 @@ components:
             properties:
                 name:
                     type: string
-                semanticTypeId:
+                semanticType:
                     type: string
                 labels:
                     type: object
                     additionalProperties:
                         type: string
                     description: The user labels for a column.
-                classificationId:
+                classification:
                     type: string
                 objectSchema:
                     $ref: '#/components/schemas/ObjectSchema'
@@ -11791,6 +11791,8 @@ components:
                     $ref: '#/components/schemas/ObjectSchema_StructKind'
                 arrayKind:
                     $ref: '#/components/schemas/ObjectSchema_ArrayKind'
+                semanticType:
+                    type: string
         ObjectSchema_ArrayKind:
             type: object
             properties:
@@ -14199,7 +14201,7 @@ components:
                     $ref: '#/components/schemas/TableCatalog_Columns'
                 objectSchema:
                     $ref: '#/components/schemas/ObjectSchema'
-                classificationId:
+                classification:
                     type: string
         TableCatalog_Columns:
             type: object
