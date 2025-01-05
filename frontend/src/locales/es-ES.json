@@ -3431,7 +3431,7 @@
     },
     "risk": {
       "self": "Riesgo",
-      "risk-center": "Centro de riesgo",
+      "risks": "Riesgo",
       "description": "El Centro de riesgo define los niveles de riesgo para diferentes operaciones de base de datos en diferentes condiciones. Y los niveles de riesgo determinan los flujos de aprobación personalizados correspondientes."
     },
     "workflow-center": {

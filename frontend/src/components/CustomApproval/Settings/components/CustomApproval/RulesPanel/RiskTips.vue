@@ -6,7 +6,7 @@
   >
     <template #link>
       <router-link
-        :to="{ name: WORKSPACE_ROUTE_RISK_CENTER }"
+        :to="{ name: WORKSPACE_ROUTE_RISKS }"
         class="normal-link"
       >
         {{ $t("custom-approval.approval-flow.the-related-risk-rules") }}
@@ -17,7 +17,7 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { WORKSPACE_ROUTE_RISK_CENTER } from "@/router/dashboard/workspaceRoutes";
+import { WORKSPACE_ROUTE_RISKS } from "@/router/dashboard/workspaceRoutes";
 import { useRiskStore } from "@/store";
 import { DEFAULT_RISK_LEVEL } from "@/types";
 import type { Risk_Source } from "@/types/proto/v1/risk_service";
