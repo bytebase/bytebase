@@ -32,13 +32,13 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 								Name: "table1",
 								Columns: []*storepb.ColumnCatalog{
 									{
-										Name:           "a",
-										SemanticTypeId: "id_a",
+										Name:         "a",
+										SemanticType: "id_a",
 									},
 									{
-										Name:           "b",
-										SemanticTypeId: "id_b",
-										Labels:         map[string]string{"hello": "world"},
+										Name:         "b",
+										SemanticType: "id_b",
+										Labels:       map[string]string{"hello": "world"},
 									},
 								},
 							},
@@ -56,8 +56,8 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 								Name: "table1",
 								Columns: []*storepb.ColumnCatalog{
 									{
-										Name:           "a",
-										SemanticTypeId: "id_a",
+										Name:         "a",
+										SemanticType: "id_a",
 									},
 								},
 							},
@@ -75,8 +75,8 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 								Name: "table1",
 								Columns: []*storepb.ColumnCatalog{
 									{
-										Name:           "a",
-										SemanticTypeId: "id_a",
+										Name:         "a",
+										SemanticType: "id_a",
 									},
 								},
 							},
@@ -94,13 +94,13 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 								Name: "table1",
 								Columns: []*storepb.ColumnCatalog{
 									{
-										Name:           "a",
-										SemanticTypeId: "id_a",
+										Name:         "a",
+										SemanticType: "id_a",
 									},
 									{
-										Name:           "b",
-										SemanticTypeId: "id_b",
-										Labels:         map[string]string{"hello": "world"},
+										Name:         "b",
+										SemanticType: "id_b",
+										Labels:       map[string]string{"hello": "world"},
 									},
 								},
 							},
@@ -121,8 +121,8 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 								Name: "table1",
 								Columns: []*storepb.ColumnCatalog{
 									{
-										Name:           "a",
-										SemanticTypeId: "id_b",
+										Name:         "a",
+										SemanticType: "id_b",
 									},
 								},
 							},
@@ -140,8 +140,8 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 								Name: "table1",
 								Columns: []*storepb.ColumnCatalog{
 									{
-										Name:           "a",
-										SemanticTypeId: "id_a",
+										Name:         "a",
+										SemanticType: "id_a",
 									},
 								},
 							},
@@ -159,8 +159,8 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 								Name: "table1",
 								Columns: []*storepb.ColumnCatalog{
 									{
-										Name:           "a",
-										SemanticTypeId: "id_c",
+										Name:         "a",
+										SemanticType: "id_c",
 									},
 								},
 							},
@@ -178,8 +178,8 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 								Name: "table1",
 								Columns: []*storepb.ColumnCatalog{
 									{
-										Name:           "a",
-										SemanticTypeId: "id_b",
+										Name:         "a",
+										SemanticType: "id_b",
 									},
 								},
 							},
@@ -201,19 +201,19 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 								Columns: []*storepb.ColumnCatalog{
 									{
 										// Modify the semantic type id to id_b.
-										Name:           "a",
-										SemanticTypeId: "id_b",
-										Labels:         map[string]string{"hello": "world"},
+										Name:         "a",
+										SemanticType: "id_b",
+										Labels:       map[string]string{"hello": "world"},
 									},
 									{
 										// Do not change.
-										Name:           "b",
-										SemanticTypeId: "id_b",
+										Name:         "b",
+										SemanticType: "id_b",
 									},
 									{
 										// Add a new column.
-										Name:           "c",
-										SemanticTypeId: "id_c",
+										Name:         "c",
+										SemanticType: "id_c",
 									},
 								},
 							},
@@ -223,7 +223,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 							// 	Columns: []*storepb.ColumnCatalog{
 							// 		{
 							// 			Name:           "a",
-							// 			SemanticTypeId: "id_a",
+							// 			SemanticType: "id_a",
 							// 		},
 							// 	},
 							// },
@@ -232,12 +232,12 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 								Name: "table3",
 								Columns: []*storepb.ColumnCatalog{
 									{
-										Name:           "a",
-										SemanticTypeId: "id_a",
+										Name:         "a",
+										SemanticType: "id_a",
 									},
 									{
-										Name:           "b",
-										SemanticTypeId: "id_b",
+										Name:         "b",
+										SemanticType: "id_b",
 									},
 								},
 							},
@@ -255,13 +255,13 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 								Name: "table1",
 								Columns: []*storepb.ColumnCatalog{
 									{
-										Name:           "a",
-										SemanticTypeId: "id_a",
-										Labels:         map[string]string{"world": "hello"},
+										Name:         "a",
+										SemanticType: "id_a",
+										Labels:       map[string]string{"world": "hello"},
 									},
 									{
-										Name:           "b",
-										SemanticTypeId: "id_b",
+										Name:         "b",
+										SemanticType: "id_b",
 									},
 								},
 							},
@@ -269,8 +269,8 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 								Name: "table2",
 								Columns: []*storepb.ColumnCatalog{
 									{
-										Name:           "a",
-										SemanticTypeId: "id_a",
+										Name:         "a",
+										SemanticType: "id_a",
 									},
 								},
 							},
@@ -288,12 +288,12 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 								Name: "table1",
 								Columns: []*storepb.ColumnCatalog{
 									{
-										Name:           "a",
-										SemanticTypeId: "id_c",
+										Name:         "a",
+										SemanticType: "id_c",
 									},
 									{
-										Name:           "b",
-										SemanticTypeId: "id_c",
+										Name:         "b",
+										SemanticType: "id_c",
 									},
 								},
 							},
@@ -301,8 +301,8 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 								Name: "table2",
 								Columns: []*storepb.ColumnCatalog{
 									{
-										Name:           "b",
-										SemanticTypeId: "id_b",
+										Name:         "b",
+										SemanticType: "id_b",
 									},
 								},
 							},
@@ -320,17 +320,17 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 								Name: "table1",
 								Columns: []*storepb.ColumnCatalog{
 									{
-										Name:           "a",
-										SemanticTypeId: "id_b",
-										Labels:         map[string]string{"hello": "world"},
+										Name:         "a",
+										SemanticType: "id_b",
+										Labels:       map[string]string{"hello": "world"},
 									},
 									{
-										Name:           "b",
-										SemanticTypeId: "id_c",
+										Name:         "b",
+										SemanticType: "id_c",
 									},
 									{
-										Name:           "c",
-										SemanticTypeId: "id_c",
+										Name:         "c",
+										SemanticType: "id_c",
 									},
 								},
 							},
@@ -338,12 +338,12 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 								Name: "table3",
 								Columns: []*storepb.ColumnCatalog{
 									{
-										Name:           "a",
-										SemanticTypeId: "id_a",
+										Name:         "a",
+										SemanticType: "id_a",
 									},
 									{
-										Name:           "b",
-										SemanticTypeId: "id_b",
+										Name:         "b",
+										SemanticType: "id_b",
 									},
 								},
 							},

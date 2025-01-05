@@ -77,13 +77,13 @@
             </label>
             <div class="flex items-center gap-x-2 mt-3">
               <ClassificationLevelBadge
-                :classification="state.catalog?.classificationId"
+                :classification="state.catalog?.classification"
                 :classification-config="classificationConfig"
               />
               <div v-if="!readonly" class="flex items-center">
                 <MiniActionButton
-                  v-if="state.catalog?.classificationId"
-                  @click.prevent="state.catalog!.classificationId = ''"
+                  v-if="state.catalog?.classification"
+                  @click.prevent="state.catalog!.classification = ''"
                 >
                   <XIcon class="w-4 h-4" />
                 </MiniActionButton>
@@ -319,11 +319,11 @@ const semanticTypeList = computed(() => {
 });
 
 const columnSemanticType = computed(() => {
-  if (!state.catalog?.semanticTypeId) {
+  if (!state.catalog?.semanticType) {
     return;
   }
   return semanticTypeList.value.find(
-    (data) => data.id === state.catalog?.semanticTypeId
+    (data) => data.id === state.catalog?.semanticType
   );
 });
 
@@ -459,7 +459,7 @@ const onClassificationSelect = (id: string) => {
   if (!state.catalog) {
     return;
   }
-  state.catalog.classificationId = id;
+  state.catalog.classification = id;
 };
 
 const handleColumnDefaultChange = (key: string) => {
@@ -525,10 +525,10 @@ const handleSelectedColumnDefaultValueExpressionChange = (
   state.showColumnDefaultValueExpressionModal = false;
 };
 
-const onSemanticTypeApply = async (semanticTypeId: string) => {
+const onSemanticTypeApply = async (semanticType: string) => {
   state.catalog = ColumnCatalog.fromPartial({
     ...state.catalog,
-    semanticTypeId,
+    semanticType,
   });
 };
 </script>

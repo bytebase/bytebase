@@ -88,7 +88,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			tableName:       "employees",
 			columnName:      "salary",
 			columnCatalog: &storepb.ColumnCatalog{
-				ClassificationId: "1-1-1",
+				Classification: "1-1-1",
 			},
 			maskingRulePolicy: &storepb.MaskingRulePolicy{
 				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
@@ -112,7 +112,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			tableName:       "employees",
 			columnName:      "salary",
 			columnCatalog: &storepb.ColumnCatalog{
-				ClassificationId: "1-1-1",
+				Classification: "1-1-1",
 			},
 			maskingRulePolicy: &storepb.MaskingRulePolicy{
 				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
@@ -144,7 +144,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			tableName:       "employees",
 			columnName:      "salary",
 			columnCatalog: &storepb.ColumnCatalog{
-				SemanticTypeId: "salary-amount",
+				SemanticType: "salary-amount",
 			},
 			maskingRulePolicy:                       &storepb.MaskingRulePolicy{},
 			dataClassification:                      defaultClassification,

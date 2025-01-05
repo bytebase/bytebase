@@ -171,15 +171,15 @@ const updateList = async () => {
   for (const schema of databaseCatalog.value.schemas) {
     for (const table of schema.tables) {
       for (const column of table.columns?.columns ?? []) {
-        if (!column.semanticTypeId && !column.classificationId) {
+        if (!column.semanticType && !column.classification) {
           continue;
         }
         sensitiveColumnList.push({
           schema: schema.name,
           table: table.name,
           column: column.name,
-          semanticTypeId: column.semanticTypeId,
-          classificationId: column.classificationId,
+          semanticTypeId: column.semanticType,
+          classificationId: column.classification,
         });
       }
     }
@@ -212,8 +212,8 @@ const removeSensitiveColumn = async (sensitiveColumn: MaskData) => {
     table: sensitiveColumn.table,
     column: sensitiveColumn.column,
     columnCatalog: {
-      classificationId: "",
-      semanticTypeId: "",
+      classification: "",
+      semanticType: "",
     },
   });
   await removeMaskingExceptions(sensitiveColumn);

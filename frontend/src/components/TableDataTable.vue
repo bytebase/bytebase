@@ -166,7 +166,7 @@ const columns = computed(() => {
       render: (table) => {
         const tableCatalog = getTableCatalog(databaseCatalog.value, props.schemaName, table.name)
         return h(ClassificationCell, {
-          classification: tableCatalog.classificationId,
+          classification: tableCatalog.classification,
           classificationConfig:
             classificationConfig.value ??
             DataClassificationConfig.fromPartial({}),
@@ -247,10 +247,10 @@ const mixedTableList = computed(() => {
 
 const onClassificationIdApply = async (
   table: string,
-  classificationId: string
+  classification: string
 ) => {
   await updateTableConfig(props.database.name, props.schemaName, table, {
-    classificationId,
+    classification,
   });
 };
 </script>

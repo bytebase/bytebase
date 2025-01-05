@@ -288,9 +288,9 @@ func (s *Server) migrateMaskingData(ctx context.Context) error {
 			tableConfig := schemaConfig.CreateOrGetTableConfig(mask.Table)
 			columnConfig := tableConfig.CreateOrGetColumnConfig(mask.Column)
 			if mask.FullMaskingAlgorithmId != "" {
-				columnConfig.SemanticTypeId = mask.FullMaskingAlgorithmId
+				columnConfig.SemanticType = mask.FullMaskingAlgorithmId
 			} else if mask.PartialMaskingAlgorithmId != "" {
-				columnConfig.SemanticTypeId = mask.PartialMaskingAlgorithmId
+				columnConfig.SemanticType = mask.PartialMaskingAlgorithmId
 			}
 		}
 
@@ -335,16 +335,16 @@ func (s *Server) migrateCatalog(ctx context.Context) error {
 					switch col.GetMaskingLevel() {
 					case storepb.MaskingLevel_FULL:
 						if col.GetFullMaskingAlgorithmId() != "" {
-							col.SemanticTypeId = col.GetFullMaskingAlgorithmId()
+							col.SemanticType = col.GetFullMaskingAlgorithmId()
 						} else {
-							col.SemanticTypeId = "default"
+							col.SemanticType = "default"
 						}
 						updated = true
 					case storepb.MaskingLevel_PARTIAL:
 						if col.GetPartialMaskingAlgorithmId() != "" {
-							col.SemanticTypeId = col.GetPartialMaskingAlgorithmId()
+							col.SemanticType = col.GetPartialMaskingAlgorithmId()
 						} else {
-							col.SemanticTypeId = "default-partial"
+							col.SemanticType = "default-partial"
 						}
 						updated = true
 					}
