@@ -14,7 +14,7 @@ import {
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
   WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
-  WORKSPACE_ROUTE_RISK_CENTER,
+  WORKSPACE_ROUTE_RISKS,
   WORKSPACE_ROUTE_DATA_MASKING,
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
   WORKSPACE_ROUTE_DATA_CLASSIFICATION,
@@ -298,10 +298,10 @@ const workspaceRoutes: RouteRecordRaw[] = [
         props: true,
       },
       {
-        path: "risk-center",
-        name: WORKSPACE_ROUTE_RISK_CENTER,
+        path: "risks",
+        name: WORKSPACE_ROUTE_RISKS,
         meta: {
-          title: () => t("custom-approval.risk.risk-center"),
+          title: () => t("custom-approval.risk.risks"),
           requiredWorkspacePermissionList: () => [
             "bb.settings.get",
             "bb.risks.list",
