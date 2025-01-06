@@ -280,6 +280,7 @@ const onClassificationIdApply = async (
     table: props.table.name,
     column,
     columnCatalog: { classification },
+    notification: !classification ? "common.removed" : undefined,
   });
 };
 </script>
