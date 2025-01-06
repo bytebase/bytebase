@@ -2256,10 +2256,10 @@
       "create-success": "GitOps 接続が作成されました",
       "delete-success": "GitOps 接続が削除されました"
     },
-    "masking-access": {
-      "self": "マスキングアクセス",
-      "grant-access": "アクセスを許可する",
-      "revoke-access-title": "{member} のエクスポート アクセスとクエリ アクセスの両方を削除しますか?"
+    "masking-exemption": {
+      "self": "マスキング免除",
+      "grant-exemption": "免除を付与",
+      "revoke-exemption-title": "{member} のエクスポートおよびクエリのマスキング免除を両方削除しますか？"
     }
   },
   "gitops": {
