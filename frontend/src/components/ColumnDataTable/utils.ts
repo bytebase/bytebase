@@ -29,12 +29,14 @@ export const updateColumnConfig = async ({
   table,
   column,
   columnCatalog,
+  notification = "common.updated",
 }: {
   database: string;
   schema: string;
   table: string;
   column: string;
   columnCatalog: Partial<ColumnCatalog>;
+  notification?: string;
 }) => {
   const dbCatalogStore = useDatabaseCatalogV1Store();
   const catalog = await dbCatalogStore.getOrFetchDatabaseCatalog({ database });
@@ -69,16 +71,23 @@ export const updateColumnConfig = async ({
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t("common.updated"),
+    title: t(notification),
   });
 };
 
-export const updateTableConfig = async (
-  database: string,
-  schema: string,
-  table: string,
-  tableCatalog: Partial<TableCatalog>
-) => {
+export const updateTableConfig = async ({
+  database,
+  schema,
+  table,
+  tableCatalog,
+  notification = "common.updated",
+}: {
+  database: string;
+  schema: string;
+  table: string;
+  tableCatalog: Partial<TableCatalog>;
+  notification?: string;
+}) => {
   const dbCatalogStore = useDatabaseCatalogV1Store();
   const catalog = await dbCatalogStore.getOrFetchDatabaseCatalog({ database });
 
@@ -111,6 +120,6 @@ export const updateTableConfig = async (
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: t("common.updated"),
+    title: t(notification),
   });
 };

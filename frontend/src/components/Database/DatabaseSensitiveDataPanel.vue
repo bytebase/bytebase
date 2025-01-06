@@ -215,6 +215,7 @@ const removeSensitiveColumn = async (sensitiveColumn: MaskData) => {
       classification: "",
       semanticType: "",
     },
+    notification: "common.removed",
   });
   await removeMaskingExceptions(sensitiveColumn);
 };

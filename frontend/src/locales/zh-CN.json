@@ -74,6 +74,7 @@
     "edit": "编辑",
     "update": "更新",
     "updated": "已更新",
+    "removed": "已移除",
     "visit": "访问",
     "role": {
       "self": "角色"
@@ -811,6 +812,8 @@
     },
     "sensitive-data": {
       "remove-sensitive-column-tips": "不再对此列数据脱敏？",
+      "remove-semantic-type-tips": "删除此列的语义类型吗？",
+      "remove-classification-tips": "删除此列的分类吗？",
       "global-masking-rule": "全局脱敏规则",
       "grant-access": "授权访问",
       "never-expires": "无过期时间",

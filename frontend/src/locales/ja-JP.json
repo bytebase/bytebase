@@ -74,6 +74,7 @@
     "edit": "編集",
     "update": "更新する",
     "updated": "更新しました",
+    "removed": "削除されました",
     "visit": "アクセス",
     "role": {
       "self": "役割"
@@ -811,6 +812,8 @@
     },
     "sensitive-data": {
       "remove-sensitive-column-tips": "このデータ列の感度を下げなくなりますか?",
+      "remove-semantic-type-tips": "この列のセマンティック タイプを削除しますか?",
+      "remove-classification-tips": "この列の分類を削除しますか?",
       "global-masking-rule": "グローバルマスキングルール",
       "grant-access": "許可されたアクセス",
       "never-expires": "有効期限なし",

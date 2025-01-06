@@ -74,6 +74,7 @@
     "edit": "Editar",
     "update": "Actualizar",
     "updated": "Actualizado",
+    "removed": "Remoto",
     "visit": "Visitar",
     "role": {
       "self": "Rol"
@@ -811,6 +812,8 @@
     },
     "sensitive-data": {
       "remove-sensitive-column-tips": "¿Exponer esta columna?",
+      "remove-semantic-type-tips": "¿Eliminar el tipo semántico de esta columna?",
+      "remove-classification-tips": "¿Eliminar la clasificación de esta columna?",
       "global-masking-rule": "Regla De Enmascaramiento Global",
       "grant-access": "Autorizará el acceso",
       "never-expires": "Nunca expira",

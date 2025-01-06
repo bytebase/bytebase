@@ -13,9 +13,9 @@
 <script lang="tsx" setup>
 import { TrashIcon } from "lucide-vue-next";
 import { NDataTable, NPopconfirm, type DataTableColumn } from "naive-ui";
-import { computed, h, ref, watch } from "vue";
-import { withModifiers } from "vue";
+import { computed, h, ref, watch, withModifiers } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter, RouterLink } from "vue-router";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import SemanticTypeCell from "@/components/ColumnDataTable/SemanticTypeCell.vue";
 import { updateColumnConfig } from "@/components/ColumnDataTable/utils";
@@ -28,6 +28,7 @@ import {
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
+import { autoDatabaseRoute } from "@/utils";
 
 const props = defineProps<{
   database: ComposedDatabase;
@@ -44,6 +45,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const router = useRouter();
 const checkedColumnIndex = ref<Set<number>>(
   new Set(props.checkedColumnIndexList)
 );
@@ -99,7 +101,24 @@ const dataTableColumns = computed(() => {
       resizable: true,
       width: "minmax(min-content, auto)",
       render(item) {
-        return item.schema ? `${item.schema}.${item.table}` : item.table;
+        return (
+          <div>
+            <RouterLink
+              to={{
+                ...autoDatabaseRoute(router, props.database),
+                query: {
+                  schema: item.schema,
+                  table: item.table,
+                },
+                hash: "overview",
+              }}
+              class="normal-link"
+              exactActiveClass=""
+            >
+              {item.schema ? `${item.schema}.${item.table}` : item.table}
+            </RouterLink>
+          </div>
+        );
       },
     },
     {
@@ -215,6 +234,7 @@ const onClassificationIdApply = async (
     table: item.table,
     column: item.column,
     columnCatalog: { classification },
+    notification: !classification ? "common.removed" : undefined,
   });
 };
 
