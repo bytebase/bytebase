@@ -588,6 +588,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 				TypeList:       []string{string(db.Migrate), string(db.Baseline)},
 				HasSyncHistory: true,
 				Limit:          &limit,
+				ShowFull:       true,
 			})
 			if err != nil {
 				return errors.Wrapf(err, "failed to list changelogs")
@@ -600,15 +601,11 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 			if changelog.SyncHistoryUID == nil {
 				return errors.Errorf("expect sync history but get nil")
 			}
-			syncHistory, err := s.store.GetSyncHistoryByUID(ctx, *changelog.SyncHistoryUID)
-			if err != nil {
-				return errors.Wrapf(err, "failed to get sync history")
-			}
 			latestSchema := string(rawDump)
-			if syncHistory.Schema != latestSchema {
+			if changelog.Schema != latestSchema {
 				anomalyPayload := &storepb.AnomalyDatabaseSchemaDriftPayload{
 					Version: changelog.Payload.GetVersion(),
-					Expect:  syncHistory.Schema,
+					Expect:  changelog.Schema,
 					Actual:  latestSchema,
 				}
 				payload, err := protojson.Marshal(anomalyPayload)
