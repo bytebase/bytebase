@@ -1,6 +1,8 @@
-import { v4 as uuidv4 } from "uuid";
 import { t } from "@/plugins/i18n";
-import { SemanticTypeSetting_SemanticType, Algorithm } from "@/types/proto/v1/setting_service";
+import {
+  SemanticTypeSetting_SemanticType,
+  Algorithm,
+} from "@/types/proto/v1/setting_service";
 import buildInSemanticTypes from "./semantic-types.yaml";
 
 interface BuildInSemantic {
@@ -9,16 +11,15 @@ interface BuildInSemantic {
 }
 
 export const getSemanticTemplateList = () => {
-  return (buildInSemanticTypes as BuildInSemantic[]).map((buildInSemantic) =>
-    SemanticTypeSetting_SemanticType.fromPartial({
-      id: uuidv4(),
-      title: t(
-        `settings.sensitive-data.semantic-types.template.${buildInSemantic.id}.title`
-      ),
+  return (buildInSemanticTypes as BuildInSemantic[]).map((buildInSemantic) => {
+    const key = buildInSemantic.id.split(".").join("-");
+    return SemanticTypeSetting_SemanticType.fromPartial({
+      id: buildInSemantic.id,
+      title: t(`settings.sensitive-data.semantic-types.template.${key}.title`),
       description: t(
-        `settings.sensitive-data.semantic-types.template.${buildInSemantic.id}.description`
+        `settings.sensitive-data.semantic-types.template.${key}.description`
       ),
       algorithm: buildInSemantic.algorithm,
-    })
-  );
+    });
+  });
 };

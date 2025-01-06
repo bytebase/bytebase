@@ -839,6 +839,24 @@
           "delete": "このセマンティック タイプを削除しますか?"
         },
         "template": {
+          "description": "テンプレートから組み込みのセマンティック タイプを適用できます。組み込みテンプレートは変更できません。",
+          "duplicate-warning": "セマンティック タイプ \"{title}\" は既に存在します",
+          "bb-default": {
+            "title": "デフォルト",
+            "description": "完全なマスク付きのデフォルトタイプ",
+            "algorithm": {
+              "title": "フルマスク",
+              "description": "すべての値は「******」としてマスクされます"
+            }
+          },
+          "bb-default-partial": {
+            "title": "デフォルト 部分的",
+            "description": "部分マスク付きのデフォルトの部分タイプ",
+            "algorithm": {
+              "title": "範囲マスク",
+              "description": "中央の生データのみを保持し、先頭と末尾を「**」で覆います。\nたとえば、「address」は「**dre**」としてマスクされます。"
+            }
+          },
           "address": {
             "title": "中国の詳細な住所",
             "description": ""
