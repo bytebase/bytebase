@@ -431,7 +431,7 @@ const revokeAccessAlert = (
       return (
         <div class="space-y-3">
           <div class="textlabel !text-base">
-            {t("project.masking-access.revoke-access-title", {
+            {t("project.masking-exemption.revoke-exemption-title", {
               member: getMemberBinding(item),
             })}
           </div>
