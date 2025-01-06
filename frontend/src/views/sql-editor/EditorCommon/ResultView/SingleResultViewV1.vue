@@ -4,7 +4,7 @@
       <ErrorView :error="result.error" />
     </BBAttention>
     <div
-      class="w-full shrink-0 flex flex-row justify-between items-center mb-2 overflow-x-auto hide-scrollbar"
+      class="relative w-full shrink-0 flex flex-row justify-between items-center mb-2 overflow-x-auto hide-scrollbar"
     >
       <div class="flex flex-row justify-start items-center mr-2 shrink-0">
         <NInput
@@ -113,6 +113,7 @@
           </NButton>
         </template>
       </div>
+      <SelectionCopyTooltips />
     </div>
 
     <div class="flex-1 w-full flex flex-col overflow-y-auto">
@@ -248,8 +249,10 @@ import {
 } from "@/utils";
 import DataBlock from "./DataBlock.vue";
 import { DataTable, DataTableLite } from "./DataTable";
+import { provideSelectionContext } from "./DataTable/common/selection-logic";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView";
+import SelectionCopyTooltips from "./SelectionCopyTooltips.vue";
 import { useSQLResultViewContext } from "./context";
 
 type LocalState = {
@@ -443,6 +446,8 @@ const table = useVueTable<QueryRow>({
 });
 
 table.setPageSize(storedPageSize.value);
+
+provideSelectionContext(computed(() => table));
 
 const pageIndex = computed(() => {
   return table.getState().pagination.pageIndex;

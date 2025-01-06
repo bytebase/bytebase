@@ -2599,7 +2599,8 @@
       "go-to-create": "ir a crear",
       "contact-the-admin-to-grant-access": "Póngase en contacto con el administrador para otorgar acceso."
     },
-    "upload-file": "Subir archivo"
+    "upload-file": "Subir archivo",
+    "copy-selected-results": "Copiar datos seleccionados por {action} o {button}"
   },
   "schema-editor": {
     "self": "Editor de esquema",

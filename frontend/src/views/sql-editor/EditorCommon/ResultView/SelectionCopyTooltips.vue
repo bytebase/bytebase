@@ -1,0 +1,67 @@
+<template>
+  <div
+    v-if="shouldShow"
+    class="w-full absolute h-full bg-white dark:bg-dark-bg flex flex-row justify-start items-center text-control dark:text-control-light"
+    @click.prevent.stop
+  >
+    <InfoIcon :size="16" class="mr-2 text-control" />
+    <i18n-t
+      keypath="sql-editor.copy-selected-results"
+      tag="p"
+      class="text-sm flex flex-row justify-start items-center gap-1"
+    >
+      <template #action>
+        <kbd
+          class="w-auto h-5 flex items-center justify-center bg-black dark:bg-zinc-700 dark:text-zinc-300 bg-opacity-10 rounded px-1.5 text-control overflow-y-hidden"
+        >
+          <span v-if="isMac" class="text-base leading-none">⌘</span>
+          <span
+            v-else
+            class="tracking-tighter text-xs transform scale-x-90 leading-none"
+          >
+            Ctrl
+          </span>
+          <span class="pl-1 text-xs leading-none">C</span>
+        </kbd>
+      </template>
+      <template #button>
+        <NButton size="tiny" @click="copySelection">{{
+          $t("common.copy")
+        }}</NButton>
+      </template>
+    </i18n-t>
+  </div>
+</template>
+
+<script lang="ts" setup>
+import { InfoIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { pushNotification } from "@/store";
+import { useSelectionContext } from "./DataTable/common/selection-logic";
+
+const { t } = useI18n();
+const { state: selectionState, copy, deselect } = useSelectionContext();
+
+const shouldShow = computed(
+  () =>
+    selectionState.value.rows.length > 0 ||
+    selectionState.value.columns.length > 0
+);
+
+const isMac = navigator.platform.match(/mac/i);
+
+const copySelection = () => {
+  const copied = copy();
+  if (!copied) {
+    return;
+  }
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.copied"),
+  });
+  deselect();
+};
+</script>
