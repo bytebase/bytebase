@@ -30,7 +30,7 @@ export type SelectionContext = {
   selectRow: (row: number) => void;
   selectColumn: (column: number) => void;
   deselect: () => void;
-  copy: () => void;
+  copy: () => boolean;
 };
 
 export const KEY = Symbol(

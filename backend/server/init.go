@@ -337,14 +337,14 @@ func (s *Server) migrateCatalog(ctx context.Context) error {
 						if col.GetFullMaskingAlgorithmId() != "" {
 							col.SemanticType = col.GetFullMaskingAlgorithmId()
 						} else {
-							col.SemanticType = "default"
+							col.SemanticType = "bb.default"
 						}
 						updated = true
 					case storepb.MaskingLevel_PARTIAL:
 						if col.GetPartialMaskingAlgorithmId() != "" {
 							col.SemanticType = col.GetPartialMaskingAlgorithmId()
 						} else {
-							col.SemanticType = "default-partial"
+							col.SemanticType = "bb.default-partial"
 						}
 						updated = true
 					}
