@@ -19,8 +19,14 @@
 </template>
 
 <script lang="tsx" setup>
-import { CheckIcon, PencilIcon, TrashIcon, Undo2Icon } from "lucide-vue-next";
-import { NPopconfirm, NInput, NDataTable } from "naive-ui";
+import {
+  CheckIcon,
+  PencilIcon,
+  TrashIcon,
+  Undo2Icon,
+  InfoIcon,
+} from "lucide-vue-next";
+import { NPopconfirm, NInput, NDataTable, NTooltip } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -74,6 +80,14 @@ const { t } = useI18n();
 const onDrawerDismiss = () => {
   state.pendingEditSemanticIndex = undefined;
   state.showAlgorithmDrawer = false;
+};
+
+const isBuiltinSemanticType = (item: SemanticTypeSetting_SemanticType) => {
+  return item.id.startsWith("bb.");
+};
+
+const isReadonly = (item: SemanticTypeSetting_SemanticType) => {
+  return props.readonly || isBuiltinSemanticType(item);
 };
 
 const onAlgorithmUpsert = async (maskingAlgorithm: Algorithm) => {
@@ -158,7 +172,21 @@ const columnList = computed(() => {
                 )
               : t("settings.sensitive-data.algorithms.default")}
           </h3>
-          {!props.readonly && (
+          {isBuiltinSemanticType(item.item) && (
+            <NTooltip>
+              {{
+                trigger: () => <InfoIcon class="w-4" />,
+                default: () => (
+                  <div class="whitespace-pre-line">
+                    {t(
+                      `settings.sensitive-data.semantic-types.template.${item.item.id.split(".").join("-")}.algorithm`
+                    )}
+                  </div>
+                ),
+              }}
+            </NTooltip>
+          )}
+          {!isReadonly(item.item) && (
             <MiniActionButton
               onClick={() => {
                 state.pendingEditAlgorithm = getMaskingType(item.item.algorithm)
@@ -183,6 +211,27 @@ const columnList = computed(() => {
       title: t("common.edit"),
       width: "minmax(min-content, auto)",
       render: (item, row) => {
+        if (isBuiltinSemanticType(item.item)) {
+          return (
+            <NPopconfirm onPositiveClick={() => emit("remove", row)}>
+              {{
+                trigger: () => {
+                  return (
+                    <MiniActionButton>
+                      <TrashIcon class="w-4 h-4" />
+                    </MiniActionButton>
+                  );
+                },
+                default: () => (
+                  <div class="whitespace-nowrap">
+                    {t("settings.sensitive-data.semantic-types.table.delete")}
+                  </div>
+                ),
+              }}
+            </NPopconfirm>
+          );
+        }
+
         return (
           <div>
             {item.mode === "EDIT" && (

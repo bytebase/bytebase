@@ -186,12 +186,24 @@ const onCancel = (index: number) => {
 };
 
 const onTemplateApply = async (template: SemanticTypeSetting_SemanticType) => {
+  if (state.semanticItemList.find((item) => item.item.id === template.id)) {
+    pushNotification({
+      module: "bytebase",
+      style: "INFO",
+      title: t(
+        "settings.sensitive-data.semantic-types.template.duplicate-warning",
+        {
+          title: template.title,
+        }
+      ),
+    });
+    return;
+  }
   const semanticItem: SemanticItem = {
     dirty: false,
     mode: "NORMAL",
     item: SemanticTypeSetting_SemanticType.fromPartial({
       ...template,
-      id: uuidv4(),
     }),
   };
   state.semanticItemList.push(semanticItem);
