@@ -49,7 +49,7 @@
               custom-class="text-white"
             />
           </template>
-          {{ $t("project.masking-access.grant-access") }}
+          {{ $t("project.masking-exemption.grant-exemption") }}
         </NButton>
       </div>
     </div>

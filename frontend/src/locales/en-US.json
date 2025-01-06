@@ -2256,10 +2256,10 @@
       "create-success": "Successfully created GitOps connector",
       "delete-success": "The GitOps connector is removed"
     },
-    "masking-access": {
-      "self": "Masking Access",
-      "grant-access": "Grant Access",
-      "revoke-access-title": "Remove both export and query access for {member}?"
+    "masking-exemption": {
+      "self": "Masking Exemptions",
+      "grant-exemption": "Grant Exemption",
+      "revoke-exemption-title": "Remove both export and query masking exemptions for {member}?"
     }
   },
   "gitops": {
