@@ -254,12 +254,8 @@ Below diagram describes a typical mapping between an engineering org and the cor
 
 ### Prerequisites
 
-- [Go](https://golang.org/doc/install) (1.23.4 or later)
+- [Go](https://golang.org/doc/install)
 - [pnpm](https://pnpm.io/installation)
-- [Air](https://github.com/bytebase/air) (**our forked repo @87187cc with the proper signal handling**). This is for backend live reload.
-  ```bash
-  go install github.com/bytebase/air@87187cc
-  ```
 
 ### Steps
 
@@ -279,19 +275,8 @@ Below diagram describes a typical mapping between an engineering org and the cor
 1. Start backend using air (with live reload).
 
    ```bash
-   PG_URL=postgresql://bbdev@localhost/bbdev $(go env GOPATH)/bin/air -c scripts/.air.toml
-   ```
-
-   Change the open file limit if you encounter "error: too many open files".
-
-   ```bash
-   ulimit -n 10240
-   ```
-
-   If you need additional runtime parameters such as --backup-bucket, please add them like this:
-
-   ```bash
-   air -c scripts/.air.toml -- --backup-region us-east-1 --backup-bucket s3:\\/\\/example-bucket --backup-credential ~/.aws/credentials
+   PG_URL=postgresql://bbdev@localhost/bbdev
+   CGO_ENABLED=1 go build -p=16 -o ./.air/bytebase ./backend/bin/server/main.go && ./.air/bytebase --port 8080 --data . --debug --disable-sample
    ```
 
 1. Start frontend (with live reload).
