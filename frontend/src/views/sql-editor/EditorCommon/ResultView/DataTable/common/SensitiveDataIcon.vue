@@ -19,7 +19,7 @@
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { WORKSPACE_ROUTE_DATA_MASKING } from "@/router/dashboard/workspaceRoutes";
+import { WORKSPACE_ROUTE_GLOBAL_MASKING } from "@/router/dashboard/workspaceRoutes";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const router = useRouter();
@@ -33,7 +33,7 @@ const handleClick = () => {
     return;
   }
   const url = router.resolve({
-    name: WORKSPACE_ROUTE_DATA_MASKING,
+    name: WORKSPACE_ROUTE_GLOBAL_MASKING,
   });
   window.open(url.href, "_BLANK");
 };

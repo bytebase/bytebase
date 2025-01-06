@@ -28,7 +28,7 @@ export const SQL_EDITOR_SETTING_AUDIT_LOG_MODULE =
   "sql-editor.setting.audit-log";
 export const SQL_EDITOR_SETTING_DATA_CLASSIFICATION_MODULE =
   "sql-editor.setting.data-classification";
-export const SQL_EDITOR_SETTING_DATA_MASKING_MODULE =
+export const SQL_EDITOR_SETTING_GLOBAL_MASKING_MODULE =
   "sql-editor.setting.data-masking";
 export const SQL_EDITOR_SETTING_PROFILE_MODULE = "sql-editor.setting.profile";
 
@@ -196,7 +196,7 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
           },
           {
             path: "data-masking",
-            name: SQL_EDITOR_SETTING_DATA_MASKING_MODULE,
+            name: SQL_EDITOR_SETTING_GLOBAL_MASKING_MODULE,
             meta: {
               requiredWorkspacePermissionList: () => ["bb.policies.get"],
             },
