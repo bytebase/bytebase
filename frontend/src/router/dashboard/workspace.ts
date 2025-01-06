@@ -311,7 +311,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
         props: true,
       },
       {
-        path: "data-masking",
+        path: "global-masking",
         name: WORKSPACE_ROUTE_GLOBAL_MASKING,
         meta: {
           title: () => t("settings.sidebar.global-masking"),
