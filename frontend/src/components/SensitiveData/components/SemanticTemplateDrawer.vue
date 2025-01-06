@@ -4,7 +4,12 @@
       :title="$t('settings.sensitive-data.semantic-types.add-from-template')"
       class="max-w-[100vw]"
     >
-      <div class="w-[42rem]">
+      <div class="w-[42rem] space-y-4">
+        <p class="textinfolabel">
+          {{
+            $t("settings.sensitive-data.semantic-types.template.description")
+          }}
+        </p>
         <SemanticTypesTable
           :readonly="true"
           :row-clickable="true"

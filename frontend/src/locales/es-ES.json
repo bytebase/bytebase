@@ -839,6 +839,24 @@
           "delete": "¿Eliminar este tipo semántico?"
         },
         "template": {
+          "description": "Puede aplicar tipos semánticos integrados desde la plantilla. La plantilla integrada no se puede modificar.",
+          "duplicate-warning": "El tipo semántico \"{title}\" ya existe",
+          "bb-default": {
+            "title": "Por defecto",
+            "description": "Tipo predeterminado con enmascaramiento completo",
+            "algorithm": {
+              "title": "Máscara completa",
+              "description": "Todos los valores se enmascararán como \"******\""
+            }
+          },
+          "bb-default-partial": {
+            "title": "Predeterminado Parcial",
+            "description": "Tipo parcial predeterminado con enmascaramiento parcial",
+            "algorithm": {
+              "title": "Máscara de rango",
+              "description": "Solo se conservan los datos sin procesar en el medio y se tapa el principio y el final con \"**\".\nPor ejemplo, \"dirección\" se enmascarará como \"**dre**\"."
+            }
+          },
           "address": {
             "title": "La dirección",
             "description": ""
