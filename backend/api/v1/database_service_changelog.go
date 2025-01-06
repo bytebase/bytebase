@@ -55,11 +55,13 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, request *v1pb.List
 	}
 	limitPlusOne := offset.limit + 1
 
-	// TODO(p0ny): support view.
 	find := &store.FindChangelogMessage{
 		DatabaseUID: &database.UID,
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
+	}
+	if request.View == v1pb.ChangelogView_CHANGELOG_VIEW_FULL {
+		find.ShowFull = true
 	}
 
 	filters, err := ParseFilter(request.Filter)
@@ -111,8 +113,14 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, request *v1pb.GetCha
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// TODO(p0ny): support view.
-	changelog, err := s.store.GetChangelog(ctx, changelogUID)
+	find := &store.FindChangelogMessage{
+		UID: &changelogUID,
+	}
+	if request.View == v1pb.ChangelogView_CHANGELOG_VIEW_FULL {
+		find.ShowFull = true
+	}
+
+	changelog, err := s.store.GetChangelog(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list changelogs, errors: %v", err)
 	}
@@ -220,21 +228,9 @@ func (s *DatabaseService) convertToChangelog(ctx context.Context, d *store.Datab
 	}
 
 	if sheet := c.Payload.GetSheet(); sheet != "" {
-		_, sheetUID, err := common.GetProjectResourceIDSheetUID(sheet)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheetUID from %q", sheet)
-		}
-		sheetM, err := s.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheet %q", sheet)
-		}
-		if sheetM == nil {
-			return nil, errors.Errorf("sheet %q not found", sheet)
-		}
-
 		cl.StatementSheet = sheet
-		cl.Statement = sheetM.Statement
-		cl.StatementSize = sheetM.Size
+		cl.Statement = c.Statement
+		cl.StatementSize = c.StatementSize
 	}
 
 	if id := c.Payload.GetRevision(); id != 0 {
@@ -248,22 +244,12 @@ func (s *DatabaseService) convertToChangelog(ctx context.Context, d *store.Datab
 	cl.Creator = common.FormatUserEmail(creator.Email)
 
 	if v := c.PrevSyncHistoryUID; v != nil {
-		id := *v
-		h, err := s.store.GetSyncHistoryByUID(ctx, id)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sync history %d", id)
-		}
-		cl.PrevSchema = h.Schema
+		cl.PrevSchema = c.PrevSchema
 		cl.PrevSchemaSize = int64(len(cl.PrevSchema))
 	}
 
 	if v := c.SyncHistoryUID; v != nil {
-		id := *v
-		h, err := s.store.GetSyncHistoryByUID(ctx, id)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sync history %d", id)
-		}
-		cl.Schema = h.Schema
+		cl.Schema = c.Schema
 		cl.SchemaSize = int64(len(cl.Schema))
 	}
 
