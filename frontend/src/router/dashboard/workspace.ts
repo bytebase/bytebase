@@ -15,7 +15,7 @@ import {
   WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
   WORKSPACE_ROUTE_RISKS,
-  WORKSPACE_ROUTE_DATA_MASKING,
+  WORKSPACE_ROUTE_GLOBAL_MASKING,
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
   WORKSPACE_ROUTE_DATA_CLASSIFICATION,
   WORKSPACE_ROUTE_AUDIT_LOG,
@@ -311,10 +311,10 @@ const workspaceRoutes: RouteRecordRaw[] = [
         props: true,
       },
       {
-        path: "data-masking",
-        name: WORKSPACE_ROUTE_DATA_MASKING,
+        path: "global-masking",
+        name: WORKSPACE_ROUTE_GLOBAL_MASKING,
         meta: {
-          title: () => t("settings.sidebar.data-masking"),
+          title: () => t("settings.sidebar.global-masking"),
           requiredWorkspacePermissionList: () => ["bb.policies.get"],
         },
         component: () => import("@/views/SettingWorkspaceDataMasking.vue"),
