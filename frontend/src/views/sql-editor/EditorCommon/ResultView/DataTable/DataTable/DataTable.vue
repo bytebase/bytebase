@@ -137,7 +137,7 @@
 import type { Table } from "@tanstack/vue-table";
 import { useElementSize } from "@vueuse/core";
 import { NEmpty, NScrollbar } from "naive-ui";
-import { computed, nextTick, ref, toRef, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import {
   FeatureBadge,
   FeatureBadgeForInstanceLicense,
@@ -148,7 +148,7 @@ import { usePreventBackAndForward } from "@/utils";
 import { useSQLResultViewContext } from "../../context";
 import ColumnSortedIcon from "../common/ColumnSortedIcon.vue";
 import SensitiveDataIcon from "../common/SensitiveDataIcon.vue";
-import { provideSelectionContext } from "../common/selection-logic";
+import { useSelectionContext } from "../common/selection-logic";
 import TableCell from "./TableCell.vue";
 import useTableColumnWidthLogic from "./useTableResize";
 
@@ -170,7 +170,7 @@ const {
   state: selectionState,
   disabled: selectionDisabled,
   selectColumn,
-} = provideSelectionContext(toRef(props, "table"));
+} = useSelectionContext();
 const containerRef = ref<HTMLDivElement>();
 const scrollbarRef = ref<InstanceType<typeof NScrollbar>>();
 const tableRef = ref<HTMLTableElement>();
