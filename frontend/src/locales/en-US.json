@@ -2594,7 +2594,8 @@
       "go-to-create": "Go to create",
       "contact-the-admin-to-grant-access": "Contact to the admin to grant access."
     },
-    "upload-file": "Upload file"
+    "upload-file": "Upload file",
+    "copy-selected-results": "Copy selected data by {action} or {button}"
   },
   "schema-editor": {
     "self": "Schema Editor",
