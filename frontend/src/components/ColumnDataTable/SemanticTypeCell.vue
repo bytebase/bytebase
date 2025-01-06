@@ -2,12 +2,22 @@
   <div class="flex items-center gap-x-1">
     <span v-if="semanticType?.title">{{ semanticType?.title }}</span>
     <span v-else class="text-control-placeholder italic"> N/A </span>
-    <MiniActionButton
+    <NPopconfirm
       v-if="!readonly && semanticType"
-      @click.prevent="() => onSemanticTypeApply('')"
+      @positive-click="() => onSemanticTypeApply('')"
     >
-      <XIcon class="w-3 h-3" />
-    </MiniActionButton>
+      <template #trigger>
+        <MiniActionButton v-if="!readonly && semanticType">
+          <XIcon class="w-3 h-3" />
+        </MiniActionButton>
+      </template>
+
+      <template #default>
+        <div>
+          {{ $t("settings.sensitive-data.remove-semantic-type-tips") }}
+        </div>
+      </template>
+    </NPopconfirm>
     <MiniActionButton v-if="!readonly" @click.prevent="openSemanticTypeDrawer">
       <PencilIcon class="w-3 h-3" />
     </MiniActionButton>
@@ -31,6 +41,7 @@
 
 <script lang="ts" setup>
 import { PencilIcon, XIcon } from "lucide-vue-next";
+import { NPopconfirm } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useSemanticType } from "@/components/SensitiveData/useSemanticType";
 import { MiniActionButton } from "@/components/v2";
@@ -92,6 +103,7 @@ const onSemanticTypeApply = async (semanticType: string) => {
     table: props.table,
     column: props.column,
     columnCatalog: { semanticType },
+    notification: !semanticType ? "common.removed" : undefined,
   });
 };
 </script>

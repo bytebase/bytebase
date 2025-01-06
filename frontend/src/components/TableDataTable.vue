@@ -31,7 +31,11 @@ import {
   updateTableConfig,
   supportSetClassificationFromComment,
 } from "@/components/ColumnDataTable/utils";
-import { useSettingV1Store, useDatabaseCatalog, getTableCatalog } from "@/store/modules";
+import {
+  useSettingV1Store,
+  useDatabaseCatalog,
+  getTableCatalog,
+} from "@/store/modules";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { TableMetadata } from "@/types/proto/v1/database_service";
@@ -164,7 +168,11 @@ const columns = computed(() => {
       resizable: true,
       minWidth: 140,
       render: (table) => {
-        const tableCatalog = getTableCatalog(databaseCatalog.value, props.schemaName, table.name)
+        const tableCatalog = getTableCatalog(
+          databaseCatalog.value,
+          props.schemaName,
+          table.name
+        );
         return h(ClassificationCell, {
           classification: tableCatalog.classification,
           classificationConfig:
@@ -249,8 +257,13 @@ const onClassificationIdApply = async (
   table: string,
   classification: string
 ) => {
-  await updateTableConfig(props.database.name, props.schemaName, table, {
-    classification,
+  await updateTableConfig({
+    database: props.database.name,
+    schema: props.schemaName,
+    table,
+    tableCatalog: {
+      classification,
+    },
   });
 };
 </script>

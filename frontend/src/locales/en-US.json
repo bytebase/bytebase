@@ -74,6 +74,7 @@
     "edit": "Edit",
     "update": "Update",
     "updated": "Updated",
+    "removed": "Removed",
     "visit": "Visit",
     "role": {
       "self": "Role"
@@ -811,6 +812,8 @@
     },
     "sensitive-data": {
       "remove-sensitive-column-tips": "Expose this column?",
+      "remove-semantic-type-tips": "Remove the semantic type for this column?",
+      "remove-classification-tips": "Remove the classification for this column?",
       "global-masking-rule": "Global Masking Rule",
       "grant-access": "Grant Access",
       "never-expires": "Never expires",
