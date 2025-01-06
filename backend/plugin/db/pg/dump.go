@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -106,7 +107,7 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 		}
 	}
 
-	graph := NewGraph()
+	graph := base.NewGraph()
 	viewMap := make(map[string]*storepb.ViewMetadata)
 	materializedViewMap := make(map[string]*storepb.MaterializedViewMetadata)
 
@@ -132,7 +133,7 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 		}
 	}
 
-	orderedList, err := graph.GetTopoSort()
+	orderedList, err := graph.TopologicalSort()
 	if err != nil {
 		return errors.Wrap(err, "failed to get topological sort")
 	}
