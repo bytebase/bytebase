@@ -844,12 +844,18 @@
           "bb-default": {
             "title": "Por defecto",
             "description": "Tipo predeterminado con enmascaramiento completo",
-            "algorithm": "Todos los valores se enmascararán como \"******\""
+            "algorithm": {
+              "title": "Máscara completa",
+              "description": "Todos los valores se enmascararán como \"******\""
+            }
           },
           "bb-default-partial": {
             "title": "Predeterminado Parcial",
             "description": "Tipo parcial predeterminado con enmascaramiento parcial",
-            "algorithm": "Solo se conservan los datos sin procesar en el medio y se tapa el principio y el final con \"**\".\nPor ejemplo, \"dirección\" se enmascarará como \"**dre**\"."
+            "algorithm": {
+              "title": "Máscara de rango",
+              "description": "Solo se conservan los datos sin procesar en el medio y se tapa el principio y el final con \"**\".\nPor ejemplo, \"dirección\" se enmascarará como \"**dre**\"."
+            }
           },
           "address": {
             "title": "La dirección",

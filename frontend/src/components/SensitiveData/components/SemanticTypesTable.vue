@@ -165,13 +165,21 @@ const columnList = computed(() => {
     render: (item, row) => {
       return (
         <div class="flex items-center space-x-1">
-          <h3>
-            {getMaskingType(item.item.algorithm)
-              ? t(
-                  `settings.sensitive-data.algorithms.${getMaskingType(item.item.algorithm)?.toLowerCase()}.self`
-                )
-              : t("settings.sensitive-data.algorithms.default")}
-          </h3>
+          {isBuiltinSemanticType(item.item) ? (
+            <h3>
+              {t(
+                `settings.sensitive-data.semantic-types.template.${item.item.id.split(".").join("-")}.algorithm.title`
+              )}
+            </h3>
+          ) : (
+            <h3>
+              {getMaskingType(item.item.algorithm)
+                ? t(
+                    `settings.sensitive-data.algorithms.${getMaskingType(item.item.algorithm)?.toLowerCase()}.self`
+                  )
+                : t("settings.sensitive-data.algorithms.default")}
+            </h3>
+          )}
           {isBuiltinSemanticType(item.item) && (
             <NTooltip>
               {{
@@ -179,7 +187,7 @@ const columnList = computed(() => {
                 default: () => (
                   <div class="whitespace-pre-line">
                     {t(
-                      `settings.sensitive-data.semantic-types.template.${item.item.id.split(".").join("-")}.algorithm`
+                      `settings.sensitive-data.semantic-types.template.${item.item.id.split(".").join("-")}.algorithm.description`
                     )}
                   </div>
                 ),

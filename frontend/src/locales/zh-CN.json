@@ -844,12 +844,18 @@
           "bb-default": {
             "title": "全遮掩",
             "description": "遮掩全部数据",
-            "algorithm": "所有值都将被屏蔽为“******”"
+            "algorithm": {
+              "title": "全遮掩",
+              "description": "所有值都将被屏蔽为“******”"
+            }
           },
           "bb-default-partial": {
             "title": "半遮掩",
             "description": "遮掩部分数据",
-            "algorithm": "只保留中间的原始数据，并用“**”覆盖开头和结尾。\n例如，“address”将被屏蔽为“**dre**”。"
+            "algorithm": {
+              "title": "范围遮掩",
+              "description": "只保留中间的原始数据，并用“**”覆盖开头和结尾。\n例如，“address”将被屏蔽为“**dre**”。"
+            }
           },
           "address": {
             "title": "中文详细地址",

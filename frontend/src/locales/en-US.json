@@ -844,12 +844,18 @@
           "bb-default": {
             "title": "Default",
             "description": "Default type with full masking",
-            "algorithm": "All values will be masked as \"******\""
+            "algorithm": {
+              "title": "Full mask",
+              "description": "All values will be masked as \"******\""
+            }
           },
           "bb-default-partial": {
             "title": "Default Partial",
             "description": "Default partial type with partial masking",
-            "algorithm": "Only keep the raw data in the middle, and cover the beginning and end with \"**\".\nFor example, \"address\" will be masked as \"**dre**\"."
+            "algorithm": {
+              "title": "Range mask",
+              "description": "Only keep the raw data in the middle, and cover the beginning and end with \"**\".\nFor example, \"address\" will be masked as \"**dre**\"."
+            }
           },
           "address": {
             "title": "Address",
