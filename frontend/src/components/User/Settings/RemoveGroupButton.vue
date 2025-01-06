@@ -21,7 +21,7 @@ import { useI18n } from "vue-i18n";
 import { RouterLink, type RouteLocationRaw } from "vue-router";
 import ProjectV1Name from "@/components/v2/Model/ProjectV1Name.vue";
 import { PROJECT_V1_ROUTE_MEMBERS } from "@/router/dashboard/projectV1";
-import { WORKSPACE_ROUTE_DATA_MASKING } from "@/router/dashboard/workspaceRoutes";
+import { WORKSPACE_ROUTE_GLOBAL_MASKING } from "@/router/dashboard/workspaceRoutes";
 import {
   useCurrentUserV1,
   useGroupStore,
@@ -174,11 +174,11 @@ const handleDeleteGroup = async () => {
           )}
 
           {renderProjectResources(
-            t("settings.sidebar.data-masking"),
+            t("settings.sidebar.global-masking"),
             resources.filter((r) => r.policy).map((r) => r.project),
             $dialog,
             (_) => ({
-              name: WORKSPACE_ROUTE_DATA_MASKING,
+              name: WORKSPACE_ROUTE_GLOBAL_MASKING,
             })
           )}
           <p>{t("bbkit.confirm-button.sure-to-delete")}</p>

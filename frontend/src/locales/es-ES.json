@@ -492,7 +492,7 @@
       "gitops": "GitOps",
       "subscription": "Suscripción",
       "labels": "Etiquetas",
-      "data-masking": "Enmascaramiento de datos",
+      "global-masking": "Enmascaramiento Global",
       "data-classification": "Clasificación de datos",
       "access-control": "Control de acceso",
       "data-access": "Acceso a datos",
