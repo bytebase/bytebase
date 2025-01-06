@@ -238,7 +238,7 @@ export const useProjectSidebar = (
             type: "div",
           },
           {
-            title: t("project.masking-access.self"),
+            title: t("project.masking-exemption.self"),
             path: PROJECT_V1_ROUTE_MASKING_EXEMPTION,
             type: "div",
           },
