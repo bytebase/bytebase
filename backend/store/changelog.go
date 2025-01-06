@@ -204,7 +204,7 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 			COALESCE(%s, ''),
 			COALESCE(%s, ''),
 			COALESCE(%s, ''),
-			OCTET_LENGTH(sheet_blob.content),
+			COALESCE(OCTET_LENGTH(sheet_blob.content), 0),
 			changelog.payload
 		FROM changelog
 		LEFT JOIN sync_history sh_pre ON sh_pre.id = changelog.prev_sync_history_id
