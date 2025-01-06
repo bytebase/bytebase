@@ -5,8 +5,8 @@ import { PROJECT_V1_ROUTE_DASHBOARD } from "./workspaceRoutes";
 
 export const PROJECT_V1_ROUTE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.detail`;
 export const PROJECT_V1_ROUTE_DATABASES = `${PROJECT_V1_ROUTE_DASHBOARD}.database`;
-export const PROJECT_V1_ROUTE_MASKING_ACCESS = `${PROJECT_V1_ROUTE_DASHBOARD}.masking-access`;
-export const PROJECT_V1_ROUTE_MASKING_ACCESS_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.masking-access.create`;
+export const PROJECT_V1_ROUTE_MASKING_EXEMPTION = `${PROJECT_V1_ROUTE_DASHBOARD}.masking-exemption`;
+export const PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.masking-exemption.create`;
 export const PROJECT_V1_ROUTE_DATABASE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database.detail`;
 export const PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database.changelog.detail`;
 export const PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database.revision.detail`;
@@ -75,7 +75,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         props: true,
       },
       {
-        path: "masking-access",
+        path: "masking-exemption",
         meta: {
           overrideTitle: true,
           requiredProjectPermissionList: () => [
@@ -88,16 +88,16 @@ const projectV1Routes: RouteRecordRaw[] = [
         children: [
           {
             path: "",
-            name: PROJECT_V1_ROUTE_MASKING_ACCESS,
+            name: PROJECT_V1_ROUTE_MASKING_EXEMPTION,
             component: () =>
-              import("@/views/project/ProjectDatabaseMaskingAccess.vue"),
+              import("@/views/project/ProjectMaskingExemption.vue"),
             props: true,
           },
           {
             path: "create",
-            name: PROJECT_V1_ROUTE_MASKING_ACCESS_CREATE,
+            name: PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE,
             component: () =>
-              import("@/views/project/ProjectDatabaseMaskingAccessCreate.vue"),
+              import("@/views/project/ProjectMaskingExemptionCreate.vue"),
             props: true,
             meta: {
               requiredProjectPermissionList: () => ["bb.policies.create"],
