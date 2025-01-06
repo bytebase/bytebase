@@ -2256,10 +2256,10 @@
       "create-success": "GitOps 连接已创建",
       "delete-success": "GitOps 连接已删除"
     },
-    "masking-access": {
-      "self": "脱敏管控",
-      "grant-access": "授予访问权限",
-      "revoke-access-title": "是否删除 {member} 的导出和查询访问权限？"
+    "masking-exemption": {
+      "self": "脱敏豁免",
+      "grant-exemption": "授予豁免",
+      "revoke-exemption-title": "是否移除 {member} 的导出和查询屏蔽豁免？"
     }
   },
   "gitops": {

@@ -2256,10 +2256,10 @@
       "create-success": "Conector GitOps creado correctamente",
       "delete-success": "Se elimina el conector GitOps"
     },
-    "masking-access": {
-      "self": "Acceso enmascarado",
-      "grant-access": "Conceder acceso",
-      "revoke-access-title": "¿Eliminar el acceso de exportación y consulta para {member}?"
+    "masking-exemption": {
+      "self": "Exenciones de Enmascaramiento",
+      "grant-exemption": "Conceder Exención",
+      "revoke-exemption-title": "Eliminar tanto las exenciones de exportación como de consulta de enmascaramiento para {member}?"
     }
   },
   "gitops": {
