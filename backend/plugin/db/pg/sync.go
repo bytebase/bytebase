@@ -91,11 +91,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	// The reason is that we can get the expression with default schema name.
 	originSearchPath, err := setSearchPath(txn, "")
 	if err != nil {
-		return nil, errors.Errorf("failed to set search path: %v", err)
+		return nil, errors.Wrapf(err, "failed to set search path")
 	}
 	defer func() {
 		if _, err := setSearchPath(txn, originSearchPath); err != nil {
-			slog.Error("failed to restore search path: %v", log.BBError(err))
+			slog.Error("failed to restore search path", log.BBError(err))
 		}
 	}()
 
