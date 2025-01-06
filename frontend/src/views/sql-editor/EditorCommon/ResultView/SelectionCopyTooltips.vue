@@ -25,16 +25,19 @@
         </kbd>
       </template>
       <template #button>
-        <NButton size="tiny" @click="copySelection">{{
-          $t("common.copy")
-        }}</NButton>
+        <NButton size="tiny" @click="copySelection" type="primary" secondary>
+          <template #icon>
+            <CopyIcon />
+          </template>
+          {{ $t("common.copy") }}
+        </NButton>
       </template>
     </i18n-t>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { InfoIcon } from "lucide-vue-next";
+import { CopyIcon, InfoIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
