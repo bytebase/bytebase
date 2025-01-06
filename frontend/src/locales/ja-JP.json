@@ -492,7 +492,7 @@
       "gitops": "GitOps",
       "subscription": "サブスクリプション",
       "labels": "ラベル",
-      "data-masking": "データマスキング",
+      "global-masking": "グローバルマスキング",
       "data-classification": "データ分類",
       "access-control": "アクセス制御",
       "data-access": "データアクセス",

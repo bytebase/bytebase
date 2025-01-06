@@ -492,7 +492,7 @@
       "gitops": "GitOps",
       "subscription": "订阅",
       "labels": "标签",
-      "data-masking": "数据屏蔽",
+      "global-masking": "全局数据屏蔽",
       "data-classification": "数据分类",
       "access-control": "访问控制",
       "data-access": "数据访问",
