@@ -262,6 +262,7 @@ func TestVCS(t *testing.T) {
 
 			resp, err := ctl.databaseServiceClient.ListChangelogs(ctx, &v1pb.ListChangelogsRequest{
 				Parent: database.Name,
+				View:   v1pb.ChangelogView_CHANGELOG_VIEW_FULL,
 			})
 			a.NoError(err)
 			changelogs := resp.Changelogs
