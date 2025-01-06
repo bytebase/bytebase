@@ -213,8 +213,12 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to evaluate masking level of database %q, schema %q, table %q, column %q", sourceColumn.Database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column)
 	}
-	// TODO(d): hack about existing default-partial algorithm.
-	if semanticTypeID == "default-partial" {
+
+	// Built-in algorithm.
+	switch semanticTypeID {
+	case "bb.default":
+		return masker.NewDefaultFullMasker(), nil
+	case "bb.default-partial":
 		return masker.NewDefaultRangeMasker(), nil
 	}
 
