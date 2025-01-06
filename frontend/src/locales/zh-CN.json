@@ -2594,7 +2594,8 @@
       "go-to-create": "去创建",
       "contact-the-admin-to-grant-access": "联系管理员以授予访问权限。"
     },
-    "upload-file": "上传文件"
+    "upload-file": "上传文件",
+    "copy-selected-results": "通过 {action} 或 {button} 来快速复制选定的数据"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
