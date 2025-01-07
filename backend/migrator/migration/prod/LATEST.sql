@@ -1010,7 +1010,6 @@ ALTER SEQUENCE changelog_id_seq RESTART WITH 101;
 
 CREATE INDEX IF NOT EXISTS idx_changelog_database_id ON changelog (database_id);
 
-
 CREATE TABLE IF NOT EXISTS release (
     id BIGSERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
