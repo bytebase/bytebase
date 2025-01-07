@@ -546,7 +546,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 			TaskRun:          mc.taskRunName,
 			Issue:            mc.issueName,
 			Revision:         0,
-			ChangedResources: mi.Payload.ChangedResources,
+			ChangedResources: mi.Payload.GetChangedResources(),
 			Sheet:            mc.sheetName,
 			Version:          mc.version,
 			Type:             convertTaskType(mc.task.Type),
