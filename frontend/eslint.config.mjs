@@ -1,5 +1,6 @@
 import vueTsEslintConfig from "@vue/eslint-config-typescript";
 import pluginVue from "eslint-plugin-vue";
+import vueI18n from '@intlify/eslint-plugin-vue-i18n'
 
 export default [
   ...pluginVue.configs["flat/essential"],
@@ -11,6 +12,7 @@ export default [
     },
     rootDir: import.meta.dirname,
   }),
+  ...vueI18n.configs['flat/recommended'],
   {
     ignores: ["**/dist/**", "**/node_modules/**", "**/proto/**"],
   },
@@ -23,6 +25,15 @@ export default [
       "@typescript-eslint/no-unused-vars": [
         "error",
         { varsIgnorePattern: "^_", argsIgnorePattern: "^_" },
+      ],
+      "@intlify/vue-i18n/no-unused-keys": [
+        "warn",
+        {
+          "src": "./src",
+          "extensions": [".js", ".vue", ".ts", ".tsx"],
+          "ignores": [],
+          "enableFix": false
+        }
       ],
       "@typescript-eslint/no-explicit-any": "off",
       "vue/no-mutating-props": "error",
@@ -44,6 +55,12 @@ export default [
         },
       ],
       "vue/multi-word-component-names": "off",
+    },
+    settings: {
+      'vue-i18n': {
+        localeDir: './src/locales/*.{json,json5,yaml,yml}',
+        messageSyntaxVersion: '^9.0.0'
+      }
     },
   },
 ];
