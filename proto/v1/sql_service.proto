@@ -125,7 +125,7 @@ message AdminExecuteRequest {
 
   // Container is the container name to execute the query against, used for
   // CosmosDB only.
-  optional string container = 7;
+  string container = 7;
 }
 
 message AdminExecuteResponse {
@@ -169,7 +169,7 @@ message QueryRequest {
 
   // Container is the container name to execute the query against, used for
   // CosmosDB only.
-  optional string container = 10;
+  string container = 10;
 }
 
 message QueryResponse {
