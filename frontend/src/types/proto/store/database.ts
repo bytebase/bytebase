@@ -681,16 +681,16 @@ export interface ViewMetadata {
   definition: string;
   /** The comment is the comment of a view. */
   comment: string;
-  /** The dependent_columns is the list of dependent columns of a view. */
-  dependentColumns: DependentColumn[];
+  /** The dependency_columns is the list of dependency columns of a view. */
+  dependencyColumns: DependencyColumn[];
   /** The columns is the ordered list of columns in a table. */
   columns: ColumnMetadata[];
   /** The triggers is the list of triggers in a view. */
   triggers: TriggerMetadata[];
 }
 
-/** DependentColumn is the metadata for dependent columns. */
-export interface DependentColumn {
+/** DependencyColumn is the metadata for dependency columns. */
+export interface DependencyColumn {
   /** The schema is the schema of a reference column. */
   schema: string;
   /** The table is the table of a reference column. */
@@ -707,15 +707,15 @@ export interface MaterializedViewMetadata {
   definition: string;
   /** The comment is the comment of a view. */
   comment: string;
-  /** The dependent_columns is the list of dependent columns of a view. */
-  dependentColumns: DependentColumn[];
+  /** The dependency_columns is the list of dependency columns of a view. */
+  dependencyColumns: DependencyColumn[];
   /** The columns is the ordered list of columns in a table. */
   triggers: TriggerMetadata[];
   /** The indexes is the list of indexes in a table. */
   indexes: IndexMetadata[];
 }
 
-export interface DependentTable {
+export interface DependencyTable {
   /** The schema is the schema of a reference table. */
   schema: string;
   /** The table is the name of a reference table. */
@@ -740,10 +740,10 @@ export interface FunctionMetadata {
   sqlMode: string;
   comment: string;
   /**
-   * The dependent_tables is the list of dependent tables of a function.
+   * The dependency_tables is the list of dependency tables of a function.
    * For PostgreSQL, it's the list of tables that the function depends on the return type definition.
    */
-  dependentTables: DependentTable[];
+  dependencyTables: DependencyTable[];
 }
 
 /** ProcedureMetadata is the metadata for procedures. */
@@ -4028,7 +4028,7 @@ export const GenerationMetadata: MessageFns<GenerationMetadata> = {
 };
 
 function createBaseViewMetadata(): ViewMetadata {
-  return { name: "", definition: "", comment: "", dependentColumns: [], columns: [], triggers: [] };
+  return { name: "", definition: "", comment: "", dependencyColumns: [], columns: [], triggers: [] };
 }
 
 export const ViewMetadata: MessageFns<ViewMetadata> = {
@@ -4042,8 +4042,8 @@ export const ViewMetadata: MessageFns<ViewMetadata> = {
     if (message.comment !== "") {
       writer.uint32(26).string(message.comment);
     }
-    for (const v of message.dependentColumns) {
-      DependentColumn.encode(v!, writer.uint32(34).fork()).join();
+    for (const v of message.dependencyColumns) {
+      DependencyColumn.encode(v!, writer.uint32(34).fork()).join();
     }
     for (const v of message.columns) {
       ColumnMetadata.encode(v!, writer.uint32(42).fork()).join();
@@ -4090,7 +4090,7 @@ export const ViewMetadata: MessageFns<ViewMetadata> = {
             break;
           }
 
-          message.dependentColumns.push(DependentColumn.decode(reader, reader.uint32()));
+          message.dependencyColumns.push(DependencyColumn.decode(reader, reader.uint32()));
           continue;
         }
         case 5: {
@@ -4123,8 +4123,8 @@ export const ViewMetadata: MessageFns<ViewMetadata> = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      dependentColumns: globalThis.Array.isArray(object?.dependentColumns)
-        ? object.dependentColumns.map((e: any) => DependentColumn.fromJSON(e))
+      dependencyColumns: globalThis.Array.isArray(object?.dependencyColumns)
+        ? object.dependencyColumns.map((e: any) => DependencyColumn.fromJSON(e))
         : [],
       columns: globalThis.Array.isArray(object?.columns)
         ? object.columns.map((e: any) => ColumnMetadata.fromJSON(e))
@@ -4146,8 +4146,8 @@ export const ViewMetadata: MessageFns<ViewMetadata> = {
     if (message.comment !== "") {
       obj.comment = message.comment;
     }
-    if (message.dependentColumns?.length) {
-      obj.dependentColumns = message.dependentColumns.map((e) => DependentColumn.toJSON(e));
+    if (message.dependencyColumns?.length) {
+      obj.dependencyColumns = message.dependencyColumns.map((e) => DependencyColumn.toJSON(e));
     }
     if (message.columns?.length) {
       obj.columns = message.columns.map((e) => ColumnMetadata.toJSON(e));
@@ -4166,19 +4166,19 @@ export const ViewMetadata: MessageFns<ViewMetadata> = {
     message.name = object.name ?? "";
     message.definition = object.definition ?? "";
     message.comment = object.comment ?? "";
-    message.dependentColumns = object.dependentColumns?.map((e) => DependentColumn.fromPartial(e)) || [];
+    message.dependencyColumns = object.dependencyColumns?.map((e) => DependencyColumn.fromPartial(e)) || [];
     message.columns = object.columns?.map((e) => ColumnMetadata.fromPartial(e)) || [];
     message.triggers = object.triggers?.map((e) => TriggerMetadata.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseDependentColumn(): DependentColumn {
+function createBaseDependencyColumn(): DependencyColumn {
   return { schema: "", table: "", column: "" };
 }
 
-export const DependentColumn: MessageFns<DependentColumn> = {
-  encode(message: DependentColumn, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const DependencyColumn: MessageFns<DependencyColumn> = {
+  encode(message: DependencyColumn, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.schema !== "") {
       writer.uint32(10).string(message.schema);
     }
@@ -4191,10 +4191,10 @@ export const DependentColumn: MessageFns<DependentColumn> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): DependentColumn {
+  decode(input: BinaryReader | Uint8Array, length?: number): DependencyColumn {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDependentColumn();
+    const message = createBaseDependencyColumn();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -4231,7 +4231,7 @@ export const DependentColumn: MessageFns<DependentColumn> = {
     return message;
   },
 
-  fromJSON(object: any): DependentColumn {
+  fromJSON(object: any): DependencyColumn {
     return {
       schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
       table: isSet(object.table) ? globalThis.String(object.table) : "",
@@ -4239,7 +4239,7 @@ export const DependentColumn: MessageFns<DependentColumn> = {
     };
   },
 
-  toJSON(message: DependentColumn): unknown {
+  toJSON(message: DependencyColumn): unknown {
     const obj: any = {};
     if (message.schema !== "") {
       obj.schema = message.schema;
@@ -4253,11 +4253,11 @@ export const DependentColumn: MessageFns<DependentColumn> = {
     return obj;
   },
 
-  create(base?: DeepPartial<DependentColumn>): DependentColumn {
-    return DependentColumn.fromPartial(base ?? {});
+  create(base?: DeepPartial<DependencyColumn>): DependencyColumn {
+    return DependencyColumn.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<DependentColumn>): DependentColumn {
-    const message = createBaseDependentColumn();
+  fromPartial(object: DeepPartial<DependencyColumn>): DependencyColumn {
+    const message = createBaseDependencyColumn();
     message.schema = object.schema ?? "";
     message.table = object.table ?? "";
     message.column = object.column ?? "";
@@ -4266,7 +4266,7 @@ export const DependentColumn: MessageFns<DependentColumn> = {
 };
 
 function createBaseMaterializedViewMetadata(): MaterializedViewMetadata {
-  return { name: "", definition: "", comment: "", dependentColumns: [], triggers: [], indexes: [] };
+  return { name: "", definition: "", comment: "", dependencyColumns: [], triggers: [], indexes: [] };
 }
 
 export const MaterializedViewMetadata: MessageFns<MaterializedViewMetadata> = {
@@ -4280,8 +4280,8 @@ export const MaterializedViewMetadata: MessageFns<MaterializedViewMetadata> = {
     if (message.comment !== "") {
       writer.uint32(26).string(message.comment);
     }
-    for (const v of message.dependentColumns) {
-      DependentColumn.encode(v!, writer.uint32(34).fork()).join();
+    for (const v of message.dependencyColumns) {
+      DependencyColumn.encode(v!, writer.uint32(34).fork()).join();
     }
     for (const v of message.triggers) {
       TriggerMetadata.encode(v!, writer.uint32(42).fork()).join();
@@ -4328,7 +4328,7 @@ export const MaterializedViewMetadata: MessageFns<MaterializedViewMetadata> = {
             break;
           }
 
-          message.dependentColumns.push(DependentColumn.decode(reader, reader.uint32()));
+          message.dependencyColumns.push(DependencyColumn.decode(reader, reader.uint32()));
           continue;
         }
         case 5: {
@@ -4361,8 +4361,8 @@ export const MaterializedViewMetadata: MessageFns<MaterializedViewMetadata> = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      dependentColumns: globalThis.Array.isArray(object?.dependentColumns)
-        ? object.dependentColumns.map((e: any) => DependentColumn.fromJSON(e))
+      dependencyColumns: globalThis.Array.isArray(object?.dependencyColumns)
+        ? object.dependencyColumns.map((e: any) => DependencyColumn.fromJSON(e))
         : [],
       triggers: globalThis.Array.isArray(object?.triggers)
         ? object.triggers.map((e: any) => TriggerMetadata.fromJSON(e))
@@ -4384,8 +4384,8 @@ export const MaterializedViewMetadata: MessageFns<MaterializedViewMetadata> = {
     if (message.comment !== "") {
       obj.comment = message.comment;
     }
-    if (message.dependentColumns?.length) {
-      obj.dependentColumns = message.dependentColumns.map((e) => DependentColumn.toJSON(e));
+    if (message.dependencyColumns?.length) {
+      obj.dependencyColumns = message.dependencyColumns.map((e) => DependencyColumn.toJSON(e));
     }
     if (message.triggers?.length) {
       obj.triggers = message.triggers.map((e) => TriggerMetadata.toJSON(e));
@@ -4404,19 +4404,19 @@ export const MaterializedViewMetadata: MessageFns<MaterializedViewMetadata> = {
     message.name = object.name ?? "";
     message.definition = object.definition ?? "";
     message.comment = object.comment ?? "";
-    message.dependentColumns = object.dependentColumns?.map((e) => DependentColumn.fromPartial(e)) || [];
+    message.dependencyColumns = object.dependencyColumns?.map((e) => DependencyColumn.fromPartial(e)) || [];
     message.triggers = object.triggers?.map((e) => TriggerMetadata.fromPartial(e)) || [];
     message.indexes = object.indexes?.map((e) => IndexMetadata.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseDependentTable(): DependentTable {
+function createBaseDependencyTable(): DependencyTable {
   return { schema: "", table: "" };
 }
 
-export const DependentTable: MessageFns<DependentTable> = {
-  encode(message: DependentTable, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const DependencyTable: MessageFns<DependencyTable> = {
+  encode(message: DependencyTable, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.schema !== "") {
       writer.uint32(10).string(message.schema);
     }
@@ -4426,10 +4426,10 @@ export const DependentTable: MessageFns<DependentTable> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): DependentTable {
+  decode(input: BinaryReader | Uint8Array, length?: number): DependencyTable {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDependentTable();
+    const message = createBaseDependencyTable();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -4458,14 +4458,14 @@ export const DependentTable: MessageFns<DependentTable> = {
     return message;
   },
 
-  fromJSON(object: any): DependentTable {
+  fromJSON(object: any): DependencyTable {
     return {
       schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
       table: isSet(object.table) ? globalThis.String(object.table) : "",
     };
   },
 
-  toJSON(message: DependentTable): unknown {
+  toJSON(message: DependencyTable): unknown {
     const obj: any = {};
     if (message.schema !== "") {
       obj.schema = message.schema;
@@ -4476,11 +4476,11 @@ export const DependentTable: MessageFns<DependentTable> = {
     return obj;
   },
 
-  create(base?: DeepPartial<DependentTable>): DependentTable {
-    return DependentTable.fromPartial(base ?? {});
+  create(base?: DeepPartial<DependencyTable>): DependencyTable {
+    return DependencyTable.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<DependentTable>): DependentTable {
-    const message = createBaseDependentTable();
+  fromPartial(object: DeepPartial<DependencyTable>): DependencyTable {
+    const message = createBaseDependencyTable();
     message.schema = object.schema ?? "";
     message.table = object.table ?? "";
     return message;
@@ -4497,7 +4497,7 @@ function createBaseFunctionMetadata(): FunctionMetadata {
     databaseCollation: "",
     sqlMode: "",
     comment: "",
-    dependentTables: [],
+    dependencyTables: [],
   };
 }
 
@@ -4527,8 +4527,8 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     if (message.comment !== "") {
       writer.uint32(66).string(message.comment);
     }
-    for (const v of message.dependentTables) {
-      DependentTable.encode(v!, writer.uint32(74).fork()).join();
+    for (const v of message.dependencyTables) {
+      DependencyTable.encode(v!, writer.uint32(74).fork()).join();
     }
     return writer;
   },
@@ -4609,7 +4609,7 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
             break;
           }
 
-          message.dependentTables.push(DependentTable.decode(reader, reader.uint32()));
+          message.dependencyTables.push(DependencyTable.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -4631,8 +4631,8 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
       databaseCollation: isSet(object.databaseCollation) ? globalThis.String(object.databaseCollation) : "",
       sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      dependentTables: globalThis.Array.isArray(object?.dependentTables)
-        ? object.dependentTables.map((e: any) => DependentTable.fromJSON(e))
+      dependencyTables: globalThis.Array.isArray(object?.dependencyTables)
+        ? object.dependencyTables.map((e: any) => DependencyTable.fromJSON(e))
         : [],
     };
   },
@@ -4663,8 +4663,8 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     if (message.comment !== "") {
       obj.comment = message.comment;
     }
-    if (message.dependentTables?.length) {
-      obj.dependentTables = message.dependentTables.map((e) => DependentTable.toJSON(e));
+    if (message.dependencyTables?.length) {
+      obj.dependencyTables = message.dependencyTables.map((e) => DependencyTable.toJSON(e));
     }
     return obj;
   },
@@ -4682,7 +4682,7 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     message.databaseCollation = object.databaseCollation ?? "";
     message.sqlMode = object.sqlMode ?? "";
     message.comment = object.comment ?? "";
-    message.dependentTables = object.dependentTables?.map((e) => DependentTable.fromPartial(e)) || [];
+    message.dependencyTables = object.dependencyTables?.map((e) => DependencyTable.fromPartial(e)) || [];
     return message;
   },
 };

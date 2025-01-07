@@ -66,14 +66,14 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 				v1View.Columns = append(v1View.Columns, convertStoreColumnMetadata(column))
 			}
 
-			for _, dependentColumn := range view.DependentColumns {
-				if dependentColumn == nil {
+			for _, dependencyColumn := range view.DependencyColumns {
+				if dependencyColumn == nil {
 					continue
 				}
-				v1View.DependentColumns = append(v1View.DependentColumns, &v1pb.DependentColumn{
-					Schema: dependentColumn.Schema,
-					Table:  dependentColumn.Table,
-					Column: dependentColumn.Column,
+				v1View.DependencyColumns = append(v1View.DependencyColumns, &v1pb.DependencyColumn{
+					Schema: dependencyColumn.Schema,
+					Table:  dependencyColumn.Table,
+					Column: dependencyColumn.Column,
 				})
 			}
 
@@ -101,8 +101,8 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 				SqlMode:             function.SqlMode,
 				Comment:             function.Comment,
 			}
-			for _, dep := range function.DependentTables {
-				v1Func.DependentTables = append(v1Func.DependentTables, &v1pb.DependentTable{
+			for _, dep := range function.DependencyTables {
+				v1Func.DependencyTables = append(v1Func.DependencyTables, &v1pb.DependencyTable{
 					Schema: dep.Schema,
 					Table:  dep.Table,
 				})
@@ -227,15 +227,15 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 				Comment:    matview.Comment,
 			}
 
-			for _, dependentColumn := range matview.DependentColumns {
-				if dependentColumn == nil {
+			for _, dependencyColumn := range matview.DependencyColumns {
+				if dependencyColumn == nil {
 					continue
 				}
-				v1Matview.DependentColumns = append(v1Matview.DependentColumns,
-					&v1pb.DependentColumn{
-						Schema: dependentColumn.Schema,
-						Table:  dependentColumn.Table,
-						Column: dependentColumn.Column,
+				v1Matview.DependencyColumns = append(v1Matview.DependencyColumns,
+					&v1pb.DependencyColumn{
+						Schema: dependencyColumn.Schema,
+						Table:  dependencyColumn.Table,
+						Column: dependencyColumn.Column,
 					})
 			}
 
@@ -616,12 +616,12 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 				storeView.Columns = append(storeView.Columns, convertV1ColumnMetadata(column))
 			}
 
-			for _, dependentColumn := range view.DependentColumns {
-				storeView.DependentColumns = append(storeView.DependentColumns,
-					&storepb.DependentColumn{
-						Schema: dependentColumn.Schema,
-						Table:  dependentColumn.Table,
-						Column: dependentColumn.Column,
+			for _, dependencyColumn := range view.DependencyColumns {
+				storeView.DependencyColumns = append(storeView.DependencyColumns,
+					&storepb.DependencyColumn{
+						Schema: dependencyColumn.Schema,
+						Table:  dependencyColumn.Table,
+						Column: dependencyColumn.Column,
 					})
 			}
 
@@ -643,15 +643,15 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 				Definition: materializedView.Definition,
 				Comment:    materializedView.Comment,
 			}
-			for _, dependentColumn := range materializedView.DependentColumns {
-				if dependentColumn == nil {
+			for _, dependencyColumn := range materializedView.DependencyColumns {
+				if dependencyColumn == nil {
 					continue
 				}
-				storeMaterializedView.DependentColumns = append(storeMaterializedView.DependentColumns,
-					&storepb.DependentColumn{
-						Schema: dependentColumn.Schema,
-						Table:  dependentColumn.Table,
-						Column: dependentColumn.Column,
+				storeMaterializedView.DependencyColumns = append(storeMaterializedView.DependencyColumns,
+					&storepb.DependencyColumn{
+						Schema: dependencyColumn.Schema,
+						Table:  dependencyColumn.Table,
+						Column: dependencyColumn.Column,
 					})
 			}
 
@@ -685,8 +685,8 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 				SqlMode:             function.SqlMode,
 				Comment:             function.Comment,
 			}
-			for _, dep := range function.DependentTables {
-				storeFunc.DependentTables = append(storeFunc.DependentTables, &storepb.DependentTable{
+			for _, dep := range function.DependencyTables {
+				storeFunc.DependencyTables = append(storeFunc.DependencyTables, &storepb.DependencyTable{
 					Schema: dep.Schema,
 					Table:  dep.Table,
 				})

@@ -95,7 +95,7 @@ func TestPostgreSQLWalkThrough(t *testing.T) {
 					{
 						Name:       "v1",
 						Definition: "SELECT id, name FROM test",
-						DependentColumns: []*storepb.DependentColumn{
+						DependencyColumns: []*storepb.DependencyColumn{
 							{
 								Schema: "public",
 								Table:  "test",

@@ -2728,7 +2728,7 @@
       "indexes": "索引",
       "edit-indexes": "インデックスの編集",
       "unique": "唯一",
-      "dependent-columns": "従属列"
+      "dependency-columns": "従属列"
     },
     "generated-ddl-is-empty": "生成された DDL は空です",
     "table-partition": {

@@ -105,7 +105,7 @@ export const filterViewMetadata = (view: ViewMetadata) => {
     name: view.name,
     comment: view.comment,
     definition: view.definition,
-    dependentColumns: cloneDeep(view.dependentColumns),
+    dependencyColumns: cloneDeep(view.dependencyColumns),
   });
 };
 

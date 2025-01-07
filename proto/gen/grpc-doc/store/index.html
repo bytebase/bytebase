@@ -370,11 +370,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.DependentColumn"><span class="badge">M</span>DependentColumn</a>
+                  <a href="#bytebase.store.DependencyColumn"><span class="badge">M</span>DependencyColumn</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.DependentTable"><span class="badge">M</span>DependentTable</a>
+                  <a href="#bytebase.store.DependencyTable"><span class="badge">M</span>DependencyTable</a>
                 </li>
               
                 <li>
@@ -3315,8 +3315,8 @@ classification and user_comment is parsed from the comment. </p></td>
 
         
       
-        <h3 id="bytebase.store.DependentColumn">DependentColumn</h3>
-        <p>DependentColumn is the metadata for dependent columns.</p>
+        <h3 id="bytebase.store.DependencyColumn">DependencyColumn</h3>
+        <p>DependencyColumn is the metadata for dependency columns.</p>
 
         
           <table class="field-table">
@@ -3353,7 +3353,7 @@ classification and user_comment is parsed from the comment. </p></td>
 
         
       
-        <h3 id="bytebase.store.DependentTable">DependentTable</h3>
+        <h3 id="bytebase.store.DependencyTable">DependencyTable</h3>
         <p></p>
 
         
@@ -3763,10 +3763,10 @@ function takes. </p></td>
                 </tr>
               
                 <tr>
-                  <td>dependent_tables</td>
-                  <td><a href="#bytebase.store.DependentTable">DependentTable</a></td>
+                  <td>dependency_tables</td>
+                  <td><a href="#bytebase.store.DependencyTable">DependencyTable</a></td>
                   <td>repeated</td>
-                  <td><p>The dependent_tables is the list of dependent tables of a function.
+                  <td><p>The dependency_tables is the list of dependency tables of a function.
 For PostgreSQL, it&#39;s the list of tables that the function depends on the return type definition. </p></td>
                 </tr>
               
@@ -4028,10 +4028,10 @@ engine. </p></td>
                 </tr>
               
                 <tr>
-                  <td>dependent_columns</td>
-                  <td><a href="#bytebase.store.DependentColumn">DependentColumn</a></td>
+                  <td>dependency_columns</td>
+                  <td><a href="#bytebase.store.DependencyColumn">DependencyColumn</a></td>
                   <td>repeated</td>
-                  <td><p>The dependent_columns is the list of dependent columns of a view. </p></td>
+                  <td><p>The dependency_columns is the list of dependency columns of a view. </p></td>
                 </tr>
               
                 <tr>
@@ -5277,10 +5277,10 @@ Format: projcets/{project}/branches/{branch} </p></td>
                 </tr>
               
                 <tr>
-                  <td>dependent_columns</td>
-                  <td><a href="#bytebase.store.DependentColumn">DependentColumn</a></td>
+                  <td>dependency_columns</td>
+                  <td><a href="#bytebase.store.DependencyColumn">DependencyColumn</a></td>
                   <td>repeated</td>
-                  <td><p>The dependent_columns is the list of dependent columns of a view. </p></td>
+                  <td><p>The dependency_columns is the list of dependency columns of a view. </p></td>
                 </tr>
               
                 <tr>
