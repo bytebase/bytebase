@@ -1,16 +1,22 @@
 - oldSchema: CREATE SCHEMA s1; CREATE SCHEMA s2;
   newSchema: CREATE SCHEMA s1;
   diff: |+
+    SET check_function_bodies = false;
+
     DROP SCHEMA "s2";
 
 - oldSchema: CREATE SCHEMA s1;
   newSchema: CREATE SCHEMA s1; CREATE SCHEMA s2;
   diff: |+
+    SET check_function_bodies = false;
+
     CREATE SCHEMA "s2";
 
 - oldSchema: CREATE SCHEMA s1; CREATE SCHEMA s2;
   newSchema: CREATE SCHEMA s2; CREATE SCHEMA s3;
   diff: |+
+    SET check_function_bodies = false;
+
     DROP SCHEMA "s1";
 
     CREATE SCHEMA "s3";
