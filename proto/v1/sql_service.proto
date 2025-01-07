@@ -17,48 +17,46 @@ option go_package = "generated-go/v1";
 service SQLService {
   rpc Query(QueryRequest) returns (QueryResponse) {
     option (google.api.http) = {
-      post: "/v1/{name=instances/*/databases/*}:query"
-      body: "*"
+      post : "/v1/{name=instances/*/databases/*}:query"
+      body : "*"
 
-      additional_bindings: {
-        post: "/v1/{name=instances/*}:query"
-        body: "*"
-      }
+      additional_bindings : {post : "/v1/{name=instances/*}:query" body : "*"}
     };
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }
 
-  rpc AdminExecute(stream AdminExecuteRequest) returns (stream AdminExecuteResponse) {
+  rpc AdminExecute(stream AdminExecuteRequest)
+      returns (stream AdminExecuteResponse) {
     // GRPC streaming / websocket requires GET method instead of POST.
-    option (google.api.http) = {get: "/v1:adminExecute"};
+    option (google.api.http) = {
+      get : "/v1:adminExecute"
+    };
     option (bytebase.v1.permission) = "bb.sql.admin";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }
 
   // SearchQueryHistories searches query histories for the caller.
-  rpc SearchQueryHistories(SearchQueryHistoriesRequest) returns (SearchQueryHistoriesResponse) {
+  rpc SearchQueryHistories(SearchQueryHistoriesRequest)
+      returns (SearchQueryHistoriesResponse) {
     option (google.api.http) = {
-      post: "/v1/queryHistories:search"
-      body: "*"
+      post : "/v1/queryHistories:search"
+      body : "*"
     };
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc Export(ExportRequest) returns (ExportResponse) {
     option (google.api.http) = {
-      post: "/v1/{name=instances/*/databases/*}:export"
-      body: "*"
+      post : "/v1/{name=instances/*/databases/*}:export"
+      body : "*"
 
-      additional_bindings: {
-        post: "/v1/{name=instances/*}:export"
-        body: "*"
-      }
-      additional_bindings: {
-        post: "/v1/{name=projects/*/issues/*}:export"
-        body: "*"
+      additional_bindings : {post : "/v1/{name=instances/*}:export" body : "*"}
+      additional_bindings : {
+        post : "/v1/{name=projects/*/issues/*}:export"
+        body : "*"
       }
     };
     option (bytebase.v1.permission) = "bb.databases.get";
@@ -68,33 +66,35 @@ service SQLService {
 
   rpc Check(CheckRequest) returns (CheckResponse) {
     option (google.api.http) = {
-      post: "/v1/sql/check"
-      body: "*"
+      post : "/v1/sql/check"
+      body : "*"
     };
     option (bytebase.v1.permission) = "bb.databases.check";
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  rpc ParseMyBatisMapper(ParseMyBatisMapperRequest) returns (ParseMyBatisMapperResponse) {
+  rpc ParseMyBatisMapper(ParseMyBatisMapperRequest)
+      returns (ParseMyBatisMapperResponse) {
     option (google.api.http) = {
-      post: "/v1/sql/parseMyBatisMapper"
-      body: "*"
+      post : "/v1/sql/parseMyBatisMapper"
+      body : "*"
     };
     option (bytebase.v1.allow_without_credential) = true;
   }
 
   rpc Pretty(PrettyRequest) returns (PrettyResponse) {
     option (google.api.http) = {
-      post: "/v1/sql/pretty"
-      body: "*"
+      post : "/v1/sql/pretty"
+      body : "*"
     };
     option (bytebase.v1.allow_without_credential) = true;
   }
 
-  rpc StringifyMetadata(StringifyMetadataRequest) returns (StringifyMetadataResponse) {
+  rpc StringifyMetadata(StringifyMetadataRequest)
+      returns (StringifyMetadataResponse) {
     option (google.api.http) = {
-      post: "/v1/schemaDesign:stringifyMetadata"
-      body: "*"
+      post : "/v1/schemaDesign:stringifyMetadata"
+      body : "*"
     };
     option (bytebase.v1.allow_without_credential) = true;
   }
@@ -107,7 +107,7 @@ message AdminExecuteRequest {
   // Format: instances/{instance}/databases/{databaseName}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+    (google.api.resource_reference) = {type : "bytebase.com/Database"}
   ];
 
   // The SQL statement to execute.
@@ -119,8 +119,13 @@ message AdminExecuteRequest {
   // The timeout for the request.
   google.protobuf.Duration timeout = 5;
 
-  // The default schema to execute the statement. Equals to the current schema in Oracle and search path in Postgres.
+  // The default schema to execute the statement. Equals to the current schema
+  // in Oracle and search path in Postgres.
   optional string schema = 6;
+
+  // Container is the container name to execute the query against, used for
+  // CosmosDB only.
+  optional string container = 7;
 }
 
 message AdminExecuteResponse {
@@ -135,7 +140,7 @@ message QueryRequest {
   // Format: instances/{instance}/databases/{databaseName}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+    (google.api.resource_reference) = {type : "bytebase.com/Database"}
   ];
 
   // The SQL statement to execute.
@@ -148,17 +153,23 @@ message QueryRequest {
   optional google.protobuf.Duration timeout = 5;
 
   // The id of data source.
-  // It is used for querying admin data source even if the instance has read-only data sources.
-  // Or it can be used to query a specific read-only data source.
+  // It is used for querying admin data source even if the instance has
+  // read-only data sources. Or it can be used to query a specific read-only
+  // data source.
   string data_source_id = 6;
 
   // Explain the statement.
   bool explain = 7;
 
-  // The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres.
+  // The default schema to search objects. Equals to the current schema in
+  // Oracle and search path in Postgres.
   optional string schema = 8;
 
   QueryOption query_option = 9;
+
+  // Container is the container name to execute the query against, used for
+  // CosmosDB only.
+  optional string container = 10;
 }
 
 message QueryResponse {
@@ -209,9 +220,7 @@ message QueryResult {
   // The query statement for the result.
   string statement = 8;
 
-  oneof detailed_error {
-    PostgresError postgres_error = 9;
-  }
+  oneof detailed_error { PostgresError postgres_error = 9; }
 
   // refer https://www.postgresql.org/docs/11/protocol-error-fields.html
   // for field description.
@@ -244,11 +253,12 @@ message QueryRow {
 message RowValue {
   message TimestampTZ {
     google.protobuf.Timestamp timestamp = 1;
-    // Zone is the time zone abbreviations in timezone database such as "PDT", "PST".
-    // https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-    // We retrieve the time zone information from the timestamptz field in the database.
-    // A timestamp is in UTC or epoch time, and with zone info, we can convert it to a local time string.
-    // Zone and offset are returned by time.Time.Zone()
+    // Zone is the time zone abbreviations in timezone database such as "PDT",
+    // "PST". https://en.wikipedia.org/wiki/List_of_tz_database_time_zones We
+    // retrieve the time zone information from the timestamptz field in the
+    // database. A timestamp is in UTC or epoch time, and with zone info, we can
+    // convert it to a local time string. Zone and offset are returned by
+    // time.Time.Zone()
     string zone = 2;
     // The offset is in seconds east of UTC
     int32 offset = 3;
@@ -267,10 +277,13 @@ message RowValue {
     uint64 uint64_value = 10;
     // value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only.
     google.protobuf.Value value_value = 11;
-    // timestamp_value is used for the timestamp without time zone data type, meaning it only includes the timestamp without any time zone or location info.
-    // Although it may be expressed as a UTC value, it should be seen as a timestamp missing location context.
+    // timestamp_value is used for the timestamp without time zone data type,
+    // meaning it only includes the timestamp without any time zone or location
+    // info. Although it may be expressed as a UTC value, it should be seen as a
+    // timestamp missing location context.
     google.protobuf.Timestamp timestamp_value = 12;
-    // timestamp_tz_value is used for the timestamptz data type, which accurately represents the timestamp with location information.
+    // timestamp_tz_value is used for the timestamptz data type, which
+    // accurately represents the timestamp with location information.
     TimestampTZ timestamp_tz_value = 13;
   }
 }
@@ -318,7 +331,7 @@ message ExportRequest {
   // Format: projects/{project}/issues/{issue} for data export issue.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+    (google.api.resource_reference) = {type : "bytebase.com/Database"}
   ];
 
   // The SQL statement to execute.
@@ -330,16 +343,17 @@ message ExportRequest {
   // The export format.
   ExportFormat format = 5;
 
-  // The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode.
-  // The exported data is not masked.
+  // The admin is used for workspace owner and DBA for exporting data from SQL
+  // Editor Admin mode. The exported data is not masked.
   bool admin = 6;
 
   // The zip password provide by users.
   string password = 7;
 
   // The id of data source.
-  // It is used for querying admin data source even if the instance has read-only data sources.
-  // Or it can be used to query a specific read-only data source.
+  // It is used for querying admin data source even if the instance has
+  // read-only data sources. Or it can be used to query a specific read-only
+  // data source.
   string data_source_id = 8;
 }
 
@@ -351,11 +365,13 @@ message ExportResponse {
 message PrettyRequest {
   Engine engine = 1;
 
-  // The SDL format SQL schema information that was dumped from a database engine.
-  // This information will be sorted to match the order of statements in the userSchema.
+  // The SDL format SQL schema information that was dumped from a database
+  // engine. This information will be sorted to match the order of statements in
+  // the userSchema.
   string current_schema = 2;
 
-  // The expected SDL schema. This schema will be checked for correctness and normalized.
+  // The expected SDL schema. This schema will be checked for correctness and
+  // normalized.
   string expected_schema = 3;
 }
 
@@ -372,14 +388,15 @@ message CheckRequest {
   // Format: instances/{instance}/databases/{database}
   string name = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+    (google.api.resource_reference) = {type : "bytebase.com/Database"}
   ];
 
   string statement = 1;
 
-  // The database metadata to check against. It can be used to check against an uncommitted metadata.
-  // If not provided, the database metadata will be fetched from the database.
-  DatabaseMetadata metadata = 3 [(google.api.field_behavior) = OPTIONAL];
+  // The database metadata to check against. It can be used to check against an
+  // uncommitted metadata. If not provided, the database metadata will be
+  // fetched from the database.
+  DatabaseMetadata metadata = 3 [ (google.api.field_behavior) = OPTIONAL ];
 
   enum ChangeType {
     CHANGE_TYPE_UNSPECIFIED = 0;
@@ -391,28 +408,23 @@ message CheckRequest {
   ChangeType change_type = 4;
 }
 
-message CheckResponse {
-  repeated Advice advices = 1;
-}
+message CheckResponse { repeated Advice advices = 1; }
 
-message ParseMyBatisMapperRequest {
-  bytes content = 1;
-}
+message ParseMyBatisMapperRequest { bytes content = 1; }
 
-message ParseMyBatisMapperResponse {
-  repeated string statements = 1;
-}
+message ParseMyBatisMapperResponse { repeated string statements = 1; }
 
 message StringifyMetadataRequest {
-  DatabaseMetadata metadata = 1 [(google.api.field_behavior) = REQUIRED];
+  DatabaseMetadata metadata = 1 [ (google.api.field_behavior) = REQUIRED ];
   // The database engine of the schema string.
   Engine engine = 2;
-  // If false, we will build the raw common by classification in database config.
+  // If false, we will build the raw common by classification in database
+  // config.
   bool classification_from_config = 3;
 }
 
 message StringifyMetadataResponse {
-  string schema = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string schema = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 }
 
 message SearchQueryHistoriesRequest {
@@ -427,8 +439,9 @@ message SearchQueryHistoriesRequest {
   string page_token = 2;
 
   // filter is the filter to apply on the search query history,
-  // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-  // Support filter by:
+  // follow the
+  // [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
+  // syntax. Support filter by:
   // - database, for example:
   //    database = "instances/{instance}/databases/{database}"
   // - instance, for example:
@@ -440,32 +453,35 @@ message SearchQueryHistoriesRequest {
 
 message SearchQueryHistoriesResponse {
   // The list of history.
-  repeated QueryHistory query_histories = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated QueryHistory query_histories = 1
+      [ (google.api.field_behavior) = OUTPUT_ONLY ];
 
   // A token to retrieve next page of history.
-  // Pass this value in the page_token field in the subsequent call to `ListQueryHistory` method
-  // to retrieve the next page of history.
+  // Pass this value in the page_token field in the subsequent call to
+  // `ListQueryHistory` method to retrieve the next page of history.
   string next_page_token = 2;
 }
 
 message QueryHistory {
   // The name for the query history.
   // Format: queryHistories/{uid}
-  string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 
   // The database name to execute the query.
   // Format: instances/{instance}/databases/{databaseName}
-  string database = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string database = 2 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 
-  string creator = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string creator = 3 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 
-  google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 4
+      [ (google.api.field_behavior) = OUTPUT_ONLY ];
 
-  string statement = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string statement = 5 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 
-  optional string error = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  optional string error = 6 [ (google.api.field_behavior) = OUTPUT_ONLY ];
 
-  google.protobuf.Duration duration = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Duration duration = 7
+      [ (google.api.field_behavior) = OUTPUT_ONLY ];
 
   enum Type {
     TYPE_UNSPECIFIED = 0;

@@ -8443,7 +8443,16 @@ paths:
                     description: Represents a a duration between -315,576,000,000s and 315,576,000,000s (around 10000 years). Precision is in nanoseconds. 1 nanosecond is represented as 0.000000001s
                 - name: schema
                   in: query
-                  description: The default schema to execute the statement. Equals to the current schema in Oracle and search path in Postgres.
+                  description: |-
+                    The default schema to execute the statement. Equals to the current schema
+                     in Oracle and search path in Postgres.
+                  schema:
+                    type: string
+                - name: container
+                  in: query
+                  description: |-
+                    Container is the container name to execute the query against, used for
+                     CosmosDB only.
                   schema:
                     type: string
             responses:
@@ -9553,8 +9562,9 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/DatabaseMetadata'
                     description: |-
-                        The database metadata to check against. It can be used to check against an uncommitted metadata.
-                         If not provided, the database metadata will be fetched from the database.
+                        The database metadata to check against. It can be used to check against an
+                         uncommitted metadata. If not provided, the database metadata will be
+                         fetched from the database.
                 changeType:
                     enum:
                         - CHANGE_TYPE_UNSPECIFIED
@@ -10271,8 +10281,8 @@ components:
                 admin:
                     type: boolean
                     description: |-
-                        The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode.
-                         The exported data is not masked.
+                        The admin is used for workspace owner and DBA for exporting data from SQL
+                         Editor Admin mode. The exported data is not masked.
                 password:
                     type: string
                     description: The zip password provide by users.
@@ -10280,8 +10290,9 @@ components:
                     type: string
                     description: |-
                         The id of data source.
-                         It is used for querying admin data source even if the instance has read-only data sources.
-                         Or it can be used to query a specific read-only data source.
+                         It is used for querying admin data source even if the instance has
+                         read-only data sources. Or it can be used to query a specific read-only
+                         data source.
         ExportResponse:
             type: object
             properties:
@@ -12289,11 +12300,14 @@ components:
                 currentSchema:
                     type: string
                     description: |-
-                        The SDL format SQL schema information that was dumped from a database engine.
-                         This information will be sorted to match the order of statements in the userSchema.
+                        The SDL format SQL schema information that was dumped from a database
+                         engine. This information will be sorted to match the order of statements in
+                         the userSchema.
                 expectedSchema:
                     type: string
-                    description: The expected SDL schema. This schema will be checked for correctness and normalized.
+                    description: |-
+                        The expected SDL schema. This schema will be checked for correctness and
+                         normalized.
         PrettyResponse:
             type: object
             properties:
@@ -12511,16 +12525,24 @@ components:
                     type: string
                     description: |-
                         The id of data source.
-                         It is used for querying admin data source even if the instance has read-only data sources.
-                         Or it can be used to query a specific read-only data source.
+                         It is used for querying admin data source even if the instance has
+                         read-only data sources. Or it can be used to query a specific read-only
+                         data source.
                 explain:
                     type: boolean
                     description: Explain the statement.
                 schema:
                     type: string
-                    description: The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres.
+                    description: |-
+                        The default schema to search objects. Equals to the current schema in
+                         Oracle and search path in Postgres.
                 queryOption:
                     $ref: '#/components/schemas/QueryOption'
+                container:
+                    type: string
+                    description: |-
+                        Container is the container name to execute the query against, used for
+                         CosmosDB only.
         QueryResponse:
             type: object
             properties:
@@ -13110,13 +13132,17 @@ components:
                 timestampValue:
                     type: string
                     description: |-
-                        timestamp_value is used for the timestamp without time zone data type, meaning it only includes the timestamp without any time zone or location info.
-                         Although it may be expressed as a UTC value, it should be seen as a timestamp missing location context.
+                        timestamp_value is used for the timestamp without time zone data type,
+                         meaning it only includes the timestamp without any time zone or location
+                         info. Although it may be expressed as a UTC value, it should be seen as a
+                         timestamp missing location context.
                     format: date-time
                 timestampTzValue:
                     allOf:
                         - $ref: '#/components/schemas/RowValue_TimestampTZ'
-                    description: timestamp_tz_value is used for the timestamptz data type, which accurately represents the timestamp with location information.
+                    description: |-
+                        timestamp_tz_value is used for the timestamptz data type, which
+                         accurately represents the timestamp with location information.
         RowValue_TimestampTZ:
             type: object
             properties:
@@ -13126,11 +13152,12 @@ components:
                 zone:
                     type: string
                     description: |-
-                        Zone is the time zone abbreviations in timezone database such as "PDT", "PST".
-                         https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-                         We retrieve the time zone information from the timestamptz field in the database.
-                         A timestamp is in UTC or epoch time, and with zone info, we can convert it to a local time string.
-                         Zone and offset are returned by time.Time.Zone()
+                        Zone is the time zone abbreviations in timezone database such as "PDT",
+                         "PST". https://en.wikipedia.org/wiki/List_of_tz_database_time_zones We
+                         retrieve the time zone information from the timestamptz field in the
+                         database. A timestamp is in UTC or epoch time, and with zone info, we can
+                         convert it to a local time string. Zone and offset are returned by
+                         time.Time.Zone()
                 offset:
                     type: integer
                     description: The offset is in seconds east of UTC
@@ -13644,8 +13671,9 @@ components:
                     type: string
                     description: |-
                         filter is the filter to apply on the search query history,
-                         follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-                         Support filter by:
+                         follow the
+                         [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
+                         syntax. Support filter by:
                          - database, for example:
                             database = "instances/{instance}/databases/{database}"
                          - instance, for example:
@@ -13665,8 +13693,8 @@ components:
                     type: string
                     description: |-
                         A token to retrieve next page of history.
-                         Pass this value in the page_token field in the subsequent call to `ListQueryHistory` method
-                         to retrieve the next page of history.
+                         Pass this value in the page_token field in the subsequent call to
+                         `ListQueryHistory` method to retrieve the next page of history.
         SearchVCSProviderRepositoriesRequest:
             required:
                 - name
@@ -14101,7 +14129,9 @@ components:
                     format: enum
                 classificationFromConfig:
                     type: boolean
-                    description: If false, we will build the raw common by classification in database config.
+                    description: |-
+                        If false, we will build the raw common by classification in database
+                         config.
         StringifyMetadataResponse:
             type: object
             properties:
