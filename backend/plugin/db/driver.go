@@ -251,6 +251,9 @@ type QueryContext struct {
 	// Schema is the specific schema for the query.
 	// Mainly used for the search path of PostgreSQL.
 	Schema string
+	// Container is the specific container for the query.
+	// Mainly used for CosmosDB.
+	Container string
 	// Limit is the maximum row count returned. No limit enforced if limit <= 0
 	Limit         int
 	Explain       bool
