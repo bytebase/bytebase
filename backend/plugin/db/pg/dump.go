@@ -117,7 +117,7 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 			viewID := getTableID(schema.Name, view.Name)
 			viewMap[viewID] = view
 			graph.AddNode(viewID)
-			for _, dependency := range view.DependentColumns {
+			for _, dependency := range view.DependencyColumns {
 				dependencyID := getTableID(dependency.Schema, dependency.Table)
 				graph.AddEdge(dependencyID, viewID)
 			}
@@ -126,7 +126,7 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 			viewID := getTableID(schema.Name, view.Name)
 			materializedViewMap[viewID] = view
 			graph.AddNode(viewID)
-			for _, dependency := range view.DependentColumns {
+			for _, dependency := range view.DependencyColumns {
 				dependencyID := getTableID(dependency.Schema, dependency.Table)
 				graph.AddEdge(dependencyID, viewID)
 			}

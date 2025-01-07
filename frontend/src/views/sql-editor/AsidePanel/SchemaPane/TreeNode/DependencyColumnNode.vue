@@ -18,11 +18,11 @@ const props = defineProps<{
 }>();
 
 const target = computed(
-  () => (props.node as TreeNode<"dependent-column">).meta.target
+  () => (props.node as TreeNode<"dependency-column">).meta.target
 );
 
 const text = computed(() => {
-  const { schema, table, column } = target.value.dependentColumn;
+  const { schema, table, column } = target.value.dependencyColumn;
   const parts = [table, column];
   if (schema) parts.unshift(schema);
   return parts.join(".");
