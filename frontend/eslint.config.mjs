@@ -35,6 +35,7 @@ export default [
           "enableFix": false
         }
       ],
+      "@intlify/vue-i18n/no-raw-text": "off",
       "@typescript-eslint/no-explicit-any": "off",
       "vue/no-mutating-props": "error",
       "vue/no-unused-components": "error",
@@ -58,7 +59,7 @@ export default [
     },
     settings: {
       'vue-i18n': {
-        localeDir: './src/locales/*.{json,json5,yaml,yml}',
+        localeDir: './src/locales/*.json',
         messageSyntaxVersion: '^9.0.0'
       }
     },
