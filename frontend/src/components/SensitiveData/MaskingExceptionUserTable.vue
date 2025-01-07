@@ -181,9 +181,7 @@ const getExceptionIdentifier = (
   exception: MaskingExceptionPolicy_MaskingException
 ): string => {
   const expression = exception.condition?.expression ?? "";
-  const res: string[] = [
-    expression,
-  ];
+  const res: string[] = [expression];
   return res.join(" && ");
 };
 
@@ -503,7 +501,9 @@ const updateExceptionPolicy = async () => {
   ).filter((exception) => !props.filterException(exception));
 
   for (const accessUser of state.accessList) {
-    const expressions = accessUser.rawExpression.split(" && ");
+    const expressions = accessUser.rawExpression
+      .split(" && ")
+      .filter((expression) => expression);
     const index = expressions.findIndex((exp) =>
       exp.startsWith("request.time")
     );
