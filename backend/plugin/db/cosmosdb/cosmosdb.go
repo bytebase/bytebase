@@ -4,6 +4,7 @@ package cosmosdb
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"io"
 
 	"google.golang.org/grpc/codes"
@@ -85,6 +86,49 @@ func (*Driver) Dump(_ context.Context, _ io.Writer, _ *storepb.DatabaseSchemaMet
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (*Driver) QueryConn(_ context.Context, _ *sql.Conn, _ string, _ db.QueryContext) ([]*v1pb.QueryResult, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method QueryConn unimplemented")
+func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	if queryContext.Container == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "container argument is required for CosmosDB")
+	}
+	container, err := driver.client.NewContainer(driver.databaseName, queryContext.Container)
+	if err != nil {
+		return nil, status.Error(codes.Internal, errors.Wrapf(err, "failed to create container").Error())
+	}
+	pager := container.NewCrossPartitionQueryItemsPager(statement, nil)
+	result := &v1pb.QueryResult{
+		ColumnNames:     []string{"id", "category"},
+		ColumnTypeNames: []string{"string", "string"},
+	}
+	for pager.More() {
+		response, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, status.Error(codes.Internal, errors.Wrapf(err, "failed to read more items").Error())
+		}
+		// TODO(zp): test only.
+		type Item struct {
+			ID       string `json:"id"`
+			Category string `json:"category"`
+		}
+		for _, bytes := range response.Items {
+			var item Item
+			if err := json.Unmarshal(bytes, &item); err != nil {
+				return nil, status.Error(codes.Internal, errors.Wrapf(err, "failed to unmarshal JSON").Error())
+			}
+			result.Rows = append(result.Rows, &v1pb.QueryRow{
+				Values: []*v1pb.RowValue{
+					{
+						Kind: &v1pb.RowValue_StringValue{
+							StringValue: item.ID,
+						},
+					},
+					{
+						Kind: &v1pb.RowValue_StringValue{
+							StringValue: item.Category,
+						},
+					},
+				},
+			})
+		}
+	}
+	return []*v1pb.QueryResult{result}, nil
 }
