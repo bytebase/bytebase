@@ -25,7 +25,7 @@
           aria-label="close"
           @click.prevent="tryClose()"
         >
-          <span class="sr-only">Close</span>
+          <span class="sr-only">{{t("common.close")}}</span>
           <XIcon class="w-5 h-auto hover:opacity-80" />
         </NButton>
       </div>

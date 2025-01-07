@@ -6,7 +6,7 @@
         ? 'absolute top-0 right-0 translate-x-[50%] translate-y-[-50%]'
         : ''
     "
-    >Beta</span
+    >{{t("common.beta")}}</span
   >
 </template>
 

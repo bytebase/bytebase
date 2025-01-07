@@ -299,7 +299,8 @@
     "title": "タイトル",
     "hide": "隠れる",
     "text-wrap": "テキストの折り返し",
-    "catalog": "カタログ"
+    "catalog": "カタログ",
+    "beta": "Beta"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -2730,6 +2731,7 @@
       "unique": "唯一",
       "dependent-columns": "従属列"
     },
+    "generating-ddl": "DDL の生成",
     "generated-ddl-is-empty": "生成された DDL は空です",
     "table-partition": {
       "partitions": "パーティション",
