@@ -299,8 +299,7 @@
     "title": "标题",
     "hide": "隐藏",
     "text-wrap": "文本折行",
-    "catalog": "Catalog",
-    "beta": "Beta"
+    "catalog": "Catalog"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -2731,7 +2730,6 @@
       "unique": "唯一",
       "dependent-columns": "依赖列"
     },
-    "generating-ddl": "DDL 生成中",
     "generated-ddl-is-empty": "生成的 DDL 为空",
     "table-partition": {
       "partitions": "分区",

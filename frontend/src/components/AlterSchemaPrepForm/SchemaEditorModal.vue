@@ -20,7 +20,7 @@
         <template v-if="state.previewStatus">{{
           state.previewStatus
         }}</template>
-        <template v-else-if="state.isGeneratingDDL">{{ $t('schema-editor.generating-ddl') }}</template>
+        <template v-else-if="state.isGeneratingDDL">Generating DDL</template>
       </span>
     </MaskSpinner>
 

@@ -299,8 +299,7 @@
     "title": "Título",
     "hide": "Esconder",
     "text-wrap": "Ajuste de texto",
-    "catalog": "Catálogo",
-    "beta": "Beta"
+    "catalog": "Catálogo"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -2731,7 +2730,6 @@
       "unique": "Único",
       "dependent-columns": "Columnas dependientes"
     },
-    "generating-ddl": "Generando DDL",
     "generated-ddl-is-empty": "El DDL generado está vacío",
     "table-partition": {
       "partitions": "Particiones",

@@ -5,6 +5,9 @@
       :plan-source="storedQuery.explain"
       :plan-query="storedQuery.statement"
     />
+    <template v-else>
+      <h1>session expired</h1>
+    </template>
   </div>
 </template>
 
