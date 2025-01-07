@@ -715,6 +715,13 @@ export interface MaterializedViewMetadata {
   indexes: IndexMetadata[];
 }
 
+export interface DependentTable {
+  /** The schema is the schema of a reference table. */
+  schema: string;
+  /** The table is the name of a reference table. */
+  table: string;
+}
+
 /** FunctionMetadata is the metadata for functions. */
 export interface FunctionMetadata {
   /** The name is the name of a function. */
@@ -732,6 +739,11 @@ export interface FunctionMetadata {
   databaseCollation: string;
   sqlMode: string;
   comment: string;
+  /**
+   * The dependent_tables is the list of dependent tables of a function.
+   * For PostgreSQL, it's the list of tables that the function depends on the return type definition.
+   */
+  dependentTables: DependentTable[];
 }
 
 /** ProcedureMetadata is the metadata for procedures. */
@@ -4399,6 +4411,82 @@ export const MaterializedViewMetadata: MessageFns<MaterializedViewMetadata> = {
   },
 };
 
+function createBaseDependentTable(): DependentTable {
+  return { schema: "", table: "" };
+}
+
+export const DependentTable: MessageFns<DependentTable> = {
+  encode(message: DependentTable, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.schema !== "") {
+      writer.uint32(10).string(message.schema);
+    }
+    if (message.table !== "") {
+      writer.uint32(18).string(message.table);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DependentTable {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDependentTable();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.schema = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.table = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DependentTable {
+    return {
+      schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
+      table: isSet(object.table) ? globalThis.String(object.table) : "",
+    };
+  },
+
+  toJSON(message: DependentTable): unknown {
+    const obj: any = {};
+    if (message.schema !== "") {
+      obj.schema = message.schema;
+    }
+    if (message.table !== "") {
+      obj.table = message.table;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DependentTable>): DependentTable {
+    return DependentTable.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DependentTable>): DependentTable {
+    const message = createBaseDependentTable();
+    message.schema = object.schema ?? "";
+    message.table = object.table ?? "";
+    return message;
+  },
+};
+
 function createBaseFunctionMetadata(): FunctionMetadata {
   return {
     name: "",
@@ -4409,6 +4497,7 @@ function createBaseFunctionMetadata(): FunctionMetadata {
     databaseCollation: "",
     sqlMode: "",
     comment: "",
+    dependentTables: [],
   };
 }
 
@@ -4437,6 +4526,9 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     }
     if (message.comment !== "") {
       writer.uint32(66).string(message.comment);
+    }
+    for (const v of message.dependentTables) {
+      DependentTable.encode(v!, writer.uint32(74).fork()).join();
     }
     return writer;
   },
@@ -4512,6 +4604,14 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
           message.comment = reader.string();
           continue;
         }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.dependentTables.push(DependentTable.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4531,6 +4631,9 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
       databaseCollation: isSet(object.databaseCollation) ? globalThis.String(object.databaseCollation) : "",
       sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
+      dependentTables: globalThis.Array.isArray(object?.dependentTables)
+        ? object.dependentTables.map((e: any) => DependentTable.fromJSON(e))
+        : [],
     };
   },
 
@@ -4560,6 +4663,9 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     if (message.comment !== "") {
       obj.comment = message.comment;
     }
+    if (message.dependentTables?.length) {
+      obj.dependentTables = message.dependentTables.map((e) => DependentTable.toJSON(e));
+    }
     return obj;
   },
 
@@ -4576,6 +4682,7 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     message.databaseCollation = object.databaseCollation ?? "";
     message.sqlMode = object.sqlMode ?? "";
     message.comment = object.comment ?? "";
+    message.dependentTables = object.dependentTables?.map((e) => DependentTable.fromPartial(e)) || [];
     return message;
   },
 };

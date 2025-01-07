@@ -514,6 +514,14 @@ message MaterializedViewMetadata {
   repeated IndexMetadata indexes = 6;
 }
 
+message DependentTable {
+  // The schema is the schema of a reference table.
+  string schema = 1;
+
+  // The table is the name of a reference table.
+  string table = 2;
+}
+
 // FunctionMetadata is the metadata for functions.
 message FunctionMetadata {
   // The name is the name of a function.
@@ -536,6 +544,10 @@ message FunctionMetadata {
   string sql_mode = 7;
 
   string comment = 8;
+
+  // The dependent_tables is the list of dependent tables of a function.
+  // For PostgreSQL, it's the list of tables that the function depends on the return type definition.
+  repeated DependentTable dependent_tables = 9;
 }
 
 // ProcedureMetadata is the metadata for procedures.
