@@ -1,4 +1,4 @@
-package pg
+package base
 
 import (
 	"sort"
@@ -40,7 +40,7 @@ func (g *Graph) AddEdge(start, end string) {
 	g.EdgeList = append(g.EdgeList, &Edge{Start: start, End: end})
 }
 
-func (g *Graph) GetTopoSort() ([]string, error) {
+func (g *Graph) TopologicalSort() ([]string, error) {
 	var result []string
 	inDegree := make(map[string]int)
 	outEdge := make(map[string][]*Edge)

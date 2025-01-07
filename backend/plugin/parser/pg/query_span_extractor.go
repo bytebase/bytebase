@@ -1639,6 +1639,9 @@ func (q *querySpanExtractor) getAllTableColumnSources(schemaName, tableName stri
 
 func (q *querySpanExtractor) getFieldColumnSource(schemaName, tableName, fieldName string) (base.SourceColumnSet, bool) {
 	findInTableSource := func(tableSource base.TableSource) (base.SourceColumnSet, bool) {
+		if tableSource == nil {
+			return nil, false
+		}
 		if schemaName != "" && schemaName != tableSource.GetSchemaName() {
 			return nil, false
 		}
@@ -1713,6 +1716,9 @@ func (q *querySpanExtractor) findTableInFrom(schemaName string, tableName string
 
 	for i := len(q.tableSourcesFrom) - 1; i >= 0; i-- {
 		tableSource := q.tableSourcesFrom[i]
+		if tableSource == nil {
+			continue
+		}
 		emptySchemaNameMatch := schemaName == "" && (tableSource.GetSchemaName() == "" || tableSource.GetSchemaName() == q.defaultSchema) && tableName == tableSource.GetTableName()
 		nonEmptySchemaNameMatch := schemaName != "" && tableSource.GetSchemaName() == schemaName && tableName == tableSource.GetTableName()
 		if emptySchemaNameMatch || nonEmptySchemaNameMatch {
