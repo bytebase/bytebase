@@ -4,9 +4,9 @@
       v-bind="$attrs"
       ref="dataTableRef"
       size="small"
-      :row-key="(dep) => keyForDependentColumn(dep)"
+      :row-key="(dep) => keyForDependencyColumn(dep)"
       :columns="columns"
-      :data="layoutReady ? filteredDependentColumns : []"
+      :data="layoutReady ? filteredDependencyColumns : []"
       :max-height="tableBodyHeight"
       :row-props="rowProps"
       :virtual-scroll="true"
@@ -26,14 +26,14 @@ import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
-  DependentColumn,
+  DependencyColumn,
   SchemaMetadata,
   ViewMetadata,
 } from "@/types/proto/v1/database_service";
 import {
   getHighlightHTMLByRegExp,
   hasSchemaProperty,
-  keyForDependentColumn,
+  keyForDependencyColumn,
   useAutoHeightDataTable,
 } from "@/utils";
 import { useEditorPanelContext } from "../../context";
@@ -56,22 +56,22 @@ const {
 } = useAutoHeightDataTable();
 const { t } = useI18n();
 
-const filteredDependentColumns = computed(() => {
+const filteredDependencyColumns = computed(() => {
   const keyword = props.keyword?.trim().toLowerCase();
   if (keyword) {
-    return props.view.dependentColumns.filter(
+    return props.view.dependencyColumns.filter(
       (dep) =>
         dep.column.toLowerCase().includes(keyword) ||
         dep.table.toLowerCase().includes(keyword) ||
         dep.schema.toLowerCase().includes(keyword)
     );
   }
-  return props.view.dependentColumns;
+  return props.view.dependencyColumns;
 });
 
 const columns = computed(() => {
   const engine = props.db.instanceResource.engine;
-  const columns: (DataTableColumn<DependentColumn> & { hide?: boolean })[] = [
+  const columns: (DataTableColumn<DependencyColumn> & { hide?: boolean })[] = [
     {
       key: "schema",
       title: t("common.schema"),
@@ -113,7 +113,7 @@ const columns = computed(() => {
   return columns.filter((header) => !header.hide);
 });
 
-const rowProps = (dep: DependentColumn) => {
+const rowProps = (dep: DependencyColumn) => {
   return {
     onClick: () => {
       updateViewState({

@@ -329,7 +329,7 @@ const selectedKeys = computed(() => {
       partition,
       index,
       foreignKey,
-      dependentColumn,
+      dependencyColumn,
     },
   } = panelViewState.value;
 
@@ -351,8 +351,8 @@ const selectedKeys = computed(() => {
     parts.push(`views/${view}`);
     if (column) {
       parts.push(`columns/${column}`);
-    } else if (dependentColumn) {
-      parts.push(`dependentColumns/${dependentColumn}`);
+    } else if (dependencyColumn) {
+      parts.push(`dependencyColumns/${dependencyColumn}`);
     }
   } else if (procedure) {
     parts.push(`procedures/${procedure}`);

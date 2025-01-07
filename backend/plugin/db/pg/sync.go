@@ -145,11 +145,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get materialized views from database %q", driver.databaseName)
 	}
-	functionDependentTables, err := getFunctionDependentTables(txn)
+	functionDependencyTables, err := getFunctionDependencyTables(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get function dependent tables from database %q", driver.databaseName)
+		return nil, errors.Wrapf(err, "failed to get function dependency tables from database %q", driver.databaseName)
 	}
-	functionMap, err := getFunctions(txn, functionDependentTables, tableOidMap, viewOidMap, materializedViewOidMap, extensionDepend)
+	functionMap, err := getFunctions(txn, functionDependencyTables, tableOidMap, viewOidMap, materializedViewOidMap, extensionDepend)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get functions from database %q", driver.databaseName)
 	}
@@ -775,7 +775,7 @@ func getMaterializedViews(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.Index
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "failed to get materialized view %q dependencies", matview.Name)
 			}
-			matview.DependentColumns = dependencies
+			matview.DependencyColumns = dependencies
 		}
 	}
 
@@ -843,7 +843,7 @@ func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata, 
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "failed to get view %q dependencies", view.Name)
 			}
-			view.DependentColumns = dependencies
+			view.DependencyColumns = dependencies
 		}
 	}
 
@@ -851,8 +851,8 @@ func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata, 
 }
 
 // getViewDependencies gets the dependencies of a view.
-func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.DependentColumn, error) {
-	var result []*storepb.DependentColumn
+func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.DependencyColumn, error) {
+	var result []*storepb.DependencyColumn
 
 	query := fmt.Sprintf(`
 		SELECT source_ns.nspname as source_schema,
@@ -860,15 +860,15 @@ func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.D
 	  		pg_attribute.attname as column_name
 	  	FROM pg_depend 
 	  		JOIN pg_rewrite ON pg_depend.objid = pg_rewrite.oid 
-	  		JOIN pg_class as dependent_view ON pg_rewrite.ev_class = dependent_view.oid 
+	  		JOIN pg_class as dependency_view ON pg_rewrite.ev_class = dependency_view.oid 
 	  		JOIN pg_class as source_table ON pg_depend.refobjid = source_table.oid 
 	  		JOIN pg_attribute ON pg_depend.refobjid = pg_attribute.attrelid 
 	  		    AND pg_depend.refobjsubid = pg_attribute.attnum 
-	  		JOIN pg_namespace dependent_ns ON dependent_ns.oid = dependent_view.relnamespace
+	  		JOIN pg_namespace dependency_ns ON dependency_ns.oid = dependency_view.relnamespace
 	  		JOIN pg_namespace source_ns ON source_ns.oid = source_table.relnamespace
 	  	WHERE 
-	  		dependent_ns.nspname = '%s'
-	  		AND dependent_view.relname = '%s'
+	  		dependency_ns.nspname = '%s'
+	  		AND dependency_view.relname = '%s'
 	  		AND pg_attribute.attnum > 0 
 	  	ORDER BY 1,2,3;
 	`, schemaName, viewName)
@@ -879,11 +879,11 @@ func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.D
 	}
 	defer rows.Close()
 	for rows.Next() {
-		dependentColumn := &storepb.DependentColumn{}
-		if err := rows.Scan(&dependentColumn.Schema, &dependentColumn.Table, &dependentColumn.Column); err != nil {
+		dependencyColumn := &storepb.DependencyColumn{}
+		if err := rows.Scan(&dependencyColumn.Schema, &dependencyColumn.Table, &dependencyColumn.Column); err != nil {
 			return nil, err
 		}
-		result = append(result, dependentColumn)
+		result = append(result, dependencyColumn)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -1274,7 +1274,7 @@ func getIndexMethodType(stmt string) string {
 	return matches[1]
 }
 
-var listFunctionDependentTablesQuery = `
+var listFunctionDependencyTablesQuery = `
 select
 	p.oid as function_oid,
 	pt.typrelid as table_oid
@@ -1285,10 +1285,10 @@ from pg_proc p
 where n.nspname not in (%s) AND pt.typrelid IS NOT NULL
 `, pgparser.SystemSchemaWhereClause)
 
-func getFunctionDependentTables(txn *sql.Tx) (map[int][]int, error) {
-	dependentTableMap := make(map[int][]int)
+func getFunctionDependencyTables(txn *sql.Tx) (map[int][]int, error) {
+	dependencyTableMap := make(map[int][]int)
 
-	rows, err := txn.Query(listFunctionDependentTablesQuery)
+	rows, err := txn.Query(listFunctionDependencyTablesQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -1299,14 +1299,14 @@ func getFunctionDependentTables(txn *sql.Tx) (map[int][]int, error) {
 		if err := rows.Scan(&functionOid, &tableOid); err != nil {
 			return nil, err
 		}
-		dependentTableMap[functionOid] = append(dependentTableMap[functionOid], tableOid)
+		dependencyTableMap[functionOid] = append(dependencyTableMap[functionOid], tableOid)
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return dependentTableMap, nil
+	return dependencyTableMap, nil
 }
 
 var listFunctionQuery = `
@@ -1327,7 +1327,7 @@ order by function_schema, function_name;`, pgparser.SystemSchemaWhereClause)
 // getFunctions gets all functions of a database.
 func getFunctions(
 	txn *sql.Tx,
-	functionDependentTables map[int][]int,
+	functionDependencyTables map[int][]int,
 	tableOidMap, viewOidMap, materializedViewOidMap map[int]*db.TableKey,
 	extensionDepend map[int]bool,
 ) (map[string][]*storepb.FunctionMetadata, error) {
@@ -1359,19 +1359,19 @@ func getFunctions(
 		}
 
 		function.Signature = fmt.Sprintf("%s(%s)", function.Name, arguments)
-		for _, tableOid := range functionDependentTables[oid] {
+		for _, tableOid := range functionDependencyTables[oid] {
 			if table, ok := tableOidMap[tableOid]; ok {
-				function.DependentTables = append(function.DependentTables, &storepb.DependentTable{
+				function.DependencyTables = append(function.DependencyTables, &storepb.DependencyTable{
 					Schema: table.Schema,
 					Table:  table.Table,
 				})
 			} else if view, ok := viewOidMap[tableOid]; ok {
-				function.DependentTables = append(function.DependentTables, &storepb.DependentTable{
+				function.DependencyTables = append(function.DependencyTables, &storepb.DependencyTable{
 					Schema: view.Schema,
 					Table:  view.Table,
 				})
 			} else if matview, ok := materializedViewOidMap[tableOid]; ok {
-				function.DependentTables = append(function.DependentTables, &storepb.DependentTable{
+				function.DependencyTables = append(function.DependencyTables, &storepb.DependencyTable{
 					Schema: matview.Schema,
 					Table:  matview.Table,
 				})

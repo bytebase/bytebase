@@ -6,7 +6,7 @@ import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
-  DependentColumn,
+  DependencyColumn,
   ExternalTableMetadata,
   ForeignKeyMetadata,
   FunctionMetadata,
@@ -20,7 +20,7 @@ import type {
   TriggerMetadata,
   ViewMetadata,
 } from "@/types/proto/v1/database_service";
-import { keyForDependentColumn } from "@/utils";
+import { keyForDependencyColumn } from "@/utils";
 import { keyWithPosition } from "../../EditorCommon";
 
 export type NodeType =
@@ -38,7 +38,7 @@ export type NodeType =
   | "column"
   | "index"
   | "foreign-key"
-  | "dependent-column"
+  | "dependency-column"
   | "expandable-text" // Text nodes to display "Tables / Views / Functions / Triggers" etc.
   | "error"; // Error nodes to display "<Empty>" or "Cannot fetch ..." etc.
 
@@ -62,8 +62,8 @@ export type RichColumnMetadata = (
 ) & {
   column: ColumnMetadata;
 };
-export type RichDependentColumnMetadata = RichViewMetadata & {
-  dependentColumn: DependentColumn;
+export type RichDependencyColumnMetadata = RichViewMetadata & {
+  dependencyColumn: DependencyColumn;
 };
 export type RichIndexMetadata = RichTableMetadata & {
   index: IndexMetadata;
@@ -120,8 +120,8 @@ export type NodeTarget<T extends NodeType = NodeType> = T extends "database"
         ? RichExternalTableMetadata
         : T extends "column"
           ? RichColumnMetadata
-          : T extends "dependent-column"
-            ? RichDependentColumnMetadata
+          : T extends "dependency-column"
+            ? RichDependencyColumnMetadata
             : T extends "index"
               ? RichIndexMetadata
               : T extends "foreign-key"
@@ -177,7 +177,7 @@ export const LeafNodeTypes: readonly NodeType[] = [
   "function",
   "sequence",
   "trigger",
-  "dependent-column",
+  "dependency-column",
   "error",
 ] as const;
 
@@ -223,14 +223,14 @@ export const keyForNodeTarget = <T extends NodeType>(
     const { column } = target as NodeTarget<"column">;
     return [parentKey, `columns/${column.name}`].join("/");
   }
-  if (type === "dependent-column") {
-    const { db, schema, view, dependentColumn } =
-      target as NodeTarget<"dependent-column">;
+  if (type === "dependency-column") {
+    const { db, schema, view, dependencyColumn } =
+      target as NodeTarget<"dependency-column">;
     return [
       db.name,
       `schemas/${schema.name}`,
       `views/${view.name}`,
-      `dependentColumns/${keyForDependentColumn(dependentColumn)}`,
+      `dependencyColumns/${keyForDependencyColumn(dependencyColumn)}`,
     ].join("/");
   }
   if (type === "index") {
@@ -362,8 +362,8 @@ const readableTextForNodeTarget = <T extends NodeType>(
   if (type === "view") {
     return (target as RichViewMetadata).view.name;
   }
-  if (type === "dependent-column") {
-    const dep = (target as RichDependentColumnMetadata).dependentColumn;
+  if (type === "dependency-column") {
+    const dep = (target as RichDependencyColumnMetadata).dependencyColumn;
     const parts = [dep.table, dep.column];
     if (dep.schema) parts.unshift(dep.schema);
     return parts.join(".");
@@ -422,7 +422,7 @@ export const mapTreeNodeByType = <T extends NodeType>(
 const createDummyNode = (
   type:
     | "column"
-    | "dependent-column"
+    | "dependency-column"
     | "index"
     | "foreign-key"
     | "table"
@@ -486,20 +486,20 @@ const mapColumnNodes = (
   });
   return children;
 };
-const mapDependentColumnNodes = (
+const mapDependencyColumnNodes = (
   target: NodeTarget<"view">,
-  dependentColumns: DependentColumn[],
+  dependencyColumns: DependencyColumn[],
   parent: TreeNode
 ) => {
-  if (dependentColumns.length === 0) {
+  if (dependencyColumns.length === 0) {
     // Create a "<Empty>" node placeholder
     return [createDummyNode("column", parent)];
   }
 
-  const children = dependentColumns.map((dependentColumn) => {
+  const children = dependencyColumns.map((dependencyColumn) => {
     const node = mapTreeNodeByType(
-      "dependent-column",
-      { ...target, dependentColumn },
+      "dependency-column",
+      { ...target, dependencyColumn },
       parent
     );
     return node;
@@ -694,18 +694,18 @@ const mapViewNodes = (
       view.columns,
       columnsFolderNode
     );
-    if (view.dependentColumns.length > 0) {
-      const dependentColumnsFolderNode = createExpandableTextNode(
-        "dependent-column",
+    if (view.dependencyColumns.length > 0) {
+      const dependencyColumnsFolderNode = createExpandableTextNode(
+        "dependency-column",
         viewNode,
-        () => t("schema-editor.index.dependent-columns")
+        () => t("schema-editor.index.dependency-columns")
       );
-      dependentColumnsFolderNode.children = mapDependentColumnNodes(
+      dependencyColumnsFolderNode.children = mapDependencyColumnNodes(
         viewNode.meta.target,
-        view.dependentColumns,
-        dependentColumnsFolderNode
+        view.dependencyColumns,
+        dependencyColumnsFolderNode
       );
-      viewNode.children!.push(dependentColumnsFolderNode);
+      viewNode.children!.push(dependencyColumnsFolderNode);
     }
     return viewNode;
   });

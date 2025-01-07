@@ -153,10 +153,10 @@ func appendSchemaTables(catalogMap databricksCatalogMap, tablesInfo []catalog.Ta
 		switch tableInfo.TableType {
 		case catalog.TableTypeView:
 			table.view = &storepb.ViewMetadata{
-				Name:             table.name,
-				Definition:       tableInfo.ViewDefinition,
-				Comment:          tableInfo.Comment,
-				DependentColumns: convertToDependentColumns(tableInfo.SchemaName, tableInfo.Name, tableInfo.Columns),
+				Name:              table.name,
+				Definition:        tableInfo.ViewDefinition,
+				Comment:           tableInfo.Comment,
+				DependencyColumns: convertToDependencyColumns(tableInfo.SchemaName, tableInfo.Name, tableInfo.Columns),
 			}
 		case catalog.TableTypeMaterializedView:
 			table.materialView = &storepb.MaterializedViewMetadata{
@@ -204,10 +204,10 @@ func convertToColumnMetadata(columnInfo []catalog.ColumnInfo) []*storepb.ColumnM
 	return columns
 }
 
-func convertToDependentColumns(schema, table string, columnInfo []catalog.ColumnInfo) []*storepb.DependentColumn {
-	columns := []*storepb.DependentColumn{}
+func convertToDependencyColumns(schema, table string, columnInfo []catalog.ColumnInfo) []*storepb.DependencyColumn {
+	columns := []*storepb.DependencyColumn{}
 	for _, col := range columnInfo {
-		columns = append(columns, &storepb.DependentColumn{
+		columns = append(columns, &storepb.DependencyColumn{
 			Schema: schema,
 			Table:  table,
 			Column: col.Name,

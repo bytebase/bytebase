@@ -28,12 +28,12 @@ func newDatabaseState(d *storepb.DatabaseSchemaMetadata, context *FinderContext)
 
 	for _, schema := range d.Schemas {
 		for _, view := range schema.Views {
-			for _, dependentColumn := range view.DependentColumns {
-				if schemaState, exist := database.schemaSet[dependentColumn.Schema]; exist {
-					if tableState, exist := schemaState.getTable(dependentColumn.Table); exist {
-						tableState.dependentView[fmt.Sprintf("%q.%q", schema.Name, view.Name)] = true
-						if columnState, exist := tableState.columnSet[dependentColumn.Column]; exist {
-							columnState.dependentView[fmt.Sprintf("%q.%q", schema.Name, view.Name)] = true
+			for _, dependencyColumn := range view.DependencyColumns {
+				if schemaState, exist := database.schemaSet[dependencyColumn.Schema]; exist {
+					if tableState, exist := schemaState.getTable(dependencyColumn.Table); exist {
+						tableState.dependencyView[fmt.Sprintf("%q.%q", schema.Name, view.Name)] = true
+						if columnState, exist := tableState.columnSet[dependencyColumn.Column]; exist {
+							columnState.dependencyView[fmt.Sprintf("%q.%q", schema.Name, view.Name)] = true
 						}
 					}
 				}
@@ -82,13 +82,13 @@ func newViewState(v *storepb.ViewMetadata) *ViewState {
 
 func newTableState(t *storepb.TableMetadata, context *FinderContext) *TableState {
 	table := &TableState{
-		name:          t.Name,
-		engine:        newStringPointer(t.Engine),
-		collation:     newStringPointer(t.Collation),
-		comment:       newStringPointer(t.Comment),
-		columnSet:     make(columnStateMap),
-		indexSet:      make(IndexStateMap),
-		dependentView: make(map[string]bool),
+		name:           t.Name,
+		engine:         newStringPointer(t.Engine),
+		collation:      newStringPointer(t.Collation),
+		comment:        newStringPointer(t.Comment),
+		columnSet:      make(columnStateMap),
+		indexSet:       make(IndexStateMap),
+		dependencyView: make(map[string]bool),
 	}
 
 	for i, column := range t.Columns {
@@ -128,15 +128,15 @@ func newColumnState(c *storepb.ColumnMetadata, position int) *ColumnState {
 		}
 	}
 	return &ColumnState{
-		name:          c.Name,
-		position:      newIntPointer(position),
-		defaultValue:  defaultValue,
-		nullable:      newBoolPointer(c.Nullable),
-		columnType:    newStringPointer(c.Type),
-		characterSet:  newStringPointer(c.CharacterSet),
-		collation:     newStringPointer(c.Collation),
-		comment:       newStringPointer(c.Comment),
-		dependentView: make(map[string]bool),
+		name:           c.Name,
+		position:       newIntPointer(position),
+		defaultValue:   defaultValue,
+		nullable:       newBoolPointer(c.Nullable),
+		columnType:     newStringPointer(c.Type),
+		characterSet:   newStringPointer(c.CharacterSet),
+		collation:      newStringPointer(c.Collation),
+		comment:        newStringPointer(c.Comment),
+		dependencyView: make(map[string]bool),
 	}
 }
 
@@ -395,9 +395,9 @@ type TableState struct {
 	// indexSet isn't supported for ClickHouse, Snowflake.
 	indexSet IndexStateMap
 
-	// dependentView is used to record the dependent view for the table.
+	// dependencyView is used to record the dependency view for the table.
 	// Used to check if the table is used by any view.
-	dependentView map[string]bool
+	dependencyView map[string]bool
 }
 
 // ListColumns return the list of columns.
@@ -511,9 +511,9 @@ type ColumnState struct {
 	// comment isn't supported for SQLite.
 	comment *string
 
-	// dependentView is used to record the dependent view for the column.
+	// dependencyView is used to record the dependency view for the column.
 	// Used to check if the column is used by any view.
-	dependentView map[string]bool
+	dependencyView map[string]bool
 }
 
 func (col *ColumnState) copy() *ColumnState {

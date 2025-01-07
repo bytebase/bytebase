@@ -115,7 +115,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 								Type:     "integer",
 							},
 						},
-						DependentColumns: []*v1pb.DependentColumn{
+						DependencyColumns: []*v1pb.DependencyColumn{
 							{
 								Schema: "public",
 								Table:  "TFK",

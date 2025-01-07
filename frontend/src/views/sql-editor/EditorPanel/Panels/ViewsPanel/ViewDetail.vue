@@ -63,8 +63,8 @@
     :view="view"
     :keyword="state.keyword"
   />
-  <DependentColumnsTable
-    v-show="state.mode === 'DEPENDENT-COLUMNS'"
+  <DependencyColumnsTable
+    v-show="state.mode === 'DEPENDENCY-COLUMNS'"
     :db="db"
     :database="database"
     :schema="schema"
@@ -91,9 +91,9 @@ import { OpenAIButton } from "@/views/sql-editor/EditorCommon";
 import { useEditorPanelContext } from "../../context";
 import ColumnsTable from "./ColumnsTable.vue";
 import DefinitionViewer from "./DefinitionViewer.vue";
-import DependentColumnsTable from "./DependentColumnsTable.vue";
+import DependencyColumnsTable from "./DependencyColumnsTable.vue";
 
-type Mode = "DEFINITION" | "COLUMNS" | "DEPENDENT-COLUMNS";
+type Mode = "DEFINITION" | "COLUMNS" | "DEPENDENCY-COLUMNS";
 type LocalState = {
   mode: Mode;
   keyword: string;
@@ -134,10 +134,10 @@ const tabItems = computed(() => {
       icon: () => h(ColumnIcon),
     });
   }
-  if (view.dependentColumns.length > 0) {
+  if (view.dependencyColumns.length > 0) {
     items.push({
-      view: "DEPENDENT-COLUMNS",
-      text: t("schema-editor.index.dependent-columns"),
+      view: "DEPENDENCY-COLUMNS",
+      text: t("schema-editor.index.dependency-columns"),
       icon: () => h(FileSymlinkIcon),
     });
   }
@@ -154,16 +154,16 @@ watch(
   [
     () => viewState.value?.detail.view,
     () => viewState.value?.detail.column,
-    () => viewState.value?.detail.dependentColumn,
+    () => viewState.value?.detail.dependencyColumn,
   ],
-  ([view, column, dependentColumn]) => {
+  ([view, column, dependencyColumn]) => {
     if (!view) return;
     if (column) {
       state.mode = "COLUMNS";
       return;
     }
-    if (dependentColumn) {
-      state.mode = "DEPENDENT-COLUMNS";
+    if (dependencyColumn) {
+      state.mode = "DEPENDENCY-COLUMNS";
       return;
     }
     // fallback
