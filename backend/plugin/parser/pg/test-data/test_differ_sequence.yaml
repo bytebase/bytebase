@@ -11,6 +11,8 @@
     alter sequence public.s1 owned by public.t1.a;
     alter table public.t1 alter column a set default nextval('public.s1'::regclass);
   diff: |+
+    SET check_function_bodies = false;
+
     DROP TABLE "public"."t2";
 
     CREATE SEQUENCE "public"."s1"
@@ -39,6 +41,8 @@
     alter table public.t1 alter column a set default nextval('public.s1'::regclass);
   newSchema: ""
   diff: |+
+    SET check_function_bodies = false;
+
     ALTER SEQUENCE "public"."s1"
         OWNED BY NONE;
 
@@ -66,7 +70,9 @@
       CACHE 1;
     alter sequence public.s1 owned by public.t1.a;
     alter table public.t1 alter column a set default nextval('public.s1'::regclass);
-  diff: ""
+  diff: |+
+    SET check_function_bodies = false;
+
 - oldSchema: |
     create table public.t1 (a int);
     create sequence public.s1
@@ -86,6 +92,8 @@
     alter sequence public.s1 owned by public.t1.a;
     alter table public.t1 alter column a set default nextval('public.s1'::regclass);
   diff: |+
+    SET check_function_bodies = false;
+
     ALTER SEQUENCE "public"."s1"
         OWNED BY "public"."t1"."a";
 

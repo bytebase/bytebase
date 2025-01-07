@@ -4,6 +4,8 @@
     CREATE TABLE public.t (a INTEGER);
     ALTER TABLE ONLY public.t ALTER COLUMN a SET DEFAULT nextval('public.t_a_seq'::regclass);
   diff: |+
+    SET check_function_bodies = false;
+
     ALTER TABLE "public"."t"
         ALTER COLUMN "a" SET DEFAULT nextval('public.t_a_seq'::regclass);
 
@@ -14,6 +16,8 @@
     CREATE TABLE public.t (a INTEGER);
     ALTER TABLE ONLY public.t ALTER COLUMN a SET DEFAULT nextval('public.t_a_seq_2'::regclass);
   diff: |+
+    SET check_function_bodies = false;
+
     ALTER TABLE "public"."t"
         ALTER COLUMN "a" SET DEFAULT nextval('public.t_a_seq_2'::regclass);
 
@@ -23,6 +27,8 @@
   newSchema: |
     CREATE TABLE public.t (a INTEGER);
   diff: |+
+    SET check_function_bodies = false;
+
     ALTER TABLE "public"."t"
         ALTER COLUMN "a" DROP DEFAULT;
 
