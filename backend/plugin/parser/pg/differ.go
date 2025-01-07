@@ -1990,6 +1990,11 @@ func printCreateViewStmt(buf io.Writer, view *ast.CreateViewStmt) error {
 func (diff *diffNode) deparse() (string, error) {
 	var buf bytes.Buffer
 
+	// Print header.
+	if _, err := buf.WriteString("SET check_function_bodies = false;\n\n"); err != nil {
+		return "", err
+	}
+
 	// drop
 	if err := printStmtSlice(&buf, diff.dropForeignKeyList); err != nil {
 		return "", err

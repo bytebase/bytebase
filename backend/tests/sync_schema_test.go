@@ -27,7 +27,9 @@ func TestSyncSchema(t *testing.T) {
 			alter sequence schema_a.sequence_s1 owned by schema_a.table_t1.c1;
 			alter table schema_a.table_t1 alter column c1 set default nextval('schema_a.sequence_s1'::regclass);
 		`
-		expectedDiff = `DROP INDEX "schema_a"."idx_table_t1_c1_c2_c3";
+		expectedDiff = `SET check_function_bodies = false;
+
+DROP INDEX "schema_a"."idx_table_t1_c1_c2_c3";
 
 ALTER SEQUENCE "schema_a"."sequence_s1"
     OWNED BY NONE;
