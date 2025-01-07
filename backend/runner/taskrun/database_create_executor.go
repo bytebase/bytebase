@@ -20,7 +20,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -365,15 +364,13 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		InstanceID:     &task.InstanceID,
 		CreatorID:      task.CreatorID,
 		ReleaseVersion: exec.profile.Version,
-		// TODO(p0ny): remove
-		Version:     model.Version{},
-		Namespace:   database.DatabaseName,
-		Database:    database.DatabaseName,
-		DatabaseID:  &database.UID,
-		Environment: environment.ResourceID,
-		Source:      db.UI,
-		Type:        db.Migrate,
-		Description: "Create database",
+		Namespace:      database.DatabaseName,
+		Database:       database.DatabaseName,
+		DatabaseID:     &database.UID,
+		Environment:    environment.ResourceID,
+		Source:         db.UI,
+		Type:           db.Migrate,
+		Description:    "Create database",
 	}
 	creator, err := exec.store.GetUserByID(ctx, task.CreatorID)
 	if err != nil {

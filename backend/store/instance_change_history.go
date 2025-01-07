@@ -509,8 +509,7 @@ func (*Store) getNextInstanceChangeHistorySequence(ctx context.Context, tx *Tx, 
 }
 
 // CreatePendingInstanceChangeHistory creates an instance change history.
-// it deprecates the old InsertPendingHistory.
-func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, prevSchema string, m *db.MigrationInfo, statement string, sheetID *int) (string, error) {
+func (s *Store) CreatePendingInstanceChangeHistoryForMigrator(ctx context.Context, prevSchema string, m *db.MigrationInfo, statement string, sheetID *int, version model.Version) (string, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return "", err
@@ -532,7 +531,7 @@ func (s *Store) CreatePendingInstanceChangeHistory(ctx context.Context, prevSche
 		Source:              m.Source,
 		Type:                m.Type,
 		Status:              db.Pending,
-		Version:             m.Version,
+		Version:             version,
 		Description:         m.Description,
 		Statement:           statement,
 		SheetID:             sheetID,

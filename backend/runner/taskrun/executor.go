@@ -114,7 +114,6 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		CreatorID:      task.CreatorID,
 		ReleaseVersion: profile.Version,
 		Type:           migrationType,
-		Version:        schemaVersion,
 		Description:    task.Name,
 		Environment:    environment.ResourceID,
 		Database:       database.DatabaseName,
@@ -386,9 +385,9 @@ func postMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInf
 			log.BBError(err))
 	}
 
-	detail := fmt.Sprintf("Applied migration version %s to database %q.", mi.Version.Version, database.DatabaseName)
+	detail := fmt.Sprintf("Applied migration version %s to database %q.", mc.version, database.DatabaseName)
 	if mi.Type == db.Baseline {
-		detail = fmt.Sprintf("Established baseline version %s for database %q.", mi.Version.Version, database.DatabaseName)
+		detail = fmt.Sprintf("Established baseline version %s for database %q.", mc.version, database.DatabaseName)
 	}
 
 	return true, &storepb.TaskRunResult{
