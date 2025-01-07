@@ -621,7 +621,7 @@ func getMaterializedViews(txn *sql.Tx) (map[string][]*storepb.MaterializedViewMe
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get materialized view %q dependencies", matview.Name)
 			}
-			matview.DependentColumns = dependencies
+			matview.DependencyColumns = dependencies
 		}
 	}
 
@@ -679,7 +679,7 @@ func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) 
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get view %q dependencies", view.Name)
 			}
-			view.DependentColumns = dependencies
+			view.DependencyColumns = dependencies
 		}
 	}
 
@@ -687,8 +687,8 @@ func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) 
 }
 
 // getViewDependencies gets the dependencies of a view.
-func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.DependentColumn, error) {
-	var result []*storepb.DependentColumn
+func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.DependencyColumn, error) {
+	var result []*storepb.DependencyColumn
 
 	query := fmt.Sprintf(`
 		SELECT source_ns.nspname as source_schema,
@@ -696,15 +696,15 @@ func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.D
 	  		pg_attribute.attname as column_name
 	  	FROM pg_depend 
 	  		JOIN pg_rewrite ON pg_depend.objid = pg_rewrite.oid 
-	  		JOIN pg_class as dependent_view ON pg_rewrite.ev_class = dependent_view.oid 
+	  		JOIN pg_class as dependency_view ON pg_rewrite.ev_class = dependency_view.oid 
 	  		JOIN pg_class as source_table ON pg_depend.refobjid = source_table.oid 
 	  		JOIN pg_attribute ON pg_depend.refobjid = pg_attribute.attrelid 
 	  		    AND pg_depend.refobjsubid = pg_attribute.attnum 
-	  		JOIN pg_namespace dependent_ns ON dependent_ns.oid = dependent_view.relnamespace
+	  		JOIN pg_namespace dependency_ns ON dependency_ns.oid = dependency_view.relnamespace
 	  		JOIN pg_namespace source_ns ON source_ns.oid = source_table.relnamespace
 	  	WHERE 
-	  		dependent_ns.nspname = '%s'
-	  		AND dependent_view.relname = '%s'
+	  		dependency_ns.nspname = '%s'
+	  		AND dependency_view.relname = '%s'
 	  		AND pg_attribute.attnum > 0 
 	  	ORDER BY 1,2,3;
 	`, schemaName, viewName)
@@ -715,11 +715,11 @@ func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.D
 	}
 	defer rows.Close()
 	for rows.Next() {
-		dependentColumn := &storepb.DependentColumn{}
-		if err := rows.Scan(&dependentColumn.Schema, &dependentColumn.Table, &dependentColumn.Column); err != nil {
+		dependencyColumn := &storepb.DependencyColumn{}
+		if err := rows.Scan(&dependencyColumn.Schema, &dependencyColumn.Table, &dependencyColumn.Column); err != nil {
 			return nil, err
 		}
-		result = append(result, dependentColumn)
+		result = append(result, dependencyColumn)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

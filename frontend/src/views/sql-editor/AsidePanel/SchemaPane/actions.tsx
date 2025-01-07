@@ -44,7 +44,7 @@ import {
   generateSimpleSelectAllStatement,
   generateSimpleUpdateStatement,
   instanceV1HasAlterSchema,
-  keyForDependentColumn,
+  keyForDependencyColumn,
   sortByDictionary,
   supportStringifyMetadata,
   toClipboard,
@@ -161,7 +161,7 @@ export const useActions = () => {
       "column",
       "external-table",
       "view",
-      "dependent-column",
+      "dependency-column",
       "procedure",
       "package",
       "function",
@@ -216,17 +216,17 @@ export const useActions = () => {
             }
           }
         }
-        if (mockType === "column" || mockType === "dependent-column") {
+        if (mockType === "column" || mockType === "dependency-column") {
           const view = viewForNode(node);
           if (typeof view !== "undefined") {
             vs.detail = { view: view.name };
             if (mockType === "column") {
               vs.detail.column = head(view.columns)?.name;
             }
-            if (mockType === "dependent-column") {
-              const dep = head(view.dependentColumns);
+            if (mockType === "dependency-column") {
+              const dep = head(view.dependencyColumns);
               if (dep) {
-                vs.detail.dependentColumn = keyForDependentColumn(dep);
+                vs.detail.dependencyColumn = keyForDependencyColumn(dep);
               }
             }
           }
@@ -251,7 +251,7 @@ export const useActions = () => {
       | "index"
       | "foreign-key"
       | "partition-table"
-      | "dependent-column"
+      | "dependency-column"
     >;
     updateViewState({
       view: typeToView(type),
@@ -298,29 +298,29 @@ export const useActions = () => {
     if (type === "view") {
       detail.view = (target as NodeTarget<"view">).view.name;
     }
-    if (type === "dependent-column") {
-      const { database, dependentColumn } =
-        target as NodeTarget<"dependent-column">;
+    if (type === "dependency-column") {
+      const { database, dependencyColumn } =
+        target as NodeTarget<"dependency-column">;
       const depSchema = database.schemas.find(
-        (s) => s.name === dependentColumn.schema
+        (s) => s.name === dependencyColumn.schema
       );
       if (
         depSchema &&
-        depSchema.views.find((v) => v.name === dependentColumn.table)
+        depSchema.views.find((v) => v.name === dependencyColumn.table)
       ) {
         updateViewState({
           view: "VIEWS",
-          schema: dependentColumn.schema,
+          schema: dependencyColumn.schema,
         });
-        detail.view = dependentColumn.table;
-        detail.column = dependentColumn.column;
+        detail.view = dependencyColumn.table;
+        detail.column = dependencyColumn.column;
       } else {
         updateViewState({
           view: "TABLES",
-          schema: dependentColumn.schema,
+          schema: dependencyColumn.schema,
         });
-        detail.table = dependentColumn.table;
-        detail.column = dependentColumn.column;
+        detail.table = dependencyColumn.table;
+        detail.column = dependencyColumn.column;
       }
     }
     if (type === "procedure") {

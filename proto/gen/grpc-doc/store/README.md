@@ -52,8 +52,8 @@
     - [DatabaseMetadata](#bytebase-store-DatabaseMetadata)
     - [DatabaseMetadata.LabelsEntry](#bytebase-store-DatabaseMetadata-LabelsEntry)
     - [DatabaseSchemaMetadata](#bytebase-store-DatabaseSchemaMetadata)
-    - [DependentColumn](#bytebase-store-DependentColumn)
-    - [DependentTable](#bytebase-store-DependentTable)
+    - [DependencyColumn](#bytebase-store-DependencyColumn)
+    - [DependencyTable](#bytebase-store-DependencyTable)
     - [EnumTypeMetadata](#bytebase-store-EnumTypeMetadata)
     - [EventMetadata](#bytebase-store-EventMetadata)
     - [ExtensionMetadata](#bytebase-store-ExtensionMetadata)
@@ -1055,10 +1055,10 @@ DatabaseSchemaMetadata is the schema metadata for databases.
 
 
 
-<a name="bytebase-store-DependentColumn"></a>
+<a name="bytebase-store-DependencyColumn"></a>
 
-### DependentColumn
-DependentColumn is the metadata for dependent columns.
+### DependencyColumn
+DependencyColumn is the metadata for dependency columns.
 
 
 | Field | Type | Label | Description |
@@ -1072,9 +1072,9 @@ DependentColumn is the metadata for dependent columns.
 
 
 
-<a name="bytebase-store-DependentTable"></a>
+<a name="bytebase-store-DependencyTable"></a>
 
-### DependentTable
+### DependencyTable
 
 
 
@@ -1217,7 +1217,7 @@ FunctionMetadata is the metadata for functions.
 | database_collation | [string](#string) |  |  |
 | sql_mode | [string](#string) |  |  |
 | comment | [string](#string) |  |  |
-| dependent_tables | [DependentTable](#bytebase-store-DependentTable) | repeated | The dependent_tables is the list of dependent tables of a function. For PostgreSQL, it&#39;s the list of tables that the function depends on the return type definition. |
+| dependency_tables | [DependencyTable](#bytebase-store-DependencyTable) | repeated | The dependency_tables is the list of dependency tables of a function. For PostgreSQL, it&#39;s the list of tables that the function depends on the return type definition. |
 
 
 
@@ -1312,7 +1312,7 @@ MaterializedViewMetadata is the metadata for materialized views.
 | name | [string](#string) |  | The name is the name of a view. |
 | definition | [string](#string) |  | The definition is the definition of a view. |
 | comment | [string](#string) |  | The comment is the comment of a view. |
-| dependent_columns | [DependentColumn](#bytebase-store-DependentColumn) | repeated | The dependent_columns is the list of dependent columns of a view. |
+| dependency_columns | [DependencyColumn](#bytebase-store-DependencyColumn) | repeated | The dependency_columns is the list of dependency columns of a view. |
 | triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The columns is the ordered list of columns in a table. |
 | indexes | [IndexMetadata](#bytebase-store-IndexMetadata) | repeated | The indexes is the list of indexes in a table. |
 
@@ -1718,7 +1718,7 @@ ViewMetadata is the metadata for views.
 | name | [string](#string) |  | The name is the name of a view. |
 | definition | [string](#string) |  | The definition is the definition of a view. |
 | comment | [string](#string) |  | The comment is the comment of a view. |
-| dependent_columns | [DependentColumn](#bytebase-store-DependentColumn) | repeated | The dependent_columns is the list of dependent columns of a view. |
+| dependency_columns | [DependencyColumn](#bytebase-store-DependencyColumn) | repeated | The dependency_columns is the list of dependency columns of a view. |
 | columns | [ColumnMetadata](#bytebase-store-ColumnMetadata) | repeated | The columns is the ordered list of columns in a table. |
 | triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The triggers is the list of triggers in a view. |
 

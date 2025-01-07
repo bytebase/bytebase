@@ -187,7 +187,7 @@ func (d *DatabaseState) pgDropTable(tableDef *ast.TableDef, ifExists bool, _ ast
 		return err
 	}
 
-	viewList, err := d.existedViewList(table.dependentView)
+	viewList, err := d.existedViewList(table.dependencyView)
 	if err != nil {
 		return err
 	}
@@ -410,7 +410,7 @@ func (d *DatabaseState) pgAlterColumnType(schema *SchemaState, t *TableState, no
 		return err
 	}
 
-	viewList, err := d.existedViewList(column.dependentView)
+	viewList, err := d.existedViewList(column.dependencyView)
 	if err != nil {
 		return err
 	}
@@ -444,7 +444,7 @@ func (d *DatabaseState) pgDropColumn(schema *SchemaState, t *TableState, node *a
 		return NewColumnNotExistsError(t.name, node.ColumnName)
 	}
 
-	viewList, err := d.existedViewList(column.dependentView)
+	viewList, err := d.existedViewList(column.dependencyView)
 	if err != nil {
 		return err
 	}
