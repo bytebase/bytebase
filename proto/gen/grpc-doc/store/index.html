@@ -374,6 +374,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.DependentTable"><span class="badge">M</span>DependentTable</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.EnumTypeMetadata"><span class="badge">M</span>EnumTypeMetadata</a>
                 </li>
               
@@ -3349,6 +3353,37 @@ classification and user_comment is parsed from the comment. </p></td>
 
         
       
+        <h3 id="bytebase.store.DependentTable">DependentTable</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>schema</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The schema is the schema of a reference table. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>table</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The table is the name of a reference table. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.EnumTypeMetadata">EnumTypeMetadata</h3>
         <p></p>
 
@@ -3725,6 +3760,14 @@ function takes. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>dependent_tables</td>
+                  <td><a href="#bytebase.store.DependentTable">DependentTable</a></td>
+                  <td>repeated</td>
+                  <td><p>The dependent_tables is the list of dependent tables of a function.
+For PostgreSQL, it&#39;s the list of tables that the function depends on the return type definition. </p></td>
                 </tr>
               
             </tbody>
