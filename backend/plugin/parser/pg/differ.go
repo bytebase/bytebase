@@ -3,6 +3,7 @@ package pg
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
@@ -16,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -27,6 +29,9 @@ func init() {
 // diffNode defines different modification types as the safe change order.
 // The safe change order means we can change them with no dependency conflicts as this order.
 type diffNode struct {
+	oldSchemaMap schemaMap
+	newSchemaMap schemaMap
+
 	// Drop nodes
 	dropForeignKeyList         []ast.Node
 	dropConstraintExceptFkList []ast.Node
@@ -34,14 +39,17 @@ type diffNode struct {
 	dropIndexList              []ast.Node
 	dropDefaultList            []ast.Node
 	dropSequenceOwnedByList    []ast.Node
-	dropViewList               []*ast.TableDef
-	dropColumnList             []ast.Node
-	dropTableList              []ast.Node
-	dropSequenceList           []ast.Node
-	dropFunctionList           []ast.Node
-	dropExtensionList          []ast.Node
-	dropTypeList               []ast.Node
-	dropSchemaList             []ast.Node
+
+	dropViewList             []*ast.CreateViewStmt
+	dropMaterializedViewList []*ast.CreateMaterializedViewStmt
+
+	dropColumnList    []ast.Node
+	dropTableList     []ast.Node
+	dropSequenceList  []ast.Node
+	dropFunctionList  []ast.Node
+	dropExtensionList []ast.Node
+	dropTypeList      []ast.Node
+	dropSchemaList    []ast.Node
 
 	// Create nodes
 	createSchemaList               []ast.Node
@@ -60,18 +68,17 @@ type diffNode struct {
 	createTriggerList              []ast.Node
 	createConstraintExceptFkList   []ast.Node
 	createForeignKeyList           []ast.Node
-	createViewList                 []*createViewInfo
-	setCommentList                 []ast.Node
-}
 
-type createViewInfo struct {
-	id   int
-	stmt *ast.CreateViewStmt
+	createViewList             []*ast.CreateViewStmt
+	createMaterializedViewList []*ast.CreateMaterializedViewStmt
+
+	setCommentList []ast.Node
 }
 
 type schemaMap map[string]*schemaInfo
 type tableMap map[string]*tableInfo
 type viewMap map[string]*viewInfo
+type materializedViewMap map[string]*materializedViewInfo
 type constraintMap map[string]*constraintInfo
 type indexMap map[string]*indexInfo
 type sequenceMap map[string]*sequenceInfo
@@ -81,30 +88,32 @@ type triggerMap map[string]*triggerInfo
 type typeMap map[string]*typeInfo
 
 type schemaInfo struct {
-	id           int
-	existsInNew  bool
-	createSchema *ast.CreateSchemaStmt
-	tableMap     tableMap
-	viewMap      viewMap
-	indexMap     indexMap
-	sequenceMap  sequenceMap
-	extensionMap extensionMap
-	functionMap  functionMap
-	typeMap      typeMap
+	id                  int
+	existsInNew         bool
+	createSchema        *ast.CreateSchemaStmt
+	tableMap            tableMap
+	viewMap             viewMap
+	materializedViewMap materializedViewMap
+	indexMap            indexMap
+	sequenceMap         sequenceMap
+	extensionMap        extensionMap
+	functionMap         functionMap
+	typeMap             typeMap
 }
 
 func newSchemaInfo(id int, createSchema *ast.CreateSchemaStmt) *schemaInfo {
 	return &schemaInfo{
-		id:           id,
-		existsInNew:  false,
-		createSchema: createSchema,
-		tableMap:     make(tableMap),
-		viewMap:      make(viewMap),
-		indexMap:     make(indexMap),
-		sequenceMap:  make(sequenceMap),
-		extensionMap: make(extensionMap),
-		functionMap:  make(functionMap),
-		typeMap:      make(typeMap),
+		id:                  id,
+		existsInNew:         false,
+		createSchema:        createSchema,
+		tableMap:            make(tableMap),
+		viewMap:             make(viewMap),
+		materializedViewMap: make(materializedViewMap),
+		indexMap:            make(indexMap),
+		sequenceMap:         make(sequenceMap),
+		extensionMap:        make(extensionMap),
+		functionMap:         make(functionMap),
+		typeMap:             make(typeMap),
 	}
 }
 
@@ -127,6 +136,24 @@ func newTableInfo(id int, createTable *ast.CreateTableStmt) *tableInfo {
 		triggerMap:       make(triggerMap),
 		comment:          "",
 		columnCommentMap: make(map[string]string),
+	}
+}
+
+type materializedViewInfo struct {
+	id                     int
+	existsInNew            bool
+	createMaterializedView *ast.CreateMaterializedViewStmt
+	comment                string
+	columnCommentMap       map[string]string
+}
+
+func newMaterializedViewInfo(id int, createMaterializedView *ast.CreateMaterializedViewStmt) *materializedViewInfo {
+	return &materializedViewInfo{
+		id:                     id,
+		existsInNew:            false,
+		createMaterializedView: createMaterializedView,
+		comment:                "",
+		columnCommentMap:       make(map[string]string),
 	}
 }
 
@@ -259,6 +286,26 @@ func newTypeInfo(id int, createType *ast.CreateTypeStmt) *typeInfo {
 		existsInNew: false,
 		createType:  createType,
 	}
+}
+
+func (m schemaMap) addMaterializedView(id int, materializedView *ast.CreateMaterializedViewStmt) error {
+	if IsSystemSchema(materializedView.Name.Schema) {
+		return nil
+	}
+	schema, exists := m[materializedView.Name.Schema]
+	if !exists {
+		return errors.Errorf("failed to add materialized view: schema %s not found", materializedView.Name.Schema)
+	}
+	schema.materializedViewMap[materializedView.Name.Name] = newMaterializedViewInfo(id, materializedView)
+	return nil
+}
+
+func (m schemaMap) getMaterializedView(schemaName string, materializedViewName string) *materializedViewInfo {
+	schema, exists := m[schemaName]
+	if !exists {
+		return nil
+	}
+	return schema.materializedViewMap[materializedViewName]
 }
 
 func (m schemaMap) addView(id int, view *ast.CreateViewStmt) error {
@@ -742,9 +789,13 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to and preprocess new statements %q", newStmt)
 	}
-	oldSchemaMap := make(schemaMap)
-	oldSchemaMap["public"] = newSchemaInfo(-1, &ast.CreateSchemaStmt{Name: "public"})
-	oldSchemaMap["public"].existsInNew = true
+	diff := &diffNode{
+		oldSchemaMap: make(schemaMap),
+		newSchemaMap: make(schemaMap),
+	}
+	diff.oldSchemaMap["public"] = newSchemaInfo(-1, &ast.CreateSchemaStmt{Name: "public"})
+	diff.newSchemaMap["public"] = newSchemaInfo(-1, &ast.CreateSchemaStmt{Name: "public"})
+	diff.oldSchemaMap["public"].existsInNew = true
 	oldPartitionMap := make(map[string]bool)
 	for _, partition := range oldPartitions {
 		oldPartitionMap[partition] = true
@@ -752,17 +803,21 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 	for i, node := range oldNodes {
 		switch stmt := node.(type) {
 		case *ast.CreateSchemaStmt:
-			oldSchemaMap[stmt.Name] = newSchemaInfo(i, stmt)
+			diff.oldSchemaMap[stmt.Name] = newSchemaInfo(i, stmt)
 		case *ast.CreateTableStmt:
 			if _, exists := oldPartitionMap[fmt.Sprintf("%s.%s", stmt.Name.Schema, stmt.Name.Name)]; exists {
 				// ignore partition table
 				continue
 			}
-			if err := oldSchemaMap.addTable(i, stmt); err != nil {
+			if err := diff.oldSchemaMap.addTable(i, stmt); err != nil {
 				return "", err
 			}
 		case *ast.CreateViewStmt:
-			if err := oldSchemaMap.addView(i, stmt); err != nil {
+			if err := diff.oldSchemaMap.addView(i, stmt); err != nil {
+				return "", err
+			}
+		case *ast.CreateMaterializedViewStmt:
+			if err := diff.oldSchemaMap.addMaterializedView(i, stmt); err != nil {
 				return "", err
 			}
 		case *ast.AlterTableStmt:
@@ -775,7 +830,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 				case *ast.AddConstraintStmt:
 					switch item.Constraint.Type {
 					case ast.ConstraintTypeUnique, ast.ConstraintTypePrimary, ast.ConstraintTypeExclusion, ast.ConstraintTypeForeign:
-						if err := oldSchemaMap.addConstraint(i, item); err != nil {
+						if err := diff.oldSchemaMap.addConstraint(i, item); err != nil {
 							return "", err
 						}
 					default:
@@ -793,44 +848,43 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			if _, exists := oldPartitionMap[fmt.Sprintf("%s.%s", stmt.Index.Table.Schema, stmt.Index.Table.Name)]; exists {
 				continue
 			}
-			if err := oldSchemaMap.addIndex(i, stmt); err != nil {
+			if err := diff.oldSchemaMap.addIndex(i, stmt); err != nil {
 				return "", err
 			}
 		case *ast.CreateSequenceStmt:
-			if err := oldSchemaMap.addSequence(i, stmt); err != nil {
+			if err := diff.oldSchemaMap.addSequence(i, stmt); err != nil {
 				return "", err
 			}
 		case *ast.AlterSequenceStmt:
 			// pg_dump will separate the SET OWNED BY clause into a ALTER SEQUENCE statement.
 			// There would be no other ALTER SEQUENCE statements.
-			if err := oldSchemaMap.addSequenceOwnedBy(i, stmt); err != nil {
+			if err := diff.oldSchemaMap.addSequenceOwnedBy(i, stmt); err != nil {
 				return "", err
 			}
 		case *ast.CreateExtensionStmt:
-			if err := oldSchemaMap.addExtension(i, stmt); err != nil {
+			if err := diff.oldSchemaMap.addExtension(i, stmt); err != nil {
 				return "", err
 			}
 		case *ast.CreateFunctionStmt:
-			if err := oldSchemaMap.addFunction(i, stmt); err != nil {
+			if err := diff.oldSchemaMap.addFunction(i, stmt); err != nil {
 				return "", err
 			}
 		case *ast.CreateTriggerStmt:
-			if err := oldSchemaMap.addTrigger(i, stmt); err != nil {
+			if err := diff.oldSchemaMap.addTrigger(i, stmt); err != nil {
 				return "", err
 			}
 		case *ast.CreateTypeStmt:
-			if err := oldSchemaMap.addType(i, stmt); err != nil {
+			if err := diff.oldSchemaMap.addType(i, stmt); err != nil {
 				return "", err
 			}
 		case *ast.CommentStmt:
-			if err := oldSchemaMap.addComment(stmt); err != nil {
+			if err := diff.oldSchemaMap.addComment(stmt); err != nil {
 				return "", err
 			}
 			// TODO(rebelice): add default back here
 		}
 	}
 
-	diff := &diffNode{}
 	newPartitionMap := make(map[string]bool)
 	for _, partition := range newPartitions {
 		newPartitionMap[partition] = true
@@ -838,6 +892,9 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 	for i, node := range newNodes {
 		switch stmt := node.(type) {
 		case *ast.CreateTableStmt:
+			if err := diff.newSchemaMap.addTable(i, stmt); err != nil {
+				return "", errors.Wrapf(err, "failed to add table %s", stmt.Name.Name)
+			}
 			// ignore partition table
 			if _, exists := newPartitionMap[fmt.Sprintf("%s.%s", stmt.Name.Schema, stmt.Name.Name)]; exists {
 				continue
@@ -845,7 +902,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			if IsSystemSchema(stmt.Name.Schema) {
 				continue
 			}
-			oldTable := oldSchemaMap.getTable(stmt.Name.Schema, stmt.Name.Name)
+			oldTable := diff.oldSchemaMap.getTable(stmt.Name.Schema, stmt.Name.Name)
 			// Add the new table.
 			if oldTable == nil {
 				diff.createTableList = append(diff.createTableList, stmt)
@@ -857,27 +914,48 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 				return "", err
 			}
 		case *ast.CreateSchemaStmt:
+			diff.newSchemaMap[stmt.Name] = newSchemaInfo(i, stmt)
 			if IsSystemSchema(stmt.Name) {
 				continue
 			}
-			schema, hasSchema := oldSchemaMap[stmt.Name]
+			schema, hasSchema := diff.oldSchemaMap[stmt.Name]
 			if !hasSchema {
 				diff.createSchemaList = append(diff.createSchemaList, stmt)
 				continue
 			}
 			schema.existsInNew = true
 		case *ast.CreateViewStmt:
+			if err := diff.newSchemaMap.addView(i, stmt); err != nil {
+				return "", errors.Wrapf(err, "failed to add view %s", stmt.Name.Name)
+			}
 			if IsSystemSchema(stmt.Name.Schema) {
 				continue
 			}
-			oldView := oldSchemaMap.getView(stmt.Name.Schema, stmt.Name.Name)
+			oldView := diff.oldSchemaMap.getView(stmt.Name.Schema, stmt.Name.Name)
 			// Add the new view.
 			if oldView == nil {
-				diff.createViewList = append(diff.createViewList, &createViewInfo{id: i, stmt: stmt})
+				diff.createViewList = append(diff.createViewList, stmt)
 				continue
 			}
 			oldView.existsInNew = true
 			if err := diff.ModifyView(oldView, i, stmt); err != nil {
+				return "", err
+			}
+		case *ast.CreateMaterializedViewStmt:
+			if err := diff.newSchemaMap.addMaterializedView(i, stmt); err != nil {
+				return "", errors.Wrapf(err, "failed to add materialized view %s", stmt.Name.Name)
+			}
+			if IsSystemSchema(stmt.Name.Schema) {
+				continue
+			}
+			oldMaterializedView := diff.oldSchemaMap.getMaterializedView(stmt.Name.Schema, stmt.Name.Name)
+			// Add the new materialized view.
+			if oldMaterializedView == nil {
+				diff.createMaterializedViewList = append(diff.createMaterializedViewList, stmt)
+				continue
+			}
+			oldMaterializedView.existsInNew = true
+			if err := diff.ModifyMaterializedView(oldMaterializedView, i, stmt); err != nil {
 				return "", err
 			}
 		case *ast.AlterTableStmt:
@@ -893,7 +971,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 				case *ast.AddConstraintStmt:
 					switch item.Constraint.Type {
 					case ast.ConstraintTypeUnique, ast.ConstraintTypePrimary, ast.ConstraintTypeExclusion, ast.ConstraintTypeForeign:
-						oldConstraint := oldSchemaMap.getConstraint(item.Table.Schema, item.Table.Name, item.Constraint.Name)
+						oldConstraint := diff.oldSchemaMap.getConstraint(item.Table.Schema, item.Table.Name, item.Constraint.Name)
 						if oldConstraint == nil {
 							diff.appendAddConstraint(stmt.Table, []*ast.ConstraintDef{item.Constraint})
 							continue
@@ -928,7 +1006,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			if IsSystemSchema(stmt.Index.Table.Schema) {
 				continue
 			}
-			oldIndex := oldSchemaMap.getIndex(stmt.Index.Table.Schema, stmt.Index.Name)
+			oldIndex := diff.oldSchemaMap.getIndex(stmt.Index.Table.Schema, stmt.Index.Name)
 			// Add the new index.
 			if oldIndex == nil {
 				diff.createIndexList = append(diff.createIndexList, stmt)
@@ -943,7 +1021,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			if IsSystemSchema(stmt.SequenceDef.SequenceName.Schema) {
 				continue
 			}
-			oldSequence := oldSchemaMap.getSequence(stmt.SequenceDef.SequenceName.Schema, stmt.SequenceDef.SequenceName.Name)
+			oldSequence := diff.oldSchemaMap.getSequence(stmt.SequenceDef.SequenceName.Schema, stmt.SequenceDef.SequenceName.Name)
 			// Add the new sequence.
 			if oldSequence == nil {
 				diff.createSequenceList = append(diff.createSequenceList, stmt)
@@ -961,7 +1039,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			if IsSystemSchema(stmt.Name.Schema) {
 				continue
 			}
-			oldSequence := oldSchemaMap.getSequence(stmt.Name.Schema, stmt.Name.Name)
+			oldSequence := diff.oldSchemaMap.getSequence(stmt.Name.Schema, stmt.Name.Name)
 			// Add the new sequence owned by.
 			if oldSequence == nil || oldSequence.ownedByInfo == nil {
 				diff.setSequenceOwnedByList = append(diff.setSequenceOwnedByList, stmt)
@@ -975,7 +1053,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			if IsSystemSchema(stmt.Schema) {
 				continue
 			}
-			oldExtension := oldSchemaMap.getExtension(stmt.Schema, stmt.Name)
+			oldExtension := diff.oldSchemaMap.getExtension(stmt.Schema, stmt.Name)
 			// Add the extension.
 			if oldExtension == nil {
 				diff.createExtensionList = append(diff.createExtensionList, stmt)
@@ -994,7 +1072,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			oldFunction := oldSchemaMap.getFunction(stmt.Function.Schema, signature)
+			oldFunction := diff.oldSchemaMap.getFunction(stmt.Function.Schema, signature)
 			// Add the function.
 			if oldFunction == nil {
 				diff.createFunctionList = append(diff.createFunctionList, stmt)
@@ -1009,7 +1087,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			if IsSystemSchema(stmt.Trigger.Table.Schema) {
 				continue
 			}
-			oldTrigger := oldSchemaMap.getTrigger(stmt.Trigger.Table.Schema, stmt.Trigger.Table.Name, stmt.Trigger.Name)
+			oldTrigger := diff.oldSchemaMap.getTrigger(stmt.Trigger.Table.Schema, stmt.Trigger.Table.Name, stmt.Trigger.Name)
 			// Add the trigger.
 			if oldTrigger == nil {
 				diff.createTriggerList = append(diff.createTriggerList, stmt)
@@ -1024,7 +1102,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			if IsSystemSchema(stmt.Type.TypeName().Schema) {
 				continue
 			}
-			oldType := oldSchemaMap.getType(stmt.Type.TypeName().Schema, stmt.Type.TypeName().Name)
+			oldType := diff.oldSchemaMap.getType(stmt.Type.TypeName().Schema, stmt.Type.TypeName().Name)
 			// Add the type.
 			if oldType == nil {
 				diff.createTypeList = append(diff.createTypeList, stmt)
@@ -1042,33 +1120,33 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 				if !ok {
 					return "", errors.Errorf("failed to add comment: expect table def, but found %v", stmt.Object)
 				}
-				oldComment := oldSchemaMap.getTableComment(tableDef.Schema, tableDef.Name)
+				oldComment := diff.oldSchemaMap.getTableComment(tableDef.Schema, tableDef.Name)
 				// Set the table comment.
 				if oldComment == "" || oldComment != stmt.Comment {
 					diff.setCommentList = append(diff.setCommentList, stmt)
 				}
-				oldSchemaMap.removeTableComment(tableDef.Schema, tableDef.Name)
+				diff.oldSchemaMap.removeTableComment(tableDef.Schema, tableDef.Name)
 			case ast.ObjectTypeView:
 				viewDef, ok := stmt.Object.(*ast.TableDef)
 				if !ok {
 					return "", errors.Errorf("failed to add comment: expect view def, but found %v", stmt.Object)
 				}
-				oldComment := oldSchemaMap.getViewComment(viewDef.Schema, viewDef.Name)
+				oldComment := diff.oldSchemaMap.getViewComment(viewDef.Schema, viewDef.Name)
 				if oldComment == "" || oldComment != stmt.Comment {
 					diff.setCommentList = append(diff.setCommentList, stmt)
 				}
-				oldSchemaMap.removeViewComment(viewDef.Schema, viewDef.Name)
+				diff.oldSchemaMap.removeViewComment(viewDef.Schema, viewDef.Name)
 			case ast.ObjectTypeColumn:
 				columnNameDef, ok := stmt.Object.(*ast.ColumnNameDef)
 				if !ok {
 					return "", errors.Errorf("failed to add comment: expect column name def, but found %v", stmt.Object)
 				}
-				oldComment := oldSchemaMap.getColumnComment(columnNameDef.Table.Schema, columnNameDef.Table.Name, columnNameDef.ColumnName)
+				oldComment := diff.oldSchemaMap.getColumnComment(columnNameDef.Table.Schema, columnNameDef.Table.Name, columnNameDef.ColumnName)
 				// Set the column comment.
 				if oldComment == "" || oldComment != stmt.Comment {
 					diff.setCommentList = append(diff.setCommentList, stmt)
 				}
-				oldSchemaMap.removeColumnComment(columnNameDef.Table.Schema, columnNameDef.Table.Name, columnNameDef.ColumnName)
+				diff.oldSchemaMap.removeColumnComment(columnNameDef.Table.Schema, columnNameDef.Table.Name, columnNameDef.ColumnName)
 			default:
 				// We only support table and column comment.
 			}
@@ -1076,7 +1154,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 	}
 
 	// Drop remaining old objects.
-	if err := diff.dropObject(oldSchemaMap); err != nil {
+	if err := diff.dropObject(); err != nil {
 		return "", err
 	}
 
@@ -1141,56 +1219,61 @@ func (diff *diffNode) appendAddConstraint(table *ast.TableDef, constraintList []
 	}
 }
 
-func (diff *diffNode) dropObject(oldSchemaMap schemaMap) error {
+func (diff *diffNode) dropObject() error {
 	// Drop the remaining old schema.
-	if dropSchemaStmt := dropSchema(oldSchemaMap); dropSchemaStmt != nil {
+	if dropSchemaStmt := dropSchema(diff.oldSchemaMap); dropSchemaStmt != nil {
 		diff.dropSchemaList = append(diff.dropSchemaList, dropSchemaStmt)
 	}
 
 	// Drop the remaining old table.
-	if dropTableStmt := dropTable(oldSchemaMap); dropTableStmt != nil {
+	if dropTableStmt := dropTable(diff.oldSchemaMap); dropTableStmt != nil {
 		diff.dropTableList = append(diff.dropTableList, dropTableStmt)
 	}
 
 	// Drop the remaining old view.
-	if dropViewStmt := dropView(oldSchemaMap); dropViewStmt != nil {
+	if dropViewStmt := dropView(diff.oldSchemaMap); dropViewStmt != nil {
 		diff.dropViewList = append(diff.dropViewList, dropViewStmt...)
 	}
 
+	// Drop the remaining old materialized view.
+	if dropMaterializedViewStmt := dropMaterializedView(diff.oldSchemaMap); dropMaterializedViewStmt != nil {
+		diff.dropMaterializedViewList = append(diff.dropMaterializedViewList, dropMaterializedViewStmt...)
+	}
+
 	// Drop the remaining old constraints.
-	diff.dropConstraint(oldSchemaMap)
+	diff.dropConstraint(diff.oldSchemaMap)
 
 	// Drop the remaining old index.
-	if dropIndexStmt := dropIndex(oldSchemaMap); dropIndexStmt != nil {
+	if dropIndexStmt := dropIndex(diff.oldSchemaMap); dropIndexStmt != nil {
 		diff.dropIndexList = append(diff.dropIndexList, dropIndexStmt)
 	}
 
 	// Drop the remaining old sequence owned by.
-	diff.dropSequenceOwnedBy(oldSchemaMap)
+	diff.dropSequenceOwnedBy(diff.oldSchemaMap)
 
 	// Drop the remaining old sequence.
-	if dropSequenceStmt := dropSequence(oldSchemaMap); dropSequenceStmt != nil {
+	if dropSequenceStmt := dropSequence(diff.oldSchemaMap); dropSequenceStmt != nil {
 		diff.dropSequenceList = append(diff.dropSequenceList, dropSequenceStmt)
 	}
 
 	// Drop the remaining old extension.
-	if dropExtensionStmt := dropExtension(oldSchemaMap); dropExtensionStmt != nil {
+	if dropExtensionStmt := dropExtension(diff.oldSchemaMap); dropExtensionStmt != nil {
 		diff.dropExtensionList = append(diff.dropExtensionList, dropExtensionStmt)
 	}
 
 	// Drop the remaining old function.
-	if dropFunctionStmt := dropFunction(oldSchemaMap); dropFunctionStmt != nil {
+	if dropFunctionStmt := dropFunction(diff.oldSchemaMap); dropFunctionStmt != nil {
 		diff.dropFunctionList = append(diff.dropFunctionList, dropFunctionStmt)
 	}
 
 	// Drop the remaining old trigger.
-	diff.dropTriggerStmt(oldSchemaMap)
+	diff.dropTriggerStmt(diff.oldSchemaMap)
 
 	// Drop the remaining old type.
-	diff.dropTypeStmt(oldSchemaMap)
+	diff.dropTypeStmt(diff.oldSchemaMap)
 
 	// Drop the remaining old comment.
-	diff.dropComment(oldSchemaMap)
+	diff.dropComment(diff.oldSchemaMap)
 
 	return nil
 }
@@ -1287,13 +1370,54 @@ func (diff *diffNode) modifyTableByConstraint(oldTable *ast.CreateTableStmt, new
 	return nil
 }
 
-func (diff *diffNode) ModifyView(oldView *viewInfo, id int, newView *ast.CreateViewStmt) error {
+func (diff *diffNode) ModifyMaterializedView(oldMaterializedView *materializedViewInfo, _ int, newMaterializedView *ast.CreateMaterializedViewStmt) error {
+	if !equalMaterializedView(oldMaterializedView.createMaterializedView, newMaterializedView) {
+		diff.dropMaterializedViewList = append(diff.dropMaterializedViewList, oldMaterializedView.createMaterializedView)
+		// drop the comments of the view
+		oldMaterializedView.comment = ""
+		oldMaterializedView.columnCommentMap = make(map[string]string)
+		diff.createMaterializedViewList = append(diff.createMaterializedViewList, newMaterializedView)
+	}
+	return nil
+}
+
+func equalMaterializedView(oldMaterializedView *ast.CreateMaterializedViewStmt, newMaterializedView *ast.CreateMaterializedViewStmt) bool {
+	oldText, err := pgquery.Deparse(&pgquery.ParseResult{
+		Stmts: []*pgquery.RawStmt{
+			{
+				Stmt: &pgquery.Node{
+					Node: oldMaterializedView.GetOriginalNode(),
+				},
+			},
+		},
+	})
+	if err != nil {
+		slog.Debug("failed to deparse old materialized view", log.BBError(err))
+		return false
+	}
+	newText, err := pgquery.Deparse(&pgquery.ParseResult{
+		Stmts: []*pgquery.RawStmt{
+			{
+				Stmt: &pgquery.Node{
+					Node: newMaterializedView.GetOriginalNode(),
+				},
+			},
+		},
+	})
+	if err != nil {
+		slog.Debug("failed to deparse new materialized view", log.BBError(err))
+		return false
+	}
+	return oldText == newText
+}
+
+func (diff *diffNode) ModifyView(oldView *viewInfo, _ int, newView *ast.CreateViewStmt) error {
 	if !equalView(oldView.createView, newView) {
-		diff.dropViewList = append(diff.dropViewList, oldView.createView.Name)
+		diff.dropViewList = append(diff.dropViewList, oldView.createView)
 		// drop the comments of the view
 		oldView.comment = ""
 		oldView.columnCommentMap = make(map[string]string)
-		diff.createViewList = append(diff.createViewList, &createViewInfo{id: id, stmt: newView})
+		diff.createViewList = append(diff.createViewList, newView)
 	}
 	return nil
 }
@@ -1796,22 +1920,16 @@ func printStmtSlice(buf io.Writer, nodeList []ast.Node) error {
 	return nil
 }
 
-func printDropView(buf io.Writer, viewList []*ast.TableDef) error {
-	if len(viewList) == 0 {
+func printDropMaterializedView(buf io.Writer, viewName *ast.TableDef) error {
+	if viewName == nil {
 		return nil
 	}
-	if _, err := fmt.Fprintf(buf, "DROP VIEW "); err != nil {
+
+	if _, err := fmt.Fprintf(buf, "DROP MATERIALIZED VIEW "); err != nil {
 		return err
 	}
-	for i, view := range viewList {
-		if i != 0 {
-			if _, err := fmt.Fprintf(buf, ", "); err != nil {
-				return err
-			}
-		}
-		if _, err := fmt.Fprintf(buf, `"%s"."%s"`, view.Schema, view.Name); err != nil {
-			return err
-		}
+	if _, err := fmt.Fprintf(buf, `"%s"."%s"`, viewName.Schema, viewName.Name); err != nil {
+		return err
 	}
 	if _, err := fmt.Fprintf(buf, ";\n"); err != nil {
 		return err
@@ -1819,28 +1937,53 @@ func printDropView(buf io.Writer, viewList []*ast.TableDef) error {
 	return nil
 }
 
-func printCreateViewStmt(buf io.Writer, viewList []*createViewInfo) error {
-	sort.Slice(viewList, func(i, j int) bool {
-		return viewList[i].id < viewList[j].id
-	})
-	for _, view := range viewList {
-		node := view.stmt.GetOriginalNode()
-		node.ViewStmt.Replace = true
-		text, err := pgquery.Deparse(&pgquery.ParseResult{
-			Stmts: []*pgquery.RawStmt{
-				{
-					Stmt: &pgquery.Node{Node: node},
-				},
-			},
-		})
-		if err != nil {
-			return err
-		}
-		if err := writeStringWithNewLine(buf, text+";"); err != nil {
-			return err
-		}
+func printDropView(buf io.Writer, viewName *ast.TableDef) error {
+	if viewName == nil {
+		return nil
+	}
+	if _, err := fmt.Fprintf(buf, "DROP VIEW "); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(buf, `"%s"."%s"`, viewName.Schema, viewName.Name); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(buf, ";\n"); err != nil {
+		return err
 	}
 	return nil
+}
+
+func printCreateMaterializedViewStmt(buf io.Writer, view *ast.CreateMaterializedViewStmt) error {
+	node := view.GetOriginalNode()
+	text, err := pgquery.Deparse(&pgquery.ParseResult{
+		Stmts: []*pgquery.RawStmt{
+			{
+				Stmt: &pgquery.Node{Node: node},
+			},
+		},
+	})
+	if err != nil {
+		return err
+	}
+	err = writeStringWithNewLine(buf, text+";")
+	return err
+}
+
+func printCreateViewStmt(buf io.Writer, view *ast.CreateViewStmt) error {
+	node := view.GetOriginalNode()
+	node.ViewStmt.Replace = true
+	text, err := pgquery.Deparse(&pgquery.ParseResult{
+		Stmts: []*pgquery.RawStmt{
+			{
+				Stmt: &pgquery.Node{Node: node},
+			},
+		},
+	})
+	if err != nil {
+		return err
+	}
+	err = writeStringWithNewLine(buf, text+";")
+	return err
 }
 
 // deparse statements as the safe change order.
@@ -1866,7 +2009,7 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := printStmtSlice(&buf, diff.dropSequenceOwnedByList); err != nil {
 		return "", err
 	}
-	if err := printDropView(&buf, diff.dropViewList); err != nil {
+	if err := diff.printDropViewAndMaterializedView(&buf); err != nil {
 		return "", err
 	}
 	if err := printStmtSlice(&buf, diff.dropColumnList); err != nil {
@@ -1940,7 +2083,7 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := printStmtSlice(&buf, diff.createForeignKeyList); err != nil {
 		return "", err
 	}
-	if err := printCreateViewStmt(&buf, diff.createViewList); err != nil {
+	if err := diff.printCreateViewAndMaterializedView(&buf); err != nil {
 		return "", err
 	}
 	if err := printStmtSlice(&buf, diff.setCommentList); err != nil {
@@ -1948,6 +2091,239 @@ func (diff *diffNode) deparse() (string, error) {
 	}
 
 	return buf.String(), nil
+}
+
+func getTableID(tableID *ast.TableDef) string {
+	return fmt.Sprintf("%s.%s", tableID.Schema, tableID.Name)
+}
+
+func (diff *diffNode) getNewDatabaseMetadataFunc() base.GetDatabaseMetadataFunc {
+	return func(context.Context, string, string) (string, *model.DatabaseMetadata, error) {
+		return "", model.NewDatabaseMetadata(schemaMapToMetadata(diff.newSchemaMap)), nil
+	}
+}
+
+func (diff *diffNode) getOldDatabaseMetadataFunc() base.GetDatabaseMetadataFunc {
+	return func(context.Context, string, string) (string, *model.DatabaseMetadata, error) {
+		return "", model.NewDatabaseMetadata(schemaMapToMetadata(diff.oldSchemaMap)), nil
+	}
+}
+
+func schemaMapToMetadata(m schemaMap) *storepb.DatabaseSchemaMetadata {
+	meta := storepb.DatabaseSchemaMetadata{}
+	for _, schema := range m {
+		// We only need to add the views and materialized views to the schema metadata.
+		// This is only use to get the resources column from query span.
+		meta.Schemas = append(meta.Schemas, &storepb.SchemaMetadata{
+			Name:              schema.createSchema.Name,
+			Views:             viewToMetadata(schema.viewMap),
+			MaterializedViews: materializedViewToMetadata(schema.materializedViewMap),
+		})
+	}
+
+	return &meta
+}
+
+func materializedViewToMetadata(m materializedViewMap) []*storepb.MaterializedViewMetadata {
+	var materializedViews []*storepb.MaterializedViewMetadata
+	for _, materializedView := range m {
+		materializedViews = append(materializedViews, &storepb.MaterializedViewMetadata{
+			Name: materializedView.createMaterializedView.Name.Name,
+		})
+	}
+	return materializedViews
+}
+
+func viewToMetadata(m viewMap) []*storepb.ViewMetadata {
+	var views []*storepb.ViewMetadata
+	for _, view := range m {
+		views = append(views, &storepb.ViewMetadata{
+			Name: view.createView.Name.Name,
+		})
+	}
+	return views
+}
+
+func (diff *diffNode) printCreateViewAndMaterializedView(buf io.Writer) error {
+	graph := base.NewGraph()
+	viewMap := make(map[string]*ast.CreateViewStmt)
+	materializedViewMap := make(map[string]*ast.CreateMaterializedViewStmt)
+
+	for _, view := range diff.createViewList {
+		viewID := getTableID(view.Name)
+		viewMap[viewID] = view
+		graph.AddNode(viewID)
+		dependency, err := diff.getViewDependency(view, diff.getNewDatabaseMetadataFunc())
+		if err != nil {
+			return errors.Wrapf(err, "failed to get view dependency for %s", viewID)
+		}
+		for _, dep := range dependency {
+			graph.AddEdge(dep, viewID)
+		}
+	}
+
+	for _, materializedView := range diff.createMaterializedViewList {
+		viewID := getTableID(materializedView.Name)
+		materializedViewMap[viewID] = materializedView
+		graph.AddNode(viewID)
+		dependency, err := diff.getMaterializedViewDependency(materializedView, diff.getNewDatabaseMetadataFunc())
+		if err != nil {
+			return errors.Wrapf(err, "failed to get view dependency for %s", viewID)
+		}
+		for _, dep := range dependency {
+			graph.AddEdge(dep, viewID)
+		}
+	}
+
+	orderedList, err := graph.TopologicalSort()
+	if err != nil {
+		return errors.Wrap(err, "failed to topological sort")
+	}
+
+	for _, viewID := range orderedList {
+		if view, ok := viewMap[viewID]; ok {
+			if err := printCreateViewStmt(buf, view); err != nil {
+				return err
+			}
+		}
+
+		if materializedView, ok := materializedViewMap[viewID]; ok {
+			if err := printCreateMaterializedViewStmt(buf, materializedView); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (diff *diffNode) printDropViewAndMaterializedView(buf io.Writer) error {
+	graph := base.NewGraph()
+	viewMap := make(map[string]*ast.CreateViewStmt)
+	materializedViewMap := make(map[string]*ast.CreateMaterializedViewStmt)
+
+	for _, view := range diff.dropViewList {
+		viewID := getTableID(view.Name)
+		viewMap[viewID] = view
+		graph.AddNode(viewID)
+		dependency, err := diff.getViewDependency(view, diff.getOldDatabaseMetadataFunc())
+		if err != nil {
+			return errors.Wrapf(err, "failed to get view dependency for %s", viewID)
+		}
+		for _, dep := range dependency {
+			graph.AddEdge(viewID, dep)
+		}
+	}
+
+	for _, materializedView := range diff.dropMaterializedViewList {
+		viewID := getTableID(materializedView.Name)
+		materializedViewMap[viewID] = materializedView
+		graph.AddNode(viewID)
+		dependency, err := diff.getMaterializedViewDependency(materializedView, diff.getOldDatabaseMetadataFunc())
+		if err != nil {
+			return errors.Wrapf(err, "failed to get view dependency for %s", viewID)
+		}
+		for _, dep := range dependency {
+			graph.AddEdge(viewID, dep)
+		}
+	}
+
+	orderedList, err := graph.TopologicalSort()
+	if err != nil {
+		return errors.Wrap(err, "failed to topological sort")
+	}
+
+	for _, viewID := range orderedList {
+		if view, ok := viewMap[viewID]; ok {
+			if err := printDropView(buf, view.Name); err != nil {
+				return err
+			}
+		}
+
+		if materializedView, ok := materializedViewMap[viewID]; ok {
+			if err := printDropMaterializedView(buf, materializedView.Name); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (*diffNode) getMaterializedViewDependency(materializedView *ast.CreateMaterializedViewStmt, getDatabaseMetadata base.GetDatabaseMetadataFunc) ([]string, error) {
+	queryText, err := pgquery.Deparse(&pgquery.ParseResult{
+		Stmts: []*pgquery.RawStmt{
+			{
+				Stmt: &pgquery.Node{
+					Node: materializedView.GetOriginalNode().CreateTableAsStmt.Query.Node,
+				},
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	span, err := GetQuerySpan(
+		context.Background(),
+		base.GetQuerySpanContext{
+			GetDatabaseMetadataFunc: getDatabaseMetadata,
+		}, // We only need the source column, so resource is not needed.
+		queryText,
+		"", // No need database name.
+		"public",
+		false,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []string
+	for sourceColumn := range span.SourceColumns {
+		result = append(result, getTableID(&ast.TableDef{
+			Schema: sourceColumn.Schema,
+			Name:   sourceColumn.Table,
+		}))
+	}
+	return result, nil
+}
+
+func (*diffNode) getViewDependency(view *ast.CreateViewStmt, getDatabaseMetadata base.GetDatabaseMetadataFunc) ([]string, error) {
+	queryText, err := pgquery.Deparse(&pgquery.ParseResult{
+		Stmts: []*pgquery.RawStmt{
+			{
+				Stmt: &pgquery.Node{
+					Node: view.GetOriginalNode().ViewStmt.Query.Node,
+				},
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	span, err := GetQuerySpan(
+		context.Background(),
+		base.GetQuerySpanContext{
+			GetDatabaseMetadataFunc: base.GetDatabaseMetadataFunc(getDatabaseMetadata),
+		}, // We only need the source column, so resource is not needed.
+		queryText,
+		"", // No need database name.
+		"public",
+		false,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []string
+	for sourceColumn := range span.SourceColumns {
+		result = append(result, getTableID(&ast.TableDef{
+			Schema: sourceColumn.Schema,
+			Name:   sourceColumn.Table,
+		}))
+	}
+	return result, nil
 }
 
 func (diff *diffNode) dropConstraint(m schemaMap) {
@@ -1972,7 +2348,32 @@ func (diff *diffNode) dropConstraint(m schemaMap) {
 	}
 }
 
-func dropView(m schemaMap) []*ast.TableDef {
+func dropMaterializedView(m schemaMap) []*ast.CreateMaterializedViewStmt {
+	var materializedViewList []*materializedViewInfo
+	for _, schema := range m {
+		for _, materializedView := range schema.materializedViewMap {
+			if materializedView.existsInNew {
+				// no need to drop
+				continue
+			}
+			materializedViewList = append(materializedViewList, materializedView)
+		}
+	}
+	if len(materializedViewList) == 0 {
+		return nil
+	}
+	sort.Slice(materializedViewList, func(i, j int) bool {
+		return materializedViewList[i].id < materializedViewList[j].id
+	})
+
+	var materializedViewDefList []*ast.CreateMaterializedViewStmt
+	for _, materializedView := range materializedViewList {
+		materializedViewDefList = append(materializedViewDefList, materializedView.createMaterializedView)
+	}
+	return materializedViewDefList
+}
+
+func dropView(m schemaMap) []*ast.CreateViewStmt {
 	var viewList []*viewInfo
 	for _, schema := range m {
 		for _, view := range schema.viewMap {
@@ -1990,9 +2391,9 @@ func dropView(m schemaMap) []*ast.TableDef {
 		return viewList[i].id < viewList[j].id
 	})
 
-	var viewDefList []*ast.TableDef
+	var viewDefList []*ast.CreateViewStmt
 	for _, view := range viewList {
-		viewDefList = append(viewDefList, view.createView.Name)
+		viewDefList = append(viewDefList, view.createView)
 	}
 	return viewDefList
 }
