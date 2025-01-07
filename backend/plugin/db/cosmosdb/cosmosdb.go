@@ -106,7 +106,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		}
 		// TODO(zp): test only.
 		type Item struct {
-			Id       string `json:"id"`
+			ID       string `json:"id"`
 			Category string `json:"category"`
 		}
 		for _, bytes := range response.Items {
@@ -118,7 +118,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 				Values: []*v1pb.RowValue{
 					{
 						Kind: &v1pb.RowValue_StringValue{
-							StringValue: item.Id,
+							StringValue: item.ID,
 						},
 					},
 					{
