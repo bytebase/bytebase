@@ -126,7 +126,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get triggers from database %q", driver.databaseName)
 	}
-	tableMap, externalTableMap, err := getTables(txn, isAtLeastPG10, columnMap, indexMap, triggerMap, extensionDepend)
+	tableMap, externalTableMap, tableOidMap, err := getTables(txn, isAtLeastPG10, columnMap, indexMap, triggerMap, extensionDepend)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
 	}
@@ -137,15 +137,19 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			return nil, errors.Wrapf(err, "failed to get table partitions from database %q", driver.databaseName)
 		}
 	}
-	viewMap, err := getViews(txn, columnMap, triggerMap, extensionDepend)
+	viewMap, viewOidMap, err := getViews(txn, columnMap, triggerMap, extensionDepend)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
 	}
-	materializedViewMap, err := getMaterializedViews(txn, indexMap, triggerMap, extensionDepend)
+	materializedViewMap, materializedViewOidMap, err := getMaterializedViews(txn, indexMap, triggerMap, extensionDepend)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get materialized views from database %q", driver.databaseName)
 	}
-	functionMap, err := getFunctions(txn, extensionDepend)
+	functionDependentTables, err := getFunctionDependentTables(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get function dependent tables from database %q", driver.databaseName)
+	}
+	functionMap, err := getFunctions(txn, functionDependentTables, tableOidMap, viewOidMap, materializedViewOidMap, extensionDepend)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get functions from database %q", driver.databaseName)
 	}
@@ -432,21 +436,22 @@ func getTables(
 	indexMap map[db.TableKey][]*storepb.IndexMetadata,
 	triggerMap map[db.TableKey][]*storepb.TriggerMetadata,
 	extensionDepend map[int]bool,
-) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ExternalTableMetadata, error) {
+) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ExternalTableMetadata, map[int]*db.TableKey, error) {
 	foreignKeysMap, err := getForeignKeys(txn)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get foreign keys")
+		return nil, nil, nil, errors.Wrapf(err, "failed to get foreign keys")
 	}
 	foreignTablesMap, err := getForeignTables(txn, columnMap)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get foreign tables")
+		return nil, nil, nil, errors.Wrapf(err, "failed to get foreign tables")
 	}
 
 	tableMap := make(map[string][]*storepb.TableMetadata)
+	tableOidMap := make(map[int]*db.TableKey)
 	query := getListTableQuery(isAtLeastPG10)
 	rows, err := txn.Query(query)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	defer rows.Close()
 
@@ -456,7 +461,7 @@ func getTables(
 		var schemaName string
 		var comment sql.NullString
 		if err := rows.Scan(&oid, &schemaName, &table.Name, &table.DataSize, &table.IndexSize, &table.RowCount, &comment, &table.Owner); err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		if pgparser.IsSystemTable(table.Name) {
 			continue
@@ -475,12 +480,13 @@ func getTables(
 		table.Triggers = triggerMap[key]
 
 		tableMap[schemaName] = append(tableMap[schemaName], table)
+		tableOidMap[oid] = &db.TableKey{Schema: schemaName, Table: table.Name}
 	}
 	if err := rows.Err(); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	return tableMap, foreignTablesMap, nil
+	return tableMap, foreignTablesMap, tableOidMap, nil
 }
 
 func getForeignTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.ExternalTableMetadata, error) {
@@ -718,12 +724,13 @@ FROM pg_catalog.pg_matviews
 WHERE schemaname NOT IN (%s)
 ORDER BY schemaname, matviewname;`, pgparser.SystemSchemaWhereClause)
 
-func getMaterializedViews(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMetadata, triggerMap map[db.TableKey][]*storepb.TriggerMetadata, extensionDepend map[int]bool) (map[string][]*storepb.MaterializedViewMetadata, error) {
+func getMaterializedViews(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMetadata, triggerMap map[db.TableKey][]*storepb.TriggerMetadata, extensionDepend map[int]bool) (map[string][]*storepb.MaterializedViewMetadata, map[int]*db.TableKey, error) {
 	matviewMap := make(map[string][]*storepb.MaterializedViewMetadata)
+	materializedViewOidMap := make(map[int]*db.TableKey)
 
 	rows, err := txn.Query(listMaterializedViewQuery)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -732,7 +739,7 @@ func getMaterializedViews(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.Index
 		var schemaName string
 		var def, comment sql.NullString
 		if err := rows.Scan(&oid, &schemaName, &matview.Name, &def, &comment); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		// Skip system views.
 		if pgparser.IsSystemView(matview.Name) {
@@ -745,7 +752,7 @@ func getMaterializedViews(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.Index
 
 		// Return error on NULL view definition.
 		if !def.Valid {
-			return nil, errors.Errorf("schema %q materialized view %q has empty definition; please check whether proper privileges have been granted to Bytebase", schemaName, matview.Name)
+			return nil, nil, errors.Errorf("schema %q materialized view %q has empty definition; please check whether proper privileges have been granted to Bytebase", schemaName, matview.Name)
 		}
 		matview.Definition = def.String
 		if comment.Valid {
@@ -756,22 +763,23 @@ func getMaterializedViews(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.Index
 		matview.Triggers = triggerMap[viewKey]
 
 		matviewMap[schemaName] = append(matviewMap[schemaName], matview)
+		materializedViewOidMap[oid] = &viewKey
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	for schemaName, list := range matviewMap {
 		for _, matview := range list {
 			dependencies, err := getViewDependencies(txn, schemaName, matview.Name)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get materialized view %q dependencies", matview.Name)
+				return nil, nil, errors.Wrapf(err, "failed to get materialized view %q dependencies", matview.Name)
 			}
 			matview.DependentColumns = dependencies
 		}
 	}
 
-	return matviewMap, nil
+	return matviewMap, materializedViewOidMap, nil
 }
 
 var listViewQuery = `
@@ -782,12 +790,13 @@ WHERE schemaname NOT IN (%s)
 ORDER BY schemaname, viewname;`, pgparser.SystemSchemaWhereClause)
 
 // getViews gets all views of a database.
-func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata, triggerMap map[db.TableKey][]*storepb.TriggerMetadata, extensionDepend map[int]bool) (map[string][]*storepb.ViewMetadata, error) {
+func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata, triggerMap map[db.TableKey][]*storepb.TriggerMetadata, extensionDepend map[int]bool) (map[string][]*storepb.ViewMetadata, map[int]*db.TableKey, error) {
 	viewMap := make(map[string][]*storepb.ViewMetadata)
+	viewOidMap := make(map[int]*db.TableKey)
 
 	rows, err := txn.Query(listViewQuery)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -796,7 +805,7 @@ func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata, 
 		var schemaName string
 		var def, comment sql.NullString
 		if err := rows.Scan(&oid, &schemaName, &view.Name, &def, &comment); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		// Skip system views.
 		if pgparser.IsSystemView(view.Name) {
@@ -810,7 +819,7 @@ func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata, 
 		// Return error on NULL view definition.
 		// https://github.com/bytebase/bytebase/issues/343
 		if !def.Valid {
-			return nil, errors.Errorf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", schemaName, view.Name)
+			return nil, nil, errors.Errorf("schema %q view %q has empty definition; please check whether proper privileges have been granted to Bytebase", schemaName, view.Name)
 		}
 		view.Definition = def.String
 		if comment.Valid {
@@ -822,22 +831,23 @@ func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata, 
 		view.Triggers = triggerMap[key]
 
 		viewMap[schemaName] = append(viewMap[schemaName], view)
+		viewOidMap[oid] = &key
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	for schemaName, list := range viewMap {
 		for _, view := range list {
 			dependencies, err := getViewDependencies(txn, schemaName, view.Name)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get view %q dependencies", view.Name)
+				return nil, nil, errors.Wrapf(err, "failed to get view %q dependencies", view.Name)
 			}
 			view.DependentColumns = dependencies
 		}
 	}
 
-	return viewMap, nil
+	return viewMap, viewOidMap, nil
 }
 
 // getViewDependencies gets the dependencies of a view.
@@ -1264,6 +1274,41 @@ func getIndexMethodType(stmt string) string {
 	return matches[1]
 }
 
+var listFunctionDependentTablesQuery = `
+select
+	p.oid as function_oid,
+	pt.typrelid as table_oid
+from pg_proc p
+	left join pg_depend d on p.oid = d.objid
+	left join pg_type pt on d.refobjid = pt.oid
+	left join pg_namespace n on p.pronamespace = n.oid` + fmt.Sprintf(`
+where n.nspname not in (%s) AND pt.typrelid IS NOT NULL
+`, pgparser.SystemSchemaWhereClause)
+
+func getFunctionDependentTables(txn *sql.Tx) (map[int][]int, error) {
+	dependentTableMap := make(map[int][]int)
+
+	rows, err := txn.Query(listFunctionDependentTablesQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var functionOid, tableOid int
+		if err := rows.Scan(&functionOid, &tableOid); err != nil {
+			return nil, err
+		}
+		dependentTableMap[functionOid] = append(dependentTableMap[functionOid], tableOid)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return dependentTableMap, nil
+}
+
 var listFunctionQuery = `
 select p.oid, n.nspname as function_schema,
 	p.proname as function_name,
@@ -1280,7 +1325,12 @@ where n.nspname not in (%s)
 order by function_schema, function_name;`, pgparser.SystemSchemaWhereClause)
 
 // getFunctions gets all functions of a database.
-func getFunctions(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*storepb.FunctionMetadata, error) {
+func getFunctions(
+	txn *sql.Tx,
+	functionDependentTables map[int][]int,
+	tableOidMap, viewOidMap, materializedViewOidMap map[int]*db.TableKey,
+	extensionDepend map[int]bool,
+) (map[string][]*storepb.FunctionMetadata, error) {
 	functionMap := make(map[string][]*storepb.FunctionMetadata)
 
 	rows, err := txn.Query(listFunctionQuery)
@@ -1309,6 +1359,25 @@ func getFunctions(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 		}
 
 		function.Signature = fmt.Sprintf("%s(%s)", function.Name, arguments)
+		for _, tableOid := range functionDependentTables[oid] {
+			if table, ok := tableOidMap[tableOid]; ok {
+				function.DependentTables = append(function.DependentTables, &storepb.DependentTable{
+					Schema: table.Schema,
+					Table:  table.Table,
+				})
+			} else if view, ok := viewOidMap[tableOid]; ok {
+				function.DependentTables = append(function.DependentTables, &storepb.DependentTable{
+					Schema: view.Schema,
+					Table:  view.Table,
+				})
+			} else if matview, ok := materializedViewOidMap[tableOid]; ok {
+				function.DependentTables = append(function.DependentTables, &storepb.DependentTable{
+					Schema: matview.Schema,
+					Table:  matview.Table,
+				})
+			}
+		}
+
 		functionMap[schemaName] = append(functionMap[schemaName], function)
 	}
 	if err := rows.Err(); err != nil {

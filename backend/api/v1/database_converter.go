@@ -101,6 +101,12 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 				SqlMode:             function.SqlMode,
 				Comment:             function.Comment,
 			}
+			for _, dep := range function.DependentTables {
+				v1Func.DependentTables = append(v1Func.DependentTables, &v1pb.DependentTable{
+					Schema: dep.Schema,
+					Table:  dep.Table,
+				})
+			}
 			s.Functions = append(s.Functions, v1Func)
 		}
 		for _, procedure := range schema.Procedures {
@@ -678,6 +684,12 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 				DatabaseCollation:   function.DatabaseCollation,
 				SqlMode:             function.SqlMode,
 				Comment:             function.Comment,
+			}
+			for _, dep := range function.DependentTables {
+				storeFunc.DependentTables = append(storeFunc.DependentTables, &storepb.DependentTable{
+					Schema: dep.Schema,
+					Table:  dep.Table,
+				})
 			}
 			s.Functions = append(s.Functions, storeFunc)
 		}
