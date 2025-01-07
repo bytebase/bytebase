@@ -109,6 +109,7 @@
     - [DeleteRevisionRequest](#bytebase-v1-DeleteRevisionRequest)
     - [DeleteSecretRequest](#bytebase-v1-DeleteSecretRequest)
     - [DependentColumn](#bytebase-v1-DependentColumn)
+    - [DependentTable](#bytebase-v1-DependentTable)
     - [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest)
     - [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse)
     - [EnumTypeMetadata](#bytebase-v1-EnumTypeMetadata)
@@ -2326,6 +2327,22 @@ DependentColumn is the metadata for dependent columns.
 
 
 
+<a name="bytebase-v1-DependentTable"></a>
+
+### DependentTable
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  | The schema is the schema of a reference table. |
+| table | [string](#string) |  | The table is the name of a reference table. |
+
+
+
+
+
+
 <a name="bytebase-v1-DiffSchemaRequest"></a>
 
 ### DiffSchemaRequest
@@ -2488,6 +2505,7 @@ FunctionMetadata is the metadata for functions.
 | database_collation | [string](#string) |  |  |
 | sql_mode | [string](#string) |  |  |
 | comment | [string](#string) |  |  |
+| dependent_tables | [DependentTable](#bytebase-v1-DependentTable) | repeated | The dependent_tables is the list of dependent tables of a function. For PostgreSQL, it&#39;s the list of tables that the function depends on the return type definition. |
 
 
 

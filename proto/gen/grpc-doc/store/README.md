@@ -53,6 +53,7 @@
     - [DatabaseMetadata.LabelsEntry](#bytebase-store-DatabaseMetadata-LabelsEntry)
     - [DatabaseSchemaMetadata](#bytebase-store-DatabaseSchemaMetadata)
     - [DependentColumn](#bytebase-store-DependentColumn)
+    - [DependentTable](#bytebase-store-DependentTable)
     - [EnumTypeMetadata](#bytebase-store-EnumTypeMetadata)
     - [EventMetadata](#bytebase-store-EventMetadata)
     - [ExtensionMetadata](#bytebase-store-ExtensionMetadata)
@@ -1071,6 +1072,22 @@ DependentColumn is the metadata for dependent columns.
 
 
 
+<a name="bytebase-store-DependentTable"></a>
+
+### DependentTable
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  | The schema is the schema of a reference table. |
+| table | [string](#string) |  | The table is the name of a reference table. |
+
+
+
+
+
+
 <a name="bytebase-store-EnumTypeMetadata"></a>
 
 ### EnumTypeMetadata
@@ -1200,6 +1217,7 @@ FunctionMetadata is the metadata for functions.
 | database_collation | [string](#string) |  |  |
 | sql_mode | [string](#string) |  |  |
 | comment | [string](#string) |  |  |
+| dependent_tables | [DependentTable](#bytebase-store-DependentTable) | repeated | The dependent_tables is the list of dependent tables of a function. For PostgreSQL, it&#39;s the list of tables that the function depends on the return type definition. |
 
 
 
