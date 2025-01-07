@@ -75,11 +75,6 @@ type diffNode struct {
 	setCommentList []ast.Node
 }
 
-type createViewInfo struct {
-	id   int
-	stmt *ast.CreateViewStmt
-}
-
 type schemaMap map[string]*schemaInfo
 type tableMap map[string]*tableInfo
 type viewMap map[string]*viewInfo
@@ -897,7 +892,9 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 	for i, node := range newNodes {
 		switch stmt := node.(type) {
 		case *ast.CreateTableStmt:
-			diff.newSchemaMap.addTable(i, stmt)
+			if err := diff.newSchemaMap.addTable(i, stmt); err != nil {
+				return "", errors.Wrapf(err, "failed to add table %s", stmt.Name.Name)
+			}
 			// ignore partition table
 			if _, exists := newPartitionMap[fmt.Sprintf("%s.%s", stmt.Name.Schema, stmt.Name.Name)]; exists {
 				continue
@@ -928,7 +925,9 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 			}
 			schema.existsInNew = true
 		case *ast.CreateViewStmt:
-			diff.newSchemaMap.addView(i, stmt)
+			if err := diff.newSchemaMap.addView(i, stmt); err != nil {
+				return "", errors.Wrapf(err, "failed to add view %s", stmt.Name.Name)
+			}
 			if IsSystemSchema(stmt.Name.Schema) {
 				continue
 			}
@@ -943,7 +942,9 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 				return "", err
 			}
 		case *ast.CreateMaterializedViewStmt:
-			diff.newSchemaMap.addMaterializedView(i, stmt)
+			if err := diff.newSchemaMap.addMaterializedView(i, stmt); err != nil {
+				return "", errors.Wrapf(err, "failed to add materialized view %s", stmt.Name.Name)
+			}
 			if IsSystemSchema(stmt.Name.Schema) {
 				continue
 			}
@@ -1964,10 +1965,8 @@ func printCreateMaterializedViewStmt(buf io.Writer, view *ast.CreateMaterialized
 	if err != nil {
 		return err
 	}
-	if err := writeStringWithNewLine(buf, text+";"); err != nil {
-		return err
-	}
-	return nil
+	err = writeStringWithNewLine(buf, text+";")
+	return err
 }
 
 func printCreateViewStmt(buf io.Writer, view *ast.CreateViewStmt) error {
@@ -1983,10 +1982,8 @@ func printCreateViewStmt(buf io.Writer, view *ast.CreateViewStmt) error {
 	if err != nil {
 		return err
 	}
-	if err := writeStringWithNewLine(buf, text+";"); err != nil {
-		return err
-	}
-	return nil
+	err = writeStringWithNewLine(buf, text+";")
+	return err
 }
 
 // deparse statements as the safe change order.
@@ -2253,7 +2250,7 @@ func (diff *diffNode) printDropViewAndMaterializedView(buf io.Writer) error {
 	return nil
 }
 
-func (diff *diffNode) getMaterializedViewDependency(materializedView *ast.CreateMaterializedViewStmt, getDatabaseMetadata base.GetDatabaseMetadataFunc) ([]string, error) {
+func (*diffNode) getMaterializedViewDependency(materializedView *ast.CreateMaterializedViewStmt, getDatabaseMetadata base.GetDatabaseMetadataFunc) ([]string, error) {
 	queryText, err := pgquery.Deparse(&pgquery.ParseResult{
 		Stmts: []*pgquery.RawStmt{
 			{
@@ -2291,7 +2288,7 @@ func (diff *diffNode) getMaterializedViewDependency(materializedView *ast.Create
 	return result, nil
 }
 
-func (diff *diffNode) getViewDependency(view *ast.CreateViewStmt, getDatabaseMetadata base.GetDatabaseMetadataFunc) ([]string, error) {
+func (*diffNode) getViewDependency(view *ast.CreateViewStmt, getDatabaseMetadata base.GetDatabaseMetadataFunc) ([]string, error) {
 	queryText, err := pgquery.Deparse(&pgquery.ParseResult{
 		Stmts: []*pgquery.RawStmt{
 			{
