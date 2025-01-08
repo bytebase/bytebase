@@ -1,7 +1,12 @@
 <template>
   <div
-    class="task px-2 py-1 pt-2 pr-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-stretch overflow-hidden gap-x-1"
-    :class="taskClass"
+    :class="
+      twMerge(
+        'task',
+        'group px-2 py-1 pt-2 pr-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-stretch overflow-hidden gap-x-1',
+        taskClass
+      )
+    "
     :data-task-name="isCreating ? '-creating-' : task.name"
     @click="onClickTask(task)"
   >
@@ -14,14 +19,21 @@
             :task="task"
             class="transform scale-75"
           />
-          <div
-            class="name flex-1 inline-flex gap-x-1 items-center flex-wrap overflow-x-hidden"
+          <span class="name">{{ database.databaseName }}</span>
+          <router-link
+            class="hidden group-hover:block hover:opacity-80"
+            v-if="
+              task.type !== Task_Type.DATABASE_CREATE &&
+              isValidDatabaseName(database.name)
+            "
+            :to="databaseV1Url(database)"
+            target="_blank"
           >
-            <span>{{ databaseForTask(issue, task).databaseName }}</span>
-            <NTag v-if="schemaVersion" class="font-normal" size="small" round>
-              {{ schemaVersion }}
-            </NTag>
-          </div>
+            <ExternalLinkIcon :size="16" />
+          </router-link>
+          <NTag v-if="schemaVersion" size="small" round>
+            {{ schemaVersion }}
+          </NTag>
         </div>
         <TaskExtraActionsButton :task="task" />
       </div>
@@ -30,11 +42,7 @@
           v-if="secondaryViewMode === 'INSTANCE'"
           class="flex flex-1 items-center whitespace-pre-wrap"
         >
-          <InstanceV1Name
-            :instance="databaseForTask(issue, task).instanceResource"
-            :link="false"
-            class="!gap-x-2"
-          />
+          <InstanceV1Name :instance="database.instanceResource" :link="false" />
         </div>
         <div
           v-if="secondaryViewMode === 'TASK_TITLE'"
@@ -48,14 +56,17 @@
 </template>
 
 <script setup lang="ts">
+import { ExternalLinkIcon } from "lucide-vue-next";
 import { NTag } from "naive-ui";
+import { twMerge } from "tailwind-merge";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { InstanceV1Name } from "@/components/v2";
+import { isValidDatabaseName } from "@/types";
 import { Workflow } from "@/types/proto/v1/project_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Type, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
-import { extractSchemaVersionFromTask, isDev } from "@/utils";
+import { databaseV1Url, extractSchemaVersionFromTask, isDev } from "@/utils";
 import { databaseForTask, useIssueContext } from "../../logic";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
@@ -121,6 +132,8 @@ const taskTitle = computed(() => {
   }
   return props.task.title;
 });
+
+const database = computed(() => databaseForTask(issue.value, props.task));
 
 const onClickTask = (task: Task) => {
   events.emit("select-task", { task });
