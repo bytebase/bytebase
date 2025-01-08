@@ -638,7 +638,6 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 		}
 
 		if err := execFunc(driverCtx, renderedStatement); err != nil {
-
 			return "", "", err
 		}
 	}
