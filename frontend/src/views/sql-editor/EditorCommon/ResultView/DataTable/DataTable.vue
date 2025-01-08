@@ -74,7 +74,9 @@
 
                   <ColumnSortedIcon
                     :is-sorted="header.column.getIsSorted()"
-                    @click="header.column.getToggleSortingHandler()?.($event)"
+                    @click.stop.prevent="
+                      header.column.getToggleSortingHandler()?.($event)
+                    "
                   />
                 </div>
 
