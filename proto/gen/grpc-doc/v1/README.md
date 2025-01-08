@@ -9304,6 +9304,7 @@ Type is the database change type.
 | limit | [int32](#int32) |  | The maximum number of rows to return. |
 | timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The timeout for the request. |
 | schema | [string](#string) | optional | The default schema to execute the statement. Equals to the current schema in Oracle and search path in Postgres. |
+| container | [string](#string) | optional | Container is the container name to execute the query against, used for CosmosDB only. |
 
 
 
@@ -9533,6 +9534,7 @@ Type is the database change type.
 | explain | [bool](#bool) |  | Explain the statement. |
 | schema | [string](#string) | optional | The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres. |
 | query_option | [QueryOption](#bytebase-v1-QueryOption) |  |  |
+| container | [string](#string) | optional | Container is the container name to execute the query against, used for CosmosDB only. |
 
 
 

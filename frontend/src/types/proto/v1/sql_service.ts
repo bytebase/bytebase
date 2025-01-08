@@ -39,8 +39,18 @@ export interface AdminExecuteRequest {
   timeout:
     | Duration
     | undefined;
-  /** The default schema to execute the statement. Equals to the current schema in Oracle and search path in Postgres. */
-  schema?: string | undefined;
+  /**
+   * The default schema to execute the statement. Equals to the current schema
+   * in Oracle and search path in Postgres.
+   */
+  schema?:
+    | string
+    | undefined;
+  /**
+   * Container is the container name to execute the query against, used for
+   * CosmosDB only.
+   */
+  container?: string | undefined;
 }
 
 export interface AdminExecuteResponse {
@@ -64,15 +74,26 @@ export interface QueryRequest {
     | undefined;
   /**
    * The id of data source.
-   * It is used for querying admin data source even if the instance has read-only data sources.
-   * Or it can be used to query a specific read-only data source.
+   * It is used for querying admin data source even if the instance has
+   * read-only data sources. Or it can be used to query a specific read-only
+   * data source.
    */
   dataSourceId: string;
   /** Explain the statement. */
   explain: boolean;
-  /** The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres. */
+  /**
+   * The default schema to search objects. Equals to the current schema in
+   * Oracle and search path in Postgres.
+   */
   schema?: string | undefined;
-  queryOption: QueryOption | undefined;
+  queryOption:
+    | QueryOption
+    | undefined;
+  /**
+   * Container is the container name to execute the query against, used for
+   * CosmosDB only.
+   */
+  container?: string | undefined;
 }
 
 export interface QueryResponse {
@@ -213,13 +234,18 @@ export interface RowValue {
     | any
     | undefined;
   /**
-   * timestamp_value is used for the timestamp without time zone data type, meaning it only includes the timestamp without any time zone or location info.
-   * Although it may be expressed as a UTC value, it should be seen as a timestamp missing location context.
+   * timestamp_value is used for the timestamp without time zone data type,
+   * meaning it only includes the timestamp without any time zone or location
+   * info. Although it may be expressed as a UTC value, it should be seen as a
+   * timestamp missing location context.
    */
   timestampValue?:
     | Timestamp
     | undefined;
-  /** timestamp_tz_value is used for the timestamptz data type, which accurately represents the timestamp with location information. */
+  /**
+   * timestamp_tz_value is used for the timestamptz data type, which
+   * accurately represents the timestamp with location information.
+   */
   timestampTzValue?: RowValue_TimestampTZ | undefined;
 }
 
@@ -228,11 +254,12 @@ export interface RowValue_TimestampTZ {
     | Timestamp
     | undefined;
   /**
-   * Zone is the time zone abbreviations in timezone database such as "PDT", "PST".
-   * https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-   * We retrieve the time zone information from the timestamptz field in the database.
-   * A timestamp is in UTC or epoch time, and with zone info, we can convert it to a local time string.
-   * Zone and offset are returned by time.Time.Zone()
+   * Zone is the time zone abbreviations in timezone database such as "PDT",
+   * "PST". https://en.wikipedia.org/wiki/List_of_tz_database_time_zones We
+   * retrieve the time zone information from the timestamptz field in the
+   * database. A timestamp is in UTC or epoch time, and with zone info, we can
+   * convert it to a local time string. Zone and offset are returned by
+   * time.Time.Zone()
    */
   zone: string;
   /** The offset is in seconds east of UTC */
@@ -338,16 +365,17 @@ export interface ExportRequest {
   /** The export format. */
   format: ExportFormat;
   /**
-   * The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode.
-   * The exported data is not masked.
+   * The admin is used for workspace owner and DBA for exporting data from SQL
+   * Editor Admin mode. The exported data is not masked.
    */
   admin: boolean;
   /** The zip password provide by users. */
   password: string;
   /**
    * The id of data source.
-   * It is used for querying admin data source even if the instance has read-only data sources.
-   * Or it can be used to query a specific read-only data source.
+   * It is used for querying admin data source even if the instance has
+   * read-only data sources. Or it can be used to query a specific read-only
+   * data source.
    */
   dataSourceId: string;
 }
@@ -360,11 +388,15 @@ export interface ExportResponse {
 export interface PrettyRequest {
   engine: Engine;
   /**
-   * The SDL format SQL schema information that was dumped from a database engine.
-   * This information will be sorted to match the order of statements in the userSchema.
+   * The SDL format SQL schema information that was dumped from a database
+   * engine. This information will be sorted to match the order of statements in
+   * the userSchema.
    */
   currentSchema: string;
-  /** The expected SDL schema. This schema will be checked for correctness and normalized. */
+  /**
+   * The expected SDL schema. This schema will be checked for correctness and
+   * normalized.
+   */
   expectedSchema: string;
 }
 
@@ -383,8 +415,9 @@ export interface CheckRequest {
   name: string;
   statement: string;
   /**
-   * The database metadata to check against. It can be used to check against an uncommitted metadata.
-   * If not provided, the database metadata will be fetched from the database.
+   * The database metadata to check against. It can be used to check against an
+   * uncommitted metadata. If not provided, the database metadata will be
+   * fetched from the database.
    */
   metadata: DatabaseMetadata | undefined;
   changeType: CheckRequest_ChangeType;
@@ -477,7 +510,10 @@ export interface StringifyMetadataRequest {
     | undefined;
   /** The database engine of the schema string. */
   engine: Engine;
-  /** If false, we will build the raw common by classification in database config. */
+  /**
+   * If false, we will build the raw common by classification in database
+   * config.
+   */
   classificationFromConfig: boolean;
 }
 
@@ -500,8 +536,9 @@ export interface SearchQueryHistoriesRequest {
   pageToken: string;
   /**
    * filter is the filter to apply on the search query history,
-   * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-   * Support filter by:
+   * follow the
+   * [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
+   * syntax. Support filter by:
    * - database, for example:
    *    database = "instances/{instance}/databases/{database}"
    * - instance, for example:
@@ -517,8 +554,8 @@ export interface SearchQueryHistoriesResponse {
   queryHistories: QueryHistory[];
   /**
    * A token to retrieve next page of history.
-   * Pass this value in the page_token field in the subsequent call to `ListQueryHistory` method
-   * to retrieve the next page of history.
+   * Pass this value in the page_token field in the subsequent call to
+   * `ListQueryHistory` method to retrieve the next page of history.
    */
   nextPageToken: string;
 }
@@ -596,7 +633,7 @@ export function queryHistory_TypeToNumber(object: QueryHistory_Type): number {
 }
 
 function createBaseAdminExecuteRequest(): AdminExecuteRequest {
-  return { name: "", statement: "", limit: 0, timeout: undefined, schema: undefined };
+  return { name: "", statement: "", limit: 0, timeout: undefined, schema: undefined, container: undefined };
 }
 
 export const AdminExecuteRequest: MessageFns<AdminExecuteRequest> = {
@@ -615,6 +652,9 @@ export const AdminExecuteRequest: MessageFns<AdminExecuteRequest> = {
     }
     if (message.schema !== undefined) {
       writer.uint32(50).string(message.schema);
+    }
+    if (message.container !== undefined) {
+      writer.uint32(58).string(message.container);
     }
     return writer;
   },
@@ -666,6 +706,14 @@ export const AdminExecuteRequest: MessageFns<AdminExecuteRequest> = {
           message.schema = reader.string();
           continue;
         }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.container = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -682,6 +730,7 @@ export const AdminExecuteRequest: MessageFns<AdminExecuteRequest> = {
       limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
       timeout: isSet(object.timeout) ? Duration.fromJSON(object.timeout) : undefined,
       schema: isSet(object.schema) ? globalThis.String(object.schema) : undefined,
+      container: isSet(object.container) ? globalThis.String(object.container) : undefined,
     };
   },
 
@@ -702,6 +751,9 @@ export const AdminExecuteRequest: MessageFns<AdminExecuteRequest> = {
     if (message.schema !== undefined) {
       obj.schema = message.schema;
     }
+    if (message.container !== undefined) {
+      obj.container = message.container;
+    }
     return obj;
   },
 
@@ -717,6 +769,7 @@ export const AdminExecuteRequest: MessageFns<AdminExecuteRequest> = {
       ? Duration.fromPartial(object.timeout)
       : undefined;
     message.schema = object.schema ?? undefined;
+    message.container = object.container ?? undefined;
     return message;
   },
 };
@@ -791,6 +844,7 @@ function createBaseQueryRequest(): QueryRequest {
     explain: false,
     schema: undefined,
     queryOption: undefined,
+    container: undefined,
   };
 }
 
@@ -819,6 +873,9 @@ export const QueryRequest: MessageFns<QueryRequest> = {
     }
     if (message.queryOption !== undefined) {
       QueryOption.encode(message.queryOption, writer.uint32(74).fork()).join();
+    }
+    if (message.container !== undefined) {
+      writer.uint32(82).string(message.container);
     }
     return writer;
   },
@@ -894,6 +951,14 @@ export const QueryRequest: MessageFns<QueryRequest> = {
           message.queryOption = QueryOption.decode(reader, reader.uint32());
           continue;
         }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.container = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -913,6 +978,7 @@ export const QueryRequest: MessageFns<QueryRequest> = {
       explain: isSet(object.explain) ? globalThis.Boolean(object.explain) : false,
       schema: isSet(object.schema) ? globalThis.String(object.schema) : undefined,
       queryOption: isSet(object.queryOption) ? QueryOption.fromJSON(object.queryOption) : undefined,
+      container: isSet(object.container) ? globalThis.String(object.container) : undefined,
     };
   },
 
@@ -942,6 +1008,9 @@ export const QueryRequest: MessageFns<QueryRequest> = {
     if (message.queryOption !== undefined) {
       obj.queryOption = QueryOption.toJSON(message.queryOption);
     }
+    if (message.container !== undefined) {
+      obj.container = message.container;
+    }
     return obj;
   },
 
@@ -962,6 +1031,7 @@ export const QueryRequest: MessageFns<QueryRequest> = {
     message.queryOption = (object.queryOption !== undefined && object.queryOption !== null)
       ? QueryOption.fromPartial(object.queryOption)
       : undefined;
+    message.container = object.container ?? undefined;
     return message;
   },
 };
