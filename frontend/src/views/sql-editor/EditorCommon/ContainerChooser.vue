@@ -1,14 +1,14 @@
 <template>
   <ConnectChooser
     v-if="show"
-    v-model:value="chosenSchema"
+    v-model:value="chosenContainer"
     :options="options"
     :is-chosen="isChosen"
-    :placeholder="$t('database.schema.select')"
+    :placeholder="$t('database.table.select')"
   />
 </template>
 
-<script setup lang="ts">
+<script lang="tsx" setup>
 import { type SelectOption } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, watchEffect } from "vue";
@@ -19,18 +19,18 @@ import {
   useDBSchemaV1Store,
   useSQLEditorTabStore,
 } from "@/store";
+import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { instanceAllowsSchemaScopedQuery } from "@/utils";
 import ConnectChooser from "./ConnectChooser.vue";
 
-const SchemaOptionValueUnspecified = "-1";
+const OptionValueUnspecified = "-1";
 
 const { t } = useI18n();
 const route = useRoute();
 const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const { database, instance } = useConnectionOfCurrentSQLEditorTab();
 const show = computed(() => {
-  return instanceAllowsSchemaScopedQuery(instance.value.engine);
+  return instance.value.engine === Engine.COSMOSDB;
 });
 
 const databaseMetadata = computed(() => {
@@ -40,39 +40,44 @@ const databaseMetadata = computed(() => {
   );
 });
 const options = computed(() => {
-  const options = databaseMetadata.value.schemas.map<SelectOption>(
-    (schema) => ({
-      value: schema.name,
-      label: schema.name || t("db.schema.default"),
-    })
-  );
-  options.unshift({
-    value: SchemaOptionValueUnspecified,
-    label: t("database.schema.unspecified"),
-  });
-  return options;
+  const selectOptions: SelectOption[] = [
+    {
+      value: OptionValueUnspecified,
+      label: t("database.schema.unspecified"),
+    },
+  ];
+
+  for (const schema of databaseMetadata.value.schemas) {
+    for (const table of schema.tables) {
+      selectOptions.push({
+        value: table.name,
+        label: table.name,
+      });
+    }
+  }
+  return selectOptions;
 });
 
-const chosenSchema = computed<string>({
+const chosenContainer = computed<string>({
   get() {
-    const schema = tab.value?.connection.schema;
-    if (schema === undefined) return SchemaOptionValueUnspecified;
-    return schema;
+    const table = tab.value?.connection.table;
+    if (table === undefined) return OptionValueUnspecified;
+    return table;
   },
   set(value) {
     if (!tab.value) return;
-    tab.value.connection.schema =
-      value === SchemaOptionValueUnspecified ? undefined : value;
+    tab.value.connection.table =
+      value === OptionValueUnspecified ? undefined : value;
   },
 });
 
 watchEffect(() => {
-  if (route.query.schema) {
-    chosenSchema.value = route.query.schema as string;
+  if (route.query.table) {
+    chosenContainer.value = route.query.table as string;
   }
 });
 
 const isChosen = computed(() => {
-  return chosenSchema.value !== SchemaOptionValueUnspecified;
+  return chosenContainer.value !== OptionValueUnspecified;
 });
 </script>
