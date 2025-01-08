@@ -149,7 +149,7 @@ message CheckReleaseRequest {
 
 message CheckReleaseResponse {
   message CheckResult {
-    // The file id that is being checked.
+    // The file path that is being checked.
     string file = 1;
 
     repeated Advice advices = 2;
