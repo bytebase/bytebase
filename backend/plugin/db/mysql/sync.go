@@ -380,6 +380,9 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		if invisible && convertedErr == nil {
 			text = iso88591Text
 		}
+		// MySQL server returns the generation expression with an escaped single quote.
+		// I have no idea why it does that. But we need to unescape it. -_-
+		text = strings.ReplaceAll(text, `\'`, `'`)
 		if extra != "" && strings.Contains(strings.ToUpper(extra), virtualGenerated) && len(generationExpr) != 0 {
 			column.Generation = &storepb.GenerationMetadata{
 				Type:       storepb.GenerationMetadata_TYPE_VIRTUAL,
