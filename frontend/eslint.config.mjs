@@ -32,7 +32,7 @@ export default [
           "src": "./src",
           "extensions": [".js", ".vue", ".ts", ".tsx"],
           "ignores": [],
-          "enableFix": true
+          "enableFix": false
         }
       ],
       "@intlify/vue-i18n/no-missing-keys": "off",
