@@ -46,6 +46,7 @@ type FindChangelogMessage struct {
 	DatabaseUID *int
 
 	TypeList        []string
+	Status          *ChangelogStatus
 	ResourcesFilter *string
 
 	Limit  *int
@@ -166,6 +167,9 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 		if text != "" {
 			where = append(where, text)
 		}
+	}
+	if v := find.Status; v != nil {
+		where, args = append(where, fmt.Sprintf("changelog.status = $%d", len(args)+1)), append(args, string(*v))
 	}
 	if find.HasSyncHistory {
 		where = append(where, "changelog.sync_history_id IS NOT NULL")

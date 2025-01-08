@@ -12,7 +12,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -44,7 +43,6 @@ type UpdateDatabaseMessage struct {
 	ProjectID            *string
 	SyncState            *api.SyncStatus
 	SuccessfulSyncTimeTs *int64
-	SchemaVersion        *model.Version
 	SourceBackupID       *int
 	Secrets              *storepb.Secrets
 	DataShare            *bool
@@ -348,13 +346,6 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	}
 	if v := patch.SuccessfulSyncTimeTs; v != nil {
 		set, args = append(set, fmt.Sprintf("last_successful_sync_ts = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.SchemaVersion; v != nil {
-		storedVersion, err := patch.SchemaVersion.Marshal()
-		if err != nil {
-			return nil, err
-		}
-		set, args = append(set, fmt.Sprintf("schema_version = $%d", len(args)+1)), append(args, storedVersion)
 	}
 	if v := patch.Secrets; v != nil {
 		secretsString, err := protojson.Marshal(v)
