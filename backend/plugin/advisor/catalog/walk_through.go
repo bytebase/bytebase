@@ -60,6 +60,8 @@ const (
 	ErrorTypeTableIsReferencedByView = 304
 	// ErrorTypeViewNotExists is the error that view not exists.
 	ErrorTypeViewNotExists = 305
+	// ErrorTypeViewExists is the error that view exists.
+	ErrorTypeViewExists = 306
 
 	// 401 ~ 499 column error type.
 
