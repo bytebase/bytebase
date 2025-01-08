@@ -1,88 +1,88 @@
 <template>
-  <NTimeline :icon-size="28">
-    <NTimelineItem v-for="step in steps" :key="step.index">
-      <template #icon>
-        <NPopover placement="left">
-          <template #trigger>
+  <NTimeline :icon-size="24">
+    <NPopover
+      v-for="step in steps"
+      :disabled="step.status === 'APPROVED'"
+      :key="step.index"
+      placement="left"
+    >
+      <template #trigger>
+        <NTimelineItem>
+          <template #icon>
             <TimelineIcon :step="step" />
           </template>
-
           <template #default>
-            <div class="flex flex-col gap-y-2 text-sm max-w-[16rem] truncate">
-              <ul class="w-full list-disc list-inside text-sm">
-                <i18n-t
-                  keypath="custom-approval.issue-review.any-n-role-can-approve"
-                  tag="li"
-                  class="whitespace-pre-wrap"
-                >
-                  <template #role>
-                    <span class="textlabel">
-                      {{ approvalNodeText(step.step.nodes[0]) }}
-                    </span>
-                  </template>
-                </i18n-t>
-                <li
-                  v-if="!issue.projectEntity.allowSelfApproval"
-                  class="whitespace-pre-wrap"
-                >
-                  {{
-                    $t(
-                      "custom-approval.issue-review.issue-creators-cannot-approve-their-own-issue"
-                    )
-                  }}
-                </li>
-              </ul>
-              <hr />
-              <template v-if="!isExternalApprovalStep(step.step)">
+            <div class="flex flex-row gap-x-1">
+              <div class="flex-1 truncate">
+                <NPerformantEllipsis>
+                  {{ approvalNodeText(step.step.nodes[0]) }}
+                </NPerformantEllipsis>
+              </div>
+              <div v-if="isExternalApprovalStep(step.step)" class="shrink-0">
+                <ExternalApprovalSyncButton />
+              </div>
+            </div>
+          </template>
+          <template v-if="!isExternalApprovalStep(step.step)" #footer>
+            <i18n-t
+              keypath="custom-approval.issue-review.approved-by-n"
+              tag="div"
+              class="break-words break-all"
+              v-if="step.status === 'APPROVED'"
+            >
+              <template #approver>
                 <Approver
                   v-if="step.status === 'APPROVED'"
                   :step="step"
-                  class="inline-flex flex-nowrap items-center whitespace-nowrap"
-                />
-                <Candidates v-else :step="step" />
+                  class="inline"
+                >
+                  <template
+                    #title="{ approver }: { approver: User | undefined }"
+                  >
+                    <span>{{ approver?.title }}</span>
+                  </template>
+                </Approver>
               </template>
-              <template v-else>
-                <ExternalApprovalSyncButton />
-              </template>
-            </div>
+            </i18n-t>
           </template>
-        </NPopover>
+        </NTimelineItem>
       </template>
+
       <template #default>
-        <div class="flex flex-row gap-x-1">
-          <div class="flex-1 truncate">
-            <NPerformantEllipsis>
-              {{ approvalNodeText(step.step.nodes[0]) }}
-            </NPerformantEllipsis>
-          </div>
-          <div v-if="isExternalApprovalStep(step.step)" class="shrink-0">
+        <div class="flex flex-col gap-y-2 text-sm max-w-[16rem] truncate">
+          <ul class="w-full list-disc list-inside text-sm">
+            <i18n-t
+              keypath="custom-approval.issue-review.any-n-role-can-approve"
+              tag="li"
+              class="whitespace-pre-wrap"
+            >
+              <template #role>
+                <span class="textlabel">
+                  {{ approvalNodeText(step.step.nodes[0]) }}
+                </span>
+              </template>
+            </i18n-t>
+            <li
+              v-if="!issue.projectEntity.allowSelfApproval"
+              class="whitespace-pre-wrap"
+            >
+              {{
+                $t(
+                  "custom-approval.issue-review.issue-creators-cannot-approve-their-own-issue"
+                )
+              }}
+            </li>
+          </ul>
+          <hr />
+          <template v-if="!isExternalApprovalStep(step.step)">
+            <Candidates :step="step" />
+          </template>
+          <template v-else>
             <ExternalApprovalSyncButton />
-          </div>
+          </template>
         </div>
       </template>
-      <template
-        v-if="!isExternalApprovalStep(step.step) && step.status === 'APPROVED'"
-        #footer
-      >
-        <i18n-t
-          keypath="custom-approval.issue-review.approved-by-n"
-          tag="div"
-          class="break-words break-all"
-        >
-          <template #approver>
-            <Approver
-              v-if="step.status === 'APPROVED'"
-              :step="step"
-              class="inline"
-            >
-              <template #title="{ approver }: { approver: User | undefined }">
-                <span>{{ approver?.title }}</span>
-              </template>
-            </Approver>
-          </template>
-        </i18n-t>
-      </template>
-    </NTimelineItem>
+    </NPopover>
   </NTimeline>
 </template>
 

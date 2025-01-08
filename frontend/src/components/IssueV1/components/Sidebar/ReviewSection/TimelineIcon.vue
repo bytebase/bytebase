@@ -1,22 +1,22 @@
 <template>
   <div
-    class="w-7 h-7 rounded-full flex items-center justify-center text-sm shrink-0"
+    class="w-6 h-6 rounded-full flex items-center justify-center text-sm shrink-0"
     :class="iconClass"
   >
     <heroicons-outline:thumb-up
       v-if="step.status === 'APPROVED'"
-      class="w-5 h-5 text-white"
+      class="w-4 h-4 text-white"
     />
     <heroicons:pause-solid
       v-else-if="step.status === 'REJECTED'"
-      class="w-5 h-5 text-white"
+      class="w-4 h-4 text-white"
     />
     <template v-else-if="step.status === 'CURRENT'">
       <heroicons-outline:external-link
         v-if="isExternalApprovalStep"
-        class="w-5 h-5"
+        class="w-4 h-4"
       />
-      <heroicons-outline:user v-else class="w-5 h-5" />
+      <heroicons-outline:user v-else class="w-4 h-4" />
     </template>
     <template v-else>
       {{ step.index + 1 }}
