@@ -707,7 +707,7 @@ func (x *Release) GetState() State {
 
 type CheckReleaseResponse_CheckResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The file id that is being checked.
+	// The file path that is being checked.
 	File          string    `protobuf:"bytes,1,opt,name=file,proto3" json:"file,omitempty"`
 	Advices       []*Advice `protobuf:"bytes,2,rep,name=advices,proto3" json:"advices,omitempty"`
 	unknownFields protoimpl.UnknownFields

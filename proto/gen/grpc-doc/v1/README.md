@@ -9865,7 +9865,7 @@ for field description.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| file | [string](#string) |  | The file id that is being checked. |
+| file | [string](#string) |  | The file path that is being checked. |
 | advices | [Advice](#bytebase-v1-Advice) | repeated |  |
 
 

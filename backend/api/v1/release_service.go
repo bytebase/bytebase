@@ -366,7 +366,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 				// If the advice status is not SUCCESS, we will add the file and advices to the response.
 				if adviceStatus != storepb.Advice_SUCCESS {
 					response.Results = append(response.Results, &v1pb.CheckReleaseResponse_CheckResult{
-						File:    file.Id,
+						File:    file.Path,
 						Advices: advices,
 					})
 				}
