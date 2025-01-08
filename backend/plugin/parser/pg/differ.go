@@ -43,10 +43,12 @@ type diffNode struct {
 	dropViewList             []*ast.CreateViewStmt
 	dropMaterializedViewList []*ast.CreateMaterializedViewStmt
 
-	dropColumnList    []ast.Node
-	dropTableList     []ast.Node
+	dropColumnList []ast.Node
+
+	dropTableList    []*ast.CreateTableStmt
+	dropFunctionList []*ast.CreateFunctionStmt
+
 	dropSequenceList  []ast.Node
-	dropFunctionList  []ast.Node
 	dropExtensionList []ast.Node
 	dropTypeList      []ast.Node
 	dropSchemaList    []ast.Node
@@ -56,18 +58,20 @@ type diffNode struct {
 	createTypeList                 []ast.Node
 	alterTypeList                  []ast.Node
 	createExtensionList            []ast.Node
-	createFunctionList             []ast.Node
 	createSequenceList             []ast.Node
 	alterSequenceExceptOwnedByList []ast.Node
-	createTableList                []ast.Node
-	createColumnList               []ast.Node
-	alterColumnList                []ast.Node
-	setSequenceOwnedByList         []ast.Node
-	setDefaultList                 []ast.Node
-	createIndexList                []ast.Node
-	createTriggerList              []ast.Node
-	createConstraintExceptFkList   []ast.Node
-	createForeignKeyList           []ast.Node
+
+	createTableList    []*ast.CreateTableStmt
+	createFunctionList []*ast.CreateFunctionStmt
+
+	createColumnList             []ast.Node
+	alterColumnList              []ast.Node
+	setSequenceOwnedByList       []ast.Node
+	setDefaultList               []ast.Node
+	createIndexList              []ast.Node
+	createTriggerList            []ast.Node
+	createConstraintExceptFkList []ast.Node
+	createForeignKeyList         []ast.Node
 
 	createViewList             []*ast.CreateViewStmt
 	createMaterializedViewList []*ast.CreateMaterializedViewStmt
@@ -1227,7 +1231,7 @@ func (diff *diffNode) dropObject() error {
 
 	// Drop the remaining old table.
 	if dropTableStmt := dropTable(diff.oldSchemaMap); dropTableStmt != nil {
-		diff.dropTableList = append(diff.dropTableList, dropTableStmt)
+		diff.dropTableList = append(diff.dropTableList, dropTableStmt...)
 	}
 
 	// Drop the remaining old view.
@@ -1263,7 +1267,7 @@ func (diff *diffNode) dropObject() error {
 
 	// Drop the remaining old function.
 	if dropFunctionStmt := dropFunction(diff.oldSchemaMap); dropFunctionStmt != nil {
-		diff.dropFunctionList = append(diff.dropFunctionList, dropFunctionStmt)
+		diff.dropFunctionList = append(diff.dropFunctionList, dropFunctionStmt...)
 	}
 
 	// Drop the remaining old trigger.
@@ -1584,9 +1588,7 @@ func (diff *diffNode) modifyExtension(oldExtension *ast.CreateExtensionStmt, new
 func (diff *diffNode) modifyFunction(oldFunction *ast.CreateFunctionStmt, newFunction *ast.CreateFunctionStmt) error {
 	// TODO(rebelice): not use Text(), it only works for pg_dump.
 	if oldFunction.Text() != newFunction.Text() {
-		diff.dropFunctionList = append(diff.dropFunctionList, &ast.DropFunctionStmt{
-			FunctionList: []*ast.FunctionDef{oldFunction.Function},
-		})
+		diff.dropFunctionList = append(diff.dropFunctionList, oldFunction)
 		diff.createFunctionList = append(diff.createFunctionList, newFunction)
 	}
 	return nil
@@ -1931,7 +1933,7 @@ func printDropMaterializedView(buf io.Writer, viewName *ast.TableDef) error {
 	if _, err := fmt.Fprintf(buf, `"%s"."%s"`, viewName.Schema, viewName.Name); err != nil {
 		return err
 	}
-	if _, err := fmt.Fprintf(buf, ";\n"); err != nil {
+	if _, err := fmt.Fprintf(buf, ";\n\n"); err != nil {
 		return err
 	}
 	return nil
@@ -1947,10 +1949,32 @@ func printDropView(buf io.Writer, viewName *ast.TableDef) error {
 	if _, err := fmt.Fprintf(buf, `"%s"."%s"`, viewName.Schema, viewName.Name); err != nil {
 		return err
 	}
-	if _, err := fmt.Fprintf(buf, ";\n"); err != nil {
+	if _, err := fmt.Fprintf(buf, ";\n\n"); err != nil {
 		return err
 	}
 	return nil
+}
+
+func printDropFunction(buf io.Writer, function *ast.FunctionDef) error {
+	signature, err := functionSignature(function)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get function signature: %v", function.Name)
+	}
+	_, err = fmt.Fprintf(buf, "%s\n\n", signature)
+	return err
+}
+
+func printDropTable(buf io.Writer, table *ast.TableDef) error {
+	if _, err := fmt.Fprintf(buf, "DROP TABLE "); err != nil {
+		return err
+	}
+
+	if _, err := fmt.Fprintf(buf, `"%s"."%s"`, table.Schema, table.Name); err != nil {
+		return err
+	}
+
+	_, err := fmt.Fprintf(buf, ";\n\n")
+	return err
 }
 
 func printCreateMaterializedViewStmt(buf io.Writer, view *ast.CreateMaterializedViewStmt) error {
@@ -1986,6 +2010,26 @@ func printCreateViewStmt(buf io.Writer, view *ast.CreateViewStmt) error {
 	return err
 }
 
+func printCreateFunctionStmt(buf io.Writer, function *ast.CreateFunctionStmt) error {
+	if err := writeStringWithNewLine(buf, function.Text()); err != nil {
+		return err
+	}
+	_, err := buf.Write([]byte("\n"))
+	return err
+}
+
+func printCreateTableStmt(buf io.Writer, table *ast.CreateTableStmt) error {
+	sql, err := pgrawparser.Deparse(pgrawparser.DeparseContext{}, table)
+	if err != nil {
+		return err
+	}
+	if err := writeStringWithNewLine(buf, sql); err != nil {
+		return err
+	}
+	_, err = buf.Write([]byte("\n"))
+	return err
+}
+
 // deparse statements as the safe change order.
 func (diff *diffNode) deparse() (string, error) {
 	var buf bytes.Buffer
@@ -2014,19 +2058,13 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := printStmtSlice(&buf, diff.dropSequenceOwnedByList); err != nil {
 		return "", err
 	}
-	if err := diff.printDropViewAndMaterializedView(&buf); err != nil {
+	if err := diff.printDropFuncTableViewAndMateView(&buf); err != nil {
 		return "", err
 	}
 	if err := printStmtSlice(&buf, diff.dropColumnList); err != nil {
 		return "", err
 	}
-	if err := printStmtSlice(&buf, diff.dropTableList); err != nil {
-		return "", err
-	}
 	if err := printStmtSlice(&buf, diff.dropSequenceList); err != nil {
-		return "", err
-	}
-	if err := printStmtSlice(&buf, diff.dropFunctionList); err != nil {
 		return "", err
 	}
 	if err := printStmtSlice(&buf, diff.dropExtensionList); err != nil {
@@ -2052,16 +2090,10 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := printStmtSliceByText(&buf, diff.createExtensionList); err != nil {
 		return "", err
 	}
-	if err := printStmtSliceByText(&buf, diff.createFunctionList); err != nil {
-		return "", err
-	}
 	if err := printStmtSlice(&buf, diff.createSequenceList); err != nil {
 		return "", err
 	}
 	if err := printStmtSlice(&buf, diff.alterSequenceExceptOwnedByList); err != nil {
-		return "", err
-	}
-	if err := printStmtSlice(&buf, diff.createTableList); err != nil {
 		return "", err
 	}
 	if err := printStmtSlice(&buf, diff.createColumnList); err != nil {
@@ -2070,6 +2102,11 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := printStmtSlice(&buf, diff.alterColumnList); err != nil {
 		return "", err
 	}
+
+	if err := diff.printCreateFuncTableViewAndMateView(&buf); err != nil {
+		return "", err
+	}
+
 	if err := printStmtSlice(&buf, diff.setSequenceOwnedByList); err != nil {
 		return "", err
 	}
@@ -2088,9 +2125,6 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := printStmtSlice(&buf, diff.createForeignKeyList); err != nil {
 		return "", err
 	}
-	if err := diff.printCreateViewAndMaterializedView(&buf); err != nil {
-		return "", err
-	}
 	if err := printStmtSlice(&buf, diff.setCommentList); err != nil {
 		return "", err
 	}
@@ -2098,8 +2132,8 @@ func (diff *diffNode) deparse() (string, error) {
 	return buf.String(), nil
 }
 
-func getTableID(tableID *ast.TableDef) string {
-	return fmt.Sprintf("%s.%s", tableID.Schema, tableID.Name)
+func getObjectID(schema, object string) string {
+	return fmt.Sprintf("%s.%s", schema, object)
 }
 
 func (diff *diffNode) getNewDatabaseMetadataFunc() base.GetDatabaseMetadataFunc {
@@ -2149,13 +2183,33 @@ func viewToMetadata(m viewMap) []*storepb.ViewMetadata {
 	return views
 }
 
-func (diff *diffNode) printCreateViewAndMaterializedView(buf io.Writer) error {
+func (diff *diffNode) printCreateFuncTableViewAndMateView(buf io.Writer) error {
 	graph := base.NewGraph()
+	functionMap := make(map[string]*ast.CreateFunctionStmt)
+	tableMap := make(map[string]*ast.CreateTableStmt)
 	viewMap := make(map[string]*ast.CreateViewStmt)
 	materializedViewMap := make(map[string]*ast.CreateMaterializedViewStmt)
 
+	for _, function := range diff.createFunctionList {
+		signature, err := functionSignature(function.Function)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get function signature for %s", function.Function.Name)
+		}
+		funcID := getObjectID(function.Function.Schema, signature)
+		functionMap[funcID] = function
+		graph.AddNode(funcID)
+		tSchema, tName := getFunctionReturnType(function)
+		graph.AddEdge(getObjectID(tSchema, tName), funcID)
+	}
+
+	for _, table := range diff.createTableList {
+		tableID := getObjectID(table.Name.Schema, table.Name.Name)
+		tableMap[tableID] = table
+		graph.AddNode(tableID)
+	}
+
 	for _, view := range diff.createViewList {
-		viewID := getTableID(view.Name)
+		viewID := getObjectID(view.Name.Schema, view.Name.Name)
 		viewMap[viewID] = view
 		graph.AddNode(viewID)
 		dependency, err := diff.getViewDependency(view, diff.getNewDatabaseMetadataFunc())
@@ -2168,7 +2222,7 @@ func (diff *diffNode) printCreateViewAndMaterializedView(buf io.Writer) error {
 	}
 
 	for _, materializedView := range diff.createMaterializedViewList {
-		viewID := getTableID(materializedView.Name)
+		viewID := getObjectID(materializedView.Name.Schema, materializedView.Name.Name)
 		materializedViewMap[viewID] = materializedView
 		graph.AddNode(viewID)
 		dependency, err := diff.getMaterializedViewDependency(materializedView, diff.getNewDatabaseMetadataFunc())
@@ -2185,14 +2239,29 @@ func (diff *diffNode) printCreateViewAndMaterializedView(buf io.Writer) error {
 		return errors.Wrap(err, "failed to topological sort")
 	}
 
-	for _, viewID := range orderedList {
-		if view, ok := viewMap[viewID]; ok {
+	for _, objectID := range orderedList {
+		if function, ok := functionMap[objectID]; ok {
+			if err := printCreateFunctionStmt(buf, function); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if table, ok := tableMap[objectID]; ok {
+			if err := printCreateTableStmt(buf, table); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if view, ok := viewMap[objectID]; ok {
 			if err := printCreateViewStmt(buf, view); err != nil {
 				return err
 			}
+			continue
 		}
 
-		if materializedView, ok := materializedViewMap[viewID]; ok {
+		if materializedView, ok := materializedViewMap[objectID]; ok {
 			if err := printCreateMaterializedViewStmt(buf, materializedView); err != nil {
 				return err
 			}
@@ -2202,13 +2271,61 @@ func (diff *diffNode) printCreateViewAndMaterializedView(buf io.Writer) error {
 	return nil
 }
 
-func (diff *diffNode) printDropViewAndMaterializedView(buf io.Writer) error {
+func getFunctionReturnType(function *ast.CreateFunctionStmt) (string, string) {
+	node := function.GetOriginalNode()
+	returnType := node.CreateFunctionStmt.ReturnType
+	if returnType == nil {
+		return "", ""
+	}
+
+	nameList := convertNodeSliceToStringList(returnType.Names)
+	switch len(nameList) {
+	case 1:
+		return "public", nameList[0]
+	case 2:
+		return nameList[0], nameList[1]
+	default:
+		return "", ""
+	}
+}
+
+func convertNodeSliceToStringList(nodeList []*pgquery.Node) []string {
+	var result []string
+	for _, node := range nodeList {
+		if stringNode, ok := node.Node.(*pgquery.Node_String_); ok {
+			result = append(result, stringNode.String_.GetSval())
+		}
+	}
+	return result
+}
+
+func (diff *diffNode) printDropFuncTableViewAndMateView(buf io.Writer) error {
 	graph := base.NewGraph()
+	functionMap := make(map[string]*ast.CreateFunctionStmt)
+	tableMap := make(map[string]*ast.CreateTableStmt)
 	viewMap := make(map[string]*ast.CreateViewStmt)
 	materializedViewMap := make(map[string]*ast.CreateMaterializedViewStmt)
 
+	for _, function := range diff.dropFunctionList {
+		signature, err := functionSignature(function.Function)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get function signature for %s", function.Function.Name)
+		}
+		funcID := getObjectID(function.Function.Schema, signature)
+		functionMap[funcID] = function
+		graph.AddNode(funcID)
+		tSchema, tName := getFunctionReturnType(function)
+		graph.AddEdge(funcID, getObjectID(tSchema, tName))
+	}
+
+	for _, table := range diff.dropTableList {
+		tableID := getObjectID(table.Name.Schema, table.Name.Name)
+		tableMap[tableID] = table
+		graph.AddNode(tableID)
+	}
+
 	for _, view := range diff.dropViewList {
-		viewID := getTableID(view.Name)
+		viewID := getObjectID(view.Name.Schema, view.Name.Name)
 		viewMap[viewID] = view
 		graph.AddNode(viewID)
 		dependency, err := diff.getViewDependency(view, diff.getOldDatabaseMetadataFunc())
@@ -2221,7 +2338,7 @@ func (diff *diffNode) printDropViewAndMaterializedView(buf io.Writer) error {
 	}
 
 	for _, materializedView := range diff.dropMaterializedViewList {
-		viewID := getTableID(materializedView.Name)
+		viewID := getObjectID(materializedView.Name.Schema, materializedView.Name.Name)
 		materializedViewMap[viewID] = materializedView
 		graph.AddNode(viewID)
 		dependency, err := diff.getMaterializedViewDependency(materializedView, diff.getOldDatabaseMetadataFunc())
@@ -2238,14 +2355,29 @@ func (diff *diffNode) printDropViewAndMaterializedView(buf io.Writer) error {
 		return errors.Wrap(err, "failed to topological sort")
 	}
 
-	for _, viewID := range orderedList {
-		if view, ok := viewMap[viewID]; ok {
+	for _, objectID := range orderedList {
+		if function, ok := functionMap[objectID]; ok {
+			if err := printDropFunction(buf, function.Function); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if table, ok := tableMap[objectID]; ok {
+			if err := printDropTable(buf, table.Name); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if view, ok := viewMap[objectID]; ok {
 			if err := printDropView(buf, view.Name); err != nil {
 				return err
 			}
+			continue
 		}
 
-		if materializedView, ok := materializedViewMap[viewID]; ok {
+		if materializedView, ok := materializedViewMap[objectID]; ok {
 			if err := printDropMaterializedView(buf, materializedView.Name); err != nil {
 				return err
 			}
@@ -2285,10 +2417,7 @@ func (*diffNode) getMaterializedViewDependency(materializedView *ast.CreateMater
 
 	var result []string
 	for sourceColumn := range span.SourceColumns {
-		result = append(result, getTableID(&ast.TableDef{
-			Schema: sourceColumn.Schema,
-			Name:   sourceColumn.Table,
-		}))
+		result = append(result, getObjectID(sourceColumn.Schema, sourceColumn.Table))
 	}
 	return result, nil
 }
@@ -2323,10 +2452,7 @@ func (*diffNode) getViewDependency(view *ast.CreateViewStmt, getDatabaseMetadata
 
 	var result []string
 	for sourceColumn := range span.SourceColumns {
-		result = append(result, getTableID(&ast.TableDef{
-			Schema: sourceColumn.Schema,
-			Name:   sourceColumn.Table,
-		}))
+		result = append(result, getObjectID(sourceColumn.Schema, sourceColumn.Table))
 	}
 	return result, nil
 }
@@ -2403,7 +2529,7 @@ func dropView(m schemaMap) []*ast.CreateViewStmt {
 	return viewDefList
 }
 
-func dropTable(m schemaMap) *ast.DropTableStmt {
+func dropTable(m schemaMap) []*ast.CreateTableStmt {
 	var tableList []*tableInfo
 	for _, schema := range m {
 		for _, table := range schema.tableMap {
@@ -2421,13 +2547,11 @@ func dropTable(m schemaMap) *ast.DropTableStmt {
 		return tableList[i].id < tableList[j].id
 	})
 
-	var tableDefList []*ast.TableDef
+	var result []*ast.CreateTableStmt
 	for _, table := range tableList {
-		tableDefList = append(tableDefList, table.createTable.Name)
+		result = append(result, table.createTable)
 	}
-	return &ast.DropTableStmt{
-		TableList: tableDefList,
-	}
+	return result
 }
 
 func dropSchema(m schemaMap) *ast.DropSchemaStmt {
@@ -2481,7 +2605,7 @@ func dropExtension(m schemaMap) *ast.DropExtensionStmt {
 	}
 }
 
-func dropFunction(m schemaMap) *ast.DropFunctionStmt {
+func dropFunction(m schemaMap) []*ast.CreateFunctionStmt {
 	var functionList []*functionInfo
 	for _, schema := range m {
 		for _, function := range schema.functionMap {
@@ -2499,11 +2623,11 @@ func dropFunction(m schemaMap) *ast.DropFunctionStmt {
 		return functionList[i].id < functionList[j].id
 	})
 
-	var functionDefList []*ast.FunctionDef
+	var result []*ast.CreateFunctionStmt
 	for _, function := range functionList {
-		functionDefList = append(functionDefList, function.createFunction.Function)
+		result = append(result, function.createFunction)
 	}
-	return &ast.DropFunctionStmt{FunctionList: functionDefList}
+	return result
 }
 
 func (diff *diffNode) dropComment(m schemaMap) {
