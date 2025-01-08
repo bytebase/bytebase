@@ -783,7 +783,10 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 			return nil, err
 		}
 
-		return &ast.CreateFunctionStmt{Function: functionDef}, nil
+		createFunc := &ast.CreateFunctionStmt{Function: functionDef}
+		createFunc.SetOriginalNode(in)
+
+		return createFunc, nil
 	case *pgquery.Node_CreateTrigStmt:
 		createTriggerStmt := &ast.CreateTriggerStmt{
 			Trigger: &ast.TriggerDef{
