@@ -463,7 +463,7 @@ const pageSize = computed({
   },
 });
 const pageSizeOptions = computed(() => {
-  return [50, 100, 200].map<SelectOption>((n) => ({
+  return [20, 50, 100, 200].map<SelectOption>((n) => ({
     label: t("sql-editor.n-per-page", { n }),
     value: n,
   }));
