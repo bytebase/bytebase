@@ -6,7 +6,7 @@
       maxHeight: maxHeight ? `${maxHeight}px` : undefined,
     }"
   >
-    <table ref="tableRef" class="relative border-collapse table-auto">
+    <table class="relative border-collapse table-auto">
       <thead
         class="sticky top-0 z-[1] drop-shadow-sm bg-gray-50 dark:bg-gray-700"
       >
@@ -117,7 +117,6 @@ const {
   selectColumn,
 } = useSelectionContext();
 const containerRef = ref<HTMLDivElement>();
-const tableRef = ref<HTMLTableElement>();
 const subscriptionStore = useSubscriptionV1Store();
 
 const { keyword } = useSQLResultViewContext();
