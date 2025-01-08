@@ -68,7 +68,7 @@ import {
 } from "@/components/FeatureGuard";
 import { useSubscriptionV1Store } from "@/store";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
-import TableCell from "./DataTable/DataTable/TableCell.vue";
+import TableCell from "./DataTable/TableCell.vue";
 import SensitiveDataIcon from "./DataTable/common/SensitiveDataIcon.vue";
 import { useSQLResultViewContext } from "./context";
 
