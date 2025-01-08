@@ -6,23 +6,19 @@ import { Engine } from "@/types/proto/v1/common";
 import { RowValue } from "@/types/proto/v1/sql_service";
 import { isNullOrUndefined } from "../util";
 
-export const extractSQLRowValue = (
-  value: RowValue | undefined
-): { plain: any; raw: any } => {
-  const fallback = (v: any) => {
-    return { plain: v, raw: v };
-  };
-  if (typeof value === "undefined") {
-    return fallback(null);
-  }
-  if (value.nullValue === NullValue.NULL_VALUE) {
-    return fallback(null);
+// extractSQLRowValuePlain extracts a plain value from a RowValue.
+export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
+  if (
+    typeof value === "undefined" ||
+    value.nullValue === NullValue.NULL_VALUE
+  ) {
+    return null;
   }
 
   const plainObject = RowValue.toJSON(value) as Record<string, any>;
   const keys = Object.keys(plainObject);
   if (keys.length === 0) {
-    return fallback(undefined); // Will bi displayed as "UNSET"
+    return undefined; // Will bi displayed as "UNSET"
   }
   if (keys.length > 1) {
     console.debug("mixed type in row value", value);
@@ -38,15 +34,9 @@ export const extractSQLRowValue = (
     }
     const binaryString = parts.join("").replace(/^0+/g, "");
     if (binaryString.length === 0) {
-      return {
-        plain: "0",
-        raw: byteArray,
-      };
+      return "0";
     }
-    return {
-      plain: binaryString,
-      raw: byteArray,
-    };
+    return binaryString;
   }
   if (value.timestampValue) {
     // Timezone-less timestamps are converted using UTC but they are not UTC timestamps.
@@ -62,14 +52,15 @@ export const extractSQLRowValue = (
           // Example: 2021-01-01 00:00:00
           `${fullDayjs.format("YYYY-MM-DD HH:mm:ss")}`;
 
-    return {
-      plain: formattedTimestamp,
-      raw: value.timestampValue,
-    };
+    return formattedTimestamp;
   }
   if (value.timestampTzValue && value.timestampTzValue.timestamp) {
-    const fullDayjs = dayjs(getDateForPbTimestamp(value.timestampTzValue.timestamp));
-    const microseconds = Math.floor(value.timestampTzValue.timestamp.nanos / 1000);
+    const fullDayjs = dayjs(
+      getDateForPbTimestamp(value.timestampTzValue.timestamp)
+    );
+    const microseconds = Math.floor(
+      value.timestampTzValue.timestamp.nanos / 1000
+    );
     let timezoneOffset = fullDayjs.format("Z");
     if (timezoneOffset.endsWith(":00")) {
       timezoneOffset = timezoneOffset.slice(0, -3);
@@ -84,16 +75,10 @@ export const extractSQLRowValue = (
           // Example: 2021-01-01 00:00:00-07
           `${fullDayjs.format("YYYY-MM-DD HH:mm:ss")}${timezoneOffset}`;
 
-    return {
-      plain: formattedTimestamp,
-      raw: value.timestampTzValue,
-    };
+    return formattedTimestamp;
   }
   const key = keys[0];
-  return {
-    plain: plainObject[key],
-    raw: (value as any)[key],
-  };
+  return plainObject[key];
 };
 
 export const wrapSQLIdentifier = (id: string, engine: Engine) => {
@@ -216,13 +201,16 @@ export const compareQueryRowValues = (
   a: RowValue,
   b: RowValue
 ): number => {
-  const { plain: valueA, raw: rawA } = extractSQLRowValue(a);
-  const { plain: valueB, raw: rawB } = extractSQLRowValue(b);
+  const valueA = extractSQLRowValuePlain(a);
+  const valueB = extractSQLRowValuePlain(b);
 
   // NULL or undefined values go behind
   if (isNullOrUndefined(valueA)) return 1;
   if (isNullOrUndefined(valueB)) return -1;
 
+  // Check if the values are Longs and compare them.
+  const rawA = extractSQLRowValueRaw(a);
+  const rawB = extractSQLRowValueRaw(b);
   if (Long.isLong(rawA) && Long.isLong(rawB)) {
     return rawA.compare(rawB);
   }
@@ -249,6 +237,21 @@ export const compareQueryRowValues = (
   const stringA = String(valueA);
   const stringB = String(valueB);
   return stringA < stringB ? -1 : stringA > stringB ? 1 : 0;
+};
+
+// extractSQLRowValueRaw extracts a raw value from a RowValue.
+const extractSQLRowValueRaw = (value: RowValue | undefined) => {
+  if (
+    typeof value === "undefined" ||
+    value.nullValue === NullValue.NULL_VALUE
+  ) {
+    return null;
+  }
+  const keys = Object.keys(RowValue.toJSON(value) as Record<string, any>);
+  if (keys.length === 0) {
+    return undefined;
+  }
+  return (value as any)[keys[0]];
 };
 
 const toInt = (a: any) => {
