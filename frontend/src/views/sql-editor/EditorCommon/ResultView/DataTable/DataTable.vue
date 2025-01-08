@@ -153,11 +153,6 @@ import SensitiveDataIcon from "./common/SensitiveDataIcon.vue";
 import { useSelectionContext } from "./common/selection-logic";
 import useTableColumnWidthLogic from "./useTableResize";
 
-export type DataTableColumn = {
-  key: string;
-  title: string;
-};
-
 const props = defineProps<{
   table: Table<QueryRow>;
   setIndex: number;

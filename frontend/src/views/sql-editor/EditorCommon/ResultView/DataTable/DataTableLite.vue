@@ -102,11 +102,6 @@ import { useSQLResultViewContext } from "../context";
 import TableCell from "./TableCell.vue";
 import { useSelectionContext } from "./common/selection-logic";
 
-export type DataTableColumn = {
-  key: string;
-  title: string;
-};
-
 const props = defineProps<{
   table: Table<QueryRow>;
   setIndex: number;
