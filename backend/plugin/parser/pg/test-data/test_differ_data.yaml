@@ -1,5 +1,40 @@
 - oldSchema: |
     CREATE TABLE public.t1(a int, b int, c int);
+    CREATE TABLE public.t3(a int, b int, c int);
+    CREATE FUNCTION public.f1() RETURNS public.t3 AS $$
+    BEGIN
+      RETURN (1, 1, 1);
+    END;
+    $$ LANGUAGE plpgsql;
+  newSchema: |
+    CREATE TABLE public.t1(a int, b int, c int);
+    CREATE TABLE public.t2(a int, b int, c int);
+    CREATE FUNCTION public.f1() RETURNS public.t2 AS $$
+    BEGIN
+      RETURN (1, 1, 1);
+    END;
+    $$ LANGUAGE plpgsql;
+  diff: |+
+    SET check_function_bodies = false;
+
+    DROP FUNCTION "public"."f1"();
+
+    DROP TABLE "public"."t3";
+
+    CREATE TABLE "public"."t2" (
+        "a" integer,
+        "b" integer,
+        "c" integer
+    );
+
+    CREATE FUNCTION public.f1() RETURNS public.t2 AS $$
+    BEGIN
+      RETURN (1, 1, 1);
+    END;
+    $$ LANGUAGE plpgsql;
+
+- oldSchema: |
+    CREATE TABLE public.t1(a int, b int, c int);
     CREATE VIEW public.v1 AS SELECT t1.a, t1.b, t1.c FROM public.t1;
     CREATE MATERIALIZED VIEW public.v2 AS SELECT v1.a, v1.b, v1.c FROM public.v1;
     CREATE VIEW public.v3 AS SELECT v2.a, v2.b, v2.c FROM public.v2;
@@ -12,7 +47,9 @@
     SET check_function_bodies = false;
 
     DROP VIEW "public"."v3";
+
     DROP MATERIALIZED VIEW "public"."v2";
+
     CREATE MATERIALIZED VIEW public.v2 AS SELECT t1.a, t1.b, t1.c FROM public.t1;
     CREATE OR REPLACE VIEW public.v4 AS SELECT v2.a, v2.b, v2.c FROM public.v2;
 - oldSchema: |
@@ -43,7 +80,9 @@
     SET check_function_bodies = false;
 
     DROP VIEW "public"."v3";
+
     DROP VIEW "public"."v2";
+
     CREATE OR REPLACE VIEW public.v2 AS SELECT t1.a, t1.b, t1.c FROM public.t1;
     CREATE OR REPLACE VIEW public.v4 AS SELECT v2.a, v2.b, v2.c FROM public.v2;
     COMMENT ON COLUMN "public"."v2"."b" IS 'comment with ''sdkfjaslkdjf; test escape for b';
@@ -68,13 +107,13 @@
   diff: |+
     SET check_function_bodies = false;
 
+    CREATE TABLE "public"."repositories" (
+        "id" serial PRIMARY KEY
+    );
+
     CREATE TABLE "public"."users" (
         "id" serial PRIMARY KEY,
         "username" text NOT NULL
-    );
-
-    CREATE TABLE "public"."repositories" (
-        "id" serial PRIMARY KEY
     );
 
 - oldSchema: CREATE TABLE public.t1(a int, b char(20), c int);
@@ -154,10 +193,12 @@
   diff: |+
     SET check_function_bodies = false;
 
+    DROP TABLE "s1"."t1";
+
+    DROP TABLE "s2"."t4";
+
     ALTER TABLE "s1"."t2"
         DROP COLUMN "b";
-
-    DROP TABLE "s1"."t1", "s2"."t4";
 
     CREATE TABLE "s1"."t3" (
         "a" integer,
@@ -380,9 +421,9 @@
   diff: |+
     SET check_function_bodies = false;
 
-    DROP FUNCTION "public"."f1"(integer);
-
     DROP FUNCTION "public"."f1"();
+
+    DROP FUNCTION "public"."f1"(integer);
 
     CREATE FUNCTION public.f1(int, int, int) RETURNS trigger
         LANGUAGE plpgsql
