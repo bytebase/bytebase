@@ -18,7 +18,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
@@ -325,7 +324,7 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 				Type:           dbdriver.Migrate,
 				Description:    fmt.Sprintf("Migrate version %s server version %s with files %s.", pv.version, serverVersion, pv.filename),
 			}
-			if _, _, err := executeMigrationDefault(ctx, ctx, storeInstance, nil, 0, metadataDriver, mi, string(buf), nil, version, dbdriver.ExecuteOptions{}); err != nil {
+			if _, _, err := executeMigrationDefault(ctx, ctx, storeInstance, metadataDriver, mi, string(buf), version, dbdriver.ExecuteOptions{}); err != nil {
 				return false, err
 			}
 			retVersion = pv.version
@@ -411,7 +410,7 @@ func migrateDev(ctx context.Context, storeInstance *store.Store, metadataDriver 
 			Type:           dbdriver.Migrate,
 			Description:    fmt.Sprintf("Migrate version %s server version %s with files %s.", m.version, serverVersion, m.filename),
 		}
-		if _, _, err := executeMigrationDefault(ctx, ctx, storeInstance, nil, 0, metadataDriver, mi, m.statement, nil, version, dbdriver.ExecuteOptions{}); err != nil {
+		if _, _, err := executeMigrationDefault(ctx, ctx, storeInstance, metadataDriver, mi, m.statement, version, dbdriver.ExecuteOptions{}); err != nil {
 			return err
 		}
 	}
@@ -584,19 +583,19 @@ func backfillOracleSchema(ctx context.Context, stores *store.Store) error {
 }
 
 // executeMigrationDefault executes migration.
-func executeMigrationDefault(ctx context.Context, driverCtx context.Context, store *store.Store, _ *state.State, taskRunUID int, driver dbdriver.Driver, mi *dbdriver.MigrationInfo, statement string, sheetID *int, version model.Version, opts dbdriver.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
+func executeMigrationDefault(ctx context.Context, driverCtx context.Context, store *store.Store, driver dbdriver.Driver, mi *dbdriver.MigrationInfo, statement string, version model.Version, opts dbdriver.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
 	execFunc := func(ctx context.Context, execStatement string) error {
 		if _, err := driver.Execute(ctx, execStatement, opts); err != nil {
 			return err
 		}
 		return nil
 	}
-	return ExecuteMigrationWithFunc(ctx, driverCtx, store, taskRunUID, driver, mi, statement, sheetID, version, execFunc, opts)
+	return ExecuteMigrationWithFunc(ctx, driverCtx, store, mi, statement, version, execFunc, opts)
 }
 
 // ExecuteMigrationWithFunc executes the migration with custom migration function.
-func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, _ int, _ dbdriver.Driver, m *dbdriver.MigrationInfo, statement string, sheetID *int, version model.Version, execFunc func(ctx context.Context, execStatement string) error, _ dbdriver.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
-	insertedID, err := BeginMigration(ctx, s, m, "", statement, sheetID, version)
+func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, m *dbdriver.MigrationInfo, statement string, version model.Version, execFunc func(ctx context.Context, execStatement string) error, _ dbdriver.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
+	insertedID, err := BeginMigration(ctx, s, m, statement, version)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to begin migration")
 	}
@@ -604,7 +603,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 	startedNs := time.Now().UnixNano()
 
 	defer func() {
-		if err := EndMigration(ctx, s, startedNs, insertedID, updatedSchema, "", sheetID, resErr == nil /* isDone */); err != nil {
+		if err := EndMigration(ctx, s, startedNs, insertedID, "" /* updatedSchema  */, "" /* prevSchema */, nil /* sheetID */, resErr == nil /* isDone */); err != nil {
 			slog.Error("Failed to update migration history record",
 				log.BBError(err),
 				slog.String("migration_id", migrationHistoryID),
@@ -648,7 +647,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 }
 
 // BeginMigration checks before executing migration and inserts a migration history record with pending status.
-func BeginMigration(ctx context.Context, stores *store.Store, m *dbdriver.MigrationInfo, prevSchema, statement string, sheetID *int, version model.Version) (string, error) {
+func BeginMigration(ctx context.Context, stores *store.Store, m *dbdriver.MigrationInfo, statement string, version model.Version) (string, error) {
 	// Phase 1 - Pre-check before executing migration
 	// Check if the same migration version has already been applied.
 	if list, err := stores.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{
@@ -680,7 +679,7 @@ func BeginMigration(ctx context.Context, stores *store.Store, m *dbdriver.Migrat
 
 	// Phase 2 - Record migration history as PENDING.
 	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
-	insertedID, err := stores.CreatePendingInstanceChangeHistoryForMigrator(ctx, prevSchema, m, statementRecord, sheetID, version)
+	insertedID, err := stores.CreatePendingInstanceChangeHistoryForMigrator(ctx, "" /* prevSchema */, m, statementRecord, nil /* sheetID */, version)
 	if err != nil {
 		return "", err
 	}
