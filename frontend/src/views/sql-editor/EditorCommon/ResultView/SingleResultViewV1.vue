@@ -415,12 +415,9 @@ const useDataTableLite = computed(() => {
   // In admin mode, always use DataTableLite to keep consistent
   if (currentTab.value?.mode === "ADMIN") return true;
 
-  // Otherwise, use DataTableLite if the result set has too many columns
-  // or too many rows in a page.
+  // Otherwise, use DataTableLite if the result set has too many columns in a page.
   const colCount = table.getFlatHeaders().length;
-  const rowCount = Math.min(pageSize.value, props.result.rows.length);
-
-  return colCount >= 50 || rowCount >= 200;
+  return colCount >= 50;
 });
 
 const isSensitiveColumn = (columnIndex: number): boolean => {
