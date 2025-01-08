@@ -337,6 +337,7 @@ const useExecuteSQL = () => {
             limit: sqlEditorStore.resultRowsLimit,
             explain: params.explain,
             schema: params.connection.schema,
+            container: params.connection.table,
             timeout: undefined, // TODO: make this param configurable
             queryOption: {
               redisRunCommandsOn: sqlEditorStore.redisCommandOption,
