@@ -50,6 +50,8 @@ func (d *DatabaseState) pgChangeState(in ast.Node) (err *WalkThroughError) {
 		return d.pgCreateTable(node)
 	case *ast.CreateIndexStmt:
 		return d.pgCreateIndex(node)
+	case *ast.CreateViewStmt:
+		return d.pgCreateView(node)
 	case *ast.AlterTableStmt:
 		return d.pgAlterTable(node)
 	case *ast.RenameIndexStmt:
@@ -288,7 +290,12 @@ func (d *DatabaseState) pgAlterTable(node *ast.AlterTableStmt) *WalkThroughError
 	}
 	table, err := schema.pgGetTable(node.Table.Name)
 	if err != nil {
-		return err
+		_, err := schema.pgGetView(node.Table.Name)
+		if err != nil {
+			return err
+		}
+		// Do nothing for view.
+		return nil
 	}
 
 	for _, item := range node.AlterItemList {
@@ -599,6 +606,32 @@ func (d *DatabaseState) pgCreateIndex(node *ast.CreateIndexStmt) *WalkThroughErr
 		return err
 	}
 	return schema.pgCreateIndex(node, false /* isPrimary */, false /* isConstraint */)
+}
+
+func (d *DatabaseState) pgCreateView(node *ast.CreateViewStmt) *WalkThroughError {
+	if node.Name.Database != "" && d.name != node.Name.Database {
+		return &WalkThroughError{
+			Type:    ErrorTypeAccessOtherDatabase,
+			Content: fmt.Sprintf("Database %q is not the current database %q", node.Name.Database, d.name),
+		}
+	}
+
+	schema, err := d.getSchema(node.Name.Schema)
+	if err != nil {
+		return err
+	}
+
+	if _, exists := schema.viewSet[node.Name.Name]; exists {
+		// TODO: currently we don't check views.
+		return nil
+	}
+
+	view := &ViewState{
+		name: node.Name.Name,
+	}
+	schema.viewSet[view.name] = view
+
+	return nil
 }
 
 func (d *DatabaseState) pgCreateTable(node *ast.CreateTableStmt) *WalkThroughError {
@@ -1029,6 +1062,17 @@ func (d *DatabaseState) getSchema(schemaName string) (*SchemaState, *WalkThrough
 		d.schemaSet[publicSchemaName] = schema
 	}
 	return schema, nil
+}
+
+func (s *SchemaState) pgGetView(viewName string) (*ViewState, *WalkThroughError) {
+	view, exists := s.viewSet[viewName]
+	if !exists {
+		return nil, &WalkThroughError{
+			Type:    ErrorTypeViewNotExists,
+			Content: fmt.Sprintf("The view %q doesn't exists in schema %q", viewName, s.name),
+		}
+	}
+	return view, nil
 }
 
 func (s *SchemaState) pgGetTable(tableName string) (*TableState, *WalkThroughError) {
