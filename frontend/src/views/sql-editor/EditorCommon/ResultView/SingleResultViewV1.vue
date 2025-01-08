@@ -64,14 +64,6 @@
             />
           </template>
         </NPagination>
-        <NButton
-          v-if="showVisualizeButton"
-          text
-          type="primary"
-          @click="visualizeExplain"
-        >
-          {{ $t("sql-editor.visualize-explain") }}
-        </NButton>
         <NTooltip v-if="DISMISS_PLACEHOLDER">
           <template #trigger>
             <NButton
@@ -153,8 +145,17 @@
       <div class="flex-1 truncate">
         {{ result.statement }}
       </div>
-      <div class="shrink-0">
-        {{ $t("sql-editor.query-time") }}: {{ queryTime }}
+      <div class="shrink-0 space-x-2">
+        <NButton
+          v-if="showVisualizeButton"
+          text
+          type="primary"
+          @click="visualizeExplain"
+          size="tiny"
+        >
+          {{ $t("sql-editor.visualize-explain") }}
+        </NButton>
+        <span>{{ $t("sql-editor.query-time") }}: {{ queryTime }}</span>
       </div>
     </div>
   </template>

@@ -83,6 +83,7 @@
                   class="absolute w-[8px] right-0 top-0 bottom-0 cursor-col-resize"
                   @dblclick="tableResize.autoAdjustColumnWidth([header.index])"
                   @pointerdown="tableResize.startResizing(header.index)"
+                  @click.stop.prevent
                 />
               </th>
             </tr>
@@ -145,11 +146,11 @@ import {
 import { useSubscriptionV1Store } from "@/store";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
 import { usePreventBackAndForward } from "@/utils";
-import { useSQLResultViewContext } from "../../context";
-import ColumnSortedIcon from "../common/ColumnSortedIcon.vue";
-import SensitiveDataIcon from "../common/SensitiveDataIcon.vue";
-import { useSelectionContext } from "../common/selection-logic";
+import { useSQLResultViewContext } from "../context";
 import TableCell from "./TableCell.vue";
+import ColumnSortedIcon from "./common/ColumnSortedIcon.vue";
+import SensitiveDataIcon from "./common/SensitiveDataIcon.vue";
+import { useSelectionContext } from "./common/selection-logic";
 import useTableColumnWidthLogic from "./useTableResize";
 
 export type DataTableColumn = {
