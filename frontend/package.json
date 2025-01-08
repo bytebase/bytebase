@@ -11,7 +11,6 @@
     "release-docker": "export NODE_OPTIONS=--max_old_space_size=8000 && npm run copy:all && vite build --mode release",
     "release-aws": "export NODE_OPTIONS=--max_old_space_size=8000 && npm run copy:all && vite build --mode release-aws",
     "lint": "eslint --cache src",
-    "lint:fix": "eslint --cache --fix src",
     "bundle-visualize": "vite-bundle-visualizer -c vite.config.ts",
     "type-check": "export NODE_OPTIONS=--max_old_space_size=8000 && vue-tsc --build --force",
     "test": "vitest run --passWithNoTests",
