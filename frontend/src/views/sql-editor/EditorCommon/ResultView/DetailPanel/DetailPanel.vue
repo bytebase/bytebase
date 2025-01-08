@@ -139,7 +139,7 @@ import { useI18n } from "vue-i18n";
 import { DrawerContent } from "@/components/v2";
 import { pushNotification } from "@/store";
 import type { RowValue } from "@/types/proto/v1/sql_service";
-import { extractSQLRowValue } from "@/utils";
+import { extractSQLRowValuePlain } from "@/utils";
 import { useSQLResultViewContext } from "../context";
 import PrettyJSON from "./PrettyJSON.vue";
 
@@ -164,7 +164,7 @@ const content = computed(() => {
     .rows[row]?.getVisibleCells()
     [col]?.getValue<RowValue>();
 
-  return String(extractSQLRowValue(value).plain);
+  return String(extractSQLRowValuePlain(value));
 });
 
 const guessedIsJSON = computed(() => {

@@ -14,7 +14,7 @@ import {
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
-import { extractSQLRowValue, isDescendantOf, toClipboard } from "@/utils";
+import { extractSQLRowValuePlain, isDescendantOf, toClipboard } from "@/utils";
 import { useSQLResultViewContext } from "../../context";
 
 export const PREVENT_DISMISS_SELECTION = "bb-prevent-dismiss-selection";
@@ -109,7 +109,7 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
           const cells = row.getVisibleCells();
           return cells
             .map((cell) =>
-              String(extractSQLRowValue(cell.getValue() as RowValue).plain)
+              String(extractSQLRowValuePlain(cell.getValue() as RowValue))
             )
             .join("\t");
         })
@@ -133,7 +133,7 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
         .map((cells) =>
           cells
             .map((cell) =>
-              String(extractSQLRowValue(cell.getValue() as RowValue).plain)
+              String(extractSQLRowValuePlain(cell.getValue() as RowValue))
             )
             .join("\t")
         )
