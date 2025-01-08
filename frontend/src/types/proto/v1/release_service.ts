@@ -159,7 +159,7 @@ export interface CheckReleaseResponse {
 }
 
 export interface CheckReleaseResponse_CheckResult {
-  /** The file id that is being checked. */
+  /** The file path that is being checked. */
   file: string;
   advices: Advice[];
 }

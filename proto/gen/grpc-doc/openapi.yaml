@@ -9541,7 +9541,7 @@ components:
             properties:
                 file:
                     type: string
-                    description: The file id that is being checked.
+                    description: The file path that is being checked.
                 advices:
                     type: array
                     items:
