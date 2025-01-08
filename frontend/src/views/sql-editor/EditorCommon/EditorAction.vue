@@ -21,24 +21,31 @@
       </NButton>
 
       <NButtonGroup v-if="currentTab?.mode !== 'ADMIN'">
-        <NButton
-          :disabled="!allowQuery"
-          type="primary"
-          size="small"
-          style="--n-padding: 0 5px"
-          @click="handleRunQuery"
-        >
-          <template #icon>
-            <PlayIcon class="w-4 h-4 !fill-current" />
+        <NTooltip :disabled="!queryTip">
+          <template #trigger>
+            <NButton
+              :disabled="!allowQuery"
+              type="primary"
+              size="small"
+              style="--n-padding: 0 5px"
+              @click="handleRunQuery"
+            >
+              <template #icon>
+                <PlayIcon class="w-4 h-4 !fill-current" />
+              </template>
+              <template #default>
+                <div class="inline-flex items-center">
+                  <span>(</span>
+                  <span>limit&nbsp;{{ resultRowsLimit }}</span>
+                  <span>)</span>
+                </div>
+              </template>
+            </NButton>
           </template>
-          <template #default>
-            <div class="inline-flex items-center">
-              <span>(</span>
-              <span>limit&nbsp;{{ resultRowsLimit }}</span>
-              <span>)</span>
-            </div>
-          </template>
-        </NButton>
+          <span class="text-sm">
+            {{ queryTip }}
+          </span>
+        </NTooltip>
         <QueryContextSettingPopover
           :disabled="!showQueryContextSettingPopover || !allowQuery"
         />
@@ -122,6 +129,7 @@
       <NButtonGroup>
         <DatabaseChooser />
         <SchemaChooser />
+        <ContainerChooser />
       </NButtonGroup>
 
       <OpenAIButton
@@ -145,9 +153,10 @@ import {
   SaveIcon,
   Share2Icon,
 } from "lucide-vue-next";
-import { NButtonGroup, NButton, NPopover } from "naive-ui";
+import { NButtonGroup, NButton, NPopover, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import {
   useUIStateStore,
@@ -163,10 +172,12 @@ import {
   type FeatureType,
   type SQLEditorQueryParams,
 } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import { keyboardShortcutStr, isWorksheetWritableV1 } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
 import BatchQueryDatabasesSelector from "./BatchQueryDatabasesSelector.vue";
+import ContainerChooser from "./ContainerChooser.vue";
 import DatabaseChooser from "./DatabaseChooser.vue";
 import OpenAIButton from "./OpenAIButton";
 import QueryContextSettingPopover from "./QueryContextSettingPopover.vue";
@@ -209,16 +220,31 @@ const isExecutingSQL = computed(
   () => currentTab.value?.queryContext?.status === "EXECUTING"
 );
 const { instance } = useConnectionOfCurrentSQLEditorTab();
+const { t } = useI18n();
 
 const showSheetsFeature = computed(() => {
   const mode = currentTab.value?.mode;
   return mode === "WORKSHEET";
 });
 
+const queryTip = computed(() => {
+  if (
+    instance.value.engine === Engine.COSMOSDB &&
+    !currentTab.value?.connection.table
+  ) {
+    return t("database.table.select-tip");
+  }
+  return "";
+});
+
 const allowQuery = computed(() => {
   if (isDisconnected.value) return false;
   if (isEmptyStatement.value) return false;
   if (isExecutingSQL.value) return false;
+
+  if (instance.value.engine === Engine.COSMOSDB) {
+    return !!currentTab.value?.connection.table;
+  }
   return true;
 });
 

@@ -1936,6 +1936,10 @@
       "select": "Seleccionar esquema",
       "unspecified": "No especificado"
     },
+    "table": {
+      "select": "Seleccionar tabla",
+      "select-tip": "Seleccione una mesa para comenzar."
+    },
     "show-missing-databases": "Mostrar bases de datos faltantes",
     "n-selected-m-in-total": "({selected} seleccionados, {total} en total)",
     "doesnt-match-database-name-template": "No coincide con la plantilla de nombre de base de datos de inquilino",

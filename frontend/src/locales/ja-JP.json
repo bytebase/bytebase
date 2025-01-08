@@ -1936,6 +1936,10 @@
       "select": "スキーマの選択",
       "unspecified": "不特定"
     },
+    "table": {
+      "select": "テーブルを選択",
+      "select-tip": "開始するにはテーブルを選択してください。"
+    },
     "show-missing-databases": "データベースが見つからないことを表示",
     "n-selected-m-in-total": "({selected} 個が選択され、合計 {total} 個)",
     "doesnt-match-database-name-template": "テナントデータベース名のテンプレートに準拠していません",
