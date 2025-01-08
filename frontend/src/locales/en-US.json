@@ -1936,6 +1936,10 @@
       "select": "Select schema",
       "unspecified": "Unspecified"
     },
+    "table": {
+      "select": "Select table",
+      "select-tip": "Please select a table to start."
+    },
     "show-missing-databases": "Show missing databases",
     "n-selected-m-in-total": "({selected} selected, {total} in total)",
     "doesnt-match-database-name-template": "Doesn't match tenant database name template",
