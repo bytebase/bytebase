@@ -50,7 +50,7 @@ export interface AdminExecuteRequest {
    * Container is the container name to execute the query against, used for
    * CosmosDB only.
    */
-  container: string;
+  container?: string | undefined;
 }
 
 export interface AdminExecuteResponse {
@@ -93,7 +93,7 @@ export interface QueryRequest {
    * Container is the container name to execute the query against, used for
    * CosmosDB only.
    */
-  container: string;
+  container?: string | undefined;
 }
 
 export interface QueryResponse {
@@ -633,7 +633,7 @@ export function queryHistory_TypeToNumber(object: QueryHistory_Type): number {
 }
 
 function createBaseAdminExecuteRequest(): AdminExecuteRequest {
-  return { name: "", statement: "", limit: 0, timeout: undefined, schema: undefined, container: "" };
+  return { name: "", statement: "", limit: 0, timeout: undefined, schema: undefined, container: undefined };
 }
 
 export const AdminExecuteRequest: MessageFns<AdminExecuteRequest> = {
@@ -653,7 +653,7 @@ export const AdminExecuteRequest: MessageFns<AdminExecuteRequest> = {
     if (message.schema !== undefined) {
       writer.uint32(50).string(message.schema);
     }
-    if (message.container !== "") {
+    if (message.container !== undefined) {
       writer.uint32(58).string(message.container);
     }
     return writer;
@@ -730,7 +730,7 @@ export const AdminExecuteRequest: MessageFns<AdminExecuteRequest> = {
       limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
       timeout: isSet(object.timeout) ? Duration.fromJSON(object.timeout) : undefined,
       schema: isSet(object.schema) ? globalThis.String(object.schema) : undefined,
-      container: isSet(object.container) ? globalThis.String(object.container) : "",
+      container: isSet(object.container) ? globalThis.String(object.container) : undefined,
     };
   },
 
@@ -751,7 +751,7 @@ export const AdminExecuteRequest: MessageFns<AdminExecuteRequest> = {
     if (message.schema !== undefined) {
       obj.schema = message.schema;
     }
-    if (message.container !== "") {
+    if (message.container !== undefined) {
       obj.container = message.container;
     }
     return obj;
@@ -769,7 +769,7 @@ export const AdminExecuteRequest: MessageFns<AdminExecuteRequest> = {
       ? Duration.fromPartial(object.timeout)
       : undefined;
     message.schema = object.schema ?? undefined;
-    message.container = object.container ?? "";
+    message.container = object.container ?? undefined;
     return message;
   },
 };
@@ -844,7 +844,7 @@ function createBaseQueryRequest(): QueryRequest {
     explain: false,
     schema: undefined,
     queryOption: undefined,
-    container: "",
+    container: undefined,
   };
 }
 
@@ -874,7 +874,7 @@ export const QueryRequest: MessageFns<QueryRequest> = {
     if (message.queryOption !== undefined) {
       QueryOption.encode(message.queryOption, writer.uint32(74).fork()).join();
     }
-    if (message.container !== "") {
+    if (message.container !== undefined) {
       writer.uint32(82).string(message.container);
     }
     return writer;
@@ -978,7 +978,7 @@ export const QueryRequest: MessageFns<QueryRequest> = {
       explain: isSet(object.explain) ? globalThis.Boolean(object.explain) : false,
       schema: isSet(object.schema) ? globalThis.String(object.schema) : undefined,
       queryOption: isSet(object.queryOption) ? QueryOption.fromJSON(object.queryOption) : undefined,
-      container: isSet(object.container) ? globalThis.String(object.container) : "",
+      container: isSet(object.container) ? globalThis.String(object.container) : undefined,
     };
   },
 
@@ -1008,7 +1008,7 @@ export const QueryRequest: MessageFns<QueryRequest> = {
     if (message.queryOption !== undefined) {
       obj.queryOption = QueryOption.toJSON(message.queryOption);
     }
-    if (message.container !== "") {
+    if (message.container !== undefined) {
       obj.container = message.container;
     }
     return obj;
@@ -1031,7 +1031,7 @@ export const QueryRequest: MessageFns<QueryRequest> = {
     message.queryOption = (object.queryOption !== undefined && object.queryOption !== null)
       ? QueryOption.fromPartial(object.queryOption)
       : undefined;
-    message.container = object.container ?? "";
+    message.container = object.container ?? undefined;
     return message;
   },
 };
