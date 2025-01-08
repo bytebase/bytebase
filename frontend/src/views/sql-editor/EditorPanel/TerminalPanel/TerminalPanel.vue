@@ -64,7 +64,7 @@
             <BBSpin />
             <div
               v-if="query === currentQuery && expired"
-              class="text-gray-400 cursor-pointer hover:underline select-none"
+              class="text-gray-400 cursor-pointer hover:underline text-sm select-none"
               @click="handleCancelQuery"
             >
               {{ $t("common.cancel") }}

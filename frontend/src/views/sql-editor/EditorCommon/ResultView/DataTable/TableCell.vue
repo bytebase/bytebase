@@ -35,7 +35,7 @@ import { computed, ref } from "vue";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
-import { extractSQLRowValue, getHighlightHTMLByRegExp } from "@/utils";
+import { extractSQLRowValuePlain, getHighlightHTMLByRegExp } from "@/utils";
 import { useSQLResultViewContext } from "../context";
 import { useSelectionContext } from "./common/selection-logic";
 
@@ -108,7 +108,7 @@ const classes = computed(() => {
 });
 
 const html = computed(() => {
-  const value = extractSQLRowValue(props.value).plain;
+  const value = extractSQLRowValuePlain(props.value);
   if (value === undefined) {
     return `<span class="text-gray-400 italic">UNSET</span>`;
   }

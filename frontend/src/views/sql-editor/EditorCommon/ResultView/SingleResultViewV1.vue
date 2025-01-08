@@ -164,7 +164,7 @@
       class="text-md font-normal flex items-center gap-x-1"
       :class="[dark ? 'text-matrix-green-hover' : 'text-control-light']"
     >
-      <span>{{ extractSQLRowValue(result.rows[0].values[0]).plain }}</span>
+      <span>{{ extractSQLRowValuePlain(result.rows[0].values[0]) }}</span>
       <span>rows affected</span>
     </div>
   </template>
@@ -241,7 +241,7 @@ import {
   compareQueryRowValues,
   createExplainToken,
   extractProjectResourceName,
-  extractSQLRowValue,
+  extractSQLRowValuePlain,
   generateIssueTitle,
   hasPermissionToCreateRequestGrantIssue,
   hasWorkspacePermissionV2,
@@ -400,7 +400,7 @@ const data = computed(() => {
   if (search) {
     temp = data.filter((item) => {
       return item.values.some((col) => {
-        const value = extractSQLRowValue(col).plain;
+        const value = extractSQLRowValuePlain(col);
         if (isNullOrUndefined(value)) {
           return false;
         }
@@ -415,12 +415,9 @@ const useDataTableLite = computed(() => {
   // In admin mode, always use DataTableLite to keep consistent
   if (currentTab.value?.mode === "ADMIN") return true;
 
-  // Otherwise, use DataTableLite if the result set has too many columns
-  // or too many rows in a page.
+  // Otherwise, use DataTableLite if the result set has too many columns in a page.
   const colCount = table.getFlatHeaders().length;
-  const rowCount = Math.min(pageSize.value, props.result.rows.length);
-
-  return colCount >= 50 || rowCount >= 200;
+  return colCount >= 50;
 });
 
 const isSensitiveColumn = (columnIndex: number): boolean => {
@@ -463,7 +460,7 @@ const pageSize = computed({
   },
 });
 const pageSizeOptions = computed(() => {
-  return [20, 50, 100, 1000].map<SelectOption>((n) => ({
+  return [20, 50, 100, 200].map<SelectOption>((n) => ({
     label: t("sql-editor.n-per-page", { n }),
     value: n,
   }));
@@ -572,7 +569,7 @@ const handleChangePage = (page: number) => {
 const explainFromSQLResultSetV1 = (resultSet: SQLResultSetV1 | undefined) => {
   if (!resultSet) return "";
   const lines = resultSet.results[0].rows.map((row) =>
-    row.values.map((value) => String(extractSQLRowValue(value).plain))
+    row.values.map((value) => String(extractSQLRowValuePlain(value)))
   );
   const explain = lines.map((line) => line[0]).join("\n");
   return explain;
