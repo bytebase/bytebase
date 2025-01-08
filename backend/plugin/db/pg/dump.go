@@ -65,11 +65,22 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 		}
 	}
 
+	// Build the graph for topological sort.
+	graph := base.NewGraph()
+	functionMap := make(map[string]*storepb.FunctionMetadata)
+	tableMap := make(map[string]*storepb.TableMetadata)
+	viewMap := make(map[string]*storepb.ViewMetadata)
+	materializedViewMap := make(map[string]*storepb.MaterializedViewMetadata)
+
 	// Construct functions.
 	for _, schema := range metadata.Schemas {
 		for _, function := range schema.Functions {
-			if err := writeFunction(out, schema.Name, function); err != nil {
-				return err
+			funcID := getObjectID(schema.Name, function.Name)
+			functionMap[funcID] = function
+			graph.AddNode(funcID)
+			for _, dependency := range function.DependencyTables {
+				dependencyID := getObjectID(dependency.Schema, dependency.Table)
+				graph.AddEdge(dependencyID, funcID)
 			}
 		}
 	}
@@ -85,7 +96,7 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 				}
 				continue
 			}
-			tableID := getTableID(schema.Name, sequence.OwnerTable)
+			tableID := getObjectID(schema.Name, sequence.OwnerTable)
 			sequenceMap[tableID] = append(sequenceMap[tableID], sequence)
 		}
 	}
@@ -101,33 +112,28 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 	// Construct tables.
 	for _, schema := range metadata.Schemas {
 		for _, table := range schema.Tables {
-			if err := writeTable(out, schema.Name, table, sequenceMap[getTableID(schema.Name, table.Name)]); err != nil {
-				return err
-			}
+			tableID := getObjectID(schema.Name, table.Name)
+			tableMap[tableID] = table
+			graph.AddNode(tableID)
 		}
 	}
 
-	graph := base.NewGraph()
-	viewMap := make(map[string]*storepb.ViewMetadata)
-	materializedViewMap := make(map[string]*storepb.MaterializedViewMetadata)
-
-	// Build the graph for topological sort.
 	for _, schema := range metadata.Schemas {
 		for _, view := range schema.Views {
-			viewID := getTableID(schema.Name, view.Name)
+			viewID := getObjectID(schema.Name, view.Name)
 			viewMap[viewID] = view
 			graph.AddNode(viewID)
 			for _, dependency := range view.DependencyColumns {
-				dependencyID := getTableID(dependency.Schema, dependency.Table)
+				dependencyID := getObjectID(dependency.Schema, dependency.Table)
 				graph.AddEdge(dependencyID, viewID)
 			}
 		}
 		for _, view := range schema.MaterializedViews {
-			viewID := getTableID(schema.Name, view.Name)
+			viewID := getObjectID(schema.Name, view.Name)
 			materializedViewMap[viewID] = view
 			graph.AddNode(viewID)
 			for _, dependency := range view.DependencyColumns {
-				dependencyID := getTableID(dependency.Schema, dependency.Table)
+				dependencyID := getObjectID(dependency.Schema, dependency.Table)
 				graph.AddEdge(dependencyID, viewID)
 			}
 		}
@@ -138,19 +144,29 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 		return errors.Wrap(err, "failed to get topological sort")
 	}
 
-	for _, viewID := range orderedList {
-		if view, ok := viewMap[viewID]; ok {
-			if err := writeView(out, getSchemaNameFromID(viewID), view); err != nil {
+	// Construct functions, tables, views and materialized views in order.
+	for _, objectID := range orderedList {
+		if function, ok := functionMap[objectID]; ok {
+			if err := writeFunction(out, getSchemaNameFromID(objectID), function); err != nil {
 				return err
 			}
-			delete(viewMap, viewID)
 			continue
 		}
-		if view, ok := materializedViewMap[viewID]; ok {
-			if err := writeMaterializedView(out, getSchemaNameFromID(viewID), view); err != nil {
+		if table, ok := tableMap[objectID]; ok {
+			if err := writeTable(out, getSchemaNameFromID(objectID), table, sequenceMap[objectID]); err != nil {
 				return err
 			}
-			delete(materializedViewMap, viewID)
+		}
+		if view, ok := viewMap[objectID]; ok {
+			if err := writeView(out, getSchemaNameFromID(objectID), view); err != nil {
+				return err
+			}
+			continue
+		}
+		if view, ok := materializedViewMap[objectID]; ok {
+			if err := writeMaterializedView(out, getSchemaNameFromID(objectID), view); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -615,11 +631,11 @@ func writeAlterSequenceOwnedBy(out io.Writer, schema string, sequence *storepb.S
 	return err
 }
 
-func getTableID(schema string, table string) string {
+func getObjectID(schema string, object string) string {
 	var buf strings.Builder
 	_, _ = buf.WriteString(schema)
 	_, _ = buf.WriteString(".")
-	_, _ = buf.WriteString(table)
+	_, _ = buf.WriteString(object)
 	return buf.String()
 }
 
