@@ -89,7 +89,7 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.Previ
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
 	if len(rollout.Stages) == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "plan has no stage created, hint: check deployment config setting")
+		return nil, status.Errorf(codes.InvalidArgument, "plan has no stage created, hint: check deployment config setting that the target database is in a stage")
 	}
 
 	rolloutV1, err := convertToRollout(ctx, s.store, project, rollout)
@@ -235,7 +235,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
 	if len(pipelineCreate.Stages) == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "no database matched for deployment, hint: check deployment config setting")
+		return nil, status.Errorf(codes.InvalidArgument, "no database matched for deployment, hint: check deployment config setting that the target database is in a stage")
 	}
 	if isChangeDatabasePlan(plan.Config.GetSteps()) {
 		pipelineCreate, err = getPipelineCreateToTargetStage(ctx, s.store, plan.Config.GetDeploymentSnapshot().GetDeploymentConfigSnapshot().GetDeploymentConfig(), project, pipelineCreate, request.StageId)
