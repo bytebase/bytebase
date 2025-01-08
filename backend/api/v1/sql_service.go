@@ -139,7 +139,7 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 			}
 		}
 
-		queryContext := db.QueryContext{OperatorEmail: user.Email}
+		queryContext := db.QueryContext{OperatorEmail: user.Email, Container: request.GetContainer()}
 		if request.Schema != nil {
 			queryContext.Schema = *request.Schema
 		}
@@ -212,6 +212,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		Limit:         int(request.Limit),
 		OperatorEmail: user.Email,
 		Option:        request.QueryOption,
+		Container:     request.GetContainer(),
 	}
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema

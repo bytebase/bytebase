@@ -119,8 +119,13 @@ message AdminExecuteRequest {
   // The timeout for the request.
   google.protobuf.Duration timeout = 5;
 
-  // The default schema to execute the statement. Equals to the current schema in Oracle and search path in Postgres.
+  // The default schema to execute the statement. Equals to the current schema
+  // in Oracle and search path in Postgres.
   optional string schema = 6;
+
+  // Container is the container name to execute the query against, used for
+  // CosmosDB only.
+  optional string container = 7;
 }
 
 message AdminExecuteResponse {
@@ -148,17 +153,23 @@ message QueryRequest {
   optional google.protobuf.Duration timeout = 5;
 
   // The id of data source.
-  // It is used for querying admin data source even if the instance has read-only data sources.
-  // Or it can be used to query a specific read-only data source.
+  // It is used for querying admin data source even if the instance has
+  // read-only data sources. Or it can be used to query a specific read-only
+  // data source.
   string data_source_id = 6;
 
   // Explain the statement.
   bool explain = 7;
 
-  // The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres.
+  // The default schema to search objects. Equals to the current schema in
+  // Oracle and search path in Postgres.
   optional string schema = 8;
 
   QueryOption query_option = 9;
+
+  // Container is the container name to execute the query against, used for
+  // CosmosDB only.
+  optional string container = 10;
 }
 
 message QueryResponse {
@@ -244,11 +255,12 @@ message QueryRow {
 message RowValue {
   message TimestampTZ {
     google.protobuf.Timestamp timestamp = 1;
-    // Zone is the time zone abbreviations in timezone database such as "PDT", "PST".
-    // https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-    // We retrieve the time zone information from the timestamptz field in the database.
-    // A timestamp is in UTC or epoch time, and with zone info, we can convert it to a local time string.
-    // Zone and offset are returned by time.Time.Zone()
+    // Zone is the time zone abbreviations in timezone database such as "PDT",
+    // "PST". https://en.wikipedia.org/wiki/List_of_tz_database_time_zones We
+    // retrieve the time zone information from the timestamptz field in the
+    // database. A timestamp is in UTC or epoch time, and with zone info, we can
+    // convert it to a local time string. Zone and offset are returned by
+    // time.Time.Zone()
     string zone = 2;
     // The offset is in seconds east of UTC
     int32 offset = 3;
@@ -267,10 +279,13 @@ message RowValue {
     uint64 uint64_value = 10;
     // value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only.
     google.protobuf.Value value_value = 11;
-    // timestamp_value is used for the timestamp without time zone data type, meaning it only includes the timestamp without any time zone or location info.
-    // Although it may be expressed as a UTC value, it should be seen as a timestamp missing location context.
+    // timestamp_value is used for the timestamp without time zone data type,
+    // meaning it only includes the timestamp without any time zone or location
+    // info. Although it may be expressed as a UTC value, it should be seen as a
+    // timestamp missing location context.
     google.protobuf.Timestamp timestamp_value = 12;
-    // timestamp_tz_value is used for the timestamptz data type, which accurately represents the timestamp with location information.
+    // timestamp_tz_value is used for the timestamptz data type, which
+    // accurately represents the timestamp with location information.
     TimestampTZ timestamp_tz_value = 13;
   }
 }
@@ -330,16 +345,17 @@ message ExportRequest {
   // The export format.
   ExportFormat format = 5;
 
-  // The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode.
-  // The exported data is not masked.
+  // The admin is used for workspace owner and DBA for exporting data from SQL
+  // Editor Admin mode. The exported data is not masked.
   bool admin = 6;
 
   // The zip password provide by users.
   string password = 7;
 
   // The id of data source.
-  // It is used for querying admin data source even if the instance has read-only data sources.
-  // Or it can be used to query a specific read-only data source.
+  // It is used for querying admin data source even if the instance has
+  // read-only data sources. Or it can be used to query a specific read-only
+  // data source.
   string data_source_id = 8;
 }
 
@@ -351,11 +367,13 @@ message ExportResponse {
 message PrettyRequest {
   Engine engine = 1;
 
-  // The SDL format SQL schema information that was dumped from a database engine.
-  // This information will be sorted to match the order of statements in the userSchema.
+  // The SDL format SQL schema information that was dumped from a database
+  // engine. This information will be sorted to match the order of statements in
+  // the userSchema.
   string current_schema = 2;
 
-  // The expected SDL schema. This schema will be checked for correctness and normalized.
+  // The expected SDL schema. This schema will be checked for correctness and
+  // normalized.
   string expected_schema = 3;
 }
 
@@ -377,8 +395,9 @@ message CheckRequest {
 
   string statement = 1;
 
-  // The database metadata to check against. It can be used to check against an uncommitted metadata.
-  // If not provided, the database metadata will be fetched from the database.
+  // The database metadata to check against. It can be used to check against an
+  // uncommitted metadata. If not provided, the database metadata will be
+  // fetched from the database.
   DatabaseMetadata metadata = 3 [(google.api.field_behavior) = OPTIONAL];
 
   enum ChangeType {
@@ -407,7 +426,8 @@ message StringifyMetadataRequest {
   DatabaseMetadata metadata = 1 [(google.api.field_behavior) = REQUIRED];
   // The database engine of the schema string.
   Engine engine = 2;
-  // If false, we will build the raw common by classification in database config.
+  // If false, we will build the raw common by classification in database
+  // config.
   bool classification_from_config = 3;
 }
 
@@ -427,8 +447,9 @@ message SearchQueryHistoriesRequest {
   string page_token = 2;
 
   // filter is the filter to apply on the search query history,
-  // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-  // Support filter by:
+  // follow the
+  // [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
+  // syntax. Support filter by:
   // - database, for example:
   //    database = "instances/{instance}/databases/{database}"
   // - instance, for example:
@@ -443,8 +464,8 @@ message SearchQueryHistoriesResponse {
   repeated QueryHistory query_histories = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // A token to retrieve next page of history.
-  // Pass this value in the page_token field in the subsequent call to `ListQueryHistory` method
-  // to retrieve the next page of history.
+  // Pass this value in the page_token field in the subsequent call to
+  // `ListQueryHistory` method to retrieve the next page of history.
   string next_page_token = 2;
 }
 
