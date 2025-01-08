@@ -622,10 +622,8 @@ func (d *DatabaseState) pgCreateView(node *ast.CreateViewStmt) *WalkThroughError
 	}
 
 	if _, exists := schema.viewSet[node.Name.Name]; exists {
-		return &WalkThroughError{
-			Type:    ErrorTypeViewExists,
-			Content: fmt.Sprintf("The view %q already exists in the schema %q", node.Name.Name, schema.name),
-		}
+		// TODO: currently we don't check views.
+		return nil
 	}
 
 	view := &ViewState{
