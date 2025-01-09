@@ -138,12 +138,15 @@ func cutover(ctx context.Context, taskContext context.Context, stores *store.Sto
 		}
 		return nil
 	}
-	err = executeMigrationWithFunc(ctx, ctx, stores, mi, mc, statement, execFunc, db.ExecuteOptions{})
+	// TODO(p0ny): we may need to defer execFunc to do the cleanup always.
+	// And we might want to move the check that determines if the task should be skipped
+	// to the sync executor.
+	skipped, err := executeMigrationWithFunc(ctx, ctx, stores, mi, mc, statement, execFunc, db.ExecuteOptions{})
 	if err != nil {
 		return true, nil, err
 	}
 
-	return postMigration(ctx, stores, mi, mc)
+	return postMigration(ctx, stores, mi, mc, skipped)
 }
 
 func waitForCutover(ctx context.Context, taskContext context.Context, migrationContext *base.MigrationContext) bool {
