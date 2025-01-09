@@ -1,8 +1,6 @@
 import { defineStore } from "pinia";
-import { computed, ref, unref, watch } from "vue";
 import { anomalyServiceClient } from "@/grpcweb";
-import type { FindAnomalyMessage, MaybeRef } from "@/types";
-import type { Anomaly } from "@/types/proto/v1/anomaly_service";
+import type { FindAnomalyMessage } from "@/types";
 
 const buildFilter = (find: FindAnomalyMessage): string => {
   const filter: string[] = [];
@@ -25,19 +23,3 @@ export const useAnomalyV1Store = defineStore("anomaly_v1", {
     },
   },
 });
-
-export const useAnomalyV1List = (find: MaybeRef<FindAnomalyMessage> = {}) => {
-  const store = useAnomalyV1Store();
-  const query = computed(() => buildFilter(unref(find)));
-  const list = ref<Anomaly[]>([]);
-  watch(
-    query,
-    () => {
-      store.fetchAnomalyList(unref(find)).then((result) => {
-        list.value = result;
-      });
-    },
-    { immediate: true }
-  );
-  return list;
-};
