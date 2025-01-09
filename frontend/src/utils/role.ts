@@ -2,49 +2,6 @@ import { t } from "@/plugins/i18n";
 import { useRoleStore } from "@/store";
 import { PRESET_ROLES } from "@/types";
 
-const roleTranslationsKey = {
-  "workspace-admin": {
-    self: "role.workspace-admin.self",
-    description: "role.workspace-admin.description"
-  },
-  "workspace-dba": {
-    self: "role.workspace-dba.self",
-    description: "role.workspace-dba.description"
-  },
-  "workspace-member": {
-    self: "role.workspace-member.self",
-    description: "role.workspace-member.description"
-  },
-  "project-owner": {
-    self: "role.project-owner.self",
-    description: "role.project-owner.description"
-  },
-  "project-developer": {
-    self: "role.project-developer.self",
-    description: "role.project-developer.description"
-  },
-  "project-releaser": {
-    self: "role.project-releaser.self",
-    description: "role.project-releaser.description"
-  },
-  "project-querier": {
-    self: "role.project-querier.self",
-    description: "role.project-querier.description"
-  },
-  "sql-editor-user": {
-    self: "role.sql-editor-user.self",
-    description: "role.sql-editor-user.description"
-  },
-  "project-exporter": {
-    self: "role.project-exporter.self",
-    description: "role.project-exporter.description"
-  },
-  "project-viewer": {
-    self: "role.project-viewer.self",
-    description: "role.project-viewer.description"
-  }
-};
-
 export const extractRoleResourceName = (resourceId: string): string => {
   const pattern = /(?:^|\/)roles\/([^/]+)(?:$|\/)/;
   const matches = resourceId.match(pattern);
@@ -53,7 +10,30 @@ export const extractRoleResourceName = (resourceId: string): string => {
 
 export const displayRoleTitle = (role: string): string => {
   if (PRESET_ROLES.includes(role)) {
-    return t(roleTranslationsKey[extractRoleResourceName(role) as keyof typeof roleTranslationsKey].self);
+    switch (extractRoleResourceName(role)) {
+      case "workspace-admin":
+        return t("role.workspace-admin.self");
+      case "workspace-dba":
+        return t("role.workspace-dba.self");
+      case "workspace-member":
+        return t("role.workspace-member.self");
+      case "project-owner":
+        return t("role.project-owner.self");
+      case "project-developer":
+        return t("role.project-developer.self");
+      case "project-releaser":
+        return t("role.project-releaser.self");
+      case "project-querier":
+        return t("role.project-querier.self");
+      case "sql-editor-user":
+        return t("role.sql-editor-user.self");
+      case "project-exporter":
+        return t("role.project-exporter.self");
+      case "project-viewer":
+        return t("role.project-viewer.self");
+      default:
+        return "";
+    }
   }
   // Use role.title if possible
   const item = useRoleStore().roleList.find((r) => r.name === role);
@@ -63,7 +43,30 @@ export const displayRoleTitle = (role: string): string => {
 
 export const displayRoleDescription = (role: string): string => {
   if (PRESET_ROLES.includes(role)) {
-    return t(roleTranslationsKey[extractRoleResourceName(role) as keyof typeof roleTranslationsKey].description);
+    switch (extractRoleResourceName(role)) {
+      case "workspace-admin":
+        return t("role.workspace-admin.description");
+      case "workspace-dba":
+        return t("role.workspace-dba.description");
+      case "workspace-member":
+        return t("role.workspace-member.description");
+      case "project-owner":
+        return t("role.project-owner.description");
+      case "project-developer":
+        return t("role.project-developer.description");
+      case "project-releaser":
+        return t("role.project-releaser.description");
+      case "project-querier":
+        return t("role.project-querier.description");
+      case "sql-editor-user":
+        return t("role.sql-editor-user.description");
+      case "project-exporter":
+        return t("role.project-exporter.description");
+      case "project-viewer":
+        return t("role.project-viewer.description");
+      default:
+        return "";
+    }
   }
   // Use role.description if possible
   const item = useRoleStore().roleList.find((r) => r.name === role);

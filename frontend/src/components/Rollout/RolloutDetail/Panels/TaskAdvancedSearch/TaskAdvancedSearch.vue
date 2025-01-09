@@ -35,15 +35,6 @@ defineEmits<{
 
 const { t } = useI18n();
 const { rollout, project } = useRolloutDetailContext();
-const statusTranslations = {
-  [Task_Status.NOT_STARTED]: "task.status.not-started",
-  [Task_Status.PENDING]: "task.status.pending",
-  [Task_Status.RUNNING]: "task.status.running",
-  [Task_Status.DONE]: "task.status.done",
-  [Task_Status.FAILED]: "task.status.failed",
-  [Task_Status.CANCELED]: "task.status.cancelled",
-  [Task_Status.SKIPPED]: "task.status.skipped",
-};
 
 const databasesFromTasks = computed(() =>
   uniqBy(
@@ -109,34 +100,49 @@ const scopeOptions = computed((): ScopeOption[] => {
         };
       }),
     },
-    // {
-    //   id: "status",
-    //   title: t("common.status"),
-    //   options: [
-    //     Task_Status.NOT_STARTED,
-    //     Task_Status.PENDING,
-    //     Task_Status.RUNNING,
-    //     Task_Status.DONE,
-    //     Task_Status.FAILED,
-    //     Task_Status.CANCELED,
-    //     Task_Status.SKIPPED,
-    //   ].map((status) => {
-    //     return {
-    //         value: status,
-    //       keywords: [status],
-    //       render: () => t(`task.status.${kebabCase(status)}`),
-    //     };
-    //   }),
-    // },
     {
       id: "status",
       title: t("common.status"),
-      options: Object.keys(statusTranslations).map((status) => {
-          return {
-            value: status,
-            keywords: [status],
-            render: () => t(statusTranslations[status as keyof typeof statusTranslations]),
-          };
+      options: [
+        Task_Status.NOT_STARTED,
+        Task_Status.PENDING,
+        Task_Status.RUNNING,
+        Task_Status.DONE,
+        Task_Status.FAILED,
+        Task_Status.CANCELED,
+        Task_Status.SKIPPED,
+      ].map((status) => {
+      let statusTitle;
+      switch (status) {
+        case Task_Status.NOT_STARTED:
+        statusTitle = t("task.status.not-started");
+        break;
+        case Task_Status.PENDING:
+        statusTitle = t("task.status.pending");
+        break;
+        case Task_Status.RUNNING:
+        statusTitle = t("task.status.running");
+        break;
+        case Task_Status.DONE:
+        statusTitle = t("task.status.done");
+        break;
+        case Task_Status.FAILED:
+        statusTitle = t("task.status.failed");
+        break;
+        case Task_Status.CANCELED:
+        statusTitle = t("task.status.canceled");
+        break;
+        case Task_Status.SKIPPED:
+        statusTitle = t("task.status.skipped");
+        break;
+        default:
+        statusTitle = status;
+      }
+      return {
+        value: status,
+        keywords: [status],
+        render: () => statusTitle,
+      };
       }),
     },
   ];
