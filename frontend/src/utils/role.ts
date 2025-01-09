@@ -1,6 +1,6 @@
 import { t } from "@/plugins/i18n";
 import { useRoleStore } from "@/store";
-import { PRESET_ROLES } from "@/types";
+import { PRESET_ROLES, PresetRoleType } from "@/types";
 
 export const extractRoleResourceName = (resourceId: string): string => {
   const pattern = /(?:^|\/)roles\/([^/]+)(?:$|\/)/;
@@ -11,23 +11,23 @@ export const extractRoleResourceName = (resourceId: string): string => {
 export const displayRoleTitle = (role: string): string => {
   if (PRESET_ROLES.includes(role)) {
     switch (extractRoleResourceName(role)) {
-      case "workspaceAdmin":
+      case PresetRoleType.WORKSPACE_ADMIN:
         return t("role.workspace-admin.self");
-      case "workspaceDBA":
+      case PresetRoleType.WORKSPACE_DBA:
         return t("role.workspace-dba.self");
-      case "workspaceMember":
+      case PresetRoleType.WORKSPACE_MEMBER:
         return t("role.workspace-member.self");
-      case "projectOwner":
+      case PresetRoleType.PROJECT_OWNER:
         return t("role.project-owner.self");
-      case "projectDeveloper":
+      case PresetRoleType.PROJECT_DEVELOPER:
         return t("role.project-developer.self");
-      case "projectReleaser":
+      case PresetRoleType.PROJECT_RELEASER:
         return t("role.project-releaser.self");
-      case "sqlEditorUser":
+      case PresetRoleType.SQL_EDITOR_USER:
         return t("role.sql-editor-user.self");
-      case "projectExporter":
+      case PresetRoleType.PROJECT_EXPORTER:
         return t("role.project-exporter.self");
-      case "projectViewer":
+      case PresetRoleType.PROJECT_VIEWER:
         return t("role.project-viewer.self");
       default:
         return "UNKNOWN ROLE";
@@ -42,23 +42,23 @@ export const displayRoleTitle = (role: string): string => {
 export const displayRoleDescription = (role: string): string => {
   if (PRESET_ROLES.includes(role)) {
     switch (extractRoleResourceName(role)) {
-      case "workspaceAdmin":
+      case PresetRoleType.WORKSPACE_ADMIN:
         return t("role.workspace-admin.description");
-      case "workspaceDBA":
+      case PresetRoleType.WORKSPACE_DBA:
         return t("role.workspace-dba.description");
-      case "workspaceMember":
+      case PresetRoleType.WORKSPACE_MEMBER:
         return t("role.workspace-member.description");
-      case "projectOwner":
+      case PresetRoleType.PROJECT_OWNER:
         return t("role.project-owner.description");
-      case "projectDeveloper":
+      case PresetRoleType.PROJECT_DEVELOPER:
         return t("role.project-developer.description");
-      case "projectReleaser":
+      case PresetRoleType.PROJECT_RELEASER:
         return t("role.project-releaser.description");
-      case "sqlEditorUser":
+      case PresetRoleType.SQL_EDITOR_USER:
         return t("role.sql-editor-user.description");
-      case "projectExporter":
+      case PresetRoleType.PROJECT_EXPORTER:
         return t("role.project-exporter.description");
-      case "projectViewer":
+      case PresetRoleType.PROJECT_VIEWER:
         return t("role.project-viewer.description");
       default:
         return "UNKNOWN ROLE";
