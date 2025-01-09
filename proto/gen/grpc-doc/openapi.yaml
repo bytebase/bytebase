@@ -119,30 +119,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/anomalies:search:
-        post:
-            tags:
-                - AnomalyService
-            operationId: AnomalyService_SearchAnomalies
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/SearchAnomaliesRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/SearchAnomaliesResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/auditLogs:export:
         post:
             tags:
@@ -3500,6 +3476,37 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Project'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/anomalies:search:
+        post:
+            tags:
+                - AnomalyService
+            operationId: AnomalyService_SearchAnomalies
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SearchAnomaliesRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SearchAnomaliesResponse'
                 default:
                     description: Default error response
                     content:
@@ -13454,8 +13461,15 @@ components:
                 catalog:
                     $ref: '#/components/schemas/TableCatalog'
         SearchAnomaliesRequest:
+            required:
+                - parent
             type: object
             properties:
+                parent:
+                    type: string
+                    description: |-
+                        The parent resource whose anomalies are to be listed.
+                         Format: projects/{project}
                 filter:
                     type: string
                     description: |-
