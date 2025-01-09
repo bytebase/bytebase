@@ -3,9 +3,9 @@
     <NAlert type="info">
       <span>{{ $t("release.usage-description") }}</span>
     </NAlert>
-    <div class="w-full flex flex-row justify-end items-center">
-      <!-- Only show create button in dev mode -->
-      <router-link v-if="isDev" :to="`/${project.name}/releases/new`">
+    <!-- Only show create button in dev mode -->
+    <div v-if="isDev" class="w-full flex flex-row justify-end items-center">
+      <router-link :to="`/${project.name}/releases/new`">
         <NButton type="primary">
           <template #icon>
             <PlusIcon />
