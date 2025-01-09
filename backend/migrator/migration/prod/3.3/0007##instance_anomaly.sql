@@ -1,0 +1,1 @@
+DELETE FROM anomaly WHERE type = 'bb.anomaly.instance.connection' OR type = 'bb.anomaly.instance.migration-schema';
