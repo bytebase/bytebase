@@ -122,13 +122,11 @@ export const supportedEngineV1List = () => {
     Engine.DYNAMODB,
     Engine.DATABRICKS,
     Engine.COCKROACHDB,
+    Engine.COSMOSDB,
   ];
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);
     engines.push(Engine.DORIS);
-  }
-  if (isDev()) {
-    engines.push(Engine.COSMOSDB);
   }
   return engines;
 };
