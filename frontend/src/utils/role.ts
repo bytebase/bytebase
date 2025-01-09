@@ -28,8 +28,6 @@ export const displayRoleTitle = (role: string): string => {
       return t("role.project-exporter.self");
     case PresetRoleType.PROJECT_VIEWER:
       return t("role.project-viewer.self");
-    default:
-      return "UNKNOWN ROLE";
   }
   // Use role.title if possible
   const item = useRoleStore().roleList.find((r) => r.name === role);
@@ -57,8 +55,6 @@ export const displayRoleDescription = (role: string): string => {
       return t("role.project-exporter.description");
     case PresetRoleType.PROJECT_VIEWER:
       return t("role.project-viewer.description");
-    default:
-      return "UNKNOWN ROLE";
   }
   // Use role.description if possible
   const item = useRoleStore().roleList.find((r) => r.name === role);
