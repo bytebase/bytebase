@@ -423,12 +423,16 @@ func executeMigrationDefault(ctx context.Context, driverCtx context.Context, sto
 
 // executeMigrationWithFunc executes the migration with custom migration function.
 func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, driver db.Driver, mi *db.MigrationInfo, mc *migrateContext, statement string, execFunc func(ctx context.Context, execStatement string) error, opts db.ExecuteOptions) (resErr error) {
+	// Phase 1 - Dump before migration.
+	// Check if versioned is already applied.
 	err := beginMigration(ctx, s, mi, mc, opts)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin migration")
 	}
 
 	defer func() {
+		// Phase 3 - Dump after migration.
+		// Insert revision for versioned.
 		if err := endMigration(ctx, s, mi, mc, resErr == nil /* isDone */); err != nil {
 			slog.Error("failed to end migration",
 				log.BBError(err),
@@ -436,7 +440,7 @@ func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 		}
 	}()
 
-	// Phase 3 - Executing migration
+	// Phase 2 - Executing migration.
 	// Branch migration type always has empty sql.
 	// Baseline migration type could has non-empty sql but will not execute.
 	// https://github.com/bytebase/bytebase/issues/394
