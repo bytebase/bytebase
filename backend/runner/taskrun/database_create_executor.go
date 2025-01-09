@@ -427,7 +427,7 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		mc.issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
 	}
 
-	if err := executeMigrationDefault(ctx, driverCtx, exec.store, exec.stateCfg, driver, mi, mc, schema, db.ExecuteOptions{}); err != nil {
+	if _, err := executeMigrationDefault(ctx, driverCtx, exec.store, exec.stateCfg, driver, mi, mc, schema, db.ExecuteOptions{}); err != nil {
 		return nil, "", "", err
 	}
 	return peerDatabase, schemaVersion, schema, nil
