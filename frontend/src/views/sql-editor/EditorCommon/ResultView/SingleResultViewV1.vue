@@ -287,7 +287,6 @@ const router = useRouter();
 const { dark, keyword } = useSQLResultViewContext();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
-const { exportData } = useExportData();
 const appFeatureDisallowExport = useAppFeature(
   "bb.feature.sql-editor.disallow-export-query-data"
 );
@@ -485,8 +484,8 @@ const handleExportBtnClick = async (
   const limit = options.limit ?? (admin ? 0 : editorStore.resultRowsLimit);
 
   try {
-    const content = await exportData({
-      database,
+    const content = await useExportData().exportData({
+      name: database,
       // TODO(lj): support data source id similar to queries.
       dataSourceId: "",
       format: options.format,
