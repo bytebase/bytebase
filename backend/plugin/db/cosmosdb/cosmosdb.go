@@ -104,9 +104,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		if err != nil {
 			return nil, status.Error(codes.Internal, errors.Wrapf(err, "failed to read more items").Error())
 		}
-		for _, bytes := range response.Items {
-			items = append(items, bytes)
-		}
+		items = append(items, response.Items...)
 	}
 
 	columns, columnTypeMap, columnIndexMap, valid := getColumns(items)
@@ -127,7 +125,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 			continue
 		}
 
-		var m map[string]interface{}
+		var m map[string]any
 		if err := json.Unmarshal(item, &m); err != nil {
 			return nil, status.Error(codes.Internal, errors.Wrapf(err, "failed to unmarshal JSON").Error())
 		}
@@ -152,12 +150,12 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 				}
 			case bool:
 				values[columnIndexMap[k]] = &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: v}}
-			case map[string]interface{}:
+			case map[string]any:
 				// Handle nested objects if necessary
 				// Convert to JSON string representation for example
 				jsonBytes, _ := json.Marshal(v)
 				values[columnIndexMap[k]] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(jsonBytes)}}
-			case []interface{}:
+			case []any:
 				// Handle arrays if necessary
 				// Convert to JSON string representation for example
 				jsonBytes, _ := json.Marshal(v)
@@ -186,7 +184,7 @@ func getColumns(rawItems [][]byte) (columnNames []string, columnTypes map[string
 	columnTypes = make(map[string]string)
 
 	for _, item := range rawItems {
-		var m map[string]interface{}
+		var m map[string]any
 		if err := json.Unmarshal(item, &m); err != nil {
 			slog.Warn("failed to unmarshal JSON", slog.String("item", string(item)), log.BBError(err))
 			return []string{"result"}, map[string]string{"result": "TEXT"}, map[string]int{"result": 0}, false
@@ -248,11 +246,11 @@ func getOrderedColumns(columnSet map[string]bool) ([]string, map[string]int) {
 	return columns, columnIndexMap
 }
 
-func getType(v interface{}) string {
+func getType(v any) string {
 	switch v.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		return "object"
-	case []interface{}:
+	case []any:
 		return "array"
 	case string:
 		return "string"
