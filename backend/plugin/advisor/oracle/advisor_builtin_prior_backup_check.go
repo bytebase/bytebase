@@ -7,17 +7,12 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
-	parser "github.com/bytebase/plsql-parser"
 	plsql "github.com/bytebase/plsql-parser"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-)
-
-const (
-	maxMixedDMLCount = 5
 )
 
 var (
@@ -168,9 +163,9 @@ func IsTopLevelStatement(ctx antlr.Tree) bool {
 		return true
 	}
 	switch ctx := ctx.(type) {
-	case *parser.Unit_statementContext, *parser.Sql_scriptContext:
+	case *plsql.Unit_statementContext, *plsql.Sql_scriptContext:
 		return true
-	case *parser.Data_manipulation_language_statementsContext:
+	case *plsql.Data_manipulation_language_statementsContext:
 		return IsTopLevelStatement(ctx.GetParent())
 	default:
 		return false
@@ -178,22 +173,22 @@ func IsTopLevelStatement(ctx antlr.Tree) bool {
 }
 
 type dmlExtractor struct {
-	*parser.BasePlSqlParserListener
+	*plsql.BasePlSqlParserListener
 
 	databaseName string
 	dmls         []statementInfo
 	offset       int
 }
 
-func (e *dmlExtractor) ExitUnit_statement(_ *parser.Unit_statementContext) {
+func (e *dmlExtractor) ExitUnit_statement(_ *plsql.Unit_statementContext) {
 	e.offset++
 }
 
-func (e *dmlExtractor) ExitSql_plus_command(_ *parser.Sql_plus_commandContext) {
+func (e *dmlExtractor) ExitSql_plus_command(_ *plsql.Sql_plus_commandContext) {
 	e.offset++
 }
 
-func (e *dmlExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext) {
+func (e *dmlExtractor) EnterDelete_statement(ctx *plsql.Delete_statementContext) {
 	if IsTopLevelStatement(ctx.GetParent()) {
 		extractor := &tableExtractor{
 			databaseName: e.databaseName,
@@ -210,7 +205,7 @@ func (e *dmlExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext
 	}
 }
 
-func (e *dmlExtractor) EnterUpdate_statement(ctx *parser.Update_statementContext) {
+func (e *dmlExtractor) EnterUpdate_statement(ctx *plsql.Update_statementContext) {
 	if IsTopLevelStatement(ctx.GetParent()) {
 		extractor := &tableExtractor{
 			databaseName: e.databaseName,
@@ -228,13 +223,13 @@ func (e *dmlExtractor) EnterUpdate_statement(ctx *parser.Update_statementContext
 }
 
 type tableExtractor struct {
-	*parser.BasePlSqlParserListener
+	*plsql.BasePlSqlParserListener
 
 	databaseName string
 	table        *TableReference
 }
 
-func (e *tableExtractor) EnterGeneral_table_ref(ctx *parser.General_table_refContext) {
+func (e *tableExtractor) EnterGeneral_table_ref(ctx *plsql.General_table_refContext) {
 	dmlTableExpr := ctx.Dml_table_expression_clause()
 	if dmlTableExpr != nil && dmlTableExpr.Tableview_name() != nil {
 		_, schemaName, tableName := plsqlparser.NormalizeTableViewName("", dmlTableExpr.Tableview_name())

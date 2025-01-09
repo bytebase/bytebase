@@ -232,17 +232,6 @@ func (e *suffixSelectClauseExtractor) EnterUpdate_statement(ctx *parser.Update_s
 	}
 }
 
-func getOffsetLength(total int) int {
-	length := 1
-	for {
-		if total < 10 {
-			return length
-		}
-		total /= 10
-		length++
-	}
-}
-
 func prepareTransformation(databaseName, statement string) ([]statementInfo, error) {
 	tree, _, err := ParsePLSQL(statement)
 	if err != nil {
