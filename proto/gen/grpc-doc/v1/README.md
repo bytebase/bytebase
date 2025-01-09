@@ -5495,10 +5495,6 @@ AnomalyType is the type of the anomaly.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | ANOMALY_TYPE_UNSPECIFIED | 0 | Unspecified anomaly type. |
-| INSTANCE_CONNECTION | 1 | Instance level anomaly.
-
-INSTANCE_CONNECTION is the anomaly type for instance connection, e.g. the instance is down. |
-| MIGRATION_SCHEMA | 2 | MIGRATION_SCHEMA is the anomaly type for migration schema, e.g. the migration schema in the instance is missing. |
 | DATABASE_CONNECTION | 5 | Database level anomaly.
 
 DATABASE_CONNECTION is the anomaly type for database connection, e.g. the database had been deleted. |

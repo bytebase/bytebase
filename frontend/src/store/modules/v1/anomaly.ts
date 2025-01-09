@@ -6,9 +6,7 @@ import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 
 const buildFilter = (find: FindAnomalyMessage): string => {
   const filter: string[] = [];
-  if (find.instance) {
-    filter.push(`resource = "${find.instance}".`);
-  } else if (find.database) {
+  if (find.database) {
     filter.push(`resource = "${find.database}".`);
   }
   if (find.type) {

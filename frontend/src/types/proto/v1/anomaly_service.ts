@@ -74,14 +74,6 @@ export enum Anomaly_AnomalyType {
   /** ANOMALY_TYPE_UNSPECIFIED - Unspecified anomaly type. */
   ANOMALY_TYPE_UNSPECIFIED = "ANOMALY_TYPE_UNSPECIFIED",
   /**
-   * INSTANCE_CONNECTION - Instance level anomaly.
-   *
-   * INSTANCE_CONNECTION is the anomaly type for instance connection, e.g. the instance is down.
-   */
-  INSTANCE_CONNECTION = "INSTANCE_CONNECTION",
-  /** MIGRATION_SCHEMA - MIGRATION_SCHEMA is the anomaly type for migration schema, e.g. the migration schema in the instance is missing. */
-  MIGRATION_SCHEMA = "MIGRATION_SCHEMA",
-  /**
    * DATABASE_CONNECTION - Database level anomaly.
    *
    * DATABASE_CONNECTION is the anomaly type for database connection, e.g. the database had been deleted.
@@ -100,12 +92,6 @@ export function anomaly_AnomalyTypeFromJSON(object: any): Anomaly_AnomalyType {
     case 0:
     case "ANOMALY_TYPE_UNSPECIFIED":
       return Anomaly_AnomalyType.ANOMALY_TYPE_UNSPECIFIED;
-    case 1:
-    case "INSTANCE_CONNECTION":
-      return Anomaly_AnomalyType.INSTANCE_CONNECTION;
-    case 2:
-    case "MIGRATION_SCHEMA":
-      return Anomaly_AnomalyType.MIGRATION_SCHEMA;
     case 5:
     case "DATABASE_CONNECTION":
       return Anomaly_AnomalyType.DATABASE_CONNECTION;
@@ -123,10 +109,6 @@ export function anomaly_AnomalyTypeToJSON(object: Anomaly_AnomalyType): string {
   switch (object) {
     case Anomaly_AnomalyType.ANOMALY_TYPE_UNSPECIFIED:
       return "ANOMALY_TYPE_UNSPECIFIED";
-    case Anomaly_AnomalyType.INSTANCE_CONNECTION:
-      return "INSTANCE_CONNECTION";
-    case Anomaly_AnomalyType.MIGRATION_SCHEMA:
-      return "MIGRATION_SCHEMA";
     case Anomaly_AnomalyType.DATABASE_CONNECTION:
       return "DATABASE_CONNECTION";
     case Anomaly_AnomalyType.DATABASE_SCHEMA_DRIFT:
@@ -141,10 +123,6 @@ export function anomaly_AnomalyTypeToNumber(object: Anomaly_AnomalyType): number
   switch (object) {
     case Anomaly_AnomalyType.ANOMALY_TYPE_UNSPECIFIED:
       return 0;
-    case Anomaly_AnomalyType.INSTANCE_CONNECTION:
-      return 1;
-    case Anomaly_AnomalyType.MIGRATION_SCHEMA:
-      return 2;
     case Anomaly_AnomalyType.DATABASE_CONNECTION:
       return 5;
     case Anomaly_AnomalyType.DATABASE_SCHEMA_DRIFT:
