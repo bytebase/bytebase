@@ -160,14 +160,14 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  project?: ComposedProject;
+  project: ComposedProject;
   selectedTab?: AnomalyTabId;
 }>();
 
 const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
 const environmentStore = useEnvironmentV1Store();
-const allAnomalyList = await useAnomalyV1Store().fetchAnomalyList({});
+const allAnomalyList = await useAnomalyV1Store().fetchAnomalyList(props.project?.name, {});
 const instanceList = useInstanceResourceList();
 const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
