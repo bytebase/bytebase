@@ -128,7 +128,7 @@ import { useI18n } from "vue-i18n";
 import type { BBTableSectionDataSource } from "@/bbkit/types";
 import {
   featureToRef,
-  useAnomalyV1List,
+  useAnomalyV1Store,
   useDatabaseV1Store,
   useEnvironmentV1List,
   useEnvironmentV1Store,
@@ -167,7 +167,7 @@ const props = defineProps<{
 const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
 const environmentStore = useEnvironmentV1Store();
-const allAnomalyList = useAnomalyV1List();
+const allAnomalyList = await useAnomalyV1Store().fetchAnomalyList({});
 const instanceList = useInstanceResourceList();
 const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
@@ -213,7 +213,7 @@ const databaseAnomalySectionList = computed(
     );
 
     for (const database of dbList) {
-      const anomalyListOfDatabase = allAnomalyList.value.filter(
+      const anomalyListOfDatabase = allAnomalyList.filter(
         (anomaly) => anomaly.resource === database.name
       );
 
@@ -255,7 +255,7 @@ const instanceAnomalySectionList = computed(
     );
 
     for (const instance of insList) {
-      const anomalyListOfInstance = allAnomalyList.value.filter((anomaly) =>
+      const anomalyListOfInstance = allAnomalyList.filter((anomaly) =>
         anomaly.resource.startsWith(instance.name)
       );
       if (anomalyListOfInstance.length > 0) {
@@ -279,7 +279,7 @@ const databaseAnomalySummaryList = computed((): Summary[] => {
     let criticalCount = 0;
     let highCount = 0;
     let mediumCount = 0;
-    const anomalyListOfDatabase = allAnomalyList.value.filter(
+    const anomalyListOfDatabase = allAnomalyList.filter(
       (anomaly) => anomaly.resource === database.name
     );
     for (const anomaly of anomalyListOfDatabase) {
@@ -327,7 +327,7 @@ const instanceAnomalySummaryList = computed((): Summary[] => {
     let criticalCount = 0;
     let highCount = 0;
     let mediumCount = 0;
-    const anomalyListOfInstance = allAnomalyList.value.filter(
+    const anomalyListOfInstance = allAnomalyList.filter(
       (anomaly) => anomaly.resource === instance.name
     );
     for (const anomaly of anomalyListOfInstance) {
