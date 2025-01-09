@@ -133,6 +133,12 @@ const commentLink = computed((): CommentLink => {
       case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
       case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER:
       case Task_Type.DATABASE_DATA_UPDATE: {
+        if (taskRun.changelog === "") {
+          return {
+            title: "",
+            link: "",
+          };
+        }
         const db = databaseForTask(issue.value, task);
         const link = `${databaseV1Url(
           db
