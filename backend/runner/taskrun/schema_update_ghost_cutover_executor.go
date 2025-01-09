@@ -151,7 +151,7 @@ func cutover(ctx context.Context, taskContext context.Context, stores *store.Sto
 		return true, nil, err
 	}
 	defer driver.Close(ctx)
-	_, _, err = executeMigrationWithFunc(ctx, ctx, stores, driver, mi, mc, statement, execFunc, db.ExecuteOptions{})
+	err = executeMigrationWithFunc(ctx, ctx, stores, driver, mi, mc, statement, execFunc, db.ExecuteOptions{})
 	if err != nil {
 		return true, nil, err
 	}

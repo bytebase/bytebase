@@ -1,7 +1,6 @@
 package taskrun
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
@@ -88,6 +87,7 @@ type migrateContext struct {
 	}
 
 	// mutable
+	// changelog uid
 	changelog int64
 }
 
@@ -286,19 +286,19 @@ func doMigration(
 	statement string,
 	mi *db.MigrationInfo,
 	mc *migrateContext,
-) (string, string, error) {
+) error {
 	instance := mc.instance
 	database := mc.database
 
 	useDBOwner, err := getUseDatabaseOwner(ctx, stores, instance, database)
 	if err != nil {
-		return "", "", errors.Wrapf(err, "failed to check if we should use database owner")
+		return errors.Wrapf(err, "failed to check if we should use database owner")
 	}
 	driver, err := mc.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
 		UseDatabaseOwner: useDBOwner,
 	})
 	if err != nil {
-		return "", "", errors.Wrapf(err, "failed to get driver connection for instance %q", instance.ResourceID)
+		return errors.Wrapf(err, "failed to get driver connection for instance %q", instance.ResourceID)
 	}
 	defer driver.Close(ctx)
 
@@ -311,7 +311,6 @@ func doMigration(
 		slog.String("statement", statementRecord),
 	)
 
-	var migrationID string
 	opts := db.ExecuteOptions{}
 
 	opts.SetConnectionID = func(id string) {
@@ -337,12 +336,12 @@ func doMigration(
 		}
 	}
 
-	migrationID, schema, err := executeMigrationDefault(ctx, driverCtx, stores, stateCfg, driver, mi, mc, statement, opts)
+	err = executeMigrationDefault(ctx, driverCtx, stores, stateCfg, driver, mi, mc, statement, opts)
 	if err != nil {
-		return "", "", err
+		return err
 	}
 
-	return migrationID, schema, nil
+	return nil
 }
 
 func postMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInfo, mc *migrateContext) (bool, *storepb.TaskRunResult, error) {
@@ -403,7 +402,7 @@ func runMigration(ctx context.Context, driverCtx context.Context, store *store.S
 		return true, nil, err
 	}
 
-	_, _, err = doMigration(ctx, driverCtx, store, stateCfg, profile, statement, mi, mc)
+	err = doMigration(ctx, driverCtx, store, stateCfg, profile, statement, mi, mc)
 	if err != nil {
 		return true, nil, err
 	}
@@ -411,28 +410,28 @@ func runMigration(ctx context.Context, driverCtx context.Context, store *store.S
 }
 
 // executeMigrationDefault executes migration.
-func executeMigrationDefault(ctx context.Context, driverCtx context.Context, store *store.Store, _ *state.State, driver db.Driver, mi *db.MigrationInfo, mc *migrateContext, statement string, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
+func executeMigrationDefault(ctx context.Context, driverCtx context.Context, store *store.Store, _ *state.State, driver db.Driver, mi *db.MigrationInfo, mc *migrateContext, statement string, opts db.ExecuteOptions) (resErr error) {
 	execFunc := func(ctx context.Context, execStatement string) error {
 		if _, err := driver.Execute(ctx, execStatement, opts); err != nil {
 			return err
 		}
 		return nil
 	}
-	return executeMigrationWithFunc(ctx, driverCtx, store, driver, mi, mc, statement, execFunc, opts)
+	err := executeMigrationWithFunc(ctx, driverCtx, store, driver, mi, mc, statement, execFunc, opts)
+	return err
 }
 
 // executeMigrationWithFunc executes the migration with custom migration function.
-func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, driver db.Driver, mi *db.MigrationInfo, mc *migrateContext, statement string, execFunc func(ctx context.Context, execStatement string) error, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
-	insertedID, err := beginMigration(ctx, s, mi, mc, opts)
+func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, driver db.Driver, mi *db.MigrationInfo, mc *migrateContext, statement string, execFunc func(ctx context.Context, execStatement string) error, opts db.ExecuteOptions) (resErr error) {
+	err := beginMigration(ctx, s, mi, mc, opts)
 	if err != nil {
-		return "", "", errors.Wrapf(err, "failed to begin migration")
+		return errors.Wrapf(err, "failed to begin migration")
 	}
 
 	defer func() {
 		if err := endMigration(ctx, s, mi, mc, resErr == nil /* isDone */); err != nil {
-			slog.Error("Failed to update migration history record",
+			slog.Error("failed to end migration",
 				log.BBError(err),
-				slog.String("migration_id", migrationHistoryID),
 			)
 		}
 	}()
@@ -453,10 +452,10 @@ func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 				UID: mi.DatabaseID,
 			})
 			if err != nil {
-				return "", "", err
+				return err
 			}
 			if database == nil {
-				return "", "", errors.Errorf("database %d not found", *mi.DatabaseID)
+				return errors.Errorf("database %d not found", *mi.DatabaseID)
 			}
 			materials := utils.GetSecretMapFromDatabaseMessage(database)
 			// To avoid leak the rendered statement, the error message should use the original statement and not the rendered statement.
@@ -464,43 +463,15 @@ func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 		}
 
 		if err := execFunc(driverCtx, renderedStatement); err != nil {
-			return "", "", err
+			return err
 		}
 	}
 
-	// Phase 4 - Dump the schema after migration
-	var afterSchemaBuf bytes.Buffer
-	if mi.Type.NeedDump() {
-		opts.LogDatabaseSyncStart()
-		// Use new driver to sync the schema to avoid the session state change, such as SET ROLE in PostgreSQL.
-		syncDriver, err := mc.dbFactory.GetAdminDatabaseDriver(ctx, mc.instance, mc.database, db.ConnectionContext{})
-		if err != nil {
-			return "", "", errors.Wrapf(err, "failed to get driver connection for instance %q", mc.instance.ResourceID)
-		}
-		defer syncDriver.Close(ctx)
-		dbSchema, err := syncDriver.SyncDBSchema(ctx)
-		if err != nil {
-			opts.LogDatabaseSyncEnd(err.Error())
-			return "", "", errors.Wrapf(err, "failed to sync database schema")
-		}
-		opts.LogDatabaseSyncEnd("")
-		opts.LogSchemaDumpStart()
-		if err := driver.Dump(ctx, &afterSchemaBuf, dbSchema); err != nil {
-			// We will ignore the dump error if the database is dropped.
-			if strings.Contains(err.Error(), "not found") {
-				return insertedID, "", nil
-			}
-			opts.LogSchemaDumpEnd(err.Error())
-			return "", "", err
-		}
-		opts.LogSchemaDumpEnd("")
-	}
-
-	return insertedID, afterSchemaBuf.String(), nil
+	return nil
 }
 
 // beginMigration checks before executing migration and inserts a migration history record with pending status.
-func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInfo, mc *migrateContext, opts db.ExecuteOptions) (string, error) {
+func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInfo, mc *migrateContext, opts db.ExecuteOptions) error {
 	// list revisions and see if it has been applied
 	// we can do this because
 	// versioned migrations are executed one by one
@@ -515,10 +486,10 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 			Version:     &mc.version,
 		})
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to list revisions")
+			return errors.Wrapf(err, "failed to list revisions")
 		}
 		if len(list) > 0 {
-			return "", errors.Errorf("database %q has already applied version %s, hint: please check the database revisions and the version", mc.database.DatabaseName, mc.version)
+			return errors.Errorf("database %q has already applied version %s, hint: please check the database revisions and the version", mc.database.DatabaseName, mc.version)
 		}
 	}
 
@@ -529,7 +500,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 		syncHistoryPrev, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database, false)
 		if err != nil {
 			opts.LogDatabaseSyncEnd(err.Error())
-			return "", errors.Wrapf(err, "failed to sync database metadata and schema")
+			return errors.Wrapf(err, "failed to sync database metadata and schema")
 		}
 		opts.LogDatabaseSyncEnd("")
 		syncHistoryPrevUID = &syncHistoryPrev
@@ -551,11 +522,11 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 			Type:             convertTaskType(mc.task.Type),
 		}}, mi.CreatorID)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to create changelog")
+		return errors.Wrapf(err, "failed to create changelog")
 	}
 	mc.changelog = changelogUID
 
-	return "", nil
+	return nil
 }
 
 // endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
