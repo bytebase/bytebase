@@ -1235,7 +1235,7 @@
     "edit-sql-statement": "Editar declaración SQL",
     "upload-sql": "Cargar SQL",
     "upload-sql-as-sheet": "Cargar SQL como Hoja",
-    "statement-from-sheet-warning": "SQL está sobredimensionado y no se permite la edición en línea. \nPuede cargar un nuevo archivo SQL para sobrescribirlo.",
+    "statement-from-sheet-warning": "Debido a que el SQL es demasiado grande, se ha truncado para mostrarlo y la edición está deshabilitada. Puede cargar un nuevo archivo SQL para sobrescribirlo.",
     "overwrite-current-statement": "Sobrescribir la declaración SQL actual",
     "upload-sql-file-max-size-exceeded": "Se ha excedido el tamaño máximo del archivo ({size}).",
     "waiting-earliest-allowed-time": "Se ejecutará después de {time}",
@@ -3832,7 +3832,8 @@
       "succeed-to-create-release": "Tener éxito en crear el lanzamiento",
       "files-will-always-be-sorted-and-executed-in-version-order": "Los archivos siempre se ordenarán y ejecutarán en orden de versión.",
       "cannot-modify-files-after-created": "No es posible modificar archivos una vez creada la versión."
-    }
+    },
+    "usage-description": "La versión se utiliza principalmente en GitOps personalizado con integración de API."
   },
   "export-data": {
     "export-rows": "Exportar filas",

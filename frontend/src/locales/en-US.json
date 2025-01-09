@@ -1235,7 +1235,7 @@
     "edit-sql-statement": "Edit SQL statement",
     "upload-sql": "Upload SQL",
     "upload-sql-as-sheet": "Upload SQL as Sheet",
-    "statement-from-sheet-warning": "SQL is oversized and inline-editing is disallowed. You can upload a new SQL file to overwrite it.",
+    "statement-from-sheet-warning": "Due to the SQL being oversized, it has been truncated to display, and editing is disabled. You can upload a new SQL file to overwrite it.",
     "overwrite-current-statement": "Overwrite current SQL statement",
     "upload-sql-file-max-size-exceeded": "Max file size ({size}) exceeded.",
     "waiting-earliest-allowed-time": "Will run after {time}",
@@ -3832,7 +3832,8 @@
       "succeed-to-create-release": "Succeed to create release",
       "files-will-always-be-sorted-and-executed-in-version-order": "The files will always be sorted and executed in version order.",
       "cannot-modify-files-after-created": "You cannot modify files after the release is created."
-    }
+    },
+    "usage-description": "The release is mainly used in custom GitOps with API integration."
   },
   "export-data": {
     "export-rows": "Export rows",
