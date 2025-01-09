@@ -30,7 +30,7 @@ export const displayRoleTitle = (role: string): string => {
       case "projectViewer":
         return t("role.project-viewer.self");
       default:
-        return "";
+        return "UNKNOWN ROLE";
     }
   }
   // Use role.title if possible
@@ -61,7 +61,7 @@ export const displayRoleDescription = (role: string): string => {
       case "projectViewer":
         return t("role.project-viewer.description");
       default:
-        return "";
+        return "UNKNOWN ROLE";
     }
   }
   // Use role.description if possible
