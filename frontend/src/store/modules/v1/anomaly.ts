@@ -15,8 +15,9 @@ const buildFilter = (find: FindAnomalyMessage): string => {
 
 export const useAnomalyV1Store = defineStore("anomaly_v1", {
   actions: {
-    async fetchAnomalyList(find: FindAnomalyMessage) {
+    async fetchAnomalyList(project: string, find: FindAnomalyMessage) {
       const resp = await anomalyServiceClient.searchAnomalies({
+        parent: project,
         filter: buildFilter(find),
       });
       return resp.anomalies;
