@@ -168,12 +168,22 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 			case map[string]any:
 				// Handle nested objects if necessary
 				// Convert to JSON string representation for example
-				jsonBytes, _ := json.Marshal(v)
+				jsonBytes, err := json.Marshal(v)
+				if err != nil {
+					slog.Warn("failed to marshal JSON", slog.Any("object", v), log.BBError(err))
+					illegal = true
+					break
+				}
 				values[columnIndexMap[k]] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(jsonBytes)}}
 			case []any:
 				// Handle arrays if necessary
 				// Convert to JSON string representation for example
-				jsonBytes, _ := json.Marshal(v)
+				jsonBytes, err := json.Marshal(v)
+				if err != nil {
+					slog.Warn("failed to marshal JSON", slog.Any("array", v), log.BBError(err))
+					illegal = true
+					break
+				}
 				values[columnIndexMap[k]] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(jsonBytes)}}
 			case nil:
 				values[columnIndexMap[k]] = &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{}}
@@ -187,10 +197,30 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 				}
 			}
 		}
+		if illegal {
+			break
+		}
 		result.Rows = append(result.Rows, &v1pb.QueryRow{
 			Values: values,
 		})
 	}
+
+	if illegal {
+		var rows []*v1pb.QueryRow
+		for _, item := range items {
+			rows = append(rows, &v1pb.QueryRow{
+				Values: []*v1pb.RowValue{
+					{Kind: &v1pb.RowValue_StringValue{StringValue: string(item)}},
+				},
+			})
+		}
+		return []*v1pb.QueryResult{
+			{
+				Rows: rows,
+			},
+		}, nil
+	}
+
 	return []*v1pb.QueryResult{result}, nil
 }
 
