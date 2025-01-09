@@ -11,25 +11,23 @@ export const extractRoleResourceName = (resourceId: string): string => {
 export const displayRoleTitle = (role: string): string => {
   if (PRESET_ROLES.includes(role)) {
     switch (extractRoleResourceName(role)) {
-      case "workspace-admin":
+      case "workspaceAdmin":
         return t("role.workspace-admin.self");
-      case "workspace-dba":
+      case "workspaceDBA":
         return t("role.workspace-dba.self");
-      case "workspace-member":
+      case "workspaceMember":
         return t("role.workspace-member.self");
-      case "project-owner":
+      case "projectOwner":
         return t("role.project-owner.self");
-      case "project-developer":
+      case "projectDeveloper":
         return t("role.project-developer.self");
-      case "project-releaser":
+      case "projectReleaser":
         return t("role.project-releaser.self");
-      case "project-querier":
-        return t("role.project-querier.self");
-      case "sql-editor-user":
+      case "sqlEditorUser":
         return t("role.sql-editor-user.self");
-      case "project-exporter":
+      case "projectExporter":
         return t("role.project-exporter.self");
-      case "project-viewer":
+      case "projectViewer":
         return t("role.project-viewer.self");
       default:
         return "";
@@ -44,25 +42,23 @@ export const displayRoleTitle = (role: string): string => {
 export const displayRoleDescription = (role: string): string => {
   if (PRESET_ROLES.includes(role)) {
     switch (extractRoleResourceName(role)) {
-      case "workspace-admin":
+      case "workspaceAdmin":
         return t("role.workspace-admin.description");
-      case "workspace-dba":
+      case "workspaceDBA":
         return t("role.workspace-dba.description");
-      case "workspace-member":
+      case "workspaceMember":
         return t("role.workspace-member.description");
-      case "project-owner":
+      case "projectOwner":
         return t("role.project-owner.description");
-      case "project-developer":
+      case "projectDeveloper":
         return t("role.project-developer.description");
-      case "project-releaser":
+      case "projectReleaser":
         return t("role.project-releaser.description");
-      case "project-querier":
-        return t("role.project-querier.description");
-      case "sql-editor-user":
+      case "sqlEditorUser":
         return t("role.sql-editor-user.description");
-      case "project-exporter":
+      case "projectExporter":
         return t("role.project-exporter.description");
-      case "project-viewer":
+      case "projectViewer":
         return t("role.project-viewer.description");
       default:
         return "";
