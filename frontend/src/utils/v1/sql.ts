@@ -109,6 +109,9 @@ export const generateSimpleSelectAllStatement = (
   if (engine === Engine.MONGODB) {
     return `db.${table}.find().limit(${limit});`;
   }
+  if (engine === Engine.COSMOSDB) {
+    return `SELECT * FROM ${table}`;
+  }
 
   const schemaAndTable = generateSchemaAndTableNameInSQL(engine, schema, table);
 
