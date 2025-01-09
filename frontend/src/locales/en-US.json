@@ -1235,7 +1235,7 @@
     "edit-sql-statement": "Edit SQL statement",
     "upload-sql": "Upload SQL",
     "upload-sql-as-sheet": "Upload SQL as Sheet",
-    "statement-from-sheet-warning": "SQL is oversized and inline-editing is disallowed. You can upload a new SQL file to overwrite it.",
+    "statement-from-sheet-warning": "Due to the SQL being oversized, it has been truncated to display, and editing is disabled. You can upload a new SQL file to overwrite it.",
     "overwrite-current-statement": "Overwrite current SQL statement",
     "upload-sql-file-max-size-exceeded": "Max file size ({size}) exceeded.",
     "waiting-earliest-allowed-time": "Will run after {time}",
