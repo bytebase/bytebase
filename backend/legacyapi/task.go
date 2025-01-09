@@ -52,6 +52,21 @@ const (
 	TaskDatabaseDataExport TaskType = "bb.task.database.data.export"
 )
 
+func (t TaskType) ChangeDatabasePayload() bool {
+	switch t {
+	case
+		TaskDatabaseDataUpdate,
+		TaskDatabaseSchemaUpdate,
+		TaskDatabaseSchemaUpdateSDL,
+		TaskDatabaseSchemaBaseline,
+		TaskDatabaseSchemaUpdateGhostSync:
+		return true
+	default:
+		return false
+	}
+
+}
+
 // Sequential returns whether the task should be executed sequentially.
 func (t TaskType) Sequential() bool {
 	switch t {
