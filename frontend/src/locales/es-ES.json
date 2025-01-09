@@ -3832,7 +3832,8 @@
       "succeed-to-create-release": "Tener éxito en crear el lanzamiento",
       "files-will-always-be-sorted-and-executed-in-version-order": "Los archivos siempre se ordenarán y ejecutarán en orden de versión.",
       "cannot-modify-files-after-created": "No es posible modificar archivos una vez creada la versión."
-    }
+    },
+    "usage-description": "La versión se utiliza principalmente en GitOps personalizado con integración de API."
   },
   "export-data": {
     "export-rows": "Exportar filas",
