@@ -15,7 +15,6 @@ import {
   type DataSource,
 } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { isDev } from "../util";
 
 export function instanceV1Name(instance: Instance | InstanceResource) {
   const store = useSubscriptionV1Store();
