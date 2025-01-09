@@ -1235,7 +1235,7 @@
     "edit-sql-statement": "SQL文を編集する",
     "upload-sql": "SQLのアップロード",
     "upload-sql-as-sheet": "SQLをワークシートにアップロード",
-    "statement-from-sheet-warning": "SQL は大きすぎて直接編集できません。新しい SQL ファイルをアップロードして上書きできます。",
+    "statement-from-sheet-warning": "SQL が大きすぎるため、表示時に切り捨てられ、編集が無効になっています。新しい SQL ファイルをアップロードして上書きすることができます。",
     "overwrite-current-statement": "現在の SQL ステートメントを上書きする",
     "upload-sql-file-max-size-exceeded": "アップロード ファイルのサイズは {size} を超えることはできません。",
     "waiting-earliest-allowed-time": "{time}の後に実行されます",
