@@ -13,6 +13,11 @@ export const protobufPackage = "bytebase.v1";
 
 export interface SearchAnomaliesRequest {
   /**
+   * The parent resource whose anomalies are to be listed.
+   * Format: projects/{project}
+   */
+  parent: string;
+  /**
    * filter is the filter to apply on the search anomaly request,
    * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
    * Only support filter by resource and type for now.
@@ -230,19 +235,22 @@ export interface Anomaly_DatabaseSchemaDriftDetail {
 }
 
 function createBaseSearchAnomaliesRequest(): SearchAnomaliesRequest {
-  return { filter: "", pageSize: 0, pageToken: "" };
+  return { parent: "", filter: "", pageSize: 0, pageToken: "" };
 }
 
 export const SearchAnomaliesRequest: MessageFns<SearchAnomaliesRequest> = {
   encode(message: SearchAnomaliesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
     if (message.filter !== "") {
-      writer.uint32(10).string(message.filter);
+      writer.uint32(18).string(message.filter);
     }
     if (message.pageSize !== 0) {
-      writer.uint32(16).int32(message.pageSize);
+      writer.uint32(24).int32(message.pageSize);
     }
     if (message.pageToken !== "") {
-      writer.uint32(26).string(message.pageToken);
+      writer.uint32(34).string(message.pageToken);
     }
     return writer;
   },
@@ -259,19 +267,27 @@ export const SearchAnomaliesRequest: MessageFns<SearchAnomaliesRequest> = {
             break;
           }
 
-          message.filter = reader.string();
+          message.parent = reader.string();
           continue;
         }
         case 2: {
-          if (tag !== 16) {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
             break;
           }
 
           message.pageSize = reader.int32();
           continue;
         }
-        case 3: {
-          if (tag !== 26) {
+        case 4: {
+          if (tag !== 34) {
             break;
           }
 
@@ -289,6 +305,7 @@ export const SearchAnomaliesRequest: MessageFns<SearchAnomaliesRequest> = {
 
   fromJSON(object: any): SearchAnomaliesRequest {
     return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
@@ -297,6 +314,9 @@ export const SearchAnomaliesRequest: MessageFns<SearchAnomaliesRequest> = {
 
   toJSON(message: SearchAnomaliesRequest): unknown {
     const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
     if (message.filter !== "") {
       obj.filter = message.filter;
     }
@@ -314,6 +334,7 @@ export const SearchAnomaliesRequest: MessageFns<SearchAnomaliesRequest> = {
   },
   fromPartial(object: DeepPartial<SearchAnomaliesRequest>): SearchAnomaliesRequest {
     const message = createBaseSearchAnomaliesRequest();
+    message.parent = object.parent ?? "";
     message.filter = object.filter ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
@@ -827,15 +848,35 @@ export const AnomalyServiceDefinition = {
           800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
-              25,
+              45,
               58,
               1,
               42,
               34,
-              20,
+              40,
               47,
               118,
               49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
               47,
               97,
               110,
