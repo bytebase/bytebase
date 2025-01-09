@@ -30,7 +30,8 @@ export const displayRoleTitle = (role: string): string => {
       case "projectViewer":
         return t("role.project-viewer.self");
       default:
-        return "";
+        // Should not reach here.
+        return "UNKNOWN ROLE";
     }
   }
   // Use role.title if possible
