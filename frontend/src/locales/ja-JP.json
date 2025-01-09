@@ -686,7 +686,7 @@
         },
         "data-export": {
           "enable": "データのエクスポートを有効にする",
-          "description": "ユーザーにデータのエクスポートを許可する"
+          "description": "ユーザーがSQLエディタでデータをエクスポートできるようにする"
         },
         "disallow-signup": {
           "enable": "セルフサービス登録を無効にする",

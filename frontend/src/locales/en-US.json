@@ -686,7 +686,7 @@
         },
         "data-export": {
           "enable": "Enable data export",
-          "description": "Allow users to export data"
+          "description": "Allow users to export data in SQL Editor"
         },
         "disallow-signup": {
           "enable": "Disallow self-service signup",

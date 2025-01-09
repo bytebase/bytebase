@@ -505,6 +505,12 @@ func executeWithTimeout(ctx context.Context, driver db.Driver, conn *sql.Conn, s
 
 // Export exports the SQL query result.
 func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*v1pb.ExportResponse, error) {
+	// Prehandle export from issue.
+	if strings.HasPrefix(request.Name, common.ProjectNamePrefix) {
+		return s.doExportFromIssue(ctx, request.Name)
+	}
+
+	// Check if data export is allowed.
 	exportDataPolicy, err := s.store.GetDataExportPolicy(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get data export policy: %v", err)
@@ -512,10 +518,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	if exportDataPolicy.Disable {
 		return nil, status.Errorf(codes.PermissionDenied, "data export is not allowed")
 	}
-	// Prehandle export from issue.
-	if strings.HasPrefix(request.Name, common.ProjectNamePrefix) {
-		return s.doExportFromIssue(ctx, request.Name)
-	}
+
 	// Prepare related message.
 	user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name)
 	if err != nil {
