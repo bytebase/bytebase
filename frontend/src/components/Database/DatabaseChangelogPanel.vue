@@ -135,7 +135,7 @@ import {
 } from "@/router/dashboard/projectV1";
 import { useChangelogStore } from "@/store";
 import type { ComposedDatabase, Table } from "@/types";
-import { DEFAULT_PROJECT_NAME } from "@/types";
+import { DEFAULT_PROJECT_NAME, getDateForPbTimestamp } from "@/types";
 import {
   Changelog_Status,
   Changelog_Type,
@@ -221,14 +221,17 @@ const handleExportChangelogs = async () => {
         continue;
       }
 
+      const filePathPrefix = dayjs(
+        getDateForPbTimestamp(changelog.createTime)
+      ).format("YYYY-MM-DDTHH-mm-ss");
       if (
         changelog.type === Changelog_Type.MIGRATE ||
         changelog.type === Changelog_Type.MIGRATE_SDL ||
         changelog.type === Changelog_Type.DATA
       ) {
-        zip.file(`${changelog.version}.sql`, changelog.statement);
+        zip.file(`${filePathPrefix}.sql`, changelog.statement);
       } else if (changelog.type === Changelog_Type.BASELINE) {
-        zip.file(`${changelog.version}_baseline.sql`, changelog.schema);
+        zip.file(`${filePathPrefix}_baseline.sql`, changelog.schema);
       } else {
         // NOT SUPPORTED.
       }
