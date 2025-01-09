@@ -93,18 +93,39 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 	if queryContext.Container == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "container argument is required for CosmosDB")
 	}
+
 	container, err := driver.client.NewContainer(driver.databaseName, queryContext.Container)
 	if err != nil {
 		return nil, status.Error(codes.Internal, errors.Wrapf(err, "failed to create container").Error())
 	}
-	pager := container.NewCrossPartitionQueryItemsPager(statement, nil)
+
+	var queryOption *azcosmos.QueryOptions
+	// TODO(zp): Rewrite limit while parser supported.
+	if queryContext.Limit > 0 && queryContext.Limit < 1000 {
+		// Set the page size to limit to avoid large page size.
+		queryOption = &azcosmos.QueryOptions{
+			PageSizeHint: int32(queryContext.Limit),
+		}
+	}
+
+	pager := container.NewCrossPartitionQueryItemsPager(statement, queryOption)
 	var items [][]byte
 	for pager.More() {
 		response, err := pager.NextPage(ctx)
 		if err != nil {
 			return nil, status.Error(codes.Internal, errors.Wrapf(err, "failed to read more items").Error())
 		}
-		items = append(items, response.Items...)
+		var stop bool
+		for _, item := range response.Items {
+			items = append(items, item)
+			if queryContext.Limit > 0 && len(items) >= queryContext.Limit {
+				stop = true
+				break
+			}
+		}
+		if stop {
+			break
+		}
 	}
 
 	var unmarshalledItems []map[string]any
