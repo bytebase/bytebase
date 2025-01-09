@@ -305,9 +305,10 @@ const disableSchemaEditor = useAppFeature(
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 onMounted(async () => {
-  anomalyList.value = await useAnomalyV1Store().fetchAnomalyList({
-    database: database.value.name,
-  });
+  anomalyList.value = await useAnomalyV1Store().fetchAnomalyList(
+    database.value.project,
+    {database: database.value.name}
+  );
 });
 
 watch(
@@ -398,9 +399,10 @@ const handleGotoSQLEditorFailed = () => {
 };
 
 const updateAnomalyList = async () => {
-  anomalyList.value = await useAnomalyV1Store().fetchAnomalyList({
-    database: database.value.name,
-  });
+  anomalyList.value = await useAnomalyV1Store().fetchAnomalyList(
+    database.value.project,
+    {database: database.value.name}
+  );
 };
 
 const environment = computed(() => {
