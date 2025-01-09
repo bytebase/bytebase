@@ -54,7 +54,7 @@
 </template>
 
 <script lang="ts" setup>
-import { FileSearchIcon, FileDownIcon } from "lucide-vue-next";
+import { FileSearchIcon } from "lucide-vue-next";
 import { NButton, NEllipsis, NSpin } from "naive-ui";
 import type { ClientError } from "nice-grpc-web";
 import { computed, watchEffect, h, reactive } from "vue";
@@ -77,7 +77,6 @@ import {
   useProjectV1Store,
   pushNotification,
   usePermissionStore,
-  usePolicyByParentAndType,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
@@ -87,7 +86,6 @@ import {
   PresetRoleType,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { hasProjectPermissionV2 } from "@/utils";
 
 interface LocalState {
@@ -148,13 +146,6 @@ const project = computed(() =>
   projectStore.getProjectByName(projectName.value)
 );
 
-const exportDataPolicy = usePolicyByParentAndType(
-  computed(() => ({
-    parentPath: "",
-    policyType: PolicyType.DATA_EXPORT,
-  }))
-);
-
 const initialized = computed(
   () => project.value.name !== UNKNOWN_PROJECT_NAME && databaseListReady.value
 );
@@ -209,14 +200,6 @@ const quickActionListForDatabase = computed(() => {
       icon: () => h(FileSearchIcon),
       action: () => (state.requestRole = PresetRoleType.SQL_EDITOR_USER),
     });
-
-    if (!exportDataPolicy.value?.exportDataPolicy?.disable) {
-      actions.push({
-        title: t("custom-approval.risk-rule.risk.namespace.request_export"),
-        icon: () => h(FileDownIcon),
-        action: () => (state.requestRole = PresetRoleType.PROJECT_EXPORTER),
-      });
-    }
   }
 
   return actions;
