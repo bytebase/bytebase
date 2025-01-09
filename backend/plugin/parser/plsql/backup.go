@@ -128,7 +128,7 @@ func generateSQLForTable(ctx base.TransformContext, statementInfoList []statemen
 	}
 	for i, info := range statementInfoList {
 		if i != 0 {
-			if _, err := buf.WriteString("\n  UNION DISTINCT\n"); err != nil {
+			if _, err := buf.WriteString("\n  UNION\n"); err != nil {
 				return nil, errors.Wrap(err, "failed to write to buffer")
 			}
 		}

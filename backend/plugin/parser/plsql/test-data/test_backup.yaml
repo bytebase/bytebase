@@ -13,9 +13,9 @@
     - statement: |-
         CREATE TABLE "backupDB"."rollback_TEST11_DB" AS
           SELECT "TEST11".* FROM test11 WHERE test11.b1 = 2
-          UNION DISTINCT
+          UNION
           SELECT "TEST11".* FROM test11 WHERE test11.b1 = 4
-          UNION DISTINCT
+          UNION
           SELECT "TEST11".* FROM test11 WHERE test11.b1 = 6;
       sourceschema: DB
       sourcetablename: TEST11
@@ -29,17 +29,17 @@
     - statement: |-
         CREATE TABLE "backupDB"."rollback_TEST_DB" AS
           SELECT "TEST".* FROM test WHERE test.b1 = 1
-          UNION DISTINCT
+          UNION
           SELECT "TEST".* FROM test WHERE test.b1 = 2
-          UNION DISTINCT
+          UNION
           SELECT "TEST".* FROM test WHERE test.b1 = 3
-          UNION DISTINCT
+          UNION
           SELECT "TEST".* FROM test WHERE test.b1 = 4
-          UNION DISTINCT
+          UNION
           SELECT "TEST".* FROM test WHERE test.b1 = 5
-          UNION DISTINCT
+          UNION
           SELECT "TEST".* FROM test WHERE test.b1 = 6
-          UNION DISTINCT
+          UNION
           SELECT "TEST".* FROM test WHERE test.b1 = 7;
       sourceschema: DB
       sourcetablename: TEST
@@ -113,7 +113,7 @@
     - statement: |-
         CREATE TABLE "backupDB"."rollback_TEST_DB" AS
           SELECT "T".* FROM test  t WHERE t.c1 = 1
-          UNION DISTINCT
+          UNION
           SELECT "T".* FROM test  t WHERE t.c1 = 5;
       sourceschema: DB
       sourcetablename: TEST
@@ -215,7 +215,7 @@
     - statement: |-
         CREATE TABLE "backupDB"."rollback_TEST_DB" AS
           SELECT "TEST".* FROM test WHERE test.c1 = 1
-          UNION DISTINCT
+          UNION
           SELECT "TEST".* FROM test WHERE test.c1 = 5;
       sourceschema: DB
       sourcetablename: TEST
