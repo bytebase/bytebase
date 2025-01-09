@@ -417,12 +417,12 @@ func executeMigrationDefault(ctx context.Context, driverCtx context.Context, sto
 		}
 		return nil
 	}
-	err := executeMigrationWithFunc(ctx, driverCtx, store, driver, mi, mc, statement, execFunc, opts)
+	err := executeMigrationWithFunc(ctx, driverCtx, store, mi, mc, statement, execFunc, opts)
 	return err
 }
 
 // executeMigrationWithFunc executes the migration with custom migration function.
-func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, driver db.Driver, mi *db.MigrationInfo, mc *migrateContext, statement string, execFunc func(ctx context.Context, execStatement string) error, opts db.ExecuteOptions) (resErr error) {
+func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, mi *db.MigrationInfo, mc *migrateContext, statement string, execFunc func(ctx context.Context, execStatement string) error, opts db.ExecuteOptions) (resErr error) {
 	// Phase 1 - Dump before migration.
 	// Check if versioned is already applied.
 	err := beginMigration(ctx, s, mi, mc, opts)
