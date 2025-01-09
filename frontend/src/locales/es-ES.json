@@ -686,7 +686,7 @@
         },
         "data-export": {
           "enable": "Habilitar la exportación de datos",
-          "description": "Permitir a los usuarios exportar datos"
+          "description": "Permitir a los usuarios exportar datos en el Editor SQL"
         },
         "disallow-signup": {
           "enable": "Deshabilitar el registro de autoservicio",

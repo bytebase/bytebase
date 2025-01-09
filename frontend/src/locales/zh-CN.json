@@ -686,7 +686,7 @@
         },
         "data-export": {
           "enable": "启用数据导出",
-          "description": "允许用户导出数据"
+          "description": "允许用户在 SQL 编辑器里导出数据"
         },
         "disallow-signup": {
           "enable": "禁用自助注册",
