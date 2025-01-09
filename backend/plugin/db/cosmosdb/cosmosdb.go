@@ -107,7 +107,35 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		items = append(items, response.Items...)
 	}
 
-	columns, columnTypeMap, columnIndexMap, valid := getColumns(items)
+	var unmarshalledItems []map[string]any
+	var illegal bool
+	for _, item := range items {
+		var m map[string]any
+		if err := json.Unmarshal(item, &m); err != nil {
+			slog.Warn("failed to unmarshal JSON", slog.String("item", string(item)), log.BBError(err))
+			illegal = true
+			break
+		}
+		unmarshalledItems = append(unmarshalledItems, m)
+	}
+
+	if illegal {
+		var rows []*v1pb.QueryRow
+		for _, item := range items {
+			rows = append(rows, &v1pb.QueryRow{
+				Values: []*v1pb.RowValue{
+					{Kind: &v1pb.RowValue_StringValue{StringValue: string(item)}},
+				},
+			})
+		}
+		return []*v1pb.QueryResult{
+			{
+				Rows: rows,
+			},
+		}, nil
+	}
+
+	columns, columnTypeMap, columnIndexMap := getColumns(unmarshalledItems)
 	result := &v1pb.QueryResult{
 		ColumnNames: columns,
 	}
@@ -115,20 +143,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		result.ColumnTypeNames = append(result.ColumnTypeNames, columnTypeMap[column])
 	}
 
-	for _, item := range items {
-		if !valid {
-			result.Rows = append(result.Rows, &v1pb.QueryRow{
-				Values: []*v1pb.RowValue{
-					{Kind: &v1pb.RowValue_StringValue{StringValue: string(item)}},
-				},
-			})
-			continue
-		}
-
-		var m map[string]any
-		if err := json.Unmarshal(item, &m); err != nil {
-			return nil, status.Error(codes.Internal, errors.Wrapf(err, "failed to unmarshal JSON").Error())
-		}
+	for _, m := range unmarshalledItems {
 		values := make([]*v1pb.RowValue, len(columns))
 		for k, v := range m {
 			switch v := v.(type) {
@@ -179,16 +194,11 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 	return []*v1pb.QueryResult{result}, nil
 }
 
-func getColumns(rawItems [][]byte) (columnNames []string, columnTypes map[string]string, columnIndexMap map[string]int, valid bool) {
+func getColumns(unmarshalledItems []map[string]any) (columnNames []string, columnTypes map[string]string, columnIndexMap map[string]int) {
 	columnNamesSet := make(map[string]bool)
 	columnTypes = make(map[string]string)
 
-	for _, item := range rawItems {
-		var m map[string]any
-		if err := json.Unmarshal(item, &m); err != nil {
-			slog.Warn("failed to unmarshal JSON", slog.String("item", string(item)), log.BBError(err))
-			return []string{"result"}, map[string]string{"result": "TEXT"}, map[string]int{"result": 0}, false
-		}
+	for _, m := range unmarshalledItems {
 		for k, v := range m {
 			if _, ok := columnNamesSet[k]; ok {
 				continue
@@ -198,7 +208,7 @@ func getColumns(rawItems [][]byte) (columnNames []string, columnTypes map[string
 		}
 	}
 	columnNames, columnIndexMap = getOrderedColumns(columnNamesSet)
-	return columnNames, columnTypes, columnIndexMap, true
+	return columnNames, columnTypes, columnIndexMap
 }
 
 func getOrderedColumns(columnSet map[string]bool) ([]string, map[string]int) {
