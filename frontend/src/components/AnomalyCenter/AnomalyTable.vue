@@ -143,10 +143,6 @@ const columnList = computed(() => [
 
 const typeName = (type: Anomaly_AnomalyType): string => {
   switch (type) {
-    case Anomaly_AnomalyType.INSTANCE_CONNECTION:
-      return t("anomaly.types.connection-failure");
-    case Anomaly_AnomalyType.MIGRATION_SCHEMA:
-      return t("anomaly.types.missing-migration-schema");
     case Anomaly_AnomalyType.DATABASE_CONNECTION:
       return t("anomaly.types.connection-failure");
     case Anomaly_AnomalyType.DATABASE_SCHEMA_DRIFT:
@@ -158,11 +154,6 @@ const typeName = (type: Anomaly_AnomalyType): string => {
 
 const detail = (anomaly: Anomaly): string => {
   switch (anomaly.type) {
-    case Anomaly_AnomalyType.INSTANCE_CONNECTION: {
-      return anomaly.instanceConnectionDetail?.detail ?? "";
-    }
-    case Anomaly_AnomalyType.MIGRATION_SCHEMA:
-      return "Please create migration schema on the instance first.";
     case Anomaly_AnomalyType.DATABASE_CONNECTION: {
       return anomaly.databaseConnectionDetail?.detail ?? "";
     }
@@ -176,32 +167,6 @@ const detail = (anomaly: Anomaly): string => {
 
 const action = (anomaly: Anomaly): Action => {
   switch (anomaly.type) {
-    case Anomaly_AnomalyType.INSTANCE_CONNECTION: {
-      return {
-        onClick: () => {
-          router.push({
-            name: INSTANCE_ROUTE_DETAIL,
-            params: {
-              instanceId: extractInstanceResourceName(anomaly.resource),
-            },
-          });
-        },
-        title: t("anomaly.action.check-instance"),
-      };
-    }
-    case Anomaly_AnomalyType.MIGRATION_SCHEMA: {
-      return {
-        onClick: () => {
-          router.push({
-            name: INSTANCE_ROUTE_DETAIL,
-            params: {
-              instanceId: extractInstanceResourceName(anomaly.resource),
-            },
-          });
-        },
-        title: t("anomaly.action.check-instance"),
-      };
-    }
     case Anomaly_AnomalyType.DATABASE_CONNECTION: {
       return {
         onClick: () => {

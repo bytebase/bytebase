@@ -8739,8 +8739,6 @@ components:
                 type:
                     enum:
                         - ANOMALY_TYPE_UNSPECIFIED
-                        - INSTANCE_CONNECTION
-                        - MIGRATION_SCHEMA
                         - DATABASE_CONNECTION
                         - DATABASE_SCHEMA_DRIFT
                     type: string

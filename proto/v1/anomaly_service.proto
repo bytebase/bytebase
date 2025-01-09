@@ -58,12 +58,6 @@ message Anomaly {
   enum AnomalyType {
     // Unspecified anomaly type.
     ANOMALY_TYPE_UNSPECIFIED = 0;
-    // Instance level anomaly.
-    //
-    // INSTANCE_CONNECTION is the anomaly type for instance connection, e.g. the instance is down.
-    INSTANCE_CONNECTION = 1;
-    // MIGRATION_SCHEMA is the anomaly type for migration schema, e.g. the migration schema in the instance is missing.
-    MIGRATION_SCHEMA = 2;
 
     // Database level anomaly.
     //
