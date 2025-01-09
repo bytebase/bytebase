@@ -54,7 +54,7 @@
 </template>
 
 <script lang="ts" setup>
-import { FileSearchIcon } from "lucide-vue-next";
+import { FileDownIcon, FileSearchIcon } from "lucide-vue-next";
 import { NButton, NEllipsis, NSpin } from "naive-ui";
 import type { ClientError } from "nice-grpc-web";
 import { computed, watchEffect, h, reactive } from "vue";
@@ -199,6 +199,11 @@ const quickActionListForDatabase = computed(() => {
       title: t("custom-approval.risk-rule.risk.namespace.request_query"),
       icon: () => h(FileSearchIcon),
       action: () => (state.requestRole = PresetRoleType.SQL_EDITOR_USER),
+    });
+    actions.push({
+      title: t("custom-approval.risk-rule.risk.namespace.request_export"),
+      icon: () => h(FileDownIcon),
+      action: () => (state.requestRole = PresetRoleType.PROJECT_EXPORTER),
     });
   }
 
