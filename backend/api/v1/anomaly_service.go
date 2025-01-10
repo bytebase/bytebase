@@ -42,8 +42,13 @@ func NewAnomalyService(store *store.Store) *AnomalyService {
 func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.SearchAnomaliesRequest) (*v1pb.
 	SearchAnomaliesResponse, error,
 ) {
+	projectID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 	rowStatus := api.Normal
 	find := &store.ListAnomalyMessage{
+		ProjectID: projectID,
 		RowStatus: &rowStatus,
 	}
 	if request.Filter != "" {
