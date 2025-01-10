@@ -34,9 +34,7 @@
           <span class="ml-2">{{ $t("sql-editor.rows-upper-limit") }}</span>
         </span>
       </div>
-      <div
-        class="flex justify-between items-center shrink-0 gap-x-3 overflow-y-hidden hide-scrollbar"
-      >
+      <div class="flex justify-between items-center shrink-0 gap-x-3">
         <div class="flex items-center">
           <NSwitch v-model:value="state.vertical" size="small" />
           <span class="ml-1 whitespace-nowrap text-sm text-gray-500">
@@ -125,7 +123,6 @@
           :offset="pageIndex * pageSize"
           :is-sensitive-column="isSensitiveColumn"
           :is-column-missing-sensitive="isColumnMissingSensitive"
-          :max-height="maxDataTableHeight"
         />
         <DataTable
           v-else
@@ -134,7 +131,6 @@
           :offset="pageIndex * pageSize"
           :is-sensitive-column="isSensitiveColumn"
           :is-column-missing-sensitive="isColumnMissingSensitive"
-          :max-height="maxDataTableHeight"
         />
       </template>
     </div>
@@ -274,7 +270,6 @@ const props = defineProps<{
   sqlResultSet: SQLResultSetV1;
   result: QueryResult;
   setIndex: number;
-  maxDataTableHeight?: number;
 }>();
 
 const state = reactive<LocalState>({
