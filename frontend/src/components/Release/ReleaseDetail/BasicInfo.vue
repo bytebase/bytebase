@@ -17,11 +17,11 @@
       <VCSIcon custom-class="h-4" :type="vcsSource.vcsType" />
       <EllipsisText>
         <a
-          :href="vcsSource.pullRequestUrl"
+          :href="vcsSource.url"
           target="_blank"
           class="normal-link !text-sm"
         >
-          {{ beautifyPullRequestUrl(vcsSource.pullRequestUrl) }}
+          {{ beautifyUrl(vcsSource.url) }}
         </a>
       </EllipsisText>
     </div>
@@ -43,15 +43,15 @@ const { release } = useReleaseDetailContext();
 
 const vcsSource = computed(() => release.value.vcsSource);
 
-const beautifyPullRequestUrl = (pullRequestUrl: string) => {
-  // Prevent URL parsing error when pullRequestUrl is invalid.
+const beautifyUrl = (url: string) => {
+  // Prevent URL parsing error when url is invalid.
   try {
-    const parsedUrl = new URL(pullRequestUrl);
+    const parsedUrl = new URL(url);
     return parsedUrl.pathname.length > 0
       ? parsedUrl.pathname.substring(1)
       : parsedUrl.pathname;
   } catch {
-    return pullRequestUrl;
+    return url;
   }
 };
 </script>
