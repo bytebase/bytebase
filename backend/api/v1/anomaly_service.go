@@ -130,14 +130,20 @@ func (s *AnomalyService) convertToAnomaly(ctx context.Context, anomaly *store.An
 		pbAnomaly.Resource = fmt.Sprintf("%s%s", common.InstanceNamePrefix, anomaly.InstanceID)
 	}
 
-	switch anomaly.Type {
-	case api.AnomalyDatabaseConnection:
-		pbAnomaly.Type = v1pb.Anomaly_DATABASE_CONNECTION
-	case api.AnomalyDatabaseSchemaDrift:
-		pbAnomaly.Type = v1pb.Anomaly_DATABASE_SCHEMA_DRIFT
-	}
+	pbAnomaly.Type = convertAnomalyType(anomaly.Type)
 	pbAnomaly.Severity = getSeverityFromAnomalyType(pbAnomaly.Type)
 	return pbAnomaly, nil
+}
+
+func convertAnomalyType(tp api.AnomalyType) v1pb.Anomaly_AnomalyType {
+	switch tp {
+	case api.AnomalyDatabaseConnection:
+		return v1pb.Anomaly_DATABASE_CONNECTION
+	case api.AnomalyDatabaseSchemaDrift:
+		return v1pb.Anomaly_DATABASE_SCHEMA_DRIFT
+	default:
+		return v1pb.Anomaly_ANOMALY_TYPE_UNSPECIFIED
+	}
 }
 
 func getSeverityFromAnomalyType(tp v1pb.Anomaly_AnomalyType) v1pb.Anomaly_AnomalySeverity {
