@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center flex-wrap gap-2 flex-1">
+  <div class="flex items-center flex-wrap sm:gap-2 gap-1 flex-1">
     <PlanCheckRunBadge
       v-for="group in planCheckRunsGroupByType"
       :key="group.type"

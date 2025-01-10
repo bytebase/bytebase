@@ -109,10 +109,4 @@ const retryFindingApprovalFlow = async () => {
     retrying.value = false;
   }
 };
-
-defineExpose({
-  shown: computed(() => {
-    return true; // Always shown
-  }),
-});
 </script>
