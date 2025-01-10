@@ -4065,7 +4065,7 @@ SlowQueryPolicy is the policy configuration for slow query.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | vcs_type | [VCSType](#bytebase-store-VCSType) |  |  |
-| pull_request_url | [string](#string) |  |  |
+| url | [string](#string) |  |  |
 
 
 

@@ -12747,8 +12747,9 @@ components:
                         - AZURE_DEVOPS
                     type: string
                     format: enum
-                pullRequestUrl:
+                url:
                     type: string
+                    description: The url link to the e.g. GitHub commit or pull request.
         RemoveDataSourceRequest:
             required:
                 - name
