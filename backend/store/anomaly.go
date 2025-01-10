@@ -204,7 +204,7 @@ func (s *Store) createAnomalyImplV2(ctx context.Context, tx *Tx, principalUID in
 		INSERT INTO anomaly (
 			creator_id,
 			updater_id,
-			project_id,
+			project,
 			instance_id,
 			database_id,
 			type,
