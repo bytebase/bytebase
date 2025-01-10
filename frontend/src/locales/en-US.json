@@ -2007,7 +2007,8 @@
         "title": "Are you sure to delete?",
         "content": "This will delete these applied revisions and the database schema will not be changed. This action cannot be undone."
       }
-    }
+    },
+    "not-found": "Cannot found the database"
   },
   "repository": {
     "our-webhook-link": "The webhook created by Bytebase can be found at {webhookLink}.",

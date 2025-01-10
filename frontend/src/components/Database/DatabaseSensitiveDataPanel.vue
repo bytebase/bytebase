@@ -12,7 +12,9 @@
         <NButton
           type="primary"
           :disabled="
-            state.pendingGrantAccessColumn.length === 0 || !hasPermission
+            state.pendingGrantAccessColumn.length === 0 ||
+            !hasPolicyPermission ||
+            !hasGetCatalogPermission
           "
           @click="onGrantAccessButtonClick"
         >
@@ -30,17 +32,16 @@
     </div>
 
     <SensitiveColumnTable
-      v-if="hasSensitiveDataFeature"
+      v-if="hasSensitiveDataFeature && hasGetCatalogPermission"
       :database="database"
       :row-clickable="false"
       :row-selectable="true"
-      :show-operation="hasPermission && hasSensitiveDataFeature"
+      :show-operation="hasUpdateCatalogPermission && hasSensitiveDataFeature"
       :column-list="filteredColumnList"
       :checked-column-index-list="checkedColumnIndexList"
       @delete="onColumnRemove"
       @checked:update="updateCheckedColumnList($event)"
     />
-
     <NoDataPlaceholder v-else />
   </div>
 
@@ -142,11 +143,24 @@ const state = reactive<LocalState>({
   showSensitiveColumnDrawer: false,
 });
 
-const hasPermission = computed(() => {
-  // TODO(ed): the permission and subscription check for db config update
+const hasUpdateCatalogPermission = computed(() => {
   return hasProjectPermissionV2(
     props.database.projectEntity,
-    "bb.databases.update"
+    "bb.databaseCatalogs.update"
+  );
+});
+
+const hasGetCatalogPermission = computed(() => {
+  return hasProjectPermissionV2(
+    props.database.projectEntity,
+    "bb.databaseCatalogs.get"
+  );
+});
+
+const hasPolicyPermission = computed(() => {
+  return hasProjectPermissionV2(
+    props.database.projectEntity,
+    "bb.policies.update"
   );
 });
 
