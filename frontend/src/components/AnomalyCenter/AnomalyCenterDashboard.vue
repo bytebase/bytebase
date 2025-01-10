@@ -123,7 +123,7 @@
 
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBTableSectionDataSource } from "@/bbkit/types";
 import {
@@ -167,13 +167,21 @@ const props = defineProps<{
 const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
 const environmentStore = useEnvironmentV1Store();
-const allAnomalyList = await useAnomalyV1Store().fetchAnomalyList(props.project?.name, {});
 const instanceList = useInstanceResourceList();
 const environmentList = useEnvironmentV1List(false /* !showDeleted */);
+const allAnomalyList = ref<Anomaly[]>([]);
 
 const state = reactive<LocalState>({
   selectedTab: props.selectedTab ?? "database",
   searchText: "",
+});
+
+onMounted(async () => {
+  // Prepare all anomaly list.
+  allAnomalyList.value = await useAnomalyV1Store().fetchAnomalyList(
+    props.project?.name,
+    {}
+  );
 });
 
 const databaseList = computed(() => {
@@ -213,7 +221,7 @@ const databaseAnomalySectionList = computed(
     );
 
     for (const database of dbList) {
-      const anomalyListOfDatabase = allAnomalyList.filter(
+      const anomalyListOfDatabase = allAnomalyList.value.filter(
         (anomaly) => anomaly.resource === database.name
       );
 
@@ -255,7 +263,7 @@ const instanceAnomalySectionList = computed(
     );
 
     for (const instance of insList) {
-      const anomalyListOfInstance = allAnomalyList.filter((anomaly) =>
+      const anomalyListOfInstance = allAnomalyList.value.filter((anomaly) =>
         anomaly.resource.startsWith(instance.name)
       );
       if (anomalyListOfInstance.length > 0) {
@@ -279,7 +287,7 @@ const databaseAnomalySummaryList = computed((): Summary[] => {
     let criticalCount = 0;
     let highCount = 0;
     let mediumCount = 0;
-    const anomalyListOfDatabase = allAnomalyList.filter(
+    const anomalyListOfDatabase = allAnomalyList.value.filter(
       (anomaly) => anomaly.resource === database.name
     );
     for (const anomaly of anomalyListOfDatabase) {
@@ -327,7 +335,7 @@ const instanceAnomalySummaryList = computed((): Summary[] => {
     let criticalCount = 0;
     let highCount = 0;
     let mediumCount = 0;
-    const anomalyListOfInstance = allAnomalyList.filter(
+    const anomalyListOfInstance = allAnomalyList.value.filter(
       (anomaly) => anomaly.resource === instance.name
     );
     for (const anomaly of anomalyListOfInstance) {
