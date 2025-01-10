@@ -24,6 +24,8 @@ export type Permission =
   | "bb.databaseSecrets.delete"
   | "bb.databaseSecrets.list"
   | "bb.databaseSecrets.update"
+  | "bb.databaseCatalogs.get"
+  | "bb.databaseCatalogs.update"
   | "bb.databases.adviseIndex"
   | "bb.databases.check"
   | "bb.databases.get"

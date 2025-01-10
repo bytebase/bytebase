@@ -2007,7 +2007,8 @@
         "title": "本当に削除しますか?",
         "content": "これにより、適用されたリビジョンが削除され、データベース スキーマは変更されません。このアクションは元に戻せません。"
       }
-    }
+    },
+    "not-found": "データベースが見つかりません"
   },
   "repository": {
     "our-webhook-link": "Bytebase によって作成された Webhook は、{webhookLink} にあります。",
