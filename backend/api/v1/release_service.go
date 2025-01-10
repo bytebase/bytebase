@@ -554,8 +554,8 @@ func convertToReleaseVcsSource(vs *storepb.ReleasePayload_VCSSource) *v1pb.Relea
 		return nil
 	}
 	return &v1pb.Release_VCSSource{
-		VcsType:        v1pb.VCSType(vs.VcsType),
-		PullRequestUrl: vs.PullRequestUrl,
+		VcsType: v1pb.VCSType(vs.VcsType),
+		Url:     vs.Url,
 	}
 }
 
@@ -597,8 +597,8 @@ func convertReleaseVcsSource(vs *v1pb.Release_VCSSource) *storepb.ReleasePayload
 		return nil
 	}
 	return &storepb.ReleasePayload_VCSSource{
-		VcsType:        storepb.VCSType(vs.VcsType),
-		PullRequestUrl: vs.PullRequestUrl,
+		VcsType: storepb.VCSType(vs.VcsType),
+		Url:     vs.Url,
 	}
 }
 
