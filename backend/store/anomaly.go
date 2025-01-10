@@ -66,6 +66,7 @@ func (s *Store) UpsertActiveAnomalyV2(ctx context.Context, principalUID int, ups
 
 	status := api.Normal
 	find := &ListAnomalyMessage{
+		ProjectID:   upsert.ProjectID,
 		RowStatus:   &status,
 		InstanceID:  &upsert.InstanceID,
 		DatabaseUID: upsert.DatabaseUID,
@@ -246,6 +247,7 @@ func (s *Store) createAnomalyImplV2(ctx context.Context, tx *Tx, principalUID in
 
 func (*Store) listAnomalyImplV2(ctx context.Context, tx *Tx, list *ListAnomalyMessage) ([]*AnomalyMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
+	where, args = append(where, fmt.Sprintf("anomaly.project = $%d", len(args)+1)), append(args, list.ProjectID)
 	if v := list.RowStatus; v != nil {
 		where, args = append(where, fmt.Sprintf("anomaly.row_status = $%d", len(args)+1)), append(args, *v)
 	}
