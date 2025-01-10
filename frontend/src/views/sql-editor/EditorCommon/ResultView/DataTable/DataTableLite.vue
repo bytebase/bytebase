@@ -76,11 +76,12 @@
           >
             <TableCell
               :table="table"
-              :value="cell.getValue() as RowValue"
+              :value="cell.getValue<RowValue>()"
               :keyword="keyword"
               :set-index="setIndex"
               :row-index="offset + rowIndex"
               :col-index="cellIndex"
+              :allow-select="true"
             />
           </td>
         </tr>
