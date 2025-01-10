@@ -1,3 +1,4 @@
+import { orderBy } from "lodash-es";
 import { ref, watch, type WatchCallback } from "vue";
 import {
   issueServiceClient,
@@ -63,12 +64,11 @@ export const composeIssue = async (
     }
     if (hasProjectPermissionV2(projectEntity, "bb.planCheckRuns.list")) {
       // Only show the latest plan check runs.
-      // TODO(steven): maybe we need to show all plan check runs on a separate page later.
       const { planCheckRuns } = await planServiceClient.listPlanCheckRuns({
         parent: issue.plan,
         latestOnly: true,
       });
-      issue.planCheckRunList = planCheckRuns;
+      issue.planCheckRunList = orderBy(planCheckRuns, "name", "desc");
     }
   }
   if (config.withRollout && issue.rollout) {
