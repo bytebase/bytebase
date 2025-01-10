@@ -1,0 +1,1 @@
+ALTER TABLE anomaly ADD COLUMN project TEXT;
