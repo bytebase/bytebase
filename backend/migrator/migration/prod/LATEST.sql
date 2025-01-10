@@ -741,6 +741,7 @@ CREATE TABLE anomaly (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    project TEXT NOT NULL,
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     -- NULL if it's an instance anomaly
     database_id INTEGER NULL REFERENCES db (id),

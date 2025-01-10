@@ -611,6 +611,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 					return errors.Wrapf(err, "failed to marshal payload")
 				} else {
 					if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
+						ProjectID:   database.ProjectID,
 						InstanceID:  instance.ResourceID,
 						DatabaseUID: &database.UID,
 						Type:        api.AnomalyDatabaseSchemaDrift,
@@ -691,6 +692,7 @@ func (s *Syncer) upsertDatabaseConnectionAnomaly(ctx context.Context, instance *
 				log.BBError(err))
 		} else {
 			if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
+				ProjectID:   database.ProjectID,
 				InstanceID:  instance.ResourceID,
 				DatabaseUID: &database.UID,
 				Type:        api.AnomalyDatabaseConnection,
