@@ -208,7 +208,8 @@ message Release {
 
   message VCSSource {
     VCSType vcs_type = 1;
-    string pull_request_url = 2;
+    // The url link to the e.g. GitHub commit or pull request.
+    string url = 2;
   }
 }
 

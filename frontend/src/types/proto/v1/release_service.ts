@@ -261,7 +261,8 @@ export function release_File_ChangeTypeToNumber(object: Release_File_ChangeType)
 
 export interface Release_VCSSource {
   vcsType: VCSType;
-  pullRequestUrl: string;
+  /** The url link to the e.g. GitHub commit or pull request. */
+  url: string;
 }
 
 function createBaseGetReleaseRequest(): GetReleaseRequest {
@@ -1381,7 +1382,7 @@ export const Release_File: MessageFns<Release_File> = {
 };
 
 function createBaseRelease_VCSSource(): Release_VCSSource {
-  return { vcsType: VCSType.VCS_TYPE_UNSPECIFIED, pullRequestUrl: "" };
+  return { vcsType: VCSType.VCS_TYPE_UNSPECIFIED, url: "" };
 }
 
 export const Release_VCSSource: MessageFns<Release_VCSSource> = {
@@ -1389,8 +1390,8 @@ export const Release_VCSSource: MessageFns<Release_VCSSource> = {
     if (message.vcsType !== VCSType.VCS_TYPE_UNSPECIFIED) {
       writer.uint32(8).int32(vCSTypeToNumber(message.vcsType));
     }
-    if (message.pullRequestUrl !== "") {
-      writer.uint32(18).string(message.pullRequestUrl);
+    if (message.url !== "") {
+      writer.uint32(18).string(message.url);
     }
     return writer;
   },
@@ -1415,7 +1416,7 @@ export const Release_VCSSource: MessageFns<Release_VCSSource> = {
             break;
           }
 
-          message.pullRequestUrl = reader.string();
+          message.url = reader.string();
           continue;
         }
       }
@@ -1430,7 +1431,7 @@ export const Release_VCSSource: MessageFns<Release_VCSSource> = {
   fromJSON(object: any): Release_VCSSource {
     return {
       vcsType: isSet(object.vcsType) ? vCSTypeFromJSON(object.vcsType) : VCSType.VCS_TYPE_UNSPECIFIED,
-      pullRequestUrl: isSet(object.pullRequestUrl) ? globalThis.String(object.pullRequestUrl) : "",
+      url: isSet(object.url) ? globalThis.String(object.url) : "",
     };
   },
 
@@ -1439,8 +1440,8 @@ export const Release_VCSSource: MessageFns<Release_VCSSource> = {
     if (message.vcsType !== VCSType.VCS_TYPE_UNSPECIFIED) {
       obj.vcsType = vCSTypeToJSON(message.vcsType);
     }
-    if (message.pullRequestUrl !== "") {
-      obj.pullRequestUrl = message.pullRequestUrl;
+    if (message.url !== "") {
+      obj.url = message.url;
     }
     return obj;
   },
@@ -1451,7 +1452,7 @@ export const Release_VCSSource: MessageFns<Release_VCSSource> = {
   fromPartial(object: DeepPartial<Release_VCSSource>): Release_VCSSource {
     const message = createBaseRelease_VCSSource();
     message.vcsType = object.vcsType ?? VCSType.VCS_TYPE_UNSPECIFIED;
-    message.pullRequestUrl = object.pullRequestUrl ?? "";
+    message.url = object.url ?? "";
     return message;
   },
 };

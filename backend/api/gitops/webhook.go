@@ -404,8 +404,8 @@ func (s *Service) createReleaseFromPRInfo(ctx context.Context, project *store.Pr
 		Title: fmt.Sprintf("release for PR %s", prInfo.title),
 		Files: files,
 		VcsSource: &v1pb.Release_VCSSource{
-			VcsType:        v1pb.VCSType(vcsProvider.Type),
-			PullRequestUrl: prInfo.url,
+			VcsType: v1pb.VCSType(vcsProvider.Type),
+			Url:     prInfo.url,
 		},
 	}
 
