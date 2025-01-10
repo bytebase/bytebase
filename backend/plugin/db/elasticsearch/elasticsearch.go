@@ -74,23 +74,24 @@ func (scheduler *AddressScheduler) GetNewAddress() string {
 }
 
 func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	addresse := fmt.Sprintf("%s:%s", config.Host, config.Port)
-	u, err := url.Parse(addresse)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse addresse: %v", addresse)
-	}
-	if u.Scheme == "" {
+	address := fmt.Sprintf("%s:%s", config.Host, config.Port)
+	u, err := url.Parse(address)
+	if err != nil || u.Host == "" {
 		protocol := "http"
 		if config.TLSConfig.UseSSL {
 			protocol = "https"
 		}
-		addresse = fmt.Sprintf("%s://%s", protocol, addresse)
+		address = fmt.Sprintf("%s://%s", protocol, address)
+
+		if _, err := url.Parse(address); err != nil {
+			return nil, errors.Wrapf(err, "failed to parse addresse: %v", address)
+		}
 	}
 
 	esConfig := elasticsearch.Config{
 		Username:  config.Username,
 		Password:  config.Password,
-		Addresses: []string{addresse},
+		Addresses: []string{address},
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost:   10,
 			ResponseHeaderTimeout: time.Second,
@@ -141,7 +142,7 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 		basicAuthClient: &BasicAuthClient{
 			httpClient: httpClient,
 			addrScheduler: &AddressScheduler{
-				addresses: []string{addresse},
+				addresses: []string{address},
 				count:     0,
 			},
 			basicAuthString: basicAuthString,
