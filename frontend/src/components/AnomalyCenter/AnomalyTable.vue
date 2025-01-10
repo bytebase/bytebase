@@ -50,41 +50,22 @@
       </BBTableCell>
     </template>
   </BBTable>
-  <BBModal
-    v-if="schemaDriftDetail"
-    class="overflow-auto"
-    :title="`'${schemaDriftDetail.database.databaseName}' schema drift - ${schemaDriftDetail.payload?.recordVersion} vs Actual`"
-    @close="dismissModal"
-  >
-    <div
-      class="space-y-4 flex flex-col overflow-hidden relative"
-      style="width: calc(100vw - 10rem); height: calc(100vh - 12rem)"
-    >
-      <DiffEditor
-        class="flex-1 w-full border rounded-md overflow-clip"
-        :original="schemaDriftDetail.payload?.expectedSchema"
-        :modified="schemaDriftDetail.payload?.actualSchema"
-        :readonly="true"
-      />
-      <div class="flex justify-end">
-        <NButton type="primary" @click.prevent="dismissModal">
-          {{ $t("common.close") }}
-        </NButton>
-      </div>
-    </div>
-  </BBModal>
+
+  <DatabaseSchemaDriftAnomalyModal
+    v-if="state.selectedAnomaly"
+    :anomaly="state.selectedAnomaly"
+    @close="state.selectedAnomaly = undefined"
+  />
 </template>
 
 <script lang="ts" setup>
-import { NButton } from "naive-ui";
 import type { PropType } from "vue";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBModal, BBTable, BBTableCell, BBTableHeaderCell } from "@/bbkit";
+import { BBTable, BBTableCell, BBTableHeaderCell } from "@/bbkit";
 import type { BBTableSectionDataSource } from "@/bbkit/types";
 import { INSTANCE_ROUTE_DETAIL } from "@/router/dashboard/instance";
-import { useDatabaseV1Store } from "@/store";
 import { getTimeForPbTimestamp } from "@/types";
 import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 import {
@@ -96,7 +77,7 @@ import {
   extractDatabaseResourceName,
   extractInstanceResourceName,
 } from "@/utils";
-import { DiffEditor } from "../MonacoEditor";
+import DatabaseSchemaDriftAnomalyModal from "./DatabaseSchemaDriftAnomalyModal.vue";
 
 type Action = {
   onClick: () => void;
@@ -155,13 +136,14 @@ const typeName = (type: Anomaly_AnomalyType): string => {
 const detail = (anomaly: Anomaly): string => {
   switch (anomaly.type) {
     case Anomaly_AnomalyType.DATABASE_CONNECTION: {
-      return anomaly.databaseConnectionDetail?.detail ?? "";
+      return `Failed to connect to the database.`;
     }
     case Anomaly_AnomalyType.DATABASE_SCHEMA_DRIFT: {
-      return `Recorded latest schema version ${anomaly.databaseSchemaDriftDetail?.recordVersion} is different from the actual schema.`;
+      return `Latest recorded schema is different from the actual schema.`;
     }
     default:
-      return "";
+      // Should not reach here.
+      return "UNKOWN ANOMALY DETAIL";
   }
 };
 
@@ -186,7 +168,6 @@ const action = (anomaly: Anomaly): Action => {
       return {
         onClick: () => {
           state.selectedAnomaly = anomaly;
-          useDatabaseV1Store().getOrFetchDatabaseByName(anomaly.resource);
         },
         title: t("anomaly.action.view-diff"),
       };
@@ -196,22 +177,5 @@ const action = (anomaly: Anomaly): Action => {
         title: "",
       };
   }
-};
-
-const schemaDriftDetail = computed(() => {
-  if (state.selectedAnomaly) {
-    const anomaly = state.selectedAnomaly;
-    const database = useDatabaseV1Store().getDatabaseByName(anomaly.resource);
-    return {
-      anomaly,
-      payload: anomaly.databaseSchemaDriftDetail,
-      database,
-    };
-  }
-  return undefined;
-});
-
-const dismissModal = () => {
-  state.selectedAnomaly = undefined;
 };
 </script>

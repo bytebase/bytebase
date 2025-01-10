@@ -13,7 +13,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -136,34 +135,20 @@ func (s *AnomalyService) convertToAnomaly(ctx context.Context, anomaly *store.An
 		pbAnomaly.Resource = fmt.Sprintf("%s%s", common.InstanceNamePrefix, anomaly.InstanceID)
 	}
 
-	switch anomaly.Type {
-	case api.AnomalyDatabaseConnection:
-		detail := &storepb.AnomalyConnectionPayload{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(anomaly.Payload), detail); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal database connection anomaly payload")
-		}
-		pbAnomaly.Type = v1pb.Anomaly_DATABASE_CONNECTION
-		pbAnomaly.Detail = &v1pb.Anomaly_DatabaseConnectionDetail_{
-			DatabaseConnectionDetail: &v1pb.Anomaly_DatabaseConnectionDetail{
-				Detail: detail.Detail,
-			},
-		}
-	case api.AnomalyDatabaseSchemaDrift:
-		detail := &storepb.AnomalyDatabaseSchemaDriftPayload{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(anomaly.Payload), detail); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal database schema drift anomaly payload")
-		}
-		pbAnomaly.Type = v1pb.Anomaly_DATABASE_SCHEMA_DRIFT
-		pbAnomaly.Detail = &v1pb.Anomaly_DatabaseSchemaDriftDetail_{
-			DatabaseSchemaDriftDetail: &v1pb.Anomaly_DatabaseSchemaDriftDetail{
-				RecordVersion:  detail.Version,
-				ExpectedSchema: detail.Expect,
-				ActualSchema:   detail.Actual,
-			},
-		}
-	}
+	pbAnomaly.Type = convertAnomalyType(anomaly.Type)
 	pbAnomaly.Severity = getSeverityFromAnomalyType(pbAnomaly.Type)
 	return pbAnomaly, nil
+}
+
+func convertAnomalyType(tp api.AnomalyType) v1pb.Anomaly_AnomalyType {
+	switch tp {
+	case api.AnomalyDatabaseConnection:
+		return v1pb.Anomaly_DATABASE_CONNECTION
+	case api.AnomalyDatabaseSchemaDrift:
+		return v1pb.Anomaly_DATABASE_SCHEMA_DRIFT
+	default:
+		return v1pb.Anomaly_ANOMALY_TYPE_UNSPECIFIED
+	}
 }
 
 func getSeverityFromAnomalyType(tp v1pb.Anomaly_AnomalyType) v1pb.Anomaly_AnomalySeverity {
