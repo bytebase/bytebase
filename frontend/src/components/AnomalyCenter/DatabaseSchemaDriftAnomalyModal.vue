@@ -49,7 +49,7 @@ onMounted(async () => {
   const changelogs = await changelogStore.getOrFetchChangelogListOfDatabase(
     database.name,
     1, // Only fetch the latest changelog.
-    ChangelogView.CHANGELOG_VIEW_FULL,
+    ChangelogView.CHANGELOG_VIEW_FULL, // Needs to fetch the full schema.
     `type = "BASELINE | MIGRATE | MIGRATE_SDL"` // Only fetch the schema related changelog.
   );
   if (changelogs.length > 0) {
