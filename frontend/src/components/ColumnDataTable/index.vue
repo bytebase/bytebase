@@ -68,10 +68,7 @@ const subscriptionV1Store = useSubscriptionV1Store();
 const settingStore = useSettingV1Store();
 
 const hasSensitiveDataFeature = computed(() => {
-  return (
-    !props.isExternalTable &&
-    subscriptionV1Store.hasFeature("bb.feature.sensitive-data")
-  );
+  return subscriptionV1Store.hasFeature("bb.feature.sensitive-data");
 });
 
 const showSensitiveColumn = computed(() => {
@@ -92,7 +89,11 @@ const showSensitiveColumn = computed(() => {
 });
 
 const showClassificationColumn = computed(() => {
-  return !props.isExternalTable && props.classificationConfig;
+  return (
+    !props.isExternalTable &&
+    props.classificationConfig &&
+    hasSensitiveDataFeature.value
+  );
 });
 
 const setClassificationFromComment = computed(() => {
@@ -115,11 +116,10 @@ const showCollationColumn = computed(() => {
   );
 });
 
-const hasSensitiveDataPermission = computed(() => {
-  // TODO(ed): the permission and subscription check for db config update
+const hasDatabaseCatalogPermission = computed(() => {
   return hasProjectPermissionV2(
     props.database.projectEntity,
-    "bb.databases.update"
+    "bb.databaseCatalogs.update"
   );
 });
 
@@ -149,7 +149,7 @@ const columns = computed(() => {
           schema: props.schema,
           table: props.table.name,
           column: column.name,
-          readonly: !hasSensitiveDataPermission.value,
+          readonly: !hasDatabaseCatalogPermission.value,
         });
       },
     },
@@ -171,7 +171,9 @@ const columns = computed(() => {
           classificationConfig:
             props.classificationConfig ??
             DataClassificationConfig.fromPartial({}),
-          readonly: setClassificationFromComment.value,
+          readonly:
+            setClassificationFromComment.value ||
+            !hasDatabaseCatalogPermission.value,
           onApply: (id: string) => onClassificationIdApply(column.name, id),
         });
       },
@@ -252,7 +254,7 @@ const columns = computed(() => {
           schema: props.schema,
           table: props.table,
           column: column,
-          readonly: !hasSensitiveDataPermission.value,
+          readonly: !hasDatabaseCatalogPermission.value,
         });
       },
     },

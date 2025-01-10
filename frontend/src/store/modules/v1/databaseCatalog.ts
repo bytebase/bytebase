@@ -9,109 +9,116 @@ import {
   DatabaseCatalog,
   TableCatalog,
 } from "@/types/proto/v1/database_catalog_service";
-import { extractDatabaseResourceName } from "@/utils";
+import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
+import { useDatabaseV1Store } from "./database";
 
 type DatabaseCatalogCacheKey = [string /* database catalog resource name */];
 
-export const useDatabaseCatalogV1Store = defineStore("databaseCatalog_v1", () => {
-  const cacheByName = useCache<DatabaseCatalogCacheKey, DatabaseCatalog>(
-    "bb.database-catalog.by-name"
-  );
+export const useDatabaseCatalogV1Store = defineStore(
+  "databaseCatalog_v1",
+  () => {
+    const cacheByName = useCache<DatabaseCatalogCacheKey, DatabaseCatalog>(
+      "bb.database-catalog.by-name"
+    );
 
-  const getCache = (name: string): DatabaseCatalog | undefined => {
-    const catalogResourceName = ensureDatabaseCatalogResourceName(name);
-    return cacheByName.getEntity([catalogResourceName]);
-  };
+    const getCache = (name: string): DatabaseCatalog | undefined => {
+      const catalogResourceName = ensureDatabaseCatalogResourceName(name);
+      return cacheByName.getEntity([catalogResourceName]);
+    };
 
-  const setCache = (catalog: DatabaseCatalog) => {
-    cacheByName.setEntity([catalog.name], catalog);
-    return catalog;
-  };
+    const setCache = (catalog: DatabaseCatalog) => {
+      cacheByName.setEntity([catalog.name], catalog);
+      return catalog;
+    };
 
-  const getOrFetchDatabaseCatalog = async (params: {
-    database: string;
-    skipCache?: boolean;
-    silent?: boolean;
-  }) => {
-    const { database, skipCache = false, silent = false } = params;
-    const { databaseName } = extractDatabaseResourceName(database);
-    if (
-      databaseName === String(UNKNOWN_ID) ||
-      databaseName === String(EMPTY_ID)
-    ) {
-      return DatabaseCatalog.fromPartial({
-        name: ensureDatabaseCatalogResourceName(
-          `${UNKNOWN_INSTANCE_NAME}/databases/${UNKNOWN_ID}`
-        ),
-      });
-    }
-
-    const catalogResourceName = ensureDatabaseCatalogResourceName(database);
-
-    if (!skipCache) {
-      const existed = getCache(database);
-      if (existed) {
-        return existed;
+    const getOrFetchDatabaseCatalog = async (params: {
+      database: string;
+      skipCache?: boolean;
+      silent?: boolean;
+    }) => {
+      const { database, skipCache = false, silent = false } = params;
+      const { databaseName } = extractDatabaseResourceName(database);
+      if (
+        databaseName === String(UNKNOWN_ID) ||
+        databaseName === String(EMPTY_ID)
+      ) {
+        return DatabaseCatalog.fromPartial({
+          name: ensureDatabaseCatalogResourceName(
+            `${UNKNOWN_INSTANCE_NAME}/databases/${UNKNOWN_ID}`
+          ),
+        });
       }
-    }
 
-    console.debug("[getOrFetchDatabaseCatalog]", {
-      name: catalogResourceName,
-    });
-    const promise = databaseCatalogServiceClient.getDatabaseCatalog(
-      {
+      const catalogResourceName = ensureDatabaseCatalogResourceName(database);
+
+      if (!skipCache) {
+        const existed = getCache(database);
+        if (existed) {
+          return existed;
+        }
+      }
+
+      console.debug("[getOrFetchDatabaseCatalog]", {
         name: catalogResourceName,
-      },
-      {
-        silent,
-      }
-    );
-    promise.then((res) => {
-      setCache(res);
-    });
-
-    return promise;
-  };
-
-  const updateDatabaseCatalog = async (catalog: DatabaseCatalog) => {
-    const updated = await databaseCatalogServiceClient.updateDatabaseCatalog({
-      catalog,
-    });
-    setCache(updated);
-    return updated;
-  };
-
-  const getDatabaseCatalog = (database: string) => {
-    const { databaseName } = extractDatabaseResourceName(database);
-    if (databaseName === String(UNKNOWN_ID) || databaseName === String(EMPTY_ID)) {
-      return DatabaseCatalog.fromPartial({
-        name: ensureDatabaseCatalogResourceName(
-          `${UNKNOWN_INSTANCE_NAME}/databases/${UNKNOWN_ID}`
-        ),
       });
-    }
+      const promise = databaseCatalogServiceClient.getDatabaseCatalog(
+        {
+          name: catalogResourceName,
+        },
+        {
+          silent,
+        }
+      );
+      promise.then((res) => {
+        setCache(res);
+      });
 
-    return (
-      getCache(database) ??
-      DatabaseCatalog.fromPartial({
-        name: ensureDatabaseCatalogResourceName(database),
-        schemas: [],
-      })
-    );
-  };
+      return promise;
+    };
 
-  const removeCache = (name: string) => {
-    const catalogResourceName = ensureDatabaseCatalogResourceName(name);
-    cacheByName.invalidateEntity([catalogResourceName]);
-  };
+    const updateDatabaseCatalog = async (catalog: DatabaseCatalog) => {
+      const updated = await databaseCatalogServiceClient.updateDatabaseCatalog({
+        catalog,
+      });
+      setCache(updated);
+      return updated;
+    };
 
-  return {
-    getOrFetchDatabaseCatalog,
-    updateDatabaseCatalog,
-    getDatabaseCatalog,
-    removeCache,
-  };
-});
+    const getDatabaseCatalog = (database: string) => {
+      const { databaseName } = extractDatabaseResourceName(database);
+      if (
+        databaseName === String(UNKNOWN_ID) ||
+        databaseName === String(EMPTY_ID)
+      ) {
+        return DatabaseCatalog.fromPartial({
+          name: ensureDatabaseCatalogResourceName(
+            `${UNKNOWN_INSTANCE_NAME}/databases/${UNKNOWN_ID}`
+          ),
+        });
+      }
+
+      return (
+        getCache(database) ??
+        DatabaseCatalog.fromPartial({
+          name: ensureDatabaseCatalogResourceName(database),
+          schemas: [],
+        })
+      );
+    };
+
+    const removeCache = (name: string) => {
+      const catalogResourceName = ensureDatabaseCatalogResourceName(name);
+      cacheByName.invalidateEntity([catalogResourceName]);
+    };
+
+    return {
+      getOrFetchDatabaseCatalog,
+      updateDatabaseCatalog,
+      getDatabaseCatalog,
+      removeCache,
+    };
+  }
+);
 
 const ensureDatabaseResourceName = (name: string) => {
   return extractDatabaseResourceName(name).database;
@@ -121,19 +128,36 @@ const ensureDatabaseCatalogResourceName = (name: string) => {
   return `${database}/catalog`;
 };
 
-export const getTableCatalog = (catalog: DatabaseCatalog, schema: string, table: string) => {
-  const schemaCatalog = catalog.schemas.find((s) => s.name === schema)
-  return schemaCatalog?.tables.find((t) => t.name === table) ?? TableCatalog.fromPartial({
-    name: table,
-  });
+export const getTableCatalog = (
+  catalog: DatabaseCatalog,
+  schema: string,
+  table: string
+) => {
+  const schemaCatalog = catalog.schemas.find((s) => s.name === schema);
+  return (
+    schemaCatalog?.tables.find((t) => t.name === table) ??
+    TableCatalog.fromPartial({
+      name: table,
+    })
+  );
 };
 
-export const getColumnCatalog = (catalog: DatabaseCatalog, schema: string, table: string, column: string) => {
-  const schemaConfig = catalog.schemas.find((s) => s.name === schema)
-  const tableCatalog = schemaConfig?.tables.find((t) => t.name === table) ?? TableCatalog.fromPartial({});
-  return tableCatalog.columns?.columns.find((c) => c.name === column) ?? ColumnCatalog.fromPartial({
-    name: column,
-  });
+export const getColumnCatalog = (
+  catalog: DatabaseCatalog,
+  schema: string,
+  table: string,
+  column: string
+) => {
+  const schemaConfig = catalog.schemas.find((s) => s.name === schema);
+  const tableCatalog =
+    schemaConfig?.tables.find((t) => t.name === table) ??
+    TableCatalog.fromPartial({});
+  return (
+    tableCatalog.columns?.columns.find((c) => c.name === column) ??
+    ColumnCatalog.fromPartial({
+      name: column,
+    })
+  );
 };
 
 export const useDatabaseCatalog = (
@@ -149,12 +173,13 @@ export const useDatabaseCatalog = (
     ) {
       return;
     }
-    store.getOrFetchDatabaseCatalog({
-      database: unref(database),
-      skipCache: unref(skipCache),
-    });
+    const db = useDatabaseV1Store().getDatabaseByName(unref(database));
+    if (hasProjectPermissionV2(db.projectEntity, "bb.databaseCatalogs.get")) {
+      store.getOrFetchDatabaseCatalog({
+        database: unref(database),
+        skipCache: unref(skipCache),
+      });
+    }
   });
-  return computed(() =>
-    store.getDatabaseCatalog(unref(database))
-  );
-}
+  return computed(() => store.getDatabaseCatalog(unref(database)));
+};
