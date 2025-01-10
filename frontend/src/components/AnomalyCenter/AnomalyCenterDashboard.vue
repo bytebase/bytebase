@@ -27,52 +27,37 @@
           class="grid grid-cols-1 gap-4 sm:grid-cols-2"
           :class="`lg:grid-cols-${databaseAnomalySummaryList.length}`"
         >
-          <template
+          <div
             v-for="(summary, index) in databaseAnomalySummaryList"
             :key="index"
+            class="px-4 py-2 border"
           >
-            <NTooltip>
-              <template #trigger>
-                <div class="px-4 py-2 border">
-                  <div class="flex justify-between items-center">
-                    <dt class="textlabel">
-                      {{ summary.environmentName }}
-                    </dt>
-                    <dd class="flex flex-row text-main space-x-2">
-                      <span class="flex flex-row items-center">
-                        <heroicons-outline:exclamation-circle
-                          class="w-4 h-4 mr-1 text-error"
-                        />
-                        {{ summary.criticalCount }}
-                      </span>
-                      <span class="flex flex-row items-center">
-                        <heroicons-outline:exclamation
-                          class="w-4 h-4 mr-1 text-warning"
-                        />
-                        {{ summary.highCount }}
-                      </span>
-                      <span class="flex flex-row items-center">
-                        <heroicons-outline:information-circle
-                          class="w-4 h-4 mr-1 text-info"
-                        />
-                        {{ summary.mediumCount }}
-                      </span>
-                    </dd>
-                  </div>
-                </div>
-              </template>
-              <span class="text-sm">
-                {{
-                  $t("anomaly.tooltip", {
-                    env: summary.environmentName,
-                    criticalCount: summary.criticalCount,
-                    highCount: summary.highCount,
-                    mediumCount: summary.mediumCount,
-                  })
-                }}
-              </span>
-            </NTooltip>
-          </template>
+            <div class="flex justify-between items-center">
+              <dt class="textlabel">
+                {{ summary.environmentName }}
+              </dt>
+              <dd class="flex flex-row text-main space-x-2">
+                <span class="flex flex-row items-center">
+                  <heroicons-outline:exclamation-circle
+                    class="w-4 h-4 mr-1 text-error"
+                  />
+                  {{ summary.criticalCount }}
+                </span>
+                <span class="flex flex-row items-center">
+                  <heroicons-outline:exclamation
+                    class="w-4 h-4 mr-1 text-warning"
+                  />
+                  {{ summary.highCount }}
+                </span>
+                <span class="flex flex-row items-center">
+                  <heroicons-outline:information-circle
+                    class="w-4 h-4 mr-1 text-info"
+                  />
+                  {{ summary.mediumCount }}
+                </span>
+              </dd>
+            </div>
+          </div>
         </dl>
       </div>
     </div>
@@ -93,7 +78,6 @@
 </template>
 
 <script lang="ts" setup>
-import { NTooltip } from "naive-ui";
 import { computed, onMounted, ref } from "vue";
 import type { BBTableSectionDataSource } from "@/bbkit/types";
 import {

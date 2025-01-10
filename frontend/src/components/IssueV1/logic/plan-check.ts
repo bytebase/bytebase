@@ -31,13 +31,7 @@ export const planCheckRunListForTask = (issue: ComposedIssue, task: Task) => {
   const spec = specForTask(issue.planEntity, task);
   const sheet = spec ? sheetNameForSpec(spec) : "";
   return issue.planCheckRunList.filter((check) => {
-    if (sheet && check.sheet) {
-      // If both the task spec and the planCheckRun have `sheet`
-      // filter by sheet and target combination
-      return check.sheet === sheet && check.target === target;
-    }
-    // Otherwise filter by target only
-    return check.target === target;
+    return check.sheet === sheet && check.target === target;
   });
 };
 

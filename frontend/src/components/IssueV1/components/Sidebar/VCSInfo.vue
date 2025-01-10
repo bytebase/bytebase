@@ -80,10 +80,4 @@ const beautifyPullRequestUrl = (vcs: Plan_VCSSource | undefined) => {
   }
   return "";
 };
-
-defineExpose({
-  shown: computed(() => {
-    return false;
-  }),
-});
 </script>
