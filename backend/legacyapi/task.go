@@ -64,7 +64,6 @@ func (t TaskType) ChangeDatabasePayload() bool {
 	default:
 		return false
 	}
-
 }
 
 // Sequential returns whether the task should be executed sequentially.
