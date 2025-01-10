@@ -22,7 +22,7 @@ export interface SearchAnomaliesRequest {
    * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
    * Only support filter by resource and type for now.
    * For example:
-   * Search the anomalies of a specific resource: 'resource="instances/{instance}".'
+   * Search the anomalies of a specific resource: 'resource="instances/{instance}/databases/{database}".'
    * Search the specified types of anomalies: 'type="MIGRATION_SCHEMA".'
    */
   filter: string;
@@ -59,17 +59,13 @@ export interface Anomaly {
   /**
    * The resource that is the target of the operation.
    * Format:
-   * - Instance: instnaces/{instance}
-   * - Database: instnaces/{instance}/databases/{database}
+   * - Database: instances/{instance}/databases/{database}
    */
   resource: string;
   /** type is the type of the anomaly. */
   type: Anomaly_AnomalyType;
   /** severity is the severity of the anomaly. */
   severity: Anomaly_AnomalySeverity;
-  instanceConnectionDetail?: Anomaly_InstanceConnectionDetail | undefined;
-  databaseConnectionDetail?: Anomaly_DatabaseConnectionDetail | undefined;
-  databaseSchemaDriftDetail?: Anomaly_DatabaseSchemaDriftDetail | undefined;
   createTime: Timestamp | undefined;
   updateTime: Timestamp | undefined;
 }
@@ -202,36 +198,6 @@ export function anomaly_AnomalySeverityToNumber(object: Anomaly_AnomalySeverity)
     default:
       return -1;
   }
-}
-
-/**
- * Instance level anomaly detail.
- *
- * InstanceConnectionDetail is the detail for instance connection anomaly.
- */
-export interface Anomaly_InstanceConnectionDetail {
-  /** detail is the detail of the instance connection failure. */
-  detail: string;
-}
-
-/**
- * Database level anomaly detial.
- *
- * DatbaaseConnectionDetail is the detail for database connection anomaly.
- */
-export interface Anomaly_DatabaseConnectionDetail {
-  /** detail is the detail of the database connection failure. */
-  detail: string;
-}
-
-/** DatabaseSchemaDriftDetail is the detail for database schema drift anomaly. */
-export interface Anomaly_DatabaseSchemaDriftDetail {
-  /** record_version is the record version of the database schema drift. */
-  recordVersion: string;
-  /** expected_schema is the expected schema in the database. */
-  expectedSchema: string;
-  /** actual_schema is the actual schema in the database. */
-  actualSchema: string;
 }
 
 function createBaseSearchAnomaliesRequest(): SearchAnomaliesRequest {
@@ -425,9 +391,6 @@ function createBaseAnomaly(): Anomaly {
     resource: "",
     type: Anomaly_AnomalyType.ANOMALY_TYPE_UNSPECIFIED,
     severity: Anomaly_AnomalySeverity.ANOMALY_SEVERITY_UNSPECIFIED,
-    instanceConnectionDetail: undefined,
-    databaseConnectionDetail: undefined,
-    databaseSchemaDriftDetail: undefined,
     createTime: undefined,
     updateTime: undefined,
   };
@@ -443,15 +406,6 @@ export const Anomaly: MessageFns<Anomaly> = {
     }
     if (message.severity !== Anomaly_AnomalySeverity.ANOMALY_SEVERITY_UNSPECIFIED) {
       writer.uint32(24).int32(anomaly_AnomalySeverityToNumber(message.severity));
-    }
-    if (message.instanceConnectionDetail !== undefined) {
-      Anomaly_InstanceConnectionDetail.encode(message.instanceConnectionDetail, writer.uint32(34).fork()).join();
-    }
-    if (message.databaseConnectionDetail !== undefined) {
-      Anomaly_DatabaseConnectionDetail.encode(message.databaseConnectionDetail, writer.uint32(42).fork()).join();
-    }
-    if (message.databaseSchemaDriftDetail !== undefined) {
-      Anomaly_DatabaseSchemaDriftDetail.encode(message.databaseSchemaDriftDetail, writer.uint32(66).fork()).join();
     }
     if (message.createTime !== undefined) {
       Timestamp.encode(message.createTime, writer.uint32(74).fork()).join();
@@ -493,30 +447,6 @@ export const Anomaly: MessageFns<Anomaly> = {
           message.severity = anomaly_AnomalySeverityFromJSON(reader.int32());
           continue;
         }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.instanceConnectionDetail = Anomaly_InstanceConnectionDetail.decode(reader, reader.uint32());
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.databaseConnectionDetail = Anomaly_DatabaseConnectionDetail.decode(reader, reader.uint32());
-          continue;
-        }
-        case 8: {
-          if (tag !== 66) {
-            break;
-          }
-
-          message.databaseSchemaDriftDetail = Anomaly_DatabaseSchemaDriftDetail.decode(reader, reader.uint32());
-          continue;
-        }
         case 9: {
           if (tag !== 74) {
             break;
@@ -551,15 +481,6 @@ export const Anomaly: MessageFns<Anomaly> = {
       severity: isSet(object.severity)
         ? anomaly_AnomalySeverityFromJSON(object.severity)
         : Anomaly_AnomalySeverity.ANOMALY_SEVERITY_UNSPECIFIED,
-      instanceConnectionDetail: isSet(object.instanceConnectionDetail)
-        ? Anomaly_InstanceConnectionDetail.fromJSON(object.instanceConnectionDetail)
-        : undefined,
-      databaseConnectionDetail: isSet(object.databaseConnectionDetail)
-        ? Anomaly_DatabaseConnectionDetail.fromJSON(object.databaseConnectionDetail)
-        : undefined,
-      databaseSchemaDriftDetail: isSet(object.databaseSchemaDriftDetail)
-        ? Anomaly_DatabaseSchemaDriftDetail.fromJSON(object.databaseSchemaDriftDetail)
-        : undefined,
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
     };
@@ -575,15 +496,6 @@ export const Anomaly: MessageFns<Anomaly> = {
     }
     if (message.severity !== Anomaly_AnomalySeverity.ANOMALY_SEVERITY_UNSPECIFIED) {
       obj.severity = anomaly_AnomalySeverityToJSON(message.severity);
-    }
-    if (message.instanceConnectionDetail !== undefined) {
-      obj.instanceConnectionDetail = Anomaly_InstanceConnectionDetail.toJSON(message.instanceConnectionDetail);
-    }
-    if (message.databaseConnectionDetail !== undefined) {
-      obj.databaseConnectionDetail = Anomaly_DatabaseConnectionDetail.toJSON(message.databaseConnectionDetail);
-    }
-    if (message.databaseSchemaDriftDetail !== undefined) {
-      obj.databaseSchemaDriftDetail = Anomaly_DatabaseSchemaDriftDetail.toJSON(message.databaseSchemaDriftDetail);
     }
     if (message.createTime !== undefined) {
       obj.createTime = fromTimestamp(message.createTime).toISOString();
@@ -602,232 +514,12 @@ export const Anomaly: MessageFns<Anomaly> = {
     message.resource = object.resource ?? "";
     message.type = object.type ?? Anomaly_AnomalyType.ANOMALY_TYPE_UNSPECIFIED;
     message.severity = object.severity ?? Anomaly_AnomalySeverity.ANOMALY_SEVERITY_UNSPECIFIED;
-    message.instanceConnectionDetail =
-      (object.instanceConnectionDetail !== undefined && object.instanceConnectionDetail !== null)
-        ? Anomaly_InstanceConnectionDetail.fromPartial(object.instanceConnectionDetail)
-        : undefined;
-    message.databaseConnectionDetail =
-      (object.databaseConnectionDetail !== undefined && object.databaseConnectionDetail !== null)
-        ? Anomaly_DatabaseConnectionDetail.fromPartial(object.databaseConnectionDetail)
-        : undefined;
-    message.databaseSchemaDriftDetail =
-      (object.databaseSchemaDriftDetail !== undefined && object.databaseSchemaDriftDetail !== null)
-        ? Anomaly_DatabaseSchemaDriftDetail.fromPartial(object.databaseSchemaDriftDetail)
-        : undefined;
     message.createTime = (object.createTime !== undefined && object.createTime !== null)
       ? Timestamp.fromPartial(object.createTime)
       : undefined;
     message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
       ? Timestamp.fromPartial(object.updateTime)
       : undefined;
-    return message;
-  },
-};
-
-function createBaseAnomaly_InstanceConnectionDetail(): Anomaly_InstanceConnectionDetail {
-  return { detail: "" };
-}
-
-export const Anomaly_InstanceConnectionDetail: MessageFns<Anomaly_InstanceConnectionDetail> = {
-  encode(message: Anomaly_InstanceConnectionDetail, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.detail !== "") {
-      writer.uint32(10).string(message.detail);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Anomaly_InstanceConnectionDetail {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAnomaly_InstanceConnectionDetail();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.detail = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Anomaly_InstanceConnectionDetail {
-    return { detail: isSet(object.detail) ? globalThis.String(object.detail) : "" };
-  },
-
-  toJSON(message: Anomaly_InstanceConnectionDetail): unknown {
-    const obj: any = {};
-    if (message.detail !== "") {
-      obj.detail = message.detail;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Anomaly_InstanceConnectionDetail>): Anomaly_InstanceConnectionDetail {
-    return Anomaly_InstanceConnectionDetail.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Anomaly_InstanceConnectionDetail>): Anomaly_InstanceConnectionDetail {
-    const message = createBaseAnomaly_InstanceConnectionDetail();
-    message.detail = object.detail ?? "";
-    return message;
-  },
-};
-
-function createBaseAnomaly_DatabaseConnectionDetail(): Anomaly_DatabaseConnectionDetail {
-  return { detail: "" };
-}
-
-export const Anomaly_DatabaseConnectionDetail: MessageFns<Anomaly_DatabaseConnectionDetail> = {
-  encode(message: Anomaly_DatabaseConnectionDetail, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.detail !== "") {
-      writer.uint32(10).string(message.detail);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Anomaly_DatabaseConnectionDetail {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAnomaly_DatabaseConnectionDetail();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.detail = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Anomaly_DatabaseConnectionDetail {
-    return { detail: isSet(object.detail) ? globalThis.String(object.detail) : "" };
-  },
-
-  toJSON(message: Anomaly_DatabaseConnectionDetail): unknown {
-    const obj: any = {};
-    if (message.detail !== "") {
-      obj.detail = message.detail;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Anomaly_DatabaseConnectionDetail>): Anomaly_DatabaseConnectionDetail {
-    return Anomaly_DatabaseConnectionDetail.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Anomaly_DatabaseConnectionDetail>): Anomaly_DatabaseConnectionDetail {
-    const message = createBaseAnomaly_DatabaseConnectionDetail();
-    message.detail = object.detail ?? "";
-    return message;
-  },
-};
-
-function createBaseAnomaly_DatabaseSchemaDriftDetail(): Anomaly_DatabaseSchemaDriftDetail {
-  return { recordVersion: "", expectedSchema: "", actualSchema: "" };
-}
-
-export const Anomaly_DatabaseSchemaDriftDetail: MessageFns<Anomaly_DatabaseSchemaDriftDetail> = {
-  encode(message: Anomaly_DatabaseSchemaDriftDetail, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.recordVersion !== "") {
-      writer.uint32(10).string(message.recordVersion);
-    }
-    if (message.expectedSchema !== "") {
-      writer.uint32(18).string(message.expectedSchema);
-    }
-    if (message.actualSchema !== "") {
-      writer.uint32(26).string(message.actualSchema);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Anomaly_DatabaseSchemaDriftDetail {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAnomaly_DatabaseSchemaDriftDetail();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.recordVersion = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.expectedSchema = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.actualSchema = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Anomaly_DatabaseSchemaDriftDetail {
-    return {
-      recordVersion: isSet(object.recordVersion) ? globalThis.String(object.recordVersion) : "",
-      expectedSchema: isSet(object.expectedSchema) ? globalThis.String(object.expectedSchema) : "",
-      actualSchema: isSet(object.actualSchema) ? globalThis.String(object.actualSchema) : "",
-    };
-  },
-
-  toJSON(message: Anomaly_DatabaseSchemaDriftDetail): unknown {
-    const obj: any = {};
-    if (message.recordVersion !== "") {
-      obj.recordVersion = message.recordVersion;
-    }
-    if (message.expectedSchema !== "") {
-      obj.expectedSchema = message.expectedSchema;
-    }
-    if (message.actualSchema !== "") {
-      obj.actualSchema = message.actualSchema;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Anomaly_DatabaseSchemaDriftDetail>): Anomaly_DatabaseSchemaDriftDetail {
-    return Anomaly_DatabaseSchemaDriftDetail.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Anomaly_DatabaseSchemaDriftDetail>): Anomaly_DatabaseSchemaDriftDetail {
-    const message = createBaseAnomaly_DatabaseSchemaDriftDetail();
-    message.recordVersion = object.recordVersion ?? "";
-    message.expectedSchema = object.expectedSchema ?? "";
-    message.actualSchema = object.actualSchema ?? "";
     return message;
   },
 };

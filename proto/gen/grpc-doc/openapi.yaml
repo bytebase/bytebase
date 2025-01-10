@@ -8741,8 +8741,7 @@ components:
                     description: |-
                         The resource that is the target of the operation.
                          Format:
-                         - Instance: instnaces/{instance}
-                         - Database: instnaces/{instance}/databases/{database}
+                         - Database: instances/{instance}/databases/{database}
                 type:
                     enum:
                         - ANOMALY_TYPE_UNSPECIFIED
@@ -8760,12 +8759,6 @@ components:
                     type: string
                     description: severity is the severity of the anomaly.
                     format: enum
-                instanceConnectionDetail:
-                    $ref: '#/components/schemas/Anomaly_InstanceConnectionDetail'
-                databaseConnectionDetail:
-                    $ref: '#/components/schemas/Anomaly_DatabaseConnectionDetail'
-                databaseSchemaDriftDetail:
-                    $ref: '#/components/schemas/Anomaly_DatabaseSchemaDriftDetail'
                 createTime:
                     readOnly: true
                     type: string
@@ -8774,39 +8767,6 @@ components:
                     readOnly: true
                     type: string
                     format: date-time
-        Anomaly_DatabaseConnectionDetail:
-            type: object
-            properties:
-                detail:
-                    type: string
-                    description: detail is the detail of the database connection failure.
-            description: |-
-                Database level anomaly detial.
-
-                 DatbaaseConnectionDetail is the detail for database connection anomaly.
-        Anomaly_DatabaseSchemaDriftDetail:
-            type: object
-            properties:
-                recordVersion:
-                    type: string
-                    description: record_version is the record version of the database schema drift.
-                expectedSchema:
-                    type: string
-                    description: expected_schema is the expected schema in the database.
-                actualSchema:
-                    type: string
-                    description: actual_schema is the actual schema in the database.
-            description: DatabaseSchemaDriftDetail is the detail for database schema drift anomaly.
-        Anomaly_InstanceConnectionDetail:
-            type: object
-            properties:
-                detail:
-                    type: string
-                    description: detail is the detail of the instance connection failure.
-            description: |-
-                Instance level anomaly detail.
-
-                 InstanceConnectionDetail is the detail for instance connection anomaly.
         AppIMSetting:
             type: object
             properties:
@@ -13477,7 +13437,7 @@ components:
                          follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
                          Only support filter by resource and type for now.
                          For example:
-                         Search the anomalies of a specific resource: 'resource="instances/{instance}".'
+                         Search the anomalies of a specific resource: 'resource="instances/{instance}/databases/{database}".'
                          Search the specified types of anomalies: 'type="MIGRATION_SCHEMA".'
                 pageSize:
                     type: integer
