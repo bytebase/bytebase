@@ -48,9 +48,9 @@ onMounted(async () => {
   );
   const changelogs = await changelogStore.getOrFetchChangelogListOfDatabase(
     database.name,
-    1,
+    1, // Only fetch the latest changelog.
     ChangelogView.CHANGELOG_VIEW_FULL,
-    `type = "BASELINE | MIGRATE | MIGRATE_SDL"`
+    `type = "BASELINE | MIGRATE | MIGRATE_SDL"` // Only fetch the schema related changelog.
   );
   if (changelogs.length > 0) {
     const latestChangelog = changelogs[0];
