@@ -1317,18 +1317,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Anomaly.DatabaseConnectionDetail"><span class="badge">M</span>Anomaly.DatabaseConnectionDetail</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Anomaly.DatabaseSchemaDriftDetail"><span class="badge">M</span>Anomaly.DatabaseSchemaDriftDetail</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Anomaly.InstanceConnectionDetail"><span class="badge">M</span>Anomaly.InstanceConnectionDetail</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.SearchAnomaliesRequest"><span class="badge">M</span>SearchAnomaliesRequest</a>
                 </li>
               
@@ -15474,8 +15462,7 @@ Default to this mode.</p></td>
                   <td></td>
                   <td><p>The resource that is the target of the operation.
 Format:
-- Instance: instnaces/{instance}
-- Database: instnaces/{instance}/databases/{database} </p></td>
+- Database: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
@@ -15493,27 +15480,6 @@ Format:
                 </tr>
               
                 <tr>
-                  <td>instance_connection_detail</td>
-                  <td><a href="#bytebase.v1.Anomaly.InstanceConnectionDetail">Anomaly.InstanceConnectionDetail</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database_connection_detail</td>
-                  <td><a href="#bytebase.v1.Anomaly.DatabaseConnectionDetail">Anomaly.DatabaseConnectionDetail</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database_schema_drift_detail</td>
-                  <td><a href="#bytebase.v1.Anomaly.DatabaseSchemaDriftDetail">Anomaly.DatabaseSchemaDriftDetail</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>create_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
@@ -15525,92 +15491,6 @@ Format:
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Anomaly.DatabaseConnectionDetail">Anomaly.DatabaseConnectionDetail</h3>
-        <p>Database level anomaly detial.</p><p>DatbaaseConnectionDetail is the detail for database connection anomaly.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>detail</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>detail is the detail of the database connection failure. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Anomaly.DatabaseSchemaDriftDetail">Anomaly.DatabaseSchemaDriftDetail</h3>
-        <p>DatabaseSchemaDriftDetail is the detail for database schema drift anomaly.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>record_version</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>record_version is the record version of the database schema drift. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>expected_schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>expected_schema is the expected schema in the database. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>actual_schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>actual_schema is the actual schema in the database. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Anomaly.InstanceConnectionDetail">Anomaly.InstanceConnectionDetail</h3>
-        <p>Instance level anomaly detail.</p><p>InstanceConnectionDetail is the detail for instance connection anomaly.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>detail</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>detail is the detail of the instance connection failure. </p></td>
                 </tr>
               
             </tbody>
@@ -15646,7 +15526,7 @@ Format: projects/{project} </p></td>
 follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
 Only support filter by resource and type for now.
 For example:
-Search the anomalies of a specific resource: &#39;resource=&#34;instances/{instance}&#34;.&#39;
+Search the anomalies of a specific resource: &#39;resource=&#34;instances/{instance}/databases/{database}&#34;.&#39;
 Search the specified types of anomalies: &#39;type=&#34;MIGRATION_SCHEMA&#34;.&#39; </p></td>
                 </tr>
               
