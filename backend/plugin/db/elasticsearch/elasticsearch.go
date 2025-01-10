@@ -84,7 +84,7 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 		address = fmt.Sprintf("%s://%s", protocol, address)
 
 		if _, err := url.Parse(address); err != nil {
-			return nil, errors.Wrapf(err, "failed to parse addresse: %v", address)
+			return nil, errors.Wrapf(err, "failed to parse address: %v", address)
 		}
 	}
 
