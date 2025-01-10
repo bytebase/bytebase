@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -153,7 +152,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		mc.sheetName = common.FormatSheet(pipeline.ProjectID, sheet.UID)
 	}
 
-	if common.IsDev() && slices.Index([]api.TaskType{api.TaskDatabaseSchemaBaseline, api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseDataUpdate}, task.Type) != -1 {
+	if task.Type.ChangeDatabasePayload() {
 		var p storepb.TaskDatabaseUpdatePayload
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), &p); err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to unmarshal task payload")
