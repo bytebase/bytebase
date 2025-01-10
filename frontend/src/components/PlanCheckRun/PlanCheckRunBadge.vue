@@ -63,6 +63,7 @@ defineEmits<{
 const { t } = useI18n();
 
 const latestPlanCheckRun = computed(() => {
+  // Get the latest PlanCheckRun by UID.
   return maxBy(props.planCheckRunList, (check) =>
     Number(extractPlanCheckRunUID(check.name))
   )!;
