@@ -5,3 +5,4 @@ FROM db
     JOIN project ON db.project_id = project.id
 WHERE
     db.id = anomaly.database_id;
+ALTER TABLE anomaly ALTER COLUMN project SET NOT NULL;
