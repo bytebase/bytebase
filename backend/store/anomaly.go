@@ -15,6 +15,7 @@ import (
 
 // AnomalyMessage is the message of the anomaly.
 type AnomalyMessage struct {
+	ProjectID string
 	// InstanceID is the instance resource id.
 	InstanceID string
 	// DatabaseUID is the unique identifier of the database, it will be nil if the anomaly is instance level.
@@ -35,6 +36,7 @@ type AnomalyMessage struct {
 
 // ListAnomalyMessage is the message to list anomalies.
 type ListAnomalyMessage struct {
+	ProjectID   string
 	RowStatus   *api.RowStatus
 	InstanceID  *string
 	DatabaseUID *int
@@ -77,6 +79,7 @@ func (s *Store) UpsertActiveAnomalyV2(ctx context.Context, principalUID int, ups
 	var anomaly *AnomalyMessage
 	if len(list) == 0 {
 		anomaly, err = s.createAnomalyImplV2(ctx, tx, principalUID, &AnomalyMessage{
+			ProjectID:   upsert.ProjectID,
 			InstanceID:  upsert.InstanceID,
 			DatabaseUID: upsert.DatabaseUID,
 			Type:        upsert.Type,
@@ -201,12 +204,13 @@ func (s *Store) createAnomalyImplV2(ctx context.Context, tx *Tx, principalUID in
 		INSERT INTO anomaly (
 			creator_id,
 			updater_id,
+			project_id,
 			instance_id,
 			database_id,
 			type,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, database_id, type, payload
 	`
 	var anomaly AnomalyMessage
@@ -215,6 +219,7 @@ func (s *Store) createAnomalyImplV2(ctx context.Context, tx *Tx, principalUID in
 		principalUID,
 		principalUID,
 		instance.UID,
+		create.ProjectID,
 		create.DatabaseUID,
 		create.Type,
 		create.Payload,
@@ -233,6 +238,7 @@ func (s *Store) createAnomalyImplV2(ctx context.Context, tx *Tx, principalUID in
 		value := int(databaseUID.Int32)
 		anomaly.DatabaseUID = &value
 	}
+	anomaly.ProjectID = create.ProjectID
 	anomaly.InstanceID = instance.ResourceID
 
 	return &anomaly, nil
