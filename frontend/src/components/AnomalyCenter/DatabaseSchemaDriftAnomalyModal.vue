@@ -9,18 +9,22 @@
       style="width: calc(100vw - 10rem); height: calc(100vh - 12rem)"
     >
       <DiffEditor
+        v-if="!isLoading"
         class="flex-1 w-full border rounded-md overflow-clip"
         :original="originalSchema"
         :modified="modifiedSchema"
         :readonly="true"
       />
+      <div v-else class="flex justify-center items-center py-10">
+        <BBSpin />
+      </div>
     </div>
   </BBModal>
 </template>
 
 <script lang="ts" setup>
 import { computed, onMounted, ref } from "vue";
-import { BBModal } from "@/bbkit";
+import { BBModal, BBSpin } from "@/bbkit";
 import { useChangelogStore, useDatabaseV1Store } from "@/store";
 import { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { ChangelogView } from "@/types/proto/v1/database_service";
