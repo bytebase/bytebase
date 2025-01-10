@@ -2,10 +2,6 @@
   <div
     ref="containerRef"
     class="bb-data-table relative w-full flex-1 overflow-hidden flex flex-col"
-    :style="{
-      maxHeight: maxHeight ? `${maxHeight}px` : undefined,
-    }"
-    :data-container-height="containerHeight"
   >
     <div class="w-full flex-1 flex flex-col overflow-hidden">
       <div
@@ -105,11 +101,12 @@
               >
                 <TableCell
                   :table="table"
-                  :value="cell.getValue() as RowValue"
+                  :value="cell.getValue<RowValue>()"
                   :keyword="keyword"
                   :set-index="setIndex"
                   :row-index="offset + rowIndex"
                   :col-index="cellIndex"
+                  :allow-select="true"
                 />
               </td>
             </tr>

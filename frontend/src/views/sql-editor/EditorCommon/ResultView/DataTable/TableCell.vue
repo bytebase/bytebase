@@ -45,6 +45,7 @@ const props = defineProps<{
   setIndex: number;
   rowIndex: number;
   colIndex: number;
+  allowSelect?: boolean;
 }>();
 
 const { dark, disallowCopyingData, detail, keyword } =
@@ -57,6 +58,10 @@ const {
 } = useSelectionContext();
 const wrapperRef = ref<HTMLDivElement>();
 const truncated = ref(false);
+
+const allowSelect = computed(() => {
+  return props.allowSelect && !selectionDisabled.value;
+});
 
 useResizeObserver(wrapperRef, (entries) => {
   const div = entries[0].target as HTMLDivElement;
@@ -88,7 +93,7 @@ const classes = computed(() => {
   if (disallowCopyingData.value) {
     classes.push("select-none");
   }
-  if (!selectionDisabled.value) {
+  if (allowSelect.value) {
     if (props.colIndex === 0) {
       classes.push("cursor-pointer");
       classes.push("hover:bg-accent/10 hover:dark:bg-accent/40");
@@ -133,7 +138,7 @@ const html = computed(() => {
 });
 
 const handleClick = (e: MouseEvent) => {
-  if (props.colIndex === 0 && !selectionDisabled.value) {
+  if (props.colIndex === 0 && allowSelect.value) {
     selectRow(props.rowIndex);
     e.stopPropagation();
   }
