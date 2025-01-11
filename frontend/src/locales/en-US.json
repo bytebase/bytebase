@@ -1895,7 +1895,7 @@
     "select-databases-from-same-project": "Please select databases from the same project",
     "sync-schema": {
       "title": "Sync Schema",
-      "description": "Bytebase supports synchronizing a schema to one or multiple target databases. (MySQL, PostgreSQL, TiDB, Oracle only)",
+      "description": "Bytebase supports synchronizing a schema to one or multiple target databases. (MySQL, PostgreSQL, Oracle, MSSQL, TiDB only)",
       "schema-history-version": "Schema History Version",
       "copy-schema": "Copy schema",
       "select-source-schema": "Select source schema",
