@@ -1895,7 +1895,7 @@
     "select-databases-from-same-project": "同じプロジェクト内のデータベースを選択してください",
     "sync-schema": {
       "title": "データベーステーブルの同期",
-      "description": "Bytebase は、スキーマを 1 つまたは複数のターゲット データベースに同期することをサポートします。(MySQL、PostgreSQL、TiDB、Oracle のみ)",
+      "description": "Bytebase は、スキーマを 1 つまたは複数のターゲット データベースに同期することをサポートします。(MySQL, PostgreSQL, Oracle, MSSQL, TiDB のみ)",
       "schema-history-version": "スキーマの履歴バージョン",
       "copy-schema": "スキーマテキストを貼り付け",
       "select-source-schema": "ソーススキーマの選択",

@@ -1895,7 +1895,7 @@
     "select-databases-from-same-project": "Por favor seleccione bases de datos del mismo proyecto",
     "sync-schema": {
       "title": "Sincronizar esquema",
-      "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino. (Solo MySQL, PostgreSQL, TiDB, Oracle)",
+      "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino. (Solo MySQL, PostgreSQL, Oracle, MSSQL, TiDB)",
       "schema-history-version": "Versión del historial de esquema",
       "copy-schema": "Copiar esquema",
       "select-source-schema": "Seleccione el esquema de origen",
