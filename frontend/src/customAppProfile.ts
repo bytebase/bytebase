@@ -1,9 +1,8 @@
 import { computed } from "vue";
 import i18n from "./plugins/i18n";
-import { useActuatorV1Store, useAppFeature, useSettingByName } from "./store";
+import { useActuatorV1Store, useSettingByName } from "./store";
 import { defaultAppProfile } from "./types";
 import { DatabaseChangeMode } from "./types/proto/v1/setting_service";
-import { useCustomTheme } from "./utils/customTheme";
 
 export const overrideAppProfile = () => {
   const setting = useSettingByName("bb.workspace.profile");
@@ -15,7 +14,6 @@ export const overrideAppProfile = () => {
   });
 
   const query = new URLSearchParams(window.location.search);
-  useCustomTheme(useAppFeature("bb.feature.custom-color-scheme"));
   overrideAppFeatures(databaseChangeMode.value, query);
 
   // Override app language.
@@ -72,23 +70,6 @@ const overrideAppFeatures = (
       "bb.feature.sql-editor.hide-profile": true,
       "bb.feature.sql-editor.hide-readonly-datasource-hint": true,
     });
-  }
-
-  const customTheme = query.get("customTheme");
-  if (customTheme === "lixiang") {
-    actuatorStore.overrideAppFeatures({
-      "bb.feature.custom-color-scheme": {
-        "--color-accent": "#00665f",
-        "--color-accent-hover": "#00554f",
-        "--color-accent-disabled": "#b8c3c3",
-      },
-      "bb.feature.sql-editor.disallow-export-query-data": true,
-    });
-    if (actuatorStore.appProfile.embedded) {
-      actuatorStore.overrideAppFeatures({
-        "bb.feature.issue.hide-review-actions": true,
-      });
-    }
   }
 
   if (databaseChangeMode === "EDITOR") {
