@@ -6,7 +6,6 @@ export type AppFeatures = {
   "bb.feature.database-change-mode":
     | DatabaseChangeMode.PIPELINE
     | DatabaseChangeMode.EDITOR;
-  "bb.feature.custom-color-scheme": Record<string, string> | undefined;
   "bb.feature.disable-kbar": boolean;
   "bb.feature.disallow-navigate-to-console": boolean;
   "bb.feature.hide-banner": boolean;
@@ -62,7 +61,6 @@ export const defaultAppProfile = (): AppProfile => ({
   features: {
     "bb.feature.default-workspace-view": "CONSOLE",
     "bb.feature.database-change-mode": DatabaseChangeMode.PIPELINE,
-    "bb.feature.custom-color-scheme": undefined,
     "bb.feature.disable-kbar": false,
     "bb.feature.disallow-navigate-to-console": false,
     "bb.feature.hide-banner": false,
