@@ -129,10 +129,7 @@ func (s *Store) DeleteAnomalyV2(ctx context.Context, d *DeleteAnomalyMessage) er
 		return err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-	return nil
+	return tx.Commit()
 }
 
 func (*Store) listAnomalyImplV2(ctx context.Context, tx *Tx, list *ListAnomalyMessage) ([]*AnomalyMessage, error) {
