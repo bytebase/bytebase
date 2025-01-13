@@ -23,7 +23,7 @@
 import { intersection } from "lodash-es";
 import type { SelectOption } from "naive-ui";
 import { NSelect } from "naive-ui";
-import { computed } from "vue";
+import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { useProjectV1List, usePermissionStore } from "@/store";
@@ -57,6 +57,7 @@ const props = withDefaults(
     multiple?: boolean;
     renderSuffix?: (project: string) => string;
     filter?: (project: ComposedProject, index: number) => boolean;
+    defaultSelectFirst?: boolean;
   }>(),
   {
     disabled: false,
@@ -70,6 +71,7 @@ const props = withDefaults(
     multiple: false,
     filter: () => true,
     renderSuffix: () => "",
+    defaultSelectFirst: false,
   }
 );
 
@@ -198,6 +200,17 @@ const options = computed(() => {
             : project.title,
     };
   });
+});
+
+watchEffect(() => {
+  if (!props.defaultSelectFirst || props.projectName || props.multiple) {
+    return;
+  }
+  if (options.value.length === 0) {
+    return;
+  }
+
+  emit("update:project-name", options.value[0].value);
 });
 
 const filterByName = (pattern: string, option: SelectOption) => {
