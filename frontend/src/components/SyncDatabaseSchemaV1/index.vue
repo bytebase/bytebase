@@ -61,7 +61,7 @@
           :project="project"
           :source-schema-string="sourceSchemaString"
           :source-engine="sourceEngine"
-          :source-changelog-bane="changelogSourceSchemaState.changelogName"
+          :source-changelog-nane="changelogSourceSchemaState.changelogName"
         />
       </template>
     </StepTab>
