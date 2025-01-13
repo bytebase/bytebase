@@ -9,6 +9,7 @@ import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
+import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/sql_service.proto";
 
@@ -18,10 +19,14 @@ service ReleaseService {
   rpc GetRelease(GetReleaseRequest) returns (Release) {
     option (google.api.http) = {get: "/v1/{name=projects/*/releases/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.releases.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
   rpc ListReleases(ListReleasesRequest) returns (ListReleasesResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/releases"};
     option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.releases.list";
+    option (bytebase.v1.auth_method) = IAM;
   }
   rpc CreateRelease(CreateReleaseRequest) returns (Release) {
     option (google.api.http) = {
@@ -29,6 +34,8 @@ service ReleaseService {
       body: "release"
     };
     option (google.api.method_signature) = "parent,release";
+    option (bytebase.v1.permission) = "bb.releases.create";
+    option (bytebase.v1.auth_method) = IAM;
   }
   rpc UpdateRelease(UpdateReleaseRequest) returns (Release) {
     option (google.api.http) = {
@@ -36,19 +43,27 @@ service ReleaseService {
       body: "release"
     };
     option (google.api.method_signature) = "release,update_mask";
+    option (bytebase.v1.permission) = "bb.releases.update";
+    option (bytebase.v1.auth_method) = IAM;
   }
   rpc DeleteRelease(DeleteReleaseRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=projects/*/releases/*}"};
     option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.releases.delete";
+    option (bytebase.v1.auth_method) = IAM;
   }
   rpc UndeleteRelease(UndeleteReleaseRequest) returns (Release) {
     option (google.api.http) = {post: "/v1/{name=projects/*/releases/*}:undelete"};
+    option (bytebase.v1.permission) = "bb.releases.undelete";
+    option (bytebase.v1.auth_method) = IAM;
   }
   rpc CheckRelease(CheckReleaseRequest) returns (CheckReleaseResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/releases:check"
       body: "*"
     };
+    option (bytebase.v1.permission) = "bb.releases.check";
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 
