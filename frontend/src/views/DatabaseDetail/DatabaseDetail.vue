@@ -13,9 +13,9 @@
           <!-- Summary -->
           <div class="flex items-center">
             <div>
-              <div class="flex items-center">
+              <div class="flex items-baseline gap-x-2">
                 <h1
-                  class="text-xl font-bold text-main truncate flex items-center gap-x-3"
+                  class="text-xl font-bold text-main truncate flex items-center gap-x-2"
                 >
                   {{ database.databaseName }}
 
@@ -25,6 +25,7 @@
                     class="w-5 h-5"
                   />
                 </h1>
+                <span class="textinfolabel">{{ database.name }}</span>
               </div>
             </div>
           </div>
@@ -139,10 +140,7 @@
       >
         <DatabaseSlowQueryPanel class="mt-2" :database="database" />
       </NTabPane>
-      <NTabPane
-        name="catalog"
-        :tab="$t('common.catalog')"
-      >
+      <NTabPane name="catalog" :tab="$t('common.catalog')">
         <DatabaseSensitiveDataPanel class="mt-2" :database="database" />
       </NTabPane>
       <NTabPane
@@ -307,7 +305,7 @@ const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 onMounted(async () => {
   anomalyList.value = await useAnomalyV1Store().fetchAnomalyList(
     database.value.project,
-    {database: database.value.name}
+    { database: database.value.name }
   );
 });
 
@@ -401,7 +399,7 @@ const handleGotoSQLEditorFailed = () => {
 const updateAnomalyList = async () => {
   anomalyList.value = await useAnomalyV1Store().fetchAnomalyList(
     database.value.project,
-    {database: database.value.name}
+    { database: database.value.name }
   );
 };
 
