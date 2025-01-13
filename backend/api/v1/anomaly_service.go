@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -119,22 +118,17 @@ func (s *AnomalyService) convertToAnomaly(ctx context.Context, anomaly *store.An
 		UpdateTime: timestamppb.New(time.Unix(anomaly.UpdatedTs, 0)),
 	}
 
-	if v := anomaly.DatabaseUID; v != nil {
-		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			UID:         v,
-			ShowDeleted: true,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find database with id %d", v)
-		}
-		if database == nil {
-			return nil, errors.Errorf("cannot found database with id %d", v)
-		}
-		pbAnomaly.Resource = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
-	} else {
-		pbAnomaly.Resource = fmt.Sprintf("%s%s", common.InstanceNamePrefix, anomaly.InstanceID)
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		UID:         &anomaly.DatabaseUID,
+		ShowDeleted: true,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find database with id %d", anomaly.DatabaseUID)
 	}
-
+	if database == nil {
+		return nil, errors.Errorf("cannot found database with id %d", anomaly.DatabaseUID)
+	}
+	pbAnomaly.Resource = common.FormatDatabase(database.InstanceID, database.DatabaseName)
 	pbAnomaly.Type = convertAnomalyType(anomaly.Type)
 	pbAnomaly.Severity = getSeverityFromAnomalyType(pbAnomaly.Type)
 	return pbAnomaly, nil
