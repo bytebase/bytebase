@@ -77,6 +77,13 @@ permissions:
   - bb.projects.setIamPolicy
   - bb.projects.undelete
   - bb.projects.update
+  - bb.releases.check
+  - bb.releases.create
+  - bb.releases.delete
+  - bb.releases.get
+  - bb.releases.list
+  - bb.releases.undelete
+  - bb.releases.update
   - bb.reviewConfigs.create
   - bb.reviewConfigs.delete
   - bb.reviewConfigs.get
