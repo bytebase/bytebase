@@ -78,7 +78,7 @@ const (
 	PermissionProjectsUpdate             Permission = "bb.projects.update"
 	PermissionReleasesCheck              Permission = "bb.releases.check"
 	PermissionReleasesCreate             Permission = "bb.releases.create"
-	PermissionReleasesDelete             Permission = "bb.releaes.delete"
+	PermissionReleasesDelete             Permission = "bb.releases.delete"
 	PermissionReleasesGet                Permission = "bb.releases.get"
 	PermissionReleasesList               Permission = "bb.releases.list"
 	PermissionReleasesUndelete           Permission = "bb.releases.undelete"
