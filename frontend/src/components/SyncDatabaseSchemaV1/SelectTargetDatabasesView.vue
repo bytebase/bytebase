@@ -1,7 +1,13 @@
 <template>
   <div
-    class="select-target-database-view h-full overflow-y-hidden flex flex-col gap-y-4"
+    class="select-target-database-view h-full overflow-y-hidden flex flex-col gap-y-2"
   >
+    <SourceSchemaInfo
+      :project="project"
+      :schema-string="sourceSchemaString"
+      :engine="sourceEngine"
+      :changelog-source-schema="changelogSourceSchema"
+    />
     <div
       class="relative border rounded-lg w-full flex flex-row flex-1 overflow-hidden"
     >
@@ -177,7 +183,9 @@ import {
   isValidChangelogName,
 } from "@/utils/v1/changelog";
 import DiffViewPanel from "./DiffViewPanel.vue";
+import SourceSchemaInfo from "./SourceSchemaInfo.vue";
 import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
+import type { ChangelogSourceSchema } from "./types";
 
 interface LocalState {
   isLoading: boolean;
@@ -192,7 +200,7 @@ const props = defineProps<{
   project: ComposedProject;
   sourceSchemaString: string;
   sourceEngine: Engine;
-  sourceChangelogName?: string;
+  changelogSourceSchema?: ChangelogSourceSchema;
 }>();
 
 const { t } = useI18n();
@@ -389,20 +397,20 @@ onMounted(async () => {
 
   // Prepare the source schema display string.
   if (
-    props.sourceChangelogName &&
+    props.changelogSourceSchema?.changelogName &&
     instanceV1SupportsConciseSchema(props.sourceEngine)
   ) {
     state.isLoading = true;
-    if (isValidChangelogName(props.sourceChangelogName)) {
+    if (isValidChangelogName(props.changelogSourceSchema.changelogName)) {
       const changelog = await databaseServiceClient.getChangelog({
-        name: props.sourceChangelogName,
+        name: props.changelogSourceSchema.changelogName,
         view: ChangelogView.CHANGELOG_VIEW_FULL,
         concise: true,
       });
       sourceSchemaDisplayString.value = changelog.schema;
     } else {
       const { databaseName } = extractDatabaseNameAndChangelogUID(
-        props.sourceChangelogName
+        props.changelogSourceSchema.changelogName
       );
       const databaseSchema = await databaseStore.fetchDatabaseSchema(
         `${databaseName}/schema`,
