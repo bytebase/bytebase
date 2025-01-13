@@ -373,8 +373,8 @@ func postMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInf
 	}
 
 	// Remove schema drift anomalies.
-	if err := stores.ArchiveAnomalyV2(ctx, &store.ArchiveAnomalyMessage{
-		DatabaseUID: mc.task.DatabaseID,
+	if err := stores.DeleteAnomalyV2(ctx, &store.DeleteAnomalyMessage{
+		DatabaseUID: *(mc.task.DatabaseID),
 		Type:        api.AnomalyDatabaseSchemaDrift,
 	}); err != nil && common.ErrorCode(err) != common.NotFound {
 		slog.Error("Failed to archive anomaly",
