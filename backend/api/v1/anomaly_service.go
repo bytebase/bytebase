@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -129,8 +128,7 @@ func (s *AnomalyService) convertToAnomaly(ctx context.Context, anomaly *store.An
 	if database == nil {
 		return nil, errors.Errorf("cannot found database with id %d", anomaly.DatabaseUID)
 	}
-	pbAnomaly.Resource = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
-
+	pbAnomaly.Resource = common.FormatDatabase(database.InstanceID, database.DatabaseName)
 	pbAnomaly.Type = convertAnomalyType(anomaly.Type)
 	pbAnomaly.Severity = getSeverityFromAnomalyType(pbAnomaly.Type)
 	return pbAnomaly, nil
