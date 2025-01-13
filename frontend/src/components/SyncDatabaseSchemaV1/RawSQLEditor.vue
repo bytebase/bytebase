@@ -3,9 +3,7 @@
     <div class="w-full h-auto shrink-0 flex flex-row justify-between items-end">
       <div class="flex flex-col justify-start items-start gap-y-2">
         <div class="flex flex-row justify-start items-center">
-          <span class="mr-2 w-20 shrink-0 text-sm">{{
-            $t("database.engine")
-          }}</span>
+          <span class="mr-2 shrink-0 text-sm">{{ $t("database.engine") }}</span>
           <NSelect
             v-model:value="state.engine"
             :consistent-menu-width="false"
