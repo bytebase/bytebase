@@ -15,7 +15,7 @@
     </div>
     <StepTab
       v-else
-      class="pt-4 flex-1 overflow-hidden flex flex-col"
+      class="pt-4 flex-1 overflow-hidden flex flex-col !space-y-4"
       :step-list="stepTabList"
       :current-index="state.currentStep"
       :show-cancel="false"
@@ -61,7 +61,11 @@
           :project="project"
           :source-schema-string="sourceSchemaString"
           :source-engine="sourceEngine"
-          :source-changelog-name="changelogSourceSchemaState.changelogName"
+          :changelog-source-schema="
+            state.sourceSchemaType === SourceSchemaType.SCHEMA_HISTORY_VERSION
+              ? changelogSourceSchemaState
+              : undefined
+          "
         />
       </template>
     </StepTab>
@@ -208,12 +212,6 @@ const stepTabList = computed(() => {
   return [
     {
       title: t("database.sync-schema.select-source-schema"),
-      description:
-        state.currentStep === Step.SELECT_TARGET_DATABASE_LIST
-          ? state.sourceSchemaType === SourceSchemaType.SCHEMA_HISTORY_VERSION
-            ? t("database.sync-schema.schema-history-version")
-            : t("database.sync-schema.copy-schema")
-          : undefined,
     },
     {
       title: t("database.sync-schema.select-target-databases"),
