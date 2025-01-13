@@ -34,7 +34,7 @@
               :label="$t('database.sync-schema.schema-history-version')"
             />
             <NRadio
-              :value="'RAW_SQL'"
+              :value="SourceSchemaType.RAW_SQL"
               :label="$t('database.sync-schema.copy-schema')"
             />
           </NRadioGroup>
