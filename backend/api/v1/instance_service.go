@@ -466,7 +466,7 @@ func (s *InstanceService) syncSlowQueriesForProject(ctx context.Context, project
 	if project.Deleted {
 		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectName)
 	}
-	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &project.ResourceID})
+	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list databases: %s", err.Error())
 	}
