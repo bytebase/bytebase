@@ -76,6 +76,13 @@ const (
 	PermissionProjectsSetIAMPolicy       Permission = "bb.projects.setIamPolicy"
 	PermissionProjectsUndelete           Permission = "bb.projects.undelete"
 	PermissionProjectsUpdate             Permission = "bb.projects.update"
+	PermissionReleasesCheck              Permission = "bb.releases.check"
+	PermissionReleasesCreate             Permission = "bb.releases.create"
+	PermissionReleasesDelete             Permission = "bb.releaes.delete"
+	PermissionReleasesGet                Permission = "bb.releases.get"
+	PermissionReleasesList               Permission = "bb.releases.list"
+	PermissionReleasesUndelete           Permission = "bb.releases.undelete"
+	PermissionReleasesUpdate             Permission = "bb.releases.update"
 	PermissionReviewConfigsCreate        Permission = "bb.reviewConfigs.create"
 	PermissionReviewConfigsDelete        Permission = "bb.reviewConfigs.delete"
 	PermissionReviewConfigsGet           Permission = "bb.reviewConfigs.get"
@@ -213,6 +220,13 @@ var allPermissions = []Permission{
 	PermissionProjectsSetIAMPolicy,
 	PermissionProjectsUndelete,
 	PermissionProjectsUpdate,
+	PermissionReleasesCheck,
+	PermissionReleasesCreate,
+	PermissionReleasesDelete,
+	PermissionReleasesGet,
+	PermissionReleasesList,
+	PermissionReleasesUndelete,
+	PermissionReleasesUpdate,
 	PermissionReviewConfigsCreate,
 	PermissionReviewConfigsDelete,
 	PermissionReviewConfigsGet,
