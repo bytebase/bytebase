@@ -75,6 +75,13 @@ roles:
       - bb.projects.setIamPolicy
       - bb.projects.undelete
       - bb.projects.update
+      - bb.releases.check
+      - bb.releases.create
+      - bb.releases.delete
+      - bb.releases.get
+      - bb.releases.list
+      - bb.releases.undelete
+      - bb.releases.update
       - bb.reviewConfigs.create
       - bb.reviewConfigs.delete
       - bb.reviewConfigs.get
@@ -212,6 +219,13 @@ roles:
       - bb.projects.setIamPolicy
       - bb.projects.undelete
       - bb.projects.update
+      - bb.releases.check
+      - bb.releases.create
+      - bb.releases.delete
+      - bb.releases.get
+      - bb.releases.list
+      - bb.releases.undelete
+      - bb.releases.update
       - bb.reviewConfigs.create
       - bb.reviewConfigs.delete
       - bb.reviewConfigs.get
@@ -335,6 +349,13 @@ roles:
       - bb.projects.getIamPolicy
       - bb.projects.setIamPolicy
       - bb.projects.update
+      - bb.releases.check
+      - bb.releases.create
+      - bb.releases.delete
+      - bb.releases.get
+      - bb.releases.list
+      - bb.releases.undelete
+      - bb.releases.update
       - bb.revisions.create
       - bb.revisions.delete
       - bb.revisions.get
@@ -395,6 +416,9 @@ roles:
       - bb.plans.list
       - bb.projects.get
       - bb.projects.getIamPolicy
+      - bb.releases.check
+      - bb.releases.get
+      - bb.releases.list
       - bb.revisions.get
       - bb.revisions.list
       - bb.rollouts.create
@@ -457,6 +481,8 @@ roles:
       - bb.plans.list
       - bb.projects.get
       - bb.projects.getIamPolicy
+      - bb.releases.get
+      - bb.releases.list
       - bb.revisions.get
       - bb.revisions.list
       - bb.rollouts.get
