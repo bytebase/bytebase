@@ -1,5 +1,5 @@
 INSERT INTO setting (creator_id, updater_id, name, value)
-VALUES (1, 1, 'bb.workspace.semantic-types', '{}')
+VALUES (1, 1, 'bb.workspace.semantic-types', '{"types": []}')
 ON CONFLICT (name) DO NOTHING;
 
 UPDATE setting

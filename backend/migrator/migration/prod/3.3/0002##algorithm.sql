@@ -1,3 +1,7 @@
+INSERT INTO setting (creator_id, updater_id, name, value)
+VALUES (1, 1, 'bb.workspace.semantic-types', '{"types": []}')
+ON CONFLICT (name) DO NOTHING;
+
 WITH setting_data AS (
     SELECT
         value::jsonb->'algorithms' AS algorithms_json
