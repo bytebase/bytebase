@@ -255,9 +255,7 @@ func (checker *SDLTypeChecker) EnterDropTable(ctx *mysql.DropTableContext) {
 			Content: fmt.Sprintf("Plan to drop table `%s`", tableName),
 			Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 				SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-					Line:   int32(checker.baseLine + ctx.GetStart().GetLine()),
-					Detail: "",
-					Code:   0,
+					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
 				},
 			},
 		})
@@ -279,9 +277,7 @@ func (checker *SDLTypeChecker) EnterDropIndex(ctx *mysql.DropIndexContext) {
 		Content: fmt.Sprintf("Plan to drop index `%s` on table `%s`", indexName, tableName),
 		Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 			SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-				Line:   int32(checker.baseLine + ctx.GetStart().GetLine()),
-				Detail: "",
-				Code:   0,
+				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
 			},
 		},
 	})
@@ -324,9 +320,7 @@ func (checker *SDLTypeChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
 					Content: fmt.Sprintf("Plan to drop column `%s` on table `%s`", columnName, tableName),
 					Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 						SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-							Line:   int32(checker.baseLine + alterListItem.GetStart().GetLine()),
-							Detail: "",
-							Code:   0,
+							Line: int32(checker.baseLine + alterListItem.GetStart().GetLine()),
 						},
 					},
 				})
@@ -339,9 +333,7 @@ func (checker *SDLTypeChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
 					Content: fmt.Sprintf("Plan to drop primary key on table `%s`", tableName),
 					Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 						SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-							Line:   int32(checker.baseLine + ctx.GetStart().GetLine()),
-							Detail: "",
-							Code:   0,
+							Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
 						},
 					},
 				})
@@ -355,9 +347,7 @@ func (checker *SDLTypeChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
 					Content: fmt.Sprintf("Plan to drop foreign key `%s` on table `%s`", name, tableName),
 					Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 						SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-							Line:   int32(checker.baseLine + ctx.GetStart().GetLine()),
-							Detail: "",
-							Code:   0,
+							Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
 						},
 					},
 				})
@@ -371,9 +361,7 @@ func (checker *SDLTypeChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
 					Content: fmt.Sprintf("Plan to drop check constraint `%s` on table `%s`", constraintName, tableName),
 					Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 						SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-							Line:   int32(checker.baseLine + ctx.GetStart().GetLine()),
-							Detail: "",
-							Code:   0,
+							Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
 						},
 					},
 				})

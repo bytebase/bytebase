@@ -3,7 +3,7 @@ import { RichClientError } from "nice-grpc-error-details";
 import { defineStore } from "pinia";
 import { sqlServiceClient } from "@/grpcweb";
 import type { SQLResultSetV1 } from "@/types";
-import { PlanCheckRun_Result_SqlReviewReport } from "@/types/proto/v1/plan_service";
+import { PlanCheckRun_Result } from "@/types/proto/v1/plan_service";
 import type { ExportRequest, QueryRequest } from "@/types/proto/v1/sql_service";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
@@ -14,19 +14,17 @@ const getSqlReviewReports = (err: unknown): Advice[] => {
     for (const extra of err.extra) {
       if (
         extra.$type === "google.protobuf.Any" &&
-        extra.typeUrl.endsWith("SqlReviewReport")
+        extra.typeUrl.endsWith("PlanCheckRun.Result")
       ) {
-        const sqlReviewReport = PlanCheckRun_Result_SqlReviewReport.decode(
-          extra.value
-        );
+        const sqlReviewReport = PlanCheckRun_Result.decode(extra.value);
         advices.push(
           Advice.fromPartial({
             status: Advice_Status.ERROR,
             code: sqlReviewReport.code,
-            title: "SQL Review Failed",
-            content: sqlReviewReport.detail,
-            line: sqlReviewReport.line,
-            column: sqlReviewReport.column,
+            title: sqlReviewReport.title || "SQL Review Failed",
+            content: sqlReviewReport.content,
+            line: sqlReviewReport.sqlReviewReport?.line,
+            column: sqlReviewReport.sqlReviewReport?.column,
           })
         );
       }

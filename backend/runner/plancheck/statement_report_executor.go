@@ -137,13 +137,11 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 				Status:  storepb.PlanCheckRunResult_Result_ERROR,
 				Title:   advice.Title,
 				Content: advice.Content,
-				Code:    0,
+				Code:    advice.Code,
 				Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
 						Line:          advice.GetStartPosition().GetLine(),
 						Column:        advice.GetStartPosition().GetColumn(),
-						Code:          advice.Code,
-						Detail:        advice.Detail,
 						StartPosition: advice.StartPosition,
 						EndPosition:   advice.EndPosition,
 					},
