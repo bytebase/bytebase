@@ -1116,6 +1116,9 @@
         "note": "ノート",
         "placeholder": "(オプション) メモを追加します…"
       },
+      "warning": {
+        "some-previous-stages-are-not-done": "以前のステージの一部が完了していません。"
+      },
       "error": {
         "some-tasks-are-still-running": "一部のタスクはまだ実行中です"
       }

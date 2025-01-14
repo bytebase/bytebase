@@ -1116,6 +1116,9 @@
         "note": "Nota",
         "placeholder": "(Opcional) Agregar una nota..."
       },
+      "warning": {
+        "some-previous-stages-are-not-done": "Algunas etapas anteriores no están realizadas."
+      },
       "error": {
         "some-tasks-are-still-running": "Algunas tareas aún se están ejecutando"
       }

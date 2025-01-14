@@ -11,17 +11,27 @@
         v-if="action"
         class="flex flex-col gap-y-4 h-full overflow-y-hidden px-1"
       >
-        <div
-          v-if="stage"
-          class="flex flex-col gap-y-1 shrink-0 overflow-y-hidden justify-start"
-        >
-          <label class="font-medium text-control">
-            {{ $t("common.stage") }}
-          </label>
-          <div class="textinfolabel break-all">
-            {{ stage.title }}
+        <template v-if="stage">
+          <NAlert
+            v-if="hasPreviousUnrolledStages"
+            :title="
+              t(
+                'issue.status-transition.warning.some-previous-stages-are-not-done'
+              )
+            "
+            type="warning"
+          />
+          <div
+            class="flex flex-col gap-y-1 shrink-0 overflow-y-hidden justify-start"
+          >
+            <label class="font-medium text-control">
+              {{ $t("common.stage") }}
+            </label>
+            <div class="textinfolabel break-all">
+              {{ stage.title }}
+            </div>
           </div>
-        </div>
+        </template>
         <div
           class="flex flex-col gap-y-1 shrink overflow-y-hidden justify-start"
         >
@@ -76,15 +86,6 @@
               />
             </template>
           </ErrorList>
-          <div>
-            <NCheckbox v-model:checked="performActionAnyway">
-              {{
-                $t("issue.action-anyway", {
-                  action: taskRolloutActionDialogButtonName(action, taskList),
-                })
-              }}
-            </NCheckbox>
-          </div>
         </div>
 
         <div class="flex flex-col gap-y-1 shrink-0">
@@ -104,25 +105,43 @@
       </div>
     </template>
     <template #footer>
-      <div v-if="action" class="flex justify-end gap-x-3">
-        <NButton @click="$emit('close')">
-          {{ $t("common.cancel") }}
-        </NButton>
+      <div
+        v-if="action"
+        class="w-full flex flex-row justify-between items-center gap-x-2"
+      >
+        <div>
+          <NCheckbox
+            v-if="showPerformActionAnyway"
+            v-model:checked="performActionAnyway"
+          >
+            {{
+              $t("issue.action-anyway", {
+                action: taskRolloutActionDialogButtonName(action, taskList),
+              })
+            }}
+          </NCheckbox>
+        </div>
 
-        <NTooltip :disabled="confirmErrors.length === 0" placement="top">
-          <template #trigger>
-            <NButton
-              :disabled="confirmErrors.length > 0"
-              v-bind="taskRolloutActionButtonProps(action)"
-              @click="handleConfirm(action!, comment)"
-            >
-              {{ taskRolloutActionDialogButtonName(action, taskList) }}
-            </NButton>
-          </template>
-          <template #default>
-            <ErrorList :errors="confirmErrors" />
-          </template>
-        </NTooltip>
+        <div class="flex justify-end gap-x-3">
+          <NButton @click="$emit('close')">
+            {{ $t("common.cancel") }}
+          </NButton>
+
+          <NTooltip :disabled="confirmErrors.length === 0" placement="top">
+            <template #trigger>
+              <NButton
+                :disabled="confirmErrors.length > 0"
+                v-bind="taskRolloutActionButtonProps(action)"
+                @click="handleConfirm(action!, comment)"
+              >
+                {{ taskRolloutActionDialogButtonName(action, taskList) }}
+              </NButton>
+            </template>
+            <template #default>
+              <ErrorList :errors="confirmErrors" />
+            </template>
+          </NTooltip>
+        </div>
       </div>
     </template>
   </CommonDrawer>
@@ -131,6 +150,7 @@
 <script setup lang="ts">
 import { head, uniqBy } from "lodash-es";
 import {
+  NAlert,
   NButton,
   NCheckbox,
   NInput,
@@ -156,7 +176,7 @@ import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/co
 import { rolloutServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import type { Task, TaskRun } from "@/types/proto/v1/rollout_service";
-import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
+import { Task_Status, TaskRun_Status } from "@/types/proto/v1/rollout_service";
 import { ErrorList } from "../common";
 import CommonDrawer from "./CommonDrawer.vue";
 import RolloutTaskDatabaseName from "./RolloutTaskDatabaseName.vue";
@@ -202,6 +222,24 @@ const stage = computed(() => {
   return stageForTask(issue.value, firstTask);
 });
 
+const hasPreviousUnrolledStages = computed(() => {
+  if (!stage.value) return false;
+  const stages = issue.value.rolloutEntity?.stages;
+  if (!stages) return false;
+  const stageIndex = stages.findIndex((s) => s.name === stage.value?.name);
+  return stages
+    .slice(0, stageIndex)
+    .some((s) =>
+      s.tasks.some(
+        (t) => ![Task_Status.DONE, Task_Status.SKIPPED].includes(t.status)
+      )
+    );
+});
+
+const showPerformActionAnyway = computed(() => {
+  return planCheckErrors.value.length > 0 || hasPreviousUnrolledStages.value;
+});
+
 const planCheckRunList = computed(() => {
   const list = props.taskList.flatMap(getPlanCheckRunsForTask);
   return uniqBy(list, (checkRun) => checkRun.name);
@@ -232,8 +270,15 @@ const planCheckErrors = computed(() => {
 
 const confirmErrors = computed(() => {
   const errors: string[] = [];
-  if (planCheckErrors.value.length > 0 && !performActionAnyway.value) {
-    errors.push(...planCheckErrors.value);
+  if (!performActionAnyway.value) {
+    if (planCheckErrors.value.length > 0) {
+      errors.push(...planCheckErrors.value);
+    }
+    if (hasPreviousUnrolledStages.value) {
+      errors.push(
+        t("issue.status-transition.warning.some-previous-stages-are-not-done")
+      );
+    }
   }
   return errors;
 });
