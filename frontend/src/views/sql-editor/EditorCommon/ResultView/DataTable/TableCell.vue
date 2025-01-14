@@ -144,14 +144,11 @@ const html = computed(() => {
 });
 
 const handleClick = (e: MouseEvent) => {
-  if (allowSelect.value) {
-    selectCell(props.rowIndex, props.colIndex);
-    e.stopPropagation();
+  if (!allowSelect.value) {
     return;
   }
-
-  if (!clickable.value) return;
-  showDetail();
+  selectCell(props.rowIndex, props.colIndex);
+  e.stopPropagation();
 };
 
 const showDetail = () => {
