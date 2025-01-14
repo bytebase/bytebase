@@ -519,18 +519,17 @@ message PlanCheckRun {
       SqlReviewReport sql_review_report = 6;
     }
     message SqlSummaryReport {
-      int32 code = 1;
+      reserved 1;
       // statement_types are the types of statements that are found in the sql.
       repeated string statement_types = 2;
       int32 affected_rows = 3;
       ChangedResources changed_resources = 4;
     }
     message SqlReviewReport {
+      reserved 3, 4;
+
       int32 line = 1;
       int32 column = 2;
-      string detail = 3;
-      // Code from sql review.
-      int32 code = 4;
       // 1-based Position of the SQL statement.
       // To supersede `line` and `column` above.
       Position start_position = 5;

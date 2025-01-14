@@ -231,11 +231,17 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 			}
 		} else if syntaxErr, ok := queryErr.(*base.SyntaxError); ok {
 			querySyntaxError, err := status.New(codes.InvalidArgument, queryErr.Error()).WithDetails(
-				&v1pb.PlanCheckRun_Result_SqlReviewReport{
-					Line:   int32(syntaxErr.Line),
-					Column: int32(syntaxErr.Column),
-					Detail: syntaxErr.Message,
-					Code:   int32(advisor.StatementSyntaxError),
+				&v1pb.PlanCheckRun_Result{
+					Code:    int32(advisor.StatementSyntaxError),
+					Content: syntaxErr.Message,
+					Title:   "Syntax error",
+					Status:  v1pb.PlanCheckRun_Result_ERROR,
+					Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
+						SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
+							Line:   int32(syntaxErr.Line),
+							Column: int32(syntaxErr.Column),
+						},
+					},
 				},
 			)
 			if err == nil {
@@ -1177,12 +1183,18 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 	if err != nil {
 		syntaxErr, ok := err.(*base.SyntaxError)
 		if ok {
-			querySyntaxError, err := status.New(codes.InvalidArgument, err.Error()).WithDetails(
-				&v1pb.PlanCheckRun_Result_SqlReviewReport{
-					Line:   int32(syntaxErr.Line),
-					Column: int32(syntaxErr.Column),
-					Detail: syntaxErr.Message,
-					Code:   int32(advisor.StatementSyntaxError),
+			querySyntaxError, err := status.New(codes.InvalidArgument, syntaxErr.Error()).WithDetails(
+				&v1pb.PlanCheckRun_Result{
+					Code:    int32(advisor.StatementSyntaxError),
+					Content: syntaxErr.Message,
+					Title:   "Syntax error",
+					Status:  v1pb.PlanCheckRun_Result_ERROR,
+					Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
+						SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
+							Line:   int32(syntaxErr.Line),
+							Column: int32(syntaxErr.Column),
+						},
+					},
 				},
 			)
 			if err != nil {
@@ -1437,7 +1449,6 @@ func convertToV1Advice(advice *storepb.Advice) *v1pb.Advice {
 		Content:       advice.Content,
 		Line:          int32(advice.GetStartPosition().GetLine()),
 		Column:        int32(advice.GetStartPosition().GetColumn()),
-		Detail:        advice.Detail,
 		StartPosition: convertToPosition(advice.StartPosition),
 		EndPosition:   convertToPosition(advice.EndPosition),
 	}
