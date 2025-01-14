@@ -234,7 +234,7 @@ func (e *StatementAdviseExecutor) runReview(
 					Line:          advice.GetStartPosition().GetLine(),
 					Column:        advice.GetStartPosition().GetColumn(),
 					Code:          advice.Code,
-					Detail:        advice.Detail,
+					Detail:        advice.Content,
 					StartPosition: advice.StartPosition,
 					EndPosition:   advice.EndPosition,
 				},

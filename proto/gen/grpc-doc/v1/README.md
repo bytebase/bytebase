@@ -9280,7 +9280,6 @@ Type is the database change type.
 | content | [string](#string) |  | The advice content. |
 | line | [int32](#int32) |  | The advice line number in the SQL statement. |
 | column | [int32](#int32) |  | The advice column number in the SQL statement. |
-| detail | [string](#string) |  | The advice detail. |
 | start_position | [Position](#bytebase-v1-Position) |  | 1-based Position of the SQL statement. To supersede `line` and `column` above. |
 | end_position | [Position](#bytebase-v1-Position) |  |  |
 

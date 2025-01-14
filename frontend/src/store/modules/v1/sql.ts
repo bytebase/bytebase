@@ -20,12 +20,11 @@ const getSqlReviewReports = (err: unknown): Advice[] => {
           extra.value
         );
         advices.push(
-          Advice.fromJSON({
+          Advice.fromPartial({
             status: Advice_Status.ERROR,
             code: sqlReviewReport.code,
-            title: "",
+            title: "SQL Review Failed",
             content: sqlReviewReport.detail,
-            detail: sqlReviewReport.detail,
             line: sqlReviewReport.line,
             column: sqlReviewReport.column,
           })
