@@ -1116,6 +1116,9 @@
         "note": "笔记",
         "placeholder": "（可选）添加一段笔记…"
       },
+      "warning": {
+        "some-previous-stages-are-not-done": "存在之前的阶段尚未完成。"
+      },
       "error": {
         "some-tasks-are-still-running": "部分任务仍在运行"
       }

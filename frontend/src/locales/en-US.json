@@ -1116,6 +1116,9 @@
         "note": "Note",
         "placeholder": "(Optional) Add a note..."
       },
+      "warning": {
+        "some-previous-stages-are-not-done": "Some previous stages are not done."
+      },
       "error": {
         "some-tasks-are-still-running": "Some tasks are still running"
       }
