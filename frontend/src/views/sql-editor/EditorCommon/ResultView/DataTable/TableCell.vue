@@ -48,13 +48,12 @@ const props = defineProps<{
   allowSelect?: boolean;
 }>();
 
-const { dark, disallowCopyingData, detail, keyword } =
-  useSQLResultViewContext();
+const { dark, detail, keyword } = useSQLResultViewContext();
 
 const {
   state: selectionState,
   disabled: selectionDisabled,
-  selectRow,
+  selectCell,
 } = useSelectionContext();
 const wrapperRef = ref<HTMLDivElement>();
 const truncated = ref(false);
@@ -90,24 +89,28 @@ const clickable = computed(() => {
 
 const classes = computed(() => {
   const classes: string[] = [];
-  if (disallowCopyingData.value) {
-    classes.push("select-none");
-  }
   if (allowSelect.value) {
-    if (props.colIndex === 0) {
-      classes.push("cursor-pointer");
-      classes.push("hover:bg-accent/10 hover:dark:bg-accent/40");
-    }
+    classes.push("cursor-pointer");
+    classes.push(dark.value ? "hover:bg-white/20" : "hover:bg-black/5");
     if (
+      selectionState.value.columns.length === 1 &&
+      selectionState.value.rows.length === 1
+    ) {
+      if (
+        selectionState.value.columns[0] === props.colIndex &&
+        selectionState.value.rows[0] === props.rowIndex
+      ) {
+        classes.push("!bg-accent/10 dark:!bg-accent/40");
+      }
+    } else if (
       selectionState.value.columns.includes(props.colIndex) ||
       selectionState.value.rows.includes(props.rowIndex)
     ) {
-      classes.push("bg-accent/10 dark:bg-accent/40");
+      classes.push("!bg-accent/10 dark:!bg-accent/40");
+    } else {
     }
-  }
-  if (clickable.value) {
-    classes.push("cursor-pointer");
-    classes.push(dark.value ? "hover:!bg-white/20" : "hover:!bg-black/5");
+  } else {
+    classes.push("select-none");
   }
   return uniq(classes);
 });
@@ -138,13 +141,11 @@ const html = computed(() => {
 });
 
 const handleClick = (e: MouseEvent) => {
-  if (props.colIndex === 0 && allowSelect.value) {
-    selectRow(props.rowIndex);
-    e.stopPropagation();
+  if (!allowSelect.value) {
+    return;
   }
-
-  if (!clickable.value) return;
-  showDetail();
+  selectCell(props.rowIndex, props.colIndex);
+  e.stopPropagation();
 };
 
 const showDetail = () => {
