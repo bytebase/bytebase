@@ -225,8 +225,22 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 	if queryErr != nil {
 		code := codes.Internal
-		if status, ok := status.FromError(queryErr); ok && status.Code() != codes.OK && status.Code() != codes.Unknown {
-			code = status.Code()
+		if errorStatus, ok := status.FromError(queryErr); ok {
+			if errorStatus.Code() != codes.OK && errorStatus.Code() != codes.Unknown {
+				code = errorStatus.Code()
+			}
+		} else if syntaxErr, ok := queryErr.(*base.SyntaxError); ok {
+			querySyntaxError, err := status.New(codes.InvalidArgument, queryErr.Error()).WithDetails(
+				&v1pb.PlanCheckRun_Result_SqlReviewReport{
+					Line:   int32(syntaxErr.Line),
+					Column: int32(syntaxErr.Column),
+					Detail: syntaxErr.Message,
+					Code:   int32(advisor.StatementSyntaxError),
+				},
+			)
+			if err == nil {
+				return nil, querySyntaxError.Err()
+			}
 		}
 		return nil, status.Error(code, queryErr.Error())
 	}
@@ -398,7 +412,7 @@ func queryRetry(
 			store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		)
 		if err != nil {
-			return nil, nil, time.Duration(0), status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
+			return nil, nil, time.Duration(0), err
 		}
 		// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
 		// If err != nil, this function will return the original spans.
@@ -459,7 +473,7 @@ func queryRetry(
 			store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		)
 		if err != nil {
-			return nil, nil, duration, status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
+			return nil, nil, time.Duration(0), err
 		}
 		// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
 		// If err != nil, this function will return the original spans.
@@ -1168,6 +1182,7 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 					Line:   int32(syntaxErr.Line),
 					Column: int32(syntaxErr.Column),
 					Detail: syntaxErr.Message,
+					Code:   int32(advisor.StatementSyntaxError),
 				},
 			)
 			if err != nil {
