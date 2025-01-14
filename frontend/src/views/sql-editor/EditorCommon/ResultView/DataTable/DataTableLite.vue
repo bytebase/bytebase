@@ -15,12 +15,15 @@
             v-for="header of table.getFlatHeaders()"
             :key="header.index"
             class="relative min-w-[2rem] max-w-[50vw] text-left text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border-l first:border-l-0 border-block-border dark:border-zinc-500"
-            :class="{
-              'cursor-pointer': !selectionDisabled,
-              'bg-accent/10 dark:bg-accent/40': selectionState.columns.includes(
-                header.index
-              ),
-            }"
+            :class="
+              twMerge(
+                !selectionDisabled &&
+                  'cursor-pointer hover:bg-accent/5 dark:hover:bg-accent/20',
+                selectionState.rows.length === 0 &&
+                  selectionState.columns.includes(header.index) &&
+                  '!bg-accent/10 dark:!bg-accent/40'
+              )
+            "
             @click.stop="selectColumn(header.index)"
           >
             <div class="px-2 py-2 flex items-center overflow-hidden">
@@ -83,6 +86,18 @@
               :col-index="cellIndex"
               :allow-select="true"
             />
+            <div
+              v-if="cellIndex === 0"
+              class="absolute inset-y-0 left-0 w-2"
+              :class="{
+                'cursor-pointer hover:bg-accent/10 dark:hover:bg-accent/40':
+                  !selectionDisabled,
+                'bg-accent/10 dark:bg-accent/40':
+                  selectionState.columns.length === 0 &&
+                  selectionState.rows.includes(offset + rowIndex),
+              }"
+              @click.prevent.stop="selectRow(offset + rowIndex)"
+            ></div>
           </td>
         </tr>
       </tbody>
@@ -92,6 +107,7 @@
 
 <script lang="ts" setup>
 import type { Table } from "@tanstack/vue-table";
+import { twMerge } from "tailwind-merge";
 import { computed, nextTick, ref, watch } from "vue";
 import {
   FeatureBadge,
@@ -118,6 +134,7 @@ const {
   state: selectionState,
   disabled: selectionDisabled,
   selectColumn,
+  selectRow,
 } = useSelectionContext();
 const containerRef = ref<HTMLDivElement>();
 const subscriptionStore = useSubscriptionV1Store();
