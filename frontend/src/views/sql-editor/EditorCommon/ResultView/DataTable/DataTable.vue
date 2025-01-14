@@ -20,26 +20,21 @@
           class="relative border-collapse table-fixed z-[1]"
           v-bind="tableResize.getTableProps()"
         >
-          <thead class="sticky top-0 z-[1] drop-shadow-sm">
+          <thead class="bg-white sticky top-0 z-[1] drop-shadow-sm">
             <tr>
               <th
                 v-for="header of table.getFlatHeaders()"
                 :key="header.index"
                 class="group relative px-2 py-2 min-w-[2rem] text-left bg-gray-50 dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border border-t-0 border-block-border border-b-0"
                 :class="{
-                  'cursor-pointer': !selectionDisabled,
+                  'cursor-pointer hover:bg-accent/5': !selectionDisabled,
+                  '!bg-accent/10':
+                    selectionState.rows.length === 0 &&
+                    selectionState.columns.includes(header.index),
                 }"
                 @click.stop="selectColumn(header.index)"
                 v-bind="tableResize.getColumnProps(header.index)"
               >
-                <div
-                  v-if="!selectionDisabled"
-                  class="absolute inset-0 group-hover:bg-accent/10 pointer-events-none"
-                  :class="
-                    selectionState.columns.includes(header.index) &&
-                    'bg-accent/10'
-                  "
-                />
                 <div class="flex items-center overflow-hidden">
                   <span class="flex flex-row items-center select-none">
                     <template
@@ -108,6 +103,17 @@
                   :col-index="cellIndex"
                   :allow-select="true"
                 />
+                <div
+                  v-if="cellIndex === 0"
+                  class="absolute inset-y-0 left-0 w-2"
+                  :class="{
+                    'cursor-pointer hover:bg-accent/10': !selectionDisabled,
+                    'bg-accent/10':
+                      selectionState.columns.length === 0 &&
+                      selectionState.rows.includes(offset + rowIndex),
+                  }"
+                  @click.prevent.stop="selectRow(offset + rowIndex)"
+                ></div>
               </td>
             </tr>
           </tbody>
@@ -165,6 +171,7 @@ const {
   state: selectionState,
   disabled: selectionDisabled,
   selectColumn,
+  selectRow,
 } = useSelectionContext();
 const containerRef = ref<HTMLDivElement>();
 const scrollbarRef = ref<InstanceType<typeof NScrollbar>>();
