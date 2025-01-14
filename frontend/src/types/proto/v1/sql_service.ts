@@ -279,6 +279,8 @@ export interface Advice {
   line: number;
   /** The advice column number in the SQL statement. */
   column: number;
+  /** The advice detail. */
+  detail: string;
   /**
    * 1-based Position of the SQL statement.
    * To supersede `line` and `column` above.
@@ -2196,6 +2198,7 @@ function createBaseAdvice(): Advice {
     content: "",
     line: 0,
     column: 0,
+    detail: "",
     startPosition: undefined,
     endPosition: undefined,
   };
@@ -2220,6 +2223,9 @@ export const Advice: MessageFns<Advice> = {
     }
     if (message.column !== 0) {
       writer.uint32(48).int32(message.column);
+    }
+    if (message.detail !== "") {
+      writer.uint32(58).string(message.detail);
     }
     if (message.startPosition !== undefined) {
       Position.encode(message.startPosition, writer.uint32(66).fork()).join();
@@ -2285,6 +2291,14 @@ export const Advice: MessageFns<Advice> = {
           message.column = reader.int32();
           continue;
         }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.detail = reader.string();
+          continue;
+        }
         case 8: {
           if (tag !== 66) {
             break;
@@ -2318,6 +2332,7 @@ export const Advice: MessageFns<Advice> = {
       content: isSet(object.content) ? globalThis.String(object.content) : "",
       line: isSet(object.line) ? globalThis.Number(object.line) : 0,
       column: isSet(object.column) ? globalThis.Number(object.column) : 0,
+      detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
       startPosition: isSet(object.startPosition) ? Position.fromJSON(object.startPosition) : undefined,
       endPosition: isSet(object.endPosition) ? Position.fromJSON(object.endPosition) : undefined,
     };
@@ -2343,6 +2358,9 @@ export const Advice: MessageFns<Advice> = {
     if (message.column !== 0) {
       obj.column = Math.round(message.column);
     }
+    if (message.detail !== "") {
+      obj.detail = message.detail;
+    }
     if (message.startPosition !== undefined) {
       obj.startPosition = Position.toJSON(message.startPosition);
     }
@@ -2363,6 +2381,7 @@ export const Advice: MessageFns<Advice> = {
     message.content = object.content ?? "";
     message.line = object.line ?? 0;
     message.column = object.column ?? 0;
+    message.detail = object.detail ?? "";
     message.startPosition = (object.startPosition !== undefined && object.startPosition !== null)
       ? Position.fromPartial(object.startPosition)
       : undefined;

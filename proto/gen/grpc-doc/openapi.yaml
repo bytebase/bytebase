@@ -8629,6 +8629,9 @@ components:
                 content:
                     type: string
                     description: The advice content.
+                detail:
+                    type: string
+                    description: The advice detail.
                 startPosition:
                     allOf:
                         - $ref: '#/components/schemas/Position'

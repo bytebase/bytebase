@@ -20,6 +20,8 @@ export interface Advice {
   title: string;
   /** The advice content. */
   content: string;
+  /** The advice detail. */
+  detail: string;
   /** 1-based positions of the sql statment. */
   startPosition: Position | undefined;
   endPosition: Position | undefined;
@@ -93,6 +95,7 @@ function createBaseAdvice(): Advice {
     code: 0,
     title: "",
     content: "",
+    detail: "",
     startPosition: undefined,
     endPosition: undefined,
   };
@@ -111,6 +114,9 @@ export const Advice: MessageFns<Advice> = {
     }
     if (message.content !== "") {
       writer.uint32(34).string(message.content);
+    }
+    if (message.detail !== "") {
+      writer.uint32(42).string(message.detail);
     }
     if (message.startPosition !== undefined) {
       Position.encode(message.startPosition, writer.uint32(50).fork()).join();
@@ -160,6 +166,14 @@ export const Advice: MessageFns<Advice> = {
           message.content = reader.string();
           continue;
         }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.detail = reader.string();
+          continue;
+        }
         case 6: {
           if (tag !== 50) {
             break;
@@ -191,6 +205,7 @@ export const Advice: MessageFns<Advice> = {
       code: isSet(object.code) ? globalThis.Number(object.code) : 0,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       content: isSet(object.content) ? globalThis.String(object.content) : "",
+      detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
       startPosition: isSet(object.startPosition) ? Position.fromJSON(object.startPosition) : undefined,
       endPosition: isSet(object.endPosition) ? Position.fromJSON(object.endPosition) : undefined,
     };
@@ -210,6 +225,9 @@ export const Advice: MessageFns<Advice> = {
     if (message.content !== "") {
       obj.content = message.content;
     }
+    if (message.detail !== "") {
+      obj.detail = message.detail;
+    }
     if (message.startPosition !== undefined) {
       obj.startPosition = Position.toJSON(message.startPosition);
     }
@@ -228,6 +246,7 @@ export const Advice: MessageFns<Advice> = {
     message.code = object.code ?? 0;
     message.title = object.title ?? "";
     message.content = object.content ?? "";
+    message.detail = object.detail ?? "";
     message.startPosition = (object.startPosition !== undefined && object.startPosition !== null)
       ? Position.fromPartial(object.startPosition)
       : undefined;

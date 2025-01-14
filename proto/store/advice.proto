@@ -7,8 +7,6 @@ import "store/common.proto";
 option go_package = "generated-go/store";
 
 message Advice {
-  reserved 5;
-
   enum Status {
     // Unspecified.
     STATUS_UNSPECIFIED = 0;
@@ -27,6 +25,9 @@ message Advice {
 
   // The advice content.
   string content = 4;
+
+  // The advice detail.
+  string detail = 5;
 
   // 1-based positions of the sql statment.
   Position start_position = 6;

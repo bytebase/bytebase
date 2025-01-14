@@ -544,6 +544,7 @@ Used internally for obfuscating the page token.
 | code | [int32](#int32) |  | The advice code. |
 | title | [string](#string) |  | The advice title. |
 | content | [string](#string) |  | The advice content. |
+| detail | [string](#string) |  | The advice detail. |
 | start_position | [Position](#bytebase-store-Position) |  | 1-based positions of the sql statment. |
 | end_position | [Position](#bytebase-store-Position) |  |  |
 

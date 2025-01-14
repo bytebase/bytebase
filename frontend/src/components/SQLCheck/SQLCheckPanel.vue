@@ -134,7 +134,7 @@ const planCheckRun = computed((): PlanCheckRun => {
         sqlReviewReport: PlanCheckRun_Result_SqlReviewReport.fromPartial({
           line: advice.line,
           column: advice.column,
-          detail: advice.content,
+          detail: advice.detail,
           code: advice.code,
         }),
       });

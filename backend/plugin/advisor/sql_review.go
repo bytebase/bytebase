@@ -799,7 +799,7 @@ func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err err
 			},
 		})
 	case catalog.ErrorTypeColumnIsReferencedByView:
-		details := walkThroughError.Content
+		details := ""
 		if checkContext.DbType == storepb.Engine_POSTGRES {
 			list, yes := walkThroughError.Payload.([]string)
 			if !yes {
@@ -816,13 +816,14 @@ func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err err
 			Status:  storepb.Advice_ERROR,
 			Code:    ColumnIsReferencedByView.Int32(),
 			Title:   "Column is referenced by view",
-			Content: details,
+			Content: walkThroughError.Content,
 			StartPosition: &storepb.Position{
 				Line: int32(walkThroughError.Line),
 			},
+			Detail: details,
 		})
 	case catalog.ErrorTypeTableIsReferencedByView:
-		details := walkThroughError.Content
+		details := ""
 		if checkContext.DbType == storepb.Engine_POSTGRES {
 			list, yes := walkThroughError.Payload.([]string)
 			if !yes {
@@ -839,10 +840,11 @@ func convertWalkThroughErrorToAdvice(checkContext SQLReviewCheckContext, err err
 			Status:  storepb.Advice_ERROR,
 			Code:    TableIsReferencedByView.Int32(),
 			Title:   "Table is referenced by view",
-			Content: details,
+			Content: walkThroughError.Content,
 			StartPosition: &storepb.Position{
 				Line: int32(walkThroughError.Line),
 			},
+			Detail: details,
 		})
 	case catalog.ErrorTypeInvalidColumnTypeForDefaultValue:
 		res = append(res, &storepb.Advice{
