@@ -227,13 +227,13 @@ const hasPreviousUnrolledStages = computed(() => {
   const stages = issue.value.rolloutEntity?.stages;
   if (!stages) return false;
   const stageIndex = stages.findIndex((s) => s.name === stage.value?.name);
-  return stages
-    .slice(0, stageIndex)
-    .some((s) =>
-      s.tasks.some(
-        (t) => ![Task_Status.DONE, Task_Status.SKIPPED].includes(t.status)
-      )
-    );
+  return stages.slice(0, stageIndex).some((s) =>
+    s.tasks.some(
+      // Done or skipped tasks are considered as rolled.
+      // Otherwise, it's considered as unrolled.
+      (t) => ![Task_Status.DONE, Task_Status.SKIPPED].includes(t.status)
+    )
+  );
 });
 
 const showPerformActionAnyway = computed(() => {
