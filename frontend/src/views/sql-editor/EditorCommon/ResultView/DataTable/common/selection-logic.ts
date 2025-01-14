@@ -50,11 +50,21 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
   const disabled = computed(() => {
     return resultViewContext.disallowCopyingData.value;
   });
+  const isCellSelected = computed(
+    () => state.value.rows.length === 1 && state.value.columns.length === 1
+  );
   const selectRow = (row: number) => {
     if (disabled.value) return;
+    if (isCellSelected.value) {
+      state.value = {
+        rows: [row],
+        columns: [],
+      };
+      return;
+    }
     state.value = {
       rows: sortBy(
-        state.value.columns.length === 0 && state.value.rows.includes(row)
+        state.value.rows.includes(row)
           ? state.value.rows.filter((r) => r !== row)
           : [...state.value.rows, row]
       ),
@@ -63,10 +73,17 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
   };
   const selectColumn = (column: number) => {
     if (disabled.value) return;
+    if (isCellSelected.value) {
+      state.value = {
+        rows: [],
+        columns: [column],
+      };
+      return;
+    }
     state.value = {
       rows: [],
       columns: sortBy(
-        state.value.rows.length === 0 && state.value.columns.includes(column)
+        state.value.columns.includes(column)
           ? state.value.columns.filter((c) => c !== column)
           : [...state.value.columns, column]
       ),
