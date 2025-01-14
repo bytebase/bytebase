@@ -124,6 +124,7 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 			payload
 		FROM release
 		WHERE %s
+		ORDER BY release.id DESC
 	`, strings.Join(where, " AND "))
 
 	if v := find.Limit; v != nil {
