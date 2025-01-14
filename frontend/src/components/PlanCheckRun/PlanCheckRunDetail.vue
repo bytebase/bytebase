@@ -64,16 +64,10 @@
         <div
           class="flex items-center justify-start space-x-2 divide-x divide-block-border"
         >
-          <div
-            v-if="row.checkResult.sqlReviewReport?.detail"
-            class="pl-2 first:pl-0"
-          >
+          <div v-if="row.checkResult.content" class="pl-2 first:pl-0">
             <span
               class="normal-link"
-              @click="
-                state.activeResultDefinition =
-                  row.checkResult.sqlReviewReport!.detail
-              "
+              @click="state.activeResultDefinition = row.checkResult.content"
               >{{ $t("sql-review.view-definition") }}</span
             >
           </div>
@@ -164,13 +158,10 @@
       </div>
       <div class="textinfolabel">
         <span>{{ row.checkResult.content }}</span>
-        <template v-if="row.checkResult.sqlReviewReport?.detail">
+        <template v-if="row.checkResult.content">
           <span
             class="ml-1 normal-link"
-            @click="
-              state.activeResultDefinition =
-                row.checkResult.sqlReviewReport!.detail
-            "
+            @click="state.activeResultDefinition = row.checkResult.content"
             >{{ $t("sql-review.view-definition") }}</span
           >
           <span class="border-r border-control-border ml-1"></span>
@@ -392,7 +383,7 @@ const categoryAndTitle = (
   checkResult: PlanCheckRun_Result
 ): [string, string] => {
   if (checkResult.sqlReviewReport) {
-    const code = checkResult.sqlReviewReport?.code ?? checkResult.code;
+    const code = checkResult.code;
     if (!code) {
       return ["", checkResult.title];
     }
@@ -432,7 +423,7 @@ const messageWithCode = (message: string, code: number) => {
 const errorCodeLink = (
   checkResult: PlanCheckRun_Result
 ): ErrorCodeLink | undefined => {
-  const code = checkResult.sqlReviewReport?.code ?? checkResult.code;
+  const code = checkResult.code;
   switch (code) {
     case undefined:
       return;
