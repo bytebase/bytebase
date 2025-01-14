@@ -240,7 +240,6 @@ import {
   extractSQLRowValuePlain,
   generateIssueTitle,
   hasPermissionToCreateRequestGrantIssue,
-  hasWorkspacePermissionV2,
   instanceV1HasStructuredQueryResult,
   isNullOrUndefined,
 } from "@/utils";
@@ -326,10 +325,6 @@ const showSearchFeature = computed(() => {
 });
 
 const allowToExportData = computed(() => {
-  if (hasWorkspacePermissionV2("bb.policies.update")) {
-    return true;
-  }
-
   return props.sqlResultSet?.allowExport || false;
 });
 
