@@ -291,6 +291,8 @@ message RowValue {
 }
 
 message Advice {
+  reserved 7;
+
   enum Status {
     // Unspecified.
     STATUS_UNSPECIFIED = 0;
@@ -315,9 +317,6 @@ message Advice {
 
   // The advice column number in the SQL statement.
   int32 column = 6;
-
-  // The advice detail.
-  string detail = 7;
 
   // 1-based Position of the SQL statement.
   // To supersede `line` and `column` above.
