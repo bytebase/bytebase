@@ -29225,11 +29225,12 @@ Format: projects/{project} </p></td>
                 <tr>
                   <td>stage_id</td>
                   <td><a href="#string">string</a></td>
-                  <td></td>
+                  <td>optional</td>
                   <td><p>stage_id is the id in the plan deployment_config_snapshot.
 The rollout is created according to the plan and the
 stages are created up to the stage_id.
-If unspecified, all stages are created. </p></td>
+If unspecified, all stages are created.
+If set to &#34;&#34;, no stages are created. </p></td>
                 </tr>
               
                 <tr>
