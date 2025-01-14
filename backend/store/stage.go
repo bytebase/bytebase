@@ -34,6 +34,9 @@ type TaskIndexDAG struct {
 }
 
 func (*Store) createStages(ctx context.Context, tx *Tx, stagesCreate []*StageMessage, pipelineUID int, creatorID int) ([]*StageMessage, error) {
+	if len(stagesCreate) == 0 {
+		return nil, nil
+	}
 	var environmentIDs []int
 	var names []string
 	var deploymentIDs []string
@@ -81,26 +84,6 @@ func (*Store) createStages(ctx context.Context, tx *Tx, stagesCreate []*StageMes
 	}
 
 	return stagesCreate, nil
-}
-
-// CreateStageV2 creates a list of stages.
-func (s *Store) CreateStageV2(ctx context.Context, stagesCreate []*StageMessage, pipelineUID int, creatorID int) ([]*StageMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	stages, err := s.createStages(ctx, tx, stagesCreate, pipelineUID, creatorID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create stages")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit")
-	}
-
-	return stages, nil
 }
 
 func (*Store) listStages(ctx context.Context, tx *Tx, pipelineUID int) ([]*StageMessage, error) {
