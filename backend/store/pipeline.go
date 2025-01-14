@@ -34,7 +34,8 @@ type PipelineFind struct {
 	Offset *int
 }
 
-// targetStage == "" means deploy all stages.
+// targetStage == nil means deploy all stages.
+// targetStage == "" means deploy no stages.
 func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *PipelineMessage, creatorUID int) (createdPipelineUID int, err error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
