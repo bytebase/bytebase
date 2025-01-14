@@ -70,7 +70,7 @@ const getLatestAdviceOptions = (planCheckRunList: PlanCheckRun[]) => {
     .map<AdviceOption>((result) => {
       const line = result.sqlReviewReport!.line;
       const column = result.sqlReviewReport?.column ?? Number.MAX_SAFE_INTEGER;
-      const code = result.sqlReviewReport?.code ?? result.code;
+      const code = result.code;
       return {
         severity:
           result.status === PlanCheckRun_Result_Status.ERROR

@@ -436,7 +436,6 @@ func convertToPlanCheckRunResult(result *storepb.PlanCheckRunResult_Result) *v1p
 	case *storepb.PlanCheckRunResult_Result_SqlSummaryReport_:
 		resultV1.Report = &v1pb.PlanCheckRun_Result_SqlSummaryReport_{
 			SqlSummaryReport: &v1pb.PlanCheckRun_Result_SqlSummaryReport{
-				Code:             report.SqlSummaryReport.Code,
 				StatementTypes:   report.SqlSummaryReport.StatementTypes,
 				AffectedRows:     report.SqlSummaryReport.AffectedRows,
 				ChangedResources: convertToChangedResources(report.SqlSummaryReport.ChangedResources),
@@ -447,8 +446,6 @@ func convertToPlanCheckRunResult(result *storepb.PlanCheckRunResult_Result) *v1p
 			SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
 				Line:          report.SqlReviewReport.Line,
 				Column:        report.SqlReviewReport.Column,
-				Detail:        report.SqlReviewReport.Detail,
-				Code:          report.SqlReviewReport.Code,
 				StartPosition: convertToPosition(report.SqlReviewReport.StartPosition),
 				EndPosition:   convertToPosition(report.SqlReviewReport.EndPosition),
 			},

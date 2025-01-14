@@ -26,7 +26,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 const code = computed(() => {
-  return props.row.checkResult.sqlReviewReport?.code;
+  return props.row.checkResult.code;
 });
 
 const advise = computed(() => {

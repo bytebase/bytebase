@@ -8629,9 +8629,6 @@ components:
                 content:
                     type: string
                     description: The advice content.
-                detail:
-                    type: string
-                    description: The advice detail.
                 startPosition:
                     allOf:
                         - $ref: '#/components/schemas/Position'
@@ -12822,12 +12819,6 @@ components:
                 column:
                     type: integer
                     format: int32
-                detail:
-                    type: string
-                code:
-                    type: integer
-                    description: Code from sql review.
-                    format: int32
                 startPosition:
                     allOf:
                         - $ref: '#/components/schemas/Position'
@@ -12839,9 +12830,6 @@ components:
         Result_SqlSummaryReport:
             type: object
             properties:
-                code:
-                    type: integer
-                    format: int32
                 statementTypes:
                     type: array
                     items:
