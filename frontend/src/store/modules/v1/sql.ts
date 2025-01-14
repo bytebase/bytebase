@@ -14,7 +14,7 @@ const getSqlReviewReports = (err: unknown): Advice[] => {
     for (const extra of err.extra) {
       if (
         extra.$type === "google.protobuf.Any" &&
-        extra.typeUrl.endsWith("PlanCheckRun_Result")
+        extra.typeUrl.endsWith("PlanCheckRun.Result")
       ) {
         const sqlReviewReport = PlanCheckRun_Result.decode(extra.value);
         advices.push(
