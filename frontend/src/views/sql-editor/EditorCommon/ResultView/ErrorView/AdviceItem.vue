@@ -22,9 +22,6 @@
     <div v-if="advice.content" class="col-start-2">
       {{ advice.content }}
     </div>
-    <div v-if="advice.detail" class="col-start-2">
-      {{ advice.detail }}
-    </div>
   </div>
 </template>
 
