@@ -5765,6 +5765,7 @@ paths:
                      The rollout is created according to the plan and the
                      stages are created up to the stage_id.
                      If unspecified, all stages are created.
+                     If set to "", no stages are created.
                   schema:
                     type: string
                 - name: validateOnly

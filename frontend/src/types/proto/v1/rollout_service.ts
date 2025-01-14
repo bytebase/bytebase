@@ -122,8 +122,11 @@ export interface CreateRolloutRequest {
    * The rollout is created according to the plan and the
    * stages are created up to the stage_id.
    * If unspecified, all stages are created.
+   * If set to "", no stages are created.
    */
-  stageId: string;
+  stageId?:
+    | string
+    | undefined;
   /**
    * If set, validate the request and preview the rollout, but
    * do not actually create it.
@@ -1684,7 +1687,7 @@ export const ListRolloutsResponse: MessageFns<ListRolloutsResponse> = {
 };
 
 function createBaseCreateRolloutRequest(): CreateRolloutRequest {
-  return { parent: "", rollout: undefined, stageId: "", validateOnly: false };
+  return { parent: "", rollout: undefined, stageId: undefined, validateOnly: false };
 }
 
 export const CreateRolloutRequest: MessageFns<CreateRolloutRequest> = {
@@ -1695,7 +1698,7 @@ export const CreateRolloutRequest: MessageFns<CreateRolloutRequest> = {
     if (message.rollout !== undefined) {
       Rollout.encode(message.rollout, writer.uint32(18).fork()).join();
     }
-    if (message.stageId !== "") {
+    if (message.stageId !== undefined) {
       writer.uint32(26).string(message.stageId);
     }
     if (message.validateOnly !== false) {
@@ -1756,7 +1759,7 @@ export const CreateRolloutRequest: MessageFns<CreateRolloutRequest> = {
     return {
       parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       rollout: isSet(object.rollout) ? Rollout.fromJSON(object.rollout) : undefined,
-      stageId: isSet(object.stageId) ? globalThis.String(object.stageId) : "",
+      stageId: isSet(object.stageId) ? globalThis.String(object.stageId) : undefined,
       validateOnly: isSet(object.validateOnly) ? globalThis.Boolean(object.validateOnly) : false,
     };
   },
@@ -1769,7 +1772,7 @@ export const CreateRolloutRequest: MessageFns<CreateRolloutRequest> = {
     if (message.rollout !== undefined) {
       obj.rollout = Rollout.toJSON(message.rollout);
     }
-    if (message.stageId !== "") {
+    if (message.stageId !== undefined) {
       obj.stageId = message.stageId;
     }
     if (message.validateOnly !== false) {
@@ -1787,7 +1790,7 @@ export const CreateRolloutRequest: MessageFns<CreateRolloutRequest> = {
     message.rollout = (object.rollout !== undefined && object.rollout !== null)
       ? Rollout.fromPartial(object.rollout)
       : undefined;
-    message.stageId = object.stageId ?? "";
+    message.stageId = object.stageId ?? undefined;
     message.validateOnly = object.validateOnly ?? false;
     return message;
   },

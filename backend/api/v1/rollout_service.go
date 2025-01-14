@@ -1164,8 +1164,12 @@ func getTaskIndexDAGs(specs []*storepb.PlanConfig_Spec, getTaskIndexes func(spec
 }
 
 // filter pipelineCreate.Stages using targetStageID.
-func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, snapshot *storepb.DeploymentConfig, project *store.ProjectMessage, pipelineCreate *store.PipelineMessage, targetStageID string) (*store.PipelineMessage, error) {
-	if targetStageID == "" {
+func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, snapshot *storepb.DeploymentConfig, project *store.ProjectMessage, pipelineCreate *store.PipelineMessage, targetStageID *string) (*store.PipelineMessage, error) {
+	if targetStageID == nil {
+		return pipelineCreate, nil
+	}
+	if *targetStageID == "" {
+		pipelineCreate.Stages = nil
 		return pipelineCreate, nil
 	}
 	if snapshot == nil {
@@ -1192,13 +1196,13 @@ func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, snapsho
 			stageCreates = append(stageCreates, pipelineCreate.Stages[i])
 			i++
 		}
-		if id == targetStageID {
+		if id == *targetStageID {
 			foundID = true
 			break
 		}
 	}
 	if !foundID {
-		return nil, errors.Errorf("stageId %q not found in deployment schedules", targetStageID)
+		return nil, errors.Errorf("stageId %q not found in deployment schedules", *targetStageID)
 	}
 	pipelineCreate.Stages = stageCreates
 	return pipelineCreate, nil
