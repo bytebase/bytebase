@@ -19,9 +19,10 @@ import StageCard from "./StageCard.vue";
 const { rollout, rolloutPreview } = useRolloutDetailContext();
 
 const mergedStages = computed(() => {
-  const stagesPreview = rolloutPreview.value.stages.slice(
-    rollout.value.stages.length
-  );
-  return [...rollout.value.stages, ...stagesPreview];
+  // Merge preview stages with created rollout stages.
+  return rolloutPreview.value.stages.map((sp) => {
+    const createdStage = rollout.value.stages.find((s) => s.id === sp.id);
+    return createdStage || sp;
+  });
 });
 </script>
