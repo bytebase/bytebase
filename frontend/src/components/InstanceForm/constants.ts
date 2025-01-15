@@ -11,7 +11,7 @@ export const defaultPortForEngine = (engine: Engine) => {
     case Engine.POSTGRES:
       return "5432";
     case  Engine.SNOWFLAKE:
-      return "443";
+      return "";
     case Engine.SQLITE:
       return "";
     case Engine.TIDB:
@@ -51,8 +51,9 @@ export const defaultPortForEngine = (engine: Engine) => {
     case Engine.COCKROACHDB:
       return "26257";
     case Engine.COSMOSDB:
-      return "443";
+      return "";
     }
+    throw new Error("engine port unknown");
 };
 
 export const EngineList = computed(() => {
