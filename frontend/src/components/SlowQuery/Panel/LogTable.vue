@@ -46,6 +46,7 @@ import {
 } from "@/types";
 import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { instanceV1HasSlowQueryDetail } from "@/utils";
+import Long from "long";
 
 const props = withDefaults(
   defineProps<{
@@ -99,8 +100,8 @@ const dataTableColumns = computed(
         title: t("slow-query.total-query-count"),
         key: "total_query_count",
         sorter: (rowA, rowB) =>
-          (rowA.log.statistics?.count ?? 0) - (rowB.log.statistics?.count ?? 0),
-        render: (item) => item.log.statistics?.count,
+          (rowA.log.statistics?.count ?? Long.ZERO).compare(rowB.log.statistics?.count ?? Long.ZERO),
+        render: (item) => (item.log.statistics?.count ?? Long.ZERO).toString(),
       },
       {
         title: t("slow-query.query-count-percent"),
@@ -134,42 +135,38 @@ const dataTableColumns = computed(
         title: t("slow-query.max-rows-examined"),
         key: "max_rows_examined",
         sorter: (rowA, rowB) =>
-          (rowA.log.statistics?.maximumRowsExamined ?? 0) -
-          (rowB.log.statistics?.maximumRowsExamined ?? 0),
+          (rowA.log.statistics?.maximumRowsExamined ?? Long.ZERO).compare(rowB.log.statistics?.maximumRowsExamined ?? Long.ZERO),
         render: (item) =>
           instanceV1HasSlowQueryDetail(item.database.instanceResource)
-            ? item.log.statistics?.maximumRowsExamined
+            ? (item.log.statistics?.maximumRowsExamined ?? Long.ZERO).toString()
             : "-",
       },
       {
         title: t("slow-query.avg-rows-examined"),
         key: "avg_rows_examined",
         sorter: (rowA, rowB) =>
-          (rowA.log.statistics?.averageRowsExamined ?? 0) -
-          (rowB.log.statistics?.averageRowsExamined ?? 0),
+          (rowA.log.statistics?.averageRowsExamined ?? Long.ZERO).compare(rowB.log.statistics?.averageRowsExamined ?? Long.ZERO),
         render: (item) =>
           instanceV1HasSlowQueryDetail(item.database.instanceResource)
-            ? item.log.statistics?.averageRowsExamined
+            ? (item.log.statistics?.averageRowsExamined ?? Long.ZERO).toString()
             : "-",
       },
       {
         title: t("slow-query.max-rows-sent"),
         key: "max_rows_sent",
         sorter: (rowA, rowB) =>
-          (rowA.log.statistics?.maximumRowsSent ?? 0) -
-          (rowB.log.statistics?.maximumRowsSent ?? 0),
+          (rowA.log.statistics?.maximumRowsSent ?? Long.ZERO).compare(rowB.log.statistics?.maximumRowsSent ?? Long.ZERO),
         render: (item) =>
           instanceV1HasSlowQueryDetail(item.database.instanceResource)
-            ? item.log.statistics?.maximumRowsSent
+            ? (item.log.statistics?.maximumRowsSent ?? Long.ZERO).toString()
             : "-",
       },
       {
         title: t("slow-query.avg-rows-sent"),
         key: "avg_rows_sent",
         sorter: (rowA, rowB) =>
-          (rowA.log.statistics?.averageRowsSent ?? 0) -
-          (rowB.log.statistics?.averageRowsSent ?? 0),
-        render: (item) => item.log.statistics?.averageRowsSent,
+          (rowA.log.statistics?.averageRowsSent ?? Long.ZERO).compare(rowB.log.statistics?.averageRowsSent ?? Long.ZERO),
+        render: (item) => (item.log.statistics?.averageRowsSent ?? Long.ZERO).toString(),
       },
     ];
 
