@@ -2,7 +2,6 @@ package taskrun
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -75,7 +74,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	}
 
 	exportRequest := &v1pb.ExportRequest{
-		Name:      fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName),
+		Name:      common.FormatDatabase(instance.ResourceID, database.DatabaseName),
 		Statement: statement,
 		Format:    v1pb.ExportFormat(payload.Format),
 		Password:  payload.Password,

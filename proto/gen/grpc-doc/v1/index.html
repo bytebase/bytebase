@@ -1317,18 +1317,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Anomaly.DatabaseConnectionDetail"><span class="badge">M</span>Anomaly.DatabaseConnectionDetail</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Anomaly.DatabaseSchemaDriftDetail"><span class="badge">M</span>Anomaly.DatabaseSchemaDriftDetail</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Anomaly.InstanceConnectionDetail"><span class="badge">M</span>Anomaly.InstanceConnectionDetail</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.SearchAnomaliesRequest"><span class="badge">M</span>SearchAnomaliesRequest</a>
                 </li>
               
@@ -15474,8 +15462,7 @@ Default to this mode.</p></td>
                   <td></td>
                   <td><p>The resource that is the target of the operation.
 Format:
-- Instance: instnaces/{instance}
-- Database: instnaces/{instance}/databases/{database} </p></td>
+- Database: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
@@ -15490,27 +15477,6 @@ Format:
                   <td><a href="#bytebase.v1.Anomaly.AnomalySeverity">Anomaly.AnomalySeverity</a></td>
                   <td></td>
                   <td><p>severity is the severity of the anomaly. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>instance_connection_detail</td>
-                  <td><a href="#bytebase.v1.Anomaly.InstanceConnectionDetail">Anomaly.InstanceConnectionDetail</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database_connection_detail</td>
-                  <td><a href="#bytebase.v1.Anomaly.DatabaseConnectionDetail">Anomaly.DatabaseConnectionDetail</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database_schema_drift_detail</td>
-                  <td><a href="#bytebase.v1.Anomaly.DatabaseSchemaDriftDetail">Anomaly.DatabaseSchemaDriftDetail</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
                 <tr>
@@ -15534,92 +15500,6 @@ Format:
 
         
       
-        <h3 id="bytebase.v1.Anomaly.DatabaseConnectionDetail">Anomaly.DatabaseConnectionDetail</h3>
-        <p>Database level anomaly detial.</p><p>DatbaaseConnectionDetail is the detail for database connection anomaly.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>detail</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>detail is the detail of the database connection failure. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Anomaly.DatabaseSchemaDriftDetail">Anomaly.DatabaseSchemaDriftDetail</h3>
-        <p>DatabaseSchemaDriftDetail is the detail for database schema drift anomaly.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>record_version</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>record_version is the record version of the database schema drift. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>expected_schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>expected_schema is the expected schema in the database. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>actual_schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>actual_schema is the actual schema in the database. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Anomaly.InstanceConnectionDetail">Anomaly.InstanceConnectionDetail</h3>
-        <p>Instance level anomaly detail.</p><p>InstanceConnectionDetail is the detail for instance connection anomaly.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>detail</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>detail is the detail of the instance connection failure. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.SearchAnomaliesRequest">SearchAnomaliesRequest</h3>
         <p></p>
 
@@ -15631,6 +15511,14 @@ Format:
             <tbody>
               
                 <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent resource whose anomalies are to be listed.
+Format: projects/{project} </p></td>
+                </tr>
+              
+                <tr>
                   <td>filter</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -15638,7 +15526,7 @@ Format:
 follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
 Only support filter by resource and type for now.
 For example:
-Search the anomalies of a specific resource: &#39;resource=&#34;instances/{instance}&#34;.&#39;
+Search the anomalies of a specific resource: &#39;resource=&#34;instances/{instance}/databases/{database}&#34;.&#39;
 Search the specified types of anomalies: &#39;type=&#34;MIGRATION_SCHEMA&#34;.&#39; </p></td>
                 </tr>
               
@@ -15756,20 +15644,6 @@ If this field is omitted, there are no subsequent pages. </p></td>
               </tr>
             
               <tr>
-                <td>INSTANCE_CONNECTION</td>
-                <td>1</td>
-                <td><p>Instance level anomaly.
-
-INSTANCE_CONNECTION is the anomaly type for instance connection, e.g. the instance is down.</p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATION_SCHEMA</td>
-                <td>2</td>
-                <td><p>MIGRATION_SCHEMA is the anomaly type for migration schema, e.g. the migration schema in the instance is missing.</p></td>
-              </tr>
-            
-              <tr>
                 <td>DATABASE_CONNECTION</td>
                 <td>5</td>
                 <td><p>Database level anomaly.
@@ -15829,7 +15703,7 @@ e.g. the database schema had been changed without bytebase migration.</p></td>
               <tr>
                 <td>SearchAnomalies</td>
                 <td>POST</td>
-                <td>/v1/anomalies:search</td>
+                <td>/v1/{parent=projects/*}/anomalies:search</td>
                 <td>*</td>
               </tr>
               
@@ -25043,20 +24917,6 @@ Format: projects/{project-ID}/vcsConnectors/{vcs-connector} </p></td>
                 </tr>
               
                 <tr>
-                  <td>detail</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>code</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>Code from sql review. </p></td>
-                </tr>
-              
-                <tr>
                   <td>start_position</td>
                   <td><a href="#bytebase.v1.Position">Position</a></td>
                   <td></td>
@@ -25087,13 +24947,6 @@ To supersede `line` and `column` above. </p></td>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
-              
-                <tr>
-                  <td>code</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
               
                 <tr>
                   <td>statement_types</td>
@@ -25900,13 +25753,6 @@ CosmosDB only. </p></td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p>The advice column number in the SQL statement. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>detail</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The advice detail. </p></td>
                 </tr>
               
                 <tr>
@@ -27746,10 +27592,10 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                 </tr>
               
                 <tr>
-                  <td>pull_request_url</td>
+                  <td>url</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The url link to the e.g. GitHub commit or pull request. </p></td>
                 </tr>
               
             </tbody>
@@ -29379,11 +29225,12 @@ Format: projects/{project} </p></td>
                 <tr>
                   <td>stage_id</td>
                   <td><a href="#string">string</a></td>
-                  <td></td>
+                  <td>optional</td>
                   <td><p>stage_id is the id in the plan deployment_config_snapshot.
 The rollout is created according to the plan and the
 stages are created up to the stage_id.
-If unspecified, all stages are created. </p></td>
+If unspecified, all stages are created.
+If set to &#34;&#34;, no stages are created. </p></td>
                 </tr>
               
                 <tr>

@@ -524,7 +524,7 @@
         },
         "data-export": {
           "enable": "Habilitar la exportación de datos",
-          "description": "Permitir a los usuarios exportar datos"
+          "description": "Permitir a los usuarios exportar datos en el Editor SQL"
         },
         "disallow-signup": {
           "enable": "Deshabilitar el registro de autoservicio",
@@ -834,6 +834,9 @@
       },
       "form": {
       },
+      "warning": {
+        "some-previous-stages-are-not-done": "Algunas etapas anteriores no están realizadas."
+      },
       "error": {
         "some-tasks-are-still-running": "Algunas tareas aún se están ejecutando"
       }
@@ -931,7 +934,8 @@
     "format-on-save": "Formatear al guardar",
     "action-to-current-stage": "{action} etapa actual",
     "upload-sql": "Cargar SQL",
-    "statement-from-sheet-warning": "SQL está sobredimensionado y no se permite la edición en línea. \nPuede cargar un nuevo archivo SQL para sobrescribirlo.",
+    "upload-sql-as-sheet": "Cargar SQL como Hoja",
+    "statement-from-sheet-warning": "Debido a que el SQL es demasiado grande, se ha truncado para mostrarlo y la edición está deshabilitada. Puede cargar un nuevo archivo SQL para sobrescribirlo.",
     "overwrite-current-statement": "Sobrescribir la declaración SQL actual",
     "upload-sql-file-max-size-exceeded": "Se ha excedido el tamaño máximo del archivo ({size}).",
     "waiting-earliest-allowed-time": "Se ejecutará después de {time}",
@@ -1484,7 +1488,7 @@
     "select-databases-from-same-project": "Por favor seleccione bases de datos del mismo proyecto",
     "sync-schema": {
       "title": "Sincronizar esquema",
-      "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino. (Solo MySQL, PostgreSQL, TiDB, Oracle)",
+      "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino. (Solo MySQL, PostgreSQL, Oracle, MSSQL, TiDB)",
       "schema-history-version": "Versión del historial de esquema",
       "copy-schema": "Copiar esquema",
       "select-source-schema": "Seleccione el esquema de origen",
@@ -1574,7 +1578,8 @@
         "title": "¿Estas seguro de eliminarlo?",
         "content": "Esto eliminará las revisiones aplicadas y el esquema de la base de datos no se modificará. Esta acción no se puede deshacer."
       }
-    }
+    },
+    "not-found": "No se puede encontrar la base de datos"
   },
   "repository": {
     "our-webhook-link": "El webhook creado por Bytebase se puede encontrar en {webhookLink}.",
@@ -2964,7 +2969,8 @@
       "succeed-to-create-release": "Tener éxito en crear el lanzamiento",
       "files-will-always-be-sorted-and-executed-in-version-order": "Los archivos siempre se ordenarán y ejecutarán en orden de versión.",
       "cannot-modify-files-after-created": "No es posible modificar archivos una vez creada la versión."
-    }
+    },
+    "usage-description": "La versión se utiliza principalmente en GitOps personalizado con integración de API."
   },
   "export-data": {
     "export-rows": "Exportar filas",

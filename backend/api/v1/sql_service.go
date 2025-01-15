@@ -225,8 +225,28 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 	if queryErr != nil {
 		code := codes.Internal
-		if status, ok := status.FromError(queryErr); ok && status.Code() != codes.OK && status.Code() != codes.Unknown {
-			code = status.Code()
+		if errorStatus, ok := status.FromError(queryErr); ok {
+			if errorStatus.Code() != codes.OK && errorStatus.Code() != codes.Unknown {
+				code = errorStatus.Code()
+			}
+		} else if syntaxErr, ok := queryErr.(*base.SyntaxError); ok {
+			querySyntaxError, err := status.New(codes.InvalidArgument, queryErr.Error()).WithDetails(
+				&v1pb.PlanCheckRun_Result{
+					Code:    int32(advisor.StatementSyntaxError),
+					Content: syntaxErr.Message,
+					Title:   "Syntax error",
+					Status:  v1pb.PlanCheckRun_Result_ERROR,
+					Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
+						SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
+							Line:   int32(syntaxErr.Line),
+							Column: int32(syntaxErr.Column),
+						},
+					},
+				},
+			)
+			if err == nil {
+				return nil, querySyntaxError.Err()
+			}
 		}
 		return nil, status.Error(code, queryErr.Error())
 	}
@@ -398,7 +418,7 @@ func queryRetry(
 			store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		)
 		if err != nil {
-			return nil, nil, time.Duration(0), status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
+			return nil, nil, time.Duration(0), err
 		}
 		// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
 		// If err != nil, this function will return the original spans.
@@ -459,7 +479,7 @@ func queryRetry(
 			store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		)
 		if err != nil {
-			return nil, nil, duration, status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
+			return nil, nil, time.Duration(0), err
 		}
 		// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
 		// If err != nil, this function will return the original spans.
@@ -505,6 +525,12 @@ func executeWithTimeout(ctx context.Context, driver db.Driver, conn *sql.Conn, s
 
 // Export exports the SQL query result.
 func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*v1pb.ExportResponse, error) {
+	// Prehandle export from issue.
+	if strings.HasPrefix(request.Name, common.ProjectNamePrefix) {
+		return s.doExportFromIssue(ctx, request.Name)
+	}
+
+	// Check if data export is allowed.
 	exportDataPolicy, err := s.store.GetDataExportPolicy(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get data export policy: %v", err)
@@ -512,10 +538,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	if exportDataPolicy.Disable {
 		return nil, status.Errorf(codes.PermissionDenied, "data export is not allowed")
 	}
-	// Prehandle export from issue.
-	if strings.HasPrefix(request.Name, common.ProjectNamePrefix) {
-		return s.doExportFromIssue(ctx, request.Name)
-	}
+
 	// Prepare related message.
 	user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name)
 	if err != nil {
@@ -1160,11 +1183,18 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 	if err != nil {
 		syntaxErr, ok := err.(*base.SyntaxError)
 		if ok {
-			querySyntaxError, err := status.New(codes.InvalidArgument, err.Error()).WithDetails(
-				&v1pb.PlanCheckRun_Result_SqlReviewReport{
-					Line:   int32(syntaxErr.Line),
-					Column: int32(syntaxErr.Column),
-					Detail: syntaxErr.Message,
+			querySyntaxError, err := status.New(codes.InvalidArgument, syntaxErr.Error()).WithDetails(
+				&v1pb.PlanCheckRun_Result{
+					Code:    int32(advisor.StatementSyntaxError),
+					Content: syntaxErr.Message,
+					Title:   "Syntax error",
+					Status:  v1pb.PlanCheckRun_Result_ERROR,
+					Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
+						SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
+							Line:   int32(syntaxErr.Line),
+							Column: int32(syntaxErr.Column),
+						},
+					},
 				},
 			)
 			if err != nil {
@@ -1419,7 +1449,6 @@ func convertToV1Advice(advice *storepb.Advice) *v1pb.Advice {
 		Content:       advice.Content,
 		Line:          int32(advice.GetStartPosition().GetLine()),
 		Column:        int32(advice.GetStartPosition().GetColumn()),
-		Detail:        advice.Detail,
 		StartPosition: convertToPosition(advice.StartPosition),
 		EndPosition:   convertToPosition(advice.EndPosition),
 	}

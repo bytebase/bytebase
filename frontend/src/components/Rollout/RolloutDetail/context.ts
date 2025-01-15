@@ -3,11 +3,12 @@ import type { ComputedRef, InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref } from "vue";
 import { useRoute } from "vue-router";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
+import { rolloutServiceClient } from "@/grpcweb";
 import { useIssueV1Store, useProjectV1Store, useRolloutStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedIssue, ComposedProject, ComposedRollout } from "@/types";
 import { unknownProject, unknownRollout } from "@/types";
-import type { Task } from "@/types/proto/v1/rollout_service";
+import { Rollout, type Task } from "@/types/proto/v1/rollout_service";
 import { flattenTaskV1List } from "@/utils";
 
 type Events = {
@@ -18,6 +19,7 @@ export type EventsEmmiter = Emittery<Events>;
 
 export type RolloutDetailContext = {
   rollout: Ref<ComposedRollout>;
+  rolloutPreview: Ref<Rollout>;
   issue: Ref<ComposedIssue | undefined>;
 
   project: ComputedRef<ComposedProject>;
@@ -42,6 +44,7 @@ export const provideRolloutDetailContext = (rolloutName: string) => {
   const issueStore = useIssueV1Store();
 
   const rollout = ref<ComposedRollout>(unknownRollout());
+  const rolloutPreview = ref<Rollout>(Rollout.fromPartial({}));
   const issue = ref<ComposedIssue | undefined>(undefined);
 
   const project = computed(() => {
@@ -64,6 +67,7 @@ export const provideRolloutDetailContext = (rolloutName: string) => {
   const context: RolloutDetailContext = {
     project,
     rollout,
+    rolloutPreview,
     issue,
     tasks,
     emmiter,
@@ -80,6 +84,13 @@ export const provideRolloutDetailContext = (rolloutName: string) => {
         withRollout: false,
       });
     }
+    rolloutPreview.value = await rolloutServiceClient.createRollout({
+      parent: project.value.name,
+      rollout: {
+        plan: rollout.value.plan,
+      },
+      validateOnly: true,
+    });
   };
 
   refreshRolloutContext();

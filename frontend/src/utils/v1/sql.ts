@@ -106,20 +106,28 @@ export const generateSimpleSelectAllStatement = (
   table: string,
   limit: number
 ) => {
-  if (engine === Engine.MONGODB) {
-    return `db.${table}.find().limit(${limit});`;
-  }
-
   const schemaAndTable = generateSchemaAndTableNameInSQL(engine, schema, table);
 
-  if (engine === Engine.MSSQL) {
-    return `SELECT TOP ${limit} * FROM ${schemaAndTable};`;
+  switch (engine) {
+    case Engine.MONGODB:
+      return `db.${table}.find().limit(${limit});`;
+    case Engine.COSMOSDB:
+      return `SELECT * FROM ${table}`;
+    case Engine.ELASTICSEARCH:
+      return `GET ${table}/_search?size=${limit}
+{
+	"query": {
+		"match_all": {}
+	}
+}`;
+    case Engine.MSSQL:
+      return `SELECT TOP ${limit} * FROM ${schemaAndTable};`;
+    case Engine.ORACLE:
+    case Engine.OCEANBASE_ORACLE:
+      return `SELECT * FROM ${schemaAndTable} WHERE ROWNUM <= ${limit};`;
+    default:
+      return `SELECT * FROM ${schemaAndTable} LIMIT ${limit};`;
   }
-  if (engine === Engine.ORACLE || engine === Engine.OCEANBASE_ORACLE) {
-    return `SELECT * FROM ${schemaAndTable} WHERE ROWNUM <= ${limit};`;
-  }
-
-  return `SELECT * FROM ${schemaAndTable} LIMIT ${limit};`;
 };
 
 export const generateSimpleInsertStatement = (

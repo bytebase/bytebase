@@ -29,15 +29,6 @@
               />
             </template>
           </ErrorList>
-          <div>
-            <NCheckbox v-model:checked="performActionAnyway">
-              {{
-                $t("issue.action-anyway", {
-                  action: issueStatusActionDisplayName(action),
-                })
-              }}
-            </NCheckbox>
-          </div>
         </div>
 
         <div class="flex flex-col gap-y-1">
@@ -57,24 +48,41 @@
       </div>
     </template>
     <template #footer>
-      <div v-if="action" class="flex justify-end gap-x-3">
-        <NButton @click="$emit('close')">
-          {{ $t("common.cancel") }}
-        </NButton>
-        <NTooltip :disabled="confirmErrors.length === 0" placement="top">
-          <template #trigger>
-            <NButton
-              :disabled="confirmErrors.length > 0"
-              v-bind="confirmButtonProps"
-              @click="handleConfirm(action!, comment)"
-            >
-              {{ $t("common.confirm") }}
-            </NButton>
-          </template>
-          <template #default>
-            <ErrorList :errors="confirmErrors" />
-          </template>
-        </NTooltip>
+      <div
+        v-if="action"
+        class="w-full flex flex-row justify-between items-center gap-2"
+      >
+        <div>
+          <NCheckbox
+            v-if="showPerformActionAnyway"
+            v-model:checked="performActionAnyway"
+          >
+            {{
+              $t("issue.action-anyway", {
+                action: issueStatusActionDisplayName(action),
+              })
+            }}
+          </NCheckbox>
+        </div>
+        <div class="flex justify-end gap-x-3">
+          <NButton @click="$emit('close')">
+            {{ $t("common.cancel") }}
+          </NButton>
+          <NTooltip :disabled="confirmErrors.length === 0" placement="top">
+            <template #trigger>
+              <NButton
+                :disabled="confirmErrors.length > 0"
+                v-bind="confirmButtonProps"
+                @click="handleConfirm(action!, comment)"
+              >
+                {{ $t("common.confirm") }}
+              </NButton>
+            </template>
+            <template #default>
+              <ErrorList :errors="confirmErrors" />
+            </template>
+          </NTooltip>
+        </div>
       </div>
     </template>
   </CommonDrawer>
@@ -129,6 +137,10 @@ const title = computed(() => {
       return t("issue.status-transition.modal.reopen");
   }
   return "";
+});
+
+const showPerformActionAnyway = computed(() => {
+  return issueStatusActionErrors.value.length > 0;
 });
 
 const issueStatusActionErrors = computed(() => {

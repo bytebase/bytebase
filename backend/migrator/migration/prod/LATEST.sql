@@ -741,15 +741,14 @@ CREATE TABLE anomaly (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    project TEXT NOT NULL,
     instance_id INTEGER NOT NULL REFERENCES instance (id),
-    -- NULL if it's an instance anomaly
     database_id INTEGER NULL REFERENCES db (id),
     type TEXT NOT NULL CHECK (type LIKE 'bb.anomaly.%'),
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE INDEX idx_anomaly_instance_id_row_status_type ON anomaly(instance_id, row_status, type);
-CREATE INDEX idx_anomaly_database_id_row_status_type ON anomaly(database_id, row_status, type);
+CREATE UNIQUE INDEX idx_anomaly_unique_project_database_id_type ON anomaly(project, database_id, type);
 
 ALTER SEQUENCE anomaly_id_seq RESTART WITH 101;
 

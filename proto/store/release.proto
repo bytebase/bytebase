@@ -30,7 +30,7 @@ message ReleasePayload {
 
   message VCSSource {
     VCSType vcs_type = 1;
-    string pull_request_url = 2;
+    string url = 2;
   }
 }
 

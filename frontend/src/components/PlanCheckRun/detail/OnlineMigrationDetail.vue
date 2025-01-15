@@ -17,6 +17,6 @@ const props = defineProps<{
 }>();
 
 const code = computed(() => {
-  return props.row.checkResult.sqlReviewReport?.code;
+  return props.row.checkResult.code;
 });
 </script>

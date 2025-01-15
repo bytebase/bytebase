@@ -34,9 +34,7 @@
           <span class="ml-2">{{ $t("sql-editor.rows-upper-limit") }}</span>
         </span>
       </div>
-      <div
-        class="flex justify-between items-center shrink-0 gap-x-3 overflow-y-hidden hide-scrollbar"
-      >
+      <div class="flex justify-between items-center shrink-0 gap-x-3">
         <div class="flex items-center">
           <NSwitch v-model:value="state.vertical" size="small" />
           <span class="ml-1 whitespace-nowrap text-sm text-gray-500">
@@ -125,7 +123,6 @@
           :offset="pageIndex * pageSize"
           :is-sensitive-column="isSensitiveColumn"
           :is-column-missing-sensitive="isColumnMissingSensitive"
-          :max-height="maxDataTableHeight"
         />
         <DataTable
           v-else
@@ -134,7 +131,6 @@
           :offset="pageIndex * pageSize"
           :is-sensitive-column="isSensitiveColumn"
           :is-column-missing-sensitive="isColumnMissingSensitive"
-          :max-height="maxDataTableHeight"
         />
       </template>
     </div>
@@ -244,7 +240,6 @@ import {
   extractSQLRowValuePlain,
   generateIssueTitle,
   hasPermissionToCreateRequestGrantIssue,
-  hasWorkspacePermissionV2,
   instanceV1HasStructuredQueryResult,
   isNullOrUndefined,
 } from "@/utils";
@@ -274,7 +269,6 @@ const props = defineProps<{
   sqlResultSet: SQLResultSetV1;
   result: QueryResult;
   setIndex: number;
-  maxDataTableHeight?: number;
 }>();
 
 const state = reactive<LocalState>({
@@ -287,7 +281,6 @@ const router = useRouter();
 const { dark, keyword } = useSQLResultViewContext();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
-const { exportData } = useExportData();
 const appFeatureDisallowExport = useAppFeature(
   "bb.feature.sql-editor.disallow-export-query-data"
 );
@@ -332,10 +325,6 @@ const showSearchFeature = computed(() => {
 });
 
 const allowToExportData = computed(() => {
-  if (hasWorkspacePermissionV2("bb.policies.update")) {
-    return true;
-  }
-
   return props.sqlResultSet?.allowExport || false;
 });
 
@@ -485,8 +474,8 @@ const handleExportBtnClick = async (
   const limit = options.limit ?? (admin ? 0 : editorStore.resultRowsLimit);
 
   try {
-    const content = await exportData({
-      database,
+    const content = await useExportData().exportData({
+      name: database,
       // TODO(lj): support data source id similar to queries.
       dataSourceId: "",
       format: options.format,

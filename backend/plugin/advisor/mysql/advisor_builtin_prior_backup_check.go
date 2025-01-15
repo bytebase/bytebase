@@ -83,7 +83,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 		})
 	}
 
-	tableReferences, err := prepareTransformation(databaseName, stmtList)
+	tableReferences, err := prepareTransformation(ctx.DBSchema.Name, stmtList)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare transformation")
 	}

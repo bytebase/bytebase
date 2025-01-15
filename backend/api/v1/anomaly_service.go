@@ -2,8 +2,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -14,7 +12,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -24,8 +21,6 @@ const (
 )
 
 var typesMap = map[string]api.AnomalyType{
-	"INSTANCE_CONNECTION":   api.AnomalyInstanceConnection,
-	"MIGRATION_SCHEMA":      api.AnomalyInstanceMigrationSchema,
 	"DATABASE_CONNECTION":   api.AnomalyDatabaseConnection,
 	"DATABASE_SCHEMA_DRIFT": api.AnomalyDatabaseSchemaDrift,
 }
@@ -45,8 +40,13 @@ func NewAnomalyService(store *store.Store) *AnomalyService {
 func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.SearchAnomaliesRequest) (*v1pb.
 	SearchAnomaliesResponse, error,
 ) {
+	projectID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 	rowStatus := api.Normal
 	find := &store.ListAnomalyMessage{
+		ProjectID: projectID,
 		RowStatus: &rowStatus,
 	}
 	if request.Filter != "" {
@@ -69,43 +69,30 @@ func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.Sear
 		if len(resources) > 1 {
 			return nil, status.Errorf(codes.InvalidArgument, "only one resource can be specified")
 		} else if len(resources) == 1 {
-			sections := strings.Split(resources[0], "/")
-			if len(sections) == 2 {
-				// Treat as instances/{resource id}
-				insID, err := common.GetInstanceID(resources[0])
-				if err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, `invalid resource filter "%s": %v`, resources[0], err.Error())
-				}
-				find.InstanceID = &insID
-			} else if len(sections) == 4 {
-				// Treat as instances/{resource id}/databases/{db name}
-				insID, dbName, err := common.GetInstanceDatabaseID(resources[0])
-				if err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, `invalid resource filter "%s": %v`, resources[0], err.Error())
-				}
-				instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &insID})
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to get instance %s", insID)
-				}
-				if instance == nil {
-					return nil, status.Errorf(codes.NotFound, "instance %q not found", insID)
-				}
-				database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-					InstanceID:          &insID,
-					DatabaseName:        &dbName,
-					IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
-				})
-				if err != nil {
-					return nil, status.Error(codes.Internal, err.Error())
-				}
-				if database == nil {
-					return nil, status.Errorf(codes.NotFound, "cannot found the database %s", resources[0])
-				}
-				find.InstanceID = &insID
-				find.DatabaseUID = &database.UID
-			} else {
-				return nil, status.Errorf(codes.InvalidArgument, `invalid resource filter "%s"`, resources[0])
+			insID, dbName, err := common.GetInstanceDatabaseID(resources[0])
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, `invalid resource filter "%s": %v`, resources[0], err.Error())
 			}
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &insID})
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get instance %s", insID)
+			}
+			if instance == nil {
+				return nil, status.Errorf(codes.NotFound, "instance %q not found", insID)
+			}
+			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				InstanceID:          &insID,
+				DatabaseName:        &dbName,
+				IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+			})
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			if database == nil {
+				return nil, status.Errorf(codes.NotFound, "cannot found the database %s", resources[0])
+			}
+			find.InstanceID = &insID
+			find.DatabaseUID = &database.UID
 		}
 	}
 
@@ -131,66 +118,36 @@ func (s *AnomalyService) convertToAnomaly(ctx context.Context, anomaly *store.An
 		UpdateTime: timestamppb.New(time.Unix(anomaly.UpdatedTs, 0)),
 	}
 
-	if v := anomaly.DatabaseUID; v != nil {
-		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			UID:         v,
-			ShowDeleted: true,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find database with id %d", v)
-		}
-		if database == nil {
-			return nil, errors.Errorf("cannot found database with id %d", v)
-		}
-		pbAnomaly.Resource = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
-	} else {
-		pbAnomaly.Resource = fmt.Sprintf("%s%s", common.InstanceNamePrefix, anomaly.InstanceID)
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		UID:         &anomaly.DatabaseUID,
+		ShowDeleted: true,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find database with id %d", anomaly.DatabaseUID)
 	}
-
-	switch anomaly.Type {
-	case api.AnomalyInstanceConnection:
-		detail := &storepb.AnomalyConnectionPayload{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(anomaly.Payload), detail); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal instance connection anomaly payload")
-		}
-		pbAnomaly.Type = v1pb.Anomaly_INSTANCE_CONNECTION
-		pbAnomaly.Detail = &v1pb.Anomaly_InstanceConnectionDetail_{
-			InstanceConnectionDetail: &v1pb.Anomaly_InstanceConnectionDetail{
-				Detail: detail.Detail,
-			},
-		}
-	case api.AnomalyDatabaseConnection:
-		detail := &storepb.AnomalyConnectionPayload{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(anomaly.Payload), detail); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal database connection anomaly payload")
-		}
-		pbAnomaly.Type = v1pb.Anomaly_DATABASE_CONNECTION
-		pbAnomaly.Detail = &v1pb.Anomaly_DatabaseConnectionDetail_{
-			DatabaseConnectionDetail: &v1pb.Anomaly_DatabaseConnectionDetail{
-				Detail: detail.Detail,
-			},
-		}
-	case api.AnomalyDatabaseSchemaDrift:
-		detail := &storepb.AnomalyDatabaseSchemaDriftPayload{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(anomaly.Payload), detail); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal database schema drift anomaly payload")
-		}
-		pbAnomaly.Type = v1pb.Anomaly_DATABASE_SCHEMA_DRIFT
-		pbAnomaly.Detail = &v1pb.Anomaly_DatabaseSchemaDriftDetail_{
-			DatabaseSchemaDriftDetail: &v1pb.Anomaly_DatabaseSchemaDriftDetail{
-				RecordVersion:  detail.Version,
-				ExpectedSchema: detail.Expect,
-				ActualSchema:   detail.Actual,
-			},
-		}
+	if database == nil {
+		return nil, errors.Errorf("cannot found database with id %d", anomaly.DatabaseUID)
 	}
+	pbAnomaly.Resource = common.FormatDatabase(database.InstanceID, database.DatabaseName)
+	pbAnomaly.Type = convertAnomalyType(anomaly.Type)
 	pbAnomaly.Severity = getSeverityFromAnomalyType(pbAnomaly.Type)
 	return pbAnomaly, nil
 }
 
+func convertAnomalyType(tp api.AnomalyType) v1pb.Anomaly_AnomalyType {
+	switch tp {
+	case api.AnomalyDatabaseConnection:
+		return v1pb.Anomaly_DATABASE_CONNECTION
+	case api.AnomalyDatabaseSchemaDrift:
+		return v1pb.Anomaly_DATABASE_SCHEMA_DRIFT
+	default:
+		return v1pb.Anomaly_ANOMALY_TYPE_UNSPECIFIED
+	}
+}
+
 func getSeverityFromAnomalyType(tp v1pb.Anomaly_AnomalyType) v1pb.Anomaly_AnomalySeverity {
 	switch tp {
-	case v1pb.Anomaly_INSTANCE_CONNECTION, v1pb.Anomaly_MIGRATION_SCHEMA, v1pb.Anomaly_DATABASE_CONNECTION, v1pb.Anomaly_DATABASE_SCHEMA_DRIFT:
+	case v1pb.Anomaly_DATABASE_CONNECTION, v1pb.Anomaly_DATABASE_SCHEMA_DRIFT:
 		return v1pb.Anomaly_CRITICAL
 	}
 	return v1pb.Anomaly_ANOMALY_SEVERITY_UNSPECIFIED

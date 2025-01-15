@@ -261,7 +261,8 @@ export function release_File_ChangeTypeToNumber(object: Release_File_ChangeType)
 
 export interface Release_VCSSource {
   vcsType: VCSType;
-  pullRequestUrl: string;
+  /** The url link to the e.g. GitHub commit or pull request. */
+  url: string;
 }
 
 function createBaseGetReleaseRequest(): GetReleaseRequest {
@@ -1381,7 +1382,7 @@ export const Release_File: MessageFns<Release_File> = {
 };
 
 function createBaseRelease_VCSSource(): Release_VCSSource {
-  return { vcsType: VCSType.VCS_TYPE_UNSPECIFIED, pullRequestUrl: "" };
+  return { vcsType: VCSType.VCS_TYPE_UNSPECIFIED, url: "" };
 }
 
 export const Release_VCSSource: MessageFns<Release_VCSSource> = {
@@ -1389,8 +1390,8 @@ export const Release_VCSSource: MessageFns<Release_VCSSource> = {
     if (message.vcsType !== VCSType.VCS_TYPE_UNSPECIFIED) {
       writer.uint32(8).int32(vCSTypeToNumber(message.vcsType));
     }
-    if (message.pullRequestUrl !== "") {
-      writer.uint32(18).string(message.pullRequestUrl);
+    if (message.url !== "") {
+      writer.uint32(18).string(message.url);
     }
     return writer;
   },
@@ -1415,7 +1416,7 @@ export const Release_VCSSource: MessageFns<Release_VCSSource> = {
             break;
           }
 
-          message.pullRequestUrl = reader.string();
+          message.url = reader.string();
           continue;
         }
       }
@@ -1430,7 +1431,7 @@ export const Release_VCSSource: MessageFns<Release_VCSSource> = {
   fromJSON(object: any): Release_VCSSource {
     return {
       vcsType: isSet(object.vcsType) ? vCSTypeFromJSON(object.vcsType) : VCSType.VCS_TYPE_UNSPECIFIED,
-      pullRequestUrl: isSet(object.pullRequestUrl) ? globalThis.String(object.pullRequestUrl) : "",
+      url: isSet(object.url) ? globalThis.String(object.url) : "",
     };
   },
 
@@ -1439,8 +1440,8 @@ export const Release_VCSSource: MessageFns<Release_VCSSource> = {
     if (message.vcsType !== VCSType.VCS_TYPE_UNSPECIFIED) {
       obj.vcsType = vCSTypeToJSON(message.vcsType);
     }
-    if (message.pullRequestUrl !== "") {
-      obj.pullRequestUrl = message.pullRequestUrl;
+    if (message.url !== "") {
+      obj.url = message.url;
     }
     return obj;
   },
@@ -1451,7 +1452,7 @@ export const Release_VCSSource: MessageFns<Release_VCSSource> = {
   fromPartial(object: DeepPartial<Release_VCSSource>): Release_VCSSource {
     const message = createBaseRelease_VCSSource();
     message.vcsType = object.vcsType ?? VCSType.VCS_TYPE_UNSPECIFIED;
-    message.pullRequestUrl = object.pullRequestUrl ?? "";
+    message.url = object.url ?? "";
     return message;
   },
 };
@@ -1470,6 +1471,8 @@ export const ReleaseServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          800010: [new Uint8Array([15, 98, 98, 46, 114, 101, 108, 101, 97, 115, 101, 115, 46, 103, 101, 116])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               34,
@@ -1521,6 +1524,8 @@ export const ReleaseServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          800010: [new Uint8Array([16, 98, 98, 46, 114, 101, 108, 101, 97, 115, 101, 115, 46, 108, 105, 115, 116])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               34,
@@ -1572,6 +1577,10 @@ export const ReleaseServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([14, 112, 97, 114, 101, 110, 116, 44, 114, 101, 108, 101, 97, 115, 101])],
+          800010: [
+            new Uint8Array([18, 98, 98, 46, 114, 101, 108, 101, 97, 115, 101, 115, 46, 99, 114, 101, 97, 116, 101]),
+          ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               43,
@@ -1655,6 +1664,10 @@ export const ReleaseServiceDefinition = {
               107,
             ]),
           ],
+          800010: [
+            new Uint8Array([18, 98, 98, 46, 114, 101, 108, 101, 97, 115, 101, 115, 46, 117, 112, 100, 97, 116, 101]),
+          ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               51,
@@ -1723,6 +1736,10 @@ export const ReleaseServiceDefinition = {
       options: {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          800010: [
+            new Uint8Array([18, 98, 98, 46, 114, 101, 108, 101, 97, 115, 101, 115, 46, 100, 101, 108, 101, 116, 101]),
+          ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               34,
@@ -1773,6 +1790,32 @@ export const ReleaseServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800010: [
+            new Uint8Array([
+              20,
+              98,
+              98,
+              46,
+              114,
+              101,
+              108,
+              101,
+              97,
+              115,
+              101,
+              115,
+              46,
+              117,
+              110,
+              100,
+              101,
+              108,
+              101,
+              116,
+              101,
+            ]),
+          ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               43,
@@ -1832,6 +1875,8 @@ export const ReleaseServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
+          800010: [new Uint8Array([17, 98, 98, 46, 114, 101, 108, 101, 97, 115, 101, 115, 46, 99, 104, 101, 99, 107])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               43,

@@ -12,7 +12,6 @@
           :sql-result-set="resultSet"
           :result="resultSet.results[0]"
           :set-index="0"
-          :max-data-table-height="maxDataTableHeight"
         />
       </template>
       <template v-else-if="viewMode === 'MULTI-RESULT'">
@@ -150,10 +149,6 @@ const props = defineProps({
   dark: {
     type: Boolean,
     default: false,
-  },
-  maxDataTableHeight: {
-    type: Number,
-    default: undefined,
   },
 });
 

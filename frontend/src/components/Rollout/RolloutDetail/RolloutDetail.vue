@@ -27,7 +27,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useBodyLayoutContext } from "@/layouts/common";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL } from "@/router/dashboard/projectV1";
 import BasicInfo from "./BasicInfo.vue";
-import Overview from "./Panels/Overview.vue";
+import Overview from "./Panels/Overview";
 import Tasks from "./Panels/Tasks.vue";
 import { useRolloutDetailContext } from "./context";
 
