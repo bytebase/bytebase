@@ -5,7 +5,7 @@ import { computed, onBeforeUnmount, reactive, watch } from "vue";
 
 export type TableResizeOptions = {
   tableRef: Ref<HTMLTableElement | undefined>;
-  scrollerRef: Ref<HTMLElement | null | undefined>;
+  containerRef: Ref<HTMLElement | null | undefined>;
   minWidth: number;
   maxWidth: number;
 };
@@ -37,7 +37,7 @@ const useTableResize = (options: TableResizeOptions) => {
   const table = computed(() => options.tableRef.value!);
 
   const containerWidth = computed(() => {
-    return options.scrollerRef?.value?.scrollWidth || 0;
+    return options.containerRef?.value?.scrollWidth || 0;
   });
 
   const normalizeWidth = (width: number) => {
@@ -166,7 +166,7 @@ const useTableResize = (options: TableResizeOptions) => {
     state.columns[index].width = normalizeWidth(expectedWidth);
     if (index === state.columns.length - 1) {
       // When resizing the last column, Keep the horizontal scroll at the end of the container.
-      scrollMaxX(options.scrollerRef.value);
+      scrollMaxX(options.containerRef.value);
     }
   });
 
