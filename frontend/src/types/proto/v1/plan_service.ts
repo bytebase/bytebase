@@ -734,7 +734,6 @@ export function planCheckRun_Result_StatusToNumber(object: PlanCheckRun_Result_S
 }
 
 export interface PlanCheckRun_Result_SqlSummaryReport {
-  code: number;
   /** statement_types are the types of statements that are found in the sql. */
   statementTypes: string[];
   affectedRows: number;
@@ -744,9 +743,6 @@ export interface PlanCheckRun_Result_SqlSummaryReport {
 export interface PlanCheckRun_Result_SqlReviewReport {
   line: number;
   column: number;
-  detail: string;
-  /** Code from sql review. */
-  code: number;
   /**
    * 1-based Position of the SQL statement.
    * To supersede `line` and `column` above.
@@ -3909,14 +3905,11 @@ export const PlanCheckRun_Result: MessageFns<PlanCheckRun_Result> = {
 };
 
 function createBasePlanCheckRun_Result_SqlSummaryReport(): PlanCheckRun_Result_SqlSummaryReport {
-  return { code: 0, statementTypes: [], affectedRows: 0, changedResources: undefined };
+  return { statementTypes: [], affectedRows: 0, changedResources: undefined };
 }
 
 export const PlanCheckRun_Result_SqlSummaryReport: MessageFns<PlanCheckRun_Result_SqlSummaryReport> = {
   encode(message: PlanCheckRun_Result_SqlSummaryReport, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.code !== 0) {
-      writer.uint32(8).int32(message.code);
-    }
     for (const v of message.statementTypes) {
       writer.uint32(18).string(v!);
     }
@@ -3936,14 +3929,6 @@ export const PlanCheckRun_Result_SqlSummaryReport: MessageFns<PlanCheckRun_Resul
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.code = reader.int32();
-          continue;
-        }
         case 2: {
           if (tag !== 18) {
             break;
@@ -3979,7 +3964,6 @@ export const PlanCheckRun_Result_SqlSummaryReport: MessageFns<PlanCheckRun_Resul
 
   fromJSON(object: any): PlanCheckRun_Result_SqlSummaryReport {
     return {
-      code: isSet(object.code) ? globalThis.Number(object.code) : 0,
       statementTypes: globalThis.Array.isArray(object?.statementTypes)
         ? object.statementTypes.map((e: any) => globalThis.String(e))
         : [],
@@ -3990,9 +3974,6 @@ export const PlanCheckRun_Result_SqlSummaryReport: MessageFns<PlanCheckRun_Resul
 
   toJSON(message: PlanCheckRun_Result_SqlSummaryReport): unknown {
     const obj: any = {};
-    if (message.code !== 0) {
-      obj.code = Math.round(message.code);
-    }
     if (message.statementTypes?.length) {
       obj.statementTypes = message.statementTypes;
     }
@@ -4010,7 +3991,6 @@ export const PlanCheckRun_Result_SqlSummaryReport: MessageFns<PlanCheckRun_Resul
   },
   fromPartial(object: DeepPartial<PlanCheckRun_Result_SqlSummaryReport>): PlanCheckRun_Result_SqlSummaryReport {
     const message = createBasePlanCheckRun_Result_SqlSummaryReport();
-    message.code = object.code ?? 0;
     message.statementTypes = object.statementTypes?.map((e) => e) || [];
     message.affectedRows = object.affectedRows ?? 0;
     message.changedResources = (object.changedResources !== undefined && object.changedResources !== null)
@@ -4021,7 +4001,7 @@ export const PlanCheckRun_Result_SqlSummaryReport: MessageFns<PlanCheckRun_Resul
 };
 
 function createBasePlanCheckRun_Result_SqlReviewReport(): PlanCheckRun_Result_SqlReviewReport {
-  return { line: 0, column: 0, detail: "", code: 0, startPosition: undefined, endPosition: undefined };
+  return { line: 0, column: 0, startPosition: undefined, endPosition: undefined };
 }
 
 export const PlanCheckRun_Result_SqlReviewReport: MessageFns<PlanCheckRun_Result_SqlReviewReport> = {
@@ -4031,12 +4011,6 @@ export const PlanCheckRun_Result_SqlReviewReport: MessageFns<PlanCheckRun_Result
     }
     if (message.column !== 0) {
       writer.uint32(16).int32(message.column);
-    }
-    if (message.detail !== "") {
-      writer.uint32(26).string(message.detail);
-    }
-    if (message.code !== 0) {
-      writer.uint32(32).int32(message.code);
     }
     if (message.startPosition !== undefined) {
       Position.encode(message.startPosition, writer.uint32(42).fork()).join();
@@ -4070,22 +4044,6 @@ export const PlanCheckRun_Result_SqlReviewReport: MessageFns<PlanCheckRun_Result
           message.column = reader.int32();
           continue;
         }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.detail = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.code = reader.int32();
-          continue;
-        }
         case 5: {
           if (tag !== 42) {
             break;
@@ -4115,8 +4073,6 @@ export const PlanCheckRun_Result_SqlReviewReport: MessageFns<PlanCheckRun_Result
     return {
       line: isSet(object.line) ? globalThis.Number(object.line) : 0,
       column: isSet(object.column) ? globalThis.Number(object.column) : 0,
-      detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
-      code: isSet(object.code) ? globalThis.Number(object.code) : 0,
       startPosition: isSet(object.startPosition) ? Position.fromJSON(object.startPosition) : undefined,
       endPosition: isSet(object.endPosition) ? Position.fromJSON(object.endPosition) : undefined,
     };
@@ -4129,12 +4085,6 @@ export const PlanCheckRun_Result_SqlReviewReport: MessageFns<PlanCheckRun_Result
     }
     if (message.column !== 0) {
       obj.column = Math.round(message.column);
-    }
-    if (message.detail !== "") {
-      obj.detail = message.detail;
-    }
-    if (message.code !== 0) {
-      obj.code = Math.round(message.code);
     }
     if (message.startPosition !== undefined) {
       obj.startPosition = Position.toJSON(message.startPosition);
@@ -4152,8 +4102,6 @@ export const PlanCheckRun_Result_SqlReviewReport: MessageFns<PlanCheckRun_Result
     const message = createBasePlanCheckRun_Result_SqlReviewReport();
     message.line = object.line ?? 0;
     message.column = object.column ?? 0;
-    message.detail = object.detail ?? "";
-    message.code = object.code ?? 0;
     message.startPosition = (object.startPosition !== undefined && object.startPosition !== null)
       ? Position.fromPartial(object.startPosition)
       : undefined;

@@ -55,14 +55,12 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_WARNING,
-				Code:    0,
+				Code:    advisor.Unsupported.Int32(),
 				Title:   "SQL review is disabled",
 				Content: err.Error(),
 				Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-						Line:   0,
-						Detail: "",
-						Code:   advisor.Unsupported.Int32(),
+						Line: 0,
 					},
 				},
 			},
@@ -228,13 +226,11 @@ func (e *StatementAdviseExecutor) runReview(
 			Status:  status,
 			Title:   advice.Title,
 			Content: advice.Content,
-			Code:    0,
+			Code:    advice.Code,
 			Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 				SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
 					Line:          advice.GetStartPosition().GetLine(),
 					Column:        advice.GetStartPosition().GetColumn(),
-					Code:          advice.Code,
-					Detail:        advice.Detail,
 					StartPosition: advice.StartPosition,
 					EndPosition:   advice.EndPosition,
 				},

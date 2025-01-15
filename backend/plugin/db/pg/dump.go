@@ -28,8 +28,7 @@ SET row_security = off;
 
 `
 
-	setDefaultTableSpace        = "SET default_tablespace = '';\n\n"
-	setDefaultTableAccessMethod = "SET default_table_access_method = heap;\n\n"
+	setDefaultTableSpace = "SET default_tablespace = '';\n\n"
 )
 
 // Dump dumps the database.
@@ -102,10 +101,6 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 	}
 
 	if _, err := io.WriteString(out, setDefaultTableSpace); err != nil {
-		return err
-	}
-
-	if _, err := io.WriteString(out, setDefaultTableAccessMethod); err != nil {
 		return err
 	}
 

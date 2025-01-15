@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import { orderBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { planServiceClient } from "@/grpcweb";
 import { useUserStore } from "@/store";
@@ -97,7 +98,7 @@ export const composePlan = async (rawPlan: Plan): Promise<ComposedPlan> => {
       parent: rawPlan.name,
       latestOnly: true,
     });
-    plan.planCheckRunList = planCheckRuns;
+    plan.planCheckRunList = orderBy(planCheckRuns, "name", "desc");
   }
 
   return plan;

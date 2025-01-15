@@ -220,7 +220,8 @@ message CreateRolloutRequest {
   // The rollout is created according to the plan and the
   // stages are created up to the stage_id.
   // If unspecified, all stages are created.
-  string stage_id = 3;
+  // If set to "", no stages are created.
+  optional string stage_id = 3;
 
   // If set, validate the request and preview the rollout, but
   // do not actually create it.

@@ -43,14 +43,21 @@ export const useChangelogStore = defineStore("changelog", () => {
     await upsertChangelogsMap(parent, changelogs);
     return { changelogs, nextPageToken };
   };
-  const getOrFetchChangelogListOfDatabase = async (databaseName: string) => {
+  const getOrFetchChangelogListOfDatabase = async (
+    databaseName: string,
+    pageSize = DEFAULT_PAGE_SIZE,
+    view = ChangelogView.CHANGELOG_VIEW_BASIC,
+    filter = ""
+  ) => {
     if (changelogsMapByDatabase.has(databaseName)) {
       return changelogsMapByDatabase.get(databaseName) ?? [];
     }
     // Fetch all changelogs of the database with max DEFAULT_PAGE_SIZE.
     const { changelogs } = await fetchChangelogList({
       parent: databaseName,
-      pageSize: DEFAULT_PAGE_SIZE,
+      pageSize,
+      view,
+      filter,
     });
     return changelogs;
   };

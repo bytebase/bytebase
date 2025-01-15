@@ -297,9 +297,6 @@
   
 - [v1/anomaly_service.proto](#v1_anomaly_service-proto)
     - [Anomaly](#bytebase-v1-Anomaly)
-    - [Anomaly.DatabaseConnectionDetail](#bytebase-v1-Anomaly-DatabaseConnectionDetail)
-    - [Anomaly.DatabaseSchemaDriftDetail](#bytebase-v1-Anomaly-DatabaseSchemaDriftDetail)
-    - [Anomaly.InstanceConnectionDetail](#bytebase-v1-Anomaly-InstanceConnectionDetail)
     - [SearchAnomaliesRequest](#bytebase-v1-SearchAnomaliesRequest)
     - [SearchAnomaliesResponse](#bytebase-v1-SearchAnomaliesResponse)
   
@@ -5371,65 +5368,11 @@ The theme resources.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| resource | [string](#string) |  | The resource that is the target of the operation. Format: - Instance: instnaces/{instance} - Database: instnaces/{instance}/databases/{database} |
+| resource | [string](#string) |  | The resource that is the target of the operation. Format: - Database: instances/{instance}/databases/{database} |
 | type | [Anomaly.AnomalyType](#bytebase-v1-Anomaly-AnomalyType) |  | type is the type of the anomaly. |
 | severity | [Anomaly.AnomalySeverity](#bytebase-v1-Anomaly-AnomalySeverity) |  | severity is the severity of the anomaly. |
-| instance_connection_detail | [Anomaly.InstanceConnectionDetail](#bytebase-v1-Anomaly-InstanceConnectionDetail) |  |  |
-| database_connection_detail | [Anomaly.DatabaseConnectionDetail](#bytebase-v1-Anomaly-DatabaseConnectionDetail) |  |  |
-| database_schema_drift_detail | [Anomaly.DatabaseSchemaDriftDetail](#bytebase-v1-Anomaly-DatabaseSchemaDriftDetail) |  |  |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Anomaly-DatabaseConnectionDetail"></a>
-
-### Anomaly.DatabaseConnectionDetail
-Database level anomaly detial.
-
-DatbaaseConnectionDetail is the detail for database connection anomaly.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| detail | [string](#string) |  | detail is the detail of the database connection failure. |
-
-
-
-
-
-
-<a name="bytebase-v1-Anomaly-DatabaseSchemaDriftDetail"></a>
-
-### Anomaly.DatabaseSchemaDriftDetail
-DatabaseSchemaDriftDetail is the detail for database schema drift anomaly.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| record_version | [string](#string) |  | record_version is the record version of the database schema drift. |
-| expected_schema | [string](#string) |  | expected_schema is the expected schema in the database. |
-| actual_schema | [string](#string) |  | actual_schema is the actual schema in the database. |
-
-
-
-
-
-
-<a name="bytebase-v1-Anomaly-InstanceConnectionDetail"></a>
-
-### Anomaly.InstanceConnectionDetail
-Instance level anomaly detail.
-
-InstanceConnectionDetail is the detail for instance connection anomaly.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| detail | [string](#string) |  | detail is the detail of the instance connection failure. |
 
 
 
@@ -5444,7 +5387,8 @@ InstanceConnectionDetail is the detail for instance connection anomaly.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| filter | [string](#string) |  | filter is the filter to apply on the search anomaly request, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Only support filter by resource and type for now. For example: Search the anomalies of a specific resource: &#39;resource=&#34;instances/{instance}&#34;.&#39; Search the specified types of anomalies: &#39;type=&#34;MIGRATION_SCHEMA&#34;.&#39; |
+| parent | [string](#string) |  | The parent resource whose anomalies are to be listed. Format: projects/{project} |
+| filter | [string](#string) |  | filter is the filter to apply on the search anomaly request, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Only support filter by resource and type for now. For example: Search the anomalies of a specific resource: &#39;resource=&#34;instances/{instance}/databases/{database}&#34;.&#39; Search the specified types of anomalies: &#39;type=&#34;MIGRATION_SCHEMA&#34;.&#39; |
 | page_size | [int32](#int32) |  | Not used. The maximum number of anomalies to return. The service may return fewer than this value. If unspecified, at most 10 anomalies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `SearchAnomalies` call. Provide this to retrieve the subsequent page.
 
@@ -5495,10 +5439,6 @@ AnomalyType is the type of the anomaly.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | ANOMALY_TYPE_UNSPECIFIED | 0 | Unspecified anomaly type. |
-| INSTANCE_CONNECTION | 1 | Instance level anomaly.
-
-INSTANCE_CONNECTION is the anomaly type for instance connection, e.g. the instance is down. |
-| MIGRATION_SCHEMA | 2 | MIGRATION_SCHEMA is the anomaly type for migration schema, e.g. the migration schema in the instance is missing. |
 | DATABASE_CONNECTION | 5 | Database level anomaly.
 
 DATABASE_CONNECTION is the anomaly type for database connection, e.g. the database had been deleted. |
@@ -9038,8 +8978,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | ----- | ---- | ----- | ----------- |
 | line | [int32](#int32) |  |  |
 | column | [int32](#int32) |  |  |
-| detail | [string](#string) |  |  |
-| code | [int32](#int32) |  | Code from sql review. |
 | start_position | [Position](#bytebase-v1-Position) |  | 1-based Position of the SQL statement. To supersede `line` and `column` above. |
 | end_position | [Position](#bytebase-v1-Position) |  |  |
 
@@ -9056,7 +8994,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| code | [int32](#int32) |  |  |
 | statement_types | [string](#string) | repeated | statement_types are the types of statements that are found in the sql. |
 | affected_rows | [int32](#int32) |  |  |
 | changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
@@ -9340,7 +9277,6 @@ Type is the database change type.
 | content | [string](#string) |  | The advice content. |
 | line | [int32](#int32) |  | The advice line number in the SQL statement. |
 | column | [int32](#int32) |  | The advice column number in the SQL statement. |
-| detail | [string](#string) |  | The advice detail. |
 | start_position | [Position](#bytebase-v1-Position) |  | 1-based Position of the SQL statement. To supersede `line` and `column` above. |
 | end_position | [Position](#bytebase-v1-Position) |  |  |
 
@@ -10008,7 +9944,7 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | vcs_type | [VCSType](#bytebase-v1-VCSType) |  |  |
-| pull_request_url | [string](#string) |  |  |
+| url | [string](#string) |  | The url link to the e.g. GitHub commit or pull request. |
 
 
 
@@ -10654,7 +10590,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent project where this rollout will be created. Format: projects/{project} |
 | rollout | [Rollout](#bytebase-v1-Rollout) |  | The rollout to create. |
-| stage_id | [string](#string) |  | stage_id is the id in the plan deployment_config_snapshot. The rollout is created according to the plan and the stages are created up to the stage_id. If unspecified, all stages are created. |
+| stage_id | [string](#string) | optional | stage_id is the id in the plan deployment_config_snapshot. The rollout is created according to the plan and the stages are created up to the stage_id. If unspecified, all stages are created. If set to &#34;&#34;, no stages are created. |
 | validate_only | [bool](#bool) |  | If set, validate the request and preview the rollout, but do not actually create it. |
 
 

@@ -32,7 +32,6 @@
     "settings": "Settings",
     "project": "Project",
     "projects": "Projects",
-    "default-project": "Default Project",
     "help": "Help",
     "database": "Database",
     "databases": "Databases",
@@ -524,7 +523,7 @@
         },
         "data-export": {
           "enable": "Enable data export",
-          "description": "Allow users to export data"
+          "description": "Allow users to export data in SQL Editor"
         },
         "disallow-signup": {
           "enable": "Disallow self-service signup",
@@ -834,6 +833,9 @@
       },
       "form": {
       },
+      "warning": {
+        "some-previous-stages-are-not-done": "Some previous stages are not done."
+      },
       "error": {
         "some-tasks-are-still-running": "Some tasks are still running"
       }
@@ -931,7 +933,7 @@
     "format-on-save": "Format on save",
     "action-to-current-stage": "{action} current stage",
     "upload-sql": "Upload SQL",
-    "statement-from-sheet-warning": "SQL is oversized and inline-editing is disallowed. You can upload a new SQL file to overwrite it.",
+    "statement-from-sheet-warning": "Due to the SQL being oversized, it has been truncated to display, and editing is disabled. You can upload a new SQL file to overwrite it.",
     "overwrite-current-statement": "Overwrite current SQL statement",
     "upload-sql-file-max-size-exceeded": "Max file size ({size}) exceeded.",
     "waiting-earliest-allowed-time": "Will run after {time}",
@@ -1484,7 +1486,7 @@
     "select-databases-from-same-project": "Please select databases from the same project",
     "sync-schema": {
       "title": "Sync Schema",
-      "description": "Bytebase supports synchronizing a schema to one or multiple target databases. (MySQL, PostgreSQL, TiDB, Oracle only)",
+      "description": "Bytebase supports synchronizing a schema to one or multiple target databases. (MySQL, PostgreSQL, Oracle, MSSQL, TiDB only)",
       "schema-history-version": "Schema History Version",
       "copy-schema": "Copy schema",
       "select-source-schema": "Select source schema",
@@ -1574,7 +1576,8 @@
         "title": "Are you sure to delete?",
         "content": "This will delete these applied revisions and the database schema will not be changed. This action cannot be undone."
       }
-    }
+    },
+    "not-found": "Cannot found the database"
   },
   "repository": {
     "our-webhook-link": "The webhook created by Bytebase can be found at {webhookLink}.",
@@ -1606,12 +1609,9 @@
   },
   "anomaly": {
     "attention-desc": "Bytebase periodically detects anomalies based on the instance scan interval, and surfaces the findings here.",
-    "table-search-placeholder": "Search {type} or environment",
     "table-placeholder": "Hooray, no {type} anomaly detected!",
-    "tooltip": "{env} has {criticalCount} CRITICAL, {highCount} HIGH and {mediumCount} MEDIUM anomalies",
     "types": {
       "connection-failure": "Connection failure",
-      "missing-migration-schema": "Missing migration schema",
       "schema-drift": "Schema drift"
     },
     "action": {
@@ -2964,7 +2964,8 @@
       "succeed-to-create-release": "Succeed to create release",
       "files-will-always-be-sorted-and-executed-in-version-order": "The files will always be sorted and executed in version order.",
       "cannot-modify-files-after-created": "You cannot modify files after the release is created."
-    }
+    },
+    "usage-description": "The release is mainly used in custom GitOps with API integration."
   },
   "export-data": {
     "export-rows": "Export rows",

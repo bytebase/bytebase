@@ -29,7 +29,7 @@ const { t } = useI18n();
 const { isCreating, issue, selectedTask } = useIssueContext();
 
 const code = computed(() => {
-  return props.row.checkResult.sqlReviewReport?.code;
+  return props.row.checkResult.code;
 });
 
 const advise = computed(() => {

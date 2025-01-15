@@ -296,14 +296,12 @@ watch(
           ALLOWED_CHANGELOG_TYPES.includes(changelog.type)
         );
 
-        if (!state.changelogName) {
-          if (changelogList.length > 0) {
-            // Default select the first changelog.
-            state.changelogName = head(changelogList)?.name;
-          } else {
-            // If database has no changelog, we will use its latest schema.
-            state.changelogName = mockLatestChangelog(database).name;
-          }
+        if (changelogList.length > 0) {
+          // Default select the first changelog.
+          state.changelogName = head(changelogList)?.name;
+        } else {
+          // If database has no changelog, we will use its latest schema.
+          state.changelogName = mockLatestChangelog(database).name;
         }
       } finally {
         isPreparingSchemaVersionOptions.value = false;

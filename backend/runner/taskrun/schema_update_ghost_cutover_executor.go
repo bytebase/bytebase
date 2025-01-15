@@ -115,14 +115,6 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, taskCont
 
 func cutover(ctx context.Context, taskContext context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, taskRunUID int, statement string, sheetID int, schemaVersion model.Version, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *storepb.TaskRunResult, err error) {
 	statement = strings.TrimSpace(statement)
-	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
-	if err != nil {
-		return true, nil, err
-	}
-	database, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
-	if err != nil {
-		return true, nil, err
-	}
 	// wait for heartbeat lag.
 	// try to make the time gap between the migration history insertion and the actual cutover as close as possible.
 	cancelled := waitForCutover(ctx, taskContext, migrationContext)
@@ -146,17 +138,15 @@ func cutover(ctx context.Context, taskContext context.Context, stores *store.Sto
 		}
 		return nil
 	}
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
-	if err != nil {
-		return true, nil, err
-	}
-	defer driver.Close(ctx)
-	_, _, err = executeMigrationWithFunc(ctx, ctx, stores, driver, mi, mc, statement, execFunc, db.ExecuteOptions{})
+	// TODO(p0ny): we may need to defer execFunc to do the cleanup always.
+	// And we might want to move the check that determines if the task should be skipped
+	// to the sync executor.
+	skipped, err := executeMigrationWithFunc(ctx, ctx, stores, mi, mc, statement, execFunc, db.ExecuteOptions{})
 	if err != nil {
 		return true, nil, err
 	}
 
-	return postMigration(ctx, stores, mi, mc)
+	return postMigration(ctx, stores, mi, mc, skipped)
 }
 
 func waitForCutover(ctx context.Context, taskContext context.Context, migrationContext *base.MigrationContext) bool {

@@ -16,16 +16,15 @@
           @select-instance="state.instanceFilter = $event"
           @search-text-change="state.searchText = $event"
         />
-        <div>
-          <ProjectSelect
-            v-if="state.transferSource == 'OTHER'"
-            class="!w-48"
-            :include-all="false"
-            :project-name="state.fromProjectName"
-            :filter="filterSourceProject"
-            @update:project-name="changeProjectFilter"
-          />
-        </div>
+        <ProjectSelect
+          v-if="state.transferSource == 'OTHER'"
+          class="!w-48"
+          :include-all="false"
+          :project-name="state.fromProjectName"
+          :filter="filterSourceProject"
+          :default-select-first="true"
+          @update:project-name="changeProjectFilter"
+        />
         <template
           v-if="state.transferSource === 'OTHER' && !state.fromProjectName"
         >

@@ -32,7 +32,6 @@
     "settings": "設定",
     "project": "プロジェクト",
     "projects": "プロジェクト",
-    "default-project": "デフォルトのプロジェクト",
     "help": "ヘルプ",
     "database": "データベース",
     "databases": "データベース",
@@ -95,7 +94,6 @@
     "confirm-and-update": "確認して更新する",
     "query": "お問い合わせ",
     "transfer": "移行",
-    "migration": "変化",
     "schema": "スキーマ",
     "anomalies": "異常",
     "detail": "詳細",
@@ -525,7 +523,7 @@
         },
         "data-export": {
           "enable": "データのエクスポートを有効にする",
-          "description": "ユーザーにデータのエクスポートを許可する"
+          "description": "ユーザーがSQLエディタでデータをエクスポートできるようにする"
         },
         "disallow-signup": {
           "enable": "セルフサービス登録を無効にする",
@@ -835,6 +833,9 @@
       },
       "form": {
       },
+      "warning": {
+        "some-previous-stages-are-not-done": "以前のステージの一部が完了していません。"
+      },
       "error": {
         "some-tasks-are-still-running": "一部のタスクはまだ実行中です"
       }
@@ -932,7 +933,7 @@
     "format-on-save": "保存時にフォーマットする",
     "action-to-current-stage": "{action}現在の段階",
     "upload-sql": "SQLのアップロード",
-    "statement-from-sheet-warning": "SQL は大きすぎて直接編集できません。新しい SQL ファイルをアップロードして上書きできます。",
+    "statement-from-sheet-warning": "SQL が大きすぎるため、表示時に切り捨てられ、編集が無効になっています。新しい SQL ファイルをアップロードして上書きすることができます。",
     "overwrite-current-statement": "現在の SQL ステートメントを上書きする",
     "upload-sql-file-max-size-exceeded": "アップロード ファイルのサイズは {size} を超えることはできません。",
     "waiting-earliest-allowed-time": "{time}の後に実行されます",
@@ -1162,7 +1163,6 @@
     "restore": "復元する",
     "restore-instance-instance-name-to-normal-state": "インスタンス '{0}' を通常の状態に復元しますか?",
     "account-locator": "アカウントロケーター",
-    "name": "名前",
     "host-or-socket": "ホストまたはソケット",
     "endpoint": "終点",
     "project-id": "プロジェクトID",
@@ -1171,9 +1171,8 @@
     "port": "ポート",
     "authentication-database": "認証データベース",
     "instance-name": "@:common.instance@:instance.name",
-    "snowflake-web-console": "スノーフレーク@:{'instance.web-console'}",
+    "snowflake-web-console": "スノーフレークウェブコンソール",
     "external-link": "外部リンク",
-    "web-console": "Webコンソール",
     "connection-info": "接続情報",
     "show-how-to-create": "作成方法",
     "no-read-only-data-source-warn-for-admin-dba": "このインスタンスは読み取り専用接続で設定されていません。設定を検討してください。",
@@ -1487,7 +1486,7 @@
     "select-databases-from-same-project": "同じプロジェクト内のデータベースを選択してください",
     "sync-schema": {
       "title": "データベーステーブルの同期",
-      "description": "Bytebase は、スキーマを 1 つまたは複数のターゲット データベースに同期することをサポートします。(MySQL、PostgreSQL、TiDB、Oracle のみ)",
+      "description": "Bytebase は、スキーマを 1 つまたは複数のターゲット データベースに同期することをサポートします。(MySQL, PostgreSQL, Oracle, MSSQL, TiDB のみ)",
       "schema-history-version": "スキーマの履歴バージョン",
       "copy-schema": "スキーマテキストを貼り付け",
       "select-source-schema": "ソーススキーマの選択",
@@ -1577,7 +1576,8 @@
         "title": "本当に削除しますか?",
         "content": "これにより、適用されたリビジョンが削除され、データベース スキーマは変更されません。このアクションは元に戻せません。"
       }
-    }
+    },
+    "not-found": "データベースが見つかりません"
   },
   "repository": {
     "our-webhook-link": "Bytebase によって作成された Webhook は、{webhookLink} にあります。",
@@ -1609,12 +1609,9 @@
   },
   "anomaly": {
     "attention-desc": "Bytebase は、インスタンスに設定されたスキャン間隔に基づいて異常を検出し、ここに表示します。",
-    "table-search-placeholder": "{type} または環境を検索",
     "table-placeholder": "すばらしいです。{type} 例外は検出されませんでした。",
-    "tooltip": "{env} 環境には、{criticalCount} の重大な異常、{highCount} の高レベルの異常、{mediumCount} 中レベルの異常があります",
     "types": {
       "connection-failure": "接続に失敗しました",
-      "missing-migration-schema": "変更スキーマがありません",
       "schema-drift": "スキーマの逸脱"
     },
     "action": {
@@ -2967,7 +2964,8 @@
       "succeed-to-create-release": "リリースの作成に成功",
       "files-will-always-be-sorted-and-executed-in-version-order": "ファイルは常にバージョン順に並べ替えられ、実行されます。",
       "cannot-modify-files-after-created": "リリースの作成後はファイルを変更できません。"
-    }
+    },
+    "usage-description": "このリリースは主に、API 統合によるカスタム GitOps で使用されます。"
   },
   "export-data": {
     "export-rows": "エクスポート行数",

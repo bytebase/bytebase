@@ -1,26 +1,45 @@
 - input: |-
     UPDATE test SET test.c1 = 1 WHERE test.b1 = 1;
     UPDATE test SET test.c1 = 2 WHERE test.b1 = 2;
+    UPDATE test11 SET test11.c1 = 2 WHERE test11.b1 = 2;
     UPDATE test SET test.c1 = 3 WHERE test.b1 = 3;
     UPDATE test SET test.c1 = 4 WHERE test.b1 = 4;
+    UPDATE test11 SET test11.c1 = 2 WHERE test11.b1 = 4;
     UPDATE test SET test.c1 = 5 WHERE test.b1 = 5;
     UPDATE test SET test.c1 = 6 WHERE test.b1 = 6;
+    UPDATE test11 SET test11.c1 = 2 WHERE test11.b1 = 6;
     UPDATE test SET test.c1 = 7 WHERE test.b1 = 7;
   result:
     - statement: |-
+        CREATE TABLE "backupDB"."rollback_TEST11_DB" AS
+          SELECT "TEST11".* FROM test11 WHERE test11.b1 = 2
+          UNION
+          SELECT "TEST11".* FROM test11 WHERE test11.b1 = 4
+          UNION
+          SELECT "TEST11".* FROM test11 WHERE test11.b1 = 6;
+      sourceschema: DB
+      sourcetablename: TEST11
+      targettablename: rollback_TEST11_DB
+      startposition:
+        line: 3
+        column: 0
+      endposition:
+        line: 9
+        column: 50
+    - statement: |-
         CREATE TABLE "backupDB"."rollback_TEST_DB" AS
           SELECT "TEST".* FROM test WHERE test.b1 = 1
-          UNION ALL
+          UNION
           SELECT "TEST".* FROM test WHERE test.b1 = 2
-          UNION ALL
+          UNION
           SELECT "TEST".* FROM test WHERE test.b1 = 3
-          UNION ALL
+          UNION
           SELECT "TEST".* FROM test WHERE test.b1 = 4
-          UNION ALL
+          UNION
           SELECT "TEST".* FROM test WHERE test.b1 = 5
-          UNION ALL
+          UNION
           SELECT "TEST".* FROM test WHERE test.b1 = 6
-          UNION ALL
+          UNION
           SELECT "TEST".* FROM test WHERE test.b1 = 7;
       sourceschema: DB
       sourcetablename: TEST
@@ -29,26 +48,30 @@
         line: 1
         column: 0
       endposition:
-        line: 7
+        line: 10
         column: 44
 - input: |-
-    DELETE FROM db.test WHERE c1 = 1;
+    DELETE FROM db.test1 WHERE c1 = 1;
     UPDATE db.test SET test.c1 = 2 WHERE test.c1 = 1;
   result:
-    - statement: CREATE TABLE "backupDB"."rollback_0_TEST" AS SELECT "DB"."TEST".* FROM db.test WHERE c1 = 1;
+    - statement: |-
+        CREATE TABLE "backupDB"."rollback_TEST1_DB" AS
+          SELECT "DB"."TEST1".* FROM db.test1 WHERE c1 = 1;
       sourceschema: DB
-      sourcetablename: TEST
-      targettablename: rollback_0_TEST
+      sourcetablename: TEST1
+      targettablename: rollback_TEST1_DB
       startposition:
         line: 1
         column: 0
       endposition:
         line: 1
-        column: 31
-    - statement: CREATE TABLE "backupDB"."rollback_1_TEST" AS SELECT "DB"."TEST".* FROM db.test WHERE test.c1 = 1;
+        column: 32
+    - statement: |-
+        CREATE TABLE "backupDB"."rollback_TEST_DB" AS
+          SELECT "DB"."TEST".* FROM db.test WHERE test.c1 = 1;
       sourceschema: DB
       sourcetablename: TEST
-      targettablename: rollback_1_TEST
+      targettablename: rollback_TEST_DB
       startposition:
         line: 2
         column: 0
@@ -57,10 +80,12 @@
         column: 47
 - input: UPDATE test  t SET t.c1 = 1 WHERE t.c1=2;
   result:
-    - statement: CREATE TABLE "backupDB"."rollback_0_TEST" AS SELECT "T".* FROM test  t WHERE t.c1=2;
+    - statement: |-
+        CREATE TABLE "backupDB"."rollback_TEST_DB" AS
+          SELECT "T".* FROM test  t WHERE t.c1=2;
       sourceschema: DB
       sourcetablename: TEST
-      targettablename: rollback_0_TEST
+      targettablename: rollback_TEST_DB
       startposition:
         line: 1
         column: 0
@@ -69,10 +94,12 @@
         column: 39
 - input: DELETE FROM test  t WHERE t.c1 = 1;
   result:
-    - statement: CREATE TABLE "backupDB"."rollback_0_TEST" AS SELECT "T".* FROM test  t WHERE t.c1 = 1;
+    - statement: |-
+        CREATE TABLE "backupDB"."rollback_TEST_DB" AS
+          SELECT "T".* FROM test  t WHERE t.c1 = 1;
       sourceschema: DB
       sourcetablename: TEST
-      targettablename: rollback_0_TEST
+      targettablename: rollback_TEST_DB
       startposition:
         line: 1
         column: 0
@@ -83,44 +110,42 @@
     UPDATE test  t SET t.c1 = 2 WHERE t.c1 = 1 ;
     UPDATE test  t SET t.c1 = 3 WHERE t.c1 = 5 ;
   result:
-    - statement: CREATE TABLE "backupDB"."rollback_0_TEST" AS SELECT "T".* FROM test  t WHERE t.c1 = 1;
+    - statement: |-
+        CREATE TABLE "backupDB"."rollback_TEST_DB" AS
+          SELECT "T".* FROM test  t WHERE t.c1 = 1
+          UNION
+          SELECT "T".* FROM test  t WHERE t.c1 = 5;
       sourceschema: DB
       sourcetablename: TEST
-      targettablename: rollback_0_TEST
+      targettablename: rollback_TEST_DB
       startposition:
         line: 1
-        column: 0
-      endposition:
-        line: 1
-        column: 41
-    - statement: CREATE TABLE "backupDB"."rollback_1_TEST" AS SELECT "T".* FROM test  t WHERE t.c1 = 5;
-      sourceschema: DB
-      sourcetablename: TEST
-      targettablename: rollback_1_TEST
-      startposition:
-        line: 2
         column: 0
       endposition:
         line: 2
         column: 41
 - input: |-
-    DELETE FROM test  t WHERE t.c1 = 1;
+    DELETE FROM test1  t WHERE t.c1 = 1;
     UPDATE test  t SET t.c1 = 2 WHERE t.c1 = 1;
   result:
-    - statement: CREATE TABLE "backupDB"."rollback_0_TEST" AS SELECT "T".* FROM test  t WHERE t.c1 = 1;
+    - statement: |-
+        CREATE TABLE "backupDB"."rollback_TEST1_DB" AS
+          SELECT "T".* FROM test1  t WHERE t.c1 = 1;
       sourceschema: DB
-      sourcetablename: TEST
-      targettablename: rollback_0_TEST
+      sourcetablename: TEST1
+      targettablename: rollback_TEST1_DB
       startposition:
         line: 1
         column: 0
       endposition:
         line: 1
-        column: 33
-    - statement: CREATE TABLE "backupDB"."rollback_1_TEST" AS SELECT "T".* FROM test  t WHERE t.c1 = 1;
+        column: 34
+    - statement: |-
+        CREATE TABLE "backupDB"."rollback_TEST_DB" AS
+          SELECT "T".* FROM test  t WHERE t.c1 = 1;
       sourceschema: DB
       sourcetablename: TEST
-      targettablename: rollback_1_TEST
+      targettablename: rollback_TEST_DB
       startposition:
         line: 2
         column: 0
@@ -128,23 +153,27 @@
         line: 2
         column: 41
 - input: |-
-    DELETE FROM test WHERE c1 = 1;
+    DELETE FROM test1 WHERE c1 = 1;
     UPDATE test SET test.c1 = 2 WHERE test.c1 = 1;
   result:
-    - statement: CREATE TABLE "backupDB"."rollback_0_TEST" AS SELECT "TEST".* FROM test WHERE c1 = 1;
+    - statement: |-
+        CREATE TABLE "backupDB"."rollback_TEST1_DB" AS
+          SELECT "TEST1".* FROM test1 WHERE c1 = 1;
       sourceschema: DB
-      sourcetablename: TEST
-      targettablename: rollback_0_TEST
+      sourcetablename: TEST1
+      targettablename: rollback_TEST1_DB
       startposition:
         line: 1
         column: 0
       endposition:
         line: 1
-        column: 28
-    - statement: CREATE TABLE "backupDB"."rollback_1_TEST" AS SELECT "TEST".* FROM test WHERE test.c1 = 1;
+        column: 29
+    - statement: |-
+        CREATE TABLE "backupDB"."rollback_TEST_DB" AS
+          SELECT "TEST".* FROM test WHERE test.c1 = 1;
       sourceschema: DB
       sourcetablename: TEST
-      targettablename: rollback_1_TEST
+      targettablename: rollback_TEST_DB
       startposition:
         line: 2
         column: 0
@@ -153,10 +182,12 @@
         column: 44
 - input: DELETE FROM test WHERE c1 = 1;
   result:
-    - statement: CREATE TABLE "backupDB"."rollback_0_TEST" AS SELECT "TEST".* FROM test WHERE c1 = 1;
+    - statement: |-
+        CREATE TABLE "backupDB"."rollback_TEST_DB" AS
+          SELECT "TEST".* FROM test WHERE c1 = 1;
       sourceschema: DB
       sourcetablename: TEST
-      targettablename: rollback_0_TEST
+      targettablename: rollback_TEST_DB
       startposition:
         line: 1
         column: 0
@@ -165,10 +196,12 @@
         column: 28
 - input: UPDATE test SET c1 = 1 WHERE c1=2;
   result:
-    - statement: CREATE TABLE "backupDB"."rollback_0_TEST" AS SELECT "TEST".* FROM test WHERE c1=2;
+    - statement: |-
+        CREATE TABLE "backupDB"."rollback_TEST_DB" AS
+          SELECT "TEST".* FROM test WHERE c1=2;
       sourceschema: DB
       sourcetablename: TEST
-      targettablename: rollback_0_TEST
+      targettablename: rollback_TEST_DB
       startposition:
         line: 1
         column: 0
@@ -179,22 +212,16 @@
     UPDATE test SET test.c1 = 2 WHERE test.c1 = 1 ;
     UPDATE test SET test.c1 = 3 WHERE test.c1 = 5 ;
   result:
-    - statement: CREATE TABLE "backupDB"."rollback_0_TEST" AS SELECT "TEST".* FROM test WHERE test.c1 = 1;
+    - statement: |-
+        CREATE TABLE "backupDB"."rollback_TEST_DB" AS
+          SELECT "TEST".* FROM test WHERE test.c1 = 1
+          UNION
+          SELECT "TEST".* FROM test WHERE test.c1 = 5;
       sourceschema: DB
       sourcetablename: TEST
-      targettablename: rollback_0_TEST
+      targettablename: rollback_TEST_DB
       startposition:
         line: 1
-        column: 0
-      endposition:
-        line: 1
-        column: 44
-    - statement: CREATE TABLE "backupDB"."rollback_1_TEST" AS SELECT "TEST".* FROM test WHERE test.c1 = 5;
-      sourceschema: DB
-      sourcetablename: TEST
-      targettablename: rollback_1_TEST
-      startposition:
-        line: 2
         column: 0
       endposition:
         line: 2

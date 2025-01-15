@@ -4,6 +4,7 @@ package bytebase.v1;
 
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 
@@ -12,7 +13,7 @@ option go_package = "generated-go/v1";
 service AnomalyService {
   rpc SearchAnomalies(SearchAnomaliesRequest) returns (SearchAnomaliesResponse) {
     option (google.api.http) = {
-      post: "/v1/anomalies:search"
+      post: "/v1/{parent=projects/*}/anomalies:search"
       body: "*"
     };
     option (bytebase.v1.auth_method) = CUSTOM;
@@ -20,20 +21,27 @@ service AnomalyService {
 }
 
 message SearchAnomaliesRequest {
+  // The parent resource whose anomalies are to be listed.
+  // Format: projects/{project}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+
   // filter is the filter to apply on the search anomaly request,
   // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
   // Only support filter by resource and type for now.
   // For example:
-  // Search the anomalies of a specific resource: 'resource="instances/{instance}".'
+  // Search the anomalies of a specific resource: 'resource="instances/{instance}/databases/{database}".'
   // Search the specified types of anomalies: 'type="MIGRATION_SCHEMA".'
-  string filter = 1;
+  string filter = 2;
 
   // Not used.
   // The maximum number of anomalies to return. The service may return fewer than
   // this value.
   // If unspecified, at most 10 anomalies will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
-  int32 page_size = 2;
+  int32 page_size = 3;
 
   // Not used.
   // A page token, received from a previous `SearchAnomalies` call.
@@ -41,7 +49,7 @@ message SearchAnomaliesRequest {
   //
   // When paginating, all other parameters provided to `SearchAnomalies` must match
   // the call that provided the page token.
-  string page_token = 3;
+  string page_token = 4;
 }
 
 message SearchAnomaliesResponse {
@@ -58,12 +66,6 @@ message Anomaly {
   enum AnomalyType {
     // Unspecified anomaly type.
     ANOMALY_TYPE_UNSPECIFIED = 0;
-    // Instance level anomaly.
-    //
-    // INSTANCE_CONNECTION is the anomaly type for instance connection, e.g. the instance is down.
-    INSTANCE_CONNECTION = 1;
-    // MIGRATION_SCHEMA is the anomaly type for migration schema, e.g. the migration schema in the instance is missing.
-    MIGRATION_SCHEMA = 2;
 
     // Database level anomaly.
     //
@@ -88,8 +90,7 @@ message Anomaly {
 
   // The resource that is the target of the operation.
   // Format:
-  // - Instance: instnaces/{instance}
-  // - Database: instnaces/{instance}/databases/{database}
+  // - Database: instances/{instance}/databases/{database}
   string resource = 1 [(google.api.field_behavior) = REQUIRED];
 
   // type is the type of the anomaly.
@@ -97,41 +98,6 @@ message Anomaly {
 
   // severity is the severity of the anomaly.
   AnomalySeverity severity = 3;
-
-  // Instance level anomaly detail.
-  //
-  // InstanceConnectionDetail is the detail for instance connection anomaly.
-  message InstanceConnectionDetail {
-    // detail is the detail of the instance connection failure.
-    string detail = 1;
-  }
-
-  // Database level anomaly detial.
-  //
-  // DatbaaseConnectionDetail is the detail for database connection anomaly.
-  message DatabaseConnectionDetail {
-    // detail is the detail of the database connection failure.
-    string detail = 1;
-  }
-
-  // DatabaseSchemaDriftDetail is the detail for database schema drift anomaly.
-  message DatabaseSchemaDriftDetail {
-    // record_version is the record version of the database schema drift.
-    string record_version = 1;
-
-    // expected_schema is the expected schema in the database.
-    string expected_schema = 2;
-
-    // actual_schema is the actual schema in the database.
-    string actual_schema = 3;
-  }
-
-  // detail is the detail of the anomaly.
-  oneof detail {
-    InstanceConnectionDetail instance_connection_detail = 4;
-    DatabaseConnectionDetail database_connection_detail = 5;
-    DatabaseSchemaDriftDetail database_schema_drift_detail = 8;
-  }
 
   google.protobuf.Timestamp create_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 

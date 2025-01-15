@@ -29,6 +29,7 @@ export type SelectionContext = {
   disabled: Ref<boolean>;
   selectRow: (row: number) => void;
   selectColumn: (column: number) => void;
+  selectCell: (row: number, column: number) => void;
   deselect: () => void;
   copy: () => boolean;
 };
@@ -49,8 +50,18 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
   const disabled = computed(() => {
     return resultViewContext.disallowCopyingData.value;
   });
+  const isCellSelected = computed(
+    () => state.value.rows.length === 1 && state.value.columns.length === 1
+  );
   const selectRow = (row: number) => {
     if (disabled.value) return;
+    if (isCellSelected.value) {
+      state.value = {
+        rows: [row],
+        columns: [],
+      };
+      return;
+    }
     state.value = {
       rows: sortBy(
         state.value.rows.includes(row)
@@ -62,6 +73,13 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
   };
   const selectColumn = (column: number) => {
     if (disabled.value) return;
+    if (isCellSelected.value) {
+      state.value = {
+        rows: [],
+        columns: [column],
+      };
+      return;
+    }
     state.value = {
       rows: [],
       columns: sortBy(
@@ -69,6 +87,20 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
           ? state.value.columns.filter((c) => c !== column)
           : [...state.value.columns, column]
       ),
+    };
+  };
+  const selectCell = (row: number, column: number) => {
+    if (disabled.value) return;
+    if (
+      state.value.rows.includes(row) &&
+      state.value.columns.includes(column)
+    ) {
+      deselect();
+      return;
+    }
+    state.value = {
+      rows: [row],
+      columns: [column],
     };
   };
   const deselect = () => {
@@ -92,7 +124,18 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
   });
 
   const getValues = () => {
-    if (state.value.rows.length > 0) {
+    if (state.value.rows.length === 1 && state.value.columns.length === 1) {
+      const row =
+        table.value.getPrePaginationRowModel().rows[state.value.rows[0]];
+      if (!row) {
+        return "";
+      }
+      const cell = row.getVisibleCells()[state.value.columns[0]];
+      if (!cell) {
+        return "";
+      }
+      return String(extractSQLRowValuePlain(cell.getValue() as RowValue));
+    } else if (state.value.rows.length > 0) {
       const rows: Row<QueryRow>[] = [];
       for (const row of state.value.rows) {
         const d = table.value.getPrePaginationRowModel().rows[row];
@@ -196,6 +239,7 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
     disabled,
     selectRow,
     selectColumn,
+    selectCell,
     deselect,
     copy,
   };

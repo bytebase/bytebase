@@ -40,7 +40,7 @@ import { useAppFeature } from "@/store";
 import type { ComposedProject, MaybeRef, Permission } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
-import { hasProjectPermissionV2, isDev } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 
 interface ProjectSidebarItem extends SidebarItem {
   title: string;
@@ -191,7 +191,6 @@ export const useProjectSidebar = (
         icon: () => h(PackageIcon),
         type: "div",
         hide:
-          !isDev() ||
           isDefaultProject.value ||
           databaseChangeMode.value === DatabaseChangeMode.EDITOR,
       },

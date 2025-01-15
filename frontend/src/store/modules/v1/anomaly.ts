@@ -1,14 +1,10 @@
 import { defineStore } from "pinia";
-import { computed, ref, unref, watch } from "vue";
 import { anomalyServiceClient } from "@/grpcweb";
-import type { FindAnomalyMessage, MaybeRef } from "@/types";
-import type { Anomaly } from "@/types/proto/v1/anomaly_service";
+import type { FindAnomalyMessage } from "@/types";
 
 const buildFilter = (find: FindAnomalyMessage): string => {
   const filter: string[] = [];
-  if (find.instance) {
-    filter.push(`resource = "${find.instance}".`);
-  } else if (find.database) {
+  if (find.database) {
     filter.push(`resource = "${find.database}".`);
   }
   if (find.type) {
@@ -19,27 +15,12 @@ const buildFilter = (find: FindAnomalyMessage): string => {
 
 export const useAnomalyV1Store = defineStore("anomaly_v1", {
   actions: {
-    async fetchAnomalyList(find: FindAnomalyMessage) {
+    async fetchAnomalyList(project: string, find: FindAnomalyMessage) {
       const resp = await anomalyServiceClient.searchAnomalies({
+        parent: project,
         filter: buildFilter(find),
       });
       return resp.anomalies;
     },
   },
 });
-
-export const useAnomalyV1List = (find: MaybeRef<FindAnomalyMessage> = {}) => {
-  const store = useAnomalyV1Store();
-  const query = computed(() => buildFilter(unref(find)));
-  const list = ref<Anomaly[]>([]);
-  watch(
-    query,
-    () => {
-      store.fetchAnomalyList(unref(find)).then((result) => {
-        list.value = result;
-      });
-    },
-    { immediate: true }
-  );
-  return list;
-};

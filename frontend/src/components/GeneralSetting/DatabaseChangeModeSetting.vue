@@ -61,7 +61,7 @@
           </NSpace>
         </NRadioGroup>
       </div>
-      <div class="mt-4 lg:mt-0">
+      <div class="mt-4">
         <div class="flex justify-end">
           <NButton
             type="primary"

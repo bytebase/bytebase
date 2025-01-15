@@ -142,6 +142,7 @@ const dataTableColumns = computed(() => {
             schema={item.schema}
             table={item.table}
             column={item.column}
+            readonly={!props.showOperation}
           />
         );
       },
@@ -163,6 +164,7 @@ const dataTableColumns = computed(() => {
           <ClassificationCell
             classification={columnCatalog.classification}
             classificationConfig={classificationConfig.value}
+            readonly={!props.showOperation}
             onApply={(id: string) => onClassificationIdApply(item, id)}
           />
         );

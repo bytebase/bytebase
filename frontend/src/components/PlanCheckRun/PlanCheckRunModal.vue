@@ -3,6 +3,7 @@
     :title="$t('task.check-result.title-general')"
     class="!w-[56rem]"
     header-class="whitespace-pre-wrap break-all gap-x-1"
+    :mask-closable="true"
     @close="$emit('close')"
   >
     <PlanCheckRunPanel

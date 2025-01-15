@@ -32,7 +32,6 @@
     "settings": "设置",
     "project": "项目",
     "projects": "项目",
-    "default-project": "默认项目",
     "help": "帮助",
     "database": "数据库",
     "databases": "数据库",
@@ -95,7 +94,6 @@
     "confirm-and-update": "确认并更新",
     "query": "查询",
     "transfer": "转移",
-    "migration": "变更",
     "schema": "Schema",
     "anomalies": "异常",
     "detail": "详情",
@@ -525,7 +523,7 @@
         },
         "data-export": {
           "enable": "启用数据导出",
-          "description": "允许用户导出数据"
+          "description": "允许用户在 SQL 编辑器里导出数据"
         },
         "disallow-signup": {
           "enable": "禁用自助注册",
@@ -835,6 +833,9 @@
       },
       "form": {
       },
+      "warning": {
+        "some-previous-stages-are-not-done": "存在之前的阶段尚未完成。"
+      },
       "error": {
         "some-tasks-are-still-running": "部分任务仍在运行"
       }
@@ -932,7 +933,7 @@
     "format-on-save": "保存时格式化",
     "action-to-current-stage": "{action}当前阶段",
     "upload-sql": "上传 SQL",
-    "statement-from-sheet-warning": "SQL 过大所以无法直接编辑。你可以上传新的 SQL 文件以将其覆盖。",
+    "statement-from-sheet-warning": "由于 SQL 文件过大，因此被截断以便显示，并且编辑功能已禁用。你可以上传新的 SQL 文件以将其覆盖。",
     "overwrite-current-statement": "覆盖当前的 SQL 语句",
     "upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {size}。",
     "waiting-earliest-allowed-time": "将于 {time} 之后执行",
@@ -1162,7 +1163,6 @@
     "restore": "恢复",
     "restore-instance-instance-name-to-normal-state": "恢复实例'{0}'到正常状态?",
     "account-locator": "账户定位符",
-    "name": "名称",
     "host-or-socket": "Host 或 Socket",
     "endpoint": "端点",
     "project-id": "项目 ID",
@@ -1170,10 +1170,9 @@
     "your-snowflake-account-locator": "您的 Snowflake 账户定位符",
     "port": "端口",
     "authentication-database": "认证数据库",
-    "instance-name": "@:common.instance@:instance.name",
-    "snowflake-web-console": "Snowflake @:{'instance.web-console'}",
+    "instance-name": "实例名称",
+    "snowflake-web-console": "Snowflake Web 控制台",
     "external-link": "外部链接",
-    "web-console": "Web 控制台",
     "connection-info": "连接信息",
     "show-how-to-create": "如何创建",
     "no-read-only-data-source-warn-for-admin-dba": "该实例没有配置只读连接，请考虑配置。",
@@ -1487,7 +1486,7 @@
     "select-databases-from-same-project": "请选择同一个项目下的数据库",
     "sync-schema": {
       "title": "库表同步",
-      "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。（支持 MySQL、PostgreSQL、TiDB 以及 Oracle）",
+      "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。（支持 MySQL, PostgreSQL, Oracle, MSSQL 以及 TiDB）",
       "schema-history-version": "Schema 历史版本",
       "copy-schema": "粘贴 Schema 文本",
       "select-source-schema": "选择源 Schema",
@@ -1577,7 +1576,8 @@
         "title": "确定要删除吗？",
         "content": "这将删除这些已应用的修改，但不会影响数据库 Schema。此操作无法撤消。"
       }
-    }
+    },
+    "not-found": "找不到数据库"
   },
   "repository": {
     "our-webhook-link": "Bytebase 创建的 webhook 可以在 {webhookLink} 中找到。",
@@ -1609,12 +1609,9 @@
   },
   "anomaly": {
     "attention-desc": "Bytebase 会根据实例配置的扫描间隔检测异常，并且展示在这里。",
-    "table-search-placeholder": "搜索{type}或者环境",
     "table-placeholder": "很棒，没有检测到{type}异常！",
-    "tooltip": "{env} 环境有 {criticalCount} 个严重异常, {highCount} 个高等级异常和 {mediumCount} 个中等级异常",
     "types": {
       "connection-failure": "连接失败",
-      "missing-migration-schema": "缺少变更 Schema",
       "schema-drift": "Schema 偏差"
     },
     "action": {
@@ -2967,7 +2964,8 @@
       "succeed-to-create-release": "成功创建发布",
       "files-will-always-be-sorted-and-executed-in-version-order": "文件将始终按照版本顺序排序和执行。",
       "cannot-modify-files-after-created": "发布创建后您无法修改文件。"
-    }
+    },
+    "usage-description": "发布包主要用于自定义的 GitOps 与 Bytebase API 集成。"
   },
   "export-data": {
     "export-rows": "导出行数",

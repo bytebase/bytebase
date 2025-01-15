@@ -35,15 +35,6 @@
               />
             </template>
           </ErrorList>
-          <div>
-            <NCheckbox v-model:checked="performActionAnyway">
-              {{
-                $t("issue.action-anyway", {
-                  action: issueReviewActionDisplayName(action),
-                })
-              }}
-            </NCheckbox>
-          </div>
         </div>
 
         <div class="flex flex-col gap-y-1">
@@ -64,25 +55,42 @@
       </div>
     </template>
     <template #footer>
-      <div v-if="action" class="flex justify-end gap-x-3">
-        <NButton @click="$emit('close')">
-          {{ $t("common.cancel") }}
-        </NButton>
+      <div
+        v-if="action"
+        class="w-full flex flex-row justify-between items-center gap-2"
+      >
+        <div>
+          <NCheckbox
+            v-if="showPerformActionAnyway"
+            v-model:checked="performActionAnyway"
+          >
+            {{
+              $t("issue.action-anyway", {
+                action: issueReviewActionDisplayName(action),
+              })
+            }}
+          </NCheckbox>
+        </div>
+        <div class="flex justify-end gap-x-3">
+          <NButton @click="$emit('close')">
+            {{ $t("common.cancel") }}
+          </NButton>
 
-        <NTooltip :disabled="confirmErrors.length === 0" placement="top">
-          <template #trigger>
-            <NButton
-              :disabled="confirmErrors.length > 0"
-              v-bind="confirmButtonProps"
-              @click="handleClickConfirm"
-            >
-              {{ $t("common.confirm") }}
-            </NButton>
-          </template>
-          <template #default>
-            <ErrorList :errors="confirmErrors" />
-          </template>
-        </NTooltip>
+          <NTooltip :disabled="confirmErrors.length === 0" placement="top">
+            <template #trigger>
+              <NButton
+                :disabled="confirmErrors.length > 0"
+                v-bind="confirmButtonProps"
+                @click="handleClickConfirm"
+              >
+                {{ $t("common.confirm") }}
+              </NButton>
+            </template>
+            <template #default>
+              <ErrorList :errors="confirmErrors" />
+            </template>
+          </NTooltip>
+        </div>
       </div>
     </template>
   </CommonDrawer>
@@ -142,6 +150,10 @@ const title = computed(() => {
 const database = computed(() =>
   databaseForTask(issue.value, selectedTask.value)
 );
+
+const showPerformActionAnyway = computed(() => {
+  return planCheckErrors.value.length > 0;
+});
 
 const planCheckErrors = computed(() => {
   const errors: string[] = [];

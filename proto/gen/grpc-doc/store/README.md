@@ -544,7 +544,6 @@ Used internally for obfuscating the page token.
 | code | [int32](#int32) |  | The advice code. |
 | title | [string](#string) |  | The advice title. |
 | content | [string](#string) |  | The advice content. |
-| detail | [string](#string) |  | The advice detail. |
 | start_position | [Position](#bytebase-store-Position) |  | 1-based positions of the sql statment. |
 | end_position | [Position](#bytebase-store-Position) |  |  |
 
@@ -3205,8 +3204,6 @@ InstanceRole is the API message for instance role.
 | ----- | ---- | ----- | ----------- |
 | line | [int32](#int32) |  |  |
 | column | [int32](#int32) |  |  |
-| detail | [string](#string) |  |  |
-| code | [int32](#int32) |  | Code from sql review. |
 | start_position | [Position](#bytebase-store-Position) |  | 1-based Position of the SQL statement. To supersede `line` and `column` above. |
 | end_position | [Position](#bytebase-store-Position) |  |  |
 
@@ -3223,7 +3220,6 @@ InstanceRole is the API message for instance role.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| code | [int32](#int32) |  |  |
 | statement_types | [string](#string) | repeated | statement_types are the types of statements that are found in the sql. |
 | affected_rows | [int32](#int32) |  |  |
 | changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
@@ -4065,7 +4061,7 @@ SlowQueryPolicy is the policy configuration for slow query.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | vcs_type | [VCSType](#bytebase-store-VCSType) |  |  |
-| pull_request_url | [string](#string) |  |  |
+| url | [string](#string) |  |  |
 
 
 

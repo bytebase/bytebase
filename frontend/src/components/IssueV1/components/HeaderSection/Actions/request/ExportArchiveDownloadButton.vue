@@ -29,7 +29,7 @@ import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useIssueContext } from "@/components/IssueV1";
 import { issueServiceClient } from "@/grpcweb";
-import { useSQLStore } from "@/store";
+import { useExportData } from "@/store/modules/export";
 import { ExportFormat, exportFormatToJSON } from "@/types/proto/v1/common";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
@@ -63,7 +63,7 @@ const exportDataConfig = computed(() => {
 
 const downloadExportArchive = async () => {
   state.isExporting = true;
-  const { content } = await useSQLStore().exportData(
+  const content = await useExportData().exportData(
     ExportRequest.fromPartial({
       name: issue.value.name,
     })
