@@ -1,148 +1,132 @@
 <template>
   <div
     ref="containerRef"
-    class="bb-data-table relative w-full flex-1 overflow-hidden flex flex-col"
+    class="relative w-full flex-1 overflow-auto flex flex-col border rounded"
+    :style="{
+      maxHeight: maxHeight ? `${maxHeight}px` : undefined,
+    }"
   >
-    <div class="w-full flex-1 flex flex-col overflow-hidden">
-      <div
-        class="header-track absolute z-0 left-0 top-0 right-0 h-[34px] border border-block-border bg-gray-50 dark:bg-gray-700"
-      />
-
-      <NScrollbar
-        ref="scrollbarRef"
-        class="inner-wrapper !h-auto max-h-full w-full overflow-auto border-y border-r border-block-border fix-scrollbar-z-index"
-        :class="rows.length === 0 && 'border-r-0 hide-scrollbar'"
-        :x-scrollable="true"
-        trigger="none"
+    <table
+      ref="tableRef"
+      class="relative border-collapse table-fixed z-[1]"
+      v-bind="tableResize.getTableProps()"
+    >
+      <thead
+        class="bg-gray-50 dark:bg-gray-700 sticky top-0 z-[1] drop-shadow-sm"
       >
-        <table
-          ref="tableRef"
-          class="relative border-collapse table-fixed z-[1]"
-          v-bind="tableResize.getTableProps()"
-        >
-          <thead class="bg-white sticky top-0 z-[1] drop-shadow-sm">
-            <tr>
-              <th
-                v-for="header of table.getFlatHeaders()"
-                :key="header.index"
-                class="group relative px-2 py-2 min-w-[2rem] text-left bg-gray-50 dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border border-t-0 border-block-border border-b-0"
+        <tr>
+          <th
+            v-for="header of table.getFlatHeaders()"
+            :key="header.index"
+            class="group relative px-2 py-2 min-w-[2rem] text-left text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border-l first:border-l-0 border-block-border"
+            :class="{
+              '!bg-accent/10':
+                selectionState.rows.length === 0 &&
+                selectionState.columns.includes(header.index),
+            }"
+            v-bind="tableResize.getColumnProps(header.index)"
+          >
+            <div class="flex items-center overflow-hidden">
+              <span
+                class="flex flex-row items-center select-none"
                 :class="{
-                  'cursor-pointer hover:bg-accent/5': !selectionDisabled,
-                  '!bg-accent/10':
-                    selectionState.rows.length === 0 &&
-                    selectionState.columns.includes(header.index),
+                  'cursor-pointer hover:text-accent': !selectionDisabled,
                 }"
                 @click.stop="selectColumn(header.index)"
-                v-bind="tableResize.getColumnProps(header.index)"
               >
-                <div class="flex items-center overflow-hidden">
-                  <span class="flex flex-row items-center select-none">
-                    <template
-                      v-if="String(header.column.columnDef.header).length > 0"
-                    >
-                      {{ header.column.columnDef.header }}
-                    </template>
-                    <br v-else class="min-h-[1rem] inline-flex" />
-                  </span>
+                <template
+                  v-if="String(header.column.columnDef.header).length > 0"
+                >
+                  {{ header.column.columnDef.header }}
+                </template>
+                <br v-else class="min-h-[1rem] inline-flex" />
+              </span>
 
-                  <SensitiveDataIcon
-                    v-if="isSensitiveColumn(header.index)"
-                    class="ml-0.5 shrink-0"
-                  />
-                  <template v-else-if="isColumnMissingSensitive(header.index)">
-                    <FeatureBadgeForInstanceLicense
-                      v-if="hasSensitiveFeature"
-                      :show="true"
-                      custom-class="ml-0.5 shrink-0"
-                      feature="bb.feature.sensitive-data"
-                    />
-                    <FeatureBadge
-                      v-else
-                      feature="bb.feature.sensitive-data"
-                      custom-class="ml-0.5 shrink-0"
-                    />
-                  </template>
-
-                  <ColumnSortedIcon
-                    :is-sorted="header.column.getIsSorted()"
-                    @click.stop.prevent="
-                      header.column.getToggleSortingHandler()?.($event)
-                    "
-                  />
-                </div>
-
-                <!-- The drag-to-resize handler -->
-                <div
-                  class="absolute w-[8px] right-0 top-0 bottom-0 cursor-col-resize"
-                  @dblclick="tableResize.autoAdjustColumnWidth([header.index])"
-                  @pointerdown="tableResize.startResizing(header.index)"
-                  @click.stop.prevent
+              <SensitiveDataIcon
+                v-if="isSensitiveColumn(header.index)"
+                class="ml-0.5 shrink-0"
+              />
+              <template v-else-if="isColumnMissingSensitive(header.index)">
+                <FeatureBadgeForInstanceLicense
+                  v-if="hasSensitiveFeature"
+                  :show="true"
+                  custom-class="ml-0.5 shrink-0"
+                  feature="bb.feature.sensitive-data"
                 />
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(row, rowIndex) of rows"
-              :key="rowIndex"
-              class="group"
-              :data-row-index="offset + rowIndex"
-            >
-              <td
-                v-for="(cell, cellIndex) of row.getVisibleCells()"
-                :key="cellIndex"
-                class="relative p-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border border-block-border border-y-0 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
-                :data-col-index="cellIndex"
-              >
-                <TableCell
-                  :table="table"
-                  :value="cell.getValue<RowValue>()"
-                  :keyword="keyword"
-                  :set-index="setIndex"
-                  :row-index="offset + rowIndex"
-                  :col-index="cellIndex"
-                  :allow-select="true"
+                <FeatureBadge
+                  v-else
+                  feature="bb.feature.sensitive-data"
+                  custom-class="ml-0.5 shrink-0"
                 />
-                <div
-                  v-if="cellIndex === 0"
-                  class="absolute inset-y-0 left-0 w-2"
-                  :class="{
-                    'cursor-pointer hover:bg-accent/10': !selectionDisabled,
-                    'bg-accent/10':
-                      selectionState.columns.length === 0 &&
-                      selectionState.rows.includes(offset + rowIndex),
-                  }"
-                  @click.prevent.stop="selectRow(offset + rowIndex)"
-                ></div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </NScrollbar>
+              </template>
 
-      <div
-        v-if="rows.length === 0"
-        class="w-full border border-block-border absolute pointer-events-none"
-        style="padding-top: 33px"
-      >
-        <div
-          class="w-full flex items-center justify-center border-t border-block-border"
-          style="padding-top: 48px; padding-bottom: 48px"
-          :style="{
-            maxHeight: `${Math.max(0, containerHeight - 34)}px`,
-          }"
+              <ColumnSortedIcon
+                :is-sorted="header.column.getIsSorted()"
+                @click.stop.prevent="
+                  header.column.getToggleSortingHandler()?.($event)
+                "
+              />
+            </div>
+
+            <!-- The drag-to-resize handler -->
+            <div
+              class="absolute w-[8px] right-0 top-0 bottom-0 cursor-col-resize"
+              @dblclick="tableResize.autoAdjustColumnWidth([header.index])"
+              @pointerdown="tableResize.startResizing(header.index)"
+              @click.stop.prevent
+            />
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          v-for="(row, rowIndex) of rows"
+          :key="rowIndex"
+          class="group"
+          :data-row-index="offset + rowIndex"
         >
-          <NEmpty />
-        </div>
-      </div>
+          <td
+            v-for="(cell, cellIndex) of row.getVisibleCells()"
+            :key="cellIndex"
+            class="relative p-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-l first:border-l-0 border-block-border group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
+            :data-col-index="cellIndex"
+          >
+            <TableCell
+              :table="table"
+              :value="cell.getValue<RowValue>()"
+              :keyword="keyword"
+              :set-index="setIndex"
+              :row-index="offset + rowIndex"
+              :col-index="cellIndex"
+              :allow-select="true"
+            />
+            <div
+              v-if="cellIndex === 0"
+              class="absolute inset-y-0 left-0 w-2"
+              :class="{
+                'cursor-pointer hover:bg-accent/10': !selectionDisabled,
+                'bg-accent/10':
+                  selectionState.columns.length === 0 &&
+                  selectionState.rows.includes(offset + rowIndex),
+              }"
+              @click.prevent.stop="selectRow(offset + rowIndex)"
+            ></div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div
+      class="w-full sticky left-0 flex justify-center items-center py-12"
+      v-if="rows.length === 0"
+    >
+      <NEmpty />
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import type { Table } from "@tanstack/vue-table";
-import { useElementSize } from "@vueuse/core";
-import { NEmpty, NScrollbar } from "naive-ui";
+import { NEmpty } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
 import {
   FeatureBadge,
@@ -150,7 +134,6 @@ import {
 } from "@/components/FeatureGuard";
 import { useSubscriptionV1Store } from "@/store";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
-import { usePreventBackAndForward } from "@/utils";
 import { useSQLResultViewContext } from "../context";
 import TableCell from "./TableCell.vue";
 import ColumnSortedIcon from "./common/ColumnSortedIcon.vue";
@@ -174,18 +157,12 @@ const {
   selectRow,
 } = useSelectionContext();
 const containerRef = ref<HTMLDivElement>();
-const scrollbarRef = ref<InstanceType<typeof NScrollbar>>();
 const tableRef = ref<HTMLTableElement>();
 const subscriptionStore = useSubscriptionV1Store();
-const { height: containerHeight } = useElementSize(containerRef);
-const scrollerRef = computed(() => {
-  return scrollbarRef.value?.scrollbarInstRef?.containerRef;
-});
-usePreventBackAndForward(scrollerRef);
 
 const tableResize = useTableColumnWidthLogic({
   tableRef,
-  scrollerRef,
+  containerRef,
   minWidth: 64, // 4rem
   maxWidth: 640, // 40rem
 });
@@ -197,7 +174,7 @@ const hasSensitiveFeature = computed(() => {
 });
 
 const scrollTo = (x: number, y: number) => {
-  scrollerRef.value?.scroll(x, y);
+  containerRef.value?.scroll(x, y);
 };
 
 const rows = computed(() => props.table.getRowModel().rows);
@@ -223,14 +200,6 @@ watch(
   () => {
     // When the offset changed, we need to reset the scroll position.
     scrollTo(0, 0);
-  }
-);
-
-watch(
-  () => props.table.getState().sorting,
-  () => {
-    // When the sorting changed, we need to reset table size.
-    tableResize.reset();
   }
 );
 </script>
