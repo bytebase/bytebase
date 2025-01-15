@@ -13925,13 +13925,11 @@ components:
                     type: string
                     description: The lock time of the slow query log.
                 rowsSent:
-                    type: integer
+                    type: string
                     description: The rows sent of the slow query log.
-                    format: int32
                 rowsExamined:
-                    type: integer
+                    type: string
                     description: The rows examined of the slow query log.
-                    format: int32
                 sqlText:
                     type: string
                     description: The sql text of the slow query log.
@@ -13968,9 +13966,8 @@ components:
                     type: string
                     description: The fingerprint of the slow query log.
                 count:
-                    type: integer
+                    type: string
                     description: The count of the slow query log.
-                    format: int32
                 latestLogTime:
                     type: string
                     description: The latest log time of the slow query log.
@@ -13984,21 +13981,17 @@ components:
                     type: string
                     description: The maximum query time of the slow query log.
                 averageRowsSent:
-                    type: integer
+                    type: string
                     description: The average rows sent of the slow query log.
-                    format: int32
                 maximumRowsSent:
-                    type: integer
+                    type: string
                     description: The maximum rows sent of the slow query log.
-                    format: int32
                 averageRowsExamined:
-                    type: integer
+                    type: string
                     description: The average rows examined of the slow query log.
-                    format: int32
                 maximumRowsExamined:
-                    type: integer
+                    type: string
                     description: The maximum rows examined of the slow query log.
-                    format: int32
                 queryTimePercent:
                     type: number
                     description: The percentage of the query time.
