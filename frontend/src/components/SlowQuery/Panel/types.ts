@@ -2,18 +2,16 @@ import dayjs from "dayjs";
 import { useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import { ListSlowQueriesRequest } from "@/types/proto/v1/database_service";
-import type { SearchScope } from "@/utils";
+import { getTsRangeFromSearchParams, type SearchParams } from "@/utils";
 
-export const buildListSlowQueriesRequest = (
-  scopes: SearchScope[],
-  timeRange: { fromTime: number | undefined; toTime: number | undefined }
-) => {
+export const buildListSlowQueriesRequest = (searchParams: SearchParams) => {
   const request = {} as Partial<ListSlowQueriesRequest>;
 
+  const { scopes } = searchParams;
   const project = scopes.find((s) => s.id === "project")?.value;
   const environment = scopes.find((s) => s.id === "environment")?.value;
   const database = scopes.find((s) => s.id === "database")?.value;
-  const { fromTime, toTime } = timeRange;
+  const createdTsRange = getTsRangeFromSearchParams(searchParams, "created");
 
   const query: string[] = [];
   request.parent = `projects/${project}`;
@@ -25,13 +23,10 @@ export const buildListSlowQueriesRequest = (
   } else if (environment) {
     query.push(`environment = "environments/${environment}"`);
   }
-
-  if (fromTime) {
-    const start = dayjs(fromTime).toISOString();
+  if (createdTsRange) {
+    const start = dayjs(createdTsRange[0]).toISOString();
+    const end = dayjs(createdTsRange[1]).toISOString();
     query.push(`start_time >= "${start}"`);
-  }
-  if (toTime) {
-    const end = dayjs(toTime).toISOString();
     query.push(`start_time <= "${end}"`);
   }
   if (query.length > 0) {
