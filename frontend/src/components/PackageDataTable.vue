@@ -6,6 +6,7 @@
     :virtual-scroll="true"
     :striped="true"
     :bordered="true"
+    :row-key="(p: PackageMetadata) => `${database.name}.${schemaName}.${p.name}`"
   />
 </template>
 
