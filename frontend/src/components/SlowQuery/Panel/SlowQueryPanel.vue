@@ -2,11 +2,9 @@
   <div class="space-y-4" v-bind="$attrs">
     <LogFilter
       v-model:params="state.params"
-      :from-time="state.timeRange.fromTime"
-      :to-time="state.timeRange.toTime"
       :loading="loading"
+      :readonly-scopes="readonlySearchScopes"
       :support-option-id-list="supportOptionIdList"
-      @update:time="state.timeRange = $event"
     >
       <template #suffix>
         <NButton
@@ -104,20 +102,12 @@ const props = withDefaults(
   }
 );
 
-const emit = defineEmits<{
-  (event: "update:scopes", scopes: SearchScope[]): void;
-}>();
-
 interface LocalState {
-  timeRange: {
-    fromTime: number | undefined;
-    toTime: number | undefined;
-  };
   params: SearchParams;
   showSetting: boolean;
 }
 
-const defaultSlowQueryTimeRange = () => {
+const defaultSlowQueryTimeRange = computed(() => {
   const now = dayjs();
   const aWeekAgo = now.subtract(7, "days").startOf("day").valueOf();
   const tonight = now.endOf("day").valueOf();
@@ -125,13 +115,18 @@ const defaultSlowQueryTimeRange = () => {
     fromTime: aWeekAgo,
     toTime: tonight,
   };
-};
+});
 
 const state = reactive<LocalState>({
-  timeRange: defaultSlowQueryTimeRange(),
   params: {
     query: "",
-    scopes: [],
+    scopes: [
+      ...props.readonlySearchScopes,
+      {
+        id: "created",
+        value: `${defaultSlowQueryTimeRange.value.fromTime},${defaultSlowQueryTimeRange.value.toTime}`,
+      },
+    ],
   },
   showSetting: false,
 });
@@ -147,30 +142,15 @@ const hasSyncPermission = computed(() =>
   hasWorkspacePermissionV2("bb.instances.sync")
 );
 
-const searchScopes = computed(() => {
-  return [...props.readonlySearchScopes, ...state.params.scopes];
-});
-
-watch(
-  () => searchScopes.value,
-  (scopes) => emit("update:scopes", scopes)
-);
-
 const selectedInstanceName = computed(() => {
-  return searchScopes.value.find((s) => s.id === "instance")?.value;
+  return state.params.scopes.find((s) => s.id === "instance")?.value;
 });
 
 const selectedProjectName = computed(() => {
-  return searchScopes.value.find((s) => s.id === "project")?.value;
+  return state.params.scopes.find((s) => s.id === "project")?.value;
 });
 
-const params = computed(() => {
-  const query = buildListSlowQueriesRequest(
-    searchScopes.value,
-    state.timeRange
-  );
-  return query;
-});
+const params = computed(() => buildListSlowQueriesRequest(state.params));
 
 const allowAdmin = computed(() => {
   const neededWorkspacePermissions: Permission[] = [
