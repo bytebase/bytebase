@@ -257,32 +257,103 @@ func (q *querySpanExtractor) extractTableSourceFromSystemFunction(node *pgquery.
 	// https://www.postgresql.org/docs/current/functions-srf.html.
 	switch strings.ToLower(funcName) {
 	case generateSeries:
+		alias := node.RangeFunction.Alias
+		if alias == nil {
+			return &base.PseudoTable{
+				Name: generateSeries,
+				Columns: []base.QuerySpanResult{
+					{
+						Name:          generateSeries,
+						SourceColumns: make(base.SourceColumnSet),
+					},
+				},
+			}, nil
+		}
+		if len(alias.Colnames) == 0 {
+			return &base.PseudoTable{
+				Name: alias.Aliasname,
+				Columns: []base.QuerySpanResult{
+					{
+						Name:          generateSeries,
+						SourceColumns: make(base.SourceColumnSet),
+					},
+				},
+			}, nil
+		}
 		return &base.PseudoTable{
+			Name: alias.Aliasname,
 			Columns: []base.QuerySpanResult{
 				{
-					Name:          generateSeries,
+					Name:          alias.Colnames[0].GetString_().Sval,
 					SourceColumns: make(base.SourceColumnSet),
 				},
 			},
 		}, nil
 	case generateSubscripts:
+		alias := node.RangeFunction.Alias
+		if alias == nil {
+			return &base.PseudoTable{
+				Name: generateSubscripts,
+				Columns: []base.QuerySpanResult{
+					{
+						Name:          generateSubscripts,
+						SourceColumns: make(base.SourceColumnSet),
+					},
+				},
+			}, nil
+		}
+		if len(alias.Colnames) == 0 {
+			return &base.PseudoTable{
+				Name: alias.Aliasname,
+				Columns: []base.QuerySpanResult{
+					{
+						Name:          generateSubscripts,
+						SourceColumns: make(base.SourceColumnSet),
+					},
+				},
+			}, nil
+		}
 		return &base.PseudoTable{
+			Name: alias.Aliasname,
 			Columns: []base.QuerySpanResult{
 				{
-					Name:          generateSubscripts,
+					Name:          alias.Colnames[0].GetString_().Sval,
 					SourceColumns: make(base.SourceColumnSet),
 				},
 			},
 		}, nil
 	case unnest:
-		table := &base.PseudoTable{Columns: []base.QuerySpanResult{}}
-		for range args {
+		table := &base.PseudoTable{Name: unnest, Columns: []base.QuerySpanResult{}}
+		alias := node.RangeFunction.Alias
+		if alias == nil {
+			for range args {
+				table.Columns = append(table.Columns, base.QuerySpanResult{
+					Name:          unnest,
+					SourceColumns: make(base.SourceColumnSet),
+				})
+			}
+			return table, nil
+		}
+		table.Name = alias.Aliasname
+		if len(alias.Colnames) == 0 {
+			for range args {
+				table.Columns = append(table.Columns, base.QuerySpanResult{
+					Name:          alias.Aliasname,
+					SourceColumns: make(base.SourceColumnSet),
+				})
+			}
+			return table, nil
+		}
+		if len(alias.Colnames) != len(args) {
+			return nil, errors.Errorf("expect equal length but found %d and %d", len(alias.Colnames), len(args))
+		}
+		for _, columnName := range alias.Colnames {
+			name := columnName.GetString_().Sval
 			table.Columns = append(table.Columns, base.QuerySpanResult{
-				Name:          unnest,
+				Name:          name,
 				SourceColumns: make(base.SourceColumnSet),
 			})
 		}
-		return table, nil
 	case jsonbEach, jsonEach, jsonbEachText, jsonEachText:
 		// Should be only called while jsonb_each act as table source.
 		// SELECT * FROM json_test, jsonb_each(jb) AS hh(key, value) WHERE id = 1;
