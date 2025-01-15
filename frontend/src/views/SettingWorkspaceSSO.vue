@@ -30,6 +30,7 @@
     <NDataTable
       key="sso-table"
       :data="identityProviderList"
+      :row-key="(sso: IdentityProvider) => sso.name"
       :columns="columnList"
       :striped="true"
       :bordered="true"

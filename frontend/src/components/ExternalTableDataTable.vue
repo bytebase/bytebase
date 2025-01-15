@@ -7,6 +7,9 @@
     :virtual-scroll="true"
     :striped="true"
     :bordered="true"
+    :row-key="
+      (ex: ExternalTableMetadata) => `${database.name}.${schemaName}.${ex.name}`
+    "
   />
 
   <ExternalTableDetailDrawer

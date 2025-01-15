@@ -5,6 +5,9 @@
     :max-height="640"
     :virtual-scroll="true"
     :striped="true"
+    :row-key="
+      (sequence: SequenceMetadata) => `${database.name}.${schemaName}.${sequence.name}`
+    "
     :bordered="true"
   />
 </template>

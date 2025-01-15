@@ -25,6 +25,7 @@
       v-if="vcsList.length > 0 || loading"
       key="vcs-table"
       :data="vcsList"
+      :row-key="(vcs: VCSProvider) => vcs.name"
       :columns="columnList"
       :striped="true"
       :bordered="true"
