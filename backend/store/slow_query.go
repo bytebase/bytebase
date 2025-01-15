@@ -52,8 +52,8 @@ func (s *Store) ListSlowQuery(ctx context.Context, list *ListSlowQueryMessage) (
 type slowQueryLogValue struct {
 	log               *v1pb.SlowQueryLog
 	totalQueryTime    time.Duration
-	totalRowsSent     int32
-	totalRowsExamined int32
+	totalRowsSent     int64
+	totalRowsExamined int64
 }
 
 func (*Store) listSlowQueryImpl(ctx context.Context, tx *Tx, list *ListSlowQueryMessage) ([]*v1pb.SlowQueryLog, error) {

@@ -979,7 +979,7 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 
 type totalValue struct {
 	totalQueryTime time.Duration
-	totalCount     int32
+	totalCount     int64
 }
 
 // ListSlowQueries lists the slow queries.

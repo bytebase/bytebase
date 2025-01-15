@@ -1359,7 +1359,7 @@ export interface SlowQueryStatistics {
   /** The fingerprint of the slow query log. */
   sqlFingerprint: string;
   /** The count of the slow query log. */
-  count: number;
+  count: Long;
   /** The latest log time of the slow query log. */
   latestLogTime:
     | Timestamp
@@ -1373,13 +1373,13 @@ export interface SlowQueryStatistics {
     | Duration
     | undefined;
   /** The average rows sent of the slow query log. */
-  averageRowsSent: number;
+  averageRowsSent: Long;
   /** The maximum rows sent of the slow query log. */
-  maximumRowsSent: number;
+  maximumRowsSent: Long;
   /** The average rows examined of the slow query log. */
-  averageRowsExamined: number;
+  averageRowsExamined: Long;
   /** The maximum rows examined of the slow query log. */
-  maximumRowsExamined: number;
+  maximumRowsExamined: Long;
   /** The percentage of the query time. */
   queryTimePercent: number;
   /** The percentage of the count. */
@@ -1406,9 +1406,9 @@ export interface SlowQueryDetails {
     | Duration
     | undefined;
   /** The rows sent of the slow query log. */
-  rowsSent: number;
+  rowsSent: Long;
   /** The rows examined of the slow query log. */
-  rowsExamined: number;
+  rowsExamined: Long;
   /** The sql text of the slow query log. */
   sqlText: string;
 }
@@ -8643,14 +8643,14 @@ export const SlowQueryLog: MessageFns<SlowQueryLog> = {
 function createBaseSlowQueryStatistics(): SlowQueryStatistics {
   return {
     sqlFingerprint: "",
-    count: 0,
+    count: Long.ZERO,
     latestLogTime: undefined,
     averageQueryTime: undefined,
     maximumQueryTime: undefined,
-    averageRowsSent: 0,
-    maximumRowsSent: 0,
-    averageRowsExamined: 0,
-    maximumRowsExamined: 0,
+    averageRowsSent: Long.ZERO,
+    maximumRowsSent: Long.ZERO,
+    averageRowsExamined: Long.ZERO,
+    maximumRowsExamined: Long.ZERO,
     queryTimePercent: 0,
     countPercent: 0,
     samples: [],
@@ -8662,8 +8662,8 @@ export const SlowQueryStatistics: MessageFns<SlowQueryStatistics> = {
     if (message.sqlFingerprint !== "") {
       writer.uint32(10).string(message.sqlFingerprint);
     }
-    if (message.count !== 0) {
-      writer.uint32(16).int32(message.count);
+    if (!message.count.equals(Long.ZERO)) {
+      writer.uint32(16).int64(message.count.toString());
     }
     if (message.latestLogTime !== undefined) {
       Timestamp.encode(message.latestLogTime, writer.uint32(26).fork()).join();
@@ -8674,17 +8674,17 @@ export const SlowQueryStatistics: MessageFns<SlowQueryStatistics> = {
     if (message.maximumQueryTime !== undefined) {
       Duration.encode(message.maximumQueryTime, writer.uint32(42).fork()).join();
     }
-    if (message.averageRowsSent !== 0) {
-      writer.uint32(48).int32(message.averageRowsSent);
+    if (!message.averageRowsSent.equals(Long.ZERO)) {
+      writer.uint32(48).int64(message.averageRowsSent.toString());
     }
-    if (message.maximumRowsSent !== 0) {
-      writer.uint32(56).int32(message.maximumRowsSent);
+    if (!message.maximumRowsSent.equals(Long.ZERO)) {
+      writer.uint32(56).int64(message.maximumRowsSent.toString());
     }
-    if (message.averageRowsExamined !== 0) {
-      writer.uint32(64).int32(message.averageRowsExamined);
+    if (!message.averageRowsExamined.equals(Long.ZERO)) {
+      writer.uint32(64).int64(message.averageRowsExamined.toString());
     }
-    if (message.maximumRowsExamined !== 0) {
-      writer.uint32(72).int32(message.maximumRowsExamined);
+    if (!message.maximumRowsExamined.equals(Long.ZERO)) {
+      writer.uint32(72).int64(message.maximumRowsExamined.toString());
     }
     if (message.queryTimePercent !== 0) {
       writer.uint32(81).double(message.queryTimePercent);
@@ -8718,7 +8718,7 @@ export const SlowQueryStatistics: MessageFns<SlowQueryStatistics> = {
             break;
           }
 
-          message.count = reader.int32();
+          message.count = Long.fromString(reader.int64().toString());
           continue;
         }
         case 3: {
@@ -8750,7 +8750,7 @@ export const SlowQueryStatistics: MessageFns<SlowQueryStatistics> = {
             break;
           }
 
-          message.averageRowsSent = reader.int32();
+          message.averageRowsSent = Long.fromString(reader.int64().toString());
           continue;
         }
         case 7: {
@@ -8758,7 +8758,7 @@ export const SlowQueryStatistics: MessageFns<SlowQueryStatistics> = {
             break;
           }
 
-          message.maximumRowsSent = reader.int32();
+          message.maximumRowsSent = Long.fromString(reader.int64().toString());
           continue;
         }
         case 8: {
@@ -8766,7 +8766,7 @@ export const SlowQueryStatistics: MessageFns<SlowQueryStatistics> = {
             break;
           }
 
-          message.averageRowsExamined = reader.int32();
+          message.averageRowsExamined = Long.fromString(reader.int64().toString());
           continue;
         }
         case 9: {
@@ -8774,7 +8774,7 @@ export const SlowQueryStatistics: MessageFns<SlowQueryStatistics> = {
             break;
           }
 
-          message.maximumRowsExamined = reader.int32();
+          message.maximumRowsExamined = Long.fromString(reader.int64().toString());
           continue;
         }
         case 10: {
@@ -8813,14 +8813,14 @@ export const SlowQueryStatistics: MessageFns<SlowQueryStatistics> = {
   fromJSON(object: any): SlowQueryStatistics {
     return {
       sqlFingerprint: isSet(object.sqlFingerprint) ? globalThis.String(object.sqlFingerprint) : "",
-      count: isSet(object.count) ? globalThis.Number(object.count) : 0,
+      count: isSet(object.count) ? Long.fromValue(object.count) : Long.ZERO,
       latestLogTime: isSet(object.latestLogTime) ? fromJsonTimestamp(object.latestLogTime) : undefined,
       averageQueryTime: isSet(object.averageQueryTime) ? Duration.fromJSON(object.averageQueryTime) : undefined,
       maximumQueryTime: isSet(object.maximumQueryTime) ? Duration.fromJSON(object.maximumQueryTime) : undefined,
-      averageRowsSent: isSet(object.averageRowsSent) ? globalThis.Number(object.averageRowsSent) : 0,
-      maximumRowsSent: isSet(object.maximumRowsSent) ? globalThis.Number(object.maximumRowsSent) : 0,
-      averageRowsExamined: isSet(object.averageRowsExamined) ? globalThis.Number(object.averageRowsExamined) : 0,
-      maximumRowsExamined: isSet(object.maximumRowsExamined) ? globalThis.Number(object.maximumRowsExamined) : 0,
+      averageRowsSent: isSet(object.averageRowsSent) ? Long.fromValue(object.averageRowsSent) : Long.ZERO,
+      maximumRowsSent: isSet(object.maximumRowsSent) ? Long.fromValue(object.maximumRowsSent) : Long.ZERO,
+      averageRowsExamined: isSet(object.averageRowsExamined) ? Long.fromValue(object.averageRowsExamined) : Long.ZERO,
+      maximumRowsExamined: isSet(object.maximumRowsExamined) ? Long.fromValue(object.maximumRowsExamined) : Long.ZERO,
       queryTimePercent: isSet(object.queryTimePercent) ? globalThis.Number(object.queryTimePercent) : 0,
       countPercent: isSet(object.countPercent) ? globalThis.Number(object.countPercent) : 0,
       samples: globalThis.Array.isArray(object?.samples)
@@ -8834,8 +8834,8 @@ export const SlowQueryStatistics: MessageFns<SlowQueryStatistics> = {
     if (message.sqlFingerprint !== "") {
       obj.sqlFingerprint = message.sqlFingerprint;
     }
-    if (message.count !== 0) {
-      obj.count = Math.round(message.count);
+    if (!message.count.equals(Long.ZERO)) {
+      obj.count = (message.count || Long.ZERO).toString();
     }
     if (message.latestLogTime !== undefined) {
       obj.latestLogTime = fromTimestamp(message.latestLogTime).toISOString();
@@ -8846,17 +8846,17 @@ export const SlowQueryStatistics: MessageFns<SlowQueryStatistics> = {
     if (message.maximumQueryTime !== undefined) {
       obj.maximumQueryTime = Duration.toJSON(message.maximumQueryTime);
     }
-    if (message.averageRowsSent !== 0) {
-      obj.averageRowsSent = Math.round(message.averageRowsSent);
+    if (!message.averageRowsSent.equals(Long.ZERO)) {
+      obj.averageRowsSent = (message.averageRowsSent || Long.ZERO).toString();
     }
-    if (message.maximumRowsSent !== 0) {
-      obj.maximumRowsSent = Math.round(message.maximumRowsSent);
+    if (!message.maximumRowsSent.equals(Long.ZERO)) {
+      obj.maximumRowsSent = (message.maximumRowsSent || Long.ZERO).toString();
     }
-    if (message.averageRowsExamined !== 0) {
-      obj.averageRowsExamined = Math.round(message.averageRowsExamined);
+    if (!message.averageRowsExamined.equals(Long.ZERO)) {
+      obj.averageRowsExamined = (message.averageRowsExamined || Long.ZERO).toString();
     }
-    if (message.maximumRowsExamined !== 0) {
-      obj.maximumRowsExamined = Math.round(message.maximumRowsExamined);
+    if (!message.maximumRowsExamined.equals(Long.ZERO)) {
+      obj.maximumRowsExamined = (message.maximumRowsExamined || Long.ZERO).toString();
     }
     if (message.queryTimePercent !== 0) {
       obj.queryTimePercent = message.queryTimePercent;
@@ -8876,7 +8876,7 @@ export const SlowQueryStatistics: MessageFns<SlowQueryStatistics> = {
   fromPartial(object: DeepPartial<SlowQueryStatistics>): SlowQueryStatistics {
     const message = createBaseSlowQueryStatistics();
     message.sqlFingerprint = object.sqlFingerprint ?? "";
-    message.count = object.count ?? 0;
+    message.count = (object.count !== undefined && object.count !== null) ? Long.fromValue(object.count) : Long.ZERO;
     message.latestLogTime = (object.latestLogTime !== undefined && object.latestLogTime !== null)
       ? Timestamp.fromPartial(object.latestLogTime)
       : undefined;
@@ -8886,10 +8886,18 @@ export const SlowQueryStatistics: MessageFns<SlowQueryStatistics> = {
     message.maximumQueryTime = (object.maximumQueryTime !== undefined && object.maximumQueryTime !== null)
       ? Duration.fromPartial(object.maximumQueryTime)
       : undefined;
-    message.averageRowsSent = object.averageRowsSent ?? 0;
-    message.maximumRowsSent = object.maximumRowsSent ?? 0;
-    message.averageRowsExamined = object.averageRowsExamined ?? 0;
-    message.maximumRowsExamined = object.maximumRowsExamined ?? 0;
+    message.averageRowsSent = (object.averageRowsSent !== undefined && object.averageRowsSent !== null)
+      ? Long.fromValue(object.averageRowsSent)
+      : Long.ZERO;
+    message.maximumRowsSent = (object.maximumRowsSent !== undefined && object.maximumRowsSent !== null)
+      ? Long.fromValue(object.maximumRowsSent)
+      : Long.ZERO;
+    message.averageRowsExamined = (object.averageRowsExamined !== undefined && object.averageRowsExamined !== null)
+      ? Long.fromValue(object.averageRowsExamined)
+      : Long.ZERO;
+    message.maximumRowsExamined = (object.maximumRowsExamined !== undefined && object.maximumRowsExamined !== null)
+      ? Long.fromValue(object.maximumRowsExamined)
+      : Long.ZERO;
     message.queryTimePercent = object.queryTimePercent ?? 0;
     message.countPercent = object.countPercent ?? 0;
     message.samples = object.samples?.map((e) => SlowQueryDetails.fromPartial(e)) || [];
@@ -8898,7 +8906,14 @@ export const SlowQueryStatistics: MessageFns<SlowQueryStatistics> = {
 };
 
 function createBaseSlowQueryDetails(): SlowQueryDetails {
-  return { startTime: undefined, queryTime: undefined, lockTime: undefined, rowsSent: 0, rowsExamined: 0, sqlText: "" };
+  return {
+    startTime: undefined,
+    queryTime: undefined,
+    lockTime: undefined,
+    rowsSent: Long.ZERO,
+    rowsExamined: Long.ZERO,
+    sqlText: "",
+  };
 }
 
 export const SlowQueryDetails: MessageFns<SlowQueryDetails> = {
@@ -8912,11 +8927,11 @@ export const SlowQueryDetails: MessageFns<SlowQueryDetails> = {
     if (message.lockTime !== undefined) {
       Duration.encode(message.lockTime, writer.uint32(26).fork()).join();
     }
-    if (message.rowsSent !== 0) {
-      writer.uint32(32).int32(message.rowsSent);
+    if (!message.rowsSent.equals(Long.ZERO)) {
+      writer.uint32(32).int64(message.rowsSent.toString());
     }
-    if (message.rowsExamined !== 0) {
-      writer.uint32(40).int32(message.rowsExamined);
+    if (!message.rowsExamined.equals(Long.ZERO)) {
+      writer.uint32(40).int64(message.rowsExamined.toString());
     }
     if (message.sqlText !== "") {
       writer.uint32(50).string(message.sqlText);
@@ -8960,7 +8975,7 @@ export const SlowQueryDetails: MessageFns<SlowQueryDetails> = {
             break;
           }
 
-          message.rowsSent = reader.int32();
+          message.rowsSent = Long.fromString(reader.int64().toString());
           continue;
         }
         case 5: {
@@ -8968,7 +8983,7 @@ export const SlowQueryDetails: MessageFns<SlowQueryDetails> = {
             break;
           }
 
-          message.rowsExamined = reader.int32();
+          message.rowsExamined = Long.fromString(reader.int64().toString());
           continue;
         }
         case 6: {
@@ -8993,8 +9008,8 @@ export const SlowQueryDetails: MessageFns<SlowQueryDetails> = {
       startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
       queryTime: isSet(object.queryTime) ? Duration.fromJSON(object.queryTime) : undefined,
       lockTime: isSet(object.lockTime) ? Duration.fromJSON(object.lockTime) : undefined,
-      rowsSent: isSet(object.rowsSent) ? globalThis.Number(object.rowsSent) : 0,
-      rowsExamined: isSet(object.rowsExamined) ? globalThis.Number(object.rowsExamined) : 0,
+      rowsSent: isSet(object.rowsSent) ? Long.fromValue(object.rowsSent) : Long.ZERO,
+      rowsExamined: isSet(object.rowsExamined) ? Long.fromValue(object.rowsExamined) : Long.ZERO,
       sqlText: isSet(object.sqlText) ? globalThis.String(object.sqlText) : "",
     };
   },
@@ -9010,11 +9025,11 @@ export const SlowQueryDetails: MessageFns<SlowQueryDetails> = {
     if (message.lockTime !== undefined) {
       obj.lockTime = Duration.toJSON(message.lockTime);
     }
-    if (message.rowsSent !== 0) {
-      obj.rowsSent = Math.round(message.rowsSent);
+    if (!message.rowsSent.equals(Long.ZERO)) {
+      obj.rowsSent = (message.rowsSent || Long.ZERO).toString();
     }
-    if (message.rowsExamined !== 0) {
-      obj.rowsExamined = Math.round(message.rowsExamined);
+    if (!message.rowsExamined.equals(Long.ZERO)) {
+      obj.rowsExamined = (message.rowsExamined || Long.ZERO).toString();
     }
     if (message.sqlText !== "") {
       obj.sqlText = message.sqlText;
@@ -9036,8 +9051,12 @@ export const SlowQueryDetails: MessageFns<SlowQueryDetails> = {
     message.lockTime = (object.lockTime !== undefined && object.lockTime !== null)
       ? Duration.fromPartial(object.lockTime)
       : undefined;
-    message.rowsSent = object.rowsSent ?? 0;
-    message.rowsExamined = object.rowsExamined ?? 0;
+    message.rowsSent = (object.rowsSent !== undefined && object.rowsSent !== null)
+      ? Long.fromValue(object.rowsSent)
+      : Long.ZERO;
+    message.rowsExamined = (object.rowsExamined !== undefined && object.rowsExamined !== null)
+      ? Long.fromValue(object.rowsExamined)
+      : Long.ZERO;
     message.sqlText = object.sqlText ?? "";
     return message;
   },

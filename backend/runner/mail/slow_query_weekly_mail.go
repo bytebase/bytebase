@@ -409,7 +409,7 @@ func (s *SlowQueryWeeklyMailSender) generateWeeklyEmailForProject(ctx context.Co
 
 type totalValue struct {
 	totalQueryTime time.Duration
-	totalCount     int32
+	totalCount     int64
 }
 
 func durationText(duration *durationpb.Duration) string {
