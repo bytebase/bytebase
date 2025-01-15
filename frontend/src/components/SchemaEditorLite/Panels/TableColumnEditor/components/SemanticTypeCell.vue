@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-row flex-wrap whitespace-nowrap">
     <span v-if="semanticType?.title">{{ semanticType?.title }}</span>
-    <span v-else class="text-control-placeholder italic"> N/A </span>
+    <span v-else class="text-control-placeholder italic">N/A</span>
     <template v-if="!readonly && !disabled">
       <MiniActionButton
         v-if="semanticType"
