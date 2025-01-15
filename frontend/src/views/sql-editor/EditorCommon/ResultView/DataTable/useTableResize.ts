@@ -58,90 +58,22 @@ const useTableResize = (options: TableResizeOptions) => {
     state.drag = undefined;
     state.isAutoAdjusting = false;
 
+    // Use auto layout to calculate the width of each column.
+    table.value.style.tableLayout = "auto";
     const thList = Array.from(table.value.querySelectorAll("th"));
     const columnCount = thList.length;
-    state.columns = new Array(columnCount);
-
-    const indexList: number[] = [];
-    for (let i = 0; i < columnCount; i++) {
-      indexList.push(i);
-      state.columns[i] = {
-        width: 0, // For auto adjust below
-      };
+    if (columnCount === 1) {
+      state.columns = [
+        {
+          width: containerWidth.value - 1,
+        },
+      ];
+    } else {
+      const columnWidths = thList.map((th) => th.getBoundingClientRect().width);
+      state.columns = columnWidths.map((width) => ({ width }));
     }
-
-    // Calculate a friendly width for every column when the first render happened.
-    requestAnimationFrame(() => {
-      autoAdjustColumnWidth(indexList);
-    });
-  };
-
-  // Automatically estimate the width of a column.
-  // Like double-clicking a cell border of Excel.
-  // Able to estimate multiple columns in a time.
-  const autoAdjustColumnWidth = (indexList: number[]): Promise<number[]> => {
-    return new Promise((resolve) => {
-      const cellListOfEachColumn = indexList.map((index) => {
-        const pseudo = `:nth-child(${index + 1})`;
-        // Find all cells in this column
-        const cellList = Array.from(
-          table.value.querySelectorAll(`th${pseudo}, td${pseudo}`)
-        ) as HTMLElement[];
-        return cellList;
-      });
-
-      // Update the cells' and table's style to estimate the width.
-      state.isAutoAdjusting = true;
-      cellListOfEachColumn.forEach((cellList) => {
-        cellList.forEach((cell) => {
-          cell.style.whiteSpace = "nowrap";
-          cell.style.overflow = "visible";
-          cell.style.width = "auto";
-          cell.style.maxWidth = `${options.maxWidth}px`;
-          cell.style.minWidth = `${options.minWidth}px`;
-        });
-      });
-      const tableWidthBackup = table.value.style.width;
-      table.value.style.width = "auto";
-
-      // Wait for the next render frame.
-      requestAnimationFrame(() => {
-        // Read the rendered widths.
-
-        const widthList = indexList.map((index, i) => {
-          const cellList = cellListOfEachColumn[i];
-          const th = cellList[0];
-          const stretchedWidth = getElementWidth(th);
-          const finalWidth = normalizeWidth(stretchedWidth);
-
-          const column = state.columns[index];
-          if (column) {
-            // Sometimes the `columns` is out-of-sync with the `indexList`
-            // so we need to detect and suppress errors here.
-            // Only occurs in dev hot reload mode.
-            column.width = finalWidth;
-          }
-
-          return finalWidth;
-        });
-
-        // Reset the cells' and table's style.
-        cellListOfEachColumn.forEach((cellList) => {
-          cellList.forEach((cell) => {
-            cell.style.whiteSpace = "";
-            cell.style.overflow = "";
-            cell.style.width = "";
-            cell.style.maxWidth = "";
-            cell.style.minWidth = "";
-          });
-        });
-        table.value.style.width = tableWidthBackup;
-        state.isAutoAdjusting = false;
-
-        resolve(widthList);
-        // Style bindings will be automatically updated next frame.
-      });
-    });
+    // After calculating the width, use fixed layout to keep the width stable.
+    table.value.style.tableLayout = "fixed";
   };
 
   // Record the initial state of dragging.
@@ -207,18 +139,11 @@ const useTableResize = (options: TableResizeOptions) => {
     reset,
     getColumnProps,
     getTableProps,
-    autoAdjustColumnWidth,
     startResizing,
   };
 };
 
 export default useTableResize;
-
-const getElementWidth = (elem: HTMLElement) => {
-  if (!elem) return 0;
-  const rect = elem.getBoundingClientRect();
-  return rect.width;
-};
 
 const scrollMaxX = (elem: HTMLElement | null | undefined) => {
   if (!elem) return;
