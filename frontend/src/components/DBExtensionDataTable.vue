@@ -6,6 +6,7 @@
     :virtual-scroll="true"
     :striped="true"
     :bordered="true"
+    :row-key="(ex: ExtensionMetadata) => ex.name"
   />
 </template>
 

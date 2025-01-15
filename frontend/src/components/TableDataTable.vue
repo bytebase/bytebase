@@ -5,6 +5,9 @@
     :row-props="rowProps"
     :max-height="640"
     :virtual-scroll="true"
+    :row-key="
+      (table: TableMetadata) => `${database.name}.${schemaName}.${table.name}`
+    "
     :striped="true"
     :bordered="true"
   />

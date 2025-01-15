@@ -12,6 +12,7 @@
       :data="project.webhooks"
       :columns="columnList"
       :striped="true"
+      :row-key="(webhook: Webhook) => webhook.name"
       :bordered="true"
     />
   </div>

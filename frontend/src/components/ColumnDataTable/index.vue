@@ -6,6 +6,7 @@
     :virtual-scroll="true"
     :striped="true"
     :bordered="true"
+    :row-key="getColumnKey"
   />
 </template>
 
@@ -124,6 +125,10 @@ const hasDatabaseCatalogPermission = computed(() => {
 });
 
 const databaseCatalog = useDatabaseCatalog(props.database.name, false);
+
+const getColumnKey = (column: ColumnMetadata) => {
+  return `${props.database}.${props.schema}.${props.table.name}.${column.name}`;
+};
 
 const columns = computed(() => {
   const columns: (DataTableColumn<ColumnMetadata> & { hide?: boolean })[] = [
