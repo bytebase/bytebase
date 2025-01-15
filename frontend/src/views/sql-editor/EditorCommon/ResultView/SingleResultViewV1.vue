@@ -115,24 +115,14 @@
         :is-sensitive-column="isSensitiveColumn"
         :is-column-missing-sensitive="isColumnMissingSensitive"
       />
-      <template v-else>
-        <DataTableLite
-          v-if="useDataTableLite"
-          :table="table"
-          :set-index="setIndex"
-          :offset="pageIndex * pageSize"
-          :is-sensitive-column="isSensitiveColumn"
-          :is-column-missing-sensitive="isColumnMissingSensitive"
-        />
-        <DataTable
-          v-else
-          :table="table"
-          :set-index="setIndex"
-          :offset="pageIndex * pageSize"
-          :is-sensitive-column="isSensitiveColumn"
-          :is-column-missing-sensitive="isColumnMissingSensitive"
-        />
-      </template>
+      <DataTable
+        v-else
+        :table="table"
+        :set-index="setIndex"
+        :offset="pageIndex * pageSize"
+        :is-sensitive-column="isSensitiveColumn"
+        :is-column-missing-sensitive="isColumnMissingSensitive"
+      />
     </div>
 
     <div
@@ -244,7 +234,7 @@ import {
   isNullOrUndefined,
 } from "@/utils";
 import DataBlock from "./DataBlock.vue";
-import { DataTable, DataTableLite } from "./DataTable";
+import DataTable from "./DataTable";
 import { provideSelectionContext } from "./DataTable/common/selection-logic";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView";
@@ -398,15 +388,6 @@ const data = computed(() => {
     });
   }
   return temp;
-});
-
-const useDataTableLite = computed(() => {
-  // In admin mode, always use DataTableLite to keep consistent
-  if (currentTab.value?.mode === "ADMIN") return true;
-
-  // Otherwise, use DataTableLite if the result set has too many columns in a page.
-  const colCount = table.getFlatHeaders().length;
-  return colCount >= 50;
 });
 
 const isSensitiveColumn = (columnIndex: number): boolean => {
