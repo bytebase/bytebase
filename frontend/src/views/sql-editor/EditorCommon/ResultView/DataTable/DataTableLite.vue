@@ -1,7 +1,7 @@
 <template>
   <div
     ref="containerRef"
-    class="relative w-full flex-1 overflow-auto flex flex-col"
+    class="relative w-full flex-1 overflow-auto flex flex-col border dark:border-zinc-500"
     :style="{
       maxHeight: maxHeight ? `${maxHeight}px` : undefined,
     }"
@@ -17,17 +17,21 @@
             class="relative min-w-[2rem] max-w-[50vw] text-left text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border-l first:border-l-0 border-block-border dark:border-zinc-500"
             :class="
               twMerge(
-                !selectionDisabled &&
-                  'cursor-pointer hover:bg-accent/5 dark:hover:bg-accent/20',
                 selectionState.rows.length === 0 &&
                   selectionState.columns.includes(header.index) &&
                   '!bg-accent/10 dark:!bg-accent/40'
               )
             "
-            @click.stop="selectColumn(header.index)"
           >
             <div class="px-2 py-2 flex items-center overflow-hidden">
-              <span class="flex flex-row items-center select-none">
+              <span
+                class="flex flex-row items-center select-none"
+                :class="{
+                  'cursor-pointer hover:text-accent dark:hover:text-gray-500':
+                    !selectionDisabled,
+                }"
+                @click.stop="selectColumn(header.index)"
+              >
                 <template
                   v-if="String(header.column.columnDef.header).length > 0"
                 >
@@ -102,11 +106,18 @@
         </tr>
       </tbody>
     </table>
+    <div
+      class="w-full sticky left-0 flex justify-center items-center py-12"
+      v-if="rows.length === 0"
+    >
+      <NEmpty />
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import type { Table } from "@tanstack/vue-table";
+import { NEmpty } from "naive-ui";
 import { twMerge } from "tailwind-merge";
 import { computed, nextTick, ref, watch } from "vue";
 import {
