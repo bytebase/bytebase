@@ -132,10 +132,15 @@ func (s *Store) updatePipelineUIDOfIssueAndPlan(ctx context.Context, tx *Tx, pla
 		WHERE plan_id = $2
 		RETURNING id
 	`, pipelineUID, planUID).Scan(&issueUID); err != nil {
-		return nil, errors.Wrapf(err, "failed to update issue pipeline_id")
+		if err != sql.ErrNoRows {
+			return nil, errors.Wrapf(err, "failed to update issue pipeline_id")
+		}
 	}
 	return func() {
-		s.issueCache.Remove(issueUID)
+		// TODO: need to remove planCache once we add planCache
+		if issueUID != 0 {
+			s.issueCache.Remove(issueUID)
+		}
 	}, nil
 }
 
