@@ -8,9 +8,11 @@ import (
 	"io"
 	"log/slog"
 	"sort"
+	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
@@ -94,6 +96,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		return nil, status.Errorf(codes.InvalidArgument, "container argument is required for CosmosDB")
 	}
 
+	startTime := time.Now()
 	container, err := driver.client.NewContainer(driver.databaseName, queryContext.Container)
 	if err != nil {
 		return nil, status.Error(codes.Internal, errors.Wrapf(err, "failed to create container").Error())
@@ -225,6 +228,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 			Values: values,
 		})
 	}
+	result.Latency = durationpb.New(time.Since(startTime))
 
 	if illegal {
 		var rows []*v1pb.QueryRow
