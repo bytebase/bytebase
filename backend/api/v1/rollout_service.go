@@ -248,6 +248,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert to rollout, error: %v", err)
 		}
+		rolloutV1.Plan = request.Rollout.GetPlan()
 		return rolloutV1, nil
 	}
 	pipelineUID, err := s.store.CreatePipelineAIO(ctx, planID, pipelineCreate, principalID)
