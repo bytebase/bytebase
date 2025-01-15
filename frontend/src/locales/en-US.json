@@ -247,8 +247,6 @@
     },
     "options": {
       "placeholder": "Type a command or search…"
-    },
-    "preferences": {
     }
   },
   "task": {
@@ -279,20 +277,12 @@
       "bb-task-database-schema-update-ghost-sync": "Sync data",
       "bb-task-database-schema-update-ghost-cutover": "Switch tables"
     },
-    "progress": {
-      "units": {
-      }
-    },
     "skip": "Skip",
     "task-checks": "Task checks",
     "prior-backup": "Prior backup",
     "skip-failed-in-current-stage": "Skip failed tasks in current stage",
-    "apply-change-to-all-pending-tasks": {
-    },
     "execution-time": "Execution time",
     "run-checks": "Run checks",
-    "database-create": {
-    },
     "action-all-tasks-in-current-stage": "{action} all tasks in current stage",
     "cancel-task": "Cancel task | Cancel tasks",
     "created": "Created",
@@ -332,15 +322,11 @@
     "readonly": "Bytebase is in readonly mode. You can still view the console, but any change attempt will fail.",
     "external-url": "Bytebase has not configured --external-url"
   },
-  "intro": {
-  },
   "bbkit": {
     "common": {
       "cancel": "Cancel",
       "back": "Back",
       "next": "Next"
-    },
-    "attention": {
     },
     "confirm-button": {
       "sure-to-delete": "Are you sure to delete?",
@@ -402,9 +388,7 @@
           "email-tips": "The email should be unique, and it cannot be changed after creation.",
           "title": "Title",
           "description": "Description",
-          "members": "Members",
-          "role": {
-          }
+          "members": "Members"
         },
         "n-members": "{n} members",
         "workspace-domain-required": "Please set a workspace domain first."
@@ -425,8 +409,6 @@
       "reset-service-key-alert": "This action cannot be undone. The old key will stop working immediately. Are you sure you want to reset this service key?",
       "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
       "show-inactive": "Show inactive members",
-      "remove-self-admin": {
-      },
       "view-by-roles": "View by roles",
       "add-member": "Add member",
       "add-user": "Add user",
@@ -608,9 +590,7 @@
           "admin-or-dba-can-edit": "Only workspace admin or DBA can update announcement setting."
         },
         "announcement-alert-level": {
-          "description": "Level",
-          "field": {
-          }
+          "description": "Level"
         },
         "announcement-text": {
           "self": "Title",
@@ -668,35 +648,7 @@
         },
         "template": {
           "description": "You can apply built-in semantic types from the template. Built-in template cannot be changed.",
-          "duplicate-warning": "Semantic type \"{title}\" already exists",
-          "bb-default": {
-            "algorithm": {
-            }
-          },
-          "bb-default-partial": {
-            "algorithm": {
-            }
-          },
-          "address": {
-          },
-          "secret_key": {
-          },
-          "card_number": {
-          },
-          "email": {
-          },
-          "id_number": {
-          },
-          "ipv4_address": {
-          },
-          "license_plate_number": {
-          },
-          "mac_address": {
-          },
-          "password": {
-          },
-          "phone": {
-          }
+          "duplicate-warning": "Semantic type \"{title}\" already exists"
         },
         "select": "Select semantic type"
       },
@@ -748,8 +700,6 @@
           "suffix-length": "Suffix Length"
         }
       },
-      "masking-level": {
-      },
       "action": {
         "self": "Action",
         "select-action": "Select action",
@@ -790,8 +740,6 @@
     }
   },
   "activity": {
-    "type": {
-    },
     "sentence": {
       "created-issue": "created issue",
       "changed-description": "changed description",
@@ -813,25 +761,17 @@
       "prior-back-table": "Data backup to database {database} and tables {tables}",
       "prior-back-table-for-line": "Data backup to database {database} and table {tables} for DML in line {line}"
     },
-    "subject-prefix": {
-    },
     "n-similar-activities": "({count} similar activity) | ({count} similar activities)"
   },
   "issue": {
     "my-issues": "My Issues",
     "waiting-approval": "Waiting for Approval",
     "waiting-rollout": "Waiting for Rollout",
-    "status": {
-    },
     "status-transition": {
       "modal": {
         "resolve": "Resolve issue?",
         "reopen": "Reopen issue?",
         "close": "Close issue?"
-      },
-      "dropdown": {
-      },
-      "form": {
       },
       "warning": {
         "some-previous-stages-are-not-done": "Some previous stages are not done."
@@ -889,8 +829,6 @@
           "title": "Subscriber",
           "description": "Search by the issue subscriber"
         },
-        "principal": {
-        },
         "approver": {
           "title": "Approver",
           "description": "Search by the issue approver"
@@ -923,8 +861,6 @@
     },
     "not-allowed-to-operate-unassigned-database": "Can't {operation} to unassigned databases.\nIt need to be transferred to a project first.",
     "migration-mode": {
-      "normal": {
-      },
       "online": {
         "description": "Based on gh-ost. For large tables, it can reduce the table lock duration from hours to seconds {link}."
       }
@@ -946,8 +882,6 @@
       "action-n-issues": "{action} {n} issue | {action} {n} issues",
       "closed": "closed",
       "close": "Close"
-    },
-    "sql-hint": {
     },
     "sdl": {
       "schema-change": "Schema change",
@@ -1001,8 +935,6 @@
     "sql-check": {
       "sql-checks": "SQL Checks",
       "not-executed-yet": "Not executed yet",
-      "no-configured-sql-review-policy": {
-      },
       "statement-is-too-large": "As the current statement size exceeds 2MB, the SQL check will be skipped.",
       "back-to-edit": "Back to edit",
       "sql-review-violations": "SQL Review Violations"
@@ -1057,8 +989,6 @@
         },
         "no-session-found": "No session found."
       }
-    },
-    "sql-review": {
     },
     "sql-review-only": "SQL Review Only",
     "create-issue": "Create issue",
@@ -1290,12 +1220,6 @@
     "create-gcp-credentials": "To create Credentials, see",
     "all": "All instances",
     "force-archive-description": "Force to archive. All databases will be unassigned.",
-    "sync-mode": {
-      "database": {
-      },
-      "schema": {
-      }
-    },
     "scan-interval": {
       "self": "Scan Interval",
       "default-never": "Default (never)",
@@ -1390,8 +1314,6 @@
     "password-reset": {
       "title": "Reset your password",
       "content": "You need to reset your password according to the password restriction policy."
-    },
-    "activate": {
     },
     "login-as-another": {
       "title": "You have logged in as another user",
@@ -1622,10 +1544,6 @@
     "first-seen": "First seen"
   },
   "project": {
-    "dashboard": {
-      "modal": {
-      }
-    },
     "table": {
       "key": "@:common.key",
       "name": "@:common.name"
@@ -1651,8 +1569,6 @@
       "webhook-url": "Webhook URL",
       "triggering-activity": "Triggering activities",
       "test-webhook": "Test Webhook",
-      "no-webhook": {
-      },
       "creation": {
         "title": "Create webhook",
         "desc": "Create the corresponding webhook for the {destination} channel receiving the message.",
@@ -1696,8 +1612,6 @@
           "title": "Issue approval needed",
           "label": "When issue is pending approval"
         },
-        "issue-task-run-status-change": {
-        },
         "notify-issue-approved": {
           "title": "Issue approved",
           "label": "When issue is approved"
@@ -1719,10 +1633,6 @@
       "restore": {
         "title": "Restore project",
         "btn-text": "Restore this @.lower:{'common.project'}"
-      },
-      "branch-protection-rules": {
-        "branch-name-pattern": {
-        }
       },
       "issue-related": {
         "self": "Issue Related",
@@ -1749,8 +1659,6 @@
         "allow-self-approval": {
           "self": "Allow self approval",
           "description": "Allow the issue creator to approve the issue."
-        },
-        "default-backup-behavior": {
         },
         "auto-enable-backup": {
           "self": "Auto enable backup",
@@ -1781,8 +1689,6 @@
       "condition-name": "Condition name",
       "workspace-level-roles": "Workspace level roles",
       "project-level-roles": "Project level roles"
-    },
-    "mode": {
     },
     "select": "Select Project",
     "all": "All projects",
@@ -1830,8 +1736,6 @@
           "bitbucket-app-access-token-tips": "Insert '{secret}' below.",
           "bitbucket-app-password": "app password",
           "azure-devops-personal-access-token": "Create a dedicated service user and generate {token} with the member role for all accessible organizations with the following scopes. The 'Organization' field should be set to 'All accessible organizations'."
-        },
-        "confirm": {
         }
       },
       "git-provider": {
@@ -1860,8 +1764,6 @@
   },
   "data-source": {
     "snowflake-keypair-tip": "Key-pair authentication",
-    "ssl-type": {
-    },
     "ssl": {
       "ca-cert": "CA Certificate",
       "client-key": "Client Key",
@@ -1896,8 +1798,6 @@
     "select-query-data-source": "Select query data source"
   },
   "setting": {
-    "project": {
-    },
     "label": {
       "value-placeholder": "Label value...",
       "key-placeholder": "Label key..."
@@ -1954,10 +1854,6 @@
     "visualize-explain": "Visualize Explain",
     "sql-execute-in-production-environment": "Be careful, you are accessing a database in a production environment.",
     "rows-upper-limit": "reached the limit of query results",
-    "tab-mode": {
-      "description": {
-      }
-    },
     "close-sheet": "Close sheet",
     "connect": "Connect",
     "connect-in-admin-mode": "Connect in admin mode",
@@ -2021,8 +1917,6 @@
     },
     "n-per-page": "{n} / page",
     "customize-tree-structure": "Customize tree structure",
-    "standard-mode": {
-    },
     "add-a-new-instance": "Add a new instance",
     "web-socket": {
       "errors": {
@@ -2160,8 +2054,6 @@
     "placeholder": {
       "select-values": "Select values..."
     },
-    "setting": {
-    },
     "add-label": "Add label",
     "filter-by-label": "Filter by label"
   },
@@ -2223,10 +2115,6 @@
       "description": "You are using features unavailable in the {plan}. Upgrade now to ensure continued access:"
     },
     "features": {
-      "bb-feature-external-secret-manager": {
-      },
-      "bb-feature-task-schedule-time": {
-      },
       "bb-feature-instance-count": {
         "remaining": "Your total instance quota is {total}, only have {count} instance remained.",
         "runoutof": "Your have run out of your {total} instance quota.",
@@ -2237,82 +2125,8 @@
         "runoutof": "Your have run out of your {total} user quota.",
         "upgrade": "@:{'subscription.upgrade'} to get unlimited user quota."
       },
-      "bb-feature-multi-tenancy": {
-      },
-      "bb-feature-rollout-policy": {
-      },
-      "bb-feature-environment-tier-policy": {
-      },
-      "bb-feature-sensitive-data": {
-      },
-      "bb-feature-access-control": {
-      },
-      "bb-feature-lgtm": {
-      },
-      "bb-feature-im-approval": {
-      },
-      "bb-feature-sql-review": {
-      },
-      "bb-feature-custom-approval": {
-      },
-      "bb-feature-vcs-sql-review": {
-      },
-      "bb-feature-rbac": {
-      },
-      "bb-feature-custom-role": {
-      },
-      "bb-feature-watermark": {
-      },
-      "bb-feature-audit-log": {
-      },
-      "bb-feature-schema-drift": {
-      },
-      "bb-feature-branding": {
-      },
-      "bb-feature-online-migration": {
-      },
-      "bb-feature-sync-schema-all-versions": {
-      },
-      "bb-feature-read-replica-connection": {
-      },
-      "bb-feature-instance-ssh-connection": {
-      },
-      "bb.feature.custom-instance-synchronization": {
-      },
       "bb-feature-index-advisor": {
         "title": "Index advisor"
-      },
-      "bb-feature-sso": {
-      },
-      "bb-feature-2fa": {
-      },
-      "bb-feature-plugin-openai": {
-      },
-      "bb-feature-batch-query": {
-      },
-      "bb-feature-shared-sql-script": {
-      },
-      "bb-feature-announcement": {
-      },
-      "bb-feature-encrypted-secrets": {
-      },
-      "bb-feature-database-grouping": {
-      },
-      "bb-feature-disallow-signup": {
-      },
-      "bb-feature-disallow-password-signin": {
-      },
-      "bb-feature-schema-template": {
-      },
-      "bb-feature-secure-token": {
-      },
-      "bb-feature-issue-advanced-search": {
-      },
-      "bb-feature-issue-project-setting": {
-      },
-      "bb-feature-password-restriction": {
-      },
-      "bb-feature-directory-sync": {
       }
     }
   },
@@ -2322,8 +2136,6 @@
     "unstar": "Unstar",
     "starred": "Starred",
     "shared": "Shared",
-    "actions": {
-    },
     "notifications": {
       "duplicate-success": "Successfully duplicate to \"My sheets\""
     },
@@ -2333,8 +2145,6 @@
     },
     "search-sheets": "Search Sheets",
     "draft": "Draft"
-  },
-  "engine": {
   },
   "sql-review": {
     "title": "SQL Review",
@@ -2384,11 +2194,7 @@
         "change-template": "Change the template",
         "confirm-override-title": "Confirm change",
         "confirm-override-description": "Your rules will be overridden"
-      },
-      "preview": {
       }
-    },
-    "edit-rule": {
     },
     "rule": {
       "active": "Active"
@@ -2411,12 +2217,6 @@
       "status": "Status",
       "service-data": "Service Data"
     },
-    "type": {
-      "workspace": {
-      },
-      "project": {
-      }
-    },
     "advanced-search": {
       "scope": {
         "actor": {
@@ -2434,20 +2234,12 @@
       }
     }
   },
-  "onboarding-guide": {
-    "create-database-guide": {
-      "finished-dialog": {
-      }
-    }
-  },
   "schema-diagram": {
     "self": "Schema Diagram",
     "fit-content-with-view": "Fit content within view"
   },
   "identity-provider": {
-    "test-connection": "Test Connection",
-    "test-modal": {
-    }
+    "test-connection": "Test Connection"
   },
   "sensitive-data": {
     "self": "Sensitive Data"
@@ -2551,8 +2343,6 @@
           "no-more": "no more"
         }
       },
-      "preset-suggestion": {
-      },
       "statement-copied": "Statement copied to clipboard",
       "text2sql": "Text2SQL",
       "actions": {
@@ -2573,18 +2363,12 @@
   "custom-approval": {
     "self": "Custom Approval",
     "risk-rule": {
-      "x-risk-rules": {
-      },
       "active": "Active",
       "edit-rule": "Edit rule",
       "delete": "Delete Risk rule",
-      "default-rules": {
-      },
       "risk": {
         "self": "Risk",
         "select": "Select risk",
-        "risk-level": {
-        },
         "namespace": {
           "data_export": "Export Data",
           "request_query": "Request Querier Role",
@@ -2594,8 +2378,6 @@
       "template": {
         "templates": "Templates",
         "load": "Load",
-        "presets": {
-        },
         "load-template": "Load template",
         "view": "View template"
       },
@@ -2621,8 +2403,6 @@
         "description": "Only one approval is required on this node when there are multiple approvers.",
         "order": "Order",
         "approver": "Approver",
-        "group": {
-        },
         "add": "Add node",
         "delete": "Delete approval node",
         "select-approver": "Select approver",
@@ -2630,8 +2410,6 @@
           "system": "System Roles",
           "custom": "Custom Roles"
         }
-      },
-      "presets": {
       },
       "view-approval-flow": "View approval flow",
       "skip": "Skip manual approval",
@@ -2655,15 +2433,11 @@
       "risks": "Risks",
       "description": "Risk Center defines the risk levels for different database operations under different conditions. And risk levels determine the corresponding custom approval flows."
     },
-    "workflow-center": {
-    },
     "rule": {
       "rules": "Rules"
     },
     "issue-review": {
       "approve-issue": "Approve issue?",
-      "form": {
-      },
       "you": "You",
       "generating-approval-flow": "Generating approval flow",
       "approved-issue": "approved issue",
@@ -2771,8 +2545,6 @@
       "edit": "Edit role",
       "title-placeholder": "Input role title",
       "description-placeholder": "Input role description",
-      "validation": {
-      },
       "delete-warning": "The role \"{name}\" will be deleted. This action cannot be undone.",
       "delete-warning-with-resources": "The role \"{name}\" is assigned to following users:",
       "delete-warning-retry": "Please remove the role from these users then retry again."
@@ -2816,8 +2588,6 @@
       "self": "Project Releaser",
       "description": "All viewer permissions, plus permission for reviewing database change requests for release purposes."
     },
-    "project-querier": {
-    },
     "sql-editor-user": {
       "self": "SQL Editor User",
       "description": "Permissions for querying database data."
@@ -2846,8 +2616,6 @@
     },
     "condition": {
       "self": "Condition"
-    },
-    "prev-editor": {
     }
   },
   "export-center": {
@@ -2863,8 +2631,6 @@
     "new-branch": "New branch",
     "parent-branch": "Parent",
     "raw-sql-preview": "Raw SQL Preview",
-    "diff-editor": {
-    },
     "search-tables": "Search tables",
     "use-tips": "Click a table to start.",
     "apply-to-database": "Apply change to database",
@@ -2872,13 +2638,9 @@
     "message": {
       "created-succeed": "Branch created successfully",
       "updated-succeed": "Branch updated successfully"
-    },
-    "action": {
     }
   },
   "cel": {
-    "factor": {
-    },
     "condition": {
       "self": "Condition",
       "description-tips": "A condition is a rule that can be configured via an expression. For example, the condition \"Environment is prod\" will match issues executed in the \"prod\" environment.",
@@ -2923,8 +2685,6 @@
       "self": "Add Change",
       "changelog": {
         "select-at-least-one-changelog-below": "Select at least one changelog below"
-      },
-      "branch": {
       }
     },
     "change-source": {

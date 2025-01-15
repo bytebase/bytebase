@@ -247,8 +247,6 @@
     },
     "options": {
       "placeholder": "输入命令或搜索…"
-    },
-    "preferences": {
     }
   },
   "task": {
@@ -279,20 +277,12 @@
       "bb-task-database-schema-update-ghost-sync": "同步数据",
       "bb-task-database-schema-update-ghost-cutover": "切换表"
     },
-    "progress": {
-      "units": {
-      }
-    },
     "skip": "跳过",
     "task-checks": "任务检查项",
     "prior-backup": "预备份受影响数据",
     "skip-failed-in-current-stage": "跳过当前阶段失败的任务",
-    "apply-change-to-all-pending-tasks": {
-    },
     "execution-time": "执行时间",
     "run-checks": "运行检查",
-    "database-create": {
-    },
     "action-all-tasks-in-current-stage": "{action}当前阶段的所有任务",
     "cancel-task": "取消任务",
     "created": "创建于",
@@ -332,15 +322,11 @@
     "readonly": "Bytebase 处于只读模式。您仍然可以查看控制台，但任何尝试更改的请求都会失败。",
     "external-url": "Bytebase 还没有配置 --external-url"
   },
-  "intro": {
-  },
   "bbkit": {
     "common": {
       "cancel": "取消",
       "back": "退回",
       "next": "下一步"
-    },
-    "attention": {
     },
     "confirm-button": {
       "sure-to-delete": "确定要删除吗？",
@@ -402,9 +388,7 @@
           "email-tips": "邮箱应该是唯一的，并且创建后不能更改。",
           "title": "标题",
           "description": "描述",
-          "members": "成员",
-          "role": {
-          }
+          "members": "成员"
         },
         "n-members": "{n} 位成员",
         "workspace-domain-required": "请先设置工作空间的域名。"
@@ -425,8 +409,6 @@
       "reset-service-key-alert": "旧 Service Key 将立即被重置，该操作不可逆。确定要重置 Service Key 吗？",
       "service-key-copied": "Service Key 已复制，请勿泄漏",
       "show-inactive": "查看未激活的成员",
-      "remove-self-admin": {
-      },
       "view-by-roles": "按角色查看",
       "add-member": "添加成员",
       "add-user": "添加用户",
@@ -608,9 +590,7 @@
           "admin-or-dba-can-edit": "只有管理员或 DBA 可以更新公告设置。"
         },
         "announcement-alert-level": {
-          "description": "等级",
-          "field": {
-          }
+          "description": "等级"
         },
         "announcement-text": {
           "self": "标题",
@@ -668,35 +648,7 @@
         },
         "template": {
           "description": "您可以从模板中应用内置语义类型。内置模板无法更改。",
-          "duplicate-warning": "语义类型“{title}”已存在",
-          "bb-default": {
-            "algorithm": {
-            }
-          },
-          "bb-default-partial": {
-            "algorithm": {
-            }
-          },
-          "address": {
-          },
-          "secret_key": {
-          },
-          "card_number": {
-          },
-          "email": {
-          },
-          "id_number": {
-          },
-          "ipv4_address": {
-          },
-          "license_plate_number": {
-          },
-          "mac_address": {
-          },
-          "password": {
-          },
-          "phone": {
-          }
+          "duplicate-warning": "语义类型“{title}”已存在"
         },
         "select": "选择语义类型"
       },
@@ -748,8 +700,6 @@
           "suffix-length": "后缀长度"
         }
       },
-      "masking-level": {
-      },
       "action": {
         "self": "操作类型",
         "select-action": "选择操作",
@@ -790,8 +740,6 @@
     }
   },
   "activity": {
-    "type": {
-    },
     "sentence": {
       "created-issue": "创建工单",
       "changed-description": "修改描述",
@@ -813,25 +761,17 @@
       "prior-back-table": "已备份到数据库 {database} 中表 {tables}",
       "prior-back-table-for-line": "数据备份到数据库 {database} 和表 {tables}，用于第 {line} 行的DML"
     },
-    "subject-prefix": {
-    },
     "n-similar-activities": "({count} 个相似的活动)"
   },
   "issue": {
     "my-issues": "我的工单",
     "waiting-approval": "等待审批",
     "waiting-rollout": "等待发布",
-    "status": {
-    },
     "status-transition": {
       "modal": {
         "resolve": "完成工单?",
         "reopen": "重开工单？",
         "close": "关闭工单？"
-      },
-      "dropdown": {
-      },
-      "form": {
       },
       "warning": {
         "some-previous-stages-are-not-done": "存在之前的阶段尚未完成。"
@@ -889,8 +829,6 @@
           "title": "订阅人",
           "description": "根据工单订阅人搜索"
         },
-        "principal": {
-        },
         "approver": {
           "title": "审批人",
           "description": "根据工单审批人搜索"
@@ -923,8 +861,6 @@
     },
     "not-allowed-to-operate-unassigned-database": "未分配的数据库无法{operation}。\n需要先将它转移到项目里。",
     "migration-mode": {
-      "normal": {
-      },
       "online": {
         "description": "基于 gh-ost。对于大表，可以把锁表的时间从小时级降低到秒级 {link}。"
       }
@@ -946,8 +882,6 @@
       "action-n-issues": "{action} {n} 个工单",
       "closed": "关闭",
       "close": "关闭"
-    },
-    "sql-hint": {
     },
     "sdl": {
       "schema-change": "Schema 变化",
@@ -1001,8 +935,6 @@
     "sql-check": {
       "sql-checks": "SQL 检查项",
       "not-executed-yet": "尚未执行",
-      "no-configured-sql-review-policy": {
-      },
       "statement-is-too-large": "当前语句大小超过 2MB，将跳过 SQL 检查。",
       "back-to-edit": "返回编辑",
       "sql-review-violations": "违反的 SQL 审核规则"
@@ -1057,8 +989,6 @@
         },
         "no-session-found": "未找到会话。"
       }
-    },
-    "sql-review": {
     },
     "sql-review-only": "仅 SQL 审核",
     "create-issue": "创建变更工单",
@@ -1290,12 +1220,6 @@
     "create-gcp-credentials": "创建凭据的方法见",
     "all": "所有实例",
     "force-archive-description": "强制归档。所有数据库均将被取消分配。",
-    "sync-mode": {
-      "database": {
-      },
-      "schema": {
-      }
-    },
     "scan-interval": {
       "self": "扫描间隔",
       "default-never": "默认（永不）",
@@ -1390,8 +1314,6 @@
     "password-reset": {
       "title": "重置您的密码",
       "content": "依据密码限制策略，您需要重置登录密码。"
-    },
-    "activate": {
     },
     "login-as-another": {
       "title": "您已以其他用户身份登录",
@@ -1622,10 +1544,6 @@
     "first-seen": "首次出现"
   },
   "project": {
-    "dashboard": {
-      "modal": {
-      }
-    },
     "table": {
       "key": "@:common.key",
       "name": "@:common.name"
@@ -1651,8 +1569,6 @@
       "webhook-url": "Webhook URL",
       "triggering-activity": "触发事件",
       "test-webhook": "测试 Webhook",
-      "no-webhook": {
-      },
       "creation": {
         "title": "创建 webhook",
         "desc": "为 {destination} 创建一个 webhook",
@@ -1696,8 +1612,6 @@
           "title": "工单待审批",
           "label": "当工单需要审批"
         },
-        "issue-task-run-status-change": {
-        },
         "notify-issue-approved": {
           "title": "工单审批通过",
           "label": "当工单审批通过"
@@ -1719,10 +1633,6 @@
       "restore": {
         "title": "恢复项目",
         "btn-text": "恢复这个@:common.project"
-      },
-      "branch-protection-rules": {
-        "branch-name-pattern": {
-        }
       },
       "issue-related": {
         "self": "工单相关",
@@ -1749,8 +1659,6 @@
         "allow-self-approval": {
           "self": "允许创建者审批",
           "description": "允许创建者审批自己创建的工单。"
-        },
-        "default-backup-behavior": {
         },
         "auto-enable-backup": {
           "self": "自动启用备份",
@@ -1781,8 +1689,6 @@
       "condition-name": "条件名称",
       "workspace-level-roles": "工作空间级别角色",
       "project-level-roles": "项目级别角色"
-    },
-    "mode": {
     },
     "select": "选择项目",
     "all": "所有项目",
@@ -1830,8 +1736,6 @@
           "bitbucket-app-access-token-tips": "在下面插入‘{secret}’。",
           "bitbucket-app-password": "应用程序密码",
           "azure-devops-personal-access-token": "创建专用服务用户并为具有以下范围的所有可访问组织生成具有成员角色的{token}。 “组织”字段应设置为“所有可访问的组织”。"
-        },
-        "confirm": {
         }
       },
       "git-provider": {
@@ -1860,8 +1764,6 @@
   },
   "data-source": {
     "snowflake-keypair-tip": "密钥对认证",
-    "ssl-type": {
-    },
     "ssl": {
       "ca-cert": "CA 证书",
       "client-key": "客户端密钥",
@@ -1896,8 +1798,6 @@
     "select-query-data-source": "选择查询数据源"
   },
   "setting": {
-    "project": {
-    },
     "label": {
       "value-placeholder": "标签值…",
       "key-placeholder": "标签 key..."
@@ -1954,10 +1854,6 @@
     "visualize-explain": "可视化 Explain",
     "sql-execute-in-production-environment": "小心，您正在操作生产环境下的数据库。",
     "rows-upper-limit": "到达查询结果条数上限",
-    "tab-mode": {
-      "description": {
-      }
-    },
     "close-sheet": "关闭工作表",
     "connect": "连接",
     "connect-in-admin-mode": "以管理员模式连接",
@@ -2021,8 +1917,6 @@
     },
     "n-per-page": "{n} / 页",
     "customize-tree-structure": "自定义树结构",
-    "standard-mode": {
-    },
     "add-a-new-instance": "添加实例",
     "web-socket": {
       "errors": {
@@ -2160,8 +2054,6 @@
     "placeholder": {
       "select-values": "选择值…"
     },
-    "setting": {
-    },
     "add-label": "添加标签",
     "filter-by-label": "按标签过滤"
   },
@@ -2223,10 +2115,6 @@
       "description": "您正在使用当前「{plan}」不包含的功能。立即升级避免影响使用。"
     },
     "features": {
-      "bb-feature-external-secret-manager": {
-      },
-      "bb-feature-task-schedule-time": {
-      },
       "bb-feature-instance-count": {
         "remaining": "当前总实例额度为 {total}，目前仅剩 {count} 个份额可用。",
         "runoutof": "已用尽全部 {total} 个实例额度。",
@@ -2237,82 +2125,8 @@
         "runoutof": "已用尽全部 {total} 个用户额度。",
         "upgrade": "@:{'subscription.upgrade'}来获取无限的用户额度。"
       },
-      "bb-feature-multi-tenancy": {
-      },
-      "bb-feature-rollout-policy": {
-      },
-      "bb-feature-environment-tier-policy": {
-      },
-      "bb-feature-sensitive-data": {
-      },
-      "bb-feature-access-control": {
-      },
-      "bb-feature-lgtm": {
-      },
-      "bb-feature-im-approval": {
-      },
-      "bb-feature-sql-review": {
-      },
-      "bb-feature-custom-approval": {
-      },
-      "bb-feature-vcs-sql-review": {
-      },
-      "bb-feature-rbac": {
-      },
-      "bb-feature-custom-role": {
-      },
-      "bb-feature-watermark": {
-      },
-      "bb-feature-audit-log": {
-      },
-      "bb-feature-schema-drift": {
-      },
-      "bb-feature-branding": {
-      },
-      "bb-feature-online-migration": {
-      },
-      "bb-feature-sync-schema-all-versions": {
-      },
-      "bb-feature-read-replica-connection": {
-      },
-      "bb-feature-instance-ssh-connection": {
-      },
-      "bb.feature.custom-instance-synchronization": {
-      },
       "bb-feature-index-advisor": {
         "title": "索引建议"
-      },
-      "bb-feature-sso": {
-      },
-      "bb-feature-2fa": {
-      },
-      "bb-feature-plugin-openai": {
-      },
-      "bb-feature-batch-query": {
-      },
-      "bb-feature-shared-sql-script": {
-      },
-      "bb-feature-announcement": {
-      },
-      "bb-feature-encrypted-secrets": {
-      },
-      "bb-feature-database-grouping": {
-      },
-      "bb-feature-disallow-signup": {
-      },
-      "bb-feature-disallow-password-signin": {
-      },
-      "bb-feature-schema-template": {
-      },
-      "bb-feature-secure-token": {
-      },
-      "bb-feature-issue-advanced-search": {
-      },
-      "bb-feature-issue-project-setting": {
-      },
-      "bb-feature-password-restriction": {
-      },
-      "bb-feature-directory-sync": {
       }
     }
   },
@@ -2322,8 +2136,6 @@
     "unstar": "取消收藏",
     "starred": "收藏的",
     "shared": "共享的",
-    "actions": {
-    },
     "notifications": {
       "duplicate-success": "已成功拷贝至“我的工作表”"
     },
@@ -2333,8 +2145,6 @@
     },
     "search-sheets": "搜索工作表",
     "draft": "草稿"
-  },
-  "engine": {
   },
   "sql-review": {
     "title": "SQL 审核策略",
@@ -2384,11 +2194,7 @@
         "change-template": "更改模板",
         "confirm-override-title": "规则变更",
         "confirm-override-description": "之前的规则将会被覆盖"
-      },
-      "preview": {
       }
-    },
-    "edit-rule": {
     },
     "rule": {
       "active": "开启"
@@ -2411,12 +2217,6 @@
       "status": "状态",
       "service-data": "服务数据"
     },
-    "type": {
-      "workspace": {
-      },
-      "project": {
-      }
-    },
     "advanced-search": {
       "scope": {
         "actor": {
@@ -2434,20 +2234,12 @@
       }
     }
   },
-  "onboarding-guide": {
-    "create-database-guide": {
-      "finished-dialog": {
-      }
-    }
-  },
   "schema-diagram": {
     "self": "Schema 关系图",
     "fit-content-with-view": "自动适应视图"
   },
   "identity-provider": {
-    "test-connection": "测试连接",
-    "test-modal": {
-    }
+    "test-connection": "测试连接"
   },
   "sensitive-data": {
     "self": "敏感数据"
@@ -2551,8 +2343,6 @@
           "no-more": "没有了"
         }
       },
-      "preset-suggestion": {
-      },
       "statement-copied": "语句已复制到剪贴板",
       "text2sql": "Text2SQL",
       "actions": {
@@ -2573,18 +2363,12 @@
   "custom-approval": {
     "self": "自定义审批",
     "risk-rule": {
-      "x-risk-rules": {
-      },
       "active": "开启",
       "edit-rule": "编辑规则",
       "delete": "删除安全规则",
-      "default-rules": {
-      },
       "risk": {
         "self": "风险",
         "select": "选择风险",
-        "risk-level": {
-        },
         "namespace": {
           "data_export": "导出数据",
           "request_query": "申请查询权限",
@@ -2594,8 +2378,6 @@
       "template": {
         "templates": "模板",
         "load": "加载",
-        "presets": {
-        },
         "load-template": "加载模板",
         "view": "查看模板"
       },
@@ -2621,8 +2403,6 @@
         "description": "当一个节点上有多个审批人时，只需要一次审批通过。",
         "order": "顺序",
         "approver": "审批人",
-        "group": {
-        },
         "add": "增加节点",
         "delete": "删除审批节点",
         "select-approver": "选择审批人",
@@ -2630,8 +2410,6 @@
           "system": "系统角色",
           "custom": "自定义角色"
         }
-      },
-      "presets": {
       },
       "view-approval-flow": "查看审批流",
       "skip": "跳过人工审批",
@@ -2655,15 +2433,11 @@
       "risks": "风险",
       "description": "风险中心定义了不同数据库操作在不同条件下的风险等级。而风险等级则会决定工单的自定义审批流程。"
     },
-    "workflow-center": {
-    },
     "rule": {
       "rules": "规则"
     },
     "issue-review": {
       "approve-issue": "批准工单？",
-      "form": {
-      },
       "you": "你",
       "generating-approval-flow": "正在生成审批流",
       "approved-issue": "批准工单",
@@ -2771,8 +2545,6 @@
       "edit": "编辑角色",
       "title-placeholder": "输入角色称谓",
       "description-placeholder": "输入角色描述",
-      "validation": {
-      },
       "delete-warning": "角色“{name}”将被删除。此操作无法撤消。",
       "delete-warning-with-resources": "角色“{name}”已分配给以下用户：",
       "delete-warning-retry": "请从这些用户中删除角色然后重试。"
@@ -2816,8 +2588,6 @@
       "self": "项目发布者",
       "description": "可查看项目基本信息，并可在指定流程中发布变更。"
     },
-    "project-querier": {
-    },
     "sql-editor-user": {
       "self": "SQL 编辑器用户",
       "description": "可查询指定范围的数据。"
@@ -2846,8 +2616,6 @@
     },
     "condition": {
       "self": "条件"
-    },
-    "prev-editor": {
     }
   },
   "export-center": {
@@ -2863,8 +2631,6 @@
     "new-branch": "新建分支",
     "parent-branch": "父分支",
     "raw-sql-preview": "原始 SQL 预览",
-    "diff-editor": {
-    },
     "search-tables": "搜索表",
     "use-tips": "选择需要设计的表",
     "apply-to-database": "应用变更到数据库",
@@ -2872,13 +2638,9 @@
     "message": {
       "created-succeed": "分支创建成功",
       "updated-succeed": "分支更新成功"
-    },
-    "action": {
     }
   },
   "cel": {
-    "factor": {
-    },
     "condition": {
       "self": "条件",
       "description-tips": "条件是通过表达式配置的规则。例如：条件「环境 为 prod」将会匹配在「prod」环境中执行的工单。",
@@ -2923,8 +2685,6 @@
       "self": "添加变更",
       "changelog": {
         "select-at-least-one-changelog-below": "请在下方选择至少一条记录"
-      },
-      "branch": {
       }
     },
     "change-source": {

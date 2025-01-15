@@ -247,8 +247,6 @@
     },
     "options": {
       "placeholder": "Escriba un comando o búsqueda…"
-    },
-    "preferences": {
     }
   },
   "task": {
@@ -279,20 +277,12 @@
       "bb-task-database-schema-update-ghost-sync": "Sincronizar datos",
       "bb-task-database-schema-update-ghost-cutover": "Cambiar de tabla"
     },
-    "progress": {
-      "units": {
-      }
-    },
     "skip": "Saltar",
     "task-checks": "Comprobaciones de tarea",
     "prior-backup": "Respaldo previo",
     "skip-failed-in-current-stage": "Saltar tareas fallidas en la etapa actual",
-    "apply-change-to-all-pending-tasks": {
-    },
     "execution-time": "Tiempo de ejecución",
     "run-checks": "Ejecutar comprobaciones",
-    "database-create": {
-    },
     "action-all-tasks-in-current-stage": "{action} todas las tareas en la etapa actual",
     "cancel-task": "Cancelar tarea | Cancelar tareas",
     "created": "Creado",
@@ -332,15 +322,11 @@
     "readonly": "Bytebase está en modo de solo lectura. Todavía puede ver la consola, pero cualquier intento de cambio fallará.",
     "external-url": "Bytebase no ha configurado --external-url"
   },
-  "intro": {
-  },
   "bbkit": {
     "common": {
       "cancel": "Cancelar",
       "back": "Volver",
       "next": "Siguiente"
-    },
-    "attention": {
     },
     "confirm-button": {
       "sure-to-delete": "¿Estás seguro de que deseas eliminar?",
@@ -402,9 +388,7 @@
           "email-tips": "El correo electrónico debe ser único y no se puede cambiar después de su creación.",
           "title": "Título",
           "description": "Descripción",
-          "members": "Miembros",
-          "role": {
-          }
+          "members": "Miembros"
         },
         "n-members": "{n} miembros",
         "workspace-domain-required": "Primero configure un dominio de espacio de trabajo."
@@ -425,8 +409,6 @@
       "reset-service-key-alert": "Esta acción no se puede deshacer. La clave antigua dejará de funcionar de inmediato. ¿Está seguro de que desea restablecer esta clave de servicio?",
       "service-key-copied": "Clave de Servicio copiada al portapapeles, por favor manténgala en secreto.",
       "show-inactive": "Mostrar miembros inactivos",
-      "remove-self-admin": {
-      },
       "view-by-roles": "Ver por roles",
       "add-member": "Agregar miembro",
       "add-user": "Agregar usuario",
@@ -608,9 +590,7 @@
           "admin-or-dba-can-edit": "Solo el administrador del espacio de trabajo o el DBA pueden actualizar la configuración de anuncios."
         },
         "announcement-alert-level": {
-          "description": "Level",
-          "field": {
-          }
+          "description": "Level"
         },
         "announcement-text": {
           "self": "Título",
@@ -668,35 +648,7 @@
         },
         "template": {
           "description": "Puede aplicar tipos semánticos integrados desde la plantilla. La plantilla integrada no se puede modificar.",
-          "duplicate-warning": "El tipo semántico \"{title}\" ya existe",
-          "bb-default": {
-            "algorithm": {
-            }
-          },
-          "bb-default-partial": {
-            "algorithm": {
-            }
-          },
-          "address": {
-          },
-          "secret_key": {
-          },
-          "card_number": {
-          },
-          "email": {
-          },
-          "id_number": {
-          },
-          "ipv4_address": {
-          },
-          "license_plate_number": {
-          },
-          "mac_address": {
-          },
-          "password": {
-          },
-          "phone": {
-          }
+          "duplicate-warning": "El tipo semántico \"{title}\" ya existe"
         },
         "select": "Seleccionar tipo semántico"
       },
@@ -748,8 +700,6 @@
           "suffix-length": "Longitud del sufijo"
         }
       },
-      "masking-level": {
-      },
       "action": {
         "self": "Acción",
         "select-action": "Seleccionar acción",
@@ -790,8 +740,6 @@
     }
   },
   "activity": {
-    "type": {
-    },
     "sentence": {
       "created-issue": "incidencia creado",
       "changed-description": "cambio de descripción",
@@ -813,25 +761,17 @@
       "prior-back-table": "Copia de seguridad de datos en la base de datos {database} y tablas {tables}",
       "prior-back-table-for-line": "Copia de seguridad de datos en la base de datos {database} y la tabla {tables} para DML en la línea {line}"
     },
-    "subject-prefix": {
-    },
     "n-similar-activities": "({count} actividad similar) | ({count} actividades similares)"
   },
   "issue": {
     "my-issues": "Mis Incidencias",
     "waiting-approval": "A la espera de la aprobación",
     "waiting-rollout": "Esperando el lanzamiento",
-    "status": {
-    },
     "status-transition": {
       "modal": {
         "resolve": "¿Resolver incidencia?",
         "reopen": "¿Reabrir incidencia?",
         "close": "¿Cerrar el problema?"
-      },
-      "dropdown": {
-      },
-      "form": {
       },
       "warning": {
         "some-previous-stages-are-not-done": "Algunas etapas anteriores no están realizadas."
@@ -889,8 +829,6 @@
           "title": "Abonado",
           "description": "Buscar por suscriptor del problema"
         },
-        "principal": {
-        },
         "approver": {
           "title": "Aprobador",
           "description": "Búsqueda por aprobador del problema"
@@ -923,8 +861,6 @@
     },
     "not-allowed-to-operate-unassigned-database": "No se puede {operation} a bases de datos no asignadas.\nPrimero deben ser transferidas a un proyecto.",
     "migration-mode": {
-      "normal": {
-      },
       "online": {
         "description": "Basado en gh-ost. Para tablas grandes, puede reducir la duración del bloqueo de la tabla de horas a segundos {link}."
       }
@@ -946,8 +882,6 @@
       "action-n-issues": "{action} {n} incidencia | {action} {n} incidencias",
       "closed": "cerrado",
       "close": "Cerca"
-    },
-    "sql-hint": {
     },
     "sdl": {
       "schema-change": "Cambio de esquema",
@@ -1001,8 +935,6 @@
     "sql-check": {
       "sql-checks": "Comprobaciones SQL",
       "not-executed-yet": "Aún no ejecutado",
-      "no-configured-sql-review-policy": {
-      },
       "statement-is-too-large": "Como el tamaño de la declaración actual supera 2MB, se omitirá la comprobación de SQL.",
       "back-to-edit": "Volver a editar",
       "sql-review-violations": "Infracciones de revisión de SQL"
@@ -1057,8 +989,6 @@
         },
         "no-session-found": "No se encontró ninguna sesión."
       }
-    },
-    "sql-review": {
     },
     "sql-review-only": "Sólo revisión de SQL",
     "create-issue": "Crear problema",
@@ -1290,12 +1220,6 @@
     "create-gcp-credentials": "Para crear credenciales, consulte",
     "all": "Todas las instancias",
     "force-archive-description": "Forzar a archivar. Todas las bases de datos quedarán desasignadas.",
-    "sync-mode": {
-      "database": {
-      },
-      "schema": {
-      }
-    },
     "scan-interval": {
       "self": "Intervalo de escaneo",
       "default-never": "Predeterminado (nunca)",
@@ -1390,8 +1314,6 @@
     "password-reset": {
       "title": "Restablecer su contraseña",
       "content": "Debe restablecer su contraseña de acuerdo con la política de restricción de contraseña."
-    },
-    "activate": {
     },
     "login-as-another": {
       "title": "Has iniciado sesión como otro usuario",
@@ -1622,10 +1544,6 @@
     "first-seen": "Primero visto"
   },
   "project": {
-    "dashboard": {
-      "modal": {
-      }
-    },
     "table": {
       "key": "@:common.key",
       "name": "@:common.name"
@@ -1651,8 +1569,6 @@
       "webhook-url": "URL del webhook",
       "triggering-activity": "Actividades de disparo",
       "test-webhook": "Probar webhook",
-      "no-webhook": {
-      },
       "creation": {
         "title": "Crear webhook",
         "desc": "Cree el webhook correspondiente para el canal {destination} que reciba el mensaje.",
@@ -1696,8 +1612,6 @@
           "title": "Notificación de aprobación de incidencia",
           "label": "Cuando se aprueba o rechaza una incidencia"
         },
-        "issue-task-run-status-change": {
-        },
         "notify-issue-approved": {
           "title": "Asunto aprobado",
           "label": "Cuando se aprueba la emisión"
@@ -1719,10 +1633,6 @@
       "restore": {
         "title": "Restaurar proyecto",
         "btn-text": "Restaurar este @.lower:{'common.project'}"
-      },
-      "branch-protection-rules": {
-        "branch-name-pattern": {
-        }
       },
       "issue-related": {
         "self": "Problema Relacionado",
@@ -1749,8 +1659,6 @@
         "allow-self-approval": {
           "self": "Permitir la autoaprobación",
           "description": "Permitir que el creador del problema apruebe el problema."
-        },
-        "default-backup-behavior": {
         },
         "auto-enable-backup": {
           "self": "Habilitar automáticamente la copia de seguridad",
@@ -1781,8 +1689,6 @@
       "condition-name": "Nombre de la condición",
       "workspace-level-roles": "Roles a nivel de espacio de trabajo",
       "project-level-roles": "Roles a nivel de proyecto"
-    },
-    "mode": {
     },
     "select": "Seleccionar Proyecto",
     "all": "Todos los proyectos",
@@ -1830,8 +1736,6 @@
           "bitbucket-app-access-token-tips": "Insertar '{secret}' debajo.",
           "bitbucket-app-password": "contraseña de la aplicación",
           "azure-devops-personal-access-token": "Cree un usuario de servicio dedicado y genere un {token} con el rol de miembro para todas las organizaciones accesibles con los siguientes alcances. El campo \"Organización\" debe estar configurado en \"Todas las organizaciones accesibles\"."
-        },
-        "confirm": {
         }
       },
       "git-provider": {
@@ -1860,8 +1764,6 @@
   },
   "data-source": {
     "snowflake-keypair-tip": "Autenticación de par de claves",
-    "ssl-type": {
-    },
     "ssl": {
       "ca-cert": "Certificado de CA",
       "client-key": "Clave del cliente",
@@ -1896,8 +1798,6 @@
     "select-query-data-source": "Seleccionar fuente de datos de consulta"
   },
   "setting": {
-    "project": {
-    },
     "label": {
       "value-placeholder": "Valor de etiqueta...",
       "key-placeholder": "Clave de etiqueta..."
@@ -1954,10 +1854,6 @@
     "visualize-explain": "Visualizar explicación",
     "sql-execute-in-production-environment": "Ten cuidado, estás accediendo a una base de datos en un entorno de producción.",
     "rows-upper-limit": "se ha alcanzado el límite de resultados de la consulta",
-    "tab-mode": {
-      "description": {
-      }
-    },
     "close-sheet": "Cerrar hoja",
     "connect": "Conectar",
     "connect-in-admin-mode": "Conectar en modo administrador",
@@ -2021,8 +1917,6 @@
     },
     "n-per-page": "{n} / página",
     "customize-tree-structure": "Personalizar la estructura del árbol",
-    "standard-mode": {
-    },
     "add-a-new-instance": "Agregar una nueva instancia",
     "web-socket": {
       "errors": {
@@ -2160,8 +2054,6 @@
     "placeholder": {
       "select-values": "Seleccionar valores..."
     },
-    "setting": {
-    },
     "add-label": "Agregar etiqueta",
     "filter-by-label": "Filtrar por etiqueta"
   },
@@ -2223,10 +2115,6 @@
       "description": "Está utilizando una función que actualmente no está incluida en {plan}. Actualice ahora para evitar interrupciones:"
     },
     "features": {
-      "bb-feature-external-secret-manager": {
-      },
-      "bb-feature-task-schedule-time": {
-      },
       "bb-feature-instance-count": {
         "remaining": "Tu cuota total de instancias es de {total}, sólo te quedan {count} instancias.",
         "runoutof": "Te has quedado sin tu cuota de instancias {total}.",
@@ -2237,82 +2125,8 @@
         "runoutof": "Se ha quedado sin su cuota de usuario {total}.",
         "upgrade": "@:{'subscription.upgrade'} para obtener una cuota de usuario ilimitada."
       },
-      "bb-feature-multi-tenancy": {
-      },
-      "bb-feature-rollout-policy": {
-      },
-      "bb-feature-environment-tier-policy": {
-      },
-      "bb-feature-sensitive-data": {
-      },
-      "bb-feature-access-control": {
-      },
-      "bb-feature-lgtm": {
-      },
-      "bb-feature-im-approval": {
-      },
-      "bb-feature-sql-review": {
-      },
-      "bb-feature-custom-approval": {
-      },
-      "bb-feature-vcs-sql-review": {
-      },
-      "bb-feature-rbac": {
-      },
-      "bb-feature-custom-role": {
-      },
-      "bb-feature-watermark": {
-      },
-      "bb-feature-audit-log": {
-      },
-      "bb-feature-schema-drift": {
-      },
-      "bb-feature-branding": {
-      },
-      "bb-feature-online-migration": {
-      },
-      "bb-feature-sync-schema-all-versions": {
-      },
-      "bb-feature-read-replica-connection": {
-      },
-      "bb-feature-instance-ssh-connection": {
-      },
-      "bb.feature.custom-instance-synchronization": {
-      },
       "bb-feature-index-advisor": {
         "title": "Asesor de índice"
-      },
-      "bb-feature-sso": {
-      },
-      "bb-feature-2fa": {
-      },
-      "bb-feature-plugin-openai": {
-      },
-      "bb-feature-batch-query": {
-      },
-      "bb-feature-shared-sql-script": {
-      },
-      "bb-feature-announcement": {
-      },
-      "bb-feature-encrypted-secrets": {
-      },
-      "bb-feature-database-grouping": {
-      },
-      "bb-feature-disallow-signup": {
-      },
-      "bb-feature-disallow-password-signin": {
-      },
-      "bb-feature-schema-template": {
-      },
-      "bb-feature-secure-token": {
-      },
-      "bb-feature-issue-advanced-search": {
-      },
-      "bb-feature-issue-project-setting": {
-      },
-      "bb-feature-password-restriction": {
-      },
-      "bb-feature-directory-sync": {
       }
     }
   },
@@ -2322,8 +2136,6 @@
     "unstar": "Quitar Favorito",
     "starred": "Favorito",
     "shared": "Compartido",
-    "actions": {
-    },
     "notifications": {
       "duplicate-success": "Duplicado con éxito en \"Mis hojas\""
     },
@@ -2333,8 +2145,6 @@
     },
     "search-sheets": "Hojas de búsqueda",
     "draft": "Borrador"
-  },
-  "engine": {
   },
   "sql-review": {
     "title": "Revisión de SQL",
@@ -2384,11 +2194,7 @@
         "change-template": "Cambiar plantilla",
         "confirm-override-title": "Confirmar cambio",
         "confirm-override-description": "Sus reglas serán anuladas"
-      },
-      "preview": {
       }
-    },
-    "edit-rule": {
     },
     "rule": {
       "active": "Activa"
@@ -2411,12 +2217,6 @@
       "status": "Estatus",
       "service-data": "Datos del Servicio"
     },
-    "type": {
-      "workspace": {
-      },
-      "project": {
-      }
-    },
     "advanced-search": {
       "scope": {
         "actor": {
@@ -2434,20 +2234,12 @@
       }
     }
   },
-  "onboarding-guide": {
-    "create-database-guide": {
-      "finished-dialog": {
-      }
-    }
-  },
   "schema-diagram": {
     "self": "Diagrama de Esquema",
     "fit-content-with-view": "Ajustar contenido dentro de la vista"
   },
   "identity-provider": {
-    "test-connection": "Probar conexión",
-    "test-modal": {
-    }
+    "test-connection": "Probar conexión"
   },
   "sensitive-data": {
     "self": "Datos Sensibles"
@@ -2551,8 +2343,6 @@
           "no-more": "No más"
         }
       },
-      "preset-suggestion": {
-      },
       "statement-copied": "Declaración copiada al portapapeles",
       "text2sql": "Text2SQL",
       "actions": {
@@ -2573,18 +2363,12 @@
   "custom-approval": {
     "self": "Aprobación personalizada",
     "risk-rule": {
-      "x-risk-rules": {
-      },
       "active": "Activo",
       "edit-rule": "Editar regla",
       "delete": "Eliminar regla de seguridad",
-      "default-rules": {
-      },
       "risk": {
         "self": "Riesgo",
         "select": "Seleccionar riesgo",
-        "risk-level": {
-        },
         "namespace": {
           "data_export": "Exportar datos",
           "request_query": "Solicitar Rol de Consultor",
@@ -2594,8 +2378,6 @@
       "template": {
         "templates": "Plantillas",
         "load": "Cargar",
-        "presets": {
-        },
         "load-template": "Cargar plantilla",
         "view": "Ver plantilla"
       },
@@ -2621,8 +2403,6 @@
         "description": "Solo se requiere una aprobación en este nodo cuando hay múltiples aprobadores.",
         "order": "Orden",
         "approver": "Aprobador",
-        "group": {
-        },
         "add": "Agregar nodo",
         "delete": "Eliminar nodo de aprobación",
         "select-approver": "Seleccionar aprobador",
@@ -2630,8 +2410,6 @@
           "system": "Funciones del sistema",
           "custom": "Funciones personalizadas"
         }
-      },
-      "presets": {
       },
       "view-approval-flow": "Ver flujo de aprobación",
       "skip": "Omitir aprobación manual",
@@ -2655,15 +2433,11 @@
       "risks": "Riesgo",
       "description": "El Centro de riesgo define los niveles de riesgo para diferentes operaciones de base de datos en diferentes condiciones. Y los niveles de riesgo determinan los flujos de aprobación personalizados correspondientes."
     },
-    "workflow-center": {
-    },
     "rule": {
       "rules": "Reglas"
     },
     "issue-review": {
       "approve-issue": "¿Aprobar incidencia?",
-      "form": {
-      },
       "you": "Tú",
       "generating-approval-flow": "Generando flujo de aprobación",
       "approved-issue": "incidencia aprobada",
@@ -2771,8 +2545,6 @@
       "edit": "Editar rol",
       "title-placeholder": "Ingrese el título del rol",
       "description-placeholder": "Ingrese la descripción del rol",
-      "validation": {
-      },
       "delete-warning": "Se eliminará el rol \"{name}\". Esta acción no se puede deshacer.",
       "delete-warning-with-resources": "El rol \"{name}\" está asignado a los siguientes usuarios:",
       "delete-warning-retry": "Elimine la función de estos usuarios y vuelva a intentarlo."
@@ -2816,8 +2588,6 @@
       "self": "Liberador del proyecto",
       "description": "El liberador del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
     },
-    "project-querier": {
-    },
     "sql-editor-user": {
       "self": "Usuario del editor SQL",
       "description": "El consultor del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
@@ -2846,8 +2616,6 @@
     },
     "condition": {
       "self": "Condición"
-    },
-    "prev-editor": {
     }
   },
   "export-center": {
@@ -2863,8 +2631,6 @@
     "new-branch": "Nueva rama",
     "parent-branch": "Rama principal",
     "raw-sql-preview": "vista previa de sql sin formato",
-    "diff-editor": {
-    },
     "search-tables": "Buscar tablas",
     "use-tips": "Selecciona las tablas a diseñar",
     "apply-to-database": "Aplicar cambio a la base de datos",
@@ -2872,13 +2638,9 @@
     "message": {
       "created-succeed": "Diseño de esquema creado con éxito",
       "updated-succeed": "Diseño de esquema actualizado con éxito"
-    },
-    "action": {
     }
   },
   "cel": {
-    "factor": {
-    },
     "condition": {
       "self": "Condición",
       "description-tips": "Una condición es una regla que se puede configurar mediante una expresión. Por ejemplo, la condición \"Entorno es prod\" coincidirá con las incidencias ejecutadas en el entorno \"prod\".",
@@ -2923,8 +2685,6 @@
       "self": "Agregar cambio",
       "changelog": {
         "select-at-least-one-changelog-below": "Seleccione al menos un historial a continuación"
-      },
-      "branch": {
       }
     },
     "change-source": {

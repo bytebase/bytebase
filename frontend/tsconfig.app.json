@@ -11,7 +11,6 @@
   "compilerOptions": {
     "composite": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-
     "module": "ES2022",
     "verbatimModuleSyntax": true,
     "baseUrl": ".",
