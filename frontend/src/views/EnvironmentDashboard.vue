@@ -1,29 +1,5 @@
 <template>
   <div class="w-full flex flex-col gap-4 px-2 overflow-y-auto">
-    <div class="flex items-center justify-end space-x-2 px-2">
-      <NButton
-        v-if="hasWorkspacePermissionV2('bb.environments.create')"
-        type="primary"
-        @click="createEnvironment"
-      >
-        <template #icon>
-          <PlusIcon class="h-4 w-4" />
-        </template>
-        {{ $t("environment.create") }}
-      </NButton>
-      <NButton
-        v-if="
-          hasWorkspacePermissionV2('bb.environments.list') &&
-          hasWorkspacePermissionV2('bb.environments.update')
-        "
-        @click="startReorder"
-      >
-        <template #icon>
-          <ListOrderedIcon class="h-4 w-4" />
-        </template>
-        {{ $t("common.reorder") }}
-      </NButton>
-    </div>
     <NTabs
       type="line"
       :bar-width="200"
@@ -45,6 +21,37 @@
           @archive="doArchive"
         />
       </NTabPane>
+      <template #suffix>
+        <div
+          v-if="!state.reorder"
+          class="flex items-center justify-end space-x-2 px-2 pb-1"
+        >
+          <NButton
+            size="small"
+            v-if="
+              hasWorkspacePermissionV2('bb.environments.list') &&
+              hasWorkspacePermissionV2('bb.environments.update')
+            "
+            @click="startReorder"
+          >
+            <template #icon>
+              <ListOrderedIcon class="h-4 w-4" />
+            </template>
+            {{ $t("common.reorder") }}
+          </NButton>
+          <NButton
+            v-if="hasWorkspacePermissionV2('bb.environments.create')"
+            type="primary"
+            size="small"
+            @click="createEnvironment"
+          >
+            <template #icon>
+              <PlusIcon class="h-4 w-4" />
+            </template>
+            {{ $t("environment.create") }}
+          </NButton>
+        </div>
+      </template>
     </NTabs>
     <div v-if="state.reorder" class="flex justify-start pt-5 gap-x-3 px-5">
       <NButton @click.prevent="discardReorder">
