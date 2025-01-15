@@ -111,6 +111,7 @@
                 {{ $t("schema-editor.actions.add-from-template") }}
               </NButton>
             </div>
+
             <TableColumnEditor
               :readonly="!!readonly"
               :show-foreign-key="false"
@@ -207,12 +208,11 @@ import {
 } from "@/store";
 import { unknownProject } from "@/types";
 import {
-  ColumnMetadata,
-} from "@/types/proto/v1/database_service";
-import {
   SchemaCatalog,
   TableCatalog,
+  TableCatalog_Columns,
 } from "@/types/proto/v1/database_catalog_service";
+import { ColumnMetadata } from "@/types/proto/v1/database_service";
 import {
   SchemaTemplateSetting_TableTemplate,
   type SchemaTemplateSetting_FieldTemplate,
@@ -308,6 +308,7 @@ const tableClassificationId = computed({
       tableCatalog = TableCatalog.fromPartial({
         name: table.name,
         classification: id,
+        columns: TableCatalog_Columns.fromPartial({}),
       });
       schemaCatalog.tables.push(tableCatalog);
     }

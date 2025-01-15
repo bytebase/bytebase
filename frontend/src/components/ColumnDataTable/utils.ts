@@ -3,8 +3,10 @@ import { t } from "@/plugins/i18n";
 import { pushNotification, useDatabaseCatalogV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import {
+  SchemaCatalog,
   ColumnCatalog,
   TableCatalog,
+  TableCatalog_Columns,
 } from "@/types/proto/v1/database_catalog_service";
 
 export const supportClassificationFromCommentFeature = (engine: Engine) => {
@@ -46,14 +48,20 @@ export const updateColumnConfig = async ({
     (s) => s.name === schema
   );
   if (!targetSchema) {
-    targetSchema = { name: schema, tables: [] };
+    targetSchema = SchemaCatalog.fromPartial({ name: schema, tables: [] });
     pendingUpdateCatalog.schemas.push(targetSchema);
   }
 
   let targetTable = targetSchema.tables.find((t) => t.name === table);
   if (!targetTable) {
-    targetTable = TableCatalog.fromPartial({ name: table });
+    targetTable = TableCatalog.fromPartial({
+      name: table,
+      columns: TableCatalog_Columns.fromPartial({}),
+    });
     targetSchema.tables.push(targetTable);
+  }
+  if (!targetTable.columns) {
+    targetTable.columns = TableCatalog_Columns.fromPartial({});
   }
 
   const columns = targetTable.columns?.columns || [];
