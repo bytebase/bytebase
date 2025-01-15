@@ -1,6 +1,7 @@
 <template>
   <div class="flex flex-row flex-wrap whitespace-nowrap">
-    {{ semanticType?.title }}
+    <span v-if="semanticType?.title">{{ semanticType?.title }}</span>
+    <span v-else class="text-control-placeholder italic">N/A</span>
     <template v-if="!readonly && !disabled">
       <MiniActionButton
         v-if="semanticType"
@@ -52,6 +53,7 @@ defineEmits<{
 const { getColumnConfig } = useSchemaEditorContext();
 
 const columnConfig = computed(() => {
+  // TODO: use catalog
   return getColumnConfig(props.db, {
     database: props.database,
     schema: props.schema,

@@ -8,6 +8,7 @@ import {
   ColumnCatalog,
   DatabaseCatalog,
   TableCatalog,
+  TableCatalog_Columns,
 } from "@/types/proto/v1/database_catalog_service";
 import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
 import { useDatabaseV1Store } from "./database";
@@ -138,6 +139,7 @@ export const getTableCatalog = (
     schemaCatalog?.tables.find((t) => t.name === table) ??
     TableCatalog.fromPartial({
       name: table,
+      columns: TableCatalog_Columns.fromPartial({}),
     })
   );
 };
@@ -148,10 +150,7 @@ export const getColumnCatalog = (
   table: string,
   column: string
 ) => {
-  const schemaConfig = catalog.schemas.find((s) => s.name === schema);
-  const tableCatalog =
-    schemaConfig?.tables.find((t) => t.name === table) ??
-    TableCatalog.fromPartial({});
+  const tableCatalog = getTableCatalog(catalog, schema, table);
   return (
     tableCatalog.columns?.columns.find((c) => c.name === column) ??
     ColumnCatalog.fromPartial({
