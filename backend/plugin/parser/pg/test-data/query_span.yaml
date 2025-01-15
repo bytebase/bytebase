@@ -1,3 +1,66 @@
+- description: unnest as table source with alias
+  statement: SELECT * FROM unnest(ARRAY[1,2,3], ARRAY[0,0,0]) as t(a, b);
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public"
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: a
+          sourcecolumns: []
+          isplainfield: false
+        - name: b
+          sourcecolumns: []
+          isplainfield: false
+    sourcecolumns: []
+- description: unnest as table source with alias
+  statement: SELECT * FROM unnest(ARRAY[1,2,3], ARRAY[0,0,0]) as t;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public"
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: t
+          sourcecolumns: []
+          isplainfield: false
+        - name: t
+          sourcecolumns: []
+          isplainfield: false
+    sourcecolumns: []
+- description: unnest as table source with alias
+  statement: SELECT * FROM unnest(ARRAY[1,2,3]) as t;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public"
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: t
+          sourcecolumns: []
+          isplainfield: false
+    sourcecolumns: []
 - description: Function with if-else
   statement: SELECT * from IF_QUERY();
   defaultDatabase: db
