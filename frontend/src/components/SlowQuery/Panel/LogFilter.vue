@@ -9,33 +9,13 @@
         :params="params"
         :placeholder="''"
         :scope-options="scopeOptions"
+        :readonly-scopes="readonlyScopes"
         @update:params="$emit('update:params', $event)"
       />
-      <NInputGroup style="width: auto">
-        <NDatePicker
-          :value="fromTime"
-          :disabled="loading"
-          :is-date-disabled="isDateDisabled"
-          :placeholder="$t('slow-query.filter.from-date')"
-          type="date"
-          clearable
-          format="yyyy-MM-dd"
-          style="width: 12rem"
-          @update:value="changeFromTime($event)"
-        />
-        <NDatePicker
-          :value="toTime"
-          :disabled="loading"
-          :is-date-disabled="isDateDisabled"
-          :placeholder="$t('slow-query.filter.to-date')"
-          type="date"
-          clearable
-          format="yyyy-MM-dd"
-          style="width: 12rem"
-          @update:value="changeToTime($event)"
-        />
-      </NInputGroup>
-
+      <TimeRange
+        :params="params"
+        @update:params="$emit('update:params', $event)"
+      />
       <div class="flex items-center justify-end space-x-2">
         <slot name="suffix" />
       </div>
@@ -43,27 +23,26 @@
   </div>
 </template>
 <script lang="ts" setup>
-import dayjs from "dayjs";
-import { NDatePicker, NInputGroup } from "naive-ui";
 import { computed } from "vue";
-import AdvancedSearch from "@/components/AdvancedSearch";
+import AdvancedSearch, { TimeRange } from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import { useSlowQueryPolicyList } from "@/store";
-import type { SearchParams, SearchScopeId } from "@/utils";
+import type { SearchParams, SearchScopeId, SearchScope } from "@/utils";
 
-const props = defineProps<{
-  fromTime: number | undefined;
-  toTime: number | undefined;
-  params: SearchParams;
-  supportOptionIdList: SearchScopeId[];
-  loading?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    params: SearchParams;
+    readonlyScopes?: SearchScope[];
+    supportOptionIdList: SearchScopeId[];
+    loading?: boolean;
+  }>(),
+  {
+    readonlyScopes: () => [],
+    loading: false,
+  }
+);
 
-const emit = defineEmits<{
-  (
-    event: "update:time",
-    params: { fromTime: number | undefined; toTime: number | undefined }
-  ): void;
+defineEmits<{
   (event: "update:params", params: SearchParams): void;
 }>();
 
@@ -73,36 +52,4 @@ const scopeOptions = useCommonSearchScopeOptions(
   computed(() => props.params),
   computed(() => props.supportOptionIdList)
 );
-
-const changeTime = (
-  fromTime: number | undefined,
-  toTime: number | undefined
-) => {
-  if (fromTime && toTime && fromTime > toTime) {
-    // Swap if from > to
-    changeTime(toTime, fromTime);
-    return;
-  }
-  if (fromTime) {
-    // fromTime is the start of the day
-    fromTime = dayjs(fromTime).startOf("day").valueOf();
-  }
-  if (toTime) {
-    // toTime is the end of the day
-    toTime = dayjs(toTime).endOf("day").valueOf();
-  }
-  emit("update:time", { fromTime, toTime });
-};
-const changeFromTime = (fromTime: number | undefined) => {
-  const { toTime } = props;
-  changeTime(fromTime, toTime);
-};
-const changeToTime = (toTime: number | undefined) => {
-  const { fromTime } = props;
-  changeTime(fromTime, toTime);
-};
-
-const isDateDisabled = (date: number) => {
-  return date > dayjs().endOf("day").valueOf();
-};
 </script>
