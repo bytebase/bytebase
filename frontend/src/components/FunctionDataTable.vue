@@ -6,6 +6,7 @@
     :virtual-scroll="true"
     :striped="true"
     :bordered="true"
+    :row-key="(f: FunctionMetadata) => `${database.name}.${schemaName}.${f.name}`"
   />
 </template>
 

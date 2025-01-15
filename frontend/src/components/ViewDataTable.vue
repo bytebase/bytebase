@@ -5,6 +5,7 @@
     :max-height="640"
     :virtual-scroll="true"
     :striped="true"
+    :row-key="(view: ViewMetadata) => `${database.name}.${schemaName}.${view.name}`"
     :bordered="true"
   />
 </template>

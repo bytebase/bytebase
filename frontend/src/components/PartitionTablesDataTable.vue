@@ -6,6 +6,7 @@
     :virtual-scroll="true"
     :striped="true"
     :max-height="640"
+    :row-key="(table: PartitionTableRowData) => table.name"
   />
 </template>
 

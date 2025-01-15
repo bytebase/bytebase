@@ -18,6 +18,7 @@
       :data="connectorList"
       :columns="columnList"
       :striped="true"
+      :row-key="(connector: VCSConnector) => connector.name"
       :bordered="true"
     />
   </div>
@@ -41,7 +42,10 @@ import {
   useVCSProviderStore,
   useProjectByName,
 } from "@/store";
-import { getProjectNameAndDatabaseGroupName, projectNamePrefix } from "@/store/modules/v1/common";
+import {
+  getProjectNameAndDatabaseGroupName,
+  projectNamePrefix,
+} from "@/store/modules/v1/common";
 import { getVCSConnectorId } from "@/store/modules/v1/common";
 import { VCSType } from "@/types/proto/v1/common";
 import type { VCSConnector } from "@/types/proto/v1/vcs_connector_service";
@@ -100,7 +104,8 @@ const columnList = computed((): DataTableColumn<VCSConnector>[] => {
       key: "databaseGroup",
       title: t("database-group.self"),
       resizable: true,
-      render: (connector) => getProjectNameAndDatabaseGroupName(connector.databaseGroup)[1] || '-',
+      render: (connector) =>
+        getProjectNameAndDatabaseGroupName(connector.databaseGroup)[1] || "-",
     },
     {
       key: "repository",

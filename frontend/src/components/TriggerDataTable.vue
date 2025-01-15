@@ -5,6 +5,7 @@
     :max-height="640"
     :virtual-scroll="true"
     :striped="true"
+    :row-key="(trigger: TriggerMetadata) => `${database.name}.${schemaName}.${tableName}.${trigger.name}`"
     :bordered="true"
   />
 </template>

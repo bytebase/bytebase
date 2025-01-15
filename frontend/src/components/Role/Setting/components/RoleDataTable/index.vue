@@ -4,6 +4,7 @@
     :columns="columns"
     :data="roleList"
     :striped="true"
+    :row-key="(role: Role) => role.name"
     :bordered="true"
   />
 </template>
