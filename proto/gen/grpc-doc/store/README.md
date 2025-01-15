@@ -4930,8 +4930,8 @@ SlowQueryDetails is the details of a slow query.
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | start_time is the start time of the slow query. |
 | query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | query_time is the query time of the slow query. |
 | lock_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | lock_time is the lock time of the slow query. |
-| rows_sent | [int32](#int32) |  | rows_sent is the number of rows sent by the slow query. |
-| rows_examined | [int32](#int32) |  | rows_examined is the number of rows examined by the slow query. |
+| rows_sent | [int64](#int64) |  | rows_sent is the number of rows sent by the slow query. |
+| rows_examined | [int64](#int64) |  | rows_examined is the number of rows examined by the slow query. |
 | sql_text | [string](#string) |  | sql_text is the SQL text of the slow query. |
 
 
@@ -4963,14 +4963,14 @@ SlowQueryStatisticsItem is the item of slow query statistics.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | sql_fingerprint | [string](#string) |  | sql_fingerprint is the fingerprint of the slow query. |
-| count | [int32](#int32) |  | count is the number of slow queries with the same fingerprint. |
+| count | [int64](#int64) |  | count is the number of slow queries with the same fingerprint. |
 | latest_log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | latest_log_time is the time of the latest slow query with the same fingerprint. |
 | total_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The total query time of the slow query log. |
 | maximum_query_time | [google.protobuf.Duration](#google-protobuf-Duration) |  | The maximum query time of the slow query log. |
-| total_rows_sent | [int32](#int32) |  | The total rows sent of the slow query log. |
-| maximum_rows_sent | [int32](#int32) |  | The maximum rows sent of the slow query log. |
-| total_rows_examined | [int32](#int32) |  | The total rows examined of the slow query log. |
-| maximum_rows_examined | [int32](#int32) |  | The maximum rows examined of the slow query log. |
+| total_rows_sent | [int64](#int64) |  | The total rows sent of the slow query log. |
+| maximum_rows_sent | [int64](#int64) |  | The maximum rows sent of the slow query log. |
+| total_rows_examined | [int64](#int64) |  | The total rows examined of the slow query log. |
+| maximum_rows_examined | [int64](#int64) |  | The maximum rows examined of the slow query log. |
 | samples | [SlowQueryDetails](#bytebase-store-SlowQueryDetails) | repeated | samples are the details of the sample slow queries with the same fingerprint. |
 
 
