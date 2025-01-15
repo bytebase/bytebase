@@ -1,14 +1,14 @@
 <template>
   <div
     ref="containerRef"
-    class="relative w-full flex-1 overflow-auto flex flex-col border rounded"
+    class="relative w-full flex-1 overflow-auto flex flex-col rounded border dark:border-zinc-500"
     :style="{
       maxHeight: maxHeight ? `${maxHeight}px` : undefined,
     }"
   >
     <table
       ref="tableRef"
-      class="relative border-collapse table-fixed z-[1]"
+      class="relative border-collapse w-full table-auto -mx-px"
       v-bind="tableResize.getTableProps()"
     >
       <thead
@@ -18,9 +18,9 @@
           <th
             v-for="header of table.getFlatHeaders()"
             :key="header.index"
-            class="group relative px-2 py-2 min-w-[2rem] text-left text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border-l first:border-l-0 border-block-border"
+            class="group relative px-2 py-2 min-w-[2rem] text-left text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border-x border-block-border dark:border-zinc-500"
             :class="{
-              '!bg-accent/10':
+              '!bg-accent/10 dark:!bg-accent/40':
                 selectionState.rows.length === 0 &&
                 selectionState.columns.includes(header.index),
             }"
@@ -30,7 +30,8 @@
               <span
                 class="flex flex-row items-center select-none"
                 :class="{
-                  'cursor-pointer hover:text-accent': !selectionDisabled,
+                  'cursor-pointer hover:text-accent dark:hover:text-gray-500':
+                    !selectionDisabled,
                 }"
                 @click.stop="selectColumn(header.index)"
               >
@@ -71,7 +72,6 @@
             <!-- The drag-to-resize handler -->
             <div
               class="absolute w-[8px] right-0 top-0 bottom-0 cursor-col-resize"
-              @dblclick="tableResize.autoAdjustColumnWidth([header.index])"
               @pointerdown="tableResize.startResizing(header.index)"
               @click.stop.prevent
             />
@@ -88,7 +88,7 @@
           <td
             v-for="(cell, cellIndex) of row.getVisibleCells()"
             :key="cellIndex"
-            class="relative p-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-l first:border-l-0 border-block-border group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
+            class="relative p-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-x border-b border-block-border dark:border-zinc-500 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
             :data-col-index="cellIndex"
           >
             <TableCell
@@ -104,8 +104,9 @@
               v-if="cellIndex === 0"
               class="absolute inset-y-0 left-0 w-2"
               :class="{
-                'cursor-pointer hover:bg-accent/10': !selectionDisabled,
-                'bg-accent/10':
+                'cursor-pointer hover:bg-accent/10 dark:hover:bg-accent/40':
+                  !selectionDisabled,
+                'bg-accent/10 dark:bg-accent/40':
                   selectionState.columns.length === 0 &&
                   selectionState.rows.includes(offset + rowIndex),
               }"
@@ -127,7 +128,7 @@
 <script lang="ts" setup>
 import type { Table } from "@tanstack/vue-table";
 import { NEmpty } from "naive-ui";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import {
   FeatureBadge,
   FeatureBadgeForInstanceLicense,
@@ -173,27 +174,17 @@ const hasSensitiveFeature = computed(() => {
   return subscriptionStore.hasFeature("bb.feature.sensitive-data");
 });
 
+const rows = computed(() => props.table.getRowModel().rows);
+
+onMounted(() => {
+  nextTick(() => {
+    tableResize.reset();
+  });
+});
+
 const scrollTo = (x: number, y: number) => {
   containerRef.value?.scroll(x, y);
 };
-
-const rows = computed(() => props.table.getRowModel().rows);
-
-watch(
-  () =>
-    props.table
-      .getFlatHeaders()
-      .map((header) => String(header.column.columnDef.header))
-      .join("|"),
-  () => {
-    nextTick(() => {
-      // Re-calculate the column widths once the column definition changed.
-      scrollTo(0, 0);
-      tableResize.reset();
-    });
-  },
-  { immediate: true }
-);
 
 watch(
   () => props.offset,
