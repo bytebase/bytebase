@@ -3,46 +3,57 @@ import { Engine } from "@/types/proto/v1/common";
 import { supportedEngineV1List } from "@/utils";
 
 export const defaultPortForEngine = (engine: Engine) => {
-  if (engine === Engine.CLICKHOUSE) {
-    return "9000";
-  } else if (engine === Engine.POSTGRES) {
-    return "5432";
-  } else if (engine === Engine.SNOWFLAKE) {
-    return "443";
-  } else if (engine === Engine.TIDB) {
-    return "4000";
-  } else if (engine === Engine.MONGODB) {
-    return "27017";
-  } else if (engine === Engine.REDIS) {
-    return "6379";
-  } else if (engine === Engine.ORACLE) {
-    return "1521";
-  } else if (engine === Engine.MSSQL) {
-    return "1433";
-  } else if (engine === Engine.REDSHIFT) {
-    return "5439";
-  } else if (engine === Engine.OCEANBASE) {
-    return "2883";
-  } else if (engine === Engine.OCEANBASE_ORACLE) {
-    return "1521";
-  } else if (engine === Engine.DM) {
-    return "5236";
-  } else if (engine === Engine.STARROCKS) {
-    return "9030";
-  } else if (engine === Engine.DORIS) {
-    return "9030";
-  } else if (engine == Engine.HIVE) {
-    return "10000";
-  } else if (engine == Engine.ELASTICSEARCH) {
-    return "9200";
-  } else if (engine == Engine.DYNAMODB) {
-    return "";
-  } else if (engine == Engine.DATABRICKS) {
-    return "";
-  } else if (engine == Engine.COCKROACHDB) {
-    return "26257";
-  }
-  return "3306";
+  switch (engine) {
+    case Engine.CLICKHOUSE:
+      return "9000";
+    case Engine.MYSQL:
+      return "3306";
+    case Engine.POSTGRES:
+      return "5432";
+    case  Engine.SNOWFLAKE:
+      return "";
+    case Engine.SQLITE:
+      return "";
+    case Engine.TIDB:
+      return "4000";
+    case Engine.MONGODB:
+      return "27017";
+    case Engine.REDIS:
+      return "6379";
+    case Engine.ORACLE:
+      return "1521";
+    case Engine.MSSQL:
+      return "1433";
+    case Engine.REDSHIFT:
+      return "5439";
+    case Engine.MARIADB:
+      return "3306";
+    case Engine.OCEANBASE:
+      return "2883";
+    case Engine.DM:
+      return "5236";
+    case Engine.RISINGWAVE:
+        return "4566";
+    case Engine.OCEANBASE_ORACLE:
+      return "1521";
+    case Engine.STARROCKS:
+      return "9030";
+    case Engine.DORIS:
+      return "9030";
+    case Engine.HIVE:
+      return "10000";
+    case Engine.ELASTICSEARCH:
+      return "9200";
+    case Engine.DYNAMODB:
+      return "";
+    case Engine.DATABRICKS:
+      return "";
+    case Engine.COCKROACHDB:
+      return "26257";
+    case Engine.COSMOSDB:
+      return "";
+    }
+    throw new Error("engine port unknown");
 };
 
 export const EngineList = computed(() => {
