@@ -14,6 +14,15 @@
         <EngineIcon :engine="item.engine" custom-class="ml-0 mr-1" />
         {{ item.column?.name }}
       </div>
+      <div class="bb-grid-cell flex gap-x-1">
+        {{
+          item.catalog?.semanticType
+            ? (semanticTypeList.find(
+                (data) => data.id === item.catalog?.semanticType
+              )?.title ?? "N/A")
+            : "N/A"
+        }}
+      </div>
       <div v-if="classificationConfig" class="bb-grid-cell flex gap-x-1">
         <ClassificationLevelBadge
           :classification="item.catalog?.classification"
@@ -101,6 +110,11 @@ const columnList = computed((): BBGridColumn[] => {
       class: "capitalize",
     },
     {
+      title: t("settings.sensitive-data.semantic-types.table.semantic-type"),
+      width: "minmax(min-content, auto)",
+      class: "capitalize",
+    },
+    {
       title: t("schema-template.classification.self"),
       width: "minmax(min-content, auto)",
       class: "capitalize",
@@ -164,4 +178,11 @@ const deleteTemplate = async (id: string) => {
     });
   }
 };
+
+const semanticTypeList = computed(() => {
+  return (
+    settingStore.getSettingByName("bb.workspace.semantic-types")?.value
+      ?.semanticTypeSettingValue?.types ?? []
+  );
+});
 </script>

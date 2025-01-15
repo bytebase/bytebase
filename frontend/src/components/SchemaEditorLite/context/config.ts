@@ -64,7 +64,7 @@ export const useEditConfigs = (targets: Ref<EditTarget[]>) => {
       Object.assign(maps, buildMaps(targets));
     },
     {
-      deep: false,
+      deep: true,
     }
   );
 
