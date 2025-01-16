@@ -1,28 +1,48 @@
 <template>
   <div class="w-full flex flex-col gap-y-2">
-    <PagedRolloutTable
+    <PagedTable
       :key="project.name"
       :session-key="`project-${project.name}-releases`"
-      :project="project.name"
-      :page-size="20"
+      :page-size="50"
+      :fetch-list="fetchRolloutList"
     >
-      <template #table="{ rolloutList, loading }">
+      <template #table="{ list, loading }">
         <RolloutDataTable
           :bordered="true"
           :loading="loading"
-          :rollout-list="rolloutList"
+          :rollout-list="list"
         />
       </template>
-    </PagedRolloutTable>
+    </PagedTable>
   </div>
 </template>
 
 <script lang="ts" setup>
+import PagedTable from "@/components/v2/Model/PagedTable.vue";
+import { useRolloutStore } from "@/store";
 import type { ComposedProject } from "@/types";
-import PagedRolloutTable from "../Rollout/PagedRolloutTable.vue";
 import RolloutDataTable from "../Rollout/RolloutDataTable.vue";
 
-defineProps<{
+const props = defineProps<{
   project: ComposedProject;
 }>();
+
+const rolloutStore = useRolloutStore();
+
+const fetchRolloutList = async ({
+  pageToken,
+  pageSize,
+}: {
+  pageToken: string;
+  pageSize: number;
+}) => {
+  const { nextPageToken, rollouts } = await rolloutStore.fetchRolloutsByProject(
+    props.project.name,
+    { pageSize, pageToken }
+  );
+  return {
+    nextPageToken,
+    list: rollouts,
+  };
+};
 </script>

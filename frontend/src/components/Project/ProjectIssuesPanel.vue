@@ -52,23 +52,23 @@
     </IssueSearch>
 
     <div class="relative min-h-[20rem]">
-      <PagedIssueTableV1
+      <PagedTable
+        ref="issuePagedTable"
         :key="keyForTab(tab)"
-        :session-key="keyForTab(tab)"
-        :issue-filter="mergedIssueFilter"
-        :ui-issue-filter="mergedUIIssueFilter"
+        :session-key="`bb.issue-table.${project.name}.${keyForTab(tab)}`"
         :page-size="50"
+        :fetch-list="fetchIssueList"
       >
-        <template #table="{ issueList, loading }">
+        <template #table="{ list, loading }">
           <IssueTableV1
             mode="PROJECT"
             :bordered="true"
             :loading="loading"
-            :issue-list="issueList"
+            :issue-list="applyUIIssueFilter(list, mergedUIIssueFilter)"
             :highlight-text="state.params.query"
           />
         </template>
-      </PagedIssueTableV1>
+      </PagedTable>
     </div>
   </div>
 </template>
@@ -78,14 +78,16 @@ import { type UseStorageOptions } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { ChevronDownIcon, SearchIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
-import { reactive, computed, watch } from "vue";
+import { reactive, computed, watch, ref } from "vue";
+import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
-import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import { TabFilter, type TabFilterItem } from "@/components/v2";
+import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { useCurrentUserV1 } from "@/store";
-import type { ComposedProject } from "@/types";
+import { useIssueV1Store, useRefreshIssueList } from "@/store";
+import type { ComposedProject, ComposedIssue } from "@/types";
 import type {
   SearchParams,
   SearchScope,
@@ -102,6 +104,7 @@ import {
   getValueFromSearchParams,
   upsertScope,
   useDynamicLocalStorage,
+  applyUIIssueFilter,
 } from "@/utils";
 import { IssueSearch } from "../IssueV1/components";
 
@@ -128,6 +131,10 @@ const me = useCurrentUserV1();
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
+const issueStore = useIssueV1Store();
+const issuePagedTable =
+  ref<ComponentExposed<typeof PagedTable<ComposedIssue>>>();
+
 const readonlyScopes = computed((): SearchScope[] => {
   return [
     { id: "project", value: extractProjectResourceName(props.project.name) },
@@ -315,6 +322,30 @@ const mergedIssueFilter = computed(() => {
 const mergedUIIssueFilter = computed(() => {
   return buildUIIssueFilterBySearchParams(state.params);
 });
+
+const fetchIssueList = async ({
+  pageToken,
+  pageSize,
+}: {
+  pageToken: string;
+  pageSize: number;
+}) => {
+  const { nextPageToken, issues } = await issueStore.listIssues({
+    find: mergedIssueFilter.value,
+    pageSize,
+    pageToken,
+  });
+  return {
+    nextPageToken,
+    list: issues,
+  };
+};
+
+watch(
+  () => JSON.stringify(mergedIssueFilter.value),
+  () => issuePagedTable.value?.refresh()
+);
+useRefreshIssueList(() => issuePagedTable.value?.refresh());
 
 const selectTab = (target: TabValue) => {
   if (target === "") return;
