@@ -208,6 +208,7 @@ var allPermissions = []Permission{
 	PermissionPlansGet,
 	PermissionPlansList,
 	PermissionPlansUpdate,
+	PermissionPlansPreview,
 	PermissionPoliciesCreate,
 	PermissionPoliciesDelete,
 	PermissionPoliciesGet,
