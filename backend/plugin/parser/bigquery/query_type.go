@@ -1,7 +1,6 @@
 package bigquery
 
 import (
-	"errors"
 	"fmt"
 
 	parser "github.com/bytebase/google-sql-parser"
@@ -20,15 +19,14 @@ type queryTypeListener struct {
 func (l *queryTypeListener) EnterStmts(ctx *parser.StmtsContext) {
 	// Assume that the stmts contains only one unterminated statement.
 	if len(ctx.AllUnterminated_sql_statement()) != 1 {
-		l.err = errors.New(fmt.Sprintf("expecting 1 unterminated sql statement, but got %d", len(ctx.AllUnterminated_sql_statement())))
+		l.err = fmt.Errorf("expecting 1 unterminated sql statement, but got %d", len(ctx.AllUnterminated_sql_statement()))
 		return
 	}
 	unterminatedStatement := ctx.AllUnterminated_sql_statement()[0]
-	l.result, l.err = l.getQueryTypeForUnterminatedSqlStatement(unterminatedStatement)
-
+	l.result, l.err = l.getQueryTypeForUnterminatedSQLStatement(unterminatedStatement)
 }
 
-func (l *queryTypeListener) getQueryTypeForUnterminatedSqlStatement(u parser.IUnterminated_sql_statementContext) (base.QueryType, error) {
+func (l *queryTypeListener) getQueryTypeForUnterminatedSQLStatement(u parser.IUnterminated_sql_statementContext) (base.QueryType, error) {
 	body := u.Sql_statement_body()
 	switch {
 	case body.Query_statement() != nil:
