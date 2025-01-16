@@ -74,15 +74,11 @@
       </div>
     </div>
 
-    <PagedChangelogTable
-      :database="database"
-      :search-changelogs="{
-        tables: state.selectedAffectedTables,
-        types: state.selectedChangeType
-          ? [state.selectedChangeType]
-          : undefined,
-      }"
-      session-key="bb.paged-changelog-table"
+    <PagedTable
+      ref="issuePagedTable"
+      :session-key="`bb.paged-changelog-table.${database.name}`"
+      :page-size="50"
+      :fetch-list="fetchChangelogList"
     >
       <template #table="{ list, loading }">
         <ChangelogDataTable
@@ -93,7 +89,7 @@
           :show-selection="true"
         />
       </template>
-    </PagedChangelogTable>
+    </PagedTable>
   </div>
 
   <BBAlert
@@ -117,7 +113,8 @@
 import dayjs from "dayjs";
 import saveAs from "file-saver";
 import JSZip from "jszip";
-import { computed, reactive } from "vue";
+import { computed, reactive, watch, ref } from "vue";
+import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAlert, BBSpin } from "@/bbkit";
@@ -125,22 +122,23 @@ import {
   AffectedTablesSelect,
   ChangeTypeSelect,
   ChangelogDataTable,
-  PagedChangelogTable,
 } from "@/components/Changelog";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import { TooltipButton } from "@/components/v2";
+import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
 } from "@/router/dashboard/projectV1";
 import { useChangelogStore } from "@/store";
-import type { ComposedDatabase, Table } from "@/types";
+import type { ComposedDatabase, Table, SearchChangeLogParams } from "@/types";
 import { DEFAULT_PROJECT_NAME, getDateForPbTimestamp } from "@/types";
 import {
   Changelog_Status,
   Changelog_Type,
   ChangelogView,
 } from "@/types/proto/v1/database_service";
+import type { Changelog } from "@/types/proto/v1/database_service";
 import { extractProjectResourceName } from "@/utils";
 import { getChangelogChangeType } from "@/utils/v1/changelog";
 
@@ -160,6 +158,8 @@ const props = defineProps<{
 const { t } = useI18n();
 const router = useRouter();
 const changelogStore = useChangelogStore();
+const changedlogPagedTable =
+  ref<ComponentExposed<typeof PagedTable<Changelog>>>();
 
 const state = reactive<LocalState>({
   showBaselineModal: false,
@@ -168,6 +168,58 @@ const state = reactive<LocalState>({
   isExporting: false,
   selectedAffectedTables: [],
 });
+
+const searchChangeLogParams = computed(
+  (): SearchChangeLogParams => ({
+    tables: state.selectedAffectedTables,
+    types: state.selectedChangeType ? [state.selectedChangeType] : undefined,
+  })
+);
+
+const searchChangelogFilter = computed(() => {
+  const filter: string[] = [];
+  if (
+    searchChangeLogParams.value.types &&
+    searchChangeLogParams.value.types.length > 0
+  ) {
+    filter.push(`type = "${searchChangeLogParams.value.types.join(" | ")}"`);
+  }
+  if (
+    searchChangeLogParams.value.tables &&
+    searchChangeLogParams.value.tables.length > 0
+  ) {
+    filter.push(
+      `table = "${searchChangeLogParams.value.tables.map((table) => `tableExists('${props.database.databaseName}', '${table.schema}', '${table.table}')`).join(" || ")}"`
+    );
+  }
+  return filter.join(" && ");
+});
+
+const fetchChangelogList = async ({
+  pageToken,
+  pageSize,
+}: {
+  pageToken: string;
+  pageSize: number;
+}) => {
+  const { nextPageToken, changelogs } = await changelogStore.fetchChangelogList(
+    {
+      parent: props.database.name,
+      filter: searchChangelogFilter.value,
+      pageSize,
+      pageToken,
+    }
+  );
+  return {
+    nextPageToken,
+    list: changelogs,
+  };
+};
+
+watch(
+  () => searchChangelogFilter.value,
+  () => changedlogPagedTable.value?.refresh()
+);
 
 const { allowAlterSchema } = useDatabaseDetailContext();
 
