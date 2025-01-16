@@ -22,7 +22,7 @@ jobs:
           version: 9.15.4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20.14.0"
+          node-version: "22.13.0"
           cache: pnpm
           cache-dependency-path: "frontend/pnpm-lock.yaml"
       - run: pnpm install --frozen-lockfile
@@ -38,12 +38,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4.0.0
+      - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 9.15.4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20.14.0"
+          node-version: "22.13.0"
           cache: pnpm
           cache-dependency-path: "frontend/pnpm-lock.yaml"
       - run: pnpm install --frozen-lockfile
