@@ -1109,7 +1109,7 @@
     "no-read-only-data-source-warn-for-developer": "このインスタンスには読み取り専用接続が設定されていません。設定するように DBA に依頼してください。",
     "sentence": {
       "host": {
-        "snowflake": "たとえば、host.docker.internal {'|'} <<ip>> {'|'} <<ローカルソケット>>"
+        "none-snowflake": "たとえば、host.docker.internal {'|'} host ip {'|'} local socket"
       },
       "proxy": {
         "snowflake": "プロキシ サーバーの場合は、{'@'}PROXY_HOST を追加し、ポートに PROXY_PORT を指定します。"
@@ -1413,6 +1413,7 @@
       "copy-schema": "スキーマテキストを貼り付け",
       "select-source-schema": "ソーススキーマの選択",
       "select-target-databases": "ターゲットデータベースを選択してください",
+      "source-schema": "ソーススキーマ",
       "schema-version": {
         "self": "スキーマのバージョン"
       },
@@ -2480,10 +2481,6 @@
     "attention-description": "Bytebase は、インスタンスからの低速クエリ ログを定期的に同期します。 MySQL インスタンスの場合は、まず、slow_query を有効にする必要があります。 PostgreSQL インスタンスの場合、pg_stat_statements がオンになっているデータベースのみが遅いクエリを収集します。",
     "sync-job-started": "同期ジョブが開始されました。同期が完了するまでお待ちください。",
     "detail": "遅いクエリの詳細",
-    "filter": {
-      "from-date": "開始日",
-      "to-date": "終了日"
-    },
     "advise-index": {
       "current-index": "現在のインデックス",
       "suggestion": "提案",

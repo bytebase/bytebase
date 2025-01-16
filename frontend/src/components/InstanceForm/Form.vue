@@ -153,7 +153,7 @@
               :placeholder="
                 basicInfo.engine === Engine.SNOWFLAKE
                   ? $t('instance.your-snowflake-account-locator')
-                  : $t('instance.sentence.host.snowflake')
+                  : $t('instance.sentence.host.none-snowflake')
               "
               class="mt-1 w-full"
               :disabled="!allowEdit"
