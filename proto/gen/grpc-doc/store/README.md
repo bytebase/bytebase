@@ -43,6 +43,36 @@
   
     - [AuditLog.Severity](#bytebase-store-AuditLog-Severity)
   
+- [store/changelist.proto](#store_changelist-proto)
+    - [Changelist](#bytebase-store-Changelist)
+    - [Changelist.Change](#bytebase-store-Changelist-Change)
+  
+- [store/changelog.proto](#store_changelog-proto)
+    - [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase)
+    - [ChangedResourceFunction](#bytebase-store-ChangedResourceFunction)
+    - [ChangedResourceProcedure](#bytebase-store-ChangedResourceProcedure)
+    - [ChangedResourceSchema](#bytebase-store-ChangedResourceSchema)
+    - [ChangedResourceTable](#bytebase-store-ChangedResourceTable)
+    - [ChangedResourceView](#bytebase-store-ChangedResourceView)
+    - [ChangedResources](#bytebase-store-ChangedResources)
+    - [ChangelogPayload](#bytebase-store-ChangelogPayload)
+  
+    - [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type)
+  
+- [store/data_source.proto](#store_data_source-proto)
+    - [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret)
+    - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption)
+    - [DataSourceOptions](#bytebase-store-DataSourceOptions)
+    - [DataSourceOptions.Address](#bytebase-store-DataSourceOptions-Address)
+    - [KerberosConfig](#bytebase-store-KerberosConfig)
+    - [SASLConfig](#bytebase-store-SASLConfig)
+  
+    - [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType)
+    - [DataSourceExternalSecret.AuthType](#bytebase-store-DataSourceExternalSecret-AuthType)
+    - [DataSourceExternalSecret.SecretType](#bytebase-store-DataSourceExternalSecret-SecretType)
+    - [DataSourceOptions.AuthenticationType](#bytebase-store-DataSourceOptions-AuthenticationType)
+    - [DataSourceOptions.RedisType](#bytebase-store-DataSourceOptions-RedisType)
+  
 - [store/database.proto](#store_database-proto)
     - [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata)
     - [ColumnCatalog](#bytebase-store-ColumnCatalog)
@@ -93,40 +123,6 @@
     - [StreamMetadata.Type](#bytebase-store-StreamMetadata-Type)
     - [TablePartitionMetadata.Type](#bytebase-store-TablePartitionMetadata-Type)
     - [TaskMetadata.State](#bytebase-store-TaskMetadata-State)
-  
-- [store/branch.proto](#store_branch-proto)
-    - [BranchConfig](#bytebase-store-BranchConfig)
-    - [BranchSnapshot](#bytebase-store-BranchSnapshot)
-  
-- [store/changelist.proto](#store_changelist-proto)
-    - [Changelist](#bytebase-store-Changelist)
-    - [Changelist.Change](#bytebase-store-Changelist-Change)
-  
-- [store/changelog.proto](#store_changelog-proto)
-    - [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase)
-    - [ChangedResourceFunction](#bytebase-store-ChangedResourceFunction)
-    - [ChangedResourceProcedure](#bytebase-store-ChangedResourceProcedure)
-    - [ChangedResourceSchema](#bytebase-store-ChangedResourceSchema)
-    - [ChangedResourceTable](#bytebase-store-ChangedResourceTable)
-    - [ChangedResourceView](#bytebase-store-ChangedResourceView)
-    - [ChangedResources](#bytebase-store-ChangedResources)
-    - [ChangelogPayload](#bytebase-store-ChangelogPayload)
-  
-    - [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type)
-  
-- [store/data_source.proto](#store_data_source-proto)
-    - [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret)
-    - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption)
-    - [DataSourceOptions](#bytebase-store-DataSourceOptions)
-    - [DataSourceOptions.Address](#bytebase-store-DataSourceOptions-Address)
-    - [KerberosConfig](#bytebase-store-KerberosConfig)
-    - [SASLConfig](#bytebase-store-SASLConfig)
-  
-    - [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType)
-    - [DataSourceExternalSecret.AuthType](#bytebase-store-DataSourceExternalSecret-AuthType)
-    - [DataSourceExternalSecret.SecretType](#bytebase-store-DataSourceExternalSecret-SecretType)
-    - [DataSourceOptions.AuthenticationType](#bytebase-store-DataSourceOptions-AuthenticationType)
-    - [DataSourceOptions.RedisType](#bytebase-store-DataSourceOptions-RedisType)
   
 - [store/db_group.proto](#store_db_group-proto)
     - [DatabaseGroupPayload](#bytebase-store-DatabaseGroupPayload)
@@ -884,6 +880,437 @@ Metadata about the request.
 | CRITICAL | 6 |  |
 | ALERT | 7 |  |
 | EMERGENCY | 8 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_changelist-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/changelist.proto
+
+
+
+<a name="bytebase-store-Changelist"></a>
+
+### Changelist
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| description | [string](#string) |  |  |
+| changes | [Changelist.Change](#bytebase-store-Changelist-Change) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-Changelist-Change"></a>
+
+### Changelist.Change
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sheet | [string](#string) |  | The name of a sheet. |
+| source | [string](#string) |  | The source of origin. 1) changes: instances/{instance}/databases/{database}/changelogs/{changelog}. 2) raw SQL if empty. |
+| version | [string](#string) |  | The migration version for a change. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_changelog-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/changelog.proto
+
+
+
+<a name="bytebase-store-ChangedResourceDatabase"></a>
+
+### ChangedResourceDatabase
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| schemas | [ChangedResourceSchema](#bytebase-store-ChangedResourceSchema) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ChangedResourceFunction"></a>
+
+### ChangedResourceFunction
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
+
+
+
+
+
+
+<a name="bytebase-store-ChangedResourceProcedure"></a>
+
+### ChangedResourceProcedure
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
+
+
+
+
+
+
+<a name="bytebase-store-ChangedResourceSchema"></a>
+
+### ChangedResourceSchema
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| tables | [ChangedResourceTable](#bytebase-store-ChangedResourceTable) | repeated |  |
+| views | [ChangedResourceView](#bytebase-store-ChangedResourceView) | repeated |  |
+| functions | [ChangedResourceFunction](#bytebase-store-ChangedResourceFunction) | repeated |  |
+| procedures | [ChangedResourceProcedure](#bytebase-store-ChangedResourceProcedure) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ChangedResourceTable"></a>
+
+### ChangedResourceTable
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| table_rows | [int64](#int64) |  | estimated row count of the table |
+| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
+
+
+
+
+
+
+<a name="bytebase-store-ChangedResourceView"></a>
+
+### ChangedResourceView
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
+
+
+
+
+
+
+<a name="bytebase-store-ChangedResources"></a>
+
+### ChangedResources
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| databases | [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ChangelogPayload"></a>
+
+### ChangelogPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| task_run | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun} |
+| issue | [string](#string) |  | Format: projects/{project}/issues/{issue} |
+| revision | [int64](#int64) |  | The revision uid. optional |
+| changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
+| sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
+| version | [string](#string) |  |  |
+| type | [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-ChangelogPayload-Type"></a>
+
+### ChangelogPayload.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| BASELINE | 1 |  |
+| MIGRATE | 2 |  |
+| MIGRATE_SDL | 3 |  |
+| MIGRATE_GHOST | 4 |  |
+| DATA | 6 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_data_source-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/data_source.proto
+
+
+
+<a name="bytebase-store-DataSourceExternalSecret"></a>
+
+### DataSourceExternalSecret
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| secret_type | [DataSourceExternalSecret.SecretType](#bytebase-store-DataSourceExternalSecret-SecretType) |  |  |
+| url | [string](#string) |  |  |
+| auth_type | [DataSourceExternalSecret.AuthType](#bytebase-store-DataSourceExternalSecret-AuthType) |  |  |
+| app_role | [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption) |  |  |
+| token | [string](#string) |  |  |
+| engine_name | [string](#string) |  | engine name is the name for secret engine. |
+| secret_name | [string](#string) |  | the secret name in the engine to store the password. |
+| password_key_name | [string](#string) |  | the key name for the password. |
+
+
+
+
+
+
+<a name="bytebase-store-DataSourceExternalSecret-AppRoleAuthOption"></a>
+
+### DataSourceExternalSecret.AppRoleAuthOption
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role_id | [string](#string) |  |  |
+| secret_id | [string](#string) |  | the secret id for the role without ttl. |
+| type | [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType) |  |  |
+| mount_path | [string](#string) |  | The path where the approle auth method is mounted. |
+
+
+
+
+
+
+<a name="bytebase-store-DataSourceOptions"></a>
+
+### DataSourceOptions
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| srv | [bool](#bool) |  | srv is a boolean flag that indicates whether the host is a DNS SRV record. |
+| authentication_database | [string](#string) |  | authentication_database is the database name to authenticate against, which stores the user credentials. |
+| sid | [string](#string) |  | sid and service_name are used for Oracle. |
+| service_name | [string](#string) |  |  |
+| ssh_host | [string](#string) |  | SSH related The hostname of the SSH server agent. |
+| ssh_port | [string](#string) |  | The port of the SSH server agent. It&#39;s 22 typically. |
+| ssh_user | [string](#string) |  | The user to login the server. |
+| ssh_obfuscated_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
+| ssh_obfuscated_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
+| authentication_private_key_obfuscated | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
+| external_secret | [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret) |  |  |
+| authentication_type | [DataSourceOptions.AuthenticationType](#bytebase-store-DataSourceOptions-AuthenticationType) |  |  |
+| sasl_config | [SASLConfig](#bytebase-store-SASLConfig) |  |  |
+| additional_addresses | [DataSourceOptions.Address](#bytebase-store-DataSourceOptions-Address) | repeated | additional_addresses is used for MongoDB replica set. |
+| replica_set | [string](#string) |  | replica_set is used for MongoDB replica set. |
+| direct_connection | [bool](#bool) |  | direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. |
+| region | [string](#string) |  | region is the location of where the DB is, works for AWS RDS. For example, us-east-1. |
+| warehouse_id | [string](#string) |  | warehouse_id is used by Databricks. |
+| master_name | [string](#string) |  | master_name is the master name used by connecting redis-master via redis sentinel. |
+| master_username | [string](#string) |  | master_username and master_obfuscated_password are master credentials used by redis sentinel mode. |
+| master_obfuscated_password | [string](#string) |  |  |
+| redis_type | [DataSourceOptions.RedisType](#bytebase-store-DataSourceOptions-RedisType) |  |  |
+| use_ssl | [bool](#bool) |  | Use SSL to connect to the data source. By default, we use system default SSL configuration. |
+| cluster | [string](#string) |  | Cluster is the cluster name for the data source. Used by CockroachDB. |
+
+
+
+
+
+
+<a name="bytebase-store-DataSourceOptions-Address"></a>
+
+### DataSourceOptions.Address
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| host | [string](#string) |  |  |
+| port | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-KerberosConfig"></a>
+
+### KerberosConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| primary | [string](#string) |  |  |
+| instance | [string](#string) |  |  |
+| realm | [string](#string) |  |  |
+| keytab | [bytes](#bytes) |  |  |
+| kdc_host | [string](#string) |  |  |
+| kdc_port | [string](#string) |  |  |
+| kdc_transport_protocol | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-SASLConfig"></a>
+
+### SASLConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| krb_config | [KerberosConfig](#bytebase-store-KerberosConfig) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType"></a>
+
+### DataSourceExternalSecret.AppRoleAuthOption.SecretType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SECRET_TYPE_UNSPECIFIED | 0 |  |
+| PLAIN | 1 |  |
+| ENVIRONMENT | 2 |  |
+
+
+
+<a name="bytebase-store-DataSourceExternalSecret-AuthType"></a>
+
+### DataSourceExternalSecret.AuthType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AUTH_TYPE_UNSPECIFIED | 0 |  |
+| TOKEN | 1 | ref: https://developer.hashicorp.com/vault/docs/auth/token |
+| VAULT_APP_ROLE | 2 | ref: https://developer.hashicorp.com/vault/docs/auth/approle |
+
+
+
+<a name="bytebase-store-DataSourceExternalSecret-SecretType"></a>
+
+### DataSourceExternalSecret.SecretType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SAECRET_TYPE_UNSPECIFIED | 0 |  |
+| VAULT_KV_V2 | 1 | ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2 |
+| AWS_SECRETS_MANAGER | 2 | ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html |
+| GCP_SECRET_MANAGER | 3 | ref: https://cloud.google.com/secret-manager/docs |
+
+
+
+<a name="bytebase-store-DataSourceOptions-AuthenticationType"></a>
+
+### DataSourceOptions.AuthenticationType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AUTHENTICATION_UNSPECIFIED | 0 |  |
+| PASSWORD | 1 |  |
+| GOOGLE_CLOUD_SQL_IAM | 2 |  |
+| AWS_RDS_IAM | 3 |  |
+
+
+
+<a name="bytebase-store-DataSourceOptions-RedisType"></a>
+
+### DataSourceOptions.RedisType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| REDIS_TYPE_UNSPECIFIED | 0 |  |
+| STANDALONE | 1 |  |
+| SENTINEL | 2 |  |
+| CLUSTER | 3 |  |
 
 
  
@@ -1818,485 +2245,6 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | STATE_UNSPECIFIED | 0 |  |
 | STATE_STARTED | 1 |  |
 | STATE_SUSPENDED | 2 |  |
-
-
- 
-
- 
-
- 
-
-
-
-<a name="store_branch-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/branch.proto
-
-
-
-<a name="bytebase-store-BranchConfig"></a>
-
-### BranchConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| source_database | [string](#string) |  | The name of source database. Optional. Example: instances/instance-id/databases/database-name. |
-| source_branch | [string](#string) |  | The name of the source branch. Optional. Example: projects/project-id/branches/branch-id. |
-
-
-
-
-
-
-<a name="bytebase-store-BranchSnapshot"></a>
-
-### BranchSnapshot
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| metadata | [DatabaseSchemaMetadata](#bytebase-store-DatabaseSchemaMetadata) |  |  |
-| database_config | [DatabaseConfig](#bytebase-store-DatabaseConfig) |  |  |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
-<a name="store_changelist-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/changelist.proto
-
-
-
-<a name="bytebase-store-Changelist"></a>
-
-### Changelist
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| description | [string](#string) |  |  |
-| changes | [Changelist.Change](#bytebase-store-Changelist-Change) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-Changelist-Change"></a>
-
-### Changelist.Change
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sheet | [string](#string) |  | The name of a sheet. |
-| source | [string](#string) |  | The source of origin. 1) changes: instances/{instance}/databases/{database}/changelogs/{changelog}. 2) raw SQL if empty. |
-| version | [string](#string) |  | The migration version for a change. |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
-<a name="store_changelog-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/changelog.proto
-
-
-
-<a name="bytebase-store-ChangedResourceDatabase"></a>
-
-### ChangedResourceDatabase
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| schemas | [ChangedResourceSchema](#bytebase-store-ChangedResourceSchema) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-ChangedResourceFunction"></a>
-
-### ChangedResourceFunction
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
-
-
-
-
-
-
-<a name="bytebase-store-ChangedResourceProcedure"></a>
-
-### ChangedResourceProcedure
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
-
-
-
-
-
-
-<a name="bytebase-store-ChangedResourceSchema"></a>
-
-### ChangedResourceSchema
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| tables | [ChangedResourceTable](#bytebase-store-ChangedResourceTable) | repeated |  |
-| views | [ChangedResourceView](#bytebase-store-ChangedResourceView) | repeated |  |
-| functions | [ChangedResourceFunction](#bytebase-store-ChangedResourceFunction) | repeated |  |
-| procedures | [ChangedResourceProcedure](#bytebase-store-ChangedResourceProcedure) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-ChangedResourceTable"></a>
-
-### ChangedResourceTable
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| table_rows | [int64](#int64) |  | estimated row count of the table |
-| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
-
-
-
-
-
-
-<a name="bytebase-store-ChangedResourceView"></a>
-
-### ChangedResourceView
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
-
-
-
-
-
-
-<a name="bytebase-store-ChangedResources"></a>
-
-### ChangedResources
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| databases | [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-ChangelogPayload"></a>
-
-### ChangelogPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| task_run | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun} |
-| issue | [string](#string) |  | Format: projects/{project}/issues/{issue} |
-| revision | [int64](#int64) |  | The revision uid. optional |
-| changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
-| sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
-| version | [string](#string) |  |  |
-| type | [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type) |  |  |
-
-
-
-
-
- 
-
-
-<a name="bytebase-store-ChangelogPayload-Type"></a>
-
-### ChangelogPayload.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| BASELINE | 1 |  |
-| MIGRATE | 2 |  |
-| MIGRATE_SDL | 3 |  |
-| MIGRATE_GHOST | 4 |  |
-| DATA | 6 |  |
-
-
- 
-
- 
-
- 
-
-
-
-<a name="store_data_source-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/data_source.proto
-
-
-
-<a name="bytebase-store-DataSourceExternalSecret"></a>
-
-### DataSourceExternalSecret
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| secret_type | [DataSourceExternalSecret.SecretType](#bytebase-store-DataSourceExternalSecret-SecretType) |  |  |
-| url | [string](#string) |  |  |
-| auth_type | [DataSourceExternalSecret.AuthType](#bytebase-store-DataSourceExternalSecret-AuthType) |  |  |
-| app_role | [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption) |  |  |
-| token | [string](#string) |  |  |
-| engine_name | [string](#string) |  | engine name is the name for secret engine. |
-| secret_name | [string](#string) |  | the secret name in the engine to store the password. |
-| password_key_name | [string](#string) |  | the key name for the password. |
-
-
-
-
-
-
-<a name="bytebase-store-DataSourceExternalSecret-AppRoleAuthOption"></a>
-
-### DataSourceExternalSecret.AppRoleAuthOption
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| role_id | [string](#string) |  |  |
-| secret_id | [string](#string) |  | the secret id for the role without ttl. |
-| type | [DataSourceExternalSecret.AppRoleAuthOption.SecretType](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType) |  |  |
-| mount_path | [string](#string) |  | The path where the approle auth method is mounted. |
-
-
-
-
-
-
-<a name="bytebase-store-DataSourceOptions"></a>
-
-### DataSourceOptions
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| srv | [bool](#bool) |  | srv is a boolean flag that indicates whether the host is a DNS SRV record. |
-| authentication_database | [string](#string) |  | authentication_database is the database name to authenticate against, which stores the user credentials. |
-| sid | [string](#string) |  | sid and service_name are used for Oracle. |
-| service_name | [string](#string) |  |  |
-| ssh_host | [string](#string) |  | SSH related The hostname of the SSH server agent. |
-| ssh_port | [string](#string) |  | The port of the SSH server agent. It&#39;s 22 typically. |
-| ssh_user | [string](#string) |  | The user to login the server. |
-| ssh_obfuscated_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
-| ssh_obfuscated_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
-| authentication_private_key_obfuscated | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
-| external_secret | [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret) |  |  |
-| authentication_type | [DataSourceOptions.AuthenticationType](#bytebase-store-DataSourceOptions-AuthenticationType) |  |  |
-| sasl_config | [SASLConfig](#bytebase-store-SASLConfig) |  |  |
-| additional_addresses | [DataSourceOptions.Address](#bytebase-store-DataSourceOptions-Address) | repeated | additional_addresses is used for MongoDB replica set. |
-| replica_set | [string](#string) |  | replica_set is used for MongoDB replica set. |
-| direct_connection | [bool](#bool) |  | direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. |
-| region | [string](#string) |  | region is the location of where the DB is, works for AWS RDS. For example, us-east-1. |
-| warehouse_id | [string](#string) |  | warehouse_id is used by Databricks. |
-| master_name | [string](#string) |  | master_name is the master name used by connecting redis-master via redis sentinel. |
-| master_username | [string](#string) |  | master_username and master_obfuscated_password are master credentials used by redis sentinel mode. |
-| master_obfuscated_password | [string](#string) |  |  |
-| redis_type | [DataSourceOptions.RedisType](#bytebase-store-DataSourceOptions-RedisType) |  |  |
-| use_ssl | [bool](#bool) |  | Use SSL to connect to the data source. By default, we use system default SSL configuration. |
-| cluster | [string](#string) |  | Cluster is the cluster name for the data source. Used by CockroachDB. |
-
-
-
-
-
-
-<a name="bytebase-store-DataSourceOptions-Address"></a>
-
-### DataSourceOptions.Address
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| host | [string](#string) |  |  |
-| port | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-KerberosConfig"></a>
-
-### KerberosConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| primary | [string](#string) |  |  |
-| instance | [string](#string) |  |  |
-| realm | [string](#string) |  |  |
-| keytab | [bytes](#bytes) |  |  |
-| kdc_host | [string](#string) |  |  |
-| kdc_port | [string](#string) |  |  |
-| kdc_transport_protocol | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-SASLConfig"></a>
-
-### SASLConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| krb_config | [KerberosConfig](#bytebase-store-KerberosConfig) |  |  |
-
-
-
-
-
- 
-
-
-<a name="bytebase-store-DataSourceExternalSecret-AppRoleAuthOption-SecretType"></a>
-
-### DataSourceExternalSecret.AppRoleAuthOption.SecretType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| SECRET_TYPE_UNSPECIFIED | 0 |  |
-| PLAIN | 1 |  |
-| ENVIRONMENT | 2 |  |
-
-
-
-<a name="bytebase-store-DataSourceExternalSecret-AuthType"></a>
-
-### DataSourceExternalSecret.AuthType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| AUTH_TYPE_UNSPECIFIED | 0 |  |
-| TOKEN | 1 | ref: https://developer.hashicorp.com/vault/docs/auth/token |
-| VAULT_APP_ROLE | 2 | ref: https://developer.hashicorp.com/vault/docs/auth/approle |
-
-
-
-<a name="bytebase-store-DataSourceExternalSecret-SecretType"></a>
-
-### DataSourceExternalSecret.SecretType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| SAECRET_TYPE_UNSPECIFIED | 0 |  |
-| VAULT_KV_V2 | 1 | ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2 |
-| AWS_SECRETS_MANAGER | 2 | ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html |
-| GCP_SECRET_MANAGER | 3 | ref: https://cloud.google.com/secret-manager/docs |
-
-
-
-<a name="bytebase-store-DataSourceOptions-AuthenticationType"></a>
-
-### DataSourceOptions.AuthenticationType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| AUTHENTICATION_UNSPECIFIED | 0 |  |
-| PASSWORD | 1 |  |
-| GOOGLE_CLOUD_SQL_IAM | 2 |  |
-| AWS_RDS_IAM | 3 |  |
-
-
-
-<a name="bytebase-store-DataSourceOptions-RedisType"></a>
-
-### DataSourceOptions.RedisType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| REDIS_TYPE_UNSPECIFIED | 0 |  |
-| STANDALONE | 1 |  |
-| SENTINEL | 2 |  |
-| CLUSTER | 3 |  |
 
 
  

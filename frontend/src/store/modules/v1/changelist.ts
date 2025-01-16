@@ -10,10 +10,8 @@ import type {
 } from "@/types/proto/v1/changelist_service";
 import {
   ResourceComposer,
-  isBranchChangeSource,
   isChangelogChangeSource,
 } from "@/utils";
-import { useBranchStore } from "../branch";
 import { useChangelogStore } from "./changelog";
 import { useSheetV1Store } from "./sheet";
 
@@ -102,10 +100,6 @@ export const useChangelistStore = defineStore("changelist", () => {
     if (isChangelogChangeSource(change)) {
       composer.collect(source, () =>
         useChangelogStore().getOrFetchChangelogByName(source)
-      );
-    } else if (isBranchChangeSource(change)) {
-      composer.collect(source, () =>
-        useBranchStore().fetchBranchByName(source, true /* useCache */)
       );
     } else {
       // Raw SQL, no need to compose

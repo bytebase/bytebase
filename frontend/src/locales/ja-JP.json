@@ -213,7 +213,6 @@
     "leave-without-saving": "変更を保存していませんか?",
     "configure-now": "今すぐ設定する",
     "connection": "接続する",
-    "permission-denied": "許可が拒否されました",
     "resource": "リソース",
     "resources": "リソース",
     "closed": "閉まっている",
@@ -947,7 +946,6 @@
     },
     "unfinished-resolved-issue-tips": "イシューは「完了」とマークされましたが、一部のタスクは正常に実行されませんでした。",
     "some-tasks-are-not-executed-successfully": "(一部のタスクは正常に実行されませんでした)",
-    "preview": "イシューのプレビュー",
     "missing-sql-statement": "SQL ステートメントが欠落しています。",
     "task-summary-tooltip": "{failed} 個のタスクが失敗しました",
     "data-export": {
@@ -1374,10 +1372,6 @@
     "mixed-values-for-label": "タグの値が異なります",
     "mixed-label-values-warning": "一部のタグには異なる値があり、タグの編集はバッチで適用されます",
     "change-data": "データ変更",
-    "new-branch": "新しいブランチを作成する",
-    "branch-name": "支店名",
-    "select-branch": "ブランチを選択してください",
-    "delete-this-branch": "このブランチを削除します",
     "table-detail": "テーブルの詳細",
     "batch-action-not-support-alter-schema": "一部のデータベースはテーブル構造の変更をサポートしていません",
     "batch-action-permission-denied": "データベース {action} に対する権限がありません",
@@ -2028,7 +2022,6 @@
       "unique": "唯一",
       "dependency-columns": "従属列"
     },
-    "generated-ddl-is-empty": "生成された DDL は空です",
     "table-partition": {
       "partitions": "パーティション",
       "edit-partitions": "パーティションの編集",
@@ -2624,18 +2617,7 @@
     "review-sql": "SQLを確認する"
   },
   "schema-designer": {
-    "baseline-version": "ベースラインバージョン",
-    "new-branch": "新しいブランチを作成する",
-    "parent-branch": "親ブランチ",
-    "raw-sql-preview": "生の SQL プレビュー",
-    "search-tables": "検索テーブル",
-    "use-tips": "デザインするテーブルを選択してください",
-    "apply-to-database": "変更をデータベースに適用する",
-    "select-database-placeholder": "データベースを選択します (MySQL、PostgreSQL、TiDB、Oracle のみ)",
-    "message": {
-      "created-succeed": "ブランチが正常に作成されました",
-      "updated-succeed": "ブランチが正常に更新されました"
-    }
+    "use-tips": "デザインするテーブルを選択してください"
   },
   "cel": {
     "condition": {
@@ -2735,64 +2717,13 @@
     "password-info": "エクスポートされたファイルを暗号化するためのパスワードを入力します"
   },
   "branch": {
-    "rollout": {
-      "select-target-database": "ターゲットデータベースを選択してください"
-    },
     "select-tables-to-rollout": "公開するテーブルを選択してください",
-    "default-branches": "デフォルトのブランチ",
-    "your-branches": "あなたの支店",
-    "active-branches": "アクティブなブランチ",
-    "merge-rebase": {
-      "select-branches-to-merge": "マージするブランチを選択してください",
-      "select-branches-to-rebase": "リベースするブランチを選択してください",
-      "validating-branch": "ブランチの検証中",
-      "able-to-merge": "統合可能",
-      "able-to-rebase": "リベース可能",
-      "cannot-automatically-merge": "自動的に結合できません。まず {rebase_branch} してください。",
-      "cannot-automatically-rebase": "自動的にリベースできません。競合を手動で解決してください。",
-      "go-rebase": "ブランチをリベースする",
-      "changes-of-branch": "{branch} への変更",
-      "merge-succeeded": "マージが成功しました",
-      "rebase-succeeded": "リベースが成功しました",
-      "merge-branch": "ブランチをマージする",
-      "rebase-branch": "ブランチをリベースする",
-      "confirm-rebase": "リベースを確認しますか?",
-      "conflict-not-resolved": "未解決の競合があるようです。",
-      "resolve-conflicts-to-rebase": "リベースの競合を解決する",
-      "preview-rebase-result": "リベース後に {branch} の変更をプレビューする",
-      "before-merge": "合併前",
-      "after-merge": "合併後",
-      "before-rebase": "リベース前",
-      "after-rebase": "リベース後",
-      "post-merge-action": {
-        "rebase": "ブランチのマージと同期",
-        "delete": "ブランチのマージと削除"
-      }
-    },
-    "source": {
-      "baseline-version": "ベースラインバージョン",
-      "parent-branch": "親ブランチ",
-      "self": "ソース"
-    },
     "index": {
       "drop-index-confirm": "インデックスを削除しますか?"
     },
-    "force-delete": "強制削除",
-    "deleting-parent-branch": "親ブランチが削除されようとしています。",
-    "visualized-schema": "ビジュアルスキーマ",
-    "schema-text": "テキストスキーマ",
-    "baseline": "ベースライン",
-    "head": "現在",
-    "show-diff-with-branch-baseline": "ブランチのベースラインとの違いを示します",
     "table-partition": {
       "drop-partition-confirm": "テーブルパーティションを削除しますか?",
       "drop-partition-with-subpartitions-confirm": "すべてのサブパーティションが同時に削除されます。"
-    },
-    "last-update": {
-      "self": "最後の更新"
-    },
-    "source-branch": {
-      "self": "ソースブランチ"
     }
   },
   "worksheet": {

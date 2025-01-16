@@ -94,7 +94,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const {
-  resourceType,
   tabList,
   currentTab,
   setCurrentTab,
@@ -162,9 +161,6 @@ const getTabComputedClassList = (tab: TabContext) => {
 
 const getTabName = (tab: TabContext) => {
   if (tab.type === "database") {
-    if (resourceType.value === "branch") {
-      return "Tables";
-    }
     const { database } = tab;
     return database.databaseName;
   }

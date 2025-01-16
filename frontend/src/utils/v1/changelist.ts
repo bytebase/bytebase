@@ -12,17 +12,12 @@ export const extractChangelistResourceName = (name: string) => {
 export const isChangelogChangeSource = (change: Change) => {
   return change.source.match(/(^|\/)changelogs\//);
 };
-export const isBranchChangeSource = (change: Change) => {
-  return change.source.match(/(^|\/)branches\//);
-};
 
 export const getChangelistChangeSourceType = (
   change: Change
 ): Changelist_Change_Source => {
   if (isChangelogChangeSource(change)) {
     return "CHANGELOG";
-  } else if (isBranchChangeSource(change)) {
-    return "BRANCH";
   } else {
     return "RAW_SQL";
   }
