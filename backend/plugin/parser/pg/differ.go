@@ -2035,8 +2035,10 @@ func (diff *diffNode) deparse() (string, error) {
 	var buf bytes.Buffer
 
 	// Print header.
-	if _, err := buf.WriteString("SET check_function_bodies = false;\n\n"); err != nil {
-		return "", err
+	if len(diff.createFunctionList) > 0 {
+		if _, err := buf.WriteString("SET check_function_bodies = false;\n\n"); err != nil {
+			return "", err
+		}
 	}
 
 	// drop
