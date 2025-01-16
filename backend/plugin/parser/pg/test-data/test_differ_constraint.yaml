@@ -4,8 +4,6 @@
     CREATE TABLE public.order_details(id INT, order_id INT);
     ALTER TABLE public.order_details ADD CONSTRAINT order_details_un_order_id UNIQUE (order_id);
   diff: |+
-    SET check_function_bodies = false;
-
     ALTER TABLE "public"."order_details"
         ADD CONSTRAINT "order_details_un_order_id" UNIQUE ("order_id");
 
@@ -15,8 +13,6 @@
   newSchema: |
     CREATE TABLE public.order_details(id INT, order_id INT);
   diff: |+
-    SET check_function_bodies = false;
-
     ALTER TABLE "public"."order_details"
         DROP CONSTRAINT "order_details_un_order_id";
 
@@ -27,8 +23,6 @@
     CREATE TABLE public.order_details(id INT, order_id INT);
     ALTER TABLE public.order_details ADD CONSTRAINT order_details_un_order_id UNIQUE (order_id);
   diff: |+
-    SET check_function_bodies = false;
-
     ALTER TABLE "public"."order_details"
         DROP CONSTRAINT "order_details_un_order_id";
 
@@ -42,8 +36,6 @@
     CREATE TABLE public.order_details(id INT, order_id INT);
     ALTER TABLE public.order_details ADD CONSTRAINT order_details_un_order_id UNIQUE (id, order_id);
   diff: |+
-    SET check_function_bodies = false;
-
     ALTER TABLE "public"."order_details"
         DROP CONSTRAINT "order_details_un_order_id";
 
@@ -57,8 +49,6 @@
     CREATE TABLE public.order_details(id INT, order_id INT);
     ALTER TABLE public.order_details ADD CONSTRAINT order_details_un_order_id UNIQUE (id, order_id);
   diff: |+
-    SET check_function_bodies = false;
-
     ALTER TABLE "public"."order_details"
         DROP CONSTRAINT "order_details_un_order_id";
 
@@ -74,8 +64,6 @@
     CREATE TABLE public.order_details(id INT, order_id INT);
     ALTER TABLE public.order_details ADD CONSTRAINT order_details_pk PRIMARY KEY (order_id);
   diff: |+
-    SET check_function_bodies = false;
-
     ALTER TABLE "public"."order_details"
         ADD CONSTRAINT "order_details_pk" PRIMARY KEY ("order_id");
 
@@ -85,8 +73,6 @@
   newSchema: |
     CREATE TABLE public.order_details(id INT, order_id INT);
   diff: |+
-    SET check_function_bodies = false;
-
     ALTER TABLE "public"."order_details"
         DROP CONSTRAINT "order_details_pk";
 
@@ -97,8 +83,6 @@
     CREATE TABLE public.order_details(id INT, order_id INT);
     ALTER TABLE public.order_details ADD CONSTRAINT order_details_pk PRIMARY KEY (order_id);
   diff: |+
-    SET check_function_bodies = false;
-
     ALTER TABLE "public"."order_details"
         DROP CONSTRAINT "order_details_pk";
 
@@ -112,8 +96,6 @@
     CREATE TABLE public.order_details(id INT, order_id INT);
     ALTER TABLE public.order_details ADD CONSTRAINT order_details_pk PRIMARY KEY (id, order_id);
   diff: |+
-    SET check_function_bodies = false;
-
     ALTER TABLE "public"."order_details"
         DROP CONSTRAINT "order_details_pk";
 
@@ -127,8 +109,6 @@
     CREATE TABLE public.order_details(id INT, order_id INT);
     ALTER TABLE public.order_details ADD CONSTRAINT order_details_pk PRIMARY KEY (id, order_id);
   diff: |+
-    SET check_function_bodies = false;
-
     ALTER TABLE "public"."order_details"
         DROP CONSTRAINT "order_details_pk";
 
@@ -144,8 +124,6 @@
   newSchema: |
     CREATE TABLE public.circles(a circle, b circle, c integer);
   diff: |+
-    SET check_function_bodies = false;
-
     ALTER TABLE "public"."circles"
         DROP CONSTRAINT "circles_a_b_excl";
 
@@ -155,8 +133,6 @@
     CREATE TABLE public.circles(a circle, b circle, c integer);
     ALTER TABLE public.circles ADD CONSTRAINT circles_a_b_excl EXCLUDE USING gist (a WITH &&, b WITH &&) WHERE (c > 0);
   diff: |+
-    SET check_function_bodies = false;
-
     ALTER TABLE "public"."circles"
         ADD CONSTRAINT "circles_a_b_excl" EXCLUDE USING gist (a WITH &&, b WITH &&) WHERE (c > 0);
 
@@ -167,8 +143,6 @@
     CREATE TABLE public.circles(a circle, b circle, c integer);
     ALTER TABLE public.circles ADD CONSTRAINT circles_a_b_excl EXCLUDE USING gist (a WITH &&, b WITH &&) WHERE (c > 0);
   diff: |+
-    SET check_function_bodies = false;
-
     ALTER TABLE "public"."circles"
         DROP CONSTRAINT "circles_a_b_excl";
 
@@ -190,8 +164,6 @@
     alter table public.t2 add constraint fk_2 foreign key (a, b, c) references public.t2(a, b, c);
     alter table public.t2 add constraint fk_3 foreign key (a, b, c) references public.t2(a, b, c);
   diff: |+
-    SET check_function_bodies = false;
-
     ALTER TABLE "public"."t2"
         DROP CONSTRAINT "fk_3";
 
