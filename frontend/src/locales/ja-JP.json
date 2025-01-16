@@ -1372,7 +1372,6 @@
     "mixed-values-for-label": "タグの値が異なります",
     "mixed-label-values-warning": "一部のタグには異なる値があり、タグの編集はバッチで適用されます",
     "change-data": "データ変更",
-    "new-branch": "新しいブランチを作成する",
     "table-detail": "テーブルの詳細",
     "batch-action-not-support-alter-schema": "一部のデータベースはテーブル構造の変更をサポートしていません",
     "batch-action-permission-denied": "データベース {action} に対する権限がありません",
@@ -2618,10 +2617,7 @@
     "review-sql": "SQLを確認する"
   },
   "schema-designer": {
-    "search-tables": "検索テーブル",
-    "use-tips": "デザインするテーブルを選択してください",
-    "message": {
-    }
+    "use-tips": "デザインするテーブルを選択してください"
   },
   "cel": {
     "condition": {
@@ -2721,32 +2717,13 @@
     "password-info": "エクスポートされたファイルを暗号化するためのパスワードを入力します"
   },
   "branch": {
-    "rollout": {
-    },
     "select-tables-to-rollout": "公開するテーブルを選択してください",
-    "default-branches": "デフォルトのブランチ",
-    "your-branches": "あなたの支店",
-    "active-branches": "アクティブなブランチ",
-    "merge-rebase": {
-      "merge-branch": "ブランチをマージする",
-      "rebase-branch": "ブランチをリベースする",
-      "post-merge-action": {
-      }
-    },
-    "source": {
-    },
     "index": {
       "drop-index-confirm": "インデックスを削除しますか?"
     },
     "table-partition": {
       "drop-partition-confirm": "テーブルパーティションを削除しますか?",
       "drop-partition-with-subpartitions-confirm": "すべてのサブパーティションが同時に削除されます。"
-    },
-    "last-update": {
-      "self": "最後の更新"
-    },
-    "source-branch": {
-      "self": "ソースブランチ"
     }
   },
   "worksheet": {

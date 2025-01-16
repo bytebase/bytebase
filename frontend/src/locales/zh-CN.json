@@ -1372,7 +1372,6 @@
     "mixed-values-for-label": "该标签拥有不同的值",
     "mixed-label-values-warning": "某些标签拥有不同的值，编辑标签将会批量应用",
     "change-data": "变更数据",
-    "new-branch": "新建分支",
     "table-detail": "表详情",
     "batch-action-not-support-alter-schema": "一些数据库不支持修改表结构",
     "batch-action-permission-denied": "没有权限对数据库{action}",
@@ -2618,10 +2617,7 @@
     "review-sql": "审核 SQL"
   },
   "schema-designer": {
-    "search-tables": "搜索表",
-    "use-tips": "选择需要设计的表",
-    "message": {
-    }
+    "use-tips": "选择需要设计的表"
   },
   "cel": {
     "condition": {
@@ -2721,32 +2717,13 @@
     "password-info": "提供密码来对导出的文件进行加密"
   },
   "branch": {
-    "rollout": {
-    },
     "select-tables-to-rollout": "选择要发布的表",
-    "default-branches": "默认分支",
-    "your-branches": "你的分支",
-    "active-branches": "活跃的分支",
-    "merge-rebase": {
-      "merge-branch": "合并分支",
-      "rebase-branch": "Rebase 分支",
-      "post-merge-action": {
-      }
-    },
-    "source": {
-    },
     "index": {
       "drop-index-confirm": "删除索引？"
     },
     "table-partition": {
       "drop-partition-confirm": "删除表分区？",
       "drop-partition-with-subpartitions-confirm": "将会同时删除其所有子分区。"
-    },
-    "last-update": {
-      "self": "最后更新"
-    },
-    "source-branch": {
-      "self": "源分支"
     }
   },
   "worksheet": {

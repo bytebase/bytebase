@@ -1372,7 +1372,6 @@
     "mixed-values-for-label": "This selected label have mixed values",
     "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key",
     "change-data": "Change Data",
-    "new-branch": "New branch",
     "table-detail": "Table detail",
     "batch-action-not-support-alter-schema": "Some databases don't support altering schema",
     "batch-action-permission-denied": "Don't have permission to {action} for databases",
@@ -2618,10 +2617,7 @@
     "review-sql": "Review SQL"
   },
   "schema-designer": {
-    "search-tables": "Search tables",
-    "use-tips": "Click a table to start.",
-    "message": {
-    }
+    "use-tips": "Click a table to start."
   },
   "cel": {
     "condition": {
@@ -2721,32 +2717,13 @@
     "password-info": "Provide a password to encrypt the export file."
   },
   "branch": {
-    "rollout": {
-    },
     "select-tables-to-rollout": "Select tables to rollout",
-    "default-branches": "Default",
-    "your-branches": "Your branches",
-    "active-branches": "Active branches",
-    "merge-rebase": {
-      "merge-branch": "Merge branch",
-      "rebase-branch": "Rebase branch",
-      "post-merge-action": {
-      }
-    },
-    "source": {
-    },
     "index": {
       "drop-index-confirm": "Drop index?"
     },
     "table-partition": {
       "drop-partition-confirm": "Drop table partition?",
       "drop-partition-with-subpartitions-confirm": "Will also drop all its subpartitions."
-    },
-    "last-update": {
-      "self": "Last update"
-    },
-    "source-branch": {
-      "self": "Source branch"
     }
   },
   "worksheet": {

@@ -1372,7 +1372,6 @@
     "mixed-values-for-label": "Esta etiqueta seleccionada tiene valores mixtos.",
     "mixed-label-values-warning": "Algunos de los recursos seleccionados tienen valores mixtos para la misma clave",
     "change-data": "Cambiar datos",
-    "new-branch": "Nueva rama",
     "table-detail": "Detalle de la tabla",
     "batch-action-not-support-alter-schema": "Algunas bases de datos no admiten la modificación del esquema",
     "batch-action-permission-denied": "No tengo permiso para {action} para bases de datos",
@@ -2618,10 +2617,7 @@
     "review-sql": "Revisar SQL"
   },
   "schema-designer": {
-    "search-tables": "Buscar tablas",
-    "use-tips": "Selecciona las tablas a diseñar",
-    "message": {
-    }
+    "use-tips": "Selecciona las tablas a diseñar"
   },
   "cel": {
     "condition": {
@@ -2721,32 +2717,13 @@
     "password-info": "Proporcione una contraseña para cifrar el archivo de exportación."
   },
   "branch": {
-    "rollout": {
-    },
     "select-tables-to-rollout": "Seleccionar tablas para implementar",
-    "default-branches": "Ramas por defecto",
-    "your-branches": "Tus ramas",
-    "active-branches": "Ramas activas",
-    "merge-rebase": {
-      "merge-branch": "Fusionar rama",
-      "rebase-branch": "rama de rebase",
-      "post-merge-action": {
-      }
-    },
-    "source": {
-    },
     "index": {
       "drop-index-confirm": "¿Índice de caída?"
     },
     "table-partition": {
       "drop-partition-confirm": "¿Eliminar partición de mesa?",
       "drop-partition-with-subpartitions-confirm": "También eliminará todas sus subparticiones."
-    },
-    "last-update": {
-      "self": "Última actualización"
-    },
-    "source-branch": {
-      "self": "Rama fuente"
     }
   },
   "worksheet": {
