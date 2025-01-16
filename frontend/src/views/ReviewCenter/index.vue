@@ -24,20 +24,20 @@
     </div>
 
     <div class="relative w-full mt-4 min-h-[20rem]">
-      <PagedPlanTable
+      <PagedTable
+        ref="planPagedTable"
         :session-key="'review-center'"
-        :plan-find="mergedPlanFind"
         :page-size="50"
-        :compose-issue-config="{ withPlan: true }"
+        :fetch-list="fetchPlanList"
       >
-        <template #table="{ planList, loading }">
+        <template #table="{ list, loading }">
           <PlanDataTable
             :loading="loading"
-            :plan-list="planList"
+            :plan-list="list"
             :show-project="!specificProject"
           />
         </template>
-      </PagedPlanTable>
+      </PagedTable>
     </div>
   </div>
 
@@ -57,17 +57,24 @@
 
 <script lang="ts" setup>
 import { NButton, NDropdown, type DropdownOption } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed, reactive, watch, ref } from "vue";
+import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import AlterSchemaPrepForm from "@/components/AlterSchemaPrepForm/";
-import PagedPlanTable from "@/components/Plan/components/PagedPlanTable.vue";
 import PlanDataTable from "@/components/Plan/components/PlanDataTable";
 import { Drawer } from "@/components/v2";
-import { useCurrentUserV1, useProjectV1Store } from "@/store";
+import PagedTable from "@/components/v2/Model/PagedTable.vue";
+import {
+  useCurrentUserV1,
+  useProjectV1Store,
+  useRefreshPlanList,
+} from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
+import { usePlanStore } from "@/store/modules/v1/plan";
 import { buildPlanFindBySearchParams } from "@/store/modules/v1/plan";
+import type { ComposedPlan } from "@/types/v1/issue/plan";
 import {
   extractProjectResourceName,
   hasPermissionToCreatePlanInProject,
@@ -116,6 +123,8 @@ const projectV1Store = useProjectV1Store();
 const state = reactive<LocalState>({
   params: defaultSearchParams(),
 });
+const planStore = usePlanStore();
+const planPagedTable = ref<ComponentExposed<typeof PagedTable<ComposedPlan>>>();
 
 const planCreationButtonOptions = computed((): DropdownOption[] => {
   return [
@@ -167,6 +176,30 @@ const mergedPlanFind = computed(() => {
     hasPipeline: false,
   });
 });
+
+const fetchPlanList = async ({
+  pageToken,
+  pageSize,
+}: {
+  pageToken: string;
+  pageSize: number;
+}) => {
+  const { nextPageToken, plans } = await planStore.searchPlans({
+    find: mergedPlanFind.value,
+    pageSize,
+    pageToken,
+  });
+  return {
+    nextPageToken,
+    list: plans,
+  };
+};
+
+watch(
+  () => JSON.stringify(mergedPlanFind.value),
+  () => planPagedTable.value?.refresh()
+);
+useRefreshPlanList(() => planPagedTable.value?.refresh());
 
 const allowToCreatePlan = computed(() => {
   // Check if user has permission to create plan in specific project.
