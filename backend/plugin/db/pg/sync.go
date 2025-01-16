@@ -269,11 +269,12 @@ func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata,
 	for rows.Next() {
 		var fkMetadata storepb.ForeignKeyMetadata
 		var fkSchema, fkTable, fkDefinition string
+		var fkRefSchema sql.NullString
 		if err := rows.Scan(
 			&fkSchema,
 			&fkTable,
 			&fkMetadata.Name,
-			&fkMetadata.ReferencedSchema,
+			&fkRefSchema,
 			&fkMetadata.ReferencedTable,
 			&fkMetadata.OnDelete,
 			&fkMetadata.OnUpdate,
@@ -282,6 +283,11 @@ func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata,
 		); err != nil {
 			return nil, err
 		}
+
+		if !fkRefSchema.Valid {
+			continue
+		}
+		fkMetadata.ReferencedSchema = fkRefSchema.String
 
 		fkTable = formatTableNameFromRegclass(fkTable)
 		fkMetadata.ReferencedTable = formatTableNameFromRegclass(fkMetadata.ReferencedTable)
