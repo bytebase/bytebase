@@ -39,23 +39,6 @@ func GetDesignSchema(engine storepb.Engine, to *storepb.DatabaseSchemaMetadata) 
 	return f(to)
 }
 
-func RegisterParseToMetadatas(engine storepb.Engine, f parseToMetadata) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := parseToMetadatas[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	parseToMetadatas[engine] = f
-}
-
-func ParseToMetadata(engine storepb.Engine, defaultSchemaName, schema string) (*storepb.DatabaseSchemaMetadata, error) {
-	f, ok := parseToMetadatas[engine]
-	if !ok {
-		return nil, errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(defaultSchemaName, schema)
-}
-
 func RegisterCheckColumnType(engine storepb.Engine, f checkColumnType) {
 	mux.Lock()
 	defer mux.Unlock()
