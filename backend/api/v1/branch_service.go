@@ -221,8 +221,7 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 			return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
 		}
 		filteredBaseSchemaMetadata := filterDatabaseMetadataByEngine(databaseSchema.GetMetadata(), instance.Engine)
-		defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(instance.Engine), filteredBaseSchemaMetadata)
-		baseSchema, err := schema.GetDesignSchema(instance.Engine, defaultSchema, filteredBaseSchemaMetadata)
+		baseSchema, err := schema.GetDesignSchema(instance.Engine, filteredBaseSchemaMetadata)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create branch: %v", err)
 		}
@@ -348,8 +347,7 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 		reconcileMetadata(metadata, branch.Engine)
 		filteredMetadata := filterDatabaseMetadataByEngine(metadata, branch.Engine)
 		config = updateConfigBranchUpdateInfoForUpdate(branch.Head.Metadata, filteredMetadata, config, common.FormatUserUID(user.ID), common.FormatBranchResourceID(projectID, branchID))
-		defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(branch.Engine), filteredMetadata)
-		schema, err := schema.GetDesignSchema(branch.Engine, defaultSchema, filteredMetadata)
+		schema, err := schema.GetDesignSchema(branch.Engine, filteredMetadata)
 		if err != nil {
 			return nil, err
 		}
@@ -375,21 +373,6 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 		return nil, err
 	}
 	return v1Branch, nil
-}
-
-// We assume that the database name is the same as the schema name,
-// and that an Oracle database with only one schema is managed based on the schema.
-func extractDefaultSchemaForOracleBranch(engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) string {
-	if engine != storepb.Engine_ORACLE {
-		return ""
-	}
-	defaultSchema := metadata.Name
-	for _, schema := range metadata.Schemas {
-		if schema.Name != defaultSchema {
-			return ""
-		}
-	}
-	return defaultSchema
 }
 
 // MergeBranch merges a personal draft branch to the target branch.
@@ -483,8 +466,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	if mergedMetadata == nil {
 		return nil, status.Errorf(codes.Internal, "merged metadata should not be nil if there is no error while merging (%+v, %+v, %+v)", headBranch.Base.Metadata, headBranch.Head.Metadata, baseBranch.Head.Metadata)
 	}
-	defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(baseBranch.Engine), mergedMetadata)
-	mergedSchema, err := schema.GetDesignSchema(storepb.Engine(baseBranch.Engine), defaultSchema, mergedMetadata)
+	mergedSchema, err := schema.GetDesignSchema(storepb.Engine(baseBranch.Engine), mergedMetadata)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
 	}
@@ -644,8 +626,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 
 	reconcileMetadata(newHeadMetadata, baseBranch.Engine)
 	filteredNewHeadMetadata := filterDatabaseMetadataByEngine(newHeadMetadata, baseBranch.Engine)
-	defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(baseBranch.Engine), newHeadMetadata)
-	newHeadSchema, err := schema.GetDesignSchema(storepb.Engine(baseBranch.Engine), defaultSchema, filteredNewHeadMetadata)
+	newHeadSchema, err := schema.GetDesignSchema(storepb.Engine(baseBranch.Engine), filteredNewHeadMetadata)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert new head metadata to schema string, %v", err)
 	}
@@ -726,8 +707,7 @@ func (s *BranchService) getFilteredNewBaseFromRebaseRequest(ctx context.Context,
 		}
 		databaseMetadata := databaseSchema.GetMetadata()
 		filteredNewBaseMetadata := filterDatabaseMetadataByEngine(databaseMetadata, instance.Engine)
-		defaultStoreSourceSchema := extractDefaultSchemaForOracleBranch(instance.Engine, filteredNewBaseMetadata)
-		sourceSchema, err := schema.GetDesignSchema(instance.Engine, defaultStoreSourceSchema, filteredNewBaseMetadata)
+		sourceSchema, err := schema.GetDesignSchema(instance.Engine, filteredNewBaseMetadata)
 		if err != nil {
 			return nil, "", nil, status.Error(codes.Internal, err.Error())
 		}
@@ -864,13 +844,11 @@ func (*BranchService) DiffMetadata(ctx context.Context, request *v1pb.DiffMetada
 		return nil, status.Errorf(codes.InvalidArgument, "invalid target metadata: %v", err)
 	}
 
-	defaultStoreSourceSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(request.Engine), storeSourceMetadata)
-	sourceSchema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), defaultStoreSourceSchema, storeSourceMetadata)
+	sourceSchema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), storeSourceMetadata)
 	if err != nil {
 		return nil, err
 	}
-	defaultStoreTargetSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(request.Engine), storeTargetMetadata)
-	targetSchema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), defaultStoreTargetSchema, storeTargetMetadata)
+	targetSchema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), storeTargetMetadata)
 	if err != nil {
 		return nil, err
 	}

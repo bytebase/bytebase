@@ -18,7 +18,7 @@ func init() {
 	schema.RegisterGetDesignSchema(storepb.Engine_ORACLE, GetDesignSchema)
 }
 
-func GetDesignSchema(defaultSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
+func GetDesignSchema(to *storepb.DatabaseSchemaMetadata) (string, error) {
 	baselineSchema := ""
 	toState := convertToDatabaseState(to)
 	tree, tokens, err := plsql.ParsePLSQL(baselineSchema)
@@ -27,8 +27,7 @@ func GetDesignSchema(defaultSchema string, to *storepb.DatabaseSchemaMetadata) (
 	}
 
 	generator := &designSchemaGenerator{
-		to:            toState,
-		defaultSchema: defaultSchema,
+		to: toState,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(generator, tree)
 	if generator.err != nil {

@@ -17,7 +17,7 @@ var (
 	stringifyTables  = make(map[storepb.Engine]stringifyTable)
 )
 
-type getDesignSchema func(string, *storepb.DatabaseSchemaMetadata) (string, error)
+type getDesignSchema func(*storepb.DatabaseSchemaMetadata) (string, error)
 type parseToMetadata func(string, string) (*storepb.DatabaseSchemaMetadata, error)
 type checkColumnType func(string) bool
 type stringifyTable func(*storepb.TableMetadata) (string, error)
@@ -31,12 +31,12 @@ func RegisterGetDesignSchema(engine storepb.Engine, f getDesignSchema) {
 	getDesignSchemas[engine] = f
 }
 
-func GetDesignSchema(engine storepb.Engine, defaultSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
+func GetDesignSchema(engine storepb.Engine, to *storepb.DatabaseSchemaMetadata) (string, error) {
 	f, ok := getDesignSchemas[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
 	}
-	return f(defaultSchema, to)
+	return f(to)
 }
 
 func RegisterParseToMetadatas(engine storepb.Engine, f parseToMetadata) {
