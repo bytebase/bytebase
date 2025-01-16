@@ -630,7 +630,7 @@
       "grant-access": "Grant Access",
       "never-expires": "Never expires",
       "global-rules": {
-        "description": "Use global rule to apply masking in batch, e.g. all columns named as \"email\" will be masked with the specific semantic type and appy the masking algorithm.",
+        "description": "Use global rule to apply masking in batch, e.g. all columns named as \"email\" will be masked with the specific semantic type and apply the masking algorithm.",
         "condition-order": "Condition order",
         "re-order": "Re-order",
         "delete-rule-tip": "Delete this rule?"
