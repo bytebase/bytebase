@@ -272,14 +272,14 @@ Below diagram describes a typical mapping between an engineering org and the cor
    CREATE DATABASE bbdev;
    ```
 
-2. Start backend.
+1. Start backend.
 
    ```bash
    PG_URL=postgresql://bbdev@localhost/bbdev
    go build -ldflags "-w -s" -p=16 -o ./.air/bytebase ./backend/bin/server/main.go && ./.air/bytebase --port 8080 --data . --debug --disable-sample
    ```
 
-3. Start frontend (with live reload).
+1. Start frontend (with live reload).
 
    ```bash
    cd frontend && pnpm i && pnpm dev
