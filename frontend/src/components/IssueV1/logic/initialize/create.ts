@@ -5,7 +5,6 @@ import { useRoute } from "vue-router";
 import { rolloutServiceClient } from "@/grpcweb";
 import type { TemplateType } from "@/plugins";
 import {
-  useBranchStore,
   useChangelistStore,
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -28,7 +27,6 @@ import {
   TaskTypeListWithStatement,
 } from "@/types";
 import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
-import { DatabaseConfig } from "@/types/proto/v1/database_service";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import {
   Plan,
@@ -40,7 +38,6 @@ import {
 } from "@/types/proto/v1/plan_service";
 import type { Stage } from "@/types/proto/v1/rollout_service";
 import { Rollout, Task_Type } from "@/types/proto/v1/rollout_service";
-import { SheetPayload } from "@/types/proto/v1/sheet_service";
 import {
   extractProjectResourceName,
   extractSheetUID,
@@ -85,9 +82,6 @@ export const createIssueSkeleton = async (
 
   const issue = await buildIssue(params);
 
-  // Prepare params context for building plan.
-  await prepareParamsContext(params);
-
   const plan = await buildPlan(params);
   issue.plan = plan.name;
   issue.planEntity = plan;
@@ -102,12 +96,6 @@ export const createIssueSkeleton = async (
   }
 
   return issue;
-};
-
-const prepareParamsContext = async (params: CreateIssueParams) => {
-  if (params.branch) {
-    await useBranchStore().fetchBranchByName(params.branch);
-  }
 };
 
 const buildIssue = async (params: CreateIssueParams) => {
@@ -212,7 +200,6 @@ export const buildSteps = async (
       const spec = await buildSpecForTarget(db.name, params, sheetUID);
       step.specs.push(spec);
       maybeSetInitialSQLForSpec(spec, db.name, params);
-      maybeSetInitialDatabaseConfigForSpec(spec, params);
     }
     steps.push(step);
   }
@@ -436,39 +423,6 @@ const maybeSetInitialSQLForSpec = (
   if (sql) {
     const sheetEntity = getLocalSheetByName(sheet);
     setSheetStatement(sheetEntity, sql);
-  }
-};
-
-const maybeSetInitialDatabaseConfigForSpec = async (
-  spec: Plan_Spec,
-  params: CreateIssueParams
-) => {
-  const branch = params.branch;
-  if (!branch) {
-    return;
-  }
-
-  const sheetName = sheetNameForSpec(spec);
-  if (!sheetName) return;
-  const uid = extractSheetUID(sheetName);
-  if (!uid.startsWith("-")) {
-    // If the sheet is a remote sheet, ignore initial Database configs.
-    return;
-  }
-
-  // TODO(d): double check setting database config.
-  const temp = await useBranchStore().fetchBranchByName(branch);
-  if (temp) {
-    const sheetEntity = getLocalSheetByName(sheetName);
-    if (!sheetEntity.payload) {
-      sheetEntity.payload = SheetPayload.fromPartial({});
-    }
-    sheetEntity.payload.databaseConfig = DatabaseConfig.fromPartial({
-      schemaConfigs: temp.schemaMetadata?.schemaConfigs,
-    });
-    sheetEntity.payload.baselineDatabaseConfig = DatabaseConfig.fromPartial({
-      schemaConfigs: temp.baselineSchemaMetadata?.schemaConfigs,
-    });
   }
 };
 

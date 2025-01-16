@@ -1,5 +1,4 @@
 import type { ComposedDatabase } from "..";
-import type { Branch } from "../../proto/v1/branch_service";
 import type { Schema } from "./atomType";
 
 export enum SchemaEditorTabType {
@@ -32,12 +31,6 @@ export type TabContext = {
 
 export interface DatabaseSchema {
   database: ComposedDatabase;
-  schemaList: Schema[];
-  originSchemaList: Schema[];
-}
-
-export interface BranchSchema {
-  branch: Branch;
   schemaList: Schema[];
   originSchemaList: Schema[];
 }

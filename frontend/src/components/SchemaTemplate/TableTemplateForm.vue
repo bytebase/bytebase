@@ -259,10 +259,8 @@ const targets = computed(() => {
 const context = provideSchemaEditorContext({
   targets,
   project: ref(unknownProject()),
-  resourceType: ref("branch"),
   readonly: toRef(props, "readonly"),
   selectedRolloutObjects: ref(undefined),
-  showLastUpdater: ref(false),
   disableDiffColoring: ref(true),
   hidePreview: ref(false),
 });

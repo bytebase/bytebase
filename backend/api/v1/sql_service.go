@@ -1557,6 +1557,28 @@ func (*SQLService) StringifyMetadata(ctx context.Context, request *v1pb.Stringif
 	}, nil
 }
 
+func sanitizeCommentForSchemaMetadata(dbSchema *storepb.DatabaseSchemaMetadata, dbModelConfig *model.DatabaseConfig, classificationFromConfig bool) {
+	for _, schema := range dbSchema.Schemas {
+		schemaConfig := dbModelConfig.CreateOrGetSchemaConfig(schema.Name)
+		for _, table := range schema.Tables {
+			tableConfig := schemaConfig.CreateOrGetTableConfig(table.Name)
+			classificationID := ""
+			if !classificationFromConfig {
+				classificationID = tableConfig.Classification
+			}
+			table.Comment = common.GetCommentFromClassificationAndUserComment(classificationID, table.UserComment)
+			for _, col := range table.Columns {
+				columnConfig := tableConfig.CreateOrGetColumnConfig(col.Name)
+				classificationID := ""
+				if !classificationFromConfig {
+					classificationID = columnConfig.Classification
+				}
+				col.Comment = common.GetCommentFromClassificationAndUserComment(classificationID, col.UserComment)
+			}
+		}
+	}
+}
+
 func appendComments(schema string, storeSchemaMetadata *storepb.DatabaseSchemaMetadata) (string, error) {
 	if !isSingleTable(storeSchemaMetadata) {
 		return schema, nil
