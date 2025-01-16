@@ -1413,6 +1413,7 @@
       "copy-schema": "スキーマテキストを貼り付け",
       "select-source-schema": "ソーススキーマの選択",
       "select-target-databases": "ターゲットデータベースを選択してください",
+      "source-schema": "ソーススキーマ",
       "schema-version": {
         "self": "スキーマのバージョン"
       },

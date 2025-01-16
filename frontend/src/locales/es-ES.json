@@ -1413,6 +1413,7 @@
       "copy-schema": "Copiar esquema",
       "select-source-schema": "Seleccione el esquema de origen",
       "select-target-databases": "Seleccione las bases de datos de destino",
+      "source-schema": "Esquema de origen",
       "schema-version": {
         "self": "Versión de esquema"
       },

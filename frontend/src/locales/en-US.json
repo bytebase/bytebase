@@ -1413,6 +1413,7 @@
       "copy-schema": "Copy schema",
       "select-source-schema": "Select source schema",
       "select-target-databases": "Select target databases",
+      "source-schema": "Source schema",
       "schema-version": {
         "self": "Schema version"
       },

@@ -1413,6 +1413,7 @@
       "copy-schema": "粘贴 Schema 文本",
       "select-source-schema": "选择源 Schema",
       "select-target-databases": "选择目标数据库",
+      "source-schema": "源 Schema",
       "schema-version": {
         "self": "Schema 版本"
       },
