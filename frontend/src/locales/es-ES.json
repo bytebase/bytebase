@@ -2481,8 +2481,6 @@
     "attention-description": "Bytebase sincroniza periódicamente los registros de consultas lentas de las instancias. Para una instancia de MySQL, slow_query debe estar habilitado primero. Para una instancia de PostgreSQL, solo se recopilarán las consultas lentas si se habilita pg_stat_statements en la base de datos.",
     "sync-job-started": "Se iniciaron trabajos de sincronización. Espere a que los trabajos se completen.",
     "detail": "Detalles de la consulta lenta",
-    "filter": {
-    },
     "advise-index": {
       "current-index": "Índice actual",
       "suggestion": "Sugerencia",
