@@ -213,7 +213,6 @@
     "leave-without-saving": "不保存变动？",
     "configure-now": "现在配置",
     "connection": "连接",
-    "permission-denied": "您没有权限执行此操作",
     "resource": "资源",
     "resources": "资源",
     "closed": "已关闭",
@@ -947,7 +946,6 @@
     },
     "unfinished-resolved-issue-tips": "该工单被标记为「已完成」，但其中某些任务并未成功执行。",
     "some-tasks-are-not-executed-successfully": "（部分任务并未成功执行）",
-    "preview": "预览工单",
     "missing-sql-statement": "SQL 语句缺失。",
     "task-summary-tooltip": "{failed} 个任务失败",
     "data-export": {
@@ -1375,9 +1373,6 @@
     "mixed-label-values-warning": "某些标签拥有不同的值，编辑标签将会批量应用",
     "change-data": "变更数据",
     "new-branch": "新建分支",
-    "branch-name": "分支名称",
-    "select-branch": "选择一个分支",
-    "delete-this-branch": "删除这个分支",
     "table-detail": "表详情",
     "batch-action-not-support-alter-schema": "一些数据库不支持修改表结构",
     "batch-action-permission-denied": "没有权限对数据库{action}",
@@ -2028,7 +2023,6 @@
       "unique": "唯一",
       "dependency-columns": "依赖列"
     },
-    "generated-ddl-is-empty": "生成的 DDL 为空",
     "table-partition": {
       "partitions": "分区",
       "edit-partitions": "编辑分区",
@@ -2624,17 +2618,9 @@
     "review-sql": "审核 SQL"
   },
   "schema-designer": {
-    "baseline-version": "基线版本",
-    "new-branch": "新建分支",
-    "parent-branch": "父分支",
-    "raw-sql-preview": "原始 SQL 预览",
     "search-tables": "搜索表",
     "use-tips": "选择需要设计的表",
-    "apply-to-database": "应用变更到数据库",
-    "select-database-placeholder": "选择数据库（仅限 MySQL、PostgreSQL、TiDB 和 Oracle）",
     "message": {
-      "created-succeed": "分支创建成功",
-      "updated-succeed": "分支更新成功"
     }
   },
   "cel": {
@@ -2736,54 +2722,22 @@
   },
   "branch": {
     "rollout": {
-      "select-target-database": "选择目标数据库"
     },
     "select-tables-to-rollout": "选择要发布的表",
     "default-branches": "默认分支",
     "your-branches": "你的分支",
     "active-branches": "活跃的分支",
     "merge-rebase": {
-      "select-branches-to-merge": "选择要合并的分支",
-      "select-branches-to-rebase": "选择要 rebase 的分支",
-      "validating-branch": "正在验证分支",
-      "able-to-merge": "可以合并",
-      "able-to-rebase": "可以 rebase",
-      "cannot-automatically-merge": "无法自动合并，请先 {rebase_branch}。",
-      "cannot-automatically-rebase": "无法自动 rebase，请手动解决冲突。",
-      "go-rebase": "rebase 分支",
-      "changes-of-branch": "{branch} 的变更",
-      "merge-succeeded": "合并成功",
-      "rebase-succeeded": "Rebase 成功",
       "merge-branch": "合并分支",
       "rebase-branch": "Rebase 分支",
-      "confirm-rebase": "确认 rebase？",
-      "conflict-not-resolved": "似乎还有尚未解决的冲突。",
-      "resolve-conflicts-to-rebase": "解决冲突以进行 rebase",
-      "preview-rebase-result": "预览 rebase 后 {branch} 上的修改",
-      "before-merge": "合并前",
-      "after-merge": "合并后",
-      "before-rebase": "rebase 前",
-      "after-rebase": "rebase 后",
       "post-merge-action": {
-        "rebase": "合并且同步分支",
-        "delete": "合并且删除分支"
       }
     },
     "source": {
-      "baseline-version": "基线版本",
-      "parent-branch": "父分支",
-      "self": "来源"
     },
     "index": {
       "drop-index-confirm": "删除索引？"
     },
-    "force-delete": "强制删除",
-    "deleting-parent-branch": "将要删除一个父分支。",
-    "visualized-schema": "可视化 Schema",
-    "schema-text": "文本 Schema",
-    "baseline": "基线",
-    "head": "当前",
-    "show-diff-with-branch-baseline": "显示与分支基线之间的差异",
     "table-partition": {
       "drop-partition-confirm": "删除表分区？",
       "drop-partition-with-subpartitions-confirm": "将会同时删除其所有子分区。"

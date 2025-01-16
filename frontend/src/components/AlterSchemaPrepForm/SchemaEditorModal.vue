@@ -38,7 +38,6 @@
       >
         <SchemaEditorLite
           ref="schemaEditorRef"
-          resource-type="database"
           :project="project"
           :targets="state.targets"
           :loading="state.isPreparingMetadata"
