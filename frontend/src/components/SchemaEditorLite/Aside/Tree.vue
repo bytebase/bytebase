@@ -6,9 +6,7 @@
       <NInput
         v-model:value="searchPattern"
         :placeholder="
-          resourceType === 'branch'
-            ? $t('schema-designer.search-tables')
-            : $t('schema-editor.search-database-and-table')
+            $t('schema-editor.search-database-and-table')
         "
       >
         <template #prefix>
@@ -141,7 +139,6 @@ import ViewNameModal from "../Modals/ViewNameModal.vue";
 import { useSchemaEditorContext } from "../context";
 import { keyForResource, keyForResourceName } from "../context/common";
 import { engineSupportsMultiSchema } from "../spec";
-import LastUpdate from "./LastUpdate.vue";
 import NodePrefix from "./NodePrefix.vue";
 import type {
   TreeNode,
@@ -189,11 +186,9 @@ interface LocalState {
 const { t } = useI18n();
 const {
   events,
-  resourceType,
   targets,
   readonly,
   currentTab,
-  showLastUpdater,
   disableDiffColoring,
   addTab,
   markEditStatus,
@@ -288,7 +283,7 @@ const findFirstTableGroupNode = (
 };
 const buildDatabaseTreeData = (openFirstChild: boolean) => {
   const treeNodeList = buildTree(targets.value, treeNodeMap, {
-    byInstance: resourceType.value === "database",
+    byInstance: true,
   });
   treeDataRef.value = treeNodeList;
 
@@ -553,17 +548,6 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
     if (icons.length === 0) return null;
     return h("div", { class: "inline-flex gap-1" }, icons);
   };
-
-  if (
-    node.type === "table" ||
-    node.type === "view" ||
-    node.type === "procedure" ||
-    node.type === "function"
-  ) {
-    if (showLastUpdater.value) {
-      icons.push(h(LastUpdate, { node }));
-    }
-  }
 
   if (readonly.value) {
     return renderIcons();

@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from "uuid";
 import { useRoute } from "vue-router";
 import type { TemplateType } from "@/plugins";
 import {
-  useBranchStore,
   useChangelistStore,
   useDatabaseV1Store,
   useEnvironmentV1Store,
@@ -16,7 +15,6 @@ import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import { composePlan } from "@/store/modules/v1/plan";
 import type { ComposedProject } from "@/types";
 import { isValidProjectName } from "@/types";
-import { DatabaseConfig } from "@/types/proto/v1/database_service";
 import {
   Plan,
   Plan_ChangeDatabaseConfig,
@@ -24,7 +22,7 @@ import {
   Plan_Spec,
   Plan_Step,
 } from "@/types/proto/v1/plan_service";
-import { Sheet, SheetPayload } from "@/types/proto/v1/sheet_service";
+import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   extractSheetUID,
   generateSQLForChangeToDatabase,
@@ -73,17 +71,8 @@ export const createPlanSkeleton = async (
     initialSQL: await extractInitialSQLFromQuery(query),
   };
 
-  // Prepare params context for building plan.
-  await prepareParamsContext(params);
-
   const plan = await buildPlan(params);
   return plan;
-};
-
-const prepareParamsContext = async (params: CreatePlanParams) => {
-  if (params.branch) {
-    await useBranchStore().fetchBranchByName(params.branch);
-  }
 };
 
 export const buildPlan = async (params: CreatePlanParams) => {
@@ -154,7 +143,6 @@ export const buildSteps = async (
       const spec = await buildSpecForTarget(db.name, params, sheetUID);
       step.specs.push(spec);
       maybeSetInitialSQLForSpec(spec, db.name, params);
-      maybeSetInitialDatabaseConfigForSpec(spec, params);
     }
     steps.push(step);
   }
@@ -334,39 +322,6 @@ const maybeSetInitialSQLForSpec = (
   if (sql) {
     const sheetEntity = getLocalSheetByName(sheet);
     setSheetStatement(sheetEntity, sql);
-  }
-};
-
-const maybeSetInitialDatabaseConfigForSpec = async (
-  spec: Plan_Spec,
-  params: CreatePlanParams
-) => {
-  const branch = params.branch;
-  if (!branch) {
-    return;
-  }
-
-  const sheetName = sheetNameForSpec(spec);
-  if (!sheetName) return;
-  const uid = extractSheetUID(sheetName);
-  if (!uid.startsWith("-")) {
-    // If the sheet is a remote sheet, ignore initial Database configs.
-    return;
-  }
-
-  // TODO(d): double check setting database config.
-  const temp = await useBranchStore().fetchBranchByName(branch);
-  if (temp) {
-    const sheetEntity = getLocalSheetByName(sheetName);
-    if (!sheetEntity.payload) {
-      sheetEntity.payload = SheetPayload.fromPartial({});
-    }
-    sheetEntity.payload.databaseConfig = DatabaseConfig.fromPartial({
-      schemaConfigs: temp.schemaMetadata?.schemaConfigs,
-    });
-    sheetEntity.payload.baselineDatabaseConfig = DatabaseConfig.fromPartial({
-      schemaConfigs: temp.baselineSchemaMetadata?.schemaConfigs,
-    });
   }
 };
 

@@ -26,10 +26,8 @@ import "splitpanes/dist/splitpanes.css";
 import { reactive, computed, onMounted, toRef, watch } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useDatabaseV1Store, useSettingV1Store } from "@/store";
+import { useSettingV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
-import type { Branch } from "@/types/proto/v1/branch_service";
-import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import Aside from "./Aside";
 import Editor from "./Editor.vue";
 import { useAlgorithm } from "./algorithm";
@@ -38,15 +36,11 @@ import type { EditTarget, RolloutObject } from "./types";
 
 const props = defineProps<{
   project: ComposedProject;
-  resourceType: "database" | "branch";
   readonly?: boolean;
   selectedRolloutObjects?: RolloutObject[];
   targets?: EditTarget[];
-  // NOTE: we only support editing one branch for now.
-  branch?: Branch;
   loading?: boolean;
   diffWhenReady?: boolean;
-  showLastUpdater?: boolean;
   disableDiffColoring?: boolean;
   hidePreview?: boolean;
 }>();
@@ -73,21 +67,7 @@ onMounted(async () => {
 });
 
 const targets = computed(() => {
-  if (props.resourceType === "database") {
-    return props.targets ?? [];
-  }
-  if (props.resourceType === "branch") {
-    const { branch } = props;
-    if (!branch) return [];
-    const target: EditTarget = {
-      database: useDatabaseV1Store().getDatabaseByName(branch.baselineDatabase),
-      metadata: branch.schemaMetadata ?? DatabaseMetadata.fromPartial({}),
-      baselineMetadata:
-        branch.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({}),
-    };
-    return [target];
-  }
-  return [];
+  return props.targets ?? [];
 });
 
 const ready = computed(() => {
@@ -101,10 +81,8 @@ const combinedLoading = computed(() => {
 const context = provideSchemaEditorContext({
   targets,
   project: toRef(props, "project"),
-  resourceType: toRef(props, "resourceType"),
   readonly: toRef(props, "readonly"),
   selectedRolloutObjects: toRef(props, "selectedRolloutObjects"),
-  showLastUpdater: toRef(props, "showLastUpdater"),
   disableDiffColoring: toRef(props, "disableDiffColoring"),
   hidePreview: toRef(props, "hidePreview"),
 });
@@ -113,8 +91,7 @@ const { rebuildMetadataEdit, applyMetadataEdit, applySelectedMetadataEdit } =
 
 useEmitteryEventListener(context.events, "rebuild-edit-status", (params) => {
   if (
-    ready.value &&
-    (props.diffWhenReady || props.resourceType === "database")
+    ready.value
   ) {
     targets.value.forEach((target) => {
       rebuildMetadataEdit(

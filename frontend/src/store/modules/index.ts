@@ -16,7 +16,6 @@ export * from "./slowQuery";
 export * from "./role";
 export * from "./dbGroup";
 export * from "./utils";
-export * from "./branch";
 export * from "./release";
 export * from "./revision";
 export * from "./rollout";

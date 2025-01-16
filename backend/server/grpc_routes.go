@@ -88,7 +88,7 @@ func configureGrpcRouters(
 	v1pb.RegisterRoleServiceServer(grpcServer, apiv1.NewRoleService(stores, iamManager, licenseService))
 	v1pb.RegisterSheetServiceServer(grpcServer, apiv1.NewSheetService(stores, sheetManager, licenseService, iamManager, profile))
 	v1pb.RegisterWorksheetServiceServer(grpcServer, apiv1.NewWorksheetService(stores, iamManager))
-	v1pb.RegisterBranchServiceServer(grpcServer, apiv1.NewBranchService(stores, licenseService, profile, iamManager))
+	v1pb.RegisterBranchServiceServer(grpcServer, apiv1.NewBranchService())
 	v1pb.RegisterCelServiceServer(grpcServer, apiv1.NewCelService())
 	v1pb.RegisterDatabaseGroupServiceServer(grpcServer, apiv1.NewDatabaseGroupService(stores, profile, iamManager, licenseService))
 	v1pb.RegisterChangelistServiceServer(grpcServer, apiv1.NewChangelistService(stores, profile, iamManager))
