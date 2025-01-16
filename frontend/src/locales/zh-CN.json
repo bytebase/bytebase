@@ -1109,7 +1109,7 @@
     "no-read-only-data-source-warn-for-developer": "该实例没有配置只读连接，请让您的 DBA 配置一个。",
     "sentence": {
       "host": {
-        "snowflake": "例如 host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>"
+        "none-snowflake": "例如 host.docker.internal {'|'} ip {'|'} local socket"
       },
       "proxy": {
         "snowflake": "对于代理服务器，加上 {'@'}PROXY_HOST，并在端口里指定 PROXY_PORT"
@@ -1413,6 +1413,7 @@
       "copy-schema": "粘贴 Schema 文本",
       "select-source-schema": "选择源 Schema",
       "select-target-databases": "选择目标数据库",
+      "source-schema": "源 Schema",
       "schema-version": {
         "self": "Schema 版本"
       },
@@ -2480,10 +2481,6 @@
     "attention-description": "Bytebase 定期从实例上同步慢查询日志。对 MySQL 实例，需要先开启 slow_query。对 PostgreSQL 实例，只有开启 pg_stat_statements 的数据库才会收集慢查询。",
     "sync-job-started": "同步作业已启动。请等待同步完成。",
     "detail": "慢查询详情",
-    "filter": {
-      "from-date": "开始日期",
-      "to-date": "结束日期"
-    },
     "advise-index": {
       "current-index": "当前索引",
       "suggestion": "建议",
