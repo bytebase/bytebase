@@ -22,6 +22,8 @@ export const defaultPortForEngine = (engine: Engine) => {
       return "6379";
     case Engine.ORACLE:
       return "1521";
+    case Engine.SPANNER:
+      return "";
     case Engine.MSSQL:
       return "1433";
     case Engine.REDSHIFT:
@@ -44,6 +46,8 @@ export const defaultPortForEngine = (engine: Engine) => {
       return "10000";
     case Engine.ELASTICSEARCH:
       return "9200";
+    case Engine.BIGQUERY:
+      return "";
     case Engine.DYNAMODB:
       return "";
     case Engine.DATABRICKS:
