@@ -350,7 +350,7 @@
       "sso": "SSO",
       "gitops": "GitOps",
       "subscription": "订阅",
-      "global-masking": "全局数据屏蔽",
+      "global-masking": "全局数据脱敏",
       "data-classification": "数据分类",
       "data-access": "数据访问",
       "audit-log": "审计日志",
@@ -630,7 +630,7 @@
       "grant-access": "授权访问",
       "never-expires": "无过期时间",
       "global-rules": {
-        "description": "使用全局规则批量应用屏蔽，例如所有名为“电子邮件”的列将使用特定的语义类型进行屏蔽并应用屏蔽算法。",
+        "description": "使用全局规则批量脱敏，例如所有名为「电子邮件」的列将被脱敏成特定语义类型，并应用对应的脱敏算法。",
         "condition-order": "条件序列",
         "re-order": "排序",
         "delete-rule-tip": "删除这条规则？"
@@ -1704,7 +1704,7 @@
     "masking-exemption": {
       "self": "脱敏豁免",
       "grant-exemption": "授予豁免",
-      "revoke-exemption-title": "是否移除 {member} 的导出和查询屏蔽豁免？"
+      "revoke-exemption-title": "是否豁免 {member} 的导出和查询脱敏？"
     }
   },
   "gitops": {
