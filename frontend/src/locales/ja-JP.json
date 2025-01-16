@@ -1109,7 +1109,7 @@
     "no-read-only-data-source-warn-for-developer": "このインスタンスには読み取り専用接続が設定されていません。設定するように DBA に依頼してください。",
     "sentence": {
       "host": {
-        "snowflake": "たとえば、host.docker.internal {'|'} <<ip>> {'|'} <<ローカルソケット>>"
+        "none-snowflake": "たとえば、host.docker.internal {'|'} host ip {'|'} local socket"
       },
       "proxy": {
         "snowflake": "プロキシ サーバーの場合は、{'@'}PROXY_HOST を追加し、ポートに PROXY_PORT を指定します。"

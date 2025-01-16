@@ -1109,7 +1109,7 @@
     "no-read-only-data-source-warn-for-developer": "La instancia no ha configurado una conexión de solo lectura, solicite a su DBA que agregue una.",
     "sentence": {
       "host": {
-        "snowflake": "por ejemplo, host.docker.internal {'|'} <<ip>> {'|'} <<socket local>>"
+        "none-snowflake": "por ejemplo, host.docker.internal {'|'} host ip {'|'} local socket"
       },
       "proxy": {
         "snowflake": "Para el servidor proxy, agregue {'@'}PROXY_HOST y especifique PROXY_PORT en el puerto"
