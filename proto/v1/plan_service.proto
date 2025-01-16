@@ -97,6 +97,8 @@ service PlanService {
       post: "/v1/{project=projects/*}:previewPlan"
       body: "*"
     };
+    option (bytebase.v1.permission) = "bb.plans.preview";
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 
