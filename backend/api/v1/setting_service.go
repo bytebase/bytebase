@@ -964,8 +964,7 @@ func validateTableMetadata(engine v1pb.Engine, tableMetadata *v1pb.TableMetadata
 	if err := checkDatabaseMetadata(storepb.Engine(engine), tempStoreSchemaMetadata); err != nil {
 		return errors.Wrap(err, "failed to check database metadata")
 	}
-	defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(engine), tempStoreSchemaMetadata)
-	if _, err := schema.GetDesignSchema(storepb.Engine(engine), defaultSchema, tempStoreSchemaMetadata); err != nil {
+	if _, err := schema.GetDesignSchema(storepb.Engine(engine), tempStoreSchemaMetadata); err != nil {
 		return errors.Wrap(err, "failed to transform database metadata to schema string")
 	}
 	return nil

@@ -13,7 +13,7 @@ func init() {
 	schema.RegisterGetDesignSchema(storepb.Engine_CLICKHOUSE, GetDesignSchema)
 }
 
-func GetDesignSchema(_ string, to *storepb.DatabaseSchemaMetadata) (string, error) {
+func GetDesignSchema(to *storepb.DatabaseSchemaMetadata) (string, error) {
 	toState := convertToDatabaseState(to)
 
 	var sb strings.Builder

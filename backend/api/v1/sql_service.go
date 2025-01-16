@@ -1540,8 +1540,7 @@ func (*SQLService) StringifyMetadata(ctx context.Context, request *v1pb.Stringif
 		}, nil
 	}
 
-	defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(request.Engine), storeSchemaMetadata)
-	schema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), defaultSchema, storeSchemaMetadata)
+	schema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), storeSchemaMetadata)
 	if err != nil {
 		return nil, err
 	}
