@@ -2481,8 +2481,6 @@
     "sync-job-started": "Sync jobs started. Please wait for the jobs to complete.",
     "detail": "Slow Query Detail",
     "filter": {
-      "from-date": "From date",
-      "to-date": "To date"
     },
     "advise-index": {
       "current-index": "Current Index",

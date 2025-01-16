@@ -2481,8 +2481,6 @@
     "sync-job-started": "同步作业已启动。请等待同步完成。",
     "detail": "慢查询详情",
     "filter": {
-      "from-date": "开始日期",
-      "to-date": "结束日期"
     },
     "advise-index": {
       "current-index": "当前索引",

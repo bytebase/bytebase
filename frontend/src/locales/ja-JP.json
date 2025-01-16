@@ -2481,8 +2481,6 @@
     "sync-job-started": "同期ジョブが開始されました。同期が完了するまでお待ちください。",
     "detail": "遅いクエリの詳細",
     "filter": {
-      "from-date": "開始日",
-      "to-date": "終了日"
     },
     "advise-index": {
       "current-index": "現在のインデックス",

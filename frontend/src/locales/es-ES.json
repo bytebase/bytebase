@@ -2481,8 +2481,6 @@
     "sync-job-started": "Se iniciaron trabajos de sincronización. Espere a que los trabajos se completen.",
     "detail": "Detalles de la consulta lenta",
     "filter": {
-      "from-date": "Desde fecha",
-      "to-date": "Hasta fecha"
     },
     "advise-index": {
       "current-index": "Índice actual",
