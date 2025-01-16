@@ -1109,7 +1109,7 @@
     "no-read-only-data-source-warn-for-developer": "La instancia no ha configurado una conexión de solo lectura, solicite a su DBA que agregue una.",
     "sentence": {
       "host": {
-        "snowflake": "por ejemplo, host.docker.internal {'|'} <<ip>> {'|'} <<socket local>>"
+        "none-snowflake": "por ejemplo, host.docker.internal {'|'} host ip {'|'} local socket"
       },
       "proxy": {
         "snowflake": "Para el servidor proxy, agregue {'@'}PROXY_HOST y especifique PROXY_PORT en el puerto"
@@ -1413,6 +1413,7 @@
       "copy-schema": "Copiar esquema",
       "select-source-schema": "Seleccione el esquema de origen",
       "select-target-databases": "Seleccione las bases de datos de destino",
+      "source-schema": "Esquema de origen",
       "schema-version": {
         "self": "Versión de esquema"
       },
@@ -2480,10 +2481,6 @@
     "attention-description": "Bytebase sincroniza periódicamente los registros de consultas lentas de las instancias. Para una instancia de MySQL, slow_query debe estar habilitado primero. Para una instancia de PostgreSQL, solo se recopilarán las consultas lentas si se habilita pg_stat_statements en la base de datos.",
     "sync-job-started": "Se iniciaron trabajos de sincronización. Espere a que los trabajos se completen.",
     "detail": "Detalles de la consulta lenta",
-    "filter": {
-      "from-date": "Desde fecha",
-      "to-date": "Hasta fecha"
-    },
     "advise-index": {
       "current-index": "Índice actual",
       "suggestion": "Sugerencia",
