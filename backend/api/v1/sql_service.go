@@ -59,6 +59,8 @@ var (
 		storepb.Engine_MSSQL:     true,
 		storepb.Engine_TIDB:      true,
 		storepb.Engine_SNOWFLAKE: true,
+		storepb.Engine_SPANNER:   true,
+		storepb.Engine_BIGQUERY:  true,
 	}
 )
 
