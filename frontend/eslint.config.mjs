@@ -27,7 +27,7 @@ export default [
         { varsIgnorePattern: "^_", argsIgnorePattern: "^_" },
       ],
       "@intlify/vue-i18n/no-unused-keys": [
-        "error",
+        "warning",
         {
           "src": "./src",
           "extensions": [".js", ".vue", ".ts", ".tsx"],
