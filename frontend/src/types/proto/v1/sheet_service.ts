@@ -10,7 +10,6 @@ import Long from "long";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { Engine, engineFromJSON, engineToJSON, engineToNumber } from "./common";
-import { DatabaseConfig } from "./database_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -107,14 +106,6 @@ export interface Sheet {
 
 export interface SheetPayload {
   type: SheetPayload_Type;
-  /** The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. */
-  databaseConfig:
-    | DatabaseConfig
-    | undefined;
-  /** The snapshot of the baseline database config when creating the sheet. */
-  baselineDatabaseConfig:
-    | DatabaseConfig
-    | undefined;
   /** The start and end position of each command in the sheet statement. */
   commands: SheetCommand[];
 }
@@ -741,24 +732,13 @@ export const Sheet: MessageFns<Sheet> = {
 };
 
 function createBaseSheetPayload(): SheetPayload {
-  return {
-    type: SheetPayload_Type.TYPE_UNSPECIFIED,
-    databaseConfig: undefined,
-    baselineDatabaseConfig: undefined,
-    commands: [],
-  };
+  return { type: SheetPayload_Type.TYPE_UNSPECIFIED, commands: [] };
 }
 
 export const SheetPayload: MessageFns<SheetPayload> = {
   encode(message: SheetPayload, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.type !== SheetPayload_Type.TYPE_UNSPECIFIED) {
       writer.uint32(8).int32(sheetPayload_TypeToNumber(message.type));
-    }
-    if (message.databaseConfig !== undefined) {
-      DatabaseConfig.encode(message.databaseConfig, writer.uint32(18).fork()).join();
-    }
-    if (message.baselineDatabaseConfig !== undefined) {
-      DatabaseConfig.encode(message.baselineDatabaseConfig, writer.uint32(26).fork()).join();
     }
     for (const v of message.commands) {
       SheetCommand.encode(v!, writer.uint32(34).fork()).join();
@@ -781,22 +761,6 @@ export const SheetPayload: MessageFns<SheetPayload> = {
           message.type = sheetPayload_TypeFromJSON(reader.int32());
           continue;
         }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.databaseConfig = DatabaseConfig.decode(reader, reader.uint32());
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.baselineDatabaseConfig = DatabaseConfig.decode(reader, reader.uint32());
-          continue;
-        }
         case 4: {
           if (tag !== 34) {
             break;
@@ -817,10 +781,6 @@ export const SheetPayload: MessageFns<SheetPayload> = {
   fromJSON(object: any): SheetPayload {
     return {
       type: isSet(object.type) ? sheetPayload_TypeFromJSON(object.type) : SheetPayload_Type.TYPE_UNSPECIFIED,
-      databaseConfig: isSet(object.databaseConfig) ? DatabaseConfig.fromJSON(object.databaseConfig) : undefined,
-      baselineDatabaseConfig: isSet(object.baselineDatabaseConfig)
-        ? DatabaseConfig.fromJSON(object.baselineDatabaseConfig)
-        : undefined,
       commands: globalThis.Array.isArray(object?.commands)
         ? object.commands.map((e: any) => SheetCommand.fromJSON(e))
         : [],
@@ -831,12 +791,6 @@ export const SheetPayload: MessageFns<SheetPayload> = {
     const obj: any = {};
     if (message.type !== SheetPayload_Type.TYPE_UNSPECIFIED) {
       obj.type = sheetPayload_TypeToJSON(message.type);
-    }
-    if (message.databaseConfig !== undefined) {
-      obj.databaseConfig = DatabaseConfig.toJSON(message.databaseConfig);
-    }
-    if (message.baselineDatabaseConfig !== undefined) {
-      obj.baselineDatabaseConfig = DatabaseConfig.toJSON(message.baselineDatabaseConfig);
     }
     if (message.commands?.length) {
       obj.commands = message.commands.map((e) => SheetCommand.toJSON(e));
@@ -850,13 +804,6 @@ export const SheetPayload: MessageFns<SheetPayload> = {
   fromPartial(object: DeepPartial<SheetPayload>): SheetPayload {
     const message = createBaseSheetPayload();
     message.type = object.type ?? SheetPayload_Type.TYPE_UNSPECIFIED;
-    message.databaseConfig = (object.databaseConfig !== undefined && object.databaseConfig !== null)
-      ? DatabaseConfig.fromPartial(object.databaseConfig)
-      : undefined;
-    message.baselineDatabaseConfig =
-      (object.baselineDatabaseConfig !== undefined && object.baselineDatabaseConfig !== null)
-        ? DatabaseConfig.fromPartial(object.baselineDatabaseConfig)
-        : undefined;
     message.commands = object.commands?.map((e) => SheetCommand.fromPartial(e)) || [];
     return message;
   },

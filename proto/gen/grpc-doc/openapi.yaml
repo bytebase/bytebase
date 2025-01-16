@@ -9518,16 +9518,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/SchemaCatalog'
-        DatabaseConfig:
-            type: object
-            properties:
-                name:
-                    type: string
-                schemas:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/SchemaCatalog'
-                    description: The schema_configs is the list of configs for schemas in a database.
         DatabaseGroup:
             type: object
             properties:
@@ -13434,14 +13424,6 @@ components:
                         - SCHEMA_DESIGN
                     type: string
                     format: enum
-                databaseConfig:
-                    allOf:
-                        - $ref: '#/components/schemas/DatabaseConfig'
-                    description: The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database.
-                baselineDatabaseConfig:
-                    allOf:
-                        - $ref: '#/components/schemas/DatabaseConfig'
-                    description: The snapshot of the baseline database config when creating the sheet.
                 commands:
                     type: array
                     items:

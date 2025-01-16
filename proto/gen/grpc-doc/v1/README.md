@@ -11232,8 +11232,6 @@ Read from `pg_stat_activity`
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | type | [SheetPayload.Type](#bytebase-v1-SheetPayload-Type) |  |  |
-| database_config | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  | The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. |
-| baseline_database_config | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  | The snapshot of the baseline database config when creating the sheet. |
 | commands | [SheetCommand](#bytebase-v1-SheetCommand) | repeated | The start and end position of each command in the sheet statement. |
 
 

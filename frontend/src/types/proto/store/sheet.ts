@@ -8,19 +8,10 @@
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import Long from "long";
 import { Engine, engineFromJSON, engineToJSON, engineToNumber } from "./common";
-import { DatabaseConfig } from "./database";
 
 export const protobufPackage = "bytebase.store";
 
 export interface SheetPayload {
-  /** The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. */
-  databaseConfig:
-    | DatabaseConfig
-    | undefined;
-  /** The snapshot of the baseline database config when creating the sheet. */
-  baselineDatabaseConfig:
-    | DatabaseConfig
-    | undefined;
   /** The SQL dialect. */
   engine: Engine;
   /** The start and end position of each command in the sheet statement. */
@@ -33,22 +24,11 @@ export interface SheetCommand {
 }
 
 function createBaseSheetPayload(): SheetPayload {
-  return {
-    databaseConfig: undefined,
-    baselineDatabaseConfig: undefined,
-    engine: Engine.ENGINE_UNSPECIFIED,
-    commands: [],
-  };
+  return { engine: Engine.ENGINE_UNSPECIFIED, commands: [] };
 }
 
 export const SheetPayload: MessageFns<SheetPayload> = {
   encode(message: SheetPayload, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.databaseConfig !== undefined) {
-      DatabaseConfig.encode(message.databaseConfig, writer.uint32(10).fork()).join();
-    }
-    if (message.baselineDatabaseConfig !== undefined) {
-      DatabaseConfig.encode(message.baselineDatabaseConfig, writer.uint32(18).fork()).join();
-    }
     if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       writer.uint32(24).int32(engineToNumber(message.engine));
     }
@@ -65,22 +45,6 @@ export const SheetPayload: MessageFns<SheetPayload> = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.databaseConfig = DatabaseConfig.decode(reader, reader.uint32());
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.baselineDatabaseConfig = DatabaseConfig.decode(reader, reader.uint32());
-          continue;
-        }
         case 3: {
           if (tag !== 24) {
             break;
@@ -108,10 +72,6 @@ export const SheetPayload: MessageFns<SheetPayload> = {
 
   fromJSON(object: any): SheetPayload {
     return {
-      databaseConfig: isSet(object.databaseConfig) ? DatabaseConfig.fromJSON(object.databaseConfig) : undefined,
-      baselineDatabaseConfig: isSet(object.baselineDatabaseConfig)
-        ? DatabaseConfig.fromJSON(object.baselineDatabaseConfig)
-        : undefined,
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
       commands: globalThis.Array.isArray(object?.commands)
         ? object.commands.map((e: any) => SheetCommand.fromJSON(e))
@@ -121,12 +81,6 @@ export const SheetPayload: MessageFns<SheetPayload> = {
 
   toJSON(message: SheetPayload): unknown {
     const obj: any = {};
-    if (message.databaseConfig !== undefined) {
-      obj.databaseConfig = DatabaseConfig.toJSON(message.databaseConfig);
-    }
-    if (message.baselineDatabaseConfig !== undefined) {
-      obj.baselineDatabaseConfig = DatabaseConfig.toJSON(message.baselineDatabaseConfig);
-    }
     if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       obj.engine = engineToJSON(message.engine);
     }
@@ -141,13 +95,6 @@ export const SheetPayload: MessageFns<SheetPayload> = {
   },
   fromPartial(object: DeepPartial<SheetPayload>): SheetPayload {
     const message = createBaseSheetPayload();
-    message.databaseConfig = (object.databaseConfig !== undefined && object.databaseConfig !== null)
-      ? DatabaseConfig.fromPartial(object.databaseConfig)
-      : undefined;
-    message.baselineDatabaseConfig =
-      (object.baselineDatabaseConfig !== undefined && object.baselineDatabaseConfig !== null)
-        ? DatabaseConfig.fromPartial(object.baselineDatabaseConfig)
-        : undefined;
     message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
     message.commands = object.commands?.map((e) => SheetCommand.fromPartial(e)) || [];
     return message;

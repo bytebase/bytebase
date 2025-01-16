@@ -4777,8 +4777,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| database_config | [DatabaseConfig](#bytebase-store-DatabaseConfig) |  | The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. |
-| baseline_database_config | [DatabaseConfig](#bytebase-store-DatabaseConfig) |  | The snapshot of the baseline database config when creating the sheet. |
 | engine | [Engine](#bytebase-store-Engine) |  | The SQL dialect. |
 | commands | [SheetCommand](#bytebase-store-SheetCommand) | repeated | The start and end position of each command in the sheet statement. |
 

@@ -284,12 +284,6 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 			{Start: 0, End: int32(sheet.Size)},
 		}
 	}
-	if payload := sheet.Payload; payload != nil {
-		if payload.DatabaseConfig != nil && payload.BaselineDatabaseConfig != nil {
-			v1SheetPayload.DatabaseConfig = convertStoreDatabaseConfig(payload.DatabaseConfig, nil /* filter */)
-			v1SheetPayload.BaselineDatabaseConfig = convertStoreDatabaseConfig(payload.BaselineDatabaseConfig, nil /* filter */)
-		}
-	}
 
 	return &v1pb.Sheet{
 		Name:        common.FormatSheet(project.ResourceID, sheet.UID),
@@ -313,10 +307,6 @@ func convertToStoreSheetMessage(projectUID int, creatorID int, sheet *v1pb.Sheet
 		Payload:    &storepb.SheetPayload{},
 	}
 	sheetMessage.Payload.Engine = convertEngine(sheet.Engine)
-	if sheet.Payload != nil {
-		sheetMessage.Payload.DatabaseConfig = convertV1DatabaseConfig(sheet.Payload.DatabaseConfig)
-		sheetMessage.Payload.BaselineDatabaseConfig = convertV1DatabaseConfig(sheet.Payload.BaselineDatabaseConfig)
-	}
 
 	return sheetMessage, nil
 }
