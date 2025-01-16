@@ -17,26 +17,27 @@
         />
       </template>
     </AuditLogSearch>
-    <PagedAuditLogTable
+
+    <PagedTable
       v-if="hasAuditLogFeature"
-      :search-audit-logs="searchAuditLogs"
+      ref="auditLogPagedTable"
       session-key="bb.page-audit-log-table.settings-audit-log-v1-table"
       :page-size="10"
+      :fetch-list="fetchAuditLog"
     >
       <template #table="{ list }">
         <AuditLogDataTable key="audit-log-table" :audit-log-list="list" />
       </template>
-    </PagedAuditLogTable>
-    <template v-else>
-      <AuditLogDataTable key="audit-log-table" :audit-log-list="[]" />
-    </template>
+    </PagedTable>
+    <NoDataPlaceholder v-else />
   </div>
 </template>
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import type { BinaryLike } from "node:crypto";
-import { reactive, computed } from "vue";
+import { reactive, computed, watch, ref } from "vue";
+import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
 import AuditLogDataTable from "@/components/AuditLog/AuditLogDataTable.vue";
 import AuditLogSearch from "@/components/AuditLog/AuditLogSearch";
@@ -44,9 +45,10 @@ import { buildSearchAuditLogParams } from "@/components/AuditLog/AuditLogSearch/
 import type { ExportOption } from "@/components/DataExportButton.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
 import { FeatureAttention } from "@/components/FeatureGuard";
-import PagedAuditLogTable from "@/components/PagedAuditLogTable.vue";
+import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { featureToRef, useAuditLogStore, pushNotification } from "@/store";
 import type { SearchAuditLogsParams } from "@/types";
+import type { AuditLog } from "@/types/proto/v1/audit_log_service";
 import { ExportFormat } from "@/types/proto/v1/common";
 import { type SearchParams } from "@/utils";
 
@@ -67,7 +69,7 @@ const state = reactive<LocalState>({
 });
 const { t } = useI18n();
 const auditLogStore = useAuditLogStore();
-
+const auditLogPagedTable = ref<ComponentExposed<typeof PagedTable<AuditLog>>>();
 const hasAuditLogFeature = featureToRef("bb.feature.audit-log");
 
 const searchAuditLogs = computed((): SearchAuditLogsParams => {
@@ -76,6 +78,26 @@ const searchAuditLogs = computed((): SearchAuditLogsParams => {
     order: "desc",
   };
 });
+
+const fetchAuditLog = async ({
+  pageToken,
+  pageSize,
+}: {
+  pageToken: string;
+  pageSize: number;
+}) => {
+  const { nextPageToken, auditLogs } = await auditLogStore.fetchAuditLogs({
+    ...searchAuditLogs.value,
+    pageToken,
+    pageSize,
+  });
+  return { nextPageToken, list: auditLogs };
+};
+
+watch(
+  () => JSON.stringify(searchAuditLogs.value),
+  () => auditLogPagedTable.value?.refresh()
+);
 
 const disableExportTip = computed(() => {
   if (

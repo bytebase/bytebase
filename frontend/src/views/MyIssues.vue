@@ -52,22 +52,22 @@
     </IssueSearch>
 
     <div class="relative min-h-[20rem]">
-      <PagedIssueTableV1
+      <PagedTable
+        ref="issuePagedTable"
         :key="keyForTab(tab)"
-        :session-key="keyForTab(tab)"
-        :issue-filter="mergedIssueFilter"
-        :ui-issue-filter="mergedUIIssueFilter"
+        :session-key="`bb.issue-table.${keyForTab(tab)}`"
         :page-size="50"
+        :fetch-list="fetchIssueList"
       >
-        <template #table="{ issueList, loading }">
+        <template #table="{ list, loading }">
           <IssueTableV1
             class="border-x-0"
             :loading="loading"
-            :issue-list="issueList"
+            :issue-list="applyUIIssueFilter(list, mergedUIIssueFilter)"
             :highlight-text="state.params.query"
           />
         </template>
-      </PagedIssueTableV1>
+      </PagedTable>
     </div>
   </div>
 
@@ -135,15 +135,16 @@ import { useLocalStorage, type UseStorageOptions } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { ChevronDownIcon, SearchIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
-import { reactive, computed, watch } from "vue";
+import { reactive, computed, watch, ref } from "vue";
+import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { BBModal } from "@/bbkit";
 import { IssueSearch } from "@/components/IssueV1/components";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
-import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import type { TabFilterItem } from "@/components/v2";
 import { TabFilter } from "@/components/v2";
+import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import {
@@ -151,8 +152,10 @@ import {
   useOnboardingStateStore,
   useCurrentUserV1,
   useAppFeature,
+  useIssueV1Store,
+  useRefreshIssueList,
 } from "@/store";
-import { planTypeToString } from "@/types";
+import { planTypeToString, type ComposedIssue } from "@/types";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import type { SearchParams, SearchScopeId, SemanticIssueStatus } from "@/utils";
 import {
@@ -164,6 +167,7 @@ import {
   getValueFromSearchParams,
   upsertScope,
   useDynamicLocalStorage,
+  applyUIIssueFilter,
 } from "@/utils";
 import { getComponentIdLocalStorageKey } from "@/utils/localStorage";
 
@@ -191,6 +195,9 @@ const me = useCurrentUserV1();
 const route = useRoute();
 const router = useRouter();
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
+const issueStore = useIssueV1Store();
+const issuePagedTable =
+  ref<ComponentExposed<typeof PagedTable<ComposedIssue>>>();
 
 const viewId = useLocalStorage<string>(
   getComponentIdLocalStorageKey(WORKSPACE_ROUTE_MY_ISSUES),
@@ -425,6 +432,30 @@ const mergedIssueFilter = computed(() => {
 const mergedUIIssueFilter = computed(() => {
   return buildUIIssueFilterBySearchParams(state.params);
 });
+
+const fetchIssueList = async ({
+  pageToken,
+  pageSize,
+}: {
+  pageToken: string;
+  pageSize: number;
+}) => {
+  const { nextPageToken, issues } = await issueStore.listIssues({
+    find: mergedIssueFilter.value,
+    pageSize,
+    pageToken,
+  });
+  return {
+    nextPageToken,
+    list: issues,
+  };
+};
+
+watch(
+  () => JSON.stringify(mergedIssueFilter.value),
+  () => issuePagedTable.value?.refresh()
+);
+useRefreshIssueList(() => issuePagedTable.value?.refresh());
 
 const selectTab = (target: TabValue) => {
   if (target === "") return;

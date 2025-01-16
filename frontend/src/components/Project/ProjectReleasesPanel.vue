@@ -14,31 +14,52 @@
         </NButton>
       </router-link>
     </div>
-    <PagedReleaseTable
+    <PagedTable
       :key="project.name"
       :session-key="`project-${project.name}-releases`"
-      :project="project.name"
       :page-size="50"
+      :fetch-list="fetchReleaseList"
     >
-      <template #table="{ releaseList, loading }">
+      <template #table="{ list, loading }">
         <ReleaseDataTable
           :bordered="true"
           :loading="loading"
-          :release-list="releaseList"
+          :release-list="list"
         />
       </template>
-    </PagedReleaseTable>
+    </PagedTable>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { PlusIcon } from "lucide-vue-next";
 import { NAlert, NButton } from "naive-ui";
+import PagedTable from "@/components/v2/Model/PagedTable.vue";
+import { useReleaseStore } from "@/store";
 import type { ComposedProject } from "@/types";
-import PagedReleaseTable from "../Release/PagedReleaseTable.vue";
 import ReleaseDataTable from "../Release/ReleaseDataTable.vue";
 
-defineProps<{
+const props = defineProps<{
   project: ComposedProject;
 }>();
+
+const releaseStore = useReleaseStore();
+
+const fetchReleaseList = async ({
+  pageToken,
+  pageSize,
+}: {
+  pageToken: string;
+  pageSize: number;
+}) => {
+  const { nextPageToken, releases } = await releaseStore.fetchReleasesByProject(
+    props.project.name,
+    { pageSize, pageToken },
+    false
+  );
+  return {
+    nextPageToken,
+    list: releases,
+  };
+};
 </script>
