@@ -90,7 +90,7 @@ func testGetDesignSchema(t *testing.T, filepaths []string, writeback bool) {
 		for i, t := range tests {
 			targetMeta := &storepb.DatabaseSchemaMetadata{}
 			a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(t.Target), targetMeta))
-			result, err := GetDesignSchema("", targetMeta)
+			result, err := GetDesignSchema(targetMeta)
 			a.NoError(err)
 
 			// Addintional parse stage to verify the result is parsable.
