@@ -135,8 +135,6 @@ export enum PlanConfig_ChangeDatabaseConfig_Type {
   MIGRATE_SDL = "MIGRATE_SDL",
   /** MIGRATE_GHOST - Used for DDL changes using gh-ost. */
   MIGRATE_GHOST = "MIGRATE_GHOST",
-  /** BRANCH - Used when restoring from a backup (the restored database branched from the original backup). */
-  BRANCH = "BRANCH",
   /** DATA - Used for DML change. */
   DATA = "DATA",
   UNRECOGNIZED = "UNRECOGNIZED",
@@ -159,9 +157,6 @@ export function planConfig_ChangeDatabaseConfig_TypeFromJSON(object: any): PlanC
     case 4:
     case "MIGRATE_GHOST":
       return PlanConfig_ChangeDatabaseConfig_Type.MIGRATE_GHOST;
-    case 5:
-    case "BRANCH":
-      return PlanConfig_ChangeDatabaseConfig_Type.BRANCH;
     case 6:
     case "DATA":
       return PlanConfig_ChangeDatabaseConfig_Type.DATA;
@@ -184,8 +179,6 @@ export function planConfig_ChangeDatabaseConfig_TypeToJSON(object: PlanConfig_Ch
       return "MIGRATE_SDL";
     case PlanConfig_ChangeDatabaseConfig_Type.MIGRATE_GHOST:
       return "MIGRATE_GHOST";
-    case PlanConfig_ChangeDatabaseConfig_Type.BRANCH:
-      return "BRANCH";
     case PlanConfig_ChangeDatabaseConfig_Type.DATA:
       return "DATA";
     case PlanConfig_ChangeDatabaseConfig_Type.UNRECOGNIZED:
@@ -206,8 +199,6 @@ export function planConfig_ChangeDatabaseConfig_TypeToNumber(object: PlanConfig_
       return 3;
     case PlanConfig_ChangeDatabaseConfig_Type.MIGRATE_GHOST:
       return 4;
-    case PlanConfig_ChangeDatabaseConfig_Type.BRANCH:
-      return 5;
     case PlanConfig_ChangeDatabaseConfig_Type.DATA:
       return 6;
     case PlanConfig_ChangeDatabaseConfig_Type.UNRECOGNIZED:

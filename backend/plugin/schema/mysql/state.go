@@ -9,16 +9,12 @@ import (
 	"strconv"
 	"strings"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
 	mysql "github.com/bytebase/mysql-parser"
 
 	mysqldb "github.com/bytebase/bytebase/backend/plugin/db/mysql"
-
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -43,28 +39,7 @@ func convertToDatabaseState(database *storepb.DatabaseSchemaMetadata) *databaseS
 	return state
 }
 
-func (s *databaseState) convertToDatabaseMetadata() *storepb.DatabaseSchemaMetadata {
-	var schemaStates []*schemaState
-	for _, schema := range s.schemas {
-		schemaStates = append(schemaStates, schema)
-	}
-	sort.Slice(schemaStates, func(i, j int) bool {
-		return schemaStates[i].id < schemaStates[j].id
-	})
-	var schemas []*storepb.SchemaMetadata
-	for _, schema := range schemaStates {
-		schemas = append(schemas, schema.convertToSchemaMetadata())
-	}
-	return &storepb.DatabaseSchemaMetadata{
-		Name:    s.name,
-		Schemas: schemas,
-		// Unsupported, for tests only.
-		Extensions: []*storepb.ExtensionMetadata{},
-	}
-}
-
 type schemaState struct {
-	id           int
 	name         string
 	tables       map[string]*tableState
 	views        map[string]*viewState
@@ -99,66 +74,6 @@ func convertToSchemaState(schema *storepb.SchemaMetadata) *schemaState {
 		state.procedures[procedure.Name] = convertToProcedureState(i, procedure)
 	}
 	return state
-}
-
-func (s *schemaState) convertToSchemaMetadata() *storepb.SchemaMetadata {
-	var tableStates []*tableState
-	for _, table := range s.tables {
-		tableStates = append(tableStates, table)
-	}
-	sort.Slice(tableStates, func(i, j int) bool {
-		return tableStates[i].id < tableStates[j].id
-	})
-	var viewStates []*viewState
-	for _, view := range s.views {
-		viewStates = append(viewStates, view)
-	}
-	sort.Slice(viewStates, func(i, j int) bool {
-		return viewStates[i].id < viewStates[j].id
-	})
-	var functionStates []*functionState
-	for _, function := range s.functions {
-		functionStates = append(functionStates, function)
-	}
-	sort.Slice(functionStates, func(i, j int) bool {
-		return functionStates[i].id < functionStates[j].id
-	})
-	var procedureStates []*procedureState
-	for _, procedure := range s.procedures {
-		procedureStates = append(procedureStates, procedure)
-	}
-	sort.Slice(procedureStates, func(i, j int) bool {
-		return procedureStates[i].id < procedureStates[j].id
-	})
-
-	var tables []*storepb.TableMetadata
-	for _, table := range tableStates {
-		tables = append(tables, table.convertToTableMetadata())
-	}
-	var views []*storepb.ViewMetadata
-	for _, view := range viewStates {
-		views = append(views, view.convertToViewMetadata())
-	}
-	var functions []*storepb.FunctionMetadata
-	for _, function := range functionStates {
-		functions = append(functions, function.convertToFunctionMetadata())
-	}
-	var procedures []*storepb.ProcedureMetadata
-	for _, procedure := range procedureStates {
-		procedures = append(procedures, procedure.convertToProcedureMetadata())
-	}
-
-	return &storepb.SchemaMetadata{
-		Name:       s.name,
-		Tables:     tables,
-		Views:      views,
-		Functions:  functions,
-		Procedures: procedures,
-		// Unsupported, for tests only.
-		Streams:           []*storepb.StreamMetadata{},
-		Tasks:             []*storepb.TaskMetadata{},
-		MaterializedViews: []*storepb.MaterializedViewMetadata{},
-	}
 }
 
 type tableState struct {
@@ -304,80 +219,12 @@ func convertToTableState(id int, table *storepb.TableMetadata) *tableState {
 	return state
 }
 
-func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
-	var columnStates []*columnState
-	for _, column := range t.columns {
-		columnStates = append(columnStates, column)
-	}
-	sort.Slice(columnStates, func(i, j int) bool {
-		return columnStates[i].id < columnStates[j].id
-	})
-	var columns []*storepb.ColumnMetadata
-	for _, column := range columnStates {
-		columns = append(columns, column.convertToColumnMetadata())
-	}
-	// Backfill all the column positions.
-	for i, column := range columns {
-		column.Position = int32(i + 1)
-	}
-
-	var indexStates []*indexState
-	for _, index := range t.indexes {
-		indexStates = append(indexStates, index)
-	}
-	sort.Slice(indexStates, func(i, j int) bool {
-		return indexStates[i].id < indexStates[j].id
-	})
-	var indexes []*storepb.IndexMetadata
-	for _, index := range indexStates {
-		indexes = append(indexes, index.convertToIndexMetadata())
-	}
-
-	var fkStates []*foreignKeyState
-	for _, fk := range t.foreignKeys {
-		fkStates = append(fkStates, fk)
-	}
-	sort.Slice(fkStates, func(i, j int) bool {
-		return fkStates[i].id < fkStates[j].id
-	})
-	var fks []*storepb.ForeignKeyMetadata
-	for _, fk := range fkStates {
-		fks = append(fks, fk.convertToForeignKeyMetadata())
-	}
-
-	var partitions []*storepb.TablePartitionMetadata
-	if t.partition != nil {
-		partitions = t.partition.convertToPartitionMetadata()
-	}
-
-	return &storepb.TableMetadata{
-		Name:        t.name,
-		Columns:     columns,
-		Indexes:     indexes,
-		ForeignKeys: fks,
-		UserComment: t.comment,
-		Comment:     t.comment,
-		Engine:      t.engine,
-		Collation:   t.collation,
-		Partitions:  partitions,
-	}
-}
-
 type foreignKeyState struct {
 	id                int
 	name              string
 	columns           []string
 	referencedTable   string
 	referencedColumns []string
-}
-
-func (f *foreignKeyState) convertToForeignKeyMetadata() *storepb.ForeignKeyMetadata {
-	return &storepb.ForeignKeyMetadata{
-		Name:              f.name,
-		Columns:           f.columns,
-		ReferencedTable:   f.referencedTable,
-		ReferencedColumns: f.referencedColumns,
-	}
 }
 
 func convertToForeignKeyState(id int, foreignKey *storepb.ForeignKeyMetadata) *foreignKeyState {
@@ -453,13 +300,6 @@ type viewState struct {
 	definition string
 }
 
-func (v *viewState) convertToViewMetadata() *storepb.ViewMetadata {
-	return &storepb.ViewMetadata{
-		Name:       v.name,
-		Definition: v.definition,
-	}
-}
-
 func convertToViewState(id int, view *storepb.ViewMetadata) *viewState {
 	return &viewState{
 		id:         id,
@@ -484,13 +324,6 @@ type procedureState struct {
 	id         int
 	name       string
 	definition string
-}
-
-func (f *procedureState) convertToProcedureMetadata() *storepb.ProcedureMetadata {
-	return &storepb.ProcedureMetadata{
-		Name:       f.name,
-		Definition: f.definition,
-	}
 }
 
 func convertToProcedureState(id int, procedure *storepb.ProcedureMetadata) *procedureState {
@@ -519,13 +352,6 @@ type functionState struct {
 	id         int
 	name       string
 	definition string
-}
-
-func (f *functionState) convertToFunctionMetadata() *storepb.FunctionMetadata {
-	return &storepb.FunctionMetadata{
-		Name:       f.name,
-		Definition: f.definition,
-	}
 }
 
 func convertToFunctionState(id int, function *storepb.FunctionMetadata) *functionState {
@@ -559,20 +385,6 @@ type indexState struct {
 	unique  bool
 	tp      string
 	comment string
-}
-
-func (i *indexState) convertToIndexMetadata() *storepb.IndexMetadata {
-	return &storepb.IndexMetadata{
-		Name:        i.name,
-		Expressions: i.keys,
-		Primary:     i.primary,
-		Unique:      i.unique,
-		Comment:     i.comment,
-		KeyLength:   i.lengths,
-		// Unsupported, for tests only.
-		Visible: true,
-		Type:    i.tp,
-	}
 }
 
 func convertToIndexState(id int, index *storepb.IndexMetadata) *indexState {
@@ -697,43 +509,6 @@ type partitionDefinition struct {
 	subpartitions map[string]*partitionDefinition
 }
 
-func (p *partitionState) isValid() error {
-	if p.info.useDefault == 0 && len(p.partitions) == 0 {
-		return errors.New("empty partition list")
-	}
-
-	if p.info.useDefault != 0 && len(p.partitions) > 0 {
-		return errors.New("specify partitions clause and use default partition are not allowed at the same time")
-	}
-
-	if p.info.tp == storepb.TablePartitionMetadata_TYPE_UNSPECIFIED {
-		return errors.New("invalid partition type")
-	}
-
-	if p.subInfo != nil {
-		if p.subInfo.tp == storepb.TablePartitionMetadata_TYPE_UNSPECIFIED {
-			return errors.New("invalid subpartition type")
-		}
-
-		anySpecificPartition := len(p.partitions) > 0
-		if anySpecificPartition {
-			var anySpecificSubpartition bool
-			for _, partition := range p.partitions {
-				if len(partition.subpartitions) > 0 {
-					anySpecificSubpartition = true
-					break
-				}
-			}
-
-			if anySpecificSubpartition && p.subInfo.useDefault != 0 {
-				return errors.New("specify subpartitions clause and use default subpartition are not allowed at the same time")
-			}
-		}
-	}
-
-	return nil
-}
-
 func convertToPartitionState(partitions []*storepb.TablePartitionMetadata) *partitionState {
 	if len(partitions) == 0 {
 		return nil
@@ -783,84 +558,6 @@ func convertToPartitionState(partitions []*storepb.TablePartitionMetadata) *part
 		state.partitions[partition.Name] = partitionDef
 	}
 	return state
-}
-
-func (p *partitionState) convertToPartitionMetadata() []*storepb.TablePartitionMetadata {
-	// There are `useDefault` fields in partitionInfo structure, which may use with empty parititions fields.
-	// For example, `PARTITION BY HASH (id) PARTITIONS 4 SUBPARTITION BY KEY(id) SUBPARTITIONS 5;` may cause the `partitions` field to be empty.
-	// To be compatible with our protobuf definition, which requires at least one partition, we need to generate the default partition name. And, value
-	// is not important, because only the KEY and HASH partition type support PARTITIONS clause.
-	// TODO(parser-group): recheck the MySQL behavior of generating the default partition name and value.
-	if err := p.isValid(); err != nil {
-		slog.Warn(err.Error())
-		return nil
-	}
-	var partitions []*storepb.TablePartitionMetadata
-	if p.info.useDefault != 0 {
-		generator := mysqlparser.NewPartitionDefaultNameGenerator("")
-		for i := 0; i < p.info.useDefault; i++ {
-			partitions = append(partitions, &storepb.TablePartitionMetadata{
-				Name:       generator.Next(),
-				Type:       p.info.tp,
-				Expression: p.info.expr,
-				Value:      "",
-				UseDefault: strconv.Itoa(p.info.useDefault),
-			})
-		}
-		// The reason of we do not consider subUseDefault in this case is that MySQL does not support
-		// subpartitions for HASH and KEY partitioning, and they are the only partitioning types that support
-		// the PARTITIONS clause.
-	} else {
-		sortedPartitions := make([]*partitionDefinition, 0, len(p.partitions))
-		for _, partition := range p.partitions {
-			sortedPartitions = append(sortedPartitions, partition)
-		}
-		sort.Slice(sortedPartitions, func(i, j int) bool {
-			return sortedPartitions[i].id < sortedPartitions[j].id
-		})
-		for _, partition := range sortedPartitions {
-			partitionMetadata := &storepb.TablePartitionMetadata{
-				Name:       partition.name,
-				Type:       p.info.tp,
-				Expression: p.info.expr,
-				Value:      partition.value,
-			}
-			if p.subInfo != nil {
-				if p.subInfo.useDefault != 0 {
-					subUseDefault := strconv.Itoa(p.subInfo.useDefault)
-					generator := mysqlparser.NewPartitionDefaultNameGenerator(partition.name)
-					for i := 0; i < p.subInfo.useDefault; i++ {
-						partitionMetadata.Subpartitions = append(partitionMetadata.Subpartitions, &storepb.TablePartitionMetadata{
-							Name:       generator.Next(),
-							Type:       p.subInfo.tp,
-							Expression: p.subInfo.expr,
-							UseDefault: subUseDefault,
-							Value:      "",
-						})
-					}
-				} else {
-					sortedSubpartitions := make([]*partitionDefinition, 0, len(partition.subpartitions))
-					for _, subPartition := range partition.subpartitions {
-						sortedSubpartitions = append(sortedSubpartitions, subPartition)
-					}
-					sort.Slice(sortedSubpartitions, func(i, j int) bool {
-						return sortedSubpartitions[i].id < sortedSubpartitions[j].id
-					})
-					for _, subPartition := range sortedSubpartitions {
-						partitionMetadata.Subpartitions = append(partitionMetadata.Subpartitions, &storepb.TablePartitionMetadata{
-							Name:       subPartition.name,
-							Type:       p.subInfo.tp,
-							Expression: p.subInfo.expr,
-							Value:      subPartition.value,
-						})
-					}
-				}
-			}
-			partitions = append(partitions, partitionMetadata)
-		}
-	}
-
-	return partitions
 }
 
 // toString() writes the partition state as SHOW CREATE TABLE syntax to buf, referencing MySQL source code:
@@ -1373,31 +1070,6 @@ func (c *columnState) toString(buf io.StringWriter) error {
 	return nil
 }
 
-func (c *columnState) convertToColumnMetadata() *storepb.ColumnMetadata {
-	result := &storepb.ColumnMetadata{
-		Name:        c.name,
-		Type:        c.tp,
-		Nullable:    c.nullable,
-		OnUpdate:    c.onUpdate,
-		Comment:     c.comment,
-		UserComment: c.comment,
-	}
-	if c.defaultValue != nil {
-		switch value := c.defaultValue.(type) {
-		case *defaultValueNull:
-			result.DefaultValue = &storepb.ColumnMetadata_DefaultNull{DefaultNull: true}
-		case *defaultValueString:
-			result.DefaultValue = &storepb.ColumnMetadata_Default{Default: wrapperspb.String(value.value)}
-		case *defaultValueExpression:
-			result.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: value.value}
-		}
-	}
-	if result.DefaultValue == nil && c.nullable {
-		result.DefaultValue = &storepb.ColumnMetadata_DefaultNull{DefaultNull: true}
-	}
-	return result
-}
-
 func convertToColumnState(id int, column *storepb.ColumnMetadata) *columnState {
 	result := &columnState{
 		id:       id,
@@ -1454,32 +1126,4 @@ func normalizeOnUpdate(s string) string {
 	}
 	// not a current_timestamp family function
 	return s
-}
-
-// getDataTypePlainText returns the plain text of the data type,
-// which excludes the charset candidate.
-// For example, for "varchar(10) CHARACTER SET utf8mb4",
-// it returns "varchar(10)".
-func getDataTypePlainText(typeCtx mysql.IDataTypeContext) string {
-	begin := typeCtx.GetStart().GetTokenIndex()
-	end := typeCtx.GetStop().GetTokenIndex()
-	if typeCtx.CharsetWithOptBinary() != nil {
-		end = typeCtx.CharsetWithOptBinary().GetStart().GetTokenIndex() - 1
-	}
-	// To skip the trailing spaces, we iterate the token stream reversely and find the first default channel token index.
-	for i := end; i >= begin; i-- {
-		if typeCtx.GetParser().GetTokenStream().Get(i).GetChannel() == antlr.TokenDefaultChannel {
-			end = i
-			break
-		}
-	}
-
-	if end < begin {
-		return ""
-	}
-
-	return typeCtx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
-		Start: begin,
-		Stop:  end,
-	})
 }

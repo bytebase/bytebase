@@ -230,7 +230,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		},
 	})
 
-	if config.Type == storepb.PlanConfig_ChangeDatabaseConfig_BASELINE || config.Type == storepb.PlanConfig_ChangeDatabaseConfig_BRANCH {
+	if config.Type == storepb.PlanConfig_ChangeDatabaseConfig_BASELINE {
 		return planCheckRuns, nil
 	}
 

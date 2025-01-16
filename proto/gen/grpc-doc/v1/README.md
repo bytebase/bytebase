@@ -117,7 +117,6 @@
     - [ExtensionMetadata](#bytebase-v1-ExtensionMetadata)
     - [ExternalTableMetadata](#bytebase-v1-ExternalTableMetadata)
     - [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata)
-    - [FunctionConfig](#bytebase-v1-FunctionConfig)
     - [FunctionMetadata](#bytebase-v1-FunctionMetadata)
     - [GenerationMetadata](#bytebase-v1-GenerationMetadata)
     - [GetChangelogRequest](#bytebase-v1-GetChangelogRequest)
@@ -140,7 +139,6 @@
     - [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse)
     - [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata)
     - [PackageMetadata](#bytebase-v1-PackageMetadata)
-    - [ProcedureConfig](#bytebase-v1-ProcedureConfig)
     - [ProcedureMetadata](#bytebase-v1-ProcedureMetadata)
     - [Revision](#bytebase-v1-Revision)
     - [SchemaConfig](#bytebase-v1-SchemaConfig)
@@ -160,7 +158,6 @@
     - [TriggerMetadata](#bytebase-v1-TriggerMetadata)
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
     - [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest)
-    - [ViewConfig](#bytebase-v1-ViewConfig)
     - [ViewMetadata](#bytebase-v1-ViewMetadata)
   
     - [Changelog.Status](#bytebase-v1-Changelog-Status)
@@ -2454,24 +2451,6 @@ ForeignKeyMetadata is the metadata for foreign keys.
 
 
 
-<a name="bytebase-v1-FunctionConfig"></a>
-
-### FunctionConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a function. |
-| updater | [string](#string) |  | The last updater of the function in branch. Format: users/{email} |
-| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the function is updated in branch. |
-
-
-
-
-
-
 <a name="bytebase-v1-FunctionMetadata"></a>
 
 ### FunctionMetadata
@@ -2874,24 +2853,6 @@ PackageMetadata is the metadata for packages.
 
 
 
-<a name="bytebase-v1-ProcedureConfig"></a>
-
-### ProcedureConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a procedure. |
-| updater | [string](#string) |  | The last updater of the procedure in branch. Format: users/{email} |
-| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the procedure is updated in branch. |
-
-
-
-
-
-
 <a name="bytebase-v1-ProcedureMetadata"></a>
 
 ### ProcedureMetadata
@@ -2951,9 +2912,6 @@ ProcedureMetadata is the metadata for procedures.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the schema name. It is an empty string for databases without such concept such as MySQL. |
 | table_configs | [TableConfig](#bytebase-v1-TableConfig) | repeated | The table_configs is the list of configs for tables in a schema. |
-| function_configs | [FunctionConfig](#bytebase-v1-FunctionConfig) | repeated |  |
-| procedure_configs | [ProcedureConfig](#bytebase-v1-ProcedureConfig) | repeated |  |
-| view_configs | [ViewConfig](#bytebase-v1-ViewConfig) | repeated |  |
 
 
 
@@ -3155,9 +3113,6 @@ SlowQueryStatistics is the statistics of the slow query log.
 | name | [string](#string) |  | The name is the name of a table. |
 | column_configs | [ColumnConfig](#bytebase-v1-ColumnConfig) | repeated | The column_configs is the ordered list of configs for columns in a table. |
 | classification_id | [string](#string) |  |  |
-| updater | [string](#string) |  | The last updater of the table in branch. Format: users/{email} |
-| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the table is updated in branch. |
 
 
 
@@ -3293,24 +3248,6 @@ The database&#39;s `name` field is used to identify the database to update. Form
 | secret | [Secret](#bytebase-v1-Secret) |  | The secret to be created or updated. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The mask of the fields to be updated. |
 | allow_missing | [bool](#bool) |  | If true, the secret will be created if it does not exist. |
-
-
-
-
-
-
-<a name="bytebase-v1-ViewConfig"></a>
-
-### ViewConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a view. |
-| updater | [string](#string) |  | The last updater of the view in branch. Format: users/{email} |
-| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the view is updated in branch. |
 
 
 
