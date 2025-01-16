@@ -1,9 +1,8 @@
 package spanner
 
 import (
-	"fmt"
-
 	parser "github.com/bytebase/google-sql-parser"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
@@ -19,7 +18,7 @@ type queryTypeListener struct {
 func (l *queryTypeListener) EnterStmts(ctx *parser.StmtsContext) {
 	// Assume that the stmts contains only one unterminated statement.
 	if len(ctx.AllUnterminated_sql_statement()) != 1 {
-		l.err = fmt.Errorf("expecting 1 unterminated sql statement, but got %d", len(ctx.AllUnterminated_sql_statement()))
+		l.err = errors.Errorf("expecting 1 unterminated sql statement, but got %d", len(ctx.AllUnterminated_sql_statement()))
 		return
 	}
 	unterminatedStatement := ctx.AllUnterminated_sql_statement()[0]
