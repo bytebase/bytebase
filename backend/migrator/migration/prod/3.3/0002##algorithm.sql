@@ -16,15 +16,15 @@ algorithms_expanded AS (
 transformed_algorithms AS (
     SELECT jsonb_build_object(
         'id', algorithm_record->>'id',
-        'title', algorithm_record->>'title',
-        'description', algorithm_record->>'description',
+        'title', coalesce(algorithm_record->>'title', ''),
+        'description', coalesce(algorithm_record->>'description', ''),
         'algorithm', algorithm_record
     ) AS transformed_algorithm
     FROM algorithms_expanded
 ),
 combined_data AS (
     SELECT
-        jsonb_agg(ta.transformed_algorithm) || (SELECT coalesce(value::jsonb->'types', '[]'::jsonb) FROM setting WHERE name = 'bb.workspace.semantic-types') AS types_array
+        coalesce(jsonb_agg(ta.transformed_algorithm), '[]'::jsonb) || (SELECT coalesce(value::jsonb->'types', '[]'::jsonb) FROM setting WHERE name = 'bb.workspace.semantic-types') AS types_array
     FROM transformed_algorithms ta
 )
 UPDATE setting
