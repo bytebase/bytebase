@@ -1,7 +1,7 @@
 import { uniq, without } from "lodash-es";
 import type { SelectOption } from "naive-ui";
 import { type Factor, SQLTypeList } from "@/plugins/cel";
-import { t, te } from "@/plugins/i18n";
+import { t } from "@/plugins/i18n";
 import { useEnvironmentV1Store, useProjectV1List } from "@/store";
 import {
   PresetRiskLevelList,
@@ -18,24 +18,39 @@ import {
 } from "@/utils";
 
 export const sourceText = (source: Risk_Source) => {
-  if (source === Risk_Source.SOURCE_UNSPECIFIED) {
-    return t("common.all");
+  switch (source) {
+    case Risk_Source.SOURCE_UNSPECIFIED:
+      return t("common.all");
+    case Risk_Source.DDL:
+      return t("custom-approval.risk-rule.risk.namespace.ddl");
+    case Risk_Source.DML:
+      return t("custom-approval.risk-rule.risk.namespace.dml");
+    case Risk_Source.CREATE_DATABASE:
+      return t("custom-approval.risk-rule.risk.namespace.create_database");
+    case Risk_Source.DATA_EXPORT:
+      return t("custom-approval.risk-rule.risk.namespace.data_export");
+    case Risk_Source.REQUEST_QUERY:
+      return t("custom-approval.risk-rule.risk.namespace.request_query");
+    case Risk_Source.REQUEST_EXPORT:
+      return t("custom-approval.risk-rule.risk.namespace.request_export");
+    default:
+      return Risk_Source.UNRECOGNIZED;
   }
-
-  const name = risk_SourceToJSON(source);
-  const keypath = `custom-approval.risk-rule.risk.namespace.${name.toLowerCase()}`;
-  if (te(keypath)) {
-    return t(keypath);
-  }
-  return name;
 };
 
 export const levelText = (level: number) => {
-  const keypath = `custom-approval.risk-rule.risk.risk-level.${level}`;
-  if (te(keypath)) {
-    return t(keypath);
+  switch (level) {
+    case 0:
+      return t("custom-approval.risk-rule.risk.risk-level.0");
+    case 100:
+      return t("custom-approval.risk-rule.risk.risk-level.100");
+    case 200:
+      return t("custom-approval.risk-rule.risk.risk-level.200");
+    case 300:
+      return t("custom-approval.risk-rule.risk.risk-level.300");
+    default:
+      return String(level);
   }
-  return String(level);
 };
 
 export const orderByLevelDesc = (a: Risk, b: Risk): number => {

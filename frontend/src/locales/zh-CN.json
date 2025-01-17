@@ -254,8 +254,12 @@
       "title-general": "检查结果"
     },
     "check-type": {
+      "fake": "Fake",
+      "connection": "连接",
       "sql-review": "SQL 审核",
-      "affected-rows": "影响行数（基于统计信息估算）"
+      "ghost-sync": "gh-ost 同步",
+      "affected-rows": "影响行数（基于统计信息估算）",
+      "summary-report": "概要报告"
     },
     "rollout-time": "指定发布时间",
     "earliest-allowed-time-hint": "'@:{'task.rollout-time'}' 是您希望任务运行的时间；如果未指定，任务会在满足条件后立即执行。",
@@ -387,7 +391,11 @@
           "email-tips": "邮箱应该是唯一的，并且创建后不能更改。",
           "title": "标题",
           "description": "描述",
-          "members": "成员"
+          "members": "成员",
+          "role": {
+            "owner": "群组所有者",
+            "member": "群组成员"
+          }
         },
         "n-members": "{n} 位成员",
         "workspace-domain-required": "请先设置工作空间的域名。"
@@ -756,6 +764,8 @@
       "skipped": "跳过",
       "rolled-out": "发布",
       "xxx-automatically": "自动{verb}",
+      "verb-type-target-by-people": "{verb} {type} {target}",
+      "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "failed-to-backup": "数据备份失败：{error}",
       "prior-back-table": "已备份到数据库 {database} 中表 {tables}",
       "prior-back-table-for-line": "数据备份到数据库 {database} 和表 {tables}，用于第 {line} 行的DML"
@@ -2363,7 +2373,16 @@
       "risk": {
         "self": "风险",
         "select": "选择风险",
+        "risk-level": {
+          "0": "默认",
+          "100": "低",
+          "200": "中",
+          "300": "高"
+        },
         "namespace": {
+          "dml": "DML",
+          "ddl": "DDL",
+          "create_database": "创建数据库",
           "data_export": "导出数据",
           "request_query": "申请查询权限",
           "request_export": "申请导出权限"

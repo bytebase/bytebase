@@ -254,8 +254,12 @@
       "title-general": "Comprobar resultado"
     },
     "check-type": {
+      "fake": "Falso",
+      "connection": "Conexión",
       "sql-review": "Revisión de SQL",
-      "affected-rows": "Filas afectadas (estimación basada en información estadística)"
+      "ghost-sync": "Sincronización gh-ost",
+      "affected-rows": "Filas afectadas (estimación basada en información estadística)",
+      "summary-report": "Informe resumido"
     },
     "rollout-time": "Tiempo de implementación",
     "earliest-allowed-time-hint": "El tiempo de implementación es cuando deseas que una tarea se ejecute; si no se especifica, se ejecuta cuando se cumplen todos los criterios.",
@@ -387,7 +391,11 @@
           "email-tips": "El correo electrónico debe ser único y no se puede cambiar después de su creación.",
           "title": "Título",
           "description": "Descripción",
-          "members": "Miembros"
+          "members": "Miembros",
+          "role": {
+            "owner": "Propietario del grupo",
+            "member": "Miembro del grupo"
+          }
         },
         "n-members": "{n} miembros",
         "workspace-domain-required": "Primero configure un dominio de espacio de trabajo."
@@ -756,6 +764,8 @@
       "skipped": "omitido",
       "rolled-out": "implementado",
       "xxx-automatically": "{verb} automáticamente",
+      "verb-type-target-by-people": "{verb} {type} {target}",
+      "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "failed-to-backup": "No se pudo realizar la copia de seguridad de los datos: {error}",
       "prior-back-table": "Copia de seguridad de datos en la base de datos {database} y tablas {tables}",
       "prior-back-table-for-line": "Copia de seguridad de datos en la base de datos {database} y la tabla {tables} para DML en la línea {line}"
@@ -2363,7 +2373,16 @@
       "risk": {
         "self": "Riesgo",
         "select": "Seleccionar riesgo",
+        "risk-level": {
+          "0": "Por defecto",
+          "100": "Bajo",
+          "200": "Moderado",
+          "300": "Alto"
+        },
         "namespace": {
+          "dml": "DML",
+          "ddl": "DDL",
+          "create_database": "Crear base de datos",
           "data_export": "Exportar datos",
           "request_query": "Solicitar Rol de Consultor",
           "request_export": "Solicitar Rol de Exportador"

@@ -136,26 +136,22 @@ const buttonClasses = computed(() => {
   return styleList.join(" ");
 });
 
-// Defines the mapping from PlanCheckRun_Type to an i18n resource keypath
-const PlanCheckRunTypeNameDict = new Map<PlanCheckRun_Type, string>([
-  [PlanCheckRun_Type.DATABASE_STATEMENT_FAKE_ADVISE, "task.check-type.fake"],
-  [PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE, "task.check-type.sql-review"],
-  [PlanCheckRun_Type.DATABASE_CONNECT, "task.check-type.connection"],
-  [PlanCheckRun_Type.DATABASE_GHOST_SYNC, "task.check-type.ghost-sync"],
-  [
-    PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT,
-    "task.check-type.summary-report",
-  ],
-]);
-
 const name = computed(() => {
   const { type } = latestPlanCheckRun.value;
-  const has = PlanCheckRunTypeNameDict.has(type);
-  console.assert(has, `Missing PlanCheckType name of "${type}"`);
-  if (has) {
-    const key = PlanCheckRunTypeNameDict.get(type)!;
-    return t(key);
+  switch (type) {
+    case PlanCheckRun_Type.DATABASE_STATEMENT_FAKE_ADVISE:
+      return t('task.check-type.fake');
+    case PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE:
+      return t('task.check-type.sql-review');
+    case PlanCheckRun_Type.DATABASE_CONNECT:
+      return t('task.check-type.connection');
+    case PlanCheckRun_Type.DATABASE_GHOST_SYNC:
+      return t('task.check-type.ghost-sync');
+    case PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT:
+      return t('task.check-type.summary-report');
+    default:
+      console.assert(false, `Missing PlanCheckType name of "${type}"`);
+      return type;
   }
-  return type;
 });
 </script>

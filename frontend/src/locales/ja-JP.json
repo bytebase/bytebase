@@ -254,8 +254,12 @@
       "title-general": "テスト結果"
     },
     "check-type": {
+      "fake": "偽物",
+      "connection": "接続する",
       "sql-review": "SQL監査",
-      "affected-rows": "影響を受ける行数 (統計に基づいて推定)"
+      "ghost-sync": "gh-ost同期",
+      "affected-rows": "影響を受ける行数 (統計に基づいて推定)",
+      "summary-report": "概略報告"
     },
     "rollout-time": "公開時間を指定する",
     "earliest-allowed-time-hint": "「@:{'task.rollout-time'}」はタスクを実行する時刻です。指定しない場合、タスクは条件が満たされるとすぐに実行されます。",
@@ -387,7 +391,11 @@
           "email-tips": "電子メールは一意である必要があり、作成後に変更することはできません。",
           "title": "タイトル",
           "description": "説明",
-          "members": "メンバー"
+          "members": "メンバー",
+          "role": {
+            "owner": "グループオーナー",
+            "member": "グループの人（仲間）たち"
+          }
         },
         "n-members": "{n} 人のメンバー",
         "workspace-domain-required": "まずワークスペースドメインを設定してください。"
@@ -756,6 +764,8 @@
       "skipped": "飛び越える",
       "rolled-out": "リリース",
       "xxx-automatically": "自動{verb}",
+      "verb-type-target-by-people": "{verb} {type} {target}",
+      "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "failed-to-backup": "データのバックアップに失敗しました: {error}",
       "prior-back-table": "データベース {database} のテーブル {tables} にバックアップされました",
       "prior-back-table-for-line": "DML のデータベース {database} とテーブル {tables} の行 {line} へのデータのバックアップ"
@@ -2363,7 +2373,16 @@
       "risk": {
         "self": "危険",
         "select": "リスクを選択する",
+        "risk-level": {
+          "0": "デフォルト",
+          "100": "低い",
+          "200": "真ん中",
+          "300": "高い"
+        },
         "namespace": {
+          "dml": "DML",
+          "ddl": "DDL",
+          "create_database": "データベースの作成",
           "data_export": "データのエクスポート",
           "request_query": "クエリ権限を申請する",
           "request_export": "出力権限を申請する"
