@@ -16,7 +16,6 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   GroupMember_Role,
-  groupMember_RoleToJSON,
 } from "@/types/proto/v1/group_service";
 
 defineProps<{
@@ -32,12 +31,23 @@ const { t } = useI18n();
 
 const options = computed(() => {
   return [GroupMember_Role.OWNER, GroupMember_Role.MEMBER].map<SelectOption>(
-    (role) => ({
-      value: role,
-      label: t(
-        `settings.members.groups.form.role.${groupMember_RoleToJSON(role).toLowerCase()}`
-      ),
-    })
+    (role) => {
+      let label = "";
+      switch (role) {
+        case GroupMember_Role.OWNER:
+          label = t("settings.members.groups.form.role.owner");
+          break;
+        case GroupMember_Role.MEMBER:
+          label = t("settings.members.groups.form.role.member");
+          break;
+        default:
+          label = "ROLE UNRECOGNIZED";
+      }
+      return {
+        value: role,
+        label,
+      };
+    }
   );
 });
 </script>

@@ -33,9 +33,16 @@
             :type="role === GroupMember_Role.OWNER ? 'primary' : 'default'"
           >
             {{
-              $t(
-                `settings.members.groups.form.role.${groupMember_RoleToJSON(role).toLowerCase()}`
-              )
+              (() => {
+                switch(role) {
+                  case GroupMember_Role.OWNER:
+                    return $t('settings.members.groups.form.role.owner');
+                  case GroupMember_Role.MEMBER:
+                    return $t('settings.members.groups.form.role.member');
+                  default:
+                    return 'ROLE UNRECOGNIZED';
+                }
+              })()
             }}
           </NTag>
         </div>
@@ -58,7 +65,6 @@ import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { UserType, type User } from "@/types/proto/v1/auth_service";
 import {
   GroupMember_Role,
-  groupMember_RoleToJSON,
 } from "@/types/proto/v1/group_service";
 
 withDefaults(

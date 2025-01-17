@@ -254,8 +254,12 @@
       "title-general": "Check result"
     },
     "check-type": {
+      "fake": "Fake",
+      "connection": "Connection",
       "sql-review": "SQL review",
-      "affected-rows": "Affected rows (estimation based on statistical information)"
+      "ghost-sync": "gh-ost sync",
+      "affected-rows": "Affected rows (estimation based on statistical information)",
+      "summary-report": "Summary report"
     },
     "rollout-time": "Rollout time",
     "earliest-allowed-time-hint": "@:{'task.rollout-time'} is when you want a task to run; if unspecified, it runs when all criteria are met.",
@@ -387,7 +391,11 @@
           "email-tips": "The email should be unique, and it cannot be changed after creation.",
           "title": "Title",
           "description": "Description",
-          "members": "Members"
+          "members": "Members",
+          "role": {
+            "owner": "Group owner",
+            "member": "Group member"
+          }
         },
         "n-members": "{n} members",
         "workspace-domain-required": "Please set a workspace domain first."
@@ -756,6 +764,8 @@
       "skipped": "skipped",
       "rolled-out": "rolled out",
       "xxx-automatically": "{verb} automatically",
+      "verb-type-target-by-people": "{verb} {type} {target}",
+      "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "failed-to-backup": "Failed to backup data: {error}",
       "prior-back-table": "Data backup to database {database} and tables {tables}",
       "prior-back-table-for-line": "Data backup to database {database} and table {tables} for DML in line {line}"
@@ -2363,7 +2373,16 @@
       "risk": {
         "self": "Risk",
         "select": "Select risk",
+        "risk-level": {
+          "default": "Default",
+          "low": "Low",
+          "moderate": "Moderate",
+          "high": "High"
+        },
         "namespace": {
+          "dml": "DML",
+          "ddl": "DDL",
+          "create_database": "Create Database",
           "data_export": "Export Data",
           "request_query": "Request Querier Role",
           "request_export": "Request Exporter Role"
