@@ -2374,10 +2374,10 @@
         "self": "Riesgo",
         "select": "Seleccionar riesgo",
         "risk-level": {
-          "0": "Por defecto",
-          "100": "Bajo",
-          "200": "Moderado",
-          "300": "Alto"
+          "default": "Por defecto",
+          "low": "Bajo",
+          "moderate": "Moderado",
+          "high": "Alto"
         },
         "namespace": {
           "dml": "DML",

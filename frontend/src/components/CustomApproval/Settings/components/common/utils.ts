@@ -41,13 +41,13 @@ export const sourceText = (source: Risk_Source) => {
 export const levelText = (level: number) => {
   switch (level) {
     case 0:
-      return t("custom-approval.risk-rule.risk.risk-level.0");
+      return t("custom-approval.risk-rule.risk.risk-level.default");
     case 100:
-      return t("custom-approval.risk-rule.risk.risk-level.100");
+      return t("custom-approval.risk-rule.risk.risk-level.low");
     case 200:
-      return t("custom-approval.risk-rule.risk.risk-level.200");
+      return t("custom-approval.risk-rule.risk.risk-level.moderate");
     case 300:
-      return t("custom-approval.risk-rule.risk.risk-level.300");
+      return t("custom-approval.risk-rule.risk.risk-level.high");
     default:
       return String(level);
   }

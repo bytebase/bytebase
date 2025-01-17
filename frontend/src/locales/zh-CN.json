@@ -2374,10 +2374,10 @@
         "self": "风险",
         "select": "选择风险",
         "risk-level": {
-          "0": "默认",
-          "100": "低",
-          "200": "中",
-          "300": "高"
+          "default": "默认",
+          "low": "低",
+          "moderate": "中",
+          "high": "高"
         },
         "namespace": {
           "dml": "DML",
