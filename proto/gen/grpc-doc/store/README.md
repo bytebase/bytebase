@@ -89,7 +89,6 @@
     - [ExtensionMetadata](#bytebase-store-ExtensionMetadata)
     - [ExternalTableMetadata](#bytebase-store-ExternalTableMetadata)
     - [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata)
-    - [FunctionConfig](#bytebase-store-FunctionConfig)
     - [FunctionMetadata](#bytebase-store-FunctionMetadata)
     - [GenerationMetadata](#bytebase-store-GenerationMetadata)
     - [IndexMetadata](#bytebase-store-IndexMetadata)
@@ -101,7 +100,6 @@
     - [ObjectSchema.StructKind](#bytebase-store-ObjectSchema-StructKind)
     - [ObjectSchema.StructKind.PropertiesEntry](#bytebase-store-ObjectSchema-StructKind-PropertiesEntry)
     - [PackageMetadata](#bytebase-store-PackageMetadata)
-    - [ProcedureConfig](#bytebase-store-ProcedureConfig)
     - [ProcedureMetadata](#bytebase-store-ProcedureMetadata)
     - [SchemaCatalog](#bytebase-store-SchemaCatalog)
     - [SchemaMetadata](#bytebase-store-SchemaMetadata)
@@ -114,7 +112,6 @@
     - [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata)
     - [TaskMetadata](#bytebase-store-TaskMetadata)
     - [TriggerMetadata](#bytebase-store-TriggerMetadata)
-    - [ViewConfig](#bytebase-store-ViewConfig)
     - [ViewMetadata](#bytebase-store-ViewMetadata)
   
     - [GenerationMetadata.Type](#bytebase-store-GenerationMetadata-Type)
@@ -1609,24 +1606,6 @@ ForeignKeyMetadata is the metadata for foreign keys.
 
 
 
-<a name="bytebase-store-FunctionConfig"></a>
-
-### FunctionConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a function. |
-| updater | [string](#string) |  | The last updater of the function in branch. Format: users/{userUID}. |
-| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the function is updated in branch. |
-
-
-
-
-
-
 <a name="bytebase-store-FunctionMetadata"></a>
 
 ### FunctionMetadata
@@ -1827,24 +1806,6 @@ PackageMetadata is the metadata for packages.
 
 
 
-<a name="bytebase-store-ProcedureConfig"></a>
-
-### ProcedureConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a procedure. |
-| updater | [string](#string) |  | The last updater of the procedure in branch. Format: users/{userUID}. |
-| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the procedure is updated in branch. |
-
-
-
-
-
-
 <a name="bytebase-store-ProcedureMetadata"></a>
 
 ### ProcedureMetadata
@@ -1876,9 +1837,6 @@ ProcedureMetadata is the metadata for procedures.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the schema name. It is an empty string for databases without such concept such as MySQL. |
 | tables | [TableCatalog](#bytebase-store-TableCatalog) | repeated | The table_configs is the list of configs for tables in a schema. |
-| function_configs | [FunctionConfig](#bytebase-store-FunctionConfig) | repeated |  |
-| procedure_configs | [ProcedureConfig](#bytebase-store-ProcedureConfig) | repeated |  |
-| view_configs | [ViewConfig](#bytebase-store-ViewConfig) | repeated |  |
 
 
 
@@ -2006,9 +1964,6 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | columns | [ColumnCatalog](#bytebase-store-ColumnCatalog) | repeated | The column_configs is the ordered list of configs for columns in a table. |
 | object_schema | [ObjectSchema](#bytebase-store-ObjectSchema) | optional |  |
 | classification | [string](#string) |  |  |
-| updater | [string](#string) |  | The last updater of the table in branch. Format: users/{userUID}. |
-| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the table is updated in branch. |
 
 
 
@@ -2109,24 +2064,6 @@ TablePartitionMetadata is the metadata for table partitions.
 | character_set_client | [string](#string) |  |  |
 | collation_connection | [string](#string) |  |  |
 | comment | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-ViewConfig"></a>
-
-### ViewConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a view. |
-| updater | [string](#string) |  | The last updater of the view in branch. Format: users/{userUID}. |
-| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the view is updated in branch. |
 
 
 
@@ -3497,7 +3434,6 @@ Type is the database change type.
 | MIGRATE | 2 | Used for DDL changes including CREATE DATABASE. |
 | MIGRATE_SDL | 3 | Used for schema changes via state-based schema migration including CREATE DATABASE. |
 | MIGRATE_GHOST | 4 | Used for DDL changes using gh-ost. |
-| BRANCH | 5 | Used when restoring from a backup (the restored database branched from the original backup). |
 | DATA | 6 | Used for DML change. |
 
 
@@ -4841,8 +4777,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| database_config | [DatabaseConfig](#bytebase-store-DatabaseConfig) |  | The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. |
-| baseline_database_config | [DatabaseConfig](#bytebase-store-DatabaseConfig) |  | The snapshot of the baseline database config when creating the sheet. |
 | engine | [Engine](#bytebase-store-Engine) |  | The SQL dialect. |
 | commands | [SheetCommand](#bytebase-store-SheetCommand) | repeated | The start and end position of each command in the sheet statement. |
 

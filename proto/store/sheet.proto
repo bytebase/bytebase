@@ -3,17 +3,10 @@ syntax = "proto3";
 package bytebase.store;
 
 import "store/common.proto";
-import "store/database.proto";
 
 option go_package = "generated-go/store";
 
 message SheetPayload {
-  // The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database.
-  DatabaseConfig database_config = 1;
-
-  // The snapshot of the baseline database config when creating the sheet.
-  DatabaseConfig baseline_database_config = 2;
-
   // The SQL dialect.
   Engine engine = 3;
 

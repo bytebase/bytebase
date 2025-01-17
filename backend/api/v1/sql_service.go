@@ -1502,7 +1502,7 @@ func (*SQLService) ParseMyBatisMapper(_ context.Context, request *v1pb.ParseMyBa
 }
 
 // StringifyMetadata returns the stringified schema of the given metadata.
-func (*SQLService) StringifyMetadata(ctx context.Context, request *v1pb.StringifyMetadataRequest) (*v1pb.StringifyMetadataResponse, error) {
+func (*SQLService) StringifyMetadata(_ context.Context, request *v1pb.StringifyMetadataRequest) (*v1pb.StringifyMetadataResponse, error) {
 	switch request.Engine {
 	case v1pb.Engine_MYSQL, v1pb.Engine_OCEANBASE, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB, v1pb.Engine_ORACLE, v1pb.Engine_REDSHIFT, v1pb.Engine_CLICKHOUSE:
 	default:
@@ -1517,12 +1517,10 @@ func (*SQLService) StringifyMetadata(ctx context.Context, request *v1pb.Stringif
 		return nil, err
 	}
 	config := convertV1DatabaseConfig(
-		ctx,
 		&v1pb.DatabaseConfig{
 			Name:          request.Metadata.Name,
 			SchemaConfigs: request.Metadata.SchemaConfigs,
 		},
-		nil, /* optionalStores */
 	)
 
 	if !request.ClassificationFromConfig {

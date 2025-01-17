@@ -10,7 +10,6 @@ import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
-import "v1/database_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -155,12 +154,6 @@ message SheetPayload {
     SCHEMA_DESIGN = 1;
   }
   Type type = 1;
-
-  // The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database.
-  DatabaseConfig database_config = 2;
-
-  // The snapshot of the baseline database config when creating the sheet.
-  DatabaseConfig baseline_database_config = 3;
 
   // The start and end position of each command in the sheet statement.
   repeated SheetCommand commands = 4;

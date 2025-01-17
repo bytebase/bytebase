@@ -396,3 +396,18 @@ func isEqualColumnType(ctx *plsqlparser.Column_definitionContext, stateColumn *c
 
 	return false
 }
+
+func getDataTypePlainText(ctx plsqlparser.IDatatypeContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	if ctx.Native_datatype_element() != nil {
+		if ctx.Precision_part() != nil {
+			return ctx.GetParser().GetTokenStream().GetTextFromTokens(ctx.GetStart(), ctx.Precision_part().GetStop())
+		}
+		return ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Native_datatype_element())
+	}
+
+	return ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+}
