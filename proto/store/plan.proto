@@ -94,8 +94,6 @@ message PlanConfig {
       MIGRATE_SDL = 3;
       // Used for DDL changes using gh-ost.
       MIGRATE_GHOST = 4;
-      // Used when restoring from a backup (the restored database branched from the original backup).
-      BRANCH = 5;
       // Used for DML change.
       DATA = 6;
     }

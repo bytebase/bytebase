@@ -12,13 +12,11 @@ import (
 var (
 	mux              sync.Mutex
 	getDesignSchemas = make(map[storepb.Engine]getDesignSchema)
-	parseToMetadatas = make(map[storepb.Engine]parseToMetadata)
 	checkColumnTypes = make(map[storepb.Engine]checkColumnType)
 	stringifyTables  = make(map[storepb.Engine]stringifyTable)
 )
 
 type getDesignSchema func(*storepb.DatabaseSchemaMetadata) (string, error)
-type parseToMetadata func(string, string) (*storepb.DatabaseSchemaMetadata, error)
 type checkColumnType func(string) bool
 type stringifyTable func(*storepb.TableMetadata) (string, error)
 
@@ -37,23 +35,6 @@ func GetDesignSchema(engine storepb.Engine, to *storepb.DatabaseSchemaMetadata) 
 		return "", errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(to)
-}
-
-func RegisterParseToMetadatas(engine storepb.Engine, f parseToMetadata) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := parseToMetadatas[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	parseToMetadatas[engine] = f
-}
-
-func ParseToMetadata(engine storepb.Engine, defaultSchemaName, schema string) (*storepb.DatabaseSchemaMetadata, error) {
-	f, ok := parseToMetadatas[engine]
-	if !ok {
-		return nil, errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(defaultSchemaName, schema)
 }
 
 func RegisterCheckColumnType(engine storepb.Engine, f checkColumnType) {

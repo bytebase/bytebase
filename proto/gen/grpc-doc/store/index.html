@@ -519,10 +519,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.FunctionConfig"><span class="badge">M</span>FunctionConfig</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.FunctionMetadata"><span class="badge">M</span>FunctionMetadata</a>
                 </li>
               
@@ -564,10 +560,6 @@
               
                 <li>
                   <a href="#bytebase.store.PackageMetadata"><span class="badge">M</span>PackageMetadata</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ProcedureConfig"><span class="badge">M</span>ProcedureConfig</a>
                 </li>
               
                 <li>
@@ -616,10 +608,6 @@
               
                 <li>
                   <a href="#bytebase.store.TriggerMetadata"><span class="badge">M</span>TriggerMetadata</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ViewConfig"><span class="badge">M</span>ViewConfig</a>
                 </li>
               
                 <li>
@@ -4677,53 +4665,6 @@ It&#39;s empty string for other databases. </p></td>
 
         
       
-        <h3 id="bytebase.store.FunctionConfig">FunctionConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name is the name of a function. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>updater</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The last updater of the function in branch.
-Format: users/{userUID}. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>source_branch</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The last change come from branch.
-Format: projcets/{project}/branches/{branch} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>The timestamp when the function is updated in branch. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.FunctionMetadata">FunctionMetadata</h3>
         <p>FunctionMetadata is the metadata for functions.</p>
 
@@ -5239,53 +5180,6 @@ engine. </p></td>
 
         
       
-        <h3 id="bytebase.store.ProcedureConfig">ProcedureConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name is the name of a procedure. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>updater</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The last updater of the procedure in branch.
-Format: users/{userUID}. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>source_branch</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The last change come from branch.
-Format: projcets/{project}/branches/{branch} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>The timestamp when the procedure is updated in branch. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.ProcedureMetadata">ProcedureMetadata</h3>
         <p>ProcedureMetadata is the metadata for procedures.</p>
 
@@ -5376,27 +5270,6 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                   <td><a href="#bytebase.store.TableCatalog">TableCatalog</a></td>
                   <td>repeated</td>
                   <td><p>The table_configs is the list of configs for tables in a schema. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>function_configs</td>
-                  <td><a href="#bytebase.store.FunctionConfig">FunctionConfig</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>procedure_configs</td>
-                  <td><a href="#bytebase.store.ProcedureConfig">ProcedureConfig</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>view_configs</td>
-                  <td><a href="#bytebase.store.ViewConfig">ViewConfig</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -5798,29 +5671,6 @@ Snowflake. </p></td>
                   <td><p> </p></td>
                 </tr>
               
-                <tr>
-                  <td>updater</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The last updater of the table in branch.
-Format: users/{userUID}. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>source_branch</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The last change come from branch.
-Format: projcets/{project}/branches/{branch} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>The timestamp when the table is updated in branch. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -6218,53 +6068,6 @@ TRUNCATE. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.ViewConfig">ViewConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name is the name of a view. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>updater</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The last updater of the view in branch.
-Format: users/{userUID}. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>source_branch</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The last change come from branch.
-Format: projcets/{project}/branches/{branch} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>The timestamp when the view is updated in branch. </p></td>
                 </tr>
               
             </tbody>
@@ -9299,12 +9102,6 @@ Format: projects/{project-ID}/vcsConnectors/{vcs-connector} </p></td>
               </tr>
             
               <tr>
-                <td>BRANCH</td>
-                <td>5</td>
-                <td><p>Used when restoring from a backup (the restored database branched from the original backup).</p></td>
-              </tr>
-            
-              <tr>
                 <td>DATA</td>
                 <td>6</td>
                 <td><p>Used for DML change.</p></td>
@@ -12107,20 +11904,6 @@ Default to this mode.</p></td>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
-              
-                <tr>
-                  <td>database_config</td>
-                  <td><a href="#bytebase.store.DatabaseConfig">DatabaseConfig</a></td>
-                  <td></td>
-                  <td><p>The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>baseline_database_config</td>
-                  <td><a href="#bytebase.store.DatabaseConfig">DatabaseConfig</a></td>
-                  <td></td>
-                  <td><p>The snapshot of the baseline database config when creating the sheet. </p></td>
-                </tr>
               
                 <tr>
                   <td>engine</td>

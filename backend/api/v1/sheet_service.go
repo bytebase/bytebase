@@ -66,7 +66,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 		return nil, status.Errorf(codes.NotFound, "project with resource id %q had deleted", projectResourceID)
 	}
 
-	storeSheetCreate, err := convertToStoreSheetMessage(ctx, project.UID, principalID, request.Sheet)
+	storeSheetCreate, err := convertToStoreSheetMessage(project.UID, principalID, request.Sheet)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to convert sheet: %v", err)
 	}
@@ -113,7 +113,7 @@ func (s *SheetService) BatchCreateSheet(ctx context.Context, request *v1pb.Batch
 			return nil, status.Errorf(codes.InvalidArgument, "Sheet Parent %q does not match BatchCreateSheetRequest.Parent %q", r.Parent, request.Parent)
 		}
 
-		storeSheetCreate, err := convertToStoreSheetMessage(ctx, project.UID, user.ID, r.Sheet)
+		storeSheetCreate, err := convertToStoreSheetMessage(project.UID, user.ID, r.Sheet)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to convert sheet: %v", err)
 		}
@@ -284,12 +284,6 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 			{Start: 0, End: int32(sheet.Size)},
 		}
 	}
-	if payload := sheet.Payload; payload != nil {
-		if payload.DatabaseConfig != nil && payload.BaselineDatabaseConfig != nil {
-			v1SheetPayload.DatabaseConfig = convertStoreDatabaseConfig(ctx, payload.DatabaseConfig, nil /* filter */, nil /* optionalStores */)
-			v1SheetPayload.BaselineDatabaseConfig = convertStoreDatabaseConfig(ctx, payload.BaselineDatabaseConfig, nil /* filter */, nil /* optionalStores */)
-		}
-	}
 
 	return &v1pb.Sheet{
 		Name:        common.FormatSheet(project.ResourceID, sheet.UID),
@@ -304,7 +298,7 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 	}, nil
 }
 
-func convertToStoreSheetMessage(ctx context.Context, projectUID int, creatorID int, sheet *v1pb.Sheet) (*store.SheetMessage, error) {
+func convertToStoreSheetMessage(projectUID int, creatorID int, sheet *v1pb.Sheet) (*store.SheetMessage, error) {
 	sheetMessage := &store.SheetMessage{
 		ProjectUID: projectUID,
 		CreatorID:  creatorID,
@@ -313,10 +307,6 @@ func convertToStoreSheetMessage(ctx context.Context, projectUID int, creatorID i
 		Payload:    &storepb.SheetPayload{},
 	}
 	sheetMessage.Payload.Engine = convertEngine(sheet.Engine)
-	if sheet.Payload != nil {
-		sheetMessage.Payload.DatabaseConfig = convertV1DatabaseConfig(ctx, sheet.Payload.DatabaseConfig, nil /* optionalStores */)
-		sheetMessage.Payload.BaselineDatabaseConfig = convertV1DatabaseConfig(ctx, sheet.Payload.BaselineDatabaseConfig, nil /* optionalStores */)
-	}
 
 	return sheetMessage, nil
 }
