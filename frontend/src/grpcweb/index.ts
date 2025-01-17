@@ -9,7 +9,6 @@ import { ActuatorServiceDefinition } from "@/types/proto/v1/actuator_service";
 import { AnomalyServiceDefinition } from "@/types/proto/v1/anomaly_service";
 import { AuditLogServiceDefinition } from "@/types/proto/v1/audit_log_service";
 import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
-import { BranchServiceDefinition } from "@/types/proto/v1/branch_service";
 import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
 import { ChangelistServiceDefinition } from "@/types/proto/v1/changelist_service";
 import { DatabaseGroupServiceDefinition } from "@/types/proto/v1/database_group_service";
@@ -196,11 +195,6 @@ export const vcsConnectorServiceClient = clientFactory.create(
 
 export const anomalyServiceClient = clientFactory.create(
   AnomalyServiceDefinition,
-  channel
-);
-
-export const branchServiceClient = clientFactory.create(
-  BranchServiceDefinition,
   channel
 );
 

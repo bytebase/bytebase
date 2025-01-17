@@ -346,9 +346,6 @@
   
     - [AuthService](#bytebase-v1-AuthService)
   
-- [v1/branch_service.proto](#v1_branch_service-proto)
-    - [BranchService](#bytebase-v1-BranchService)
-  
 - [v1/cel_service.proto](#v1_cel_service-proto)
     - [BatchDeparseRequest](#bytebase-v1-BatchDeparseRequest)
     - [BatchDeparseResponse](#bytebase-v1-BatchDeparseResponse)
@@ -5979,31 +5976,6 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | UndeleteUser | [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest) | [User](#bytebase-v1-User) | Only the user with bb.users.undelete permission on the workspace can undelete the user. |
 | Login | [LoginRequest](#bytebase-v1-LoginRequest) | [LoginResponse](#bytebase-v1-LoginResponse) |  |
 | Logout | [LogoutRequest](#bytebase-v1-LogoutRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-
- 
-
-
-
-<a name="v1_branch_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/branch_service.proto
-
-
- 
-
- 
-
- 
-
-
-<a name="bytebase-v1-BranchService"></a>
-
-### BranchService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
 
  
 
