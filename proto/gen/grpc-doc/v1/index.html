@@ -1497,29 +1497,6 @@
         
           
           <li>
-            <a href="#v1%2fbranch_service.proto">v1/branch_service.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.v1.DiffMetadataRequest"><span class="badge">M</span>DiffMetadataRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.DiffMetadataResponse"><span class="badge">M</span>DiffMetadataResponse</a>
-                </li>
-              
-              
-              
-              
-                <li>
-                  <a href="#bytebase.v1.BranchService"><span class="badge">S</span>BranchService</a>
-                </li>
-              
-            </ul>
-          </li>
-        
-          
-          <li>
             <a href="#v1%2fcel_service.proto">v1/cel_service.proto</a>
             <ul>
               
@@ -2284,6 +2261,14 @@
               
                 <li>
                   <a href="#bytebase.v1.CheckResponse"><span class="badge">M</span>CheckResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DiffMetadataRequest"><span class="badge">M</span>DiffMetadataRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DiffMetadataResponse"><span class="badge">M</span>DiffMetadataResponse</a>
                 </li>
               
                 <li>
@@ -17026,136 +17011,6 @@ The last remaining workspace admin cannot be deleted.</p></td>
     
       
       <div class="file-heading">
-        <h2 id="v1/branch_service.proto">v1/branch_service.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.v1.DiffMetadataRequest">DiffMetadataRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>source_metadata</td>
-                  <td><a href="#bytebase.v1.DatabaseMetadata">DatabaseMetadata</a></td>
-                  <td></td>
-                  <td><p>The metadata of the source schema. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>target_metadata</td>
-                  <td><a href="#bytebase.v1.DatabaseMetadata">DatabaseMetadata</a></td>
-                  <td></td>
-                  <td><p>The metadata of the target schema. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>engine</td>
-                  <td><a href="#bytebase.v1.Engine">Engine</a></td>
-                  <td></td>
-                  <td><p>The database engine of the schema. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>classification_from_config</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If false, we will build the raw common by classification in database config. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.DiffMetadataResponse">DiffMetadataResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>diff</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The diff of the metadata. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-
-      
-
-      
-        <h3 id="bytebase.v1.BranchService">BranchService</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>DiffMetadata</td>
-                <td><a href="#bytebase.v1.DiffMetadataRequest">DiffMetadataRequest</a></td>
-                <td><a href="#bytebase.v1.DiffMetadataResponse">DiffMetadataResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-
-        
-          
-          
-          <h4>Methods with HTTP bindings</h4>
-          <table>
-            <thead>
-              <tr>
-                <td>Method Name</td>
-                <td>Method</td>
-                <td>Pattern</td>
-                <td>Body</td>
-              </tr>
-            </thead>
-            <tbody>
-            
-              
-              
-              <tr>
-                <td>DiffMetadata</td>
-                <td>POST</td>
-                <td>/v1/schemaDesign:diffMetadata</td>
-                <td>*</td>
-              </tr>
-              
-            
-            </tbody>
-          </table>
-          
-        
-    
-      
-      <div class="file-heading">
         <h2 id="v1/cel_service.proto">v1/cel_service.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -24865,6 +24720,75 @@ fetched from the database. </p></td>
 
         
       
+        <h3 id="bytebase.v1.DiffMetadataRequest">DiffMetadataRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>source_metadata</td>
+                  <td><a href="#bytebase.v1.DatabaseMetadata">DatabaseMetadata</a></td>
+                  <td></td>
+                  <td><p>The metadata of the source schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>target_metadata</td>
+                  <td><a href="#bytebase.v1.DatabaseMetadata">DatabaseMetadata</a></td>
+                  <td></td>
+                  <td><p>The metadata of the target schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>engine</td>
+                  <td><a href="#bytebase.v1.Engine">Engine</a></td>
+                  <td></td>
+                  <td><p>The database engine of the schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>classification_from_config</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If false, we will build the raw common by classification in database config. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DiffMetadataResponse">DiffMetadataResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>diff</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The diff of the metadata. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ExportRequest">ExportRequest</h3>
         <p></p>
 
@@ -26051,6 +25975,13 @@ config. </p></td>
                 <td><p></p></td>
               </tr>
             
+              <tr>
+                <td>DiffMetadata</td>
+                <td><a href="#bytebase.v1.DiffMetadataRequest">DiffMetadataRequest</a></td>
+                <td><a href="#bytebase.v1.DiffMetadataResponse">DiffMetadataResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -26166,6 +26097,16 @@ config. </p></td>
                 <td>StringifyMetadata</td>
                 <td>POST</td>
                 <td>/v1/schemaDesign:stringifyMetadata</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>DiffMetadata</td>
+                <td>POST</td>
+                <td>/v1/schemaDesign:diffMetadata</td>
                 <td>*</td>
               </tr>
               
