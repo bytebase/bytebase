@@ -10,6 +10,7 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
+import "v1/database_catalog_service.proto";
 import "v1/database_service.proto";
 
 option go_package = "generated-go/v1";
@@ -97,6 +98,15 @@ service SQLService {
       body: "*"
     };
     option (bytebase.v1.allow_without_credential) = true;
+  }
+
+  rpc DiffMetadata(DiffMetadataRequest) returns (DiffMetadataResponse) {
+    option (google.api.http) = {
+      post: "/v1/schemaDesign:diffMetadata"
+      body: "*"
+    };
+    option (bytebase.v1.allow_without_credential) = true;
+    // This is a util method requiring no authentication thus no authorization.
   }
 }
 
@@ -432,6 +442,29 @@ message StringifyMetadataRequest {
 
 message StringifyMetadataResponse {
   string schema = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message DiffMetadataRequest {
+  // The metadata of the source schema.
+  DatabaseMetadata source_metadata = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The metadata of the target schema.
+  DatabaseMetadata target_metadata = 2 [(google.api.field_behavior) = REQUIRED];
+
+  DatabaseCatalog source_catalog = 5;
+
+  DatabaseCatalog target_catalog = 6;
+
+  // The database engine of the schema.
+  Engine engine = 3;
+
+  // If false, we will build the raw common by classification in database config.
+  bool classification_from_config = 4;
+}
+
+message DiffMetadataResponse {
+  // The diff of the metadata.
+  string diff = 1;
 }
 
 message SearchQueryHistoriesRequest {

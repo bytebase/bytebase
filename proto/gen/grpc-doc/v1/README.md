@@ -117,7 +117,6 @@
     - [ExtensionMetadata](#bytebase-v1-ExtensionMetadata)
     - [ExternalTableMetadata](#bytebase-v1-ExternalTableMetadata)
     - [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata)
-    - [FunctionConfig](#bytebase-v1-FunctionConfig)
     - [FunctionMetadata](#bytebase-v1-FunctionMetadata)
     - [GenerationMetadata](#bytebase-v1-GenerationMetadata)
     - [GetChangelogRequest](#bytebase-v1-GetChangelogRequest)
@@ -140,7 +139,6 @@
     - [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse)
     - [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata)
     - [PackageMetadata](#bytebase-v1-PackageMetadata)
-    - [ProcedureConfig](#bytebase-v1-ProcedureConfig)
     - [ProcedureMetadata](#bytebase-v1-ProcedureMetadata)
     - [Revision](#bytebase-v1-Revision)
     - [SchemaConfig](#bytebase-v1-SchemaConfig)
@@ -160,7 +158,6 @@
     - [TriggerMetadata](#bytebase-v1-TriggerMetadata)
     - [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest)
     - [UpdateSecretRequest](#bytebase-v1-UpdateSecretRequest)
-    - [ViewConfig](#bytebase-v1-ViewConfig)
     - [ViewMetadata](#bytebase-v1-ViewMetadata)
   
     - [Changelog.Status](#bytebase-v1-Changelog-Status)
@@ -348,26 +345,6 @@
     - [UserType](#bytebase-v1-UserType)
   
     - [AuthService](#bytebase-v1-AuthService)
-  
-- [v1/branch_service.proto](#v1_branch_service-proto)
-    - [Branch](#bytebase-v1-Branch)
-    - [CreateBranchRequest](#bytebase-v1-CreateBranchRequest)
-    - [DeleteBranchRequest](#bytebase-v1-DeleteBranchRequest)
-    - [DiffDatabaseRequest](#bytebase-v1-DiffDatabaseRequest)
-    - [DiffDatabaseResponse](#bytebase-v1-DiffDatabaseResponse)
-    - [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest)
-    - [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse)
-    - [GetBranchRequest](#bytebase-v1-GetBranchRequest)
-    - [ListBranchesRequest](#bytebase-v1-ListBranchesRequest)
-    - [ListBranchesResponse](#bytebase-v1-ListBranchesResponse)
-    - [MergeBranchRequest](#bytebase-v1-MergeBranchRequest)
-    - [RebaseBranchRequest](#bytebase-v1-RebaseBranchRequest)
-    - [RebaseBranchResponse](#bytebase-v1-RebaseBranchResponse)
-    - [UpdateBranchRequest](#bytebase-v1-UpdateBranchRequest)
-  
-    - [BranchView](#bytebase-v1-BranchView)
-  
-    - [BranchService](#bytebase-v1-BranchService)
   
 - [v1/cel_service.proto](#v1_cel_service-proto)
     - [BatchDeparseRequest](#bytebase-v1-BatchDeparseRequest)
@@ -570,6 +547,8 @@
     - [Advice](#bytebase-v1-Advice)
     - [CheckRequest](#bytebase-v1-CheckRequest)
     - [CheckResponse](#bytebase-v1-CheckResponse)
+    - [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest)
+    - [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse)
     - [ExportRequest](#bytebase-v1-ExportRequest)
     - [ExportResponse](#bytebase-v1-ExportResponse)
     - [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest)
@@ -2468,24 +2447,6 @@ ForeignKeyMetadata is the metadata for foreign keys.
 
 
 
-<a name="bytebase-v1-FunctionConfig"></a>
-
-### FunctionConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a function. |
-| updater | [string](#string) |  | The last updater of the function in branch. Format: users/{email} |
-| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the function is updated in branch. |
-
-
-
-
-
-
 <a name="bytebase-v1-FunctionMetadata"></a>
 
 ### FunctionMetadata
@@ -2888,24 +2849,6 @@ PackageMetadata is the metadata for packages.
 
 
 
-<a name="bytebase-v1-ProcedureConfig"></a>
-
-### ProcedureConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a procedure. |
-| updater | [string](#string) |  | The last updater of the procedure in branch. Format: users/{email} |
-| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the procedure is updated in branch. |
-
-
-
-
-
-
 <a name="bytebase-v1-ProcedureMetadata"></a>
 
 ### ProcedureMetadata
@@ -2965,9 +2908,6 @@ ProcedureMetadata is the metadata for procedures.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the schema name. It is an empty string for databases without such concept such as MySQL. |
 | table_configs | [TableConfig](#bytebase-v1-TableConfig) | repeated | The table_configs is the list of configs for tables in a schema. |
-| function_configs | [FunctionConfig](#bytebase-v1-FunctionConfig) | repeated |  |
-| procedure_configs | [ProcedureConfig](#bytebase-v1-ProcedureConfig) | repeated |  |
-| view_configs | [ViewConfig](#bytebase-v1-ViewConfig) | repeated |  |
 
 
 
@@ -3169,9 +3109,6 @@ SlowQueryStatistics is the statistics of the slow query log.
 | name | [string](#string) |  | The name is the name of a table. |
 | column_configs | [ColumnConfig](#bytebase-v1-ColumnConfig) | repeated | The column_configs is the ordered list of configs for columns in a table. |
 | classification_id | [string](#string) |  |  |
-| updater | [string](#string) |  | The last updater of the table in branch. Format: users/{email} |
-| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the table is updated in branch. |
 
 
 
@@ -3307,24 +3244,6 @@ The database&#39;s `name` field is used to identify the database to update. Form
 | secret | [Secret](#bytebase-v1-Secret) |  | The secret to be created or updated. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The mask of the fields to be updated. |
 | allow_missing | [bool](#bool) |  | If true, the secret will be created if it does not exist. |
-
-
-
-
-
-
-<a name="bytebase-v1-ViewConfig"></a>
-
-### ViewConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a view. |
-| updater | [string](#string) |  | The last updater of the view in branch. Format: users/{email} |
-| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the view is updated in branch. |
 
 
 
@@ -6057,304 +5976,6 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | UndeleteUser | [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest) | [User](#bytebase-v1-User) | Only the user with bb.users.undelete permission on the workspace can undelete the user. |
 | Login | [LoginRequest](#bytebase-v1-LoginRequest) | [LoginResponse](#bytebase-v1-LoginResponse) |  |
 | Logout | [LogoutRequest](#bytebase-v1-LogoutRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-
- 
-
-
-
-<a name="v1_branch_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/branch_service.proto
-
-
-
-<a name="bytebase-v1-Branch"></a>
-
-### Branch
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the branch. Format: projects/{project}/branches/{branch} {branch} should be the id of a sheet. |
-| branch_id | [string](#string) |  | The branch ID. |
-| schema | [string](#string) |  | The schema of branch. AKA sheet&#39;s statement. |
-| schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the current editing schema. |
-| baseline_schema | [string](#string) |  | The baseline schema. |
-| baseline_schema_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the baseline schema. |
-| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the branch. |
-| baseline_database | [string](#string) |  | The name of the baseline database. Format: instances/{instance}/databases/{database} |
-| parent_branch | [string](#string) |  | The name of the parent branch. For main branch, it&#39;s empty. For child branch, its format will be: projects/{project}/branches/{branch} |
-| etag | [string](#string) |  | The etag of the branch. |
-| creator | [string](#string) |  | The creator of the branch. Format: users/{email} |
-| updater | [string](#string) |  | The updater of the branch. Format: users/{email} |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the branch was created. |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the branch was last updated. |
-
-
-
-
-
-
-<a name="bytebase-v1-CreateBranchRequest"></a>
-
-### CreateBranchRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of branches. Format: project/{project} |
-| branch | [Branch](#bytebase-v1-Branch) |  |  |
-| branch_id | [string](#string) |  | The ID to use for the branch, which will become the final component of the branch&#39;s resource name. Format: [a-zA-Z][a-zA-Z0-9-_/]&#43;. |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteBranchRequest"></a>
-
-### DeleteBranchRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the branch to delete. Format: projects/{project}/branches/{branch} |
-| force | [bool](#bool) |  | By default, server will return `FAILED_PRECONDITION` error if delete the branch that is parent of other branches. If true, server will delete the branch forcely but will not delete its children branches. |
-
-
-
-
-
-
-<a name="bytebase-v1-DiffDatabaseRequest"></a>
-
-### DiffDatabaseRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of branch. |
-| database | [string](#string) |  | The name of the databsae to merge the branch to. |
-
-
-
-
-
-
-<a name="bytebase-v1-DiffDatabaseResponse"></a>
-
-### DiffDatabaseResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| diff | [string](#string) |  | The schema diff when merge occurs seamlessly. |
-| schema | [string](#string) |  | The merged schema if there is no conflict. |
-| conflict_schema | [string](#string) |  | The conflict schema when rebase has conflicts. The conflict section is enclosed by the following. &lt;&lt;&lt;&lt;&lt; HEAD ==== &gt;&gt;&gt;&gt;&gt; main |
-
-
-
-
-
-
-<a name="bytebase-v1-DiffMetadataRequest"></a>
-
-### DiffMetadataRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| source_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the source schema. |
-| target_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the target schema. |
-| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema. |
-| classification_from_config | [bool](#bool) |  | If false, we will build the raw common by classification in database config. |
-
-
-
-
-
-
-<a name="bytebase-v1-DiffMetadataResponse"></a>
-
-### DiffMetadataResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| diff | [string](#string) |  | The diff of the metadata. |
-
-
-
-
-
-
-<a name="bytebase-v1-GetBranchRequest"></a>
-
-### GetBranchRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the branch to retrieve. Format: projects/{project}/branches/{branch} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListBranchesRequest"></a>
-
-### ListBranchesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource of the branch. Format: projects/{project} |
-| filter | [string](#string) |  | To filter the search result. |
-| page_size | [int32](#int32) |  | Not used. The maximum number of branches to return. The service may return fewer than this value. If unspecified, at most 50 branches will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListBranches` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListBranches` must match the call that provided the page token. |
-| view | [BranchView](#bytebase-v1-BranchView) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ListBranchesResponse"></a>
-
-### ListBranchesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| branches | [Branch](#bytebase-v1-Branch) | repeated | The branches from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-MergeBranchRequest"></a>
-
-### MergeBranchRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the base branch to merge to. Format: projects/{project}/branches/{branch} |
-| head_branch | [string](#string) |  | The head branch to merge from. Format: projects/{project}/branches/{branch} |
-| etag | [string](#string) |  | The current etag of the branch. If an etag is provided and does not match the current etag of the branch, the call will be blocked and an ABORTED error will be returned. The etag should be the etag from named branch. |
-| validate_only | [bool](#bool) |  | validate_only determines if the merge can occur seamlessly without any conflicts. |
-
-
-
-
-
-
-<a name="bytebase-v1-RebaseBranchRequest"></a>
-
-### RebaseBranchRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the base branch to merge to. Format: projects/{project}/branches/{branch} |
-| source_database | [string](#string) |  | The database (remote upstream) used to rebase. We use its schema as baseline and reapply the difference between base and head of the named branch. Format: instances/{instance}/databases/{database} |
-| source_branch | [string](#string) |  | The branch (remote upstream) used to rebase. We use its head as baseline. We use its head schema as baseline and reapply the difference between base and head of the named branch. Format: projects/{project}/branches/{branch} |
-| merged_schema | [string](#string) |  | For failed merge, we will pass in this addition merged schema and use it for head. This has to be set together with source_database or source_branch. |
-| etag | [string](#string) |  | The current etag of the branch. If an etag is provided and does not match the current etag of the branch, the call will be blocked and an ABORTED error will be returned. The etag should be specified for using merged_schema. The etag should be the etag from named branch. |
-| validate_only | [bool](#bool) |  | validate_only determines if the rebase can occur seamlessly without any conflicts. |
-
-
-
-
-
-
-<a name="bytebase-v1-RebaseBranchResponse"></a>
-
-### RebaseBranchResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| branch | [Branch](#bytebase-v1-Branch) |  | The rebased branch when rebase occurs seamlessly. |
-| conflict_schema | [string](#string) |  | The conflict schema when rebase has conflicts. The conflict section is enclosed by the following. &lt;&lt;&lt;&lt;&lt; HEAD ==== &gt;&gt;&gt;&gt;&gt; main |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateBranchRequest"></a>
-
-### UpdateBranchRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| branch | [Branch](#bytebase-v1-Branch) |  | The branch to update.
-
-The branch&#39;s `name` field is used to identify the branch to update. Format: projects/{project}/branches/{branch} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| etag | [string](#string) |  | The current etag of the branch. If an etag is provided and does not match the current etag of the branch, the call will be blocked and an ABORTED error will be returned. The etag should be specified for using merged_schema. The etag should be the etag from named branch. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-BranchView"></a>
-
-### BranchView
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| BRANCH_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
-| BRANCH_VIEW_BASIC | 1 | Exclude schema, baseline_schema. |
-| BRANCH_VIEW_FULL | 2 | Include everything. |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-BranchService"></a>
-
-### BranchService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetBranch | [GetBranchRequest](#bytebase-v1-GetBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
-| ListBranches | [ListBranchesRequest](#bytebase-v1-ListBranchesRequest) | [ListBranchesResponse](#bytebase-v1-ListBranchesResponse) |  |
-| CreateBranch | [CreateBranchRequest](#bytebase-v1-CreateBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
-| UpdateBranch | [UpdateBranchRequest](#bytebase-v1-UpdateBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
-| MergeBranch | [MergeBranchRequest](#bytebase-v1-MergeBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
-| RebaseBranch | [RebaseBranchRequest](#bytebase-v1-RebaseBranchRequest) | [RebaseBranchResponse](#bytebase-v1-RebaseBranchResponse) |  |
-| DeleteBranch | [DeleteBranchRequest](#bytebase-v1-DeleteBranchRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
 
  
 
@@ -9318,6 +8939,41 @@ Type is the database change type.
 
 
 
+<a name="bytebase-v1-DiffMetadataRequest"></a>
+
+### DiffMetadataRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| source_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the source schema. |
+| target_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the target schema. |
+| source_catalog | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  |  |
+| target_catalog | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  |  |
+| engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema. |
+| classification_from_config | [bool](#bool) |  | If false, we will build the raw common by classification in database config. |
+
+
+
+
+
+
+<a name="bytebase-v1-DiffMetadataResponse"></a>
+
+### DiffMetadataResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| diff | [string](#string) |  | The diff of the metadata. |
+
+
+
+
+
+
 <a name="bytebase-v1-ExportRequest"></a>
 
 ### ExportRequest
@@ -9749,6 +9405,7 @@ for field description.
 | ParseMyBatisMapper | [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest) | [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse) |  |
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
 | StringifyMetadata | [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest) | [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse) |  |
+| DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
 
  
 
@@ -11548,8 +11205,6 @@ Read from `pg_stat_activity`
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | type | [SheetPayload.Type](#bytebase-v1-SheetPayload-Type) |  |  |
-| database_config | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  | The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. |
-| baseline_database_config | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  | The snapshot of the baseline database config when creating the sheet. |
 | commands | [SheetCommand](#bytebase-v1-SheetCommand) | repeated | The start and end position of each command in the sheet statement. |
 
 

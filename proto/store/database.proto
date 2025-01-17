@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package bytebase.store;
 
-import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 import "store/common.proto";
@@ -717,12 +716,6 @@ message SchemaCatalog {
 
   // The table_configs is the list of configs for tables in a schema.
   repeated TableCatalog tables = 2;
-
-  repeated FunctionConfig function_configs = 3;
-
-  repeated ProcedureConfig procedure_configs = 4;
-
-  repeated ViewConfig view_configs = 5;
 }
 
 message TableCatalog {
@@ -735,17 +728,6 @@ message TableCatalog {
   optional ObjectSchema object_schema = 7;
 
   string classification = 3;
-
-  // The last updater of the table in branch.
-  // Format: users/{userUID}.
-  string updater = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The last change come from branch.
-  // Format: projcets/{project}/branches/{branch}
-  string source_branch = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The timestamp when the table is updated in branch.
-  google.protobuf.Timestamp update_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message ColumnCatalog {
@@ -792,52 +774,4 @@ message ObjectSchema {
   }
 
   string semantic_type = 4;
-}
-
-message FunctionConfig {
-  // The name is the name of a function.
-  string name = 1;
-
-  // The last updater of the function in branch.
-  // Format: users/{userUID}.
-  string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The last change come from branch.
-  // Format: projcets/{project}/branches/{branch}
-  string source_branch = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The timestamp when the function is updated in branch.
-  google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
-}
-
-message ProcedureConfig {
-  // The name is the name of a procedure.
-  string name = 1;
-
-  // The last updater of the procedure in branch.
-  // Format: users/{userUID}.
-  string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The last change come from branch.
-  // Format: projcets/{project}/branches/{branch}
-  string source_branch = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The timestamp when the procedure is updated in branch.
-  google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
-}
-
-message ViewConfig {
-  // The name is the name of a view.
-  string name = 1;
-
-  // The last updater of the view in branch.
-  // Format: users/{userUID}.
-  string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The last change come from branch.
-  // Format: projcets/{project}/branches/{branch}
-  string source_branch = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The timestamp when the view is updated in branch.
-  google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

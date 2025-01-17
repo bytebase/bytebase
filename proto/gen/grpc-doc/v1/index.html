@@ -618,10 +618,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.FunctionConfig"><span class="badge">M</span>FunctionConfig</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.FunctionMetadata"><span class="badge">M</span>FunctionMetadata</a>
                 </li>
               
@@ -710,10 +706,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ProcedureConfig"><span class="badge">M</span>ProcedureConfig</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.ProcedureMetadata"><span class="badge">M</span>ProcedureMetadata</a>
                 </li>
               
@@ -787,10 +779,6 @@
               
                 <li>
                   <a href="#bytebase.v1.UpdateSecretRequest"><span class="badge">M</span>UpdateSecretRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ViewConfig"><span class="badge">M</span>ViewConfig</a>
                 </li>
               
                 <li>
@@ -1502,81 +1490,6 @@
               
                 <li>
                   <a href="#bytebase.v1.AuthService"><span class="badge">S</span>AuthService</a>
-                </li>
-              
-            </ul>
-          </li>
-        
-          
-          <li>
-            <a href="#v1%2fbranch_service.proto">v1/branch_service.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.v1.Branch"><span class="badge">M</span>Branch</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.CreateBranchRequest"><span class="badge">M</span>CreateBranchRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.DeleteBranchRequest"><span class="badge">M</span>DeleteBranchRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.DiffDatabaseRequest"><span class="badge">M</span>DiffDatabaseRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.DiffDatabaseResponse"><span class="badge">M</span>DiffDatabaseResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.DiffMetadataRequest"><span class="badge">M</span>DiffMetadataRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.DiffMetadataResponse"><span class="badge">M</span>DiffMetadataResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.GetBranchRequest"><span class="badge">M</span>GetBranchRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListBranchesRequest"><span class="badge">M</span>ListBranchesRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListBranchesResponse"><span class="badge">M</span>ListBranchesResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.MergeBranchRequest"><span class="badge">M</span>MergeBranchRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.RebaseBranchRequest"><span class="badge">M</span>RebaseBranchRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.RebaseBranchResponse"><span class="badge">M</span>RebaseBranchResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.UpdateBranchRequest"><span class="badge">M</span>UpdateBranchRequest</a>
-                </li>
-              
-              
-                <li>
-                  <a href="#bytebase.v1.BranchView"><span class="badge">E</span>BranchView</a>
-                </li>
-              
-              
-              
-                <li>
-                  <a href="#bytebase.v1.BranchService"><span class="badge">S</span>BranchService</a>
                 </li>
               
             </ul>
@@ -2348,6 +2261,14 @@
               
                 <li>
                   <a href="#bytebase.v1.CheckResponse"><span class="badge">M</span>CheckResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DiffMetadataRequest"><span class="badge">M</span>DiffMetadataRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DiffMetadataResponse"><span class="badge">M</span>DiffMetadataResponse</a>
                 </li>
               
                 <li>
@@ -7501,53 +7422,6 @@ It&#39;s empty string for other databases. </p></td>
 
         
       
-        <h3 id="bytebase.v1.FunctionConfig">FunctionConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name is the name of a function. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>updater</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The last updater of the function in branch.
-Format: users/{email} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>source_branch</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The last change come from branch.
-Format: projcets/{project}/branches/{branch} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>The timestamp when the function is updated in branch. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.FunctionMetadata">FunctionMetadata</h3>
         <p>FunctionMetadata is the metadata for functions.</p>
 
@@ -8576,53 +8450,6 @@ view. </p></td>
 
         
       
-        <h3 id="bytebase.v1.ProcedureConfig">ProcedureConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name is the name of a procedure. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>updater</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The last updater of the procedure in branch.
-Format: users/{email} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>source_branch</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The last change come from branch.
-Format: projcets/{project}/branches/{branch} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>The timestamp when the procedure is updated in branch. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.ProcedureMetadata">ProcedureMetadata</h3>
         <p>ProcedureMetadata is the metadata for procedures.</p>
 
@@ -8837,27 +8664,6 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                   <td><a href="#bytebase.v1.TableConfig">TableConfig</a></td>
                   <td>repeated</td>
                   <td><p>The table_configs is the list of configs for tables in a schema. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>function_configs</td>
-                  <td><a href="#bytebase.v1.FunctionConfig">FunctionConfig</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>procedure_configs</td>
-                  <td><a href="#bytebase.v1.ProcedureConfig">ProcedureConfig</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>view_configs</td>
-                  <td><a href="#bytebase.v1.ViewConfig">ViewConfig</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -9477,29 +9283,6 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><p> </p></td>
                 </tr>
               
-                <tr>
-                  <td>updater</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The last updater of the table in branch.
-Format: users/{email} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>source_branch</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The last change come from branch.
-Format: projcets/{project}/branches/{branch} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>The timestamp when the table is updated in branch. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -9969,53 +9752,6 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>If true, the secret will be created if it does not exist. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ViewConfig">ViewConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name is the name of a view. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>updater</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The last updater of the view in branch.
-Format: users/{email} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>source_branch</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The last change come from branch.
-Format: projcets/{project}/branches/{branch} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>The timestamp when the view is updated in branch. </p></td>
                 </tr>
               
             </tbody>
@@ -17264,871 +17000,6 @@ The last remaining workspace admin cannot be deleted.</p></td>
                 <td>Logout</td>
                 <td>POST</td>
                 <td>/v1/auth/logout</td>
-                <td>*</td>
-              </tr>
-              
-            
-            </tbody>
-          </table>
-          
-        
-    
-      
-      <div class="file-heading">
-        <h2 id="v1/branch_service.proto">v1/branch_service.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.v1.Branch">Branch</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the branch.
-Format: projects/{project}/branches/{branch}
-{branch} should be the id of a sheet. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>branch_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The branch ID. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The schema of branch. AKA sheet&#39;s statement. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema_metadata</td>
-                  <td><a href="#bytebase.v1.DatabaseMetadata">DatabaseMetadata</a></td>
-                  <td></td>
-                  <td><p>The metadata of the current editing schema. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>baseline_schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The baseline schema. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>baseline_schema_metadata</td>
-                  <td><a href="#bytebase.v1.DatabaseMetadata">DatabaseMetadata</a></td>
-                  <td></td>
-                  <td><p>The metadata of the baseline schema. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>engine</td>
-                  <td><a href="#bytebase.v1.Engine">Engine</a></td>
-                  <td></td>
-                  <td><p>The database engine of the branch. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>baseline_database</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the baseline database.
-Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>parent_branch</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the parent branch.
-For main branch, it&#39;s empty.
-For child branch, its format will be: projects/{project}/branches/{branch} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>etag</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The etag of the branch. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>creator</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The creator of the branch.
-Format: users/{email} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>updater</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The updater of the branch.
-Format: users/{email} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>create_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>The timestamp when the branch was created. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>The timestamp when the branch was last updated. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.CreateBranchRequest">CreateBranchRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent, which owns this collection of branches.
-Format: project/{project} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>branch</td>
-                  <td><a href="#bytebase.v1.Branch">Branch</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>branch_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The ID to use for the branch, which will become the final component of
-the branch&#39;s resource name.
-Format: [a-zA-Z][a-zA-Z0-9-_/]&#43;. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.DeleteBranchRequest">DeleteBranchRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the branch to delete.
-Format: projects/{project}/branches/{branch} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>force</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>By default, server will return `FAILED_PRECONDITION` error
-if delete the branch that is parent of other branches.
-If true, server will delete the branch forcely but will not delete its children branches. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.DiffDatabaseRequest">DiffDatabaseRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of branch. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the databsae to merge the branch to. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.DiffDatabaseResponse">DiffDatabaseResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>diff</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The schema diff when merge occurs seamlessly. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The merged schema if there is no conflict. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>conflict_schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The conflict schema when rebase has conflicts.
-The conflict section is enclosed by the following.
-&lt;&lt;&lt;&lt;&lt; HEAD
-====
-&gt;&gt;&gt;&gt;&gt; main </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.DiffMetadataRequest">DiffMetadataRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>source_metadata</td>
-                  <td><a href="#bytebase.v1.DatabaseMetadata">DatabaseMetadata</a></td>
-                  <td></td>
-                  <td><p>The metadata of the source schema. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>target_metadata</td>
-                  <td><a href="#bytebase.v1.DatabaseMetadata">DatabaseMetadata</a></td>
-                  <td></td>
-                  <td><p>The metadata of the target schema. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>engine</td>
-                  <td><a href="#bytebase.v1.Engine">Engine</a></td>
-                  <td></td>
-                  <td><p>The database engine of the schema. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>classification_from_config</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If false, we will build the raw common by classification in database config. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.DiffMetadataResponse">DiffMetadataResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>diff</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The diff of the metadata. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.GetBranchRequest">GetBranchRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the branch to retrieve.
-Format: projects/{project}/branches/{branch} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListBranchesRequest">ListBranchesRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent resource of the branch.
-Format: projects/{project} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>To filter the search result. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>Not used.
-The maximum number of branches to return. The service may return fewer than
-this value.
-If unspecified, at most 50 branches will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Not used.
-A page token, received from a previous `ListBranches` call.
-Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListBranches` must match
-the call that provided the page token. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>view</td>
-                  <td><a href="#bytebase.v1.BranchView">BranchView</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListBranchesResponse">ListBranchesResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>branches</td>
-                  <td><a href="#bytebase.v1.Branch">Branch</a></td>
-                  <td>repeated</td>
-                  <td><p>The branches from the specified request. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
-If this field is omitted, there are no subsequent pages. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.MergeBranchRequest">MergeBranchRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the base branch to merge to.
-Format: projects/{project}/branches/{branch} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>head_branch</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The head branch to merge from.
-Format: projects/{project}/branches/{branch} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>etag</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The current etag of the branch.
-If an etag is provided and does not match the current etag of the branch,
-the call will be blocked and an ABORTED error will be returned.
-The etag should be the etag from named branch. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>validate_only</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>validate_only determines if the merge can occur seamlessly without any conflicts. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.RebaseBranchRequest">RebaseBranchRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the base branch to merge to.
-Format: projects/{project}/branches/{branch} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>source_database</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The database (remote upstream) used to rebase.
-We use its schema as baseline and reapply the difference between base and head of the named branch.
-Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>source_branch</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The branch (remote upstream) used to rebase. We use its head as baseline.
-We use its head schema as baseline and reapply the difference between base and head of the named branch.
-Format: projects/{project}/branches/{branch} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>merged_schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>For failed merge, we will pass in this addition merged schema and use it for head.
-This has to be set together with source_database or source_branch. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>etag</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The current etag of the branch.
-If an etag is provided and does not match the current etag of the branch,
-the call will be blocked and an ABORTED error will be returned.
-The etag should be specified for using merged_schema. The etag should be the etag from named branch. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>validate_only</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>validate_only determines if the rebase can occur seamlessly without any conflicts. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.RebaseBranchResponse">RebaseBranchResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>branch</td>
-                  <td><a href="#bytebase.v1.Branch">Branch</a></td>
-                  <td></td>
-                  <td><p>The rebased branch when rebase occurs seamlessly. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>conflict_schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The conflict schema when rebase has conflicts.
-The conflict section is enclosed by the following.
-&lt;&lt;&lt;&lt;&lt; HEAD
-====
-&gt;&gt;&gt;&gt;&gt; main </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.UpdateBranchRequest">UpdateBranchRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>branch</td>
-                  <td><a href="#bytebase.v1.Branch">Branch</a></td>
-                  <td></td>
-                  <td><p>The branch to update.
-
-The branch&#39;s `name` field is used to identify the branch to update.
-Format: projects/{project}/branches/{branch} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_mask</td>
-                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
-                  <td></td>
-                  <td><p>The list of fields to update. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>etag</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The current etag of the branch.
-If an etag is provided and does not match the current etag of the branch,
-the call will be blocked and an ABORTED error will be returned.
-The etag should be specified for using merged_schema. The etag should be the etag from named branch. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-        <h3 id="bytebase.v1.BranchView">BranchView</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>BRANCH_VIEW_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>The default / unset value.
-The API will default to the BASIC view.</p></td>
-              </tr>
-            
-              <tr>
-                <td>BRANCH_VIEW_BASIC</td>
-                <td>1</td>
-                <td><p>Exclude schema, baseline_schema.</p></td>
-              </tr>
-            
-              <tr>
-                <td>BRANCH_VIEW_FULL</td>
-                <td>2</td>
-                <td><p>Include everything.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-
-      
-
-      
-        <h3 id="bytebase.v1.BranchService">BranchService</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>GetBranch</td>
-                <td><a href="#bytebase.v1.GetBranchRequest">GetBranchRequest</a></td>
-                <td><a href="#bytebase.v1.Branch">Branch</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ListBranches</td>
-                <td><a href="#bytebase.v1.ListBranchesRequest">ListBranchesRequest</a></td>
-                <td><a href="#bytebase.v1.ListBranchesResponse">ListBranchesResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>CreateBranch</td>
-                <td><a href="#bytebase.v1.CreateBranchRequest">CreateBranchRequest</a></td>
-                <td><a href="#bytebase.v1.Branch">Branch</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>UpdateBranch</td>
-                <td><a href="#bytebase.v1.UpdateBranchRequest">UpdateBranchRequest</a></td>
-                <td><a href="#bytebase.v1.Branch">Branch</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MergeBranch</td>
-                <td><a href="#bytebase.v1.MergeBranchRequest">MergeBranchRequest</a></td>
-                <td><a href="#bytebase.v1.Branch">Branch</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>RebaseBranch</td>
-                <td><a href="#bytebase.v1.RebaseBranchRequest">RebaseBranchRequest</a></td>
-                <td><a href="#bytebase.v1.RebaseBranchResponse">RebaseBranchResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DeleteBranch</td>
-                <td><a href="#bytebase.v1.DeleteBranchRequest">DeleteBranchRequest</a></td>
-                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DiffMetadata</td>
-                <td><a href="#bytebase.v1.DiffMetadataRequest">DiffMetadataRequest</a></td>
-                <td><a href="#bytebase.v1.DiffMetadataResponse">DiffMetadataResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-
-        
-          
-          
-          <h4>Methods with HTTP bindings</h4>
-          <table>
-            <thead>
-              <tr>
-                <td>Method Name</td>
-                <td>Method</td>
-                <td>Pattern</td>
-                <td>Body</td>
-              </tr>
-            </thead>
-            <tbody>
-            
-              
-              
-              <tr>
-                <td>GetBranch</td>
-                <td>GET</td>
-                <td>/v1/{name=projects/*/branches/*}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>ListBranches</td>
-                <td>GET</td>
-                <td>/v1/{parent=projects/*}/branches</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>CreateBranch</td>
-                <td>POST</td>
-                <td>/v1/{parent=projects/*}/branch</td>
-                <td>branch</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>UpdateBranch</td>
-                <td>PATCH</td>
-                <td>/v1/{branch.name=projects/*/branches/*}</td>
-                <td>branch</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>MergeBranch</td>
-                <td>POST</td>
-                <td>/v1/{name=projects/*/branches/*}:merge</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>RebaseBranch</td>
-                <td>POST</td>
-                <td>/v1/{name=projects/*/branches/*}:rebase</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>DeleteBranch</td>
-                <td>DELETE</td>
-                <td>/v1/{name=projects/*/branches/*}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>DiffMetadata</td>
-                <td>POST</td>
-                <td>/v1/schemaDesign:diffMetadata</td>
                 <td>*</td>
               </tr>
               
@@ -25849,6 +24720,89 @@ fetched from the database. </p></td>
 
         
       
+        <h3 id="bytebase.v1.DiffMetadataRequest">DiffMetadataRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>source_metadata</td>
+                  <td><a href="#bytebase.v1.DatabaseMetadata">DatabaseMetadata</a></td>
+                  <td></td>
+                  <td><p>The metadata of the source schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>target_metadata</td>
+                  <td><a href="#bytebase.v1.DatabaseMetadata">DatabaseMetadata</a></td>
+                  <td></td>
+                  <td><p>The metadata of the target schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>source_catalog</td>
+                  <td><a href="#bytebase.v1.DatabaseCatalog">DatabaseCatalog</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>target_catalog</td>
+                  <td><a href="#bytebase.v1.DatabaseCatalog">DatabaseCatalog</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>engine</td>
+                  <td><a href="#bytebase.v1.Engine">Engine</a></td>
+                  <td></td>
+                  <td><p>The database engine of the schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>classification_from_config</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If false, we will build the raw common by classification in database config. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DiffMetadataResponse">DiffMetadataResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>diff</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The diff of the metadata. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ExportRequest">ExportRequest</h3>
         <p></p>
 
@@ -27035,6 +25989,13 @@ config. </p></td>
                 <td><p></p></td>
               </tr>
             
+              <tr>
+                <td>DiffMetadata</td>
+                <td><a href="#bytebase.v1.DiffMetadataRequest">DiffMetadataRequest</a></td>
+                <td><a href="#bytebase.v1.DiffMetadataResponse">DiffMetadataResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -27150,6 +26111,16 @@ config. </p></td>
                 <td>StringifyMetadata</td>
                 <td>POST</td>
                 <td>/v1/schemaDesign:stringifyMetadata</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>DiffMetadata</td>
+                <td>POST</td>
+                <td>/v1/schemaDesign:diffMetadata</td>
                 <td>*</td>
               </tr>
               
@@ -31764,20 +30735,6 @@ set the `raw` to true in GetSheet request to retrieve the full content. </p></td
                   <td><a href="#bytebase.v1.SheetPayload.Type">SheetPayload.Type</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database_config</td>
-                  <td><a href="#bytebase.v1.DatabaseConfig">DatabaseConfig</a></td>
-                  <td></td>
-                  <td><p>The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>baseline_database_config</td>
-                  <td><a href="#bytebase.v1.DatabaseConfig">DatabaseConfig</a></td>
-                  <td></td>
-                  <td><p>The snapshot of the baseline database config when creating the sheet. </p></td>
                 </tr>
               
                 <tr>

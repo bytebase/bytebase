@@ -43,61 +43,6 @@
   
     - [AuditLog.Severity](#bytebase-store-AuditLog-Severity)
   
-- [store/database.proto](#store_database-proto)
-    - [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata)
-    - [ColumnCatalog](#bytebase-store-ColumnCatalog)
-    - [ColumnCatalog.LabelsEntry](#bytebase-store-ColumnCatalog-LabelsEntry)
-    - [ColumnMetadata](#bytebase-store-ColumnMetadata)
-    - [DatabaseConfig](#bytebase-store-DatabaseConfig)
-    - [DatabaseMetadata](#bytebase-store-DatabaseMetadata)
-    - [DatabaseMetadata.LabelsEntry](#bytebase-store-DatabaseMetadata-LabelsEntry)
-    - [DatabaseSchemaMetadata](#bytebase-store-DatabaseSchemaMetadata)
-    - [DependencyColumn](#bytebase-store-DependencyColumn)
-    - [DependencyTable](#bytebase-store-DependencyTable)
-    - [EnumTypeMetadata](#bytebase-store-EnumTypeMetadata)
-    - [EventMetadata](#bytebase-store-EventMetadata)
-    - [ExtensionMetadata](#bytebase-store-ExtensionMetadata)
-    - [ExternalTableMetadata](#bytebase-store-ExternalTableMetadata)
-    - [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata)
-    - [FunctionConfig](#bytebase-store-FunctionConfig)
-    - [FunctionMetadata](#bytebase-store-FunctionMetadata)
-    - [GenerationMetadata](#bytebase-store-GenerationMetadata)
-    - [IndexMetadata](#bytebase-store-IndexMetadata)
-    - [InstanceRoleMetadata](#bytebase-store-InstanceRoleMetadata)
-    - [LinkedDatabaseMetadata](#bytebase-store-LinkedDatabaseMetadata)
-    - [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata)
-    - [ObjectSchema](#bytebase-store-ObjectSchema)
-    - [ObjectSchema.ArrayKind](#bytebase-store-ObjectSchema-ArrayKind)
-    - [ObjectSchema.StructKind](#bytebase-store-ObjectSchema-StructKind)
-    - [ObjectSchema.StructKind.PropertiesEntry](#bytebase-store-ObjectSchema-StructKind-PropertiesEntry)
-    - [PackageMetadata](#bytebase-store-PackageMetadata)
-    - [ProcedureConfig](#bytebase-store-ProcedureConfig)
-    - [ProcedureMetadata](#bytebase-store-ProcedureMetadata)
-    - [SchemaCatalog](#bytebase-store-SchemaCatalog)
-    - [SchemaMetadata](#bytebase-store-SchemaMetadata)
-    - [SecretItem](#bytebase-store-SecretItem)
-    - [Secrets](#bytebase-store-Secrets)
-    - [SequenceMetadata](#bytebase-store-SequenceMetadata)
-    - [StreamMetadata](#bytebase-store-StreamMetadata)
-    - [TableCatalog](#bytebase-store-TableCatalog)
-    - [TableMetadata](#bytebase-store-TableMetadata)
-    - [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata)
-    - [TaskMetadata](#bytebase-store-TaskMetadata)
-    - [TriggerMetadata](#bytebase-store-TriggerMetadata)
-    - [ViewConfig](#bytebase-store-ViewConfig)
-    - [ViewMetadata](#bytebase-store-ViewMetadata)
-  
-    - [GenerationMetadata.Type](#bytebase-store-GenerationMetadata-Type)
-    - [ObjectSchema.Type](#bytebase-store-ObjectSchema-Type)
-    - [StreamMetadata.Mode](#bytebase-store-StreamMetadata-Mode)
-    - [StreamMetadata.Type](#bytebase-store-StreamMetadata-Type)
-    - [TablePartitionMetadata.Type](#bytebase-store-TablePartitionMetadata-Type)
-    - [TaskMetadata.State](#bytebase-store-TaskMetadata-State)
-  
-- [store/branch.proto](#store_branch-proto)
-    - [BranchConfig](#bytebase-store-BranchConfig)
-    - [BranchSnapshot](#bytebase-store-BranchSnapshot)
-  
 - [store/changelist.proto](#store_changelist-proto)
     - [Changelist](#bytebase-store-Changelist)
     - [Changelist.Change](#bytebase-store-Changelist-Change)
@@ -127,6 +72,54 @@
     - [DataSourceExternalSecret.SecretType](#bytebase-store-DataSourceExternalSecret-SecretType)
     - [DataSourceOptions.AuthenticationType](#bytebase-store-DataSourceOptions-AuthenticationType)
     - [DataSourceOptions.RedisType](#bytebase-store-DataSourceOptions-RedisType)
+  
+- [store/database.proto](#store_database-proto)
+    - [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata)
+    - [ColumnCatalog](#bytebase-store-ColumnCatalog)
+    - [ColumnCatalog.LabelsEntry](#bytebase-store-ColumnCatalog-LabelsEntry)
+    - [ColumnMetadata](#bytebase-store-ColumnMetadata)
+    - [DatabaseConfig](#bytebase-store-DatabaseConfig)
+    - [DatabaseMetadata](#bytebase-store-DatabaseMetadata)
+    - [DatabaseMetadata.LabelsEntry](#bytebase-store-DatabaseMetadata-LabelsEntry)
+    - [DatabaseSchemaMetadata](#bytebase-store-DatabaseSchemaMetadata)
+    - [DependencyColumn](#bytebase-store-DependencyColumn)
+    - [DependencyTable](#bytebase-store-DependencyTable)
+    - [EnumTypeMetadata](#bytebase-store-EnumTypeMetadata)
+    - [EventMetadata](#bytebase-store-EventMetadata)
+    - [ExtensionMetadata](#bytebase-store-ExtensionMetadata)
+    - [ExternalTableMetadata](#bytebase-store-ExternalTableMetadata)
+    - [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata)
+    - [FunctionMetadata](#bytebase-store-FunctionMetadata)
+    - [GenerationMetadata](#bytebase-store-GenerationMetadata)
+    - [IndexMetadata](#bytebase-store-IndexMetadata)
+    - [InstanceRoleMetadata](#bytebase-store-InstanceRoleMetadata)
+    - [LinkedDatabaseMetadata](#bytebase-store-LinkedDatabaseMetadata)
+    - [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata)
+    - [ObjectSchema](#bytebase-store-ObjectSchema)
+    - [ObjectSchema.ArrayKind](#bytebase-store-ObjectSchema-ArrayKind)
+    - [ObjectSchema.StructKind](#bytebase-store-ObjectSchema-StructKind)
+    - [ObjectSchema.StructKind.PropertiesEntry](#bytebase-store-ObjectSchema-StructKind-PropertiesEntry)
+    - [PackageMetadata](#bytebase-store-PackageMetadata)
+    - [ProcedureMetadata](#bytebase-store-ProcedureMetadata)
+    - [SchemaCatalog](#bytebase-store-SchemaCatalog)
+    - [SchemaMetadata](#bytebase-store-SchemaMetadata)
+    - [SecretItem](#bytebase-store-SecretItem)
+    - [Secrets](#bytebase-store-Secrets)
+    - [SequenceMetadata](#bytebase-store-SequenceMetadata)
+    - [StreamMetadata](#bytebase-store-StreamMetadata)
+    - [TableCatalog](#bytebase-store-TableCatalog)
+    - [TableMetadata](#bytebase-store-TableMetadata)
+    - [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata)
+    - [TaskMetadata](#bytebase-store-TaskMetadata)
+    - [TriggerMetadata](#bytebase-store-TriggerMetadata)
+    - [ViewMetadata](#bytebase-store-ViewMetadata)
+  
+    - [GenerationMetadata.Type](#bytebase-store-GenerationMetadata-Type)
+    - [ObjectSchema.Type](#bytebase-store-ObjectSchema-Type)
+    - [StreamMetadata.Mode](#bytebase-store-StreamMetadata-Mode)
+    - [StreamMetadata.Type](#bytebase-store-StreamMetadata-Type)
+    - [TablePartitionMetadata.Type](#bytebase-store-TablePartitionMetadata-Type)
+    - [TaskMetadata.State](#bytebase-store-TaskMetadata-State)
   
 - [store/db_group.proto](#store_db_group-proto)
     - [DatabaseGroupPayload](#bytebase-store-DatabaseGroupPayload)
@@ -894,988 +887,6 @@ Metadata about the request.
 
 
 
-<a name="store_database-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/database.proto
-
-
-
-<a name="bytebase-store-CheckConstraintMetadata"></a>
-
-### CheckConstraintMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a check constraint. |
-| expression | [string](#string) |  | The expression is the expression of a check constraint. |
-
-
-
-
-
-
-<a name="bytebase-store-ColumnCatalog"></a>
-
-### ColumnCatalog
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a column. |
-| semantic_type | [string](#string) |  |  |
-| labels | [ColumnCatalog.LabelsEntry](#bytebase-store-ColumnCatalog-LabelsEntry) | repeated | The user labels for a column. |
-| classification | [string](#string) |  |  |
-| object_schema | [ObjectSchema](#bytebase-store-ObjectSchema) | optional |  |
-| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  | Deprecated. |
-| full_masking_algorithm_id | [string](#string) |  | Deprecated. |
-| partial_masking_algorithm_id | [string](#string) |  | Deprecated. |
-
-
-
-
-
-
-<a name="bytebase-store-ColumnCatalog-LabelsEntry"></a>
-
-### ColumnCatalog.LabelsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-ColumnMetadata"></a>
-
-### ColumnMetadata
-ColumnMetadata is the metadata for columns.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a column. |
-| position | [int32](#int32) |  | The position is the position in columns. |
-| default | [google.protobuf.StringValue](#google-protobuf-StringValue) |  | The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default. |
-| default_null | [bool](#bool) |  |  |
-| default_expression | [string](#string) |  |  |
-| on_update | [string](#string) |  | The on_update is the on update action of a column. For MySQL like databases, it&#39;s only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value. |
-| nullable | [bool](#bool) |  | The nullable is the nullable of a column. |
-| type | [string](#string) |  | The type is the type of a column. |
-| character_set | [string](#string) |  | The character_set is the character_set of a column. |
-| collation | [string](#string) |  | The collation is the collation of a column. |
-| comment | [string](#string) |  | The comment is the comment of a column. classification and user_comment is parsed from the comment. |
-| user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
-| generation | [GenerationMetadata](#bytebase-store-GenerationMetadata) |  | The generation is for generated columns. |
-
-
-
-
-
-
-<a name="bytebase-store-DatabaseConfig"></a>
-
-### DatabaseConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| schemas | [SchemaCatalog](#bytebase-store-SchemaCatalog) | repeated | The schema_configs is the list of configs for schemas in a database. |
-
-
-
-
-
-
-<a name="bytebase-store-DatabaseMetadata"></a>
-
-### DatabaseMetadata
-DatabaseMetadata is the metadata for databases.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| labels | [DatabaseMetadata.LabelsEntry](#bytebase-store-DatabaseMetadata-LabelsEntry) | repeated |  |
-| last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| backup_available | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-DatabaseMetadata-LabelsEntry"></a>
-
-### DatabaseMetadata.LabelsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-DatabaseSchemaMetadata"></a>
-
-### DatabaseSchemaMetadata
-DatabaseSchemaMetadata is the schema metadata for databases.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| schemas | [SchemaMetadata](#bytebase-store-SchemaMetadata) | repeated | The schemas is the list of schemas in a database. |
-| character_set | [string](#string) |  | The character_set is the character set of a database. |
-| collation | [string](#string) |  | The collation is the collation of a database. |
-| extensions | [ExtensionMetadata](#bytebase-store-ExtensionMetadata) | repeated | The extensions is the list of extensions in a database. |
-| datashare | [bool](#bool) |  | The database belongs to a datashare. |
-| service_name | [string](#string) |  | The service name of the database. It&#39;s the Oracle specific concept. |
-| linked_databases | [LinkedDatabaseMetadata](#bytebase-store-LinkedDatabaseMetadata) | repeated |  |
-| owner | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-DependencyColumn"></a>
-
-### DependencyColumn
-DependencyColumn is the metadata for dependency columns.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  | The schema is the schema of a reference column. |
-| table | [string](#string) |  | The table is the table of a reference column. |
-| column | [string](#string) |  | The column is the name of a reference column. |
-
-
-
-
-
-
-<a name="bytebase-store-DependencyTable"></a>
-
-### DependencyTable
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  | The schema is the schema of a reference table. |
-| table | [string](#string) |  | The table is the name of a reference table. |
-
-
-
-
-
-
-<a name="bytebase-store-EnumTypeMetadata"></a>
-
-### EnumTypeMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of a type. |
-| values | [string](#string) | repeated | The enum values of a type. |
-| comment | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-EventMetadata"></a>
-
-### EventMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the event. |
-| definition | [string](#string) |  | The schedule of the event. |
-| time_zone | [string](#string) |  | The time zone of the event. |
-| sql_mode | [string](#string) |  |  |
-| character_set_client | [string](#string) |  |  |
-| collation_connection | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-ExtensionMetadata"></a>
-
-### ExtensionMetadata
-ExtensionMetadata is the metadata for extensions.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of an extension. |
-| schema | [string](#string) |  | The schema is the extension that is installed to. But the extension usage is not limited to the schema. |
-| version | [string](#string) |  | The version is the version of an extension. |
-| description | [string](#string) |  | The description is the description of an extension. |
-
-
-
-
-
-
-<a name="bytebase-store-ExternalTableMetadata"></a>
-
-### ExternalTableMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a external table. |
-| external_server_name | [string](#string) |  | The external_server_name is the name of the external server. |
-| external_database_name | [string](#string) |  | The external_database_name is the name of the external database. |
-| columns | [ColumnMetadata](#bytebase-store-ColumnMetadata) | repeated | The columns is the ordered list of columns in a foreign table. |
-
-
-
-
-
-
-<a name="bytebase-store-ForeignKeyMetadata"></a>
-
-### ForeignKeyMetadata
-ForeignKeyMetadata is the metadata for foreign keys.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a foreign key. |
-| columns | [string](#string) | repeated | The columns are the ordered referencing columns of a foreign key. |
-| referenced_schema | [string](#string) |  | The referenced_schema is the referenced schema name of a foreign key. It is an empty string for databases without such concept such as MySQL. |
-| referenced_table | [string](#string) |  | The referenced_table is the referenced table name of a foreign key. |
-| referenced_columns | [string](#string) | repeated | The referenced_columns are the ordered referenced columns of a foreign key. |
-| on_delete | [string](#string) |  | The on_delete is the on delete action of a foreign key. |
-| on_update | [string](#string) |  | The on_update is the on update action of a foreign key. |
-| match_type | [string](#string) |  | The match_type is the match type of a foreign key. The match_type is the PostgreSQL specific field. It&#39;s empty string for other databases. |
-
-
-
-
-
-
-<a name="bytebase-store-FunctionConfig"></a>
-
-### FunctionConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a function. |
-| updater | [string](#string) |  | The last updater of the function in branch. Format: users/{userUID}. |
-| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the function is updated in branch. |
-
-
-
-
-
-
-<a name="bytebase-store-FunctionMetadata"></a>
-
-### FunctionMetadata
-FunctionMetadata is the metadata for functions.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a function. |
-| definition | [string](#string) |  | The definition is the definition of a function. |
-| signature | [string](#string) |  | The signature is the name with the number and type of input arguments the function takes. |
-| character_set_client | [string](#string) |  | MySQL specific metadata. |
-| collation_connection | [string](#string) |  |  |
-| database_collation | [string](#string) |  |  |
-| sql_mode | [string](#string) |  |  |
-| comment | [string](#string) |  |  |
-| dependency_tables | [DependencyTable](#bytebase-store-DependencyTable) | repeated | The dependency_tables is the list of dependency tables of a function. For PostgreSQL, it&#39;s the list of tables that the function depends on the return type definition. |
-
-
-
-
-
-
-<a name="bytebase-store-GenerationMetadata"></a>
-
-### GenerationMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [GenerationMetadata.Type](#bytebase-store-GenerationMetadata-Type) |  |  |
-| expression | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-IndexMetadata"></a>
-
-### IndexMetadata
-IndexMetadata is the metadata for indexes.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of an index. |
-| expressions | [string](#string) | repeated | The expressions are the ordered columns or expressions of an index. This could refer to a column or an expression. |
-| key_length | [int64](#int64) | repeated | The key_lengths are the ordered key lengths of an index. If the key length is not specified, it&#39;s -1. |
-| descending | [bool](#bool) | repeated | The descending is the ordered descending of an index. |
-| type | [string](#string) |  | The type is the type of an index. |
-| unique | [bool](#bool) |  | The unique is whether the index is unique. |
-| primary | [bool](#bool) |  | The primary is whether the index is a primary key index. |
-| visible | [bool](#bool) |  | The visible is whether the index is visible. |
-| comment | [string](#string) |  | The comment is the comment of an index. |
-| definition | [string](#string) |  | The definition of an index. |
-| parent_index_schema | [string](#string) |  | The schema name of the parent index. |
-| parent_index_name | [string](#string) |  | The index name of the parent index. |
-| granularity | [int64](#int64) |  | The number of granules in the block. It&#39;s a ClickHouse specific field. |
-| is_constraint | [bool](#bool) |  | It&#39;s a PostgreSQL specific field. The unique constraint and unique index are not the same thing in PostgreSQL. |
-
-
-
-
-
-
-<a name="bytebase-store-InstanceRoleMetadata"></a>
-
-### InstanceRoleMetadata
-InstanceRoleMetadata is the message for instance role.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The role name. It&#39;s unique within the instance. |
-| grant | [string](#string) |  | The grant display string on the instance. It&#39;s generated by database engine. |
-
-
-
-
-
-
-<a name="bytebase-store-LinkedDatabaseMetadata"></a>
-
-### LinkedDatabaseMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| username | [string](#string) |  |  |
-| host | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-MaterializedViewMetadata"></a>
-
-### MaterializedViewMetadata
-MaterializedViewMetadata is the metadata for materialized views.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a view. |
-| definition | [string](#string) |  | The definition is the definition of a view. |
-| comment | [string](#string) |  | The comment is the comment of a view. |
-| dependency_columns | [DependencyColumn](#bytebase-store-DependencyColumn) | repeated | The dependency_columns is the list of dependency columns of a view. |
-| triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The columns is the ordered list of columns in a table. |
-| indexes | [IndexMetadata](#bytebase-store-IndexMetadata) | repeated | The indexes is the list of indexes in a table. |
-
-
-
-
-
-
-<a name="bytebase-store-ObjectSchema"></a>
-
-### ObjectSchema
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [ObjectSchema.Type](#bytebase-store-ObjectSchema-Type) |  |  |
-| struct_kind | [ObjectSchema.StructKind](#bytebase-store-ObjectSchema-StructKind) |  |  |
-| array_kind | [ObjectSchema.ArrayKind](#bytebase-store-ObjectSchema-ArrayKind) |  |  |
-| semantic_type | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-ObjectSchema-ArrayKind"></a>
-
-### ObjectSchema.ArrayKind
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| kind | [ObjectSchema](#bytebase-store-ObjectSchema) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-ObjectSchema-StructKind"></a>
-
-### ObjectSchema.StructKind
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| properties | [ObjectSchema.StructKind.PropertiesEntry](#bytebase-store-ObjectSchema-StructKind-PropertiesEntry) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-ObjectSchema-StructKind-PropertiesEntry"></a>
-
-### ObjectSchema.StructKind.PropertiesEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [ObjectSchema](#bytebase-store-ObjectSchema) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-PackageMetadata"></a>
-
-### PackageMetadata
-PackageMetadata is the metadata for packages.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a package. |
-| definition | [string](#string) |  | The definition is the definition of a package. |
-
-
-
-
-
-
-<a name="bytebase-store-ProcedureConfig"></a>
-
-### ProcedureConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a procedure. |
-| updater | [string](#string) |  | The last updater of the procedure in branch. Format: users/{userUID}. |
-| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the procedure is updated in branch. |
-
-
-
-
-
-
-<a name="bytebase-store-ProcedureMetadata"></a>
-
-### ProcedureMetadata
-ProcedureMetadata is the metadata for procedures.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a procedure. |
-| definition | [string](#string) |  | The definition is the definition of a procedure. |
-| signature | [string](#string) |  | The signature is the name with the number and type of input arguments the function takes. |
-| character_set_client | [string](#string) |  | MySQL specific metadata. |
-| collation_connection | [string](#string) |  |  |
-| database_collation | [string](#string) |  |  |
-| sql_mode | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-SchemaCatalog"></a>
-
-### SchemaCatalog
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the schema name. It is an empty string for databases without such concept such as MySQL. |
-| tables | [TableCatalog](#bytebase-store-TableCatalog) | repeated | The table_configs is the list of configs for tables in a schema. |
-| function_configs | [FunctionConfig](#bytebase-store-FunctionConfig) | repeated |  |
-| procedure_configs | [ProcedureConfig](#bytebase-store-ProcedureConfig) | repeated |  |
-| view_configs | [ViewConfig](#bytebase-store-ViewConfig) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-SchemaMetadata"></a>
-
-### SchemaMetadata
-SchemaMetadata is the metadata for schemas.
-This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the schema name. It is an empty string for databases without such concept such as MySQL. |
-| tables | [TableMetadata](#bytebase-store-TableMetadata) | repeated | The tables is the list of tables in a schema. |
-| external_tables | [ExternalTableMetadata](#bytebase-store-ExternalTableMetadata) | repeated | The external_tables is the list of external tables in a schema. |
-| views | [ViewMetadata](#bytebase-store-ViewMetadata) | repeated | The views is the list of views in a schema. |
-| functions | [FunctionMetadata](#bytebase-store-FunctionMetadata) | repeated | The functions is the list of functions in a schema. |
-| procedures | [ProcedureMetadata](#bytebase-store-ProcedureMetadata) | repeated | The procedures is the list of procedures in a schema. |
-| streams | [StreamMetadata](#bytebase-store-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
-| tasks | [TaskMetadata](#bytebase-store-TaskMetadata) | repeated | The routines is the list of routines in a schema, currently, only used for Snowflake. |
-| materialized_views | [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata) | repeated | The materialized_views is the list of materialized views in a schema. |
-| sequences | [SequenceMetadata](#bytebase-store-SequenceMetadata) | repeated | The sequences is the list of sequences in a schema. |
-| packages | [PackageMetadata](#bytebase-store-PackageMetadata) | repeated | The packages is the list of packages in a schema. |
-| owner | [string](#string) |  |  |
-| events | [EventMetadata](#bytebase-store-EventMetadata) | repeated |  |
-| enum_types | [EnumTypeMetadata](#bytebase-store-EnumTypeMetadata) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-SecretItem"></a>
-
-### SecretItem
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of the secret. |
-| value | [string](#string) |  | The value is the value of the secret. |
-| description | [string](#string) |  | The description is the description of the secret. |
-
-
-
-
-
-
-<a name="bytebase-store-Secrets"></a>
-
-### Secrets
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| items | [SecretItem](#bytebase-store-SecretItem) | repeated | The list of secrets. |
-
-
-
-
-
-
-<a name="bytebase-store-SequenceMetadata"></a>
-
-### SequenceMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of a sequence. |
-| data_type | [string](#string) |  | The data type of a sequence. |
-| start | [string](#string) |  | The start value of a sequence. |
-| min_value | [string](#string) |  | The minimum value of a sequence. |
-| max_value | [string](#string) |  | The maximum value of a sequence. |
-| increment | [string](#string) |  | Increment value of a sequence. |
-| cycle | [bool](#bool) |  | Cycle is whether the sequence cycles. |
-| cache_size | [string](#string) |  | Cache size of a sequence. |
-| last_value | [string](#string) |  | Last value of a sequence. |
-| owner_table | [string](#string) |  | The owner table of the sequence. |
-| owner_column | [string](#string) |  | The owner column of the sequence. |
-| comment | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-StreamMetadata"></a>
-
-### StreamMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a stream. |
-| table_name | [string](#string) |  | The table_name is the name of the table/view that the stream is created on. |
-| owner | [string](#string) |  | The owner of the stream. |
-| comment | [string](#string) |  | The comment of the stream. |
-| type | [StreamMetadata.Type](#bytebase-store-StreamMetadata-Type) |  | The type of the stream. |
-| stale | [bool](#bool) |  | Indicates whether the stream was last read before the `stale_after` time. |
-| mode | [StreamMetadata.Mode](#bytebase-store-StreamMetadata-Mode) |  | The mode of the stream. |
-| definition | [string](#string) |  | The definition of the stream. |
-
-
-
-
-
-
-<a name="bytebase-store-TableCatalog"></a>
-
-### TableCatalog
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a table. |
-| columns | [ColumnCatalog](#bytebase-store-ColumnCatalog) | repeated | The column_configs is the ordered list of configs for columns in a table. |
-| object_schema | [ObjectSchema](#bytebase-store-ObjectSchema) | optional |  |
-| classification | [string](#string) |  |  |
-| updater | [string](#string) |  | The last updater of the table in branch. Format: users/{userUID}. |
-| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the table is updated in branch. |
-
-
-
-
-
-
-<a name="bytebase-store-TableMetadata"></a>
-
-### TableMetadata
-TableMetadata is the metadata for tables.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a table. |
-| columns | [ColumnMetadata](#bytebase-store-ColumnMetadata) | repeated | The columns is the ordered list of columns in a table. |
-| indexes | [IndexMetadata](#bytebase-store-IndexMetadata) | repeated | The indexes is the list of indexes in a table. |
-| engine | [string](#string) |  | The engine is the engine of a table. |
-| collation | [string](#string) |  | The collation is the collation of a table. |
-| charset | [string](#string) |  | The character set of table. |
-| row_count | [int64](#int64) |  | The row_count is the estimated number of rows of a table. |
-| data_size | [int64](#int64) |  | The data_size is the estimated data size of a table. |
-| index_size | [int64](#int64) |  | The index_size is the estimated index size of a table. |
-| data_free | [int64](#int64) |  | The data_free is the estimated free data size of a table. |
-| create_options | [string](#string) |  | The create_options is the create option of a table. |
-| comment | [string](#string) |  | The comment is the comment of a table. classification and user_comment is parsed from the comment. |
-| user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
-| foreign_keys | [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata) | repeated | The foreign_keys is the list of foreign keys in a table. |
-| partitions | [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata) | repeated | The partitions is the list of partitions in a table. |
-| check_constraints | [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata) | repeated | The check_constraints is the list of check constraints in a table. |
-| owner | [string](#string) |  |  |
-| sorting_keys | [string](#string) | repeated | The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field. Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by |
-| triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-TablePartitionMetadata"></a>
-
-### TablePartitionMetadata
-TablePartitionMetadata is the metadata for table partitions.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a table partition. |
-| type | [TablePartitionMetadata.Type](#bytebase-store-TablePartitionMetadata-Type) |  | The type of a table partition. |
-| expression | [string](#string) |  | The expression is the expression of a table partition. For PostgreSQL, the expression is the text of {FOR VALUES partition_bound_spec}, see https://www.postgresql.org/docs/current/sql-createtable.html. For MySQL, the expression is the `expr` or `column_list` of the following syntax. PARTITION BY { [LINEAR] HASH(expr) | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list) | RANGE{(expr) | COLUMNS(column_list)} | LIST{(expr) | COLUMNS(column_list)} }. |
-| value | [string](#string) |  | The value is the value of a table partition. For MySQL, the value is for RANGE and LIST partition types, - For a RANGE partition, it contains the value set in the partition&#39;s VALUES LESS THAN clause, which can be either an integer or MAXVALUE. - For a LIST partition, this column contains the values defined in the partition&#39;s VALUES IN clause, which is a list of comma-separated integer values. - For others, it&#39;s an empty string. |
-| use_default | [string](#string) |  | The use_default is whether the users use the default partition, it stores the different value for different database engines. For MySQL, it&#39;s [INT] type, 0 means not use default partition, otherwise, it&#39;s equals to number in syntax [SUB]PARTITION {number}. |
-| subpartitions | [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata) | repeated | The subpartitions is the list of subpartitions in a table partition. |
-| indexes | [IndexMetadata](#bytebase-store-IndexMetadata) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-TaskMetadata"></a>
-
-### TaskMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a task. |
-| id | [string](#string) |  | The id is the snowflake-generated id of a task. Example: 01ad32a0-1bb6-5e93-0000-000000000001 |
-| owner | [string](#string) |  | The owner of the task. |
-| comment | [string](#string) |  | The comment of the task. |
-| warehouse | [string](#string) |  | The warehouse of the task. |
-| schedule | [string](#string) |  | The schedule interval of the task. |
-| predecessors | [string](#string) | repeated | The predecessor tasks of the task. |
-| state | [TaskMetadata.State](#bytebase-store-TaskMetadata-State) |  | The state of the task. |
-| condition | [string](#string) |  | The condition of the task. |
-| definition | [string](#string) |  | The definition of the task. |
-
-
-
-
-
-
-<a name="bytebase-store-TriggerMetadata"></a>
-
-### TriggerMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of the trigger. |
-| event | [string](#string) |  | The event is the event of the trigger, such as INSERT, UPDATE, DELETE, TRUNCATE. |
-| timing | [string](#string) |  | The timing is the timing of the trigger, such as BEFORE, AFTER. |
-| body | [string](#string) |  | The body is the body of the trigger. |
-| sql_mode | [string](#string) |  |  |
-| character_set_client | [string](#string) |  |  |
-| collation_connection | [string](#string) |  |  |
-| comment | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-ViewConfig"></a>
-
-### ViewConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a view. |
-| updater | [string](#string) |  | The last updater of the view in branch. Format: users/{userUID}. |
-| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the view is updated in branch. |
-
-
-
-
-
-
-<a name="bytebase-store-ViewMetadata"></a>
-
-### ViewMetadata
-ViewMetadata is the metadata for views.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a view. |
-| definition | [string](#string) |  | The definition is the definition of a view. |
-| comment | [string](#string) |  | The comment is the comment of a view. |
-| dependency_columns | [DependencyColumn](#bytebase-store-DependencyColumn) | repeated | The dependency_columns is the list of dependency columns of a view. |
-| columns | [ColumnMetadata](#bytebase-store-ColumnMetadata) | repeated | The columns is the ordered list of columns in a table. |
-| triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The triggers is the list of triggers in a view. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-store-GenerationMetadata-Type"></a>
-
-### GenerationMetadata.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| TYPE_VIRTUAL | 1 |  |
-| TYPE_STORED | 2 |  |
-
-
-
-<a name="bytebase-store-ObjectSchema-Type"></a>
-
-### ObjectSchema.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| STRING | 1 |  |
-| NUMBER | 2 |  |
-| BOOLEAN | 3 |  |
-| OBJECT | 4 |  |
-| ARRAY | 5 |  |
-
-
-
-<a name="bytebase-store-StreamMetadata-Mode"></a>
-
-### StreamMetadata.Mode
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MODE_UNSPECIFIED | 0 |  |
-| MODE_DEFAULT | 1 |  |
-| MODE_APPEND_ONLY | 2 |  |
-| MODE_INSERT_ONLY | 3 |  |
-
-
-
-<a name="bytebase-store-StreamMetadata-Type"></a>
-
-### StreamMetadata.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| TYPE_DELTA | 1 |  |
-
-
-
-<a name="bytebase-store-TablePartitionMetadata-Type"></a>
-
-### TablePartitionMetadata.Type
-Type is the type of a table partition, some database engines may not
-support all types. Only avilable for the following database engines now:
-MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY,
-LINEAR_KEY
-(https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html) TiDB:
-RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY PostgreSQL: RANGE,
-LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| RANGE | 1 |  |
-| RANGE_COLUMNS | 2 |  |
-| LIST | 3 |  |
-| LIST_COLUMNS | 4 |  |
-| HASH | 5 |  |
-| LINEAR_HASH | 6 |  |
-| KEY | 7 |  |
-| LINEAR_KEY | 8 |  |
-
-
-
-<a name="bytebase-store-TaskMetadata-State"></a>
-
-### TaskMetadata.State
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATE_UNSPECIFIED | 0 |  |
-| STATE_STARTED | 1 |  |
-| STATE_SUSPENDED | 2 |  |
-
-
- 
-
- 
-
- 
-
-
-
-<a name="store_branch-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/branch.proto
-
-
-
-<a name="bytebase-store-BranchConfig"></a>
-
-### BranchConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| source_database | [string](#string) |  | The name of source database. Optional. Example: instances/instance-id/databases/database-name. |
-| source_branch | [string](#string) |  | The name of the source branch. Optional. Example: projects/project-id/branches/branch-id. |
-
-
-
-
-
-
-<a name="bytebase-store-BranchSnapshot"></a>
-
-### BranchSnapshot
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| metadata | [DatabaseSchemaMetadata](#bytebase-store-DatabaseSchemaMetadata) |  |  |
-| database_config | [DatabaseConfig](#bytebase-store-DatabaseConfig) |  |  |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
 <a name="store_changelist-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -2297,6 +1308,880 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | STANDALONE | 1 |  |
 | SENTINEL | 2 |  |
 | CLUSTER | 3 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_database-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/database.proto
+
+
+
+<a name="bytebase-store-CheckConstraintMetadata"></a>
+
+### CheckConstraintMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a check constraint. |
+| expression | [string](#string) |  | The expression is the expression of a check constraint. |
+
+
+
+
+
+
+<a name="bytebase-store-ColumnCatalog"></a>
+
+### ColumnCatalog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a column. |
+| semantic_type | [string](#string) |  |  |
+| labels | [ColumnCatalog.LabelsEntry](#bytebase-store-ColumnCatalog-LabelsEntry) | repeated | The user labels for a column. |
+| classification | [string](#string) |  |  |
+| object_schema | [ObjectSchema](#bytebase-store-ObjectSchema) | optional |  |
+| masking_level | [MaskingLevel](#bytebase-store-MaskingLevel) |  | Deprecated. |
+| full_masking_algorithm_id | [string](#string) |  | Deprecated. |
+| partial_masking_algorithm_id | [string](#string) |  | Deprecated. |
+
+
+
+
+
+
+<a name="bytebase-store-ColumnCatalog-LabelsEntry"></a>
+
+### ColumnCatalog.LabelsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ColumnMetadata"></a>
+
+### ColumnMetadata
+ColumnMetadata is the metadata for columns.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a column. |
+| position | [int32](#int32) |  | The position is the position in columns. |
+| default | [google.protobuf.StringValue](#google-protobuf-StringValue) |  | The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default. |
+| default_null | [bool](#bool) |  |  |
+| default_expression | [string](#string) |  |  |
+| on_update | [string](#string) |  | The on_update is the on update action of a column. For MySQL like databases, it&#39;s only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value. |
+| nullable | [bool](#bool) |  | The nullable is the nullable of a column. |
+| type | [string](#string) |  | The type is the type of a column. |
+| character_set | [string](#string) |  | The character_set is the character_set of a column. |
+| collation | [string](#string) |  | The collation is the collation of a column. |
+| comment | [string](#string) |  | The comment is the comment of a column. classification and user_comment is parsed from the comment. |
+| user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
+| generation | [GenerationMetadata](#bytebase-store-GenerationMetadata) |  | The generation is for generated columns. |
+
+
+
+
+
+
+<a name="bytebase-store-DatabaseConfig"></a>
+
+### DatabaseConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| schemas | [SchemaCatalog](#bytebase-store-SchemaCatalog) | repeated | The schema_configs is the list of configs for schemas in a database. |
+
+
+
+
+
+
+<a name="bytebase-store-DatabaseMetadata"></a>
+
+### DatabaseMetadata
+DatabaseMetadata is the metadata for databases.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| labels | [DatabaseMetadata.LabelsEntry](#bytebase-store-DatabaseMetadata-LabelsEntry) | repeated |  |
+| last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| backup_available | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-DatabaseMetadata-LabelsEntry"></a>
+
+### DatabaseMetadata.LabelsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-DatabaseSchemaMetadata"></a>
+
+### DatabaseSchemaMetadata
+DatabaseSchemaMetadata is the schema metadata for databases.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| schemas | [SchemaMetadata](#bytebase-store-SchemaMetadata) | repeated | The schemas is the list of schemas in a database. |
+| character_set | [string](#string) |  | The character_set is the character set of a database. |
+| collation | [string](#string) |  | The collation is the collation of a database. |
+| extensions | [ExtensionMetadata](#bytebase-store-ExtensionMetadata) | repeated | The extensions is the list of extensions in a database. |
+| datashare | [bool](#bool) |  | The database belongs to a datashare. |
+| service_name | [string](#string) |  | The service name of the database. It&#39;s the Oracle specific concept. |
+| linked_databases | [LinkedDatabaseMetadata](#bytebase-store-LinkedDatabaseMetadata) | repeated |  |
+| owner | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-DependencyColumn"></a>
+
+### DependencyColumn
+DependencyColumn is the metadata for dependency columns.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  | The schema is the schema of a reference column. |
+| table | [string](#string) |  | The table is the table of a reference column. |
+| column | [string](#string) |  | The column is the name of a reference column. |
+
+
+
+
+
+
+<a name="bytebase-store-DependencyTable"></a>
+
+### DependencyTable
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema | [string](#string) |  | The schema is the schema of a reference table. |
+| table | [string](#string) |  | The table is the name of a reference table. |
+
+
+
+
+
+
+<a name="bytebase-store-EnumTypeMetadata"></a>
+
+### EnumTypeMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of a type. |
+| values | [string](#string) | repeated | The enum values of a type. |
+| comment | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-EventMetadata"></a>
+
+### EventMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the event. |
+| definition | [string](#string) |  | The schedule of the event. |
+| time_zone | [string](#string) |  | The time zone of the event. |
+| sql_mode | [string](#string) |  |  |
+| character_set_client | [string](#string) |  |  |
+| collation_connection | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ExtensionMetadata"></a>
+
+### ExtensionMetadata
+ExtensionMetadata is the metadata for extensions.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of an extension. |
+| schema | [string](#string) |  | The schema is the extension that is installed to. But the extension usage is not limited to the schema. |
+| version | [string](#string) |  | The version is the version of an extension. |
+| description | [string](#string) |  | The description is the description of an extension. |
+
+
+
+
+
+
+<a name="bytebase-store-ExternalTableMetadata"></a>
+
+### ExternalTableMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a external table. |
+| external_server_name | [string](#string) |  | The external_server_name is the name of the external server. |
+| external_database_name | [string](#string) |  | The external_database_name is the name of the external database. |
+| columns | [ColumnMetadata](#bytebase-store-ColumnMetadata) | repeated | The columns is the ordered list of columns in a foreign table. |
+
+
+
+
+
+
+<a name="bytebase-store-ForeignKeyMetadata"></a>
+
+### ForeignKeyMetadata
+ForeignKeyMetadata is the metadata for foreign keys.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a foreign key. |
+| columns | [string](#string) | repeated | The columns are the ordered referencing columns of a foreign key. |
+| referenced_schema | [string](#string) |  | The referenced_schema is the referenced schema name of a foreign key. It is an empty string for databases without such concept such as MySQL. |
+| referenced_table | [string](#string) |  | The referenced_table is the referenced table name of a foreign key. |
+| referenced_columns | [string](#string) | repeated | The referenced_columns are the ordered referenced columns of a foreign key. |
+| on_delete | [string](#string) |  | The on_delete is the on delete action of a foreign key. |
+| on_update | [string](#string) |  | The on_update is the on update action of a foreign key. |
+| match_type | [string](#string) |  | The match_type is the match type of a foreign key. The match_type is the PostgreSQL specific field. It&#39;s empty string for other databases. |
+
+
+
+
+
+
+<a name="bytebase-store-FunctionMetadata"></a>
+
+### FunctionMetadata
+FunctionMetadata is the metadata for functions.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a function. |
+| definition | [string](#string) |  | The definition is the definition of a function. |
+| signature | [string](#string) |  | The signature is the name with the number and type of input arguments the function takes. |
+| character_set_client | [string](#string) |  | MySQL specific metadata. |
+| collation_connection | [string](#string) |  |  |
+| database_collation | [string](#string) |  |  |
+| sql_mode | [string](#string) |  |  |
+| comment | [string](#string) |  |  |
+| dependency_tables | [DependencyTable](#bytebase-store-DependencyTable) | repeated | The dependency_tables is the list of dependency tables of a function. For PostgreSQL, it&#39;s the list of tables that the function depends on the return type definition. |
+
+
+
+
+
+
+<a name="bytebase-store-GenerationMetadata"></a>
+
+### GenerationMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [GenerationMetadata.Type](#bytebase-store-GenerationMetadata-Type) |  |  |
+| expression | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-IndexMetadata"></a>
+
+### IndexMetadata
+IndexMetadata is the metadata for indexes.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of an index. |
+| expressions | [string](#string) | repeated | The expressions are the ordered columns or expressions of an index. This could refer to a column or an expression. |
+| key_length | [int64](#int64) | repeated | The key_lengths are the ordered key lengths of an index. If the key length is not specified, it&#39;s -1. |
+| descending | [bool](#bool) | repeated | The descending is the ordered descending of an index. |
+| type | [string](#string) |  | The type is the type of an index. |
+| unique | [bool](#bool) |  | The unique is whether the index is unique. |
+| primary | [bool](#bool) |  | The primary is whether the index is a primary key index. |
+| visible | [bool](#bool) |  | The visible is whether the index is visible. |
+| comment | [string](#string) |  | The comment is the comment of an index. |
+| definition | [string](#string) |  | The definition of an index. |
+| parent_index_schema | [string](#string) |  | The schema name of the parent index. |
+| parent_index_name | [string](#string) |  | The index name of the parent index. |
+| granularity | [int64](#int64) |  | The number of granules in the block. It&#39;s a ClickHouse specific field. |
+| is_constraint | [bool](#bool) |  | It&#39;s a PostgreSQL specific field. The unique constraint and unique index are not the same thing in PostgreSQL. |
+
+
+
+
+
+
+<a name="bytebase-store-InstanceRoleMetadata"></a>
+
+### InstanceRoleMetadata
+InstanceRoleMetadata is the message for instance role.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The role name. It&#39;s unique within the instance. |
+| grant | [string](#string) |  | The grant display string on the instance. It&#39;s generated by database engine. |
+
+
+
+
+
+
+<a name="bytebase-store-LinkedDatabaseMetadata"></a>
+
+### LinkedDatabaseMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| username | [string](#string) |  |  |
+| host | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-MaterializedViewMetadata"></a>
+
+### MaterializedViewMetadata
+MaterializedViewMetadata is the metadata for materialized views.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a view. |
+| definition | [string](#string) |  | The definition is the definition of a view. |
+| comment | [string](#string) |  | The comment is the comment of a view. |
+| dependency_columns | [DependencyColumn](#bytebase-store-DependencyColumn) | repeated | The dependency_columns is the list of dependency columns of a view. |
+| triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The columns is the ordered list of columns in a table. |
+| indexes | [IndexMetadata](#bytebase-store-IndexMetadata) | repeated | The indexes is the list of indexes in a table. |
+
+
+
+
+
+
+<a name="bytebase-store-ObjectSchema"></a>
+
+### ObjectSchema
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [ObjectSchema.Type](#bytebase-store-ObjectSchema-Type) |  |  |
+| struct_kind | [ObjectSchema.StructKind](#bytebase-store-ObjectSchema-StructKind) |  |  |
+| array_kind | [ObjectSchema.ArrayKind](#bytebase-store-ObjectSchema-ArrayKind) |  |  |
+| semantic_type | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ObjectSchema-ArrayKind"></a>
+
+### ObjectSchema.ArrayKind
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| kind | [ObjectSchema](#bytebase-store-ObjectSchema) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ObjectSchema-StructKind"></a>
+
+### ObjectSchema.StructKind
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| properties | [ObjectSchema.StructKind.PropertiesEntry](#bytebase-store-ObjectSchema-StructKind-PropertiesEntry) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ObjectSchema-StructKind-PropertiesEntry"></a>
+
+### ObjectSchema.StructKind.PropertiesEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [ObjectSchema](#bytebase-store-ObjectSchema) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-PackageMetadata"></a>
+
+### PackageMetadata
+PackageMetadata is the metadata for packages.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a package. |
+| definition | [string](#string) |  | The definition is the definition of a package. |
+
+
+
+
+
+
+<a name="bytebase-store-ProcedureMetadata"></a>
+
+### ProcedureMetadata
+ProcedureMetadata is the metadata for procedures.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a procedure. |
+| definition | [string](#string) |  | The definition is the definition of a procedure. |
+| signature | [string](#string) |  | The signature is the name with the number and type of input arguments the function takes. |
+| character_set_client | [string](#string) |  | MySQL specific metadata. |
+| collation_connection | [string](#string) |  |  |
+| database_collation | [string](#string) |  |  |
+| sql_mode | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-SchemaCatalog"></a>
+
+### SchemaCatalog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the schema name. It is an empty string for databases without such concept such as MySQL. |
+| tables | [TableCatalog](#bytebase-store-TableCatalog) | repeated | The table_configs is the list of configs for tables in a schema. |
+
+
+
+
+
+
+<a name="bytebase-store-SchemaMetadata"></a>
+
+### SchemaMetadata
+SchemaMetadata is the metadata for schemas.
+This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the schema name. It is an empty string for databases without such concept such as MySQL. |
+| tables | [TableMetadata](#bytebase-store-TableMetadata) | repeated | The tables is the list of tables in a schema. |
+| external_tables | [ExternalTableMetadata](#bytebase-store-ExternalTableMetadata) | repeated | The external_tables is the list of external tables in a schema. |
+| views | [ViewMetadata](#bytebase-store-ViewMetadata) | repeated | The views is the list of views in a schema. |
+| functions | [FunctionMetadata](#bytebase-store-FunctionMetadata) | repeated | The functions is the list of functions in a schema. |
+| procedures | [ProcedureMetadata](#bytebase-store-ProcedureMetadata) | repeated | The procedures is the list of procedures in a schema. |
+| streams | [StreamMetadata](#bytebase-store-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
+| tasks | [TaskMetadata](#bytebase-store-TaskMetadata) | repeated | The routines is the list of routines in a schema, currently, only used for Snowflake. |
+| materialized_views | [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata) | repeated | The materialized_views is the list of materialized views in a schema. |
+| sequences | [SequenceMetadata](#bytebase-store-SequenceMetadata) | repeated | The sequences is the list of sequences in a schema. |
+| packages | [PackageMetadata](#bytebase-store-PackageMetadata) | repeated | The packages is the list of packages in a schema. |
+| owner | [string](#string) |  |  |
+| events | [EventMetadata](#bytebase-store-EventMetadata) | repeated |  |
+| enum_types | [EnumTypeMetadata](#bytebase-store-EnumTypeMetadata) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-SecretItem"></a>
+
+### SecretItem
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of the secret. |
+| value | [string](#string) |  | The value is the value of the secret. |
+| description | [string](#string) |  | The description is the description of the secret. |
+
+
+
+
+
+
+<a name="bytebase-store-Secrets"></a>
+
+### Secrets
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| items | [SecretItem](#bytebase-store-SecretItem) | repeated | The list of secrets. |
+
+
+
+
+
+
+<a name="bytebase-store-SequenceMetadata"></a>
+
+### SequenceMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of a sequence. |
+| data_type | [string](#string) |  | The data type of a sequence. |
+| start | [string](#string) |  | The start value of a sequence. |
+| min_value | [string](#string) |  | The minimum value of a sequence. |
+| max_value | [string](#string) |  | The maximum value of a sequence. |
+| increment | [string](#string) |  | Increment value of a sequence. |
+| cycle | [bool](#bool) |  | Cycle is whether the sequence cycles. |
+| cache_size | [string](#string) |  | Cache size of a sequence. |
+| last_value | [string](#string) |  | Last value of a sequence. |
+| owner_table | [string](#string) |  | The owner table of the sequence. |
+| owner_column | [string](#string) |  | The owner column of the sequence. |
+| comment | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-StreamMetadata"></a>
+
+### StreamMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a stream. |
+| table_name | [string](#string) |  | The table_name is the name of the table/view that the stream is created on. |
+| owner | [string](#string) |  | The owner of the stream. |
+| comment | [string](#string) |  | The comment of the stream. |
+| type | [StreamMetadata.Type](#bytebase-store-StreamMetadata-Type) |  | The type of the stream. |
+| stale | [bool](#bool) |  | Indicates whether the stream was last read before the `stale_after` time. |
+| mode | [StreamMetadata.Mode](#bytebase-store-StreamMetadata-Mode) |  | The mode of the stream. |
+| definition | [string](#string) |  | The definition of the stream. |
+
+
+
+
+
+
+<a name="bytebase-store-TableCatalog"></a>
+
+### TableCatalog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a table. |
+| columns | [ColumnCatalog](#bytebase-store-ColumnCatalog) | repeated | The column_configs is the ordered list of configs for columns in a table. |
+| object_schema | [ObjectSchema](#bytebase-store-ObjectSchema) | optional |  |
+| classification | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-TableMetadata"></a>
+
+### TableMetadata
+TableMetadata is the metadata for tables.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a table. |
+| columns | [ColumnMetadata](#bytebase-store-ColumnMetadata) | repeated | The columns is the ordered list of columns in a table. |
+| indexes | [IndexMetadata](#bytebase-store-IndexMetadata) | repeated | The indexes is the list of indexes in a table. |
+| engine | [string](#string) |  | The engine is the engine of a table. |
+| collation | [string](#string) |  | The collation is the collation of a table. |
+| charset | [string](#string) |  | The character set of table. |
+| row_count | [int64](#int64) |  | The row_count is the estimated number of rows of a table. |
+| data_size | [int64](#int64) |  | The data_size is the estimated data size of a table. |
+| index_size | [int64](#int64) |  | The index_size is the estimated index size of a table. |
+| data_free | [int64](#int64) |  | The data_free is the estimated free data size of a table. |
+| create_options | [string](#string) |  | The create_options is the create option of a table. |
+| comment | [string](#string) |  | The comment is the comment of a table. classification and user_comment is parsed from the comment. |
+| user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
+| foreign_keys | [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata) | repeated | The foreign_keys is the list of foreign keys in a table. |
+| partitions | [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata) | repeated | The partitions is the list of partitions in a table. |
+| check_constraints | [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata) | repeated | The check_constraints is the list of check constraints in a table. |
+| owner | [string](#string) |  |  |
+| sorting_keys | [string](#string) | repeated | The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field. Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by |
+| triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-TablePartitionMetadata"></a>
+
+### TablePartitionMetadata
+TablePartitionMetadata is the metadata for table partitions.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a table partition. |
+| type | [TablePartitionMetadata.Type](#bytebase-store-TablePartitionMetadata-Type) |  | The type of a table partition. |
+| expression | [string](#string) |  | The expression is the expression of a table partition. For PostgreSQL, the expression is the text of {FOR VALUES partition_bound_spec}, see https://www.postgresql.org/docs/current/sql-createtable.html. For MySQL, the expression is the `expr` or `column_list` of the following syntax. PARTITION BY { [LINEAR] HASH(expr) | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list) | RANGE{(expr) | COLUMNS(column_list)} | LIST{(expr) | COLUMNS(column_list)} }. |
+| value | [string](#string) |  | The value is the value of a table partition. For MySQL, the value is for RANGE and LIST partition types, - For a RANGE partition, it contains the value set in the partition&#39;s VALUES LESS THAN clause, which can be either an integer or MAXVALUE. - For a LIST partition, this column contains the values defined in the partition&#39;s VALUES IN clause, which is a list of comma-separated integer values. - For others, it&#39;s an empty string. |
+| use_default | [string](#string) |  | The use_default is whether the users use the default partition, it stores the different value for different database engines. For MySQL, it&#39;s [INT] type, 0 means not use default partition, otherwise, it&#39;s equals to number in syntax [SUB]PARTITION {number}. |
+| subpartitions | [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata) | repeated | The subpartitions is the list of subpartitions in a table partition. |
+| indexes | [IndexMetadata](#bytebase-store-IndexMetadata) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-TaskMetadata"></a>
+
+### TaskMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a task. |
+| id | [string](#string) |  | The id is the snowflake-generated id of a task. Example: 01ad32a0-1bb6-5e93-0000-000000000001 |
+| owner | [string](#string) |  | The owner of the task. |
+| comment | [string](#string) |  | The comment of the task. |
+| warehouse | [string](#string) |  | The warehouse of the task. |
+| schedule | [string](#string) |  | The schedule interval of the task. |
+| predecessors | [string](#string) | repeated | The predecessor tasks of the task. |
+| state | [TaskMetadata.State](#bytebase-store-TaskMetadata-State) |  | The state of the task. |
+| condition | [string](#string) |  | The condition of the task. |
+| definition | [string](#string) |  | The definition of the task. |
+
+
+
+
+
+
+<a name="bytebase-store-TriggerMetadata"></a>
+
+### TriggerMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of the trigger. |
+| event | [string](#string) |  | The event is the event of the trigger, such as INSERT, UPDATE, DELETE, TRUNCATE. |
+| timing | [string](#string) |  | The timing is the timing of the trigger, such as BEFORE, AFTER. |
+| body | [string](#string) |  | The body is the body of the trigger. |
+| sql_mode | [string](#string) |  |  |
+| character_set_client | [string](#string) |  |  |
+| collation_connection | [string](#string) |  |  |
+| comment | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ViewMetadata"></a>
+
+### ViewMetadata
+ViewMetadata is the metadata for views.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a view. |
+| definition | [string](#string) |  | The definition is the definition of a view. |
+| comment | [string](#string) |  | The comment is the comment of a view. |
+| dependency_columns | [DependencyColumn](#bytebase-store-DependencyColumn) | repeated | The dependency_columns is the list of dependency columns of a view. |
+| columns | [ColumnMetadata](#bytebase-store-ColumnMetadata) | repeated | The columns is the ordered list of columns in a table. |
+| triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The triggers is the list of triggers in a view. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-GenerationMetadata-Type"></a>
+
+### GenerationMetadata.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| TYPE_VIRTUAL | 1 |  |
+| TYPE_STORED | 2 |  |
+
+
+
+<a name="bytebase-store-ObjectSchema-Type"></a>
+
+### ObjectSchema.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| STRING | 1 |  |
+| NUMBER | 2 |  |
+| BOOLEAN | 3 |  |
+| OBJECT | 4 |  |
+| ARRAY | 5 |  |
+
+
+
+<a name="bytebase-store-StreamMetadata-Mode"></a>
+
+### StreamMetadata.Mode
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| MODE_UNSPECIFIED | 0 |  |
+| MODE_DEFAULT | 1 |  |
+| MODE_APPEND_ONLY | 2 |  |
+| MODE_INSERT_ONLY | 3 |  |
+
+
+
+<a name="bytebase-store-StreamMetadata-Type"></a>
+
+### StreamMetadata.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| TYPE_DELTA | 1 |  |
+
+
+
+<a name="bytebase-store-TablePartitionMetadata-Type"></a>
+
+### TablePartitionMetadata.Type
+Type is the type of a table partition, some database engines may not
+support all types. Only avilable for the following database engines now:
+MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY,
+LINEAR_KEY
+(https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html) TiDB:
+RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY PostgreSQL: RANGE,
+LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| RANGE | 1 |  |
+| RANGE_COLUMNS | 2 |  |
+| LIST | 3 |  |
+| LIST_COLUMNS | 4 |  |
+| HASH | 5 |  |
+| LINEAR_HASH | 6 |  |
+| KEY | 7 |  |
+| LINEAR_KEY | 8 |  |
+
+
+
+<a name="bytebase-store-TaskMetadata-State"></a>
+
+### TaskMetadata.State
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATE_UNSPECIFIED | 0 |  |
+| STATE_STARTED | 1 |  |
+| STATE_SUSPENDED | 2 |  |
 
 
  
@@ -3549,7 +3434,6 @@ Type is the database change type.
 | MIGRATE | 2 | Used for DDL changes including CREATE DATABASE. |
 | MIGRATE_SDL | 3 | Used for schema changes via state-based schema migration including CREATE DATABASE. |
 | MIGRATE_GHOST | 4 | Used for DDL changes using gh-ost. |
-| BRANCH | 5 | Used when restoring from a backup (the restored database branched from the original backup). |
 | DATA | 6 | Used for DML change. |
 
 
@@ -4893,8 +4777,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| database_config | [DatabaseConfig](#bytebase-store-DatabaseConfig) |  | The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. |
-| baseline_database_config | [DatabaseConfig](#bytebase-store-DatabaseConfig) |  | The snapshot of the baseline database config when creating the sheet. |
 | engine | [Engine](#bytebase-store-Engine) |  | The SQL dialect. |
 | commands | [SheetCommand](#bytebase-store-SheetCommand) | repeated | The start and end position of each command in the sheet statement. |
 

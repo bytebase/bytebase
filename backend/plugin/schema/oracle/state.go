@@ -5,8 +5,6 @@ import (
 	"sort"
 	"strings"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -31,26 +29,6 @@ func convertToDatabaseState(database *storepb.DatabaseSchemaMetadata) *databaseS
 	return state
 }
 
-func (s *databaseState) convertToDatabaseMetadata() *storepb.DatabaseSchemaMetadata {
-	schemaStates := []*schemaState{}
-	for _, schema := range s.schemas {
-		schemaStates = append(schemaStates, schema)
-	}
-	sort.Slice(schemaStates, func(i, j int) bool {
-		return schemaStates[i].id < schemaStates[j].id
-	})
-	schemas := []*storepb.SchemaMetadata{}
-	for _, schema := range schemaStates {
-		schemas = append(schemas, schema.convertToSchemaMetadata())
-	}
-	return &storepb.DatabaseSchemaMetadata{
-		Name:    s.name,
-		Schemas: schemas,
-		// Unsupported, for tests only.
-		Extensions: []*storepb.ExtensionMetadata{},
-	}
-}
-
 type schemaState struct {
 	id     int
 	name   string
@@ -72,30 +50,6 @@ func convertToSchemaState(id int, schema *storepb.SchemaMetadata) *schemaState {
 		state.tables[table.Name] = convertToTableState(i, table)
 	}
 	return state
-}
-
-func (s *schemaState) convertToSchemaMetadata() *storepb.SchemaMetadata {
-	tableStates := []*tableState{}
-	for _, table := range s.tables {
-		tableStates = append(tableStates, table)
-	}
-	sort.Slice(tableStates, func(i, j int) bool {
-		return tableStates[i].id < tableStates[j].id
-	})
-	tables := []*storepb.TableMetadata{}
-	for _, table := range tableStates {
-		tables = append(tables, table.convertToTableMetadata())
-	}
-	return &storepb.SchemaMetadata{
-		Name:   s.name,
-		Tables: tables,
-		// Unsupported, for tests only.
-		Views:             []*storepb.ViewMetadata{},
-		Functions:         []*storepb.FunctionMetadata{},
-		Streams:           []*storepb.StreamMetadata{},
-		Tasks:             []*storepb.TaskMetadata{},
-		MaterializedViews: []*storepb.MaterializedViewMetadata{},
-	}
 }
 
 type tableState struct {
@@ -199,40 +153,6 @@ func convertToTableState(id int, table *storepb.TableMetadata) *tableState {
 	return state
 }
 
-func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
-	columnStates := []*columnState{}
-	for _, column := range t.columns {
-		columnStates = append(columnStates, column)
-	}
-	sort.Slice(columnStates, func(i, j int) bool {
-		return columnStates[i].id < columnStates[j].id
-	})
-	columns := []*storepb.ColumnMetadata{}
-	for _, column := range columnStates {
-		columns = append(columns, column.convertToColumnMetadata())
-	}
-
-	indexStates := []*indexState{}
-	for _, index := range t.indexes {
-		indexStates = append(indexStates, index)
-	}
-	sort.Slice(indexStates, func(i, j int) bool {
-		return indexStates[i].id < indexStates[j].id
-	})
-	indexes := []*storepb.IndexMetadata{}
-	for _, index := range indexStates {
-		indexes = append(indexes, index.convertToIndexMetadata())
-	}
-
-	return &storepb.TableMetadata{
-		Name:        t.name,
-		Columns:     columns,
-		Indexes:     indexes,
-		Comment:     t.comment,
-		UserComment: t.comment,
-	}
-}
-
 type defaultValue interface {
 	isDefaultValue()
 	toString() string
@@ -303,27 +223,6 @@ func (c *columnState) toString(buf *strings.Builder) error {
 		}
 	}
 	return nil
-}
-
-func (c *columnState) convertToColumnMetadata() *storepb.ColumnMetadata {
-	result := &storepb.ColumnMetadata{
-		Name:        c.name,
-		Type:        c.tp,
-		Nullable:    c.nullable,
-		Comment:     c.comment,
-		UserComment: c.comment,
-	}
-	if c.defaultValue != nil {
-		switch value := c.defaultValue.(type) {
-		case *defaultValueNull:
-			result.DefaultValue = &storepb.ColumnMetadata_DefaultNull{DefaultNull: true}
-		case *defaultValueString:
-			result.DefaultValue = &storepb.ColumnMetadata_Default{Default: wrapperspb.String(value.value)}
-		case *defaultValueExpression:
-			result.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: value.value}
-		}
-	}
-	return result
 }
 
 // nolint
@@ -461,17 +360,6 @@ func (i *indexState) toInlineString(buf *strings.Builder) error {
 	}
 
 	return nil
-}
-
-func (i *indexState) convertToIndexMetadata() *storepb.IndexMetadata {
-	return &storepb.IndexMetadata{
-		Name:        i.name,
-		Expressions: i.keys,
-		Primary:     i.primary,
-		Unique:      i.unique,
-		// Unsupported, for tests only.
-		Visible: true,
-	}
 }
 
 // nolint

@@ -53,8 +53,18 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	if mixed {
 		return nil, base.MixUserSystemTablesError
 	}
-	if allSystems {
+
+	queryTypeListener := &queryTypeListener{
+		allSystems: allSystems,
+		result:     base.QueryTypeUnknown,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(queryTypeListener, tree)
+	if queryTypeListener.err != nil {
+		return nil, queryTypeListener.err
+	}
+	if queryTypeListener.result != base.Select {
 		return &base.QuerySpan{
+			Type:          queryTypeListener.result,
 			SourceColumns: base.SourceColumnSet{},
 			Results:       []base.QuerySpanResult{},
 		}, nil

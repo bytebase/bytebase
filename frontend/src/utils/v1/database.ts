@@ -55,7 +55,7 @@ export const sortDatabaseV1List = (databaseList: ComposedDatabase[]) => {
       (db) => db.projectEntity.key,
       (db) => db.databaseName,
     ],
-    ["desc", "asc", "asc", "asc"]
+    ["asc", "asc", "asc", "asc"]
   );
 };
 

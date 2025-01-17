@@ -248,21 +248,26 @@ type VerbTypeTarget = {
 };
 
 const renderVerbTypeTarget = (params: VerbTypeTarget, props: object = {}) => {
-  const keypath =
-    extractUserResourceName(params.issueComment.creator) ===
-    userStore.systemBotUser?.email
-      ? "activity.sentence.verb-type-target-by-system-bot"
-      : "activity.sentence.verb-type-target-by-people";
+  let translation;
+  switch (extractUserResourceName(params.issueComment.creator)) {
+    case userStore.systemBotUser?.email:
+      translation = t("activity.sentence.verb-type-target-by-system-bot", {
+        verb: params.verb,
+        type: params.type,
+        target: params.target,
+        ...props,
+      });
+      break;
+    default:
+      translation = t("activity.sentence.verb-type-target-by-people", {
+        verb: params.verb,
+        type: params.type,
+        target: params.target,
+        ...props,
+      });
+  }
 
-  return (
-    <Translation {...props} keypath={keypath}>
-      {{
-        verb: () => params.verb,
-        type: () => params.type,
-        target: () => params.target,
-      }}
-    </Translation>
-  );
+  return <span>{translation}</span>;
 };
 
 const Renderer = defineComponent({

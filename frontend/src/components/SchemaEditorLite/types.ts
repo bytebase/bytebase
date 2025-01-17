@@ -15,8 +15,6 @@ export type EditTarget = {
   baselineMetadata: DatabaseMetadata;
 };
 
-export type ResourceType = "branch" | "database";
-
 export type TabType = "database" | "table" | "view" | "procedure" | "function";
 
 export type CommonTabContext = {

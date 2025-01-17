@@ -213,7 +213,6 @@
     "leave-without-saving": "¿Salir sin ahorrar?",
     "configure-now": "Configurar ahora",
     "connection": "Conexión",
-    "permission-denied": "Permiso denegado",
     "resource": "Recurso",
     "resources": "Recursos",
     "closed": "Cerrado",
@@ -255,8 +254,12 @@
       "title-general": "Comprobar resultado"
     },
     "check-type": {
+      "fake": "Falso",
+      "connection": "Conexión",
       "sql-review": "Revisión de SQL",
-      "affected-rows": "Filas afectadas (estimación basada en información estadística)"
+      "ghost-sync": "Sincronización gh-ost",
+      "affected-rows": "Filas afectadas (estimación basada en información estadística)",
+      "summary-report": "Informe resumido"
     },
     "rollout-time": "Tiempo de implementación",
     "earliest-allowed-time-hint": "El tiempo de implementación es cuando deseas que una tarea se ejecute; si no se especifica, se ejecuta cuando se cumplen todos los criterios.",
@@ -388,7 +391,11 @@
           "email-tips": "El correo electrónico debe ser único y no se puede cambiar después de su creación.",
           "title": "Título",
           "description": "Descripción",
-          "members": "Miembros"
+          "members": "Miembros",
+          "role": {
+            "owner": "Propietario del grupo",
+            "member": "Miembro del grupo"
+          }
         },
         "n-members": "{n} miembros",
         "workspace-domain-required": "Primero configure un dominio de espacio de trabajo."
@@ -757,6 +764,8 @@
       "skipped": "omitido",
       "rolled-out": "implementado",
       "xxx-automatically": "{verb} automáticamente",
+      "verb-type-target-by-people": "{verb} {type} {target}",
+      "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "failed-to-backup": "No se pudo realizar la copia de seguridad de los datos: {error}",
       "prior-back-table": "Copia de seguridad de datos en la base de datos {database} y tablas {tables}",
       "prior-back-table-for-line": "Copia de seguridad de datos en la base de datos {database} y la tabla {tables} para DML en la línea {line}"
@@ -947,7 +956,6 @@
     },
     "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
     "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
-    "preview": "Problema de vista previa",
     "missing-sql-statement": "Sentencia SQL faltante.",
     "task-summary-tooltip": "{failed} tarea fallida | \n{failed} tareas fallidas",
     "data-export": {
@@ -1374,10 +1382,6 @@
     "mixed-values-for-label": "Esta etiqueta seleccionada tiene valores mixtos.",
     "mixed-label-values-warning": "Algunos de los recursos seleccionados tienen valores mixtos para la misma clave",
     "change-data": "Cambiar datos",
-    "new-branch": "Nueva rama",
-    "branch-name": "Nombre de la rama",
-    "select-branch": "Seleccione una rama",
-    "delete-this-branch": "Eliminar esta rama",
     "table-detail": "Detalle de la tabla",
     "batch-action-not-support-alter-schema": "Algunas bases de datos no admiten la modificación del esquema",
     "batch-action-permission-denied": "No tengo permiso para {action} para bases de datos",
@@ -2028,7 +2032,6 @@
       "unique": "Único",
       "dependency-columns": "Columnas dependientes"
     },
-    "generated-ddl-is-empty": "El DDL generado está vacío",
     "table-partition": {
       "partitions": "Particiones",
       "edit-partitions": "Editar particiones",
@@ -2370,7 +2373,16 @@
       "risk": {
         "self": "Riesgo",
         "select": "Seleccionar riesgo",
+        "risk-level": {
+          "default": "Por defecto",
+          "low": "Bajo",
+          "moderate": "Moderado",
+          "high": "Alto"
+        },
         "namespace": {
+          "dml": "DML",
+          "ddl": "DDL",
+          "create_database": "Crear base de datos",
           "data_export": "Exportar datos",
           "request_query": "Solicitar Rol de Consultor",
           "request_export": "Solicitar Rol de Exportador"
@@ -2624,18 +2636,7 @@
     "review-sql": "Revisar SQL"
   },
   "schema-designer": {
-    "baseline-version": "Versión de referencia",
-    "new-branch": "Nueva rama",
-    "parent-branch": "Rama principal",
-    "raw-sql-preview": "vista previa de sql sin formato",
-    "search-tables": "Buscar tablas",
-    "use-tips": "Selecciona las tablas a diseñar",
-    "apply-to-database": "Aplicar cambio a la base de datos",
-    "select-database-placeholder": "Seleccione una base de datos (solo MySQL, PostgreSQL, TiDB y Oracle)",
-    "message": {
-      "created-succeed": "Diseño de esquema creado con éxito",
-      "updated-succeed": "Diseño de esquema actualizado con éxito"
-    }
+    "use-tips": "Selecciona las tablas a diseñar"
   },
   "cel": {
     "condition": {
@@ -2735,64 +2736,13 @@
     "password-info": "Proporcione una contraseña para cifrar el archivo de exportación."
   },
   "branch": {
-    "rollout": {
-      "select-target-database": "Seleccionar base de datos de destino"
-    },
     "select-tables-to-rollout": "Seleccionar tablas para implementar",
-    "default-branches": "Ramas por defecto",
-    "your-branches": "Tus ramas",
-    "active-branches": "Ramas activas",
-    "merge-rebase": {
-      "select-branches-to-merge": "Seleccionar sucursales para fusionar",
-      "select-branches-to-rebase": "Seleccione sucursales para rebase",
-      "validating-branch": "Validando sucursales",
-      "able-to-merge": "Capaz de fusionarse",
-      "able-to-rebase": "Capaz de rebase",
-      "cannot-automatically-merge": "No se puede fusionar automáticamente, {rebase_branch} primero.",
-      "cannot-automatically-rebase": "No se puede cambiar la base automáticamente. \nResuelva los conflictos manualmente.",
-      "go-rebase": "rama de rebase",
-      "changes-of-branch": "Cambios de {branch}",
-      "merge-succeeded": "Fusión exitosa",
-      "rebase-succeeded": "Rebase exitoso",
-      "merge-branch": "Fusionar rama",
-      "rebase-branch": "rama de rebase",
-      "confirm-rebase": "¿Confirmar rebase?",
-      "conflict-not-resolved": "Parece que algunos conflictos aún no se han resuelto.",
-      "resolve-conflicts-to-rebase": "Resolver conflictos para rebase",
-      "preview-rebase-result": "Vista previa de los cambios en {branch} después de la rebase",
-      "before-merge": "Antes de fusionarse",
-      "after-merge": "Después de fusionar",
-      "before-rebase": "Antes de rebase",
-      "after-rebase": "Después de rebase",
-      "post-merge-action": {
-        "rebase": "Fusionar y reorganizar rama",
-        "delete": "Fusionar y eliminar rama"
-      }
-    },
-    "source": {
-      "baseline-version": "Versión básica",
-      "parent-branch": "Rama principal",
-      "self": "Fuente"
-    },
     "index": {
       "drop-index-confirm": "¿Índice de caída?"
     },
-    "force-delete": "Forzar eliminación",
-    "deleting-parent-branch": "Eliminando una rama principal.",
-    "visualized-schema": "Esquema visualizado",
-    "schema-text": "Texto del esquema",
-    "baseline": "Base",
-    "head": "Cabeza",
-    "show-diff-with-branch-baseline": "Mostrar diferencia con la línea base de la rama",
     "table-partition": {
       "drop-partition-confirm": "¿Eliminar partición de mesa?",
       "drop-partition-with-subpartitions-confirm": "También eliminará todas sus subparticiones."
-    },
-    "last-update": {
-      "self": "Última actualización"
-    },
-    "source-branch": {
-      "self": "Rama fuente"
     }
   },
   "worksheet": {

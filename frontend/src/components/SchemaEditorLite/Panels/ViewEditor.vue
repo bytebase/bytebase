@@ -24,9 +24,8 @@ import { computed } from "vue";
 import type { ComposedDatabase } from "@/types";
 import {
   DatabaseMetadata,
-  type ViewMetadata,
-  type SchemaMetadata,
-  SchemaConfig,
+  ViewMetadata,
+  SchemaMetadata,
 } from "@/types/proto/v1/database_service";
 import { useSchemaEditorContext } from "../context";
 import type { EditStatus } from "../types";
@@ -90,20 +89,6 @@ const mocked = computed(() => {
       },
     ],
   });
-  const schemaConfig = database.schemaConfigs.find(
-    (sc) => sc.name === schema.name
-  );
-  const viewConfig = schemaConfig?.viewConfigs.find(
-    (vc) => vc.name === view.name
-  );
-  if (schemaConfig && viewConfig) {
-    mockedDatabase.schemaConfigs = [
-      SchemaConfig.fromJSON({
-        name: schemaConfig.name,
-        tableConfigs: [cloneDeep(viewConfig)],
-      }),
-    ];
-  }
   return mockedDatabase;
 });
 

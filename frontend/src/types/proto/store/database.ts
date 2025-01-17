@@ -894,9 +894,6 @@ export interface SchemaCatalog {
   name: string;
   /** The table_configs is the list of configs for tables in a schema. */
   tables: TableCatalog[];
-  functionConfigs: FunctionConfig[];
-  procedureConfigs: ProcedureConfig[];
-  viewConfigs: ViewConfig[];
 }
 
 export interface TableCatalog {
@@ -906,18 +903,6 @@ export interface TableCatalog {
   columns: ColumnCatalog[];
   objectSchema?: ObjectSchema | undefined;
   classification: string;
-  /**
-   * The last updater of the table in branch.
-   * Format: users/{userUID}.
-   */
-  updater: string;
-  /**
-   * The last change come from branch.
-   * Format: projcets/{project}/branches/{branch}
-   */
-  sourceBranch: string;
-  /** The timestamp when the table is updated in branch. */
-  updateTime: Timestamp | undefined;
 }
 
 export interface ColumnCatalog {
@@ -1038,57 +1023,6 @@ export interface ObjectSchema_StructKind_PropertiesEntry {
 
 export interface ObjectSchema_ArrayKind {
   kind: ObjectSchema | undefined;
-}
-
-export interface FunctionConfig {
-  /** The name is the name of a function. */
-  name: string;
-  /**
-   * The last updater of the function in branch.
-   * Format: users/{userUID}.
-   */
-  updater: string;
-  /**
-   * The last change come from branch.
-   * Format: projcets/{project}/branches/{branch}
-   */
-  sourceBranch: string;
-  /** The timestamp when the function is updated in branch. */
-  updateTime: Timestamp | undefined;
-}
-
-export interface ProcedureConfig {
-  /** The name is the name of a procedure. */
-  name: string;
-  /**
-   * The last updater of the procedure in branch.
-   * Format: users/{userUID}.
-   */
-  updater: string;
-  /**
-   * The last change come from branch.
-   * Format: projcets/{project}/branches/{branch}
-   */
-  sourceBranch: string;
-  /** The timestamp when the procedure is updated in branch. */
-  updateTime: Timestamp | undefined;
-}
-
-export interface ViewConfig {
-  /** The name is the name of a view. */
-  name: string;
-  /**
-   * The last updater of the view in branch.
-   * Format: users/{userUID}.
-   */
-  updater: string;
-  /**
-   * The last change come from branch.
-   * Format: projcets/{project}/branches/{branch}
-   */
-  sourceBranch: string;
-  /** The timestamp when the view is updated in branch. */
-  updateTime: Timestamp | undefined;
 }
 
 function createBaseDatabaseMetadata(): DatabaseMetadata {
@@ -5838,7 +5772,7 @@ export const DatabaseConfig: MessageFns<DatabaseConfig> = {
 };
 
 function createBaseSchemaCatalog(): SchemaCatalog {
-  return { name: "", tables: [], functionConfigs: [], procedureConfigs: [], viewConfigs: [] };
+  return { name: "", tables: [] };
 }
 
 export const SchemaCatalog: MessageFns<SchemaCatalog> = {
@@ -5848,15 +5782,6 @@ export const SchemaCatalog: MessageFns<SchemaCatalog> = {
     }
     for (const v of message.tables) {
       TableCatalog.encode(v!, writer.uint32(18).fork()).join();
-    }
-    for (const v of message.functionConfigs) {
-      FunctionConfig.encode(v!, writer.uint32(26).fork()).join();
-    }
-    for (const v of message.procedureConfigs) {
-      ProcedureConfig.encode(v!, writer.uint32(34).fork()).join();
-    }
-    for (const v of message.viewConfigs) {
-      ViewConfig.encode(v!, writer.uint32(42).fork()).join();
     }
     return writer;
   },
@@ -5884,30 +5809,6 @@ export const SchemaCatalog: MessageFns<SchemaCatalog> = {
           message.tables.push(TableCatalog.decode(reader, reader.uint32()));
           continue;
         }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.functionConfigs.push(FunctionConfig.decode(reader, reader.uint32()));
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.procedureConfigs.push(ProcedureConfig.decode(reader, reader.uint32()));
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.viewConfigs.push(ViewConfig.decode(reader, reader.uint32()));
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5921,15 +5822,6 @@ export const SchemaCatalog: MessageFns<SchemaCatalog> = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       tables: globalThis.Array.isArray(object?.tables) ? object.tables.map((e: any) => TableCatalog.fromJSON(e)) : [],
-      functionConfigs: globalThis.Array.isArray(object?.functionConfigs)
-        ? object.functionConfigs.map((e: any) => FunctionConfig.fromJSON(e))
-        : [],
-      procedureConfigs: globalThis.Array.isArray(object?.procedureConfigs)
-        ? object.procedureConfigs.map((e: any) => ProcedureConfig.fromJSON(e))
-        : [],
-      viewConfigs: globalThis.Array.isArray(object?.viewConfigs)
-        ? object.viewConfigs.map((e: any) => ViewConfig.fromJSON(e))
-        : [],
     };
   },
 
@@ -5941,15 +5833,6 @@ export const SchemaCatalog: MessageFns<SchemaCatalog> = {
     if (message.tables?.length) {
       obj.tables = message.tables.map((e) => TableCatalog.toJSON(e));
     }
-    if (message.functionConfigs?.length) {
-      obj.functionConfigs = message.functionConfigs.map((e) => FunctionConfig.toJSON(e));
-    }
-    if (message.procedureConfigs?.length) {
-      obj.procedureConfigs = message.procedureConfigs.map((e) => ProcedureConfig.toJSON(e));
-    }
-    if (message.viewConfigs?.length) {
-      obj.viewConfigs = message.viewConfigs.map((e) => ViewConfig.toJSON(e));
-    }
     return obj;
   },
 
@@ -5960,23 +5843,12 @@ export const SchemaCatalog: MessageFns<SchemaCatalog> = {
     const message = createBaseSchemaCatalog();
     message.name = object.name ?? "";
     message.tables = object.tables?.map((e) => TableCatalog.fromPartial(e)) || [];
-    message.functionConfigs = object.functionConfigs?.map((e) => FunctionConfig.fromPartial(e)) || [];
-    message.procedureConfigs = object.procedureConfigs?.map((e) => ProcedureConfig.fromPartial(e)) || [];
-    message.viewConfigs = object.viewConfigs?.map((e) => ViewConfig.fromPartial(e)) || [];
     return message;
   },
 };
 
 function createBaseTableCatalog(): TableCatalog {
-  return {
-    name: "",
-    columns: [],
-    objectSchema: undefined,
-    classification: "",
-    updater: "",
-    sourceBranch: "",
-    updateTime: undefined,
-  };
+  return { name: "", columns: [], objectSchema: undefined, classification: "" };
 }
 
 export const TableCatalog: MessageFns<TableCatalog> = {
@@ -5992,15 +5864,6 @@ export const TableCatalog: MessageFns<TableCatalog> = {
     }
     if (message.classification !== "") {
       writer.uint32(26).string(message.classification);
-    }
-    if (message.updater !== "") {
-      writer.uint32(34).string(message.updater);
-    }
-    if (message.sourceBranch !== "") {
-      writer.uint32(50).string(message.sourceBranch);
-    }
-    if (message.updateTime !== undefined) {
-      Timestamp.encode(message.updateTime, writer.uint32(42).fork()).join();
     }
     return writer;
   },
@@ -6044,30 +5907,6 @@ export const TableCatalog: MessageFns<TableCatalog> = {
           message.classification = reader.string();
           continue;
         }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.updater = reader.string();
-          continue;
-        }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.sourceBranch = reader.string();
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.updateTime = Timestamp.decode(reader, reader.uint32());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -6085,9 +5924,6 @@ export const TableCatalog: MessageFns<TableCatalog> = {
         : [],
       objectSchema: isSet(object.objectSchema) ? ObjectSchema.fromJSON(object.objectSchema) : undefined,
       classification: isSet(object.classification) ? globalThis.String(object.classification) : "",
-      updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
-      sourceBranch: isSet(object.sourceBranch) ? globalThis.String(object.sourceBranch) : "",
-      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
     };
   },
 
@@ -6105,15 +5941,6 @@ export const TableCatalog: MessageFns<TableCatalog> = {
     if (message.classification !== "") {
       obj.classification = message.classification;
     }
-    if (message.updater !== "") {
-      obj.updater = message.updater;
-    }
-    if (message.sourceBranch !== "") {
-      obj.sourceBranch = message.sourceBranch;
-    }
-    if (message.updateTime !== undefined) {
-      obj.updateTime = fromTimestamp(message.updateTime).toISOString();
-    }
     return obj;
   },
 
@@ -6128,11 +5955,6 @@ export const TableCatalog: MessageFns<TableCatalog> = {
       ? ObjectSchema.fromPartial(object.objectSchema)
       : undefined;
     message.classification = object.classification ?? "";
-    message.updater = object.updater ?? "";
-    message.sourceBranch = object.sourceBranch ?? "";
-    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
-      ? Timestamp.fromPartial(object.updateTime)
-      : undefined;
     return message;
   },
 };
@@ -6748,336 +6570,6 @@ export const ObjectSchema_ArrayKind: MessageFns<ObjectSchema_ArrayKind> = {
     const message = createBaseObjectSchema_ArrayKind();
     message.kind = (object.kind !== undefined && object.kind !== null)
       ? ObjectSchema.fromPartial(object.kind)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseFunctionConfig(): FunctionConfig {
-  return { name: "", updater: "", sourceBranch: "", updateTime: undefined };
-}
-
-export const FunctionConfig: MessageFns<FunctionConfig> = {
-  encode(message: FunctionConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    if (message.updater !== "") {
-      writer.uint32(18).string(message.updater);
-    }
-    if (message.sourceBranch !== "") {
-      writer.uint32(34).string(message.sourceBranch);
-    }
-    if (message.updateTime !== undefined) {
-      Timestamp.encode(message.updateTime, writer.uint32(26).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): FunctionConfig {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseFunctionConfig();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.updater = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.sourceBranch = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.updateTime = Timestamp.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): FunctionConfig {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
-      sourceBranch: isSet(object.sourceBranch) ? globalThis.String(object.sourceBranch) : "",
-      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
-    };
-  },
-
-  toJSON(message: FunctionConfig): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.updater !== "") {
-      obj.updater = message.updater;
-    }
-    if (message.sourceBranch !== "") {
-      obj.sourceBranch = message.sourceBranch;
-    }
-    if (message.updateTime !== undefined) {
-      obj.updateTime = fromTimestamp(message.updateTime).toISOString();
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<FunctionConfig>): FunctionConfig {
-    return FunctionConfig.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<FunctionConfig>): FunctionConfig {
-    const message = createBaseFunctionConfig();
-    message.name = object.name ?? "";
-    message.updater = object.updater ?? "";
-    message.sourceBranch = object.sourceBranch ?? "";
-    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
-      ? Timestamp.fromPartial(object.updateTime)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseProcedureConfig(): ProcedureConfig {
-  return { name: "", updater: "", sourceBranch: "", updateTime: undefined };
-}
-
-export const ProcedureConfig: MessageFns<ProcedureConfig> = {
-  encode(message: ProcedureConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    if (message.updater !== "") {
-      writer.uint32(18).string(message.updater);
-    }
-    if (message.sourceBranch !== "") {
-      writer.uint32(34).string(message.sourceBranch);
-    }
-    if (message.updateTime !== undefined) {
-      Timestamp.encode(message.updateTime, writer.uint32(26).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ProcedureConfig {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseProcedureConfig();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.updater = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.sourceBranch = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.updateTime = Timestamp.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ProcedureConfig {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
-      sourceBranch: isSet(object.sourceBranch) ? globalThis.String(object.sourceBranch) : "",
-      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
-    };
-  },
-
-  toJSON(message: ProcedureConfig): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.updater !== "") {
-      obj.updater = message.updater;
-    }
-    if (message.sourceBranch !== "") {
-      obj.sourceBranch = message.sourceBranch;
-    }
-    if (message.updateTime !== undefined) {
-      obj.updateTime = fromTimestamp(message.updateTime).toISOString();
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<ProcedureConfig>): ProcedureConfig {
-    return ProcedureConfig.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<ProcedureConfig>): ProcedureConfig {
-    const message = createBaseProcedureConfig();
-    message.name = object.name ?? "";
-    message.updater = object.updater ?? "";
-    message.sourceBranch = object.sourceBranch ?? "";
-    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
-      ? Timestamp.fromPartial(object.updateTime)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseViewConfig(): ViewConfig {
-  return { name: "", updater: "", sourceBranch: "", updateTime: undefined };
-}
-
-export const ViewConfig: MessageFns<ViewConfig> = {
-  encode(message: ViewConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    if (message.updater !== "") {
-      writer.uint32(18).string(message.updater);
-    }
-    if (message.sourceBranch !== "") {
-      writer.uint32(34).string(message.sourceBranch);
-    }
-    if (message.updateTime !== undefined) {
-      Timestamp.encode(message.updateTime, writer.uint32(26).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ViewConfig {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseViewConfig();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.updater = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.sourceBranch = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.updateTime = Timestamp.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ViewConfig {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
-      sourceBranch: isSet(object.sourceBranch) ? globalThis.String(object.sourceBranch) : "",
-      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
-    };
-  },
-
-  toJSON(message: ViewConfig): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.updater !== "") {
-      obj.updater = message.updater;
-    }
-    if (message.sourceBranch !== "") {
-      obj.sourceBranch = message.sourceBranch;
-    }
-    if (message.updateTime !== undefined) {
-      obj.updateTime = fromTimestamp(message.updateTime).toISOString();
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<ViewConfig>): ViewConfig {
-    return ViewConfig.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<ViewConfig>): ViewConfig {
-    const message = createBaseViewConfig();
-    message.name = object.name ?? "";
-    message.updater = object.updater ?? "";
-    message.sourceBranch = object.sourceBranch ?? "";
-    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
-      ? Timestamp.fromPartial(object.updateTime)
       : undefined;
     return message;
   },

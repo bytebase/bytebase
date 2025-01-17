@@ -2,7 +2,6 @@ import { ActuatorServiceDefinition } from "@/types/proto/v1/actuator_service";
 import { AnomalyServiceDefinition } from "@/types/proto/v1/anomaly_service";
 import { AuditLogServiceDefinition } from "@/types/proto/v1/audit_log_service";
 import { AuthServiceDefinition } from "@/types/proto/v1/auth_service";
-import { BranchServiceDefinition } from "@/types/proto/v1/branch_service";
 import { CelServiceDefinition } from "@/types/proto/v1/cel_service";
 import { ChangelistServiceDefinition } from "@/types/proto/v1/changelist_service";
 import { DatabaseGroupServiceDefinition } from "@/types/proto/v1/database_group_service";
@@ -42,7 +41,6 @@ export const ALL_METHODS_WITH_AUDIT = [
   AnomalyServiceDefinition,
   AuditLogServiceDefinition,
   AuthServiceDefinition,
-  BranchServiceDefinition,
   CelServiceDefinition,
   ChangelistServiceDefinition,
   DatabaseGroupServiceDefinition,

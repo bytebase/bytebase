@@ -3575,343 +3575,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/branch:
-        post:
-            tags:
-                - BranchService
-            operationId: BranchService_CreateBranch
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: branchId
-                  in: query
-                  description: |-
-                    The ID to use for the branch, which will become the final component of
-                     the branch's resource name.
-                     Format: [a-zA-Z][a-zA-Z0-9-_/]+.
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/Branch'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Branch'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/branches:
-        get:
-            tags:
-                - BranchService
-            operationId: BranchService_ListBranches
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: filter
-                  in: query
-                  description: To filter the search result.
-                  schema:
-                    type: string
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Not used.
-                     The maximum number of branches to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 50 branches will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Not used.
-                     A page token, received from a previous `ListBranches` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListBranches` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
-                - name: view
-                  in: query
-                  schema:
-                    enum:
-                        - BRANCH_VIEW_UNSPECIFIED
-                        - BRANCH_VIEW_BASIC
-                        - BRANCH_VIEW_FULL
-                    type: string
-                    format: enum
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListBranchesResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/branches/{branche}:
-        get:
-            tags:
-                - BranchService
-            operationId: BranchService_GetBranch
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: branche
-                  in: path
-                  description: The branche id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Branch'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        delete:
-            tags:
-                - BranchService
-            operationId: BranchService_DeleteBranch
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: branche
-                  in: path
-                  description: The branche id.
-                  required: true
-                  schema:
-                    type: string
-                - name: force
-                  in: query
-                  description: |-
-                    By default, server will return `FAILED_PRECONDITION` error
-                     if delete the branch that is parent of other branches.
-                     If true, server will delete the branch forcely but will not delete its children branches.
-                  schema:
-                    type: boolean
-            responses:
-                "200":
-                    description: OK
-                    content: {}
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        patch:
-            tags:
-                - BranchService
-            operationId: BranchService_UpdateBranch
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: branche
-                  in: path
-                  description: The branche id.
-                  required: true
-                  schema:
-                    type: string
-                - name: updateMask
-                  in: query
-                  description: The list of fields to update.
-                  schema:
-                    type: string
-                    format: field-mask
-                - name: etag
-                  in: query
-                  description: |-
-                    The current etag of the branch.
-                     If an etag is provided and does not match the current etag of the branch,
-                     the call will be blocked and an ABORTED error will be returned.
-                     The etag should be specified for using merged_schema. The etag should be the etag from named branch.
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/Branch'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Branch'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/branches/{branche}:merge:
-        post:
-            tags:
-                - BranchService
-            operationId: BranchService_MergeBranch
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: branche
-                  in: path
-                  description: The branche id.
-                  required: true
-                  schema:
-                    type: string
-                - name: headBranch
-                  in: query
-                  description: |-
-                    The head branch to merge from.
-                     Format: projects/{project}/branches/{branch}
-                  schema:
-                    type: string
-                - name: etag
-                  in: query
-                  description: |-
-                    The current etag of the branch.
-                     If an etag is provided and does not match the current etag of the branch,
-                     the call will be blocked and an ABORTED error will be returned.
-                     The etag should be the etag from named branch.
-                  schema:
-                    type: string
-                - name: validateOnly
-                  in: query
-                  description: validate_only determines if the merge can occur seamlessly without any conflicts.
-                  schema:
-                    type: boolean
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Branch'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/branches/{branche}:rebase:
-        post:
-            tags:
-                - BranchService
-            operationId: BranchService_RebaseBranch
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: branche
-                  in: path
-                  description: The branche id.
-                  required: true
-                  schema:
-                    type: string
-                - name: sourceDatabase
-                  in: query
-                  description: |-
-                    The database (remote upstream) used to rebase.
-                     We use its schema as baseline and reapply the difference between base and head of the named branch.
-                     Format: instances/{instance}/databases/{database}
-                  schema:
-                    type: string
-                - name: sourceBranch
-                  in: query
-                  description: |-
-                    The branch (remote upstream) used to rebase. We use its head as baseline.
-                     We use its head schema as baseline and reapply the difference between base and head of the named branch.
-                     Format: projects/{project}/branches/{branch}
-                  schema:
-                    type: string
-                - name: mergedSchema
-                  in: query
-                  description: |-
-                    For failed merge, we will pass in this addition merged schema and use it for head.
-                     This has to be set together with source_database or source_branch.
-                  schema:
-                    type: string
-                - name: etag
-                  in: query
-                  description: |-
-                    The current etag of the branch.
-                     If an etag is provided and does not match the current etag of the branch,
-                     the call will be blocked and an ABORTED error will be returned.
-                     The etag should be specified for using merged_schema. The etag should be the etag from named branch.
-                  schema:
-                    type: string
-                - name: validateOnly
-                  in: query
-                  description: validate_only determines if the rebase can occur seamlessly without any conflicts.
-                  schema:
-                    type: boolean
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/RebaseBranchResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}/changelists:
         get:
             tags:
@@ -7424,8 +7087,8 @@ paths:
     /v1/schemaDesign:diffMetadata:
         post:
             tags:
-                - BranchService
-            operationId: BranchService_DiffMetadata
+                - SQLService
+            operationId: SQLService_DiffMetadata
             requestBody:
                 content:
                     application/json:
@@ -9186,103 +8849,6 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/Expr'
                     description: The parsed expression of the condition.
-        Branch:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: |-
-                        The name of the branch.
-                         Format: projects/{project}/branches/{branch}
-                         {branch} should be the id of a sheet.
-                branchId:
-                    type: string
-                    description: The branch ID.
-                schema:
-                    readOnly: true
-                    type: string
-                    description: The schema of branch. AKA sheet's statement.
-                schemaMetadata:
-                    allOf:
-                        - $ref: '#/components/schemas/DatabaseMetadata'
-                    description: The metadata of the current editing schema.
-                baselineSchema:
-                    readOnly: true
-                    type: string
-                    description: The baseline schema.
-                baselineSchemaMetadata:
-                    readOnly: true
-                    allOf:
-                        - $ref: '#/components/schemas/DatabaseMetadata'
-                    description: The metadata of the baseline schema.
-                engine:
-                    enum:
-                        - ENGINE_UNSPECIFIED
-                        - CLICKHOUSE
-                        - MYSQL
-                        - POSTGRES
-                        - SNOWFLAKE
-                        - SQLITE
-                        - TIDB
-                        - MONGODB
-                        - REDIS
-                        - ORACLE
-                        - SPANNER
-                        - MSSQL
-                        - REDSHIFT
-                        - MARIADB
-                        - OCEANBASE
-                        - DM
-                        - RISINGWAVE
-                        - OCEANBASE_ORACLE
-                        - STARROCKS
-                        - DORIS
-                        - HIVE
-                        - ELASTICSEARCH
-                        - BIGQUERY
-                        - DYNAMODB
-                        - DATABRICKS
-                        - COCKROACHDB
-                        - COSMOSDB
-                    type: string
-                    description: The database engine of the branch.
-                    format: enum
-                baselineDatabase:
-                    type: string
-                    description: |-
-                        The name of the baseline database.
-                         Format: instances/{instance}/databases/{database}
-                parentBranch:
-                    type: string
-                    description: |-
-                        The name of the parent branch.
-                         For main branch, it's empty.
-                         For child branch, its format will be: projects/{project}/branches/{branch}
-                etag:
-                    type: string
-                    description: The etag of the branch.
-                creator:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The creator of the branch.
-                         Format: users/{email}
-                updater:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The updater of the branch.
-                         Format: users/{email}
-                createTime:
-                    readOnly: true
-                    type: string
-                    description: The timestamp when the branch was created.
-                    format: date-time
-                updateTime:
-                    readOnly: true
-                    type: string
-                    description: The timestamp when the branch was last updated.
-                    format: date-time
         ChangeDatabaseConfig_PreUpdateBackupDetail:
             type: object
             properties:
@@ -9952,16 +9518,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/SchemaCatalog'
-        DatabaseConfig:
-            type: object
-            properties:
-                name:
-                    type: string
-                schemas:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/SchemaCatalog'
-                    description: The schema_configs is the list of configs for schemas in a database.
         DatabaseGroup:
             type: object
             properties:
@@ -10045,6 +9601,10 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/DatabaseMetadata'
                     description: The metadata of the target schema.
+                sourceCatalog:
+                    $ref: '#/components/schemas/DatabaseCatalog'
+                targetCatalog:
+                    $ref: '#/components/schemas/DatabaseCatalog'
                 engine:
                     enum:
                         - ENGINE_UNSPECIFIED
@@ -11160,19 +10720,6 @@ components:
                     items:
                         type: string
                     description: Values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
-        ListBranchesResponse:
-            type: object
-            properties:
-                branches:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Branch'
-                    description: The branches from the specified request.
-                nextPageToken:
-                    type: string
-                    description: |-
-                        A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
         ListChangelistsResponse:
             type: object
             properties:
@@ -12635,21 +12182,6 @@ components:
                 substitution:
                     type: string
                     description: OriginalValue[start:end) would be replaced with replace_with.
-        RebaseBranchResponse:
-            type: object
-            properties:
-                branch:
-                    allOf:
-                        - $ref: '#/components/schemas/Branch'
-                    description: The rebased branch when rebase occurs seamlessly.
-                conflictSchema:
-                    type: string
-                    description: |-
-                        The conflict schema when rebase has conflicts.
-                         The conflict section is enclosed by the following.
-                         <<<<< HEAD
-                         ====
-                         >>>>> main
         RejectIssueRequest:
             required:
                 - name
@@ -13896,14 +13428,6 @@ components:
                         - SCHEMA_DESIGN
                     type: string
                     format: enum
-                databaseConfig:
-                    allOf:
-                        - $ref: '#/components/schemas/DatabaseConfig'
-                    description: The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database.
-                baselineDatabaseConfig:
-                    allOf:
-                        - $ref: '#/components/schemas/DatabaseConfig'
-                    description: The snapshot of the baseline database config when creating the sheet.
                 commands:
                     type: array
                     items:
@@ -15326,7 +14850,6 @@ tags:
     - name: AnomalyService
     - name: AuditLogService
     - name: AuthService
-    - name: BranchService
     - name: CelService
     - name: ChangelistService
     - name: DatabaseCatalogService

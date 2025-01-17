@@ -14,11 +14,6 @@ export const PROJECT_V1_ROUTE_DATABASE_GROUPS = `${PROJECT_V1_ROUTE_DASHBOARD}.d
 export const PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.create`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.detail`;
 export const PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG = `${PROJECT_V1_ROUTE_DASHBOARD}.deployment-config`;
-export const PROJECT_V1_ROUTE_BRANCHES = `${PROJECT_V1_ROUTE_DASHBOARD}.branch`;
-export const PROJECT_V1_ROUTE_BRANCH_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.branch.detail`;
-export const PROJECT_V1_ROUTE_BRANCH_ROLLOUT = `${PROJECT_V1_ROUTE_DASHBOARD}.branch.rollout`;
-export const PROJECT_V1_ROUTE_BRANCH_MERGE = `${PROJECT_V1_ROUTE_DASHBOARD}.branch.merge`;
-export const PROJECT_V1_ROUTE_BRANCH_REBASE = `${PROJECT_V1_ROUTE_DASHBOARD}.branch.rebase`;
 export const PROJECT_V1_ROUTE_ISSUES = `${PROJECT_V1_ROUTE_DASHBOARD}.issue`;
 export const PROJECT_V1_ROUTE_ISSUE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.issue.detail`;
 export const PROJECT_V1_ROUTE_PLAN_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.plan.detail`;
@@ -153,82 +148,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         component: () =>
           import("@/views/project/ProjectDeploymentConfigPanel.vue"),
         props: true,
-      },
-      {
-        path: "branches",
-        meta: {
-          overrideTitle: true,
-        },
-        props: true,
-        children: [
-          {
-            path: "",
-            name: PROJECT_V1_ROUTE_BRANCHES,
-            meta: {
-              overrideTitle: true,
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
-                "bb.branches.list",
-              ],
-            },
-            component: () =>
-              import("@/views/project/ProjectBranchDashboard.vue"),
-            props: true,
-          },
-          {
-            path: ":branchName",
-            name: PROJECT_V1_ROUTE_BRANCH_DETAIL,
-            meta: {
-              overrideTitle: true,
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
-                "bb.branches.get",
-              ],
-            },
-            component: () => import("@/views/branch/BranchDetail.vue"),
-            props: true,
-          },
-          {
-            path: ":branchName/rollout",
-            name: PROJECT_V1_ROUTE_BRANCH_ROLLOUT,
-            meta: {
-              overrideTitle: true,
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
-                "bb.branches.get",
-                "bb.issues.create",
-              ],
-            },
-            component: () => import("@/views/branch/BranchRollout.vue"),
-            props: true,
-          },
-          {
-            path: ":branchName/merge",
-            name: PROJECT_V1_ROUTE_BRANCH_MERGE,
-            meta: {
-              title: () => t("branch.merge-rebase.merge-branch"),
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
-                "bb.branches.get",
-              ],
-            },
-            component: () => import("@/views/branch/BranchMerge.vue"),
-            props: true,
-          },
-          {
-            path: ":branchName/rebase",
-            name: PROJECT_V1_ROUTE_BRANCH_REBASE,
-            meta: {
-              title: () => t("branch.merge-rebase.rebase-branch"),
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
-                "bb.branches.get",
-              ],
-            },
-            component: () => import("@/views/branch/BranchRebase.vue"),
-            props: true,
-          },
-        ],
       },
       {
         path: "issues",

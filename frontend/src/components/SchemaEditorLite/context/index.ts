@@ -6,7 +6,7 @@ import { useSettingV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { RebuildMetadataEditReset } from "../algorithm/rebuild";
-import type { EditTarget, ResourceType, RolloutObject } from "../types";
+import type { EditTarget, RolloutObject } from "../types";
 import { useEditConfigs } from "./config";
 import { useEditStatus } from "./edit";
 import { useScrollStatus } from "./scroll";
@@ -30,20 +30,15 @@ export type SchemaEditorOptions = {
 };
 
 export const provideSchemaEditorContext = (params: {
-  resourceType: Ref<ResourceType>;
   readonly: Ref<boolean>;
   project: Ref<ComposedProject>;
   targets: Ref<EditTarget[]>;
   selectedRolloutObjects: Ref<RolloutObject[] | undefined>;
-  showLastUpdater: Ref<boolean>;
   disableDiffColoring: Ref<boolean>;
   hidePreview: Ref<boolean>;
   options?: Ref<SchemaEditorOptions>;
 }) => {
   const events = new Emittery() as SchemaEditorEvents;
-  const showDatabaseConfigColumn = computed(
-    () => params.resourceType.value === "branch"
-  );
   const classificationConfig = computed(() => {
     if (!params.project.value.dataClassificationConfigId) {
       return;
@@ -61,7 +56,6 @@ export const provideSchemaEditorContext = (params: {
     ...useEditConfigs(params.targets),
     ...useScrollStatus(),
     ...useSelection(params.selectedRolloutObjects, events),
-    showDatabaseConfigColumn,
     classificationConfig,
     showClassificationColumn: (
       engine: Engine,
@@ -69,9 +63,6 @@ export const provideSchemaEditorContext = (params: {
     ) => {
       if (!classificationConfig.value) {
         return false;
-      }
-      if (showDatabaseConfigColumn.value) {
-        return true;
       }
       return supportSetClassificationFromComment(
         engine,
