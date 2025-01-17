@@ -508,7 +508,7 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 	if err != nil {
 		return nil, err
 	}
-	dbConfig := convertStoreDatabaseConfig(ctx, dbSchema.GetConfig(), filter, nil /* optionalStores */)
+	dbConfig := convertStoreDatabaseConfig(dbSchema.GetConfig(), filter)
 	if dbConfig != nil {
 		v1pbMetadata.SchemaConfigs = dbConfig.SchemaConfigs
 	}

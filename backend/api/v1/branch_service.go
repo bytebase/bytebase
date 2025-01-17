@@ -24,7 +24,7 @@ func NewBranchService() *BranchService {
 	return &BranchService{}
 }
 
-func (*BranchService) DiffMetadata(ctx context.Context, request *v1pb.DiffMetadataRequest) (*v1pb.DiffMetadataResponse, error) {
+func (*BranchService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadataRequest) (*v1pb.DiffMetadataResponse, error) {
 	switch request.Engine {
 	case v1pb.Engine_MYSQL, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB, v1pb.Engine_ORACLE:
 	default:
@@ -38,12 +38,10 @@ func (*BranchService) DiffMetadata(ctx context.Context, request *v1pb.DiffMetada
 		return nil, err
 	}
 	sourceConfig := convertV1DatabaseConfig(
-		ctx,
 		&v1pb.DatabaseConfig{
 			Name:          request.SourceMetadata.Name,
 			SchemaConfigs: request.SourceMetadata.SchemaConfigs,
 		},
-		nil, /* optionalStores */
 	)
 	sanitizeCommentForSchemaMetadata(storeSourceMetadata, model.NewDatabaseConfig(sourceConfig), request.ClassificationFromConfig)
 
@@ -52,12 +50,10 @@ func (*BranchService) DiffMetadata(ctx context.Context, request *v1pb.DiffMetada
 		return nil, err
 	}
 	targetConfig := convertV1DatabaseConfig(
-		ctx,
 		&v1pb.DatabaseConfig{
 			Name:          request.TargetMetadata.Name,
 			SchemaConfigs: request.TargetMetadata.SchemaConfigs,
 		},
-		nil, /* optionalStores */
 	)
 	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid target metadata: %v", err)

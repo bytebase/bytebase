@@ -353,25 +353,6 @@ func postMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInf
 		slog.String("database", database.DatabaseName),
 	)
 
-	// Set schema config.
-	if mc.sheet != nil && mc.task.DatabaseID != nil {
-		sheet := mc.sheet
-		if sheet.Payload != nil && (sheet.Payload.DatabaseConfig != nil || sheet.Payload.BaselineDatabaseConfig != nil) {
-			databaseSchema, err := stores.GetDBSchema(ctx, *mc.task.DatabaseID)
-			if err != nil {
-				slog.Error("Failed to get database config from store", slog.Int("sheetID", sheet.UID), slog.Int("databaseUID", *mc.task.DatabaseID), log.BBError(err))
-			} else {
-				updatedDatabaseConfig := utils.MergeDatabaseConfig(sheet.Payload.DatabaseConfig, sheet.Payload.BaselineDatabaseConfig, databaseSchema.GetConfig())
-				err = stores.UpdateDBSchema(ctx, *mc.task.DatabaseID, &store.UpdateDBSchemaMessage{
-					Config: updatedDatabaseConfig,
-				}, api.SystemBotID)
-				if err != nil {
-					slog.Error("Failed to update database config", slog.Int("sheetID", sheet.UID), slog.Int("databaseUID", *mc.task.DatabaseID), log.BBError(err))
-				}
-			}
-		}
-	}
-
 	// Remove schema drift anomalies.
 	if err := stores.DeleteAnomalyV2(ctx, &store.DeleteAnomalyMessage{
 		DatabaseUID: *(mc.task.DatabaseID),
