@@ -1,5 +1,5 @@
 import { isEqual } from "lodash-es";
-import { branchServiceClient } from "@/grpcweb";
+import { sqlServiceClient } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
 import { useSettingV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
@@ -46,7 +46,7 @@ export const generateDiffDDL = async (
     const classificationConfig = useSettingV1Store().getProjectClassification(
       database.projectEntity.dataClassificationConfigId
     );
-    const diffResponse = await branchServiceClient.diffMetadata(
+    const diffResponse = await sqlServiceClient.diffMetadata(
       {
         sourceMetadata: source,
         targetMetadata: target,
