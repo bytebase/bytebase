@@ -22,10 +22,10 @@ func (l *queryTypeListener) EnterStmts(ctx *parser.StmtsContext) {
 		return
 	}
 	unterminatedStatement := ctx.AllUnterminated_sql_statement()[0]
-	l.result, l.err = l.getQueryTypeForUnterminatedSqlStatement(unterminatedStatement)
+	l.result, l.err = l.getQueryTypeForUnterminatedSQLStatement(unterminatedStatement)
 }
 
-func (l *queryTypeListener) getQueryTypeForUnterminatedSqlStatement(u parser.IUnterminated_sql_statementContext) (base.QueryType, error) {
+func (l *queryTypeListener) getQueryTypeForUnterminatedSQLStatement(u parser.IUnterminated_sql_statementContext) (base.QueryType, error) {
 	body := u.Sql_statement_body()
 	switch {
 	case body.Query_statement() != nil:
