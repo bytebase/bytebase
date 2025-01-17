@@ -9601,6 +9601,10 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/DatabaseMetadata'
                     description: The metadata of the target schema.
+                sourceCatalog:
+                    $ref: '#/components/schemas/DatabaseCatalog'
+                targetCatalog:
+                    $ref: '#/components/schemas/DatabaseCatalog'
                 engine:
                     enum:
                         - ENGINE_UNSPECIFIED
