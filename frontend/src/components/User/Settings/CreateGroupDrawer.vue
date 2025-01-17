@@ -337,7 +337,11 @@ const tryCreateOrUpdateGroup = async () => {
   state.isRequesting = true;
 
   try {
-    await groupStore.upsertGroup(validGroup.value);
+    if (isCreating.value) {
+      await groupStore.createGroup(validGroup.value);
+    } else {
+      await groupStore.updateGroup(validGroup.value);
+    }
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
