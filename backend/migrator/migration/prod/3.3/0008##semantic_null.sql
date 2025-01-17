@@ -1,0 +1,1 @@
+DELETE FROM setting where name = 'bb.workspace.semantic-types' AND value LIKE '%null%';
