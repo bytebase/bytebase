@@ -10,6 +10,7 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
+import "v1/database_catalog_service.proto";
 import "v1/database_service.proto";
 
 option go_package = "generated-go/v1";
@@ -449,6 +450,10 @@ message DiffMetadataRequest {
 
   // The metadata of the target schema.
   DatabaseMetadata target_metadata = 2 [(google.api.field_behavior) = REQUIRED];
+
+  DatabaseCatalog source_catalog = 5;
+
+  DatabaseCatalog target_catalog = 6;
 
   // The database engine of the schema.
   Engine engine = 3;
