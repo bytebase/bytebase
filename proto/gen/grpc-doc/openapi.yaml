@@ -7087,8 +7087,8 @@ paths:
     /v1/schemaDesign:diffMetadata:
         post:
             tags:
-                - BranchService
-            operationId: BranchService_DiffMetadata
+                - SQLService
+            operationId: SQLService_DiffMetadata
             requestBody:
                 content:
                     application/json:
@@ -14846,7 +14846,6 @@ tags:
     - name: AnomalyService
     - name: AuditLogService
     - name: AuthService
-    - name: BranchService
     - name: CelService
     - name: ChangelistService
     - name: DatabaseCatalogService
