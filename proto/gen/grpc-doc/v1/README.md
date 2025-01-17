@@ -8949,6 +8949,8 @@ Type is the database change type.
 | ----- | ---- | ----- | ----------- |
 | source_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the source schema. |
 | target_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the target schema. |
+| source_catalog | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  |  |
+| target_catalog | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  |  |
 | engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema. |
 | classification_from_config | [bool](#bool) |  | If false, we will build the raw common by classification in database config. |
 
