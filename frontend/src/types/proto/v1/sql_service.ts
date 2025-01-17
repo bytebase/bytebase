@@ -519,6 +519,26 @@ export interface StringifyMetadataResponse {
   schema: string;
 }
 
+export interface DiffMetadataRequest {
+  /** The metadata of the source schema. */
+  sourceMetadata:
+    | DatabaseMetadata
+    | undefined;
+  /** The metadata of the target schema. */
+  targetMetadata:
+    | DatabaseMetadata
+    | undefined;
+  /** The database engine of the schema. */
+  engine: Engine;
+  /** If false, we will build the raw common by classification in database config. */
+  classificationFromConfig: boolean;
+}
+
+export interface DiffMetadataResponse {
+  /** The diff of the metadata. */
+  diff: string;
+}
+
 export interface SearchQueryHistoriesRequest {
   /**
    * The maximum number of histories to return.
@@ -3209,6 +3229,183 @@ export const StringifyMetadataResponse: MessageFns<StringifyMetadataResponse> = 
   },
 };
 
+function createBaseDiffMetadataRequest(): DiffMetadataRequest {
+  return {
+    sourceMetadata: undefined,
+    targetMetadata: undefined,
+    engine: Engine.ENGINE_UNSPECIFIED,
+    classificationFromConfig: false,
+  };
+}
+
+export const DiffMetadataRequest: MessageFns<DiffMetadataRequest> = {
+  encode(message: DiffMetadataRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.sourceMetadata !== undefined) {
+      DatabaseMetadata.encode(message.sourceMetadata, writer.uint32(10).fork()).join();
+    }
+    if (message.targetMetadata !== undefined) {
+      DatabaseMetadata.encode(message.targetMetadata, writer.uint32(18).fork()).join();
+    }
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
+      writer.uint32(24).int32(engineToNumber(message.engine));
+    }
+    if (message.classificationFromConfig !== false) {
+      writer.uint32(32).bool(message.classificationFromConfig);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DiffMetadataRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDiffMetadataRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.sourceMetadata = DatabaseMetadata.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.targetMetadata = DatabaseMetadata.decode(reader, reader.uint32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.engine = engineFromJSON(reader.int32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.classificationFromConfig = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DiffMetadataRequest {
+    return {
+      sourceMetadata: isSet(object.sourceMetadata) ? DatabaseMetadata.fromJSON(object.sourceMetadata) : undefined,
+      targetMetadata: isSet(object.targetMetadata) ? DatabaseMetadata.fromJSON(object.targetMetadata) : undefined,
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
+      classificationFromConfig: isSet(object.classificationFromConfig)
+        ? globalThis.Boolean(object.classificationFromConfig)
+        : false,
+    };
+  },
+
+  toJSON(message: DiffMetadataRequest): unknown {
+    const obj: any = {};
+    if (message.sourceMetadata !== undefined) {
+      obj.sourceMetadata = DatabaseMetadata.toJSON(message.sourceMetadata);
+    }
+    if (message.targetMetadata !== undefined) {
+      obj.targetMetadata = DatabaseMetadata.toJSON(message.targetMetadata);
+    }
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
+      obj.engine = engineToJSON(message.engine);
+    }
+    if (message.classificationFromConfig !== false) {
+      obj.classificationFromConfig = message.classificationFromConfig;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DiffMetadataRequest>): DiffMetadataRequest {
+    return DiffMetadataRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DiffMetadataRequest>): DiffMetadataRequest {
+    const message = createBaseDiffMetadataRequest();
+    message.sourceMetadata = (object.sourceMetadata !== undefined && object.sourceMetadata !== null)
+      ? DatabaseMetadata.fromPartial(object.sourceMetadata)
+      : undefined;
+    message.targetMetadata = (object.targetMetadata !== undefined && object.targetMetadata !== null)
+      ? DatabaseMetadata.fromPartial(object.targetMetadata)
+      : undefined;
+    message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
+    message.classificationFromConfig = object.classificationFromConfig ?? false;
+    return message;
+  },
+};
+
+function createBaseDiffMetadataResponse(): DiffMetadataResponse {
+  return { diff: "" };
+}
+
+export const DiffMetadataResponse: MessageFns<DiffMetadataResponse> = {
+  encode(message: DiffMetadataResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.diff !== "") {
+      writer.uint32(10).string(message.diff);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DiffMetadataResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDiffMetadataResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.diff = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DiffMetadataResponse {
+    return { diff: isSet(object.diff) ? globalThis.String(object.diff) : "" };
+  },
+
+  toJSON(message: DiffMetadataResponse): unknown {
+    const obj: any = {};
+    if (message.diff !== "") {
+      obj.diff = message.diff;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DiffMetadataResponse>): DiffMetadataResponse {
+    return DiffMetadataResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DiffMetadataResponse>): DiffMetadataResponse {
+    const message = createBaseDiffMetadataResponse();
+    message.diff = object.diff ?? "";
+    return message;
+  },
+};
+
 function createBaseSearchQueryHistoriesRequest(): SearchQueryHistoriesRequest {
   return { pageSize: 0, pageToken: "", filter: "" };
 }
@@ -4002,6 +4199,57 @@ export const SQLServiceDefinition = {
               105,
               102,
               121,
+              77,
+              101,
+              116,
+              97,
+              100,
+              97,
+              116,
+              97,
+            ]),
+          ],
+        },
+      },
+    },
+    diffMetadata: {
+      name: "DiffMetadata",
+      requestType: DiffMetadataRequest,
+      requestStream: false,
+      responseType: DiffMetadataResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          800000: [new Uint8Array([1])],
+          578365826: [
+            new Uint8Array([
+              34,
+              58,
+              1,
+              42,
+              34,
+              29,
+              47,
+              118,
+              49,
+              47,
+              115,
+              99,
+              104,
+              101,
+              109,
+              97,
+              68,
+              101,
+              115,
+              105,
+              103,
+              110,
+              58,
+              100,
+              105,
+              102,
+              102,
               77,
               101,
               116,
