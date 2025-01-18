@@ -71,11 +71,20 @@ export const useGroupStore = defineStore("group", () => {
     groupMapByName.delete(name);
   };
 
-  const upsertGroup = async (group: Group) => {
+  const createGroup = async (group: Group) => {
+    const resp = await groupServiceClient.createGroup({
+      group,
+      groupEmail: extractGroupEmail(group.name),
+    });
+    groupMapByName.set(resp.name, resp);
+    return resp;
+  };
+
+  const updateGroup = async (group: Group) => {
     const updated = await groupServiceClient.updateGroup({
       group,
       updateMask: ["title", "description", "members"],
-      allowMissing: true,
+      allowMissing: false,
     });
     groupMapByName.set(updated.name, updated);
     return updated;
@@ -88,6 +97,7 @@ export const useGroupStore = defineStore("group", () => {
     getGroupByIdentifier,
     getOrFetchGroupByEmail,
     deleteGroup,
-    upsertGroup,
+    updateGroup,
+    createGroup,
   };
 });
