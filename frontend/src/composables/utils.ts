@@ -1,61 +1,165 @@
 import { orderBy } from "lodash-es";
 import type { SQLResultSetV1 } from "@/types";
 import { NullValue } from "@/types/proto/google/protobuf/struct";
-import { Engine } from "@/types/proto/v1/common";
+import { Timestamp } from "@/types/proto/google/protobuf/timestamp";
 import { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
 
 type NoSQLRowData = {
-  Key: string;
-  Value: string | number | object | any;
+  key: string;
+  value: any;
 };
 
-const instanceOfNoSQLRowData = (data: any): data is NoSQLRowData => {
-  return (
-    typeof data === "object" &&
-    Object.keys(data).length === 2 &&
-    "Key" in data &&
-    "Value" in data
+const flattenNoSQLColumn = (value: any): any => {
+  if (typeof value !== "object") {
+    return value;
+  }
+  if (value === null) {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map(flattenNoSQLColumn);
+  }
+
+  const dict = value as { [key: string]: any };
+  if (Object.keys(dict).length === 1 && Object.keys(dict)[0].startsWith("$")) {
+    // Used by the MongoDB response.
+    const key = Object.keys(dict)[0];
+    switch (key) {
+      case "$oid":
+        return dict[key];
+      case "$date":
+        if (typeof dict[key] !== "object") {
+          return dict[key];
+        }
+        if (!dict[key]["$numberLong"]) {
+          return dict[key];
+        }
+        return new Date(parseInt(dict[key]["$numberLong"]));
+      case "$numberLong":
+        return parseInt(dict[key]);
+      case "$numberDouble":
+        return parseFloat(dict[key]);
+      case "$numberInt":
+        return parseInt(dict[key]);
+      case "$timestamp":
+        return (dict[key] as { t: number; i: number }).t;
+      default:
+        return dict[key];
+    }
+  }
+
+  return Object.keys(dict).reduce(
+    (d, key) => {
+      d[key] = flattenNoSQLColumn(dict[key]);
+      return d;
+    },
+    {} as { [key: string]: any }
   );
 };
 
-const isNoSQLRowArray = (data: object): boolean => {
-  return Array.isArray(data) && data.every(instanceOfNoSQLRowData);
+const convertAnyToRowValue = (
+  value: any,
+  nested: boolean
+): { value: RowValue; type: string } => {
+  switch (typeof value) {
+    case "number": {
+      if (Math.floor(value) === value) {
+        return {
+          value: RowValue.fromPartial({
+            int32Value: value,
+          }),
+          type: "INTEGER",
+        };
+      }
+      return {
+        value: RowValue.fromPartial({
+          floatValue: value,
+        }),
+        type: "FLOAT",
+      };
+    }
+    case "string":
+      return {
+        value: RowValue.fromPartial({
+          stringValue: value,
+        }),
+        type: "TEXT",
+      };
+    case "undefined":
+      return {
+        value: RowValue.fromPartial({
+          nullValue: NullValue.NULL_VALUE,
+        }),
+        type: "NULL",
+      };
+    case "boolean":
+      return {
+        value: RowValue.fromPartial({
+          boolValue: value,
+        }),
+        type: "BOOLEAN",
+      };
+    case "bigint":
+      return {
+        value: RowValue.fromPartial({
+          stringValue: value.toString(),
+        }),
+        type: "TEXT",
+      };
+    case "object": {
+      if (value === null) {
+        return {
+          value: RowValue.fromPartial({
+            nullValue: NullValue.NULL_VALUE,
+          }),
+          type: "NULL",
+        };
+      }
+      if (Array.isArray(value)) {
+        return {
+          value: RowValue.fromPartial({
+            stringValue: JSON.stringify(value.map(flattenNoSQLColumn)),
+          }),
+          type: "OBJECT",
+        };
+      }
+      if (value instanceof Date) {
+        return {
+          value: RowValue.fromPartial({
+            timestampValue: Timestamp.fromPartial({
+              seconds: Math.floor(value.getTime() / 1000),
+              nanos: (value.getTime() % 1000) * 1e6,
+            }),
+          }),
+          type: "DATETIME",
+        };
+      }
+
+      if (nested) {
+        const formatted = flattenNoSQLColumn(value);
+        return convertAnyToRowValue(formatted, !nested);
+      } else {
+        return {
+          value: RowValue.fromPartial({
+            stringValue: JSON.stringify(value),
+          }),
+          type: "TEXT",
+        };
+      }
+    }
+    default:
+      return {
+        value: RowValue.fromPartial({
+          stringValue: JSON.stringify(value),
+        }),
+        type: "TEXT",
+      };
+  }
 };
 
-interface CosmosDBRawData {
-  [key: string]: string | number | object | any;
-}
-
-const flattenNoSQLColumn = (data: any): any => {
-  if (!Array.isArray(data)) {
-    return data;
-  }
-  if (isNoSQLRowArray(data)) {
-    const result: { [key: string]: any } = {};
-    for (const row of data as NoSQLRowData[]) {
-      result[row.Key] = flattenNoSQLColumn(row.Value);
-    }
-    return result;
-  }
-
-  const result: any[] = [];
-  for (const item of data as any[]) {
-    if (Array.isArray(item)) {
-      result.push(flattenNoSQLColumn(item));
-    } else {
-      result.push(item);
-    }
-  }
-
-  return result;
-};
-
-export const flattenNoSQLResult = (
-  engine: Engine,
-  resultSet: SQLResultSetV1
-) => {
+export const flattenNoSQLResult = (resultSet: SQLResultSetV1) => {
   for (const result of resultSet.results) {
-    const { columns, columnIndexMap } = getNoSQLColumns(engine, result.rows);
+    const { columns, columnIndexMap } = getNoSQLColumns(result.rows);
 
     const rows: QueryRow[] = [];
     const columnTypeNames: string[] = Array.from({
@@ -63,48 +167,23 @@ export const flattenNoSQLResult = (
     }).map((_) => "TEXT");
 
     for (const row of result.rows) {
-      let parsedRows: NoSQLRowData[] | undefined = undefined;
-      switch (engine) {
-        case Engine.MONGODB:
-          parsedRows = getMongoDBRows(row);
-          break;
-        case Engine.COSMOSDB:
-          parsedRows = getCosmosDBRows(row);
-          break;
-      }
-      if (!parsedRows) {
+      if (row.values.length !== 1 || !row.values[0].stringValue) {
         continue;
       }
-
+      const data = JSON.parse(row.values[0].stringValue);
       const values: RowValue[] = Array.from({ length: columns.length }).map(
         (_) =>
           RowValue.fromPartial({
             nullValue: NullValue.NULL_VALUE,
           })
       );
-      for (const rawData of parsedRows) {
-        const index = columnIndexMap.get(rawData.Key) ?? 0;
-        switch (typeof rawData.Value) {
-          case "object":
-            const value = flattenNoSQLColumn(rawData.Value);
-            values[index] = RowValue.fromPartial({
-              stringValue: JSON.stringify(value),
-            });
-            columnTypeNames[index] = "OBJECT";
-            break;
-          case "number":
-            values[index] = RowValue.fromPartial({
-              int64Value: rawData.Value,
-            });
-            columnTypeNames[index] = "INTEGER";
-            break;
-          default:
-            values[index] = RowValue.fromPartial({
-              stringValue: rawData.Value,
-            });
-            columnTypeNames[index] = "TEXT";
-            break;
-        }
+
+      for (const [key, value] of Object.entries(data)) {
+        const index = columnIndexMap.get(key) ?? 0;
+
+        const { value: formatted, type } = convertAnyToRowValue(value, true);
+        values[index] = formatted;
+        columnTypeNames[index] = type;
       }
 
       rows.push(
@@ -120,67 +199,17 @@ export const flattenNoSQLResult = (
   }
 };
 
-const getNoSQLColumns = (
-  engine: Engine,
-  rows: QueryRow[]
-): {
-  columns: string[];
-  columnIndexMap: Map<string, number>;
-} => {
-  switch (engine) {
-    case Engine.MONGODB:
-      return getMongoDBColumns(rows);
-    case Engine.COSMOSDB:
-      return getCosmosDBColumns(rows);
-    default:
-      return {
-        columns: [],
-        columnIndexMap: new Map(),
-      };
-  }
-};
-
-const getMongoDBColumns = (rows: QueryRow[]) => {
+const getNoSQLColumns = (rows: QueryRow[]) => {
   const columnSet = new Set<string>();
   const columnIndexMap = new Map<string, number>();
 
   for (const row of rows) {
-    const parsedRows = getMongoDBRows(row);
-    if (!parsedRows) {
-      continue;
-    }
-    for (const rawData of parsedRows) {
-      columnSet.add(rawData.Key);
-    }
-  }
-
-  const sortedColumns = orderBy(
-    [...columnSet],
-    (column) => (column === "_id" ? -1 : column),
-    "asc"
-  );
-
-  for (let i = 0; i < sortedColumns.length; i++) {
-    columnIndexMap.set(sortedColumns[i], i);
-  }
-
-  return {
-    columns: sortedColumns,
-    columnIndexMap,
-  };
-};
-
-const getCosmosDBColumns = (rows: QueryRow[]) => {
-  const columnSet = new Set<string>();
-  const columnIndexMap = new Map<string, number>();
-
-  for (const row of rows) {
-    const parsedRows = getCosmosDBRows(row);
+    const parsedRows = getNoSQLRows(row);
     if (!parsedRows) {
       continue;
     }
     for (const item of parsedRows) {
-      columnSet.add(item.Key);
+      columnSet.add(item.key);
     }
   }
 
@@ -195,7 +224,7 @@ const getCosmosDBColumns = (rows: QueryRow[]) => {
   const sortedColumns = orderBy(
     [...columnSet],
     [
-      (column) => (column === "id" ? -1 : 1),
+      (column) => (column === "id" || column === "-id" ? -1 : 1),
       (column) => (builtInColumns.has(column) ? 1 : 0),
       (column) => builtInColumns.get(column) ?? 0,
     ],
@@ -212,25 +241,19 @@ const getCosmosDBColumns = (rows: QueryRow[]) => {
   };
 };
 
-const getMongoDBRows = (row: QueryRow): NoSQLRowData[] | undefined => {
+const getNoSQLRows = (row: QueryRow): NoSQLRowData[] | undefined => {
   if (row.values.length !== 1 || !row.values[0].stringValue) {
     return;
   }
-  const parsedRows = JSON.parse(row.values[0].stringValue) as NoSQLRowData[];
-  return parsedRows;
-};
-
-const getCosmosDBRows = (row: QueryRow): NoSQLRowData[] | undefined => {
-  if (row.values.length !== 1 || !row.values[0].stringValue) {
-    return;
-  }
-  const parsedRow = JSON.parse(row.values[0].stringValue) as CosmosDBRawData;
+  const parsedRow = JSON.parse(row.values[0].stringValue) as {
+    [key: string]: any;
+  };
   const results: NoSQLRowData[] = [];
 
   for (const [key, value] of Object.entries(parsedRow)) {
     results.push({
-      Key: key,
-      Value: value,
+      key: key,
+      value: value,
     });
   }
   return results;

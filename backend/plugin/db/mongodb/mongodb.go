@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -399,7 +398,7 @@ func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
 	}
 
 	for _, v := range rows {
-		r, err := json.MarshalIndent(v, "", "	")
+		r, err := bson.MarshalExtJSONIndent(v, true, false, "", "  ")
 		if err != nil {
 			return nil, err
 		}

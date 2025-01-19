@@ -352,7 +352,7 @@ const useExecuteSQL = () => {
           database.instanceResource.engine === Engine.MONGODB ||
           database.instanceResource.engine === Engine.COSMOSDB
         ) {
-          flattenNoSQLResult(database.instanceResource.engine, resultSet);
+          flattenNoSQLResult(resultSet);
         }
 
         if (checkBehavior === "NOTIFICATION") {
