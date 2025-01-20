@@ -177,7 +177,7 @@
     "will-lose-unsaved-data": "这会丢失当前所有未保存的数据。",
     "deleted": "已删除",
     "will-override-current-data": "将会覆盖当前数据。",
-    "roll-out": "发布",
+    "rollout": "发布",
     "upload": "上传",
     "added": "已创建",
     "revoke": "撤销",
@@ -909,7 +909,7 @@
       "moderate": "中风险",
       "high": "高风险"
     },
-    "waiting-to-rollout": "等待发布",
+    "awaiting-rollout": "等待发布",
     "waiting-for-review": "等待审核",
     "issue-name": "工单名称",
     "grant-request": {

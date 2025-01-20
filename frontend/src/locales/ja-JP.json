@@ -177,7 +177,7 @@
     "will-lose-unsaved-data": "これにより、現在保存されていないデータはすべて失われます。",
     "deleted": "削除されました",
     "will-override-current-data": "現在のデータは上書きされます。",
-    "roll-out": "リリース",
+    "rollout": "リリース",
     "upload": "アップロード",
     "added": "作成した",
     "revoke": "キャンセル",
@@ -909,7 +909,7 @@
       "moderate": "適度",
       "high": "高い"
     },
-    "waiting-to-rollout": "リリース待ち",
+    "awaiting-rollout": "リリース待ち",
     "waiting-for-review": "モデレート済み",
     "issue-name": "イシュー名",
     "grant-request": {
