@@ -62,23 +62,14 @@ const useTableResize = (options: TableResizeOptions) => {
     table.value.style.tableLayout = "auto";
     const scale = containerWidth.value / table.value.scrollWidth;
     const thList = Array.from(table.value.querySelectorAll("th"));
-    const columnCount = thList.length;
-    if (columnCount === 1) {
-      state.columns = [
-        {
-          width: containerWidth.value - 1,
-        },
-      ];
-    } else {
-      state.columns = thList
-        .map((th) =>
-          Math.max(
-            th.getBoundingClientRect().width,
-            th.getBoundingClientRect().width * scale
-          )
+    state.columns = thList
+      .map((th) =>
+        Math.max(
+          th.getBoundingClientRect().width,
+          th.getBoundingClientRect().width * scale
         )
-        .map((width) => ({ width }));
-    }
+      )
+      .map((width) => ({ width }));
     // After calculating the width, use fixed layout to keep the width stable.
     table.value.style.tableLayout = "fixed";
   };
