@@ -41,6 +41,8 @@ const flattenNoSQLColumn = (value: any): any => {
         return parseFloat(dict[key]);
       case "$numberInt":
         return parseInt(dict[key]);
+      case "$numberDecimal":
+        return Number(dict[key]);
       case "$timestamp":
         return (dict[key] as { t: number; i: number }).t;
       default:
