@@ -258,7 +258,7 @@ const getNoSQLColumns = (rows: QueryRow[]) => {
   const sortedColumns = orderBy(
     [...columnSet],
     [
-      (column) => (column === "id" || column === "-id" ? -1 : 1),
+      (column) => (column === "id" || column === "_id" ? -1 : 1),
       (column) => (builtInColumns.has(column) ? 1 : 0),
       (column) => builtInColumns.get(column) ?? 0,
     ],
