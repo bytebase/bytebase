@@ -219,6 +219,11 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
     if (disabled.value) return;
     if (state.value.columns.length === 0 && state.value.rows.length === 0)
       return;
+    // Deselect all when escape is pressed.
+    if (e.key === "Escape") {
+      deselect();
+    }
+    // Copy when Cmd/Ctrl + C is pressed.
     if ((e.key === "c" || e.key === "C") && (e.metaKey || e.ctrlKey)) {
       const copied = copy();
       if (copied) {
@@ -229,7 +234,6 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
           style: "SUCCESS",
           title: t("common.copied"),
         });
-        deselect();
       }
     }
   });

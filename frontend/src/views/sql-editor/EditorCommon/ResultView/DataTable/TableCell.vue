@@ -29,8 +29,9 @@
 <script setup lang="ts">
 import { type Table } from "@tanstack/vue-table";
 import { useResizeObserver } from "@vueuse/core";
-import { escape, uniq } from "lodash-es";
+import { escape } from "lodash-es";
 import { NButton } from "naive-ui";
+import { twMerge } from "tailwind-merge";
 import { computed, ref } from "vue";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
@@ -48,12 +49,13 @@ const props = defineProps<{
   allowSelect?: boolean;
 }>();
 
-const { dark, detail, keyword } = useSQLResultViewContext();
+const { detail, keyword } = useSQLResultViewContext();
 
 const {
   state: selectionState,
   disabled: selectionDisabled,
   selectCell,
+  selectRow,
 } = useSelectionContext();
 const wrapperRef = ref<HTMLDivElement>();
 const truncated = ref(false);
@@ -91,7 +93,10 @@ const classes = computed(() => {
   const classes: string[] = [];
   if (allowSelect.value) {
     classes.push("cursor-pointer");
-    classes.push(dark.value ? "hover:bg-white/20" : "hover:bg-black/5");
+    classes.push("hover:bg-white/20 dark:hover:bg-black/5");
+    if (props.colIndex === 0) {
+      classes.push("pl-3");
+    }
     if (
       selectionState.value.columns.length === 1 &&
       selectionState.value.rows.length === 1
@@ -112,7 +117,7 @@ const classes = computed(() => {
   } else {
     classes.push("select-none");
   }
-  return uniq(classes);
+  return twMerge(classes);
 });
 
 const html = computed(() => {
@@ -144,7 +149,12 @@ const handleClick = (e: MouseEvent) => {
   if (!allowSelect.value) {
     return;
   }
-  selectCell(props.rowIndex, props.colIndex);
+  // If the user is holding the ctrl/cmd key, select the row.
+  if (e.ctrlKey || e.metaKey) {
+    selectRow(props.rowIndex);
+  } else {
+    selectCell(props.rowIndex, props.colIndex);
+  }
   e.stopPropagation();
 };
 
