@@ -10,19 +10,19 @@ type NoSQLRowData = {
   value: any;
 };
 
-function base64ToArrayBuffer(base64: string) {
+const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
   const binaryString = atob(base64);
   const bytes = new Uint8Array(binaryString.length);
   for (let i = 0; i < binaryString.length; i++) {
     bytes[i] = binaryString.charCodeAt(i);
   }
   return bytes.buffer;
-}
+};
 
-function decodeBase64ToUUID(base64Encoded: string): string {
+const decodeBase64ToUUID = (base64Encoded: string): string => {
   const uint8Array = new Uint8Array(base64ToArrayBuffer(base64Encoded));
   return stringify(uint8Array);
-}
+};
 
 const flattenNoSQLColumn = (value: any): any => {
   if (typeof value !== "object") {
