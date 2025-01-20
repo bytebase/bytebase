@@ -1,4 +1,5 @@
 import { orderBy } from "lodash-es";
+import { stringify } from "uuid";
 import type { SQLResultSetV1 } from "@/types";
 import { NullValue } from "@/types/proto/google/protobuf/struct";
 import { Timestamp } from "@/types/proto/google/protobuf/timestamp";
@@ -8,6 +9,20 @@ type NoSQLRowData = {
   key: string;
   value: any;
 };
+
+function base64ToArrayBuffer(base64: string) {
+  var binaryString = atob(base64);
+  var bytes = new Uint8Array(binaryString.length);
+  for (var i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+function decodeBase64ToUUID(base64Encoded: string): string {
+  const uint8Array = new Uint8Array(base64ToArrayBuffer(base64Encoded));
+  return stringify(uint8Array);
+}
 
 const flattenNoSQLColumn = (value: any): any => {
   if (typeof value !== "object") {
@@ -45,6 +60,23 @@ const flattenNoSQLColumn = (value: any): any => {
         return Number(dict[key]);
       case "$timestamp":
         return (dict[key] as { t: number; i: number }).t;
+      case "$binary": {
+        const { base64, subType } = dict[key] as {
+          base64: string;
+          subType: string;
+        };
+        switch (subType) {
+          case "03":
+          case "04":
+            try {
+              return decodeBase64ToUUID(base64);
+            } catch {
+              return dict[key];
+            }
+          default:
+            return dict[key];
+        }
+      }
       default:
         return dict[key];
     }
