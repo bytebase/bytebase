@@ -60,6 +60,7 @@ const useTableResize = (options: TableResizeOptions) => {
 
     // Use auto layout to calculate the width of each column.
     table.value.style.tableLayout = "auto";
+    const scale = containerWidth.value / table.value.scrollWidth;
     const thList = Array.from(table.value.querySelectorAll("th"));
     const columnCount = thList.length;
     if (columnCount === 1) {
@@ -69,8 +70,14 @@ const useTableResize = (options: TableResizeOptions) => {
         },
       ];
     } else {
-      const columnWidths = thList.map((th) => th.getBoundingClientRect().width);
-      state.columns = columnWidths.map((width) => ({ width }));
+      state.columns = thList
+        .map((th) =>
+          Math.max(
+            th.getBoundingClientRect().width,
+            th.getBoundingClientRect().width * scale
+          )
+        )
+        .map((width) => ({ width }));
     }
     // After calculating the width, use fixed layout to keep the width stable.
     table.value.style.tableLayout = "fixed";
