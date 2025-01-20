@@ -177,7 +177,7 @@
     "will-lose-unsaved-data": "Se perderán los datos no guardados.",
     "deleted": "Eliminado",
     "will-override-current-data": "Se sobrescribirán los datos actuales.",
-    "roll-out": "Implementar",
+    "rollout": "Implementar",
     "upload": "Subir",
     "added": "Agregado",
     "revoke": "Revocar",
@@ -909,7 +909,7 @@
       "moderate": "Moderado",
       "high": "Alto"
     },
-    "waiting-to-rollout": "Esperando para implementar",
+    "awaiting-rollout": "Esperando para implementar",
     "waiting-for-review": "Esperando revisión",
     "issue-name": "Nombre de la incidencia",
     "grant-request": {
