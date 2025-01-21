@@ -12,16 +12,6 @@ import type {
 import type { EditStatus } from "../types";
 import { keyForResource } from "./common";
 
-interface EditStatusMetadata {
-  schema: SchemaMetadata;
-  table?: TableMetadata;
-  column?: ColumnMetadata;
-  partition?: TablePartitionMetadata;
-  procedure?: ProcedureMetadata;
-  function?: FunctionMetadata;
-  view?: ViewMetadata;
-}
-
 export const useEditStatus = () => {
   const dirtyPaths = ref(new Map<string, EditStatus>());
   const dirtyPathsArray = computed(() => {
@@ -30,7 +20,15 @@ export const useEditStatus = () => {
 
   const markEditStatus = (
     database: ComposedDatabase,
-    metadata: EditStatusMetadata,
+    metadata: {
+      schema: SchemaMetadata;
+      table?: TableMetadata;
+      column?: ColumnMetadata;
+      partition?: TablePartitionMetadata;
+      procedure?: ProcedureMetadata;
+      function?: FunctionMetadata;
+      view?: ViewMetadata;
+    },
     status: EditStatus
   ) => {
     const key = keyForResource(database, metadata);
@@ -47,7 +45,15 @@ export const useEditStatus = () => {
 
   const removeEditStatus = (
     database: ComposedDatabase,
-    metadata: EditStatusMetadata,
+    metadata: {
+      schema: SchemaMetadata;
+      table?: TableMetadata;
+      column?: ColumnMetadata;
+      partition?: TablePartitionMetadata;
+      procedure?: ProcedureMetadata;
+      function?: FunctionMetadata;
+      view?: ViewMetadata;
+    },
     recursive: boolean
   ) => {
     const key = keyForResource(database, metadata);
