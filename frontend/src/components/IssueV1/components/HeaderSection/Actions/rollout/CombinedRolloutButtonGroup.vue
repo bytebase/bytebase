@@ -17,20 +17,6 @@
       :extra-action-list="extraActionList"
     />
   </div>
-
-  <div class="issue-debug">
-    <div>taskRolloutActionList: {{ taskRolloutActionList }}</div>
-    <div>
-      stageRolloutActionList:
-      {{
-        stageRolloutActionList.map(
-          ({ action, tasks }) => `${action}(${tasks.map((t) => t.name)})`
-        )
-      }}
-    </div>
-    <div>primaryTaskRolloutActionList: {{ primaryTaskRolloutActionList }}</div>
-    <div>issueStatusActionList: {{ issueStatusActionList }}</div>
-  </div>
 </template>
 
 <script setup lang="ts">

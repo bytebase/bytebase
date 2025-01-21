@@ -1,7 +1,6 @@
 <template>
   <div ref="containerRef" class="h-full flex flex-col">
     <div class="border-b">
-      <div class="issue-debug">phase: {{ phase }}</div>
       <BannerSection v-if="!isCreating" />
 
       <HeaderSection />
@@ -67,10 +66,6 @@
     :task-list="ongoingTaskRolloutAction?.taskList ?? []"
     @close="ongoingTaskRolloutAction = undefined"
   />
-
-  <div class="issue-debug">
-    <pre class="text-xs">{{ JSON.stringify(issue, null, "  ") }}</pre>
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -107,7 +102,7 @@ import {
 } from "./logic";
 
 const containerRef = ref<HTMLElement>();
-const { isCreating, phase, issue, events } = useIssueContext();
+const { isCreating, events } = useIssueContext();
 const advices = ref<Advice[]>();
 
 const ongoingIssueReviewAction = ref<{
