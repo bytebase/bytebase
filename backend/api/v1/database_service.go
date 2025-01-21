@@ -26,7 +26,6 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
@@ -578,12 +577,6 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 				return nil, status.Errorf(codes.Internal, "failed to get concise schema, error %v", err.Error())
 			}
 			schema = conciseSchema
-		case storepb.Engine_POSTGRES:
-			conciseSchema, err := pg.FilterBackupSchema(schema)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to filter backup schema, error %v", err.Error())
-			}
-			schema = conciseSchema
 		default:
 			return nil, status.Errorf(codes.Unimplemented, "concise schema is not supported for engine %q", instance.Engine.String())
 		}
@@ -613,15 +606,6 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, request *v1pb.DiffSche
 	switch engine {
 	case storepb.Engine_ORACLE:
 		strictMode = false
-	case storepb.Engine_POSTGRES:
-		source, err = pg.FilterBackupSchema(source)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to filter backup schema, error: %v", err)
-		}
-		target, err = pg.FilterBackupSchema(target)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to filter backup schema, error: %v", err)
-		}
 	}
 
 	diff, err := base.SchemaDiff(engine, base.DiffContext{

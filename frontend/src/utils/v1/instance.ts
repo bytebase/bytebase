@@ -248,7 +248,7 @@ export const instanceV1SupportsConciseSchema = (
   instanceOrEngine: Instance | InstanceResource | Engine
 ) => {
   const engine = engineOfInstanceV1(instanceOrEngine);
-  return [Engine.ORACLE, Engine.POSTGRES].includes(engine);
+  return [Engine.ORACLE].includes(engine);
 };
 
 export const instanceV1SupportsTablePartition = (
