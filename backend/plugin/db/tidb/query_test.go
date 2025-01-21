@@ -42,6 +42,16 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			count: 10,
 			want:  "SELECT * FROM `t` LIMIT 10",
 		},
+		{
+			stmt:  "SELECT * FROM t WHERE nickname = 'bb'",
+			count: 10,
+			want:  "SELECT * FROM `t` WHERE `nickname`='bb' LIMIT 10",
+		},
+		{
+			stmt:  "SELECT 'Hello world'",
+			count: 10,
+			want:  "SELECT 'Hello world' LIMIT 10",
+		},
 	}
 
 	for _, tc := range testCases {
