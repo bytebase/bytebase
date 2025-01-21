@@ -42,8 +42,9 @@
           size="tiny"
           :loading="retrying"
           @click="retryFindingApprovalFlow"
-          >{{ $t("common.retry") }}</NButton
         >
+          {{ $t("common.retry") }}
+        </NButton>
       </div>
       <Timeline
         v-else-if="wrappedSteps && wrappedSteps.length > 0"
