@@ -85,7 +85,7 @@
           <td
             v-for="(cell, cellIndex) of row.getVisibleCells()"
             :key="cellIndex"
-            class="relative p-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-x border-b border-block-border dark:border-zinc-500 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
+            class="relative max-w-[50vw] p-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-x border-b border-block-border dark:border-zinc-500 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
             :data-col-index="cellIndex"
           >
             <TableCell
