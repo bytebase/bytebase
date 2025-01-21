@@ -127,7 +127,7 @@
                   <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.classification.self") }}
                   </dt>
-                  <dd class="mt-1 font-semibold">
+                  <dd class="mt-1 flex flex-row items-center">
                     <ClassificationLevelBadge
                       :classification="tableCatalog.classification"
                       :classification-config="classificationConfig"
