@@ -60,8 +60,6 @@ import { hasFeature } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import {
   TableCatalog,
-  DatabaseCatalog,
-  SchemaCatalog,
   TableCatalog_Columns,
 } from "@/types/proto/v1/database_catalog_service";
 import type {

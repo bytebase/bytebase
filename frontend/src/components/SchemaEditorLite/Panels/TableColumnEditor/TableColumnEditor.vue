@@ -64,6 +64,7 @@ import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
+import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
 import { InlineInput } from "@/components/v2";
 import { useSettingV1Store, hasFeature } from "@/store";
 import type { ComposedDatabase } from "@/types";
@@ -167,7 +168,7 @@ const state = reactive<LocalState>({
 
 const {
   classificationConfig,
-  showClassificationColumn,
+  showClassificationColumn: canShowClassificationColumn,
   disableDiffColoring,
   selectionEnabled,
   markEditStatus,
@@ -259,7 +260,7 @@ const primaryKey = computed(() => {
 const showClassification = computed(() => {
   return (
     props.showClassificationColumn === "ALWAYS" ||
-    showClassificationColumn(
+    canShowClassificationColumn(
       props.engine,
       classificationConfig.value?.classificationFromConfig ?? false
     )
