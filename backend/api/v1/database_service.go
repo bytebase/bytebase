@@ -590,8 +590,7 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, request *v1pb.DiffSche
 
 	strictMode := true
 
-	switch engine {
-	case storepb.Engine_ORACLE:
+	if engine == storepb.Engine_ORACLE {
 		strictMode = false
 	}
 
