@@ -21,6 +21,7 @@ import {
   exportFormatToNumber,
   Position,
 } from "./common";
+import { DatabaseCatalog } from "./database_catalog_service";
 import { DatabaseMetadata } from "./database_service";
 
 export const protobufPackage = "bytebase.v1";
@@ -508,11 +509,10 @@ export interface StringifyMetadataRequest {
     | undefined;
   /** The database engine of the schema string. */
   engine: Engine;
-  /**
-   * If false, we will build the raw common by classification in database
-   * config.
-   */
+  /** If false, we will build the raw common by classification in database catalog. */
   classificationFromConfig: boolean;
+  /** Database catlog is required if classification_from_config is false. */
+  catalog?: DatabaseCatalog | undefined;
 }
 
 export interface StringifyMetadataResponse {
@@ -525,8 +525,10 @@ export interface DiffMetadataRequest {
     | DatabaseMetadata
     | undefined;
   /** The metadata of the target schema. */
-  targetMetadata:
-    | DatabaseMetadata
+  targetMetadata: DatabaseMetadata | undefined;
+  sourceCatalog: DatabaseCatalog | undefined;
+  targetCatalog:
+    | DatabaseCatalog
     | undefined;
   /** The database engine of the schema. */
   engine: Engine;
@@ -3076,7 +3078,12 @@ export const ParseMyBatisMapperResponse: MessageFns<ParseMyBatisMapperResponse> 
 };
 
 function createBaseStringifyMetadataRequest(): StringifyMetadataRequest {
-  return { metadata: undefined, engine: Engine.ENGINE_UNSPECIFIED, classificationFromConfig: false };
+  return {
+    metadata: undefined,
+    engine: Engine.ENGINE_UNSPECIFIED,
+    classificationFromConfig: false,
+    catalog: undefined,
+  };
 }
 
 export const StringifyMetadataRequest: MessageFns<StringifyMetadataRequest> = {
@@ -3089,6 +3096,9 @@ export const StringifyMetadataRequest: MessageFns<StringifyMetadataRequest> = {
     }
     if (message.classificationFromConfig !== false) {
       writer.uint32(24).bool(message.classificationFromConfig);
+    }
+    if (message.catalog !== undefined) {
+      DatabaseCatalog.encode(message.catalog, writer.uint32(34).fork()).join();
     }
     return writer;
   },
@@ -3124,6 +3134,14 @@ export const StringifyMetadataRequest: MessageFns<StringifyMetadataRequest> = {
           message.classificationFromConfig = reader.bool();
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.catalog = DatabaseCatalog.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3140,6 +3158,7 @@ export const StringifyMetadataRequest: MessageFns<StringifyMetadataRequest> = {
       classificationFromConfig: isSet(object.classificationFromConfig)
         ? globalThis.Boolean(object.classificationFromConfig)
         : false,
+      catalog: isSet(object.catalog) ? DatabaseCatalog.fromJSON(object.catalog) : undefined,
     };
   },
 
@@ -3154,6 +3173,9 @@ export const StringifyMetadataRequest: MessageFns<StringifyMetadataRequest> = {
     if (message.classificationFromConfig !== false) {
       obj.classificationFromConfig = message.classificationFromConfig;
     }
+    if (message.catalog !== undefined) {
+      obj.catalog = DatabaseCatalog.toJSON(message.catalog);
+    }
     return obj;
   },
 
@@ -3167,6 +3189,9 @@ export const StringifyMetadataRequest: MessageFns<StringifyMetadataRequest> = {
       : undefined;
     message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
     message.classificationFromConfig = object.classificationFromConfig ?? false;
+    message.catalog = (object.catalog !== undefined && object.catalog !== null)
+      ? DatabaseCatalog.fromPartial(object.catalog)
+      : undefined;
     return message;
   },
 };
@@ -3233,6 +3258,8 @@ function createBaseDiffMetadataRequest(): DiffMetadataRequest {
   return {
     sourceMetadata: undefined,
     targetMetadata: undefined,
+    sourceCatalog: undefined,
+    targetCatalog: undefined,
     engine: Engine.ENGINE_UNSPECIFIED,
     classificationFromConfig: false,
   };
@@ -3245,6 +3272,12 @@ export const DiffMetadataRequest: MessageFns<DiffMetadataRequest> = {
     }
     if (message.targetMetadata !== undefined) {
       DatabaseMetadata.encode(message.targetMetadata, writer.uint32(18).fork()).join();
+    }
+    if (message.sourceCatalog !== undefined) {
+      DatabaseCatalog.encode(message.sourceCatalog, writer.uint32(42).fork()).join();
+    }
+    if (message.targetCatalog !== undefined) {
+      DatabaseCatalog.encode(message.targetCatalog, writer.uint32(50).fork()).join();
     }
     if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       writer.uint32(24).int32(engineToNumber(message.engine));
@@ -3278,6 +3311,22 @@ export const DiffMetadataRequest: MessageFns<DiffMetadataRequest> = {
           message.targetMetadata = DatabaseMetadata.decode(reader, reader.uint32());
           continue;
         }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.sourceCatalog = DatabaseCatalog.decode(reader, reader.uint32());
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.targetCatalog = DatabaseCatalog.decode(reader, reader.uint32());
+          continue;
+        }
         case 3: {
           if (tag !== 24) {
             break;
@@ -3307,6 +3356,8 @@ export const DiffMetadataRequest: MessageFns<DiffMetadataRequest> = {
     return {
       sourceMetadata: isSet(object.sourceMetadata) ? DatabaseMetadata.fromJSON(object.sourceMetadata) : undefined,
       targetMetadata: isSet(object.targetMetadata) ? DatabaseMetadata.fromJSON(object.targetMetadata) : undefined,
+      sourceCatalog: isSet(object.sourceCatalog) ? DatabaseCatalog.fromJSON(object.sourceCatalog) : undefined,
+      targetCatalog: isSet(object.targetCatalog) ? DatabaseCatalog.fromJSON(object.targetCatalog) : undefined,
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
       classificationFromConfig: isSet(object.classificationFromConfig)
         ? globalThis.Boolean(object.classificationFromConfig)
@@ -3321,6 +3372,12 @@ export const DiffMetadataRequest: MessageFns<DiffMetadataRequest> = {
     }
     if (message.targetMetadata !== undefined) {
       obj.targetMetadata = DatabaseMetadata.toJSON(message.targetMetadata);
+    }
+    if (message.sourceCatalog !== undefined) {
+      obj.sourceCatalog = DatabaseCatalog.toJSON(message.sourceCatalog);
+    }
+    if (message.targetCatalog !== undefined) {
+      obj.targetCatalog = DatabaseCatalog.toJSON(message.targetCatalog);
     }
     if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       obj.engine = engineToJSON(message.engine);
@@ -3341,6 +3398,12 @@ export const DiffMetadataRequest: MessageFns<DiffMetadataRequest> = {
       : undefined;
     message.targetMetadata = (object.targetMetadata !== undefined && object.targetMetadata !== null)
       ? DatabaseMetadata.fromPartial(object.targetMetadata)
+      : undefined;
+    message.sourceCatalog = (object.sourceCatalog !== undefined && object.sourceCatalog !== null)
+      ? DatabaseCatalog.fromPartial(object.sourceCatalog)
+      : undefined;
+    message.targetCatalog = (object.targetCatalog !== undefined && object.targetCatalog !== null)
+      ? DatabaseCatalog.fromPartial(object.targetCatalog)
       : undefined;
     message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
     message.classificationFromConfig = object.classificationFromConfig ?? false;

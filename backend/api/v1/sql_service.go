@@ -1518,14 +1518,12 @@ func (*SQLService) StringifyMetadata(_ context.Context, request *v1pb.StringifyM
 	if err != nil {
 		return nil, err
 	}
-	config := convertV1DatabaseConfig(
-		&v1pb.DatabaseConfig{
-			Name:          request.Metadata.Name,
-			SchemaConfigs: request.Metadata.SchemaConfigs,
-		},
-	)
 
 	if !request.ClassificationFromConfig {
+		if request.Catalog == nil {
+			return nil, status.Errorf(codes.InvalidArgument, "database catalog is required")
+		}
+		config := convertDatabaseCatalog(request.GetCatalog())
 		sanitizeCommentForSchemaMetadata(storeSchemaMetadata, model.NewDatabaseConfig(config), request.ClassificationFromConfig)
 	}
 
@@ -1570,24 +1568,16 @@ func (*SQLService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadataReq
 	if err != nil {
 		return nil, err
 	}
-	sourceConfig := convertV1DatabaseConfig(
-		&v1pb.DatabaseConfig{
-			Name:          request.SourceMetadata.Name,
-			SchemaConfigs: request.SourceMetadata.SchemaConfigs,
-		},
-	)
+
+	sourceConfig := convertDatabaseCatalog(request.GetSourceCatalog())
 	sanitizeCommentForSchemaMetadata(storeSourceMetadata, model.NewDatabaseConfig(sourceConfig), request.ClassificationFromConfig)
 
 	storeTargetMetadata, err := convertV1DatabaseMetadata(request.TargetMetadata)
 	if err != nil {
 		return nil, err
 	}
-	targetConfig := convertV1DatabaseConfig(
-		&v1pb.DatabaseConfig{
-			Name:          request.TargetMetadata.Name,
-			SchemaConfigs: request.TargetMetadata.SchemaConfigs,
-		},
-	)
+
+	targetConfig := convertDatabaseCatalog(request.GetTargetCatalog())
 	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid target metadata: %v", err)
 	}

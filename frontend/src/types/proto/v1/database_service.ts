@@ -381,8 +381,6 @@ export interface DatabaseMetadata {
   collation: string;
   /** The extensions is the list of extensions in a database. */
   extensions: ExtensionMetadata[];
-  /** The schema_configs is the list of configs for schemas in a database. */
-  schemaConfigs: SchemaConfig[];
   owner: string;
 }
 
@@ -1190,44 +1188,6 @@ export interface ForeignKeyMetadata {
    * It's empty string for other databases.
    */
   matchType: string;
-}
-
-export interface DatabaseConfig {
-  name: string;
-  /** The schema_configs is the list of configs for schemas in a database. */
-  schemaConfigs: SchemaConfig[];
-}
-
-export interface SchemaConfig {
-  /**
-   * The name is the schema name.
-   * It is an empty string for databases without such concept such as MySQL.
-   */
-  name: string;
-  /** The table_configs is the list of configs for tables in a schema. */
-  tableConfigs: TableConfig[];
-}
-
-export interface TableConfig {
-  /** The name is the name of a table. */
-  name: string;
-  /** The column_configs is the ordered list of configs for columns in a table. */
-  columnConfigs: ColumnConfig[];
-  classificationId: string;
-}
-
-export interface ColumnConfig {
-  /** The name is the name of a column. */
-  name: string;
-  semanticTypeId: string;
-  /** The user labels for a column. */
-  labels: { [key: string]: string };
-  classificationId: string;
-}
-
-export interface ColumnConfig_LabelsEntry {
-  key: string;
-  value: string;
 }
 
 /** DatabaseSchema is the metadata for databases. */
@@ -3248,7 +3208,7 @@ export const Database_LabelsEntry: MessageFns<Database_LabelsEntry> = {
 };
 
 function createBaseDatabaseMetadata(): DatabaseMetadata {
-  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [], schemaConfigs: [], owner: "" };
+  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [], owner: "" };
 }
 
 export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
@@ -3267,9 +3227,6 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
     }
     for (const v of message.extensions) {
       ExtensionMetadata.encode(v!, writer.uint32(42).fork()).join();
-    }
-    for (const v of message.schemaConfigs) {
-      SchemaConfig.encode(v!, writer.uint32(50).fork()).join();
     }
     if (message.owner !== "") {
       writer.uint32(58).string(message.owner);
@@ -3324,14 +3281,6 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
           message.extensions.push(ExtensionMetadata.decode(reader, reader.uint32()));
           continue;
         }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.schemaConfigs.push(SchemaConfig.decode(reader, reader.uint32()));
-          continue;
-        }
         case 7: {
           if (tag !== 58) {
             break;
@@ -3360,9 +3309,6 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
       extensions: globalThis.Array.isArray(object?.extensions)
         ? object.extensions.map((e: any) => ExtensionMetadata.fromJSON(e))
         : [],
-      schemaConfigs: globalThis.Array.isArray(object?.schemaConfigs)
-        ? object.schemaConfigs.map((e: any) => SchemaConfig.fromJSON(e))
-        : [],
       owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
     };
   },
@@ -3384,9 +3330,6 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
     if (message.extensions?.length) {
       obj.extensions = message.extensions.map((e) => ExtensionMetadata.toJSON(e));
     }
-    if (message.schemaConfigs?.length) {
-      obj.schemaConfigs = message.schemaConfigs.map((e) => SchemaConfig.toJSON(e));
-    }
     if (message.owner !== "") {
       obj.owner = message.owner;
     }
@@ -3403,7 +3346,6 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
     message.characterSet = object.characterSet ?? "";
     message.collation = object.collation ?? "";
     message.extensions = object.extensions?.map((e) => ExtensionMetadata.fromPartial(e)) || [];
-    message.schemaConfigs = object.schemaConfigs?.map((e) => SchemaConfig.fromPartial(e)) || [];
     message.owner = object.owner ?? "";
     return message;
   },
@@ -7377,459 +7319,6 @@ export const ForeignKeyMetadata: MessageFns<ForeignKeyMetadata> = {
     message.onDelete = object.onDelete ?? "";
     message.onUpdate = object.onUpdate ?? "";
     message.matchType = object.matchType ?? "";
-    return message;
-  },
-};
-
-function createBaseDatabaseConfig(): DatabaseConfig {
-  return { name: "", schemaConfigs: [] };
-}
-
-export const DatabaseConfig: MessageFns<DatabaseConfig> = {
-  encode(message: DatabaseConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    for (const v of message.schemaConfigs) {
-      SchemaConfig.encode(v!, writer.uint32(18).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): DatabaseConfig {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDatabaseConfig();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.schemaConfigs.push(SchemaConfig.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): DatabaseConfig {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      schemaConfigs: globalThis.Array.isArray(object?.schemaConfigs)
-        ? object.schemaConfigs.map((e: any) => SchemaConfig.fromJSON(e))
-        : [],
-    };
-  },
-
-  toJSON(message: DatabaseConfig): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.schemaConfigs?.length) {
-      obj.schemaConfigs = message.schemaConfigs.map((e) => SchemaConfig.toJSON(e));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<DatabaseConfig>): DatabaseConfig {
-    return DatabaseConfig.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<DatabaseConfig>): DatabaseConfig {
-    const message = createBaseDatabaseConfig();
-    message.name = object.name ?? "";
-    message.schemaConfigs = object.schemaConfigs?.map((e) => SchemaConfig.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseSchemaConfig(): SchemaConfig {
-  return { name: "", tableConfigs: [] };
-}
-
-export const SchemaConfig: MessageFns<SchemaConfig> = {
-  encode(message: SchemaConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    for (const v of message.tableConfigs) {
-      TableConfig.encode(v!, writer.uint32(18).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): SchemaConfig {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSchemaConfig();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.tableConfigs.push(TableConfig.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SchemaConfig {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      tableConfigs: globalThis.Array.isArray(object?.tableConfigs)
-        ? object.tableConfigs.map((e: any) => TableConfig.fromJSON(e))
-        : [],
-    };
-  },
-
-  toJSON(message: SchemaConfig): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.tableConfigs?.length) {
-      obj.tableConfigs = message.tableConfigs.map((e) => TableConfig.toJSON(e));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SchemaConfig>): SchemaConfig {
-    return SchemaConfig.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SchemaConfig>): SchemaConfig {
-    const message = createBaseSchemaConfig();
-    message.name = object.name ?? "";
-    message.tableConfigs = object.tableConfigs?.map((e) => TableConfig.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseTableConfig(): TableConfig {
-  return { name: "", columnConfigs: [], classificationId: "" };
-}
-
-export const TableConfig: MessageFns<TableConfig> = {
-  encode(message: TableConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    for (const v of message.columnConfigs) {
-      ColumnConfig.encode(v!, writer.uint32(18).fork()).join();
-    }
-    if (message.classificationId !== "") {
-      writer.uint32(26).string(message.classificationId);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): TableConfig {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTableConfig();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.columnConfigs.push(ColumnConfig.decode(reader, reader.uint32()));
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.classificationId = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): TableConfig {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      columnConfigs: globalThis.Array.isArray(object?.columnConfigs)
-        ? object.columnConfigs.map((e: any) => ColumnConfig.fromJSON(e))
-        : [],
-      classificationId: isSet(object.classificationId) ? globalThis.String(object.classificationId) : "",
-    };
-  },
-
-  toJSON(message: TableConfig): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.columnConfigs?.length) {
-      obj.columnConfigs = message.columnConfigs.map((e) => ColumnConfig.toJSON(e));
-    }
-    if (message.classificationId !== "") {
-      obj.classificationId = message.classificationId;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<TableConfig>): TableConfig {
-    return TableConfig.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<TableConfig>): TableConfig {
-    const message = createBaseTableConfig();
-    message.name = object.name ?? "";
-    message.columnConfigs = object.columnConfigs?.map((e) => ColumnConfig.fromPartial(e)) || [];
-    message.classificationId = object.classificationId ?? "";
-    return message;
-  },
-};
-
-function createBaseColumnConfig(): ColumnConfig {
-  return { name: "", semanticTypeId: "", labels: {}, classificationId: "" };
-}
-
-export const ColumnConfig: MessageFns<ColumnConfig> = {
-  encode(message: ColumnConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    if (message.semanticTypeId !== "") {
-      writer.uint32(18).string(message.semanticTypeId);
-    }
-    Object.entries(message.labels).forEach(([key, value]) => {
-      ColumnConfig_LabelsEntry.encode({ key: key as any, value }, writer.uint32(26).fork()).join();
-    });
-    if (message.classificationId !== "") {
-      writer.uint32(34).string(message.classificationId);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ColumnConfig {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseColumnConfig();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.semanticTypeId = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          const entry3 = ColumnConfig_LabelsEntry.decode(reader, reader.uint32());
-          if (entry3.value !== undefined) {
-            message.labels[entry3.key] = entry3.value;
-          }
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.classificationId = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ColumnConfig {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      semanticTypeId: isSet(object.semanticTypeId) ? globalThis.String(object.semanticTypeId) : "",
-      labels: isObject(object.labels)
-        ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-          acc[key] = String(value);
-          return acc;
-        }, {})
-        : {},
-      classificationId: isSet(object.classificationId) ? globalThis.String(object.classificationId) : "",
-    };
-  },
-
-  toJSON(message: ColumnConfig): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.semanticTypeId !== "") {
-      obj.semanticTypeId = message.semanticTypeId;
-    }
-    if (message.labels) {
-      const entries = Object.entries(message.labels);
-      if (entries.length > 0) {
-        obj.labels = {};
-        entries.forEach(([k, v]) => {
-          obj.labels[k] = v;
-        });
-      }
-    }
-    if (message.classificationId !== "") {
-      obj.classificationId = message.classificationId;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<ColumnConfig>): ColumnConfig {
-    return ColumnConfig.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<ColumnConfig>): ColumnConfig {
-    const message = createBaseColumnConfig();
-    message.name = object.name ?? "";
-    message.semanticTypeId = object.semanticTypeId ?? "";
-    message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-      if (value !== undefined) {
-        acc[key] = globalThis.String(value);
-      }
-      return acc;
-    }, {});
-    message.classificationId = object.classificationId ?? "";
-    return message;
-  },
-};
-
-function createBaseColumnConfig_LabelsEntry(): ColumnConfig_LabelsEntry {
-  return { key: "", value: "" };
-}
-
-export const ColumnConfig_LabelsEntry: MessageFns<ColumnConfig_LabelsEntry> = {
-  encode(message: ColumnConfig_LabelsEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.key !== "") {
-      writer.uint32(10).string(message.key);
-    }
-    if (message.value !== "") {
-      writer.uint32(18).string(message.value);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ColumnConfig_LabelsEntry {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseColumnConfig_LabelsEntry();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.value = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ColumnConfig_LabelsEntry {
-    return {
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      value: isSet(object.value) ? globalThis.String(object.value) : "",
-    };
-  },
-
-  toJSON(message: ColumnConfig_LabelsEntry): unknown {
-    const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== "") {
-      obj.value = message.value;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<ColumnConfig_LabelsEntry>): ColumnConfig_LabelsEntry {
-    return ColumnConfig_LabelsEntry.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<ColumnConfig_LabelsEntry>): ColumnConfig_LabelsEntry {
-    const message = createBaseColumnConfig_LabelsEntry();
-    message.key = object.key ?? "";
-    message.value = object.value ?? "";
     return message;
   },
 };

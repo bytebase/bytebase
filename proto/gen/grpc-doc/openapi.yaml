@@ -13608,9 +13608,11 @@ components:
                     format: enum
                 classificationFromConfig:
                     type: boolean
-                    description: |-
-                        If false, we will build the raw common by classification in database
-                         config.
+                    description: If false, we will build the raw common by classification in database catalog.
+                catalog:
+                    allOf:
+                        - $ref: '#/components/schemas/DatabaseCatalog'
+                    description: Database catlog is required if classification_from_config is false.
         StringifyMetadataResponse:
             type: object
             properties:
