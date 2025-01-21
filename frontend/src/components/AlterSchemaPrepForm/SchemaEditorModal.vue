@@ -138,7 +138,7 @@ import { NTabs, NCheckbox, NButton, NTabPane, useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import type { PropType } from "vue";
 import { computed, onMounted, h, reactive, ref, watch } from "vue";
-import { I18nT, useI18n } from "vue-i18n";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBModal } from "@/bbkit";
 import { ActionConfirmModal } from "@/components/SchemaEditorLite";
@@ -542,11 +542,11 @@ const handlePreviewIssue = async () => {
 const renderEmptyGeneratedDDLContent = (databases: ComposedDatabase[]) => {
   const children = databases.map((database) => {
     return (
-      <I18nT tag="li" keypath="schema-editor.nothing-changed-for-database">
-        {{
-          database: () => database.databaseName,
-        }}
-      </I18nT>
+      <li>
+        {t("schema-editor.nothing-changed-for-database", {
+          database: database.databaseName,
+        })}
+      </li>
     );
   });
   return h(
