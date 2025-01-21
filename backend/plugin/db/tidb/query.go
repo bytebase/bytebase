@@ -112,6 +112,7 @@ func getStatementWithResultLimitInline(statement string, limit int) (string, err
 	if len(stmtList) != 1 {
 		return "", errors.Errorf("expect one single statement in the query, %s", statement)
 	}
+	restoreFlags := format.DefaultRestoreFlags | format.RestoreStringWithoutDefaultCharset
 	stmt := stmtList[0]
 	switch stmt := stmt.(type) {
 	case *tidbast.SelectStmt:
@@ -129,7 +130,7 @@ func getStatementWithResultLimitInline(statement string, limit int) (string, err
 			}
 		}
 		var buffer strings.Builder
-		ctx := format.NewRestoreCtx(format.DefaultRestoreFlags, &buffer)
+		ctx := format.NewRestoreCtx(restoreFlags, &buffer)
 		if err := stmt.Restore(ctx); err != nil {
 			return "", err
 		}
@@ -149,7 +150,7 @@ func getStatementWithResultLimitInline(statement string, limit int) (string, err
 			}
 		}
 		var buffer strings.Builder
-		ctx := format.NewRestoreCtx(format.DefaultRestoreFlags, &buffer)
+		ctx := format.NewRestoreCtx(restoreFlags, &buffer)
 		if err := stmt.Restore(ctx); err != nil {
 			return "", err
 		}
