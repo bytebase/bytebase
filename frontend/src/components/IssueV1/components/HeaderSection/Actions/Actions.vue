@@ -1,8 +1,4 @@
 <template>
-  <div class="issue-debug">
-    <pre>actionType: {{ actionType }}</pre>
-    <pre>reviewDone: {{ reviewDone }}</pre>
-  </div>
   <div class="flex flex-col items-end">
     <CreateButton v-if="actionType === 'CREATE'" />
 
