@@ -45,7 +45,7 @@ import { pushNotification } from "@/store";
 import { useSelectionContext } from "./DataTable/common/selection-logic";
 
 const { t } = useI18n();
-const { state: selectionState, copy, deselect } = useSelectionContext();
+const { state: selectionState, copy } = useSelectionContext();
 
 const shouldShow = computed(
   () =>
@@ -65,6 +65,5 @@ const copySelection = () => {
     style: "SUCCESS",
     title: t("common.copied"),
   });
-  deselect();
 };
 </script>

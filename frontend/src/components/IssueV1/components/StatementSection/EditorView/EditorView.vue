@@ -187,18 +187,6 @@
     feature="bb.feature.sql-review"
     @cancel="state.showFeatureModal = false"
   />
-
-  <div class="issue-debug">
-    <div>task: {{ selectedTask }}</div>
-    <div>sheetName: {{ sheetName }}</div>
-    <div>sheetReady: {{ sheetReady }}</div>
-    <div>sheetStatement.length: {{ sheetStatement.length }}</div>
-    <div>sheet.title: {{ sheet?.title }}</div>
-    <div>sheet.content.length: {{ sheet?.content?.length }}</div>
-    <div>isTaskSheetOversize: {{ isSheetOversize }}</div>
-    <div>isEditorReadonly: {{ isEditorReadonly }}</div>
-    <div>state.isEditing: {{ state.isEditing }}</div>
-  </div>
 </template>
 
 <script setup lang="ts">

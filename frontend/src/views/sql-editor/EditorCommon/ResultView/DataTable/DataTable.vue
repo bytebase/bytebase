@@ -20,21 +20,18 @@
             :key="header.index"
             class="group relative px-2 py-2 min-w-[2rem] text-left text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border-x border-block-border dark:border-zinc-500"
             :class="{
+              'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800':
+                !selectionDisabled,
               '!bg-accent/10 dark:!bg-accent/40':
                 selectionState.rows.length === 0 &&
                 selectionState.columns.includes(header.index),
+              'pl-3': header.index === 0,
             }"
             v-bind="tableResize.getColumnProps(header.index)"
+            @click.stop="selectColumn(header.index)"
           >
             <div class="flex items-center overflow-hidden">
-              <span
-                class="flex flex-row items-center select-none"
-                :class="{
-                  'cursor-pointer hover:text-accent dark:hover:text-gray-500':
-                    !selectionDisabled,
-                }"
-                @click.stop="selectColumn(header.index)"
-              >
+              <span class="flex flex-row items-center select-none">
                 <template
                   v-if="String(header.column.columnDef.header).length > 0"
                 >
@@ -88,7 +85,7 @@
           <td
             v-for="(cell, cellIndex) of row.getVisibleCells()"
             :key="cellIndex"
-            class="relative p-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-x border-b border-block-border dark:border-zinc-500 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
+            class="relative max-w-[50vw] p-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-x border-b border-block-border dark:border-zinc-500 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
             :data-col-index="cellIndex"
           >
             <TableCell
@@ -101,11 +98,9 @@
               :allow-select="true"
             />
             <div
-              v-if="cellIndex === 0"
-              class="absolute inset-y-0 left-0 w-2"
+              v-if="cellIndex === 0 && !selectionDisabled"
+              class="absolute inset-y-0 left-0 w-3 cursor-pointer hover:bg-accent/10 dark:hover:bg-accent/40"
               :class="{
-                'cursor-pointer hover:bg-accent/10 dark:hover:bg-accent/40':
-                  !selectionDisabled,
                 'bg-accent/10 dark:bg-accent/40':
                   selectionState.columns.length === 0 &&
                   selectionState.rows.includes(offset + rowIndex),

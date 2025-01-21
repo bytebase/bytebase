@@ -1,9 +1,4 @@
 <template>
-  <div class="issue-debug">
-    <div>task run section</div>
-    <div>mode: {{ mode }}</div>
-    <div>flattenTaskRunList.length: {{ flattenTaskRunList.length }}</div>
-  </div>
   <div v-if="flattenTaskRunList.length > 0" class="px-4 py-2 space-y-4">
     <TaskRunTable :task-run-list="flattenTaskRunList" />
   </div>
