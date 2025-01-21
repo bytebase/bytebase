@@ -29,11 +29,22 @@ SET row_security = off;
 `
 
 	setDefaultTableSpace = "SET default_tablespace = '';\n\n"
+	backupSchemaName     = "bbdataarchive"
 )
 
 // Dump dumps the database.
 func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.DatabaseSchemaMetadata) error {
-	if len(metadata.Schemas) == 0 {
+	metadataExceptBackup := &storepb.DatabaseSchemaMetadata{
+		Extensions: metadata.Extensions,
+	}
+	for _, schema := range metadata.Schemas {
+		if schema.Name == backupSchemaName {
+			continue
+		}
+		metadataExceptBackup.Schemas = append(metadataExceptBackup.Schemas, schema)
+	}
+
+	if len(metadataExceptBackup.Schemas) == 0 {
 		return nil
 	}
 
@@ -42,21 +53,21 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 	}
 
 	// Construct schemas.
-	for _, schema := range metadata.Schemas {
+	for _, schema := range metadataExceptBackup.Schemas {
 		if err := writeSchema(out, schema); err != nil {
 			return err
 		}
 	}
 
 	// Construct extensions.
-	for _, extension := range metadata.Extensions {
+	for _, extension := range metadataExceptBackup.Extensions {
 		if err := writeExtension(out, extension); err != nil {
 			return err
 		}
 	}
 
 	// Construct enums.
-	for _, schema := range metadata.Schemas {
+	for _, schema := range metadataExceptBackup.Schemas {
 		for _, enum := range schema.EnumTypes {
 			if err := writeEnum(out, schema.Name, enum); err != nil {
 				return err
@@ -72,7 +83,7 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 	materializedViewMap := make(map[string]*storepb.MaterializedViewMetadata)
 
 	// Construct functions.
-	for _, schema := range metadata.Schemas {
+	for _, schema := range metadataExceptBackup.Schemas {
 		for _, function := range schema.Functions {
 			funcID := getObjectID(schema.Name, function.Name)
 			functionMap[funcID] = function
@@ -87,7 +98,7 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 	// Mapping from table ID to sequence metadata.
 	// Construct none owner column sequences first.
 	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
-	for _, schema := range metadata.Schemas {
+	for _, schema := range metadataExceptBackup.Schemas {
 		for _, sequence := range schema.Sequences {
 			if sequence.OwnerTable == "" || sequence.OwnerColumn == "" {
 				if err := writeCreateSequence(out, schema.Name, sequence); err != nil {
@@ -105,7 +116,7 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 	}
 
 	// Construct tables.
-	for _, schema := range metadata.Schemas {
+	for _, schema := range metadataExceptBackup.Schemas {
 		for _, table := range schema.Tables {
 			tableID := getObjectID(schema.Name, table.Name)
 			tableMap[tableID] = table
@@ -113,7 +124,7 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 		}
 	}
 
-	for _, schema := range metadata.Schemas {
+	for _, schema := range metadataExceptBackup.Schemas {
 		for _, view := range schema.Views {
 			viewID := getObjectID(schema.Name, view.Name)
 			viewMap[viewID] = view
@@ -166,7 +177,7 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 	}
 
 	// Construct triggers.
-	for _, schema := range metadata.Schemas {
+	for _, schema := range metadataExceptBackup.Schemas {
 		for _, table := range schema.Tables {
 			for _, trigger := range table.Triggers {
 				if err := writeTrigger(out, schema.Name, table.Name, trigger); err != nil {
@@ -193,7 +204,7 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 	}
 
 	// Construct foreign keys.
-	for _, schema := range metadata.Schemas {
+	for _, schema := range metadataExceptBackup.Schemas {
 		for _, table := range schema.Tables {
 			for _, fk := range table.ForeignKeys {
 				if err := writeForeignKey(out, schema.Name, table.Name, fk); err != nil {
