@@ -3,6 +3,7 @@ import { sqlServiceClient } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
 import { useSettingV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
+import type { DatabaseCatalog } from "@/types/proto/v1/database_catalog_service";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { TinyTimer } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
@@ -17,12 +18,21 @@ export type GenerateDiffDDLResult = {
   errors: string[];
 };
 
-export const generateDiffDDL = async (
-  database: ComposedDatabase,
-  source: DatabaseMetadata,
-  target: DatabaseMetadata,
-  allowEmptyDiffDDLWithConfigChange = true
-): Promise<GenerateDiffDDLResult> => {
+export const generateDiffDDL = async ({
+  database,
+  sourceMetadata,
+  targetMetadata,
+  sourceCatalog,
+  targetCatalog,
+  allowEmptyDiffDDLWithConfigChange = true,
+}: {
+  database: ComposedDatabase;
+  sourceMetadata: DatabaseMetadata;
+  targetMetadata: DatabaseMetadata;
+  sourceCatalog: DatabaseCatalog;
+  targetCatalog: DatabaseCatalog;
+  allowEmptyDiffDDLWithConfigChange?: boolean;
+}): Promise<GenerateDiffDDLResult> => {
   const finish = (statement: string, errors: string[]) => {
     _generateDiffDDLTimer.end("generateDiffDDL");
     return {
@@ -31,11 +41,14 @@ export const generateDiffDDL = async (
     };
   };
 
-  if (isEqual(source, target)) {
+  if (
+    isEqual(sourceMetadata, targetMetadata) &&
+    isEqual(sourceCatalog, targetCatalog)
+  ) {
     return finish("", []);
   }
 
-  const validationMessages = validateDatabaseMetadata(target);
+  const validationMessages = validateDatabaseMetadata(targetMetadata);
   if (validationMessages.length > 0) {
     return finish("", [
       t("schema-editor.message.invalid-schema"),
@@ -46,10 +59,13 @@ export const generateDiffDDL = async (
     const classificationConfig = useSettingV1Store().getProjectClassification(
       database.projectEntity.dataClassificationConfigId
     );
+
     const diffResponse = await sqlServiceClient.diffMetadata(
       {
-        sourceMetadata: source,
-        targetMetadata: target,
+        sourceMetadata,
+        targetMetadata,
+        sourceCatalog,
+        targetCatalog,
         engine: database.instanceResource.engine,
         classificationFromConfig:
           classificationConfig?.classificationFromConfig ?? false,
@@ -62,7 +78,7 @@ export const generateDiffDDL = async (
     if (diff.length === 0) {
       if (
         !allowEmptyDiffDDLWithConfigChange &&
-        !isEqual(source.schemaConfigs, target.schemaConfigs)
+        !isEqual(sourceCatalog, targetCatalog)
       ) {
         return finish("", [t("schema-editor.message.cannot-change-config")]);
       }

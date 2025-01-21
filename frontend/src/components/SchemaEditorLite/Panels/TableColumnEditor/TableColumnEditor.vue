@@ -49,7 +49,7 @@
         resource: `'${state.pendingUpdateColumn.name}'`,
       })
     "
-    :labels="[configForColumn(state.pendingUpdateColumn).labels]"
+    :labels="[catalogForColumn(state.pendingUpdateColumn.name).labels]"
     @dismiss="state.showLabelsDrawer = false"
     @apply="onLabelsApply"
   />
@@ -64,11 +64,11 @@ import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
-import SemanticTypesDrawer from "@/components/SensitiveData/components/SemanticTypesDrawer.vue";
 import { InlineInput } from "@/components/v2";
-import { useSettingV1Store } from "@/store/modules";
+import { useSettingV1Store, hasFeature } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import { ColumnCatalog } from "@/types/proto/v1/database_catalog_service";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
@@ -76,7 +76,6 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { ColumnConfig } from "@/types/proto/v1/database_service";
 import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import ColumnDefaultValueExpressionModal from "../../Modals/ColumnDefaultValueExpressionModal.vue";
 import { useSchemaEditorContext } from "../../context";
@@ -90,6 +89,8 @@ import {
   ReorderCell,
   SelectionCell,
   DefaultValueCell,
+  SemanticTypeCell,
+  LabelsCell,
 } from "./components";
 
 interface LocalState {
@@ -108,11 +109,12 @@ const props = withDefaults(
     schema: SchemaMetadata;
     table: TableMetadata;
     engine: Engine;
-    classificationConfigId?: string;
     disableChangeTable?: boolean;
     allowChangePrimaryKeys?: boolean;
     allowReorderColumns?: boolean;
     maxBodyHeight?: number;
+    showDatabaseCatalogColumn?: boolean;
+    showClassificationColumn?: "ALWAYS" | "AUTO";
     filterColumn?: (column: ColumnMetadata) => boolean;
     disableAlterColumn?: (column: ColumnMetadata) => boolean;
     getColumnItemComputedClassList?: (column: ColumnMetadata) => string;
@@ -124,7 +126,8 @@ const props = withDefaults(
     allowChangePrimaryKeys: false,
     allowReorderColumns: false,
     maxBodyHeight: undefined,
-    classificationConfigId: "",
+    showDatabaseCatalogColumn: false,
+    showClassificationColumn: "AUTO",
     filterColumn: (_: ColumnMetadata) => true,
     disableAlterColumn: (_: ColumnMetadata) => false,
     getColumnItemComputedClassList: (_: ColumnMetadata) => "",
@@ -169,8 +172,9 @@ const {
   selectionEnabled,
   markEditStatus,
   getColumnStatus,
-  getColumnConfig,
-  upsertColumnConfig,
+  getColumnCatalog,
+  removeColumnCatalog,
+  upsertColumnCatalog,
   useConsumePendingScrollToColumn,
   getAllColumnsSelectionState,
   updateAllColumnsSelection,
@@ -207,9 +211,11 @@ const metadataForColumn = (column: ColumnMetadata) => {
     column,
   };
 };
+
 const statusForColumn = (column: ColumnMetadata) => {
   return getColumnStatus(props.db, metadataForColumn(column));
 };
+
 const markColumnStatus = (
   column: ColumnMetadata,
   status: EditStatus,
@@ -228,19 +234,6 @@ const markColumnStatus = (
   markEditStatus(props.db, metadataForColumn(column), status);
 };
 
-const configForColumn = (column: ColumnMetadata) => {
-  return (
-    getColumnConfig(props.db, metadataForColumn(column)) ??
-    ColumnConfig.fromPartial({
-      name: column.name,
-    })
-  );
-};
-
-const primaryKey = computed(() => {
-  return props.table.indexes.find((idx) => idx.primary);
-});
-
 const semanticTypeList = computed(() => {
   return (
     settingStore.getSettingByName("bb.workspace.semantic-types")?.value
@@ -248,12 +241,40 @@ const semanticTypeList = computed(() => {
   );
 });
 
+const catalogForColumn = (column: string) => {
+  return (
+    getColumnCatalog({
+      database: props.db.name,
+      schema: props.schema.name,
+      table: props.table.name,
+      column,
+    }) ?? ColumnCatalog.fromPartial({ name: column })
+  );
+};
+
+const primaryKey = computed(() => {
+  return props.table.indexes.find((idx) => idx.primary);
+});
+
 const showClassification = computed(() => {
-  return showClassificationColumn(
-    props.engine,
-    classificationConfig.value?.classificationFromConfig ?? false
+  return (
+    props.showClassificationColumn === "ALWAYS" ||
+    showClassificationColumn(
+      props.engine,
+      classificationConfig.value?.classificationFromConfig ?? false
+    )
   );
 });
+
+const openSemanticTypeDrawer = (column: ColumnMetadata) => {
+  state.pendingUpdateColumn = column;
+  state.showSemanticTypesDrawer = true;
+};
+
+const openLabelsDrawer = (column: ColumnMetadata) => {
+  state.pendingUpdateColumn = column;
+  state.showLabelsDrawer = true;
+};
 
 const columns = computed(() => {
   const columns: (DataTableColumn<ColumnMetadata> & { hide?: boolean })[] = [
@@ -299,7 +320,6 @@ const columns = computed(() => {
       className: "!px-0",
       render: (column, index) => {
         return h(ReorderCell, {
-          column,
           allowMoveUp: index > 0,
           allowMoveDown: index < shownColumnList.value.length - 1,
           disabled: props.disableChangeTable,
@@ -324,10 +344,52 @@ const columns = computed(() => {
             "--n-text-color-disabled": "rgb(var(--color-main))",
           },
           "onUpdate:value": (value: string) => {
+            upsertColumnCatalog(
+              {
+                database: props.db.name,
+                schema: props.schema.name,
+                table: props.table.name,
+                column: column.name,
+              },
+              (catalog) => {
+                catalog.name = value;
+              }
+            );
+            removeColumnCatalog({
+              database: props.db.name,
+              schema: props.schema.name,
+              table: props.table.name,
+              column: column.name,
+            });
             const oldStatus = statusForColumn(column);
+
             column.name = value;
             markColumnStatus(column, "updated", oldStatus);
           },
+        });
+      },
+    },
+    {
+      key: "semantic-types",
+      title: t("settings.sensitive-data.semantic-types.table.semantic-type"),
+      resizable: true,
+      minWidth: 140,
+      maxWidth: 320,
+      hide:
+        !props.showDatabaseCatalogColumn ||
+        !hasFeature("bb.feature.sensitive-data"),
+      render: (column) => {
+        return h(SemanticTypeCell, {
+          database: props.database.name,
+          schema: props.schema.name,
+          table: props.table.name,
+          column: column.name,
+          readonly: props.readonly,
+          disabled:
+            props.disableChangeTable || props.disableAlterColumn(column),
+          semanticTypeList: semanticTypeList.value,
+          onRemove: () => onSemanticTypeRemove(column),
+          onEdit: () => openSemanticTypeDrawer(column),
         });
       },
     },
@@ -339,10 +401,9 @@ const columns = computed(() => {
       minWidth: 140,
       maxWidth: 320,
       render: (column) => {
-        // TODO(ed): use catalog
-        const config = configForColumn(column);
+        const config = catalogForColumn(column.name);
         return h(ClassificationCell, {
-          classification: config.classificationId,
+          classification: config.classification,
           readonly: props.readonly,
           disabled: props.disableChangeTable,
           classificationConfig:
@@ -506,6 +567,25 @@ const columns = computed(() => {
       },
     },
     {
+      key: "labels",
+      title: t("common.labels"),
+      resizable: true,
+      minWidth: 140,
+      maxWidth: 320,
+      hide: !props.showDatabaseCatalogColumn,
+      render: (column) => {
+        return h(LabelsCell, {
+          database: props.database.name,
+          schema: props.schema.name,
+          table: props.table.name,
+          column: column.name,
+          readonly: props.readonly,
+          disabled: props.disableChangeTable,
+          onEdit: () => openLabelsDrawer(column),
+        });
+      },
+    },
+    {
       key: "operations",
       title: "",
       resizable: false,
@@ -514,7 +594,6 @@ const columns = computed(() => {
       className: "!px-0",
       render: (column) => {
         return h(OperationCell, {
-          column,
           dropped: isDroppedColumn(column),
           disabled: props.disableChangeTable,
           onDrop: () => emit("drop", column),
@@ -625,41 +704,56 @@ const handleSelectColumnDefaultValueExpression = (expression: string) => {
   markColumnStatus(column, "updated");
 };
 
+const onSemanticTypeApply = async (semanticTypeId: string) => {
+  if (!state.pendingUpdateColumn) {
+    return;
+  }
+
+  updateColumnConfig(state.pendingUpdateColumn, (catalog) => {
+    catalog.semanticType = semanticTypeId;
+  });
+};
+
+const onSemanticTypeRemove = async (column: ColumnMetadata) => {
+  markColumnStatus(column, "updated");
+  updateColumnConfig(column, (catalog) => {
+    catalog.semanticType = "";
+  });
+};
+
 const onClassificationSelect = (classificationId: string) => {
   if (!state.pendingUpdateColumn) {
     return;
   }
 
   markColumnStatus(state.pendingUpdateColumn, "updated");
-  updateColumnConfig(state.pendingUpdateColumn, (config) => {
-    config.classificationId = classificationId;
+  updateColumnConfig(state.pendingUpdateColumn, (catalog) => {
+    catalog.classification = classificationId;
   });
 };
 
 const updateColumnConfig = (
   column: ColumnMetadata,
-  update: (config: ColumnConfig) => void
+  update: (config: ColumnCatalog) => void
 ) => {
-  upsertColumnConfig(props.db, metadataForColumn(column), update);
+  upsertColumnCatalog(
+    {
+      database: props.db.name,
+      schema: props.schema.name,
+      table: props.table.name,
+      column: column.name,
+    },
+    update
+  );
   markColumnStatus(column, "updated");
-};
-
-const onSemanticTypeApply = async (semanticTypeId: string) => {
-  if (!state.pendingUpdateColumn) {
-    return;
-  }
-
-  updateColumnConfig(state.pendingUpdateColumn, (config) => {
-    config.semanticTypeId = semanticTypeId;
-  });
 };
 
 const onLabelsApply = (labelsList: { [key: string]: string }[]) => {
   if (!state.pendingUpdateColumn) {
     return;
   }
-  updateColumnConfig(state.pendingUpdateColumn, (config) => {
-    config.labels = labelsList[0];
+  updateColumnConfig(state.pendingUpdateColumn, (catalog) => {
+    catalog.labels = labelsList[0];
   });
   markColumnStatus(state.pendingUpdateColumn, "updated");
 };

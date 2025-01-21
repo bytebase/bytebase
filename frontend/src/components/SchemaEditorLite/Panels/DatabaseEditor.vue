@@ -212,7 +212,7 @@ const {
   addTab,
   getSchemaStatus,
   markEditStatus,
-  upsertTableConfig,
+  upsertTableCatalog,
   queuePendingScrollToTable,
 } = context;
 const state = reactive<LocalState>({
@@ -237,7 +237,6 @@ const allowCreateTable = computed(() => {
   if (!schema) return false;
   if (engine.value === Engine.POSTGRES) {
     const status = getSchemaStatus(props.db, {
-      database: props.database,
       schema,
     });
 
@@ -255,7 +254,6 @@ const schemaSelectorOptionList = computed(() => {
   const schemas = disableDiffColoring.value
     ? props.database.schemas.filter((schema) => {
         const status = getSchemaStatus(props.db, {
-          database: props.database,
           schema,
         });
         return status !== "dropped";
@@ -368,9 +366,16 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
   };
   const { db } = props;
   if (template.catalog) {
-    upsertTableConfig(db, metadataForTable(), (config) => {
-      Object.assign(config, template.catalog);
-    });
+    upsertTableCatalog(
+      {
+        database: props.db.name,
+        schema: schema.name,
+        table: table.name,
+      },
+      (catalog) => {
+        Object.assign(catalog, template.catalog);
+      }
+    );
   }
   markEditStatus(db, metadataForTable(), "created");
   table.columns.forEach((column) => {

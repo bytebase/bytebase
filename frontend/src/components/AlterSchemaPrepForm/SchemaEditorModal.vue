@@ -132,7 +132,7 @@
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { cloneDeep, head, uniq } from "lodash-es";
 import { NTabs, NCheckbox, NButton, NTabPane, useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
@@ -154,10 +154,12 @@ import {
   useDBSchemaV1Store,
   useAppFeature,
   useStorageStore,
+  useDatabaseCatalogV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { dialectOfEngineV1, isValidProjectName, unknownProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import type { DatabaseCatalog } from "@/types/proto/v1/database_catalog_service";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
@@ -232,6 +234,7 @@ const state = reactive<LocalState>({
   useOnlineSchemaMigration: false,
 });
 const databaseV1Store = useDatabaseV1Store();
+const dbCatalogStore = useDatabaseCatalogV1Store();
 const notificationStore = useNotificationStore();
 const dbSchemaStore = useDBSchemaV1Store();
 const { runSQLCheck } = provideSQLCheckContext();
@@ -289,6 +292,7 @@ const prepareDatabaseMetadata = async () => {
   const targets: {
     database: ComposedDatabase;
     metadata: DatabaseMetadata;
+    catalog: DatabaseCatalog;
   }[] = [];
   for (let i = 0; i < databaseList.value.length; i++) {
     const database = databaseList.value[i];
@@ -297,16 +301,23 @@ const prepareDatabaseMetadata = async () => {
       view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
       skipCache: true,
     });
-    targets.push({ database, metadata });
+    const catalog = await dbCatalogStore.getOrFetchDatabaseCatalog({
+      database: database.name,
+      skipCache: true,
+    });
+
+    targets.push({ database, metadata, catalog });
   }
   timer.end("fetchMetadata", databaseList.value.length);
 
   timer.begin("convertEditTargets");
-  state.targets = targets.map<EditTarget>(({ database, metadata }) => {
+  state.targets = targets.map<EditTarget>(({ database, metadata, catalog }) => {
     return {
       database,
       metadata: cloneDeep(metadata),
       baselineMetadata: metadata,
+      catalog: cloneDeep(catalog),
+      baselineCatalog: catalog,
     };
   });
   timer.end("convertEditTargets", databaseList.value.length);
@@ -392,14 +403,22 @@ const generateDiffDDLMap = async (silent: boolean) => {
   }
   for (let i = 0; i < state.targets.length; i++) {
     const target = state.targets[i];
-    const { database, baselineMetadata: source, metadata } = target;
-    applyMetadataEdit(database, metadata);
-    const result = await generateSingleDiffDDL(
+    const {
       database,
-      source,
+      baselineMetadata: source,
       metadata,
-      /* !allowEmptyDiffDDLWithConfigChange */ false
-    );
+      catalog,
+      baselineCatalog,
+    } = target;
+    applyMetadataEdit(database, metadata, catalog);
+    const result = await generateSingleDiffDDL({
+      database,
+      sourceMetadata: source,
+      targetMetadata: metadata,
+      sourceCatalog: baselineCatalog,
+      targetCatalog: catalog,
+      allowEmptyDiffDDLWithConfigChange: false,
+    });
 
     if (result.errors.length > 0 && !silent) {
       pushNotification({
@@ -522,15 +541,12 @@ const handlePreviewIssue = async () => {
 
 const renderEmptyGeneratedDDLContent = (databases: ComposedDatabase[]) => {
   const children = databases.map((database) => {
-    return h(
-      I18nT,
-      {
-        tag: "li",
-        keypath: "schema-editor.nothing-changed-for-database",
-      },
-      {
-        database: () => database.databaseName,
-      }
+    return (
+      <I18nT tag="li" keypath="schema-editor.nothing-changed-for-database">
+        {{
+          database: () => database.databaseName,
+        }}
+      </I18nT>
     );
   });
   return h(

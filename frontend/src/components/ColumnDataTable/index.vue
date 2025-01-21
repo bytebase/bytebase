@@ -36,7 +36,7 @@ import ClassificationCell from "./ClassificationCell.vue";
 import LabelsCell from "./LabelsCell.vue";
 import SemanticTypeCell from "./SemanticTypeCell.vue";
 import {
-  updateColumnConfig,
+  updateColumnCatalog,
   supportSetClassificationFromComment,
 } from "./utils";
 
@@ -255,10 +255,10 @@ const columns = computed(() => {
       width: 140,
       render: (column) => {
         return h(LabelsCell, {
-          database: props.database,
+          database: props.database.name,
           schema: props.schema,
-          table: props.table,
-          column: column,
+          table: props.table.name,
+          column: column.name,
           readonly: !hasDatabaseCatalogPermission.value,
         });
       },
@@ -281,7 +281,7 @@ const onClassificationIdApply = async (
   column: string,
   classification: string
 ) => {
-  await updateColumnConfig({
+  await updateColumnCatalog({
     database: props.database.name,
     schema: props.schema,
     table: props.table.name,

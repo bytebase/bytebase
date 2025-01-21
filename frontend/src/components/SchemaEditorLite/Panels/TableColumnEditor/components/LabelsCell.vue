@@ -1,6 +1,6 @@
 <template>
   <div class="flex justify-start items-center">
-    <DatabaseLabelsCell :labels="columnConfig?.labels ?? {}" :show-count="1" />
+    <DatabaseLabelsCell :labels="columnCatalog?.labels ?? {}" :show-count="1" />
     <MiniActionButton v-if="!readonly && !disabled" @click="$emit('edit')">
       <PencilIcon class="w-3 h-3" />
     </MiniActionButton>
@@ -13,20 +13,12 @@ import { computed } from "vue";
 import { useSchemaEditorContext } from "@/components/SchemaEditorLite/context";
 import { MiniActionButton } from "@/components/v2";
 import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
-import type { ComposedDatabase } from "@/types";
-import type {
-  ColumnMetadata,
-  DatabaseMetadata,
-  SchemaMetadata,
-  TableMetadata,
-} from "@/types/proto/v1/database_service";
 
 const props = defineProps<{
-  db: ComposedDatabase;
-  database: DatabaseMetadata;
-  schema: SchemaMetadata;
-  table: TableMetadata;
-  column: ColumnMetadata;
+  database: string;
+  schema: string;
+  table: string;
+  column: string;
   readonly?: boolean;
   disabled?: boolean;
 }>();
@@ -34,10 +26,10 @@ defineEmits<{
   (event: "edit"): void;
 }>();
 
-const { getColumnConfig } = useSchemaEditorContext();
+const { getColumnCatalog } = useSchemaEditorContext();
 
-const columnConfig = computed(() => {
-  return getColumnConfig(props.db, {
+const columnCatalog = computed(() => {
+  return getColumnCatalog({
     database: props.database,
     schema: props.schema,
     table: props.table,

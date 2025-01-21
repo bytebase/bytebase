@@ -75,7 +75,6 @@ const handleConfirmButtonClick = async () => {
   markEditStatus(
     props.database,
     {
-      database: props.metadata,
       schema,
     },
     "created"

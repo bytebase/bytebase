@@ -7,7 +7,7 @@ import type { ComposedProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { RebuildMetadataEditReset } from "../algorithm/rebuild";
 import type { EditTarget, RolloutObject } from "../types";
-import { useEditConfigs } from "./config";
+import { useEditCatalogs } from "./config";
 import { useEditStatus } from "./edit";
 import { useScrollStatus } from "./scroll";
 import { useSelection } from "./selection";
@@ -32,6 +32,7 @@ export type SchemaEditorOptions = {
 export const provideSchemaEditorContext = (params: {
   readonly: Ref<boolean>;
   project: Ref<ComposedProject>;
+  classificationConfigId: Ref<string | undefined>;
   targets: Ref<EditTarget[]>;
   selectedRolloutObjects: Ref<RolloutObject[] | undefined>;
   disableDiffColoring: Ref<boolean>;
@@ -40,11 +41,11 @@ export const provideSchemaEditorContext = (params: {
 }) => {
   const events = new Emittery() as SchemaEditorEvents;
   const classificationConfig = computed(() => {
-    if (!params.project.value.dataClassificationConfigId) {
+    if (!params.classificationConfigId.value) {
       return;
     }
     return useSettingV1Store().getProjectClassification(
-      params.project.value.dataClassificationConfigId
+      params.classificationConfigId.value
     );
   });
 
@@ -53,7 +54,7 @@ export const provideSchemaEditorContext = (params: {
     ...params,
     ...useTabs(events),
     ...useEditStatus(),
-    ...useEditConfigs(params.targets),
+    ...useEditCatalogs(params.targets),
     ...useScrollStatus(),
     ...useSelection(params.selectedRolloutObjects, events),
     classificationConfig,

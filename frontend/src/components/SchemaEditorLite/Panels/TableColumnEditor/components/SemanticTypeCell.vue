@@ -2,18 +2,15 @@
   <div class="flex flex-row flex-wrap whitespace-nowrap">
     <span v-if="semanticType?.title">{{ semanticType?.title }}</span>
     <span v-else class="text-control-placeholder italic">N/A</span>
-    <template v-if="!readonly && !disabled">
+    <template v-if="!readonly">
       <MiniActionButton
         v-if="semanticType"
-        :disabled="disableAlterColumn(column)"
+        :disabled="disabled"
         @click.prevent="$emit('remove')"
       >
         <XIcon class="w-3 h-3" />
       </MiniActionButton>
-      <MiniActionButton
-        :disabled="disableAlterColumn(column)"
-        @click.prevent="$emit('edit')"
-      >
+      <MiniActionButton :disabled="disabled" @click.prevent="$emit('edit')">
         <PencilIcon class="w-3 h-3" />
       </MiniActionButton>
     </template>
@@ -25,36 +22,27 @@ import { PencilIcon, XIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { useSchemaEditorContext } from "@/components/SchemaEditorLite/context";
 import { MiniActionButton } from "@/components/v2";
-import type { ComposedDatabase } from "@/types";
-import type {
-  ColumnMetadata,
-  DatabaseMetadata,
-  SchemaMetadata,
-  TableMetadata,
-} from "@/types/proto/v1/database_service";
 import type { SemanticTypeSetting_SemanticType as SemanticType } from "@/types/proto/v1/setting_service";
 
 const props = defineProps<{
-  db: ComposedDatabase;
-  database: DatabaseMetadata;
-  schema: SchemaMetadata;
-  table: TableMetadata;
-  column: ColumnMetadata;
+  database: string;
+  schema: string;
+  table: string;
+  column: string;
   readonly?: boolean;
-  disabled?: boolean;
+  disabled: boolean;
   semanticTypeList: SemanticType[];
-  disableAlterColumn: (column: ColumnMetadata) => boolean;
 }>();
+
 defineEmits<{
   (event: "edit"): void;
   (event: "remove"): void;
 }>();
 
-const { getColumnConfig } = useSchemaEditorContext();
+const { getColumnCatalog } = useSchemaEditorContext();
 
-const columnConfig = computed(() => {
-  // TODO: use catalog
-  return getColumnConfig(props.db, {
+const columnCatalog = computed(() => {
+  return getColumnCatalog({
     database: props.database,
     schema: props.schema,
     table: props.table,
@@ -64,10 +52,10 @@ const columnConfig = computed(() => {
 
 const semanticType = computed(() => {
   const { semanticTypeList } = props;
-  const config = columnConfig.value;
-  if (!config?.semanticTypeId) {
+  const catalog = columnCatalog.value;
+  if (!catalog?.semanticType) {
     return;
   }
-  return semanticTypeList.find((data) => data.id === config.semanticTypeId);
+  return semanticTypeList.find((data) => data.id === catalog.semanticType);
 });
 </script>

@@ -31,7 +31,7 @@ import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import {
-  updateTableConfig,
+  updateTableCatalog,
   supportSetClassificationFromComment,
 } from "@/components/ColumnDataTable/utils";
 import {
@@ -260,7 +260,7 @@ const onClassificationIdApply = async (
   table: string,
   classification: string
 ) => {
-  await updateTableConfig({
+  await updateTableCatalog({
     database: props.database.name,
     schema: props.schemaName,
     table,

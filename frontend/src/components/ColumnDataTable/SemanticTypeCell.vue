@@ -49,7 +49,7 @@ import { useSubscriptionV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import FeatureModal from "../FeatureGuard/FeatureModal.vue";
 import SemanticTypesDrawer from "../SensitiveData/components/SemanticTypesDrawer.vue";
-import { updateColumnConfig } from "./utils";
+import { updateColumnCatalog } from "./utils";
 
 type LocalState = {
   showFeatureModal: boolean;
@@ -97,7 +97,7 @@ const openSemanticTypeDrawer = () => {
 };
 
 const onSemanticTypeApply = async (semanticType: string) => {
-  await updateColumnConfig({
+  await updateColumnCatalog({
     database: props.database.name,
     schema: props.schema,
     table: props.table,

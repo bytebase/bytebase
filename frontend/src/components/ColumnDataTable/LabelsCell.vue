@@ -14,7 +14,7 @@
     v-if="state.showLabelsDrawer"
     :show="true"
     :readonly="!!readonly"
-    :title="$t('db.labels-for-resource', { resource: `'${column.name}'` })"
+    :title="$t('db.labels-for-resource', { resource: `'${column}'` })"
     :labels="[labels]"
     @dismiss="state.showLabelsDrawer = false"
     @apply="onLabelsApply($event)"
@@ -26,23 +26,18 @@ import { computed } from "vue";
 import { reactive } from "vue";
 import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { useDatabaseCatalog, getColumnCatalog } from "@/store";
-import type { ComposedDatabase } from "@/types";
-import type {
-  ColumnMetadata,
-  TableMetadata,
-} from "@/types/proto/v1/database_service";
 import LabelEditorDrawer from "../LabelEditorDrawer.vue";
-import { updateColumnConfig } from "./utils";
+import { updateColumnCatalog } from "./utils";
 
 type LocalState = {
   showLabelsDrawer: boolean;
 };
 
 const props = defineProps<{
-  database: ComposedDatabase;
+  database: string;
   schema: string;
-  table: TableMetadata;
-  column: ColumnMetadata;
+  table: string;
+  column: string;
   readonly?: boolean;
 }>();
 
@@ -50,10 +45,15 @@ const state = reactive<LocalState>({
   showLabelsDrawer: false,
 });
 
-const databaseCatalog = useDatabaseCatalog(props.database.name, false);
+const databaseCatalog = useDatabaseCatalog(props.database, false);
 
 const columnCatalog = computed(() =>
-  getColumnCatalog(databaseCatalog.value, props.schema, props.table.name, props.column.name)
+  getColumnCatalog(
+    databaseCatalog.value,
+    props.schema,
+    props.table,
+    props.column
+  )
 );
 
 const labels = computed(() => columnCatalog.value?.labels ?? {});
@@ -63,11 +63,11 @@ const openLabelsDrawer = () => {
 };
 
 const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
-  await updateColumnConfig({
-    database: props.database.name,
+  await updateColumnCatalog({
+    database: props.database,
     schema: props.schema,
-    table: props.table.name,
-    column: props.column.name,
+    table: props.table,
+    column: props.column,
     columnCatalog: { labels: labelsList[0] },
   });
 };
