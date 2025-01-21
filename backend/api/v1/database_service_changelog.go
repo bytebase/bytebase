@@ -11,8 +11,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
-	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -169,26 +167,6 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, request *v1pb.GetCha
 			}
 			converted.PrevSchema = sdlSchema
 			converted.PrevSchemaSize = int64(len(sdlSchema))
-		}
-	}
-	if request.Concise {
-		switch instance.Engine {
-		case storepb.Engine_ORACLE:
-			conciseSchema, err := plsql.GetConciseSchema(converted.Schema)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get concise schema, error %v", err.Error())
-			}
-			converted.Schema = conciseSchema
-			converted.SchemaSize = int64(len(conciseSchema))
-		case storepb.Engine_POSTGRES:
-			conciseSchema, err := pg.FilterBackupSchema(converted.Schema)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to filter the backup schema, error %v", err.Error())
-			}
-			converted.Schema = conciseSchema
-			converted.SchemaSize = int64(len(conciseSchema))
-		default:
-			return nil, status.Errorf(codes.Unimplemented, "concise schema is not supported for engine %q", instance.Engine.String())
 		}
 	}
 	return converted, nil

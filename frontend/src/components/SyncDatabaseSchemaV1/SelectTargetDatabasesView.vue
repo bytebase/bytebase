@@ -164,7 +164,6 @@ import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { InstanceV1EngineIcon } from "@/components/v2";
-import { databaseServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -176,12 +175,7 @@ import {
   type ComposedProject,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { ChangelogView } from "@/types/proto/v1/database_service";
-import { instanceV1SupportsConciseSchema, toClipboard } from "@/utils";
-import {
-  extractDatabaseNameAndChangelogUID,
-  isValidChangelogName,
-} from "@/utils/v1/changelog";
+import { toClipboard } from "@/utils";
 import DiffViewPanel from "./DiffViewPanel.vue";
 import SourceSchemaInfo from "./SourceSchemaInfo.vue";
 import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
@@ -342,11 +336,9 @@ watch(
         continue;
       }
       const db = databaseStore.getDatabaseByName(name);
-      const concise = instanceV1SupportsConciseSchema(props.sourceEngine);
       const schema = await databaseStore.fetchDatabaseSchema(
         `${db.name}/schema`,
-        false /* sdlFormat */,
-        concise
+        false /* sdlFormat */
       );
       databaseSchemaCache.value[name] = schema.schema;
       if (schemaDiffCache.value[name]) {
@@ -393,33 +385,6 @@ onMounted(async () => {
       state.selectedDatabaseNameList = [targetDatabaseName];
       state.selectedDatabaseName = targetDatabaseName;
     }
-  }
-
-  // Prepare the source schema display string.
-  if (
-    props.changelogSourceSchema?.changelogName &&
-    instanceV1SupportsConciseSchema(props.sourceEngine)
-  ) {
-    state.isLoading = true;
-    if (isValidChangelogName(props.changelogSourceSchema.changelogName)) {
-      const changelog = await databaseServiceClient.getChangelog({
-        name: props.changelogSourceSchema.changelogName,
-        view: ChangelogView.CHANGELOG_VIEW_FULL,
-        concise: true,
-      });
-      sourceSchemaDisplayString.value = changelog.schema;
-    } else {
-      const { databaseName } = extractDatabaseNameAndChangelogUID(
-        props.changelogSourceSchema.changelogName
-      );
-      const databaseSchema = await databaseStore.fetchDatabaseSchema(
-        `${databaseName}/schema`,
-        false /* sdlFormat */,
-        true /* concise */
-      );
-      sourceSchemaDisplayString.value = databaseSchema.schema;
-    }
-    state.isLoading = false;
   }
 });
 
