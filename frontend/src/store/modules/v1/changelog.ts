@@ -74,8 +74,7 @@ export const useChangelogStore = defineStore("changelog", () => {
   };
   const getOrFetchChangelogByName = async (
     name: string,
-    view: ChangelogView = ChangelogView.CHANGELOG_VIEW_BASIC,
-    concise = false
+    view: ChangelogView = ChangelogView.CHANGELOG_VIEW_BASIC
   ) => {
     const uid = extractChangelogUID(name);
     if (!uid || uid === String(UNKNOWN_ID)) {
@@ -89,7 +88,7 @@ export const useChangelogStore = defineStore("changelog", () => {
     if (request) {
       return request;
     }
-    const promise = fetchChangelog({ name, view, concise });
+    const promise = fetchChangelog({ name, view });
     cache.setRequest([name, view], promise);
     return promise;
   };

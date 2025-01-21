@@ -244,13 +244,6 @@ export const instanceV1AllowsReorderColumns = (
   return [Engine.MYSQL, Engine.TIDB].includes(engine);
 };
 
-export const instanceV1SupportsConciseSchema = (
-  instanceOrEngine: Instance | InstanceResource | Engine
-) => {
-  const engine = engineOfInstanceV1(instanceOrEngine);
-  return [Engine.ORACLE].includes(engine);
-};
-
 export const instanceV1SupportsTablePartition = (
   instanceOrEngine: Instance | InstanceResource | Engine
 ) => {
