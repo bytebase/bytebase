@@ -67,7 +67,7 @@ func (driver *Driver) dumpSchemaTxn(ctx context.Context, txn *sql.Tx, schema str
 	return nil
 }
 
-func assembleTableStatement(tableMap map[string]*tableSchema, out io.Writer) error {
+func assembleTableStatement(schema string, tableMap map[string]*tableSchema, out io.Writer) error {
 	var tableList []*tableSchema
 	for _, table := range tableMap {
 		switch {
@@ -82,7 +82,7 @@ func assembleTableStatement(tableMap map[string]*tableSchema, out io.Writer) err
 	})
 
 	for _, table := range tableList {
-		if err := table.assembleStatement(out); err != nil {
+		if err := table.assembleStatement(schema, out); err != nil {
 			return err
 		}
 		if _, err := out.Write([]byte("\n")); err != nil {
@@ -98,7 +98,7 @@ type tableSchema struct {
 	constraints []*mergedConstraintMeta
 }
 
-func (t *tableSchema) assembleStatement(out io.Writer) error {
+func (t *tableSchema) assembleStatement(schema string, out io.Writer) error {
 	if _, err := out.Write([]byte(`CREATE TABLE "`)); err != nil {
 		return err
 	}
@@ -130,7 +130,7 @@ func (t *tableSchema) assembleStatement(out io.Writer) error {
 		if _, err := out.Write([]byte(`  `)); err != nil {
 			return err
 		}
-		if err := constraint.assembleStatement(out); err != nil {
+		if err := constraint.assembleStatement(schema, out); err != nil {
 			return err
 		}
 	}
@@ -164,9 +164,9 @@ func (t *tableSchema) assembleStatement(out io.Writer) error {
 		}
 	}
 
-	if err := t.assembleStorage(out); err != nil {
-		return err
-	}
+	// if err := t.assembleStorage(out); err != nil {
+	// 	return err
+	// }
 
 	if t.meta.Cache.Valid {
 		if t.meta.Cache.String == "Y" {
@@ -216,6 +216,7 @@ func (t *tableSchema) assembleStatement(out io.Writer) error {
 	return nil
 }
 
+// nolint
 func (t *tableSchema) assembleStorage(out io.Writer) error {
 	switch {
 	case t.meta.InitialExtent.Valid,
@@ -536,7 +537,7 @@ type mergedConstraintMeta struct {
 	RColumnName     []sql.NullString
 }
 
-func (c *mergedConstraintMeta) assembleStatement(out io.Writer) error {
+func (c *mergedConstraintMeta) assembleStatement(schema string, out io.Writer) error {
 	if _, err := out.Write([]byte(`CONSTRAINT "`)); err != nil {
 		return err
 	}
@@ -634,11 +635,13 @@ func (c *mergedConstraintMeta) assembleStatement(out io.Writer) error {
 		if _, err := out.Write([]byte(`) REFERENCES "`)); err != nil {
 			return err
 		}
-		if _, err := out.Write([]byte(c.ROwner.String)); err != nil {
-			return err
-		}
-		if _, err := out.Write([]byte(`"."`)); err != nil {
-			return err
+		if c.ROwner.String != schema {
+			if _, err := out.Write([]byte(c.ROwner.String)); err != nil {
+				return err
+			}
+			if _, err := out.Write([]byte(`"."`)); err != nil {
+				return err
+			}
 		}
 		if _, err := out.Write([]byte(c.RTableName.String)); err != nil {
 			return err
@@ -763,9 +766,9 @@ type functionMeta struct {
 	Text          sql.NullString
 }
 
-func assembleIndexes(indexes []*mergedIndexMeta, out io.Writer) error {
+func assembleIndexes(schema string, indexes []*mergedIndexMeta, out io.Writer) error {
 	for _, index := range indexes {
-		if err := assembleIndexStatement(index, out); err != nil {
+		if err := assembleIndexStatement(schema, index, out); err != nil {
 			return err
 		}
 		if _, err := out.Write([]byte("\n;\n\n")); err != nil {
@@ -775,7 +778,7 @@ func assembleIndexes(indexes []*mergedIndexMeta, out io.Writer) error {
 	return nil
 }
 
-func assembleIndexStatement(index *mergedIndexMeta, out io.Writer) error {
+func assembleIndexStatement(schema string, index *mergedIndexMeta, out io.Writer) error {
 	if _, err := out.Write([]byte(`CREATE`)); err != nil {
 		return err
 	}
@@ -805,12 +808,14 @@ func assembleIndexStatement(index *mergedIndexMeta, out io.Writer) error {
 		return err
 	}
 
-	if _, err := out.Write([]byte(index.TableOwner.String)); err != nil {
-		return err
-	}
+	if index.TableOwner.String != schema {
+		if _, err := out.Write([]byte(index.TableOwner.String)); err != nil {
+			return err
+		}
 
-	if _, err := out.Write([]byte(`"."`)); err != nil {
-		return err
+		if _, err := out.Write([]byte(`"."`)); err != nil {
+			return err
+		}
 	}
 
 	if _, err := out.Write([]byte(index.TableName.String)); err != nil {
@@ -914,9 +919,9 @@ func assembleIndexProperties(index *mergedIndexMeta, out io.Writer) error {
 		}
 	}
 
-	if err := index.assembleStorage(out); err != nil {
-		return err
-	}
+	// if err := index.assembleStorage(out); err != nil {
+	// 	return err
+	// }
 
 	if index.Status.Valid {
 		if index.Status.String == "VALID" {
@@ -999,6 +1004,7 @@ type mergedIndexMeta struct {
 	ConstraintType       sql.NullString
 }
 
+// nolint
 func (i *mergedIndexMeta) assembleStorage(out io.Writer) error {
 	switch {
 	case i.InitialExtent.Valid,
@@ -1910,7 +1916,7 @@ func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, version *plsq
 		tableMap[constraint.TableName.String].constraints = append(tableMap[constraint.TableName.String].constraints, constraint)
 	}
 
-	return assembleTableStatement(tableMap, out)
+	return assembleTableStatement(schema, tableMap, out)
 }
 
 // nolint
@@ -2183,7 +2189,7 @@ func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 		}
 	}
 
-	return assembleIndexes(mergedIndexList, out)
+	return assembleIndexes(schema, mergedIndexList, out)
 }
 
 // nolint

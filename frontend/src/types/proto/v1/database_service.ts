@@ -283,12 +283,6 @@ export interface GetDatabaseSchemaRequest {
   name: string;
   /** Format the schema dump into SDL format. */
   sdlFormat: boolean;
-  /**
-   * When true, the schema dump will be concise.
-   * For Oracle, there will be tables and indexes only for Sync Schema.
-   * For Postgres, we'll filter the backup schema.
-   */
-  concise: boolean;
 }
 
 export interface DiffSchemaRequest {
@@ -1668,12 +1662,6 @@ export interface GetChangelogRequest {
   view: ChangelogView;
   /** Format the schema dump into SDL format. */
   sdlFormat: boolean;
-  /**
-   * When true, the schema dump will be concise.
-   * For Oracle, there will be tables and indexes only for Sync Schema.
-   * For Postgres, we'll filter the backup schema.
-   */
-  concise: boolean;
 }
 
 export interface Changelog {
@@ -2676,7 +2664,7 @@ export const GetDatabaseMetadataRequest: MessageFns<GetDatabaseMetadataRequest> 
 };
 
 function createBaseGetDatabaseSchemaRequest(): GetDatabaseSchemaRequest {
-  return { name: "", sdlFormat: false, concise: false };
+  return { name: "", sdlFormat: false };
 }
 
 export const GetDatabaseSchemaRequest: MessageFns<GetDatabaseSchemaRequest> = {
@@ -2686,9 +2674,6 @@ export const GetDatabaseSchemaRequest: MessageFns<GetDatabaseSchemaRequest> = {
     }
     if (message.sdlFormat !== false) {
       writer.uint32(16).bool(message.sdlFormat);
-    }
-    if (message.concise !== false) {
-      writer.uint32(24).bool(message.concise);
     }
     return writer;
   },
@@ -2716,14 +2701,6 @@ export const GetDatabaseSchemaRequest: MessageFns<GetDatabaseSchemaRequest> = {
           message.sdlFormat = reader.bool();
           continue;
         }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.concise = reader.bool();
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2737,7 +2714,6 @@ export const GetDatabaseSchemaRequest: MessageFns<GetDatabaseSchemaRequest> = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       sdlFormat: isSet(object.sdlFormat) ? globalThis.Boolean(object.sdlFormat) : false,
-      concise: isSet(object.concise) ? globalThis.Boolean(object.concise) : false,
     };
   },
 
@@ -2749,9 +2725,6 @@ export const GetDatabaseSchemaRequest: MessageFns<GetDatabaseSchemaRequest> = {
     if (message.sdlFormat !== false) {
       obj.sdlFormat = message.sdlFormat;
     }
-    if (message.concise !== false) {
-      obj.concise = message.concise;
-    }
     return obj;
   },
 
@@ -2762,7 +2735,6 @@ export const GetDatabaseSchemaRequest: MessageFns<GetDatabaseSchemaRequest> = {
     const message = createBaseGetDatabaseSchemaRequest();
     message.name = object.name ?? "";
     message.sdlFormat = object.sdlFormat ?? false;
-    message.concise = object.concise ?? false;
     return message;
   },
 };
@@ -10626,7 +10598,7 @@ export const ListChangelogsResponse: MessageFns<ListChangelogsResponse> = {
 };
 
 function createBaseGetChangelogRequest(): GetChangelogRequest {
-  return { name: "", view: ChangelogView.CHANGELOG_VIEW_UNSPECIFIED, sdlFormat: false, concise: false };
+  return { name: "", view: ChangelogView.CHANGELOG_VIEW_UNSPECIFIED, sdlFormat: false };
 }
 
 export const GetChangelogRequest: MessageFns<GetChangelogRequest> = {
@@ -10639,9 +10611,6 @@ export const GetChangelogRequest: MessageFns<GetChangelogRequest> = {
     }
     if (message.sdlFormat !== false) {
       writer.uint32(24).bool(message.sdlFormat);
-    }
-    if (message.concise !== false) {
-      writer.uint32(32).bool(message.concise);
     }
     return writer;
   },
@@ -10677,14 +10646,6 @@ export const GetChangelogRequest: MessageFns<GetChangelogRequest> = {
           message.sdlFormat = reader.bool();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.concise = reader.bool();
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -10699,7 +10660,6 @@ export const GetChangelogRequest: MessageFns<GetChangelogRequest> = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       view: isSet(object.view) ? changelogViewFromJSON(object.view) : ChangelogView.CHANGELOG_VIEW_UNSPECIFIED,
       sdlFormat: isSet(object.sdlFormat) ? globalThis.Boolean(object.sdlFormat) : false,
-      concise: isSet(object.concise) ? globalThis.Boolean(object.concise) : false,
     };
   },
 
@@ -10714,9 +10674,6 @@ export const GetChangelogRequest: MessageFns<GetChangelogRequest> = {
     if (message.sdlFormat !== false) {
       obj.sdlFormat = message.sdlFormat;
     }
-    if (message.concise !== false) {
-      obj.concise = message.concise;
-    }
     return obj;
   },
 
@@ -10728,7 +10685,6 @@ export const GetChangelogRequest: MessageFns<GetChangelogRequest> = {
     message.name = object.name ?? "";
     message.view = object.view ?? ChangelogView.CHANGELOG_VIEW_UNSPECIFIED;
     message.sdlFormat = object.sdlFormat ?? false;
-    message.concise = object.concise ?? false;
     return message;
   },
 };

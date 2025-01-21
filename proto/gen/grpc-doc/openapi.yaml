@@ -1580,14 +1580,6 @@ paths:
                   description: Format the schema dump into SDL format.
                   schema:
                     type: boolean
-                - name: concise
-                  in: query
-                  description: |-
-                    When true, the schema dump will be concise.
-                     For Oracle, there will be tables and indexes only for Sync Schema.
-                     For Postgres, we'll filter the backup schema.
-                  schema:
-                    type: boolean
             responses:
                 "200":
                     description: OK
@@ -2125,14 +2117,6 @@ paths:
                 - name: sdlFormat
                   in: query
                   description: Format the schema dump into SDL format.
-                  schema:
-                    type: boolean
-                - name: concise
-                  in: query
-                  description: |-
-                    When true, the schema dump will be concise.
-                     For Oracle, there will be tables and indexes only for Sync Schema.
-                     For Postgres, we'll filter the backup schema.
                   schema:
                     type: boolean
             responses:
