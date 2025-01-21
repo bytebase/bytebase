@@ -21,6 +21,7 @@ import {
   exportFormatToNumber,
   Position,
 } from "./common";
+import { DatabaseCatalog } from "./database_catalog_service";
 import { DatabaseMetadata } from "./database_service";
 
 export const protobufPackage = "bytebase.v1";
@@ -525,8 +526,10 @@ export interface DiffMetadataRequest {
     | DatabaseMetadata
     | undefined;
   /** The metadata of the target schema. */
-  targetMetadata:
-    | DatabaseMetadata
+  targetMetadata: DatabaseMetadata | undefined;
+  sourceCatalog: DatabaseCatalog | undefined;
+  targetCatalog:
+    | DatabaseCatalog
     | undefined;
   /** The database engine of the schema. */
   engine: Engine;
@@ -3233,6 +3236,8 @@ function createBaseDiffMetadataRequest(): DiffMetadataRequest {
   return {
     sourceMetadata: undefined,
     targetMetadata: undefined,
+    sourceCatalog: undefined,
+    targetCatalog: undefined,
     engine: Engine.ENGINE_UNSPECIFIED,
     classificationFromConfig: false,
   };
@@ -3245,6 +3250,12 @@ export const DiffMetadataRequest: MessageFns<DiffMetadataRequest> = {
     }
     if (message.targetMetadata !== undefined) {
       DatabaseMetadata.encode(message.targetMetadata, writer.uint32(18).fork()).join();
+    }
+    if (message.sourceCatalog !== undefined) {
+      DatabaseCatalog.encode(message.sourceCatalog, writer.uint32(42).fork()).join();
+    }
+    if (message.targetCatalog !== undefined) {
+      DatabaseCatalog.encode(message.targetCatalog, writer.uint32(50).fork()).join();
     }
     if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       writer.uint32(24).int32(engineToNumber(message.engine));
@@ -3278,6 +3289,22 @@ export const DiffMetadataRequest: MessageFns<DiffMetadataRequest> = {
           message.targetMetadata = DatabaseMetadata.decode(reader, reader.uint32());
           continue;
         }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.sourceCatalog = DatabaseCatalog.decode(reader, reader.uint32());
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.targetCatalog = DatabaseCatalog.decode(reader, reader.uint32());
+          continue;
+        }
         case 3: {
           if (tag !== 24) {
             break;
@@ -3307,6 +3334,8 @@ export const DiffMetadataRequest: MessageFns<DiffMetadataRequest> = {
     return {
       sourceMetadata: isSet(object.sourceMetadata) ? DatabaseMetadata.fromJSON(object.sourceMetadata) : undefined,
       targetMetadata: isSet(object.targetMetadata) ? DatabaseMetadata.fromJSON(object.targetMetadata) : undefined,
+      sourceCatalog: isSet(object.sourceCatalog) ? DatabaseCatalog.fromJSON(object.sourceCatalog) : undefined,
+      targetCatalog: isSet(object.targetCatalog) ? DatabaseCatalog.fromJSON(object.targetCatalog) : undefined,
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
       classificationFromConfig: isSet(object.classificationFromConfig)
         ? globalThis.Boolean(object.classificationFromConfig)
@@ -3321,6 +3350,12 @@ export const DiffMetadataRequest: MessageFns<DiffMetadataRequest> = {
     }
     if (message.targetMetadata !== undefined) {
       obj.targetMetadata = DatabaseMetadata.toJSON(message.targetMetadata);
+    }
+    if (message.sourceCatalog !== undefined) {
+      obj.sourceCatalog = DatabaseCatalog.toJSON(message.sourceCatalog);
+    }
+    if (message.targetCatalog !== undefined) {
+      obj.targetCatalog = DatabaseCatalog.toJSON(message.targetCatalog);
     }
     if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
       obj.engine = engineToJSON(message.engine);
@@ -3341,6 +3376,12 @@ export const DiffMetadataRequest: MessageFns<DiffMetadataRequest> = {
       : undefined;
     message.targetMetadata = (object.targetMetadata !== undefined && object.targetMetadata !== null)
       ? DatabaseMetadata.fromPartial(object.targetMetadata)
+      : undefined;
+    message.sourceCatalog = (object.sourceCatalog !== undefined && object.sourceCatalog !== null)
+      ? DatabaseCatalog.fromPartial(object.sourceCatalog)
+      : undefined;
+    message.targetCatalog = (object.targetCatalog !== undefined && object.targetCatalog !== null)
+      ? DatabaseCatalog.fromPartial(object.targetCatalog)
       : undefined;
     message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
     message.classificationFromConfig = object.classificationFromConfig ?? false;
