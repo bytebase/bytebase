@@ -544,6 +544,7 @@ func convertToReleaseFiles(ctx context.Context, s *store.Store, files []*storepb
 			Version:       f.Version,
 			Statement:     sheet.Statement,
 			StatementSize: sheet.Size,
+			ChangeType:    v1pb.Release_File_ChangeType(f.ChangeType),
 		})
 	}
 	return v1Files, nil
@@ -587,6 +588,7 @@ func convertReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Rele
 			SheetSha256: sheet.GetSha256Hex(),
 			Type:        storepb.ReleaseFileType(f.Type),
 			Version:     f.Version,
+			ChangeType:  storepb.ReleasePayload_File_ChangeType(f.ChangeType),
 		})
 	}
 	return rFiles, nil
