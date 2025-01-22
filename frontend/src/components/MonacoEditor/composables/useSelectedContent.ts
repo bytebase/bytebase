@@ -1,9 +1,7 @@
 import type monaco from "monaco-editor";
 import { ref } from "vue";
-import type { MonacoModule } from "../types";
 
 export const useSelectedContent = (
-  monaco: MonacoModule,
   editor: monaco.editor.IStandaloneCodeEditor
 ) => {
   const selectedContent = ref(getSelectedContent(editor));
@@ -25,4 +23,23 @@ const getSelectedContent = (editor: monaco.editor.IStandaloneCodeEditor) => {
   if (!selection) return "";
 
   return model.getValueInRange(selection);
+};
+
+export const getActiveContentByCursor = (
+  editor: monaco.editor.IStandaloneCodeEditor
+) => {
+  const model = editor.getModel();
+  if (!model) {
+    return "";
+  }
+  const position = editor.getPosition();
+  if (!position) {
+    return "";
+  }
+  return model.getValueInRange({
+    startLineNumber: position.lineNumber,
+    startColumn: 0,
+    endLineNumber: position.lineNumber,
+    endColumn: editor.getBottomForLineNumber(position.lineNumber),
+  });
 };
