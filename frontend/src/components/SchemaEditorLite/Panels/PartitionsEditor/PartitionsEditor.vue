@@ -107,7 +107,6 @@ const {
 
 const tableStatus = computed(() => {
   return getTableStatus(props.db, {
-    database: props.database,
     schema: props.schema,
     table: props.table,
   });

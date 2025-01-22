@@ -475,57 +475,6 @@ func convertStoreGenerationMetadata(generation *storepb.GenerationMetadata) *v1p
 	return meta
 }
 
-func convertStoreDatabaseConfig(config *storepb.DatabaseConfig, filter *metadataFilter) *v1pb.DatabaseConfig {
-	databaseConfig := &v1pb.DatabaseConfig{
-		Name: config.Name,
-	}
-	for _, schema := range config.Schemas {
-		if schema == nil {
-			continue
-		}
-		if filter != nil && filter.schema != schema.Name {
-			continue
-		}
-		s := &v1pb.SchemaConfig{
-			Name: schema.Name,
-		}
-		for _, table := range schema.Tables {
-			if table == nil {
-				continue
-			}
-			if filter != nil && filter.table != table.Name {
-				continue
-			}
-			s.TableConfigs = append(s.TableConfigs, convertStoreTableConfig(table))
-		}
-		databaseConfig.SchemaConfigs = append(databaseConfig.SchemaConfigs, s)
-	}
-	return databaseConfig
-}
-
-func convertStoreTableConfig(table *storepb.TableCatalog) *v1pb.TableConfig {
-	t := &v1pb.TableConfig{
-		Name:             table.Name,
-		ClassificationId: table.Classification,
-	}
-	for _, column := range table.Columns {
-		if column == nil {
-			continue
-		}
-		t.ColumnConfigs = append(t.ColumnConfigs, convertStoreColumnConfig(column))
-	}
-	return t
-}
-
-func convertStoreColumnConfig(column *storepb.ColumnCatalog) *v1pb.ColumnConfig {
-	return &v1pb.ColumnConfig{
-		Name:             column.Name,
-		SemanticTypeId:   column.SemanticType,
-		Labels:           column.Labels,
-		ClassificationId: column.Classification,
-	}
-}
-
 func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.DatabaseSchemaMetadata, error) {
 	m := &storepb.DatabaseSchemaMetadata{
 		Name:         metadata.Name,
@@ -945,50 +894,4 @@ func convertV1GenerationMetadata(generation *v1pb.GenerationMetadata) *storepb.G
 		meta.Type = storepb.GenerationMetadata_TYPE_UNSPECIFIED
 	}
 	return meta
-}
-
-func convertV1DatabaseConfig(databaseConfig *v1pb.DatabaseConfig) *storepb.DatabaseConfig {
-	config := &storepb.DatabaseConfig{
-		Name: databaseConfig.Name,
-	}
-	for _, schema := range databaseConfig.SchemaConfigs {
-		if schema == nil {
-			continue
-		}
-		s := &storepb.SchemaCatalog{
-			Name: schema.Name,
-		}
-		for _, table := range schema.TableConfigs {
-			if table == nil {
-				continue
-			}
-
-			s.Tables = append(s.Tables, convertV1TableConfig(table))
-		}
-		config.Schemas = append(config.Schemas, s)
-	}
-	return config
-}
-
-func convertV1TableConfig(table *v1pb.TableConfig) *storepb.TableCatalog {
-	t := &storepb.TableCatalog{
-		Name:           table.Name,
-		Classification: table.ClassificationId,
-	}
-	for _, column := range table.ColumnConfigs {
-		if column == nil {
-			continue
-		}
-		t.Columns = append(t.Columns, convertV1ColumnConfig(column))
-	}
-	return t
-}
-
-func convertV1ColumnConfig(column *v1pb.ColumnConfig) *storepb.ColumnCatalog {
-	return &storepb.ColumnCatalog{
-		Name:           column.Name,
-		SemanticType:   column.SemanticTypeId,
-		Labels:         column.Labels,
-		Classification: column.ClassificationId,
-	}
 }

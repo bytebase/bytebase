@@ -68,7 +68,7 @@
               <span class="text-red-600 mr-2">*</span>
             </label>
             <NInput
-              :value="editing.table.name"
+              :value="editing.tableMetadata.name"
               :disabled="readonly"
               placeholder="table name"
               @update:value="handleUpdateTableName"
@@ -81,7 +81,7 @@
               {{ $t("schema-template.form.comment") }}
             </label>
             <NInput
-              v-model:value="editing.table.userComment"
+              v-model:value="editing.tableMetadata.userComment"
               type="textarea"
               :autosize="{ minRows: 3, maxRows: 3 }"
               :disabled="readonly"
@@ -116,14 +116,15 @@
               :readonly="!!readonly"
               :show-foreign-key="false"
               :db="editing.db"
-              :database="editing.database"
-              :schema="editing.schema"
-              :table="editing.table"
+              :database="editing.databaseMetadata"
+              :schema="editing.schemaMetadata"
+              :table="editing.tableMetadata"
               :engine="editing.engine"
-              :classification-config-id="classificationConfig?.id"
               :allow-change-primary-keys="true"
               :allow-reorder-columns="allowReorderColumns"
               :max-body-height="640"
+              :show-database-catalog-column="true"
+              :show-classification-column="'ALWAYS'"
               @drop="handleDropColumn"
               @reorder="handleReorderColumn"
               @primary-key-set="setColumnPrimaryKey"
@@ -200,18 +201,9 @@ import {
   InstanceEngineRadioGrid,
   MiniActionButton,
 } from "@/components/v2";
-import {
-  useSettingV1Store,
-  useDatabaseCatalog,
-  useNotificationStore,
-  pushNotification,
-} from "@/store";
+import { useSettingV1Store, pushNotification } from "@/store";
 import { unknownProject } from "@/types";
-import {
-  SchemaCatalog,
-  TableCatalog,
-  TableCatalog_Columns,
-} from "@/types/proto/v1/database_catalog_service";
+import { TableCatalog } from "@/types/proto/v1/database_catalog_service";
 import { ColumnMetadata } from "@/types/proto/v1/database_service";
 import {
   SchemaTemplateSetting_TableTemplate,
@@ -250,8 +242,10 @@ const editing = computed(() => {
 const targets = computed(() => {
   const target: EditTarget = {
     database: editing.value.db,
-    metadata: editing.value.database,
-    baselineMetadata: editing.value.database,
+    metadata: editing.value.databaseMetadata,
+    baselineMetadata: editing.value.databaseMetadata,
+    catalog: editing.value.databaseCatalog,
+    baselineCatalog: editing.value.databaseCatalog,
   };
   return [target];
 });
@@ -259,6 +253,7 @@ const targets = computed(() => {
 const context = provideSchemaEditorContext({
   targets,
   project: ref(unknownProject()),
+  classificationConfigId: ref(classificationConfig.value?.id),
   readonly: toRef(props, "readonly"),
   selectedRolloutObjects: ref(undefined),
   disableDiffColoring: ref(true),
@@ -271,61 +266,45 @@ const state = reactive<LocalState>({
 });
 const { t } = useI18n();
 const settingStore = useSettingV1Store();
-const databaseCatalog = useDatabaseCatalog(editing.value.database.name, false);
-const tableCatalog = computed(() => {
-  const { schema, table } = editing.value;
-  const schemaCatalog = databaseCatalog.value.schemas.find(
-    (sc) => sc.name === schema.name
-  );
-  if (!schemaCatalog) return undefined;
-  return schemaCatalog.tables.find((tc) => tc.name === table.name);
-});
+
+const tableCatalog = computed(() =>
+  context.getTableCatalog({
+    database: editing.value.databaseMetadata.name,
+    schema: editing.value.schemaMetadata.name,
+    table: editing.value.tableMetadata.name,
+  })
+);
 
 const tableClassificationId = computed({
   get() {
     return tableCatalog.value?.classification;
   },
   set(id) {
-    const { schema, table } = editing.value;
-    let schemaCatalog = databaseCatalog.value.schemas.find(
-      (sc) => sc.name === schema.name
+    context.upsertTableCatalog(
+      {
+        database: editing.value.databaseCatalog.name,
+        schema: editing.value.schemaCatalog.name,
+        table: editing.value.tableMetadata.name,
+      },
+      (catalog) => {
+        catalog.classification = id ?? "";
+      }
     );
-    if (!schemaCatalog) {
-      schemaCatalog = SchemaCatalog.fromPartial({
-        name: schema.name,
-        tables: [],
-      });
-    }
-    if (!schemaCatalog.tables) {
-      schemaCatalog.tables = [];
-    }
-    let tableCatalog = schemaCatalog.tables.find(
-      (tc) => tc.name === table.name
-    );
-    if (!tableCatalog) {
-      tableCatalog = TableCatalog.fromPartial({
-        name: table.name,
-        classification: id,
-        columns: TableCatalog_Columns.fromPartial({}),
-      });
-      schemaCatalog.tables.push(tableCatalog);
-    }
-    tableCatalog.classification = id ?? "";
   },
 });
 
 const metadataForColumn = (column: ColumnMetadata) => {
-  const { database, schema, table } = editing.value;
+  const {
+    databaseMetadata: database,
+    schemaMetadata: schema,
+    tableMetadata: table,
+  } = editing.value;
   return {
     database,
     schema,
     table,
     column,
   };
-};
-
-const statusForColumn = (column: ColumnMetadata) => {
-  return context.getColumnStatus(editing.value.db, metadataForColumn(column));
 };
 
 const markColumnStatus = (column: ColumnMetadata, status: EditStatus) => {
@@ -344,16 +323,16 @@ const allowReorderColumns = computed(() => {
 });
 
 const submitDisabled = computed(() => {
-  const { table, category } = editing.value;
-  if (!table.name || table.columns.length === 0) {
+  const { tableMetadata, category } = editing.value;
+  if (!tableMetadata.name || tableMetadata.columns.length === 0) {
     return true;
   }
-  if (table.columns.some((col) => !col.name || !col.type)) {
+  if (tableMetadata.columns.some((col) => !col.name || !col.type)) {
     return true;
   }
   if (
     !props.create &&
-    isEqual(props.template.table, table) &&
+    isEqual(props.template.table, tableMetadata) &&
     isEqual(props.template.catalog, tableCatalog.value) &&
     props.template.category === category
   ) {
@@ -363,7 +342,10 @@ const submitDisabled = computed(() => {
 });
 
 const onSubmit = async () => {
-  const template = rebuildTableTemplateFromMetadata(editing.value);
+  const template = rebuildTableTemplateFromMetadata({
+    ...editing.value,
+    tableCatalog: tableCatalog.value ?? TableCatalog.fromPartial({}),
+  });
   const setting = await settingStore.fetchSettingByName(
     "bb.workspace.schema-template"
   );
@@ -392,7 +374,7 @@ const onSubmit = async () => {
     },
   });
 
-  useNotificationStore().pushNotification({
+  pushNotification({
     module: "bytebase",
     style: "SUCCESS",
     title: t("common.updated"),
@@ -402,7 +384,12 @@ const onSubmit = async () => {
 };
 
 const onColumnAdd = () => {
-  const { db, database, schema, table } = editing.value;
+  const {
+    db,
+    databaseMetadata: database,
+    schemaMetadata: schema,
+    tableMetadata: table,
+  } = editing.value;
   const column = ColumnMetadata.fromPartial({});
   table.columns.push(column);
   markColumnStatus(column, "created");
@@ -419,29 +406,18 @@ const onColumnAdd = () => {
 };
 
 const handleDropColumn = (column: ColumnMetadata) => {
-  const { table } = editing.value;
-  // Disallow to drop the last column.
-  const nonDroppedColumns = table.columns.filter((column) => {
-    return statusForColumn(column) !== "dropped";
-  });
-  if (nonDroppedColumns.length === 1) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: t("schema-editor.message.cannot-drop-the-last-column"),
-    });
-    return;
-  }
-  const status = statusForColumn(column);
-  if (status === "created") {
-    pull(table.columns, column);
-    table.columns = table.columns.filter((col) => col !== column);
+  const { tableMetadata } = editing.value;
+  pull(tableMetadata.columns, column);
+  tableMetadata.columns = tableMetadata.columns.filter((col) => col !== column);
 
-    removeColumnPrimaryKey(table, column.name);
-    removeColumnFromAllForeignKeys(table, column.name);
-  } else {
-    markColumnStatus(column, "dropped");
-  }
+  removeColumnPrimaryKey(tableMetadata, column.name);
+  removeColumnFromAllForeignKeys(tableMetadata, column.name);
+  context.removeColumnCatalog({
+    database: editing.value.databaseCatalog.name,
+    schema: editing.value.schemaCatalog.name,
+    table: editing.value.tableMetadata.name,
+    column: column.name,
+  });
 };
 
 const setColumnPrimaryKey = (column: ColumnMetadata, isPrimaryKey: boolean) => {
@@ -449,11 +425,11 @@ const setColumnPrimaryKey = (column: ColumnMetadata, isPrimaryKey: boolean) => {
     column.nullable = false;
     upsertColumnPrimaryKey(
       editing.value.engine,
-      editing.value.table,
+      editing.value.tableMetadata,
       column.name
     );
   } else {
-    removeColumnPrimaryKey(editing.value.table, column.name);
+    removeColumnPrimaryKey(editing.value.tableMetadata, column.name);
   }
   markColumnStatus(column, "updated");
 };
@@ -465,16 +441,24 @@ const handleApplyColumnTemplate = (
   if (!template.column) {
     return;
   }
-  const { db, table, engine } = editing.value;
+  const { db, tableMetadata, engine } = editing.value;
   if (template.engine !== engine) {
     return;
   }
   const column = cloneDeep(template.column);
-  table.columns.push(column);
+  tableMetadata.columns.push(column);
   if (template.catalog) {
-    context.upsertColumnConfig(db, metadataForColumn(column), (config) => {
-      Object.assign(config, template.catalog);
-    });
+    context.upsertColumnCatalog(
+      {
+        database: editing.value.databaseCatalog.name,
+        schema: editing.value.schemaCatalog.name,
+        table: editing.value.tableCatalog.name,
+        column: template.column.name,
+      },
+      (config) => {
+        Object.assign(config, template.catalog);
+      }
+    );
   }
   markColumnStatus(column, "created");
   context.queuePendingScrollToColumn({
@@ -489,17 +473,28 @@ const handleReorderColumn = (
   delta: -1 | 1
 ) => {
   const target = index + delta;
-  const { columns } = editing.value.table;
+  const { columns } = editing.value.tableMetadata;
   if (target < 0) return;
   if (target >= columns.length) return;
   arraySwap(columns, index, target);
 };
 
 const handleUpdateTableName = (name: string) => {
-  editing.value.table.name = name;
-  const tc = tableCatalog.value;
-  if (tc) {
-    tc.name = name;
-  }
+  context.upsertTableCatalog(
+    {
+      database: editing.value.databaseCatalog.name,
+      schema: editing.value.schemaCatalog.name,
+      table: editing.value.tableMetadata.name,
+    },
+    (catalog) => {
+      catalog.name = name;
+    }
+  );
+  context.removeTableCatalog({
+    database: editing.value.databaseCatalog.name,
+    schema: editing.value.schemaCatalog.name,
+    table: editing.value.tableMetadata.name,
+  });
+  editing.value.tableMetadata.name = name;
 };
 </script>

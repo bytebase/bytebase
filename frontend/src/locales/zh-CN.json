@@ -1955,6 +1955,7 @@
     "search-database-and-table": "搜索数据库和表",
     "search-table": "搜索表",
     "search-column": "搜索列",
+    "nothing-changed-for-database": "数据库 {database} 未发生任何变化",
     "actions": {
       "create-schema": "新建 Schema",
       "drop-schema": "删除 Schema",

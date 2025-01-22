@@ -15,13 +15,10 @@
         {{ item.column?.name }}
       </div>
       <div class="bb-grid-cell flex gap-x-1">
-        {{
-          item.catalog?.semanticType
-            ? (semanticTypeList.find(
-                (data) => data.id === item.catalog?.semanticType
-              )?.title ?? "N/A")
-            : "N/A"
-        }}
+        <span v-if="getSemanticType(item.catalog?.semanticType)">
+          {{ getSemanticType(item.catalog?.semanticType)?.title }}
+        </span>
+        <span v-else class="text-control-placeholder italic"> N/A </span>
       </div>
       <div v-if="classificationConfig" class="bb-grid-cell flex gap-x-1">
         <ClassificationLevelBadge
@@ -185,4 +182,11 @@ const semanticTypeList = computed(() => {
       ?.semanticTypeSettingValue?.types ?? []
   );
 });
+
+const getSemanticType = (semanticType: string | undefined) => {
+  if (!semanticType) {
+    return;
+  }
+  return semanticTypeList.value.find((data) => data.id === semanticType);
+};
 </script>

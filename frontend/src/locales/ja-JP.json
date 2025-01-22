@@ -1955,6 +1955,7 @@
     "search-database-and-table": "データベースとテーブルを検索する",
     "search-table": "検索テーブル",
     "search-column": "検索欄",
+    "nothing-changed-for-database": "データベース {database} には何も変更されていません",
     "actions": {
       "create-schema": "新しいスキーマ",
       "drop-schema": "スキーマの削除",

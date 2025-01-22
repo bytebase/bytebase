@@ -58,12 +58,15 @@ import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import { Drawer, DrawerContent, InlineInput } from "@/components/v2";
 import { hasFeature } from "@/store";
 import type { ComposedDatabase } from "@/types";
+import {
+  TableCatalog,
+  TableCatalog_Columns,
+} from "@/types/proto/v1/database_catalog_service";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { TableConfig } from "@/types/proto/v1/database_service";
 import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
 import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
@@ -106,9 +109,9 @@ const {
   markEditStatus,
   removeEditStatus,
   getSchemaStatus,
-  getTableConfig,
+  getTableCatalog,
   getTableStatus,
-  upsertTableConfig,
+  upsertTableCatalog,
   useConsumePendingScrollToTable,
   getAllTablesSelectionState,
   updateAllTablesSelection,
@@ -152,11 +155,16 @@ const engine = computed(() => {
   return props.db.instanceResource.engine;
 });
 
-const configForTable = (table: TableMetadata) => {
+const catalogForTable = (table: string) => {
   return (
-    getTableConfig(props.db, { schema: props.schema, table }) ??
-    TableConfig.fromPartial({
-      name: table.name,
+    getTableCatalog({
+      database: props.db.name,
+      schema: props.schema.name,
+      table,
+    }) ??
+    TableCatalog.fromPartial({
+      name: table,
+      columns: TableCatalog_Columns.fromPartial({}),
     })
   );
 };
@@ -172,10 +180,13 @@ const onClassificationSelect = (classificationId: string) => {
   const table = state.activeTable;
   if (!table) return;
 
-  upsertTableConfig(
-    props.db,
-    metadataForTable(table),
-    (config) => (config.classificationId = classificationId)
+  upsertTableCatalog(
+    {
+      database: props.db.name,
+      schema: props.schema.name,
+      table: table.name,
+    },
+    (config) => (config.classification = classificationId)
   );
 
   state.activeTable = undefined;
@@ -201,7 +212,6 @@ const classesForRow = (table: TableMetadata) => {
 const isDroppedSchema = computed(() => {
   return (
     getSchemaStatus(props.db, {
-      database: props.database,
       schema: props.schema,
     }) === "dropped"
   );
@@ -263,10 +273,9 @@ const columns = computed(() => {
       maxWidth: 320,
       hide: !showClassification.value,
       render: (table) => {
-        // TODO(ed): use catalog
-        const config = configForTable(table);
+        const catalog = catalogForTable(table.name);
         return h(ClassificationCell, {
-          classification: config.classificationId,
+          classification: catalog.classification,
           readonly: readonly.value,
           disabled: isDroppedSchema.value || isDroppedTable(table),
           classificationConfig:
@@ -383,8 +392,14 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
   /* eslint-disable-next-line vue/no-mutating-props */
   props.schema.tables.push(table);
   const metadata = metadataForTable(table);
-  upsertTableConfig(props.db, metadata, (catalog) =>
-    Object.assign(catalog, template.catalog)
+
+  upsertTableCatalog(
+    {
+      database: props.db.name,
+      schema: props.schema.name,
+      table: table.name,
+    },
+    (catalog) => Object.assign(catalog, template.catalog)
   );
 
   markEditStatus(props.db, metadata, "created");

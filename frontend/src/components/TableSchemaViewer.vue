@@ -45,6 +45,7 @@ import {
   pushNotification,
   useDBSchemaV1Store,
   useSettingV1Store,
+  useDatabaseCatalogV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import {
@@ -63,6 +64,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const dbSchemaStore = useDBSchemaV1Store();
+const dbCatalogStore = useDatabaseCatalogV1Store();
 const settingStore = useSettingV1Store();
 
 const { copy: copyTextToClipboard, isSupported } = useClipboard({
@@ -121,6 +123,11 @@ onMounted(async () => {
     const mockedDatabaseMetadata = DatabaseMetadata.fromPartial({
       name: props.database.name,
     });
+    const catalog = await dbCatalogStore.getOrFetchDatabaseCatalog({
+      database: props.database.name,
+      skipCache: false,
+    });
+
     if (!isUndefined(props.schema)) {
       const schemaMetadata = SchemaMetadata.fromPartial({
         name: props.schema,
@@ -141,6 +148,7 @@ onMounted(async () => {
     );
     const { schema } = await sqlServiceClient.stringifyMetadata({
       metadata: mockedDatabaseMetadata,
+      catalog,
       engine: engine.value,
       classificationFromConfig:
         classificationConfig?.classificationFromConfig ?? false,
