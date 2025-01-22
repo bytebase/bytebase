@@ -72,9 +72,35 @@
     },
     "subscription": {
         "features": {
-            "bb-feature-custom-approval": {
-                "title": "Custom approval",
-                "desc": "Configure risk level and approval flow for different tasks."
+            "bb-feature-external-secret-manager": {
+                "title": "Set external secret",
+                "desc": "Use Vault or a custom URL as the external secret for the database password."
+            },
+            "bb-feature-task-schedule-time": {
+                "title": "Set task schedule time",
+                "desc": "Set task schedule time allows you to set a specific time to run your tasks."
+            },
+            "bb-feature-instance-count": {
+                "title": "Instance count limit",
+                "desc": "You have reached the maximum instance count limit. Please upgrade to get more instance quota.",
+                "remaining": "Your total instance quota is {total}, only have {count} instance remained.",
+                "runoutof": "Your have run out of your {total} instance quota.",
+                "upgrade": "@:{'subscription.upgrade'} to get more instance quota."
+            },
+            "bb-feature-user-count": {
+                "title": "User count limit",
+                "desc": "You have reached the maximum user count limit. Please upgrade to get unlimited user quota.",
+                "remaining": "Your total user quota is {total}, only have {count} user remained.",
+                "runoutof": "Your have run out of your {total} user quota.",
+                "upgrade": "@:{'subscription.upgrade'} to get unlimited user quota."
+            },
+            "bb-feature-multi-tenancy": {
+                "title": "Batch mode",
+                "desc": "Batch changing a group of databases from different tenants or partitions."
+            },
+            "bb-feature-rollout-policy": {
+                "title": "Rollout policy",
+                "desc": "Rollout policy controls whether the schema change task requires manual rolling out."
             },
             "bb-feature-environment-tier-policy": {
                 "title": "Environment tier",
@@ -83,6 +109,142 @@
             "bb-feature-sensitive-data": {
                 "title": "Sensitive data",
                 "desc": "Mark table columns as sensitive data and the query result of them will be displayed as \"******\"."
+            },
+            "bb-feature-access-control": {
+                "title": "Data Access Control",
+                "desc": "Restrict user access to data, such as prohibiting users from copying data query results."
+            },
+            "bb-feature-lgtm": {
+                "title": "LGTM check",
+                "desc": "Check if the issue has an \"LGTM\" comment."
+            },
+            "bb-feature-im-approval": {
+                "title": "IM Approval",
+                "desc": "Approval issue with IM integration."
+            },
+            "bb-feature-sql-review": {
+                "title": "Unlock 100+ SQL Review checks",
+                "desc": "Specify SQL lint rules to adopt SQL best practice and enforce schema consistency across the engineering organization."
+            },
+            "bb-feature-custom-approval": {
+                "title": "Custom approval",
+                "desc": "Configure risk level and approval flow for different tasks."
+            },
+            "bb-feature-vcs-sql-review": {
+                "title": "SQL Review in GitOps workflow",
+                "desc": "Add the SQL Review CI to your VCS repository pipeline. SQL Review will be triggered in the pull request for changed SQL files."
+            },
+            "bb-feature-rbac": {
+                "title": "Role management",
+                "desc": "Role management can assign a particular role (e.g. DBA) to a member."
+            },
+            "bb-feature-custom-role": {
+                "title": "Custom role",
+                "desc": "Defining custom roles. You may apply them to project members and used in custom approval."
+            },
+            "bb-feature-watermark": {
+                "title": "Watermark",
+                "desc": "Display visible watermarks on pages, including username, ID and email."
+            },
+            "bb-feature-audit-log": {
+                "title": "Audit log",
+                "desc": "Record and query operations performed by users in workspace."
+            },
+            "bb-feature-schema-drift": {
+                "title": "Schema drift",
+                "desc": "Detect out-of-band schema changes and report schema drift."
+            },
+            "bb-feature-branding": {
+                "title": "Branding",
+                "desc": "Customize the logo."
+            },
+            "bb-feature-online-migration": {
+                "title": "Online migration",
+                "desc": "Based on gh-ost. For large tables, it can reduce the table lock duration from hours to seconds."
+            },
+            "bb-feature-sync-schema-all-versions": {
+                "title": "Synchronize schema all versions",
+                "desc": "Select any arbitrary migration version from the base database and synchronize it to the target database."
+            },
+            "bb-feature-read-replica-connection": {
+                "title": "Read replica connection",
+                "desc": "Connect to a read replica for the read-only data source."
+            },
+            "bb-feature-instance-ssh-connection": {
+                "title": "Instance SSH connection",
+                "desc": "Connect to a instance over SSH."
+            },
+            "bb.feature.custom-instance-synchronization": {
+                "title": "Custom instance synchronization",
+                "desc": "Customize the scan interval, maximum connections and sync specific databases"
+            },
+            "bb-feature-index-advisor": {
+                "title": "Index advisor",
+                "desc": "Index advisor can help you to find the missing indexes in slow queries."
+            },
+            "bb-feature-sso": {
+                "title": "Single Sign-On (SSO)",
+                "desc": "Enables users to securely authenticate with multiple applications and websites via a single set of credentials."
+            },
+            "bb-feature-2fa": {
+                "title": "Two-Factor Authentication (2FA)",
+                "desc": "Two-factor authentication provides an extra layer of security for member accounts. When signing in, you will be required to enter the security code generated by your Authenticator App."
+            },
+            "bb-feature-plugin-openai": {
+                "title": "AI Augmentation",
+                "desc": "AI augmented SQL Editor and index advisor features powered by OpenAI."
+            },
+            "bb-feature-batch-query": {
+                "title": "Batch query",
+                "desc": "Batch query additional databases under same project in SQL Editor."
+            },
+            "bb-feature-shared-sql-script": {
+                "title": "Shared SQL script",
+                "desc": "Share your SQL scripts with project teammates or make them public to all."
+            },
+            "bb-feature-announcement": {
+                "title": "Announcement",
+                "desc": "Configure an Announcement Banner."
+            },
+            "bb-feature-encrypted-secrets": {
+                "title": "Encrypted Secrets",
+                "desc": "Store your secrets of database and use them in your issue SQL scripts."
+            },
+            "bb-feature-database-grouping": {
+                "title": "Database Group",
+                "desc": "Database group allows you to apply batch operations to the databases from the database group."
+            },
+            "bb-feature-disallow-signup": {
+                "title": "Disable self-service signup",
+                "desc": "Once disabled, users cannot self-service signup and can only be invited by the workspace admin."
+            },
+            "bb-feature-disallow-password-signin": {
+                "title": "Disallow signin with email & password",
+                "desc": "Users cannot sign in with email & password, only SSO is allowed."
+            },
+            "bb-feature-schema-template": {
+                "title": "Schema Template",
+                "desc": "Pre-define the field template, then apply the template during the schema change."
+            },
+            "bb-feature-secure-token": {
+                "title": "Sign-in frequency",
+                "desc": "Sign-in frequency is the period before a user must sign in again."
+            },
+            "bb-feature-issue-advanced-search": {
+                "title": "Advanced issue search",
+                "desc": "Access unlimited issue history with advanced issue search."
+            },
+            "bb-feature-issue-project-setting": {
+                "title": "Issue project setting",
+                "desc": "Customize advanced issue project settings. Including creating issue restrictions and default backup settings."
+            },
+            "bb-feature-password-restriction": {
+                "title": "Password restriction",
+                "desc": "Allow to configure the restriction for users' password"
+            },
+            "bb-feature-directory-sync": {
+                "title": "Directory sync",
+                "desc": "Sync users and groups from Entra ID (formerly Azure AD) to your Bytebase instance"
             }
         }
     }
