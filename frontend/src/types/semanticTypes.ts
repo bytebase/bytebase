@@ -15,9 +15,9 @@ export const getSemanticTemplateList = () => {
     const key = buildInSemantic.id.split(".").join("-");
     return SemanticTypeSetting_SemanticType.fromPartial({
       id: buildInSemantic.id,
-      title: t(`settings.sensitive-data.semantic-types.template.${key}.title`),
+      title: t(`dynamic.settings.sensitive-data.semantic-types.template.${key}.title`),
       description: t(
-        `settings.sensitive-data.semantic-types.template.${key}.description`
+        `dynamic.settings.sensitive-data.semantic-types.template.${key}.description`
       ),
       algorithm: buildInSemantic.algorithm,
     });

@@ -3,7 +3,7 @@
     v-if="!hasFeature"
     :class="customClass"
     type="warning"
-    :title="$t(`subscription.features.${featureKey}.title`)"
+    :title="$t(`dynamic.subscription.features.${featureKey}.title`)"
     :description="descriptionText"
     :action-text="actionText"
     @click="onClick"
@@ -118,7 +118,7 @@ const featureKey = props.feature.split(".").join("-");
 const descriptionText = computed(() => {
   let description = props.description;
   if (!description) {
-    description = t(`subscription.features.${featureKey}.desc`);
+    description = t(`dynamic.subscription.features.${featureKey}.desc`);
   }
 
   if (instanceMissingLicense.value) {

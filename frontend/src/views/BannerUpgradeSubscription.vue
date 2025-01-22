@@ -50,7 +50,7 @@
       <ul class="list-disc list-inside">
         <li v-for="feature in unlicensedFeatures" :key="feature">
           {{
-            $t(`subscription.features.${feature.split(".").join("-")}.title`)
+            $t(`dynamic.subscription.features.${feature.split(".").join("-")}.title`)
           }}
           ({{
             $t(

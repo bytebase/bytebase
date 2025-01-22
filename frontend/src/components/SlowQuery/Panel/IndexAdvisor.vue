@@ -28,7 +28,7 @@
   </div>
   <div v-else-if="!hasIndexAdvisorFeature">
     <NButton type="primary" @click="state.showFeatureModal = true">
-      {{ $t("subscription.features.bb-feature-index-advisor.title") }}
+      {{ $t("dynamic.subscription.features.bb-feature-index-advisor.title") }}
       <FeatureBadge
         custom-class="ml-1 text-white"
         feature="bb.feature.index-advisor"
