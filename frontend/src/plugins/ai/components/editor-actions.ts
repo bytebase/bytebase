@@ -38,7 +38,7 @@ export const useAIActions = async (
     contentEmpty.set(checkContentEmpty());
   });
 
-  const selectedContent = useSelectedContent(monaco, editor);
+  const selectedContent = useSelectedContent(editor);
   useEditorContextKey(
     editor,
     "bb.ai.selectedContentEmpty",
