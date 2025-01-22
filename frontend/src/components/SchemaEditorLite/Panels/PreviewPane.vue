@@ -56,6 +56,7 @@ import { MonacoEditor } from "@/components/MonacoEditor";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { sqlServiceClient } from "@/grpcweb";
 import type { ComposedDatabase } from "@/types";
+import type { DatabaseCatalog } from "@/types/proto/v1/database_catalog_service";
 import {
   DatabaseMetadata,
   SchemaMetadata,
@@ -69,7 +70,7 @@ const props = defineProps<{
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   title: string;
-  mocked: DatabaseMetadata | undefined;
+  mocked: { metadata: DatabaseMetadata; catalog: DatabaseCatalog } | undefined;
 }>();
 
 const { hidePreview } = useSchemaEditorContext();
@@ -92,13 +93,15 @@ const { status, data, error } = useQuery({
   queryKey: [engine, debouncedMocked],
   queryFn: async () => {
     if (!expanded.value) return "";
-    const metadata = debouncedMocked.value;
-    if (!metadata) return "";
+    if (!debouncedMocked.value) return "";
+    const { metadata, catalog } = debouncedMocked.value;
+
     try {
       const response = await sqlServiceClient.stringifyMetadata(
         {
           engine: engine.value,
           metadata,
+          catalog,
         },
         {
           silent: true,

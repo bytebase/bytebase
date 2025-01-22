@@ -27,10 +27,8 @@
 import { TrashIcon, Undo2Icon } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
 import { MiniActionButton } from "@/components/v2";
-import type { ColumnMetadata } from "@/types/proto/v1/database_service";
 
 defineProps<{
-  column: ColumnMetadata;
   dropped?: boolean;
   disabled?: boolean;
 }>();

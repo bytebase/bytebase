@@ -435,9 +435,10 @@ message StringifyMetadataRequest {
   DatabaseMetadata metadata = 1 [(google.api.field_behavior) = REQUIRED];
   // The database engine of the schema string.
   Engine engine = 2;
-  // If false, we will build the raw common by classification in database
-  // config.
+  // If false, we will build the raw common by classification in database catalog.
   bool classification_from_config = 3;
+  // Database catlog is required if classification_from_config is false.
+  optional DatabaseCatalog catalog = 4;
 }
 
 message StringifyMetadataResponse {

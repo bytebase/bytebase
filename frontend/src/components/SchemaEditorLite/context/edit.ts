@@ -2,7 +2,6 @@ import { computed, ref } from "vue";
 import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
-  DatabaseMetadata,
   FunctionMetadata,
   ProcedureMetadata,
   SchemaMetadata,
@@ -22,7 +21,6 @@ export const useEditStatus = () => {
   const markEditStatus = (
     database: ComposedDatabase,
     metadata: {
-      database: DatabaseMetadata;
       schema: SchemaMetadata;
       table?: TableMetadata;
       column?: ColumnMetadata;
@@ -48,7 +46,6 @@ export const useEditStatus = () => {
   const removeEditStatus = (
     database: ComposedDatabase,
     metadata: {
-      database: DatabaseMetadata;
       schema: SchemaMetadata;
       table?: TableMetadata;
       column?: ColumnMetadata;
@@ -69,20 +66,9 @@ export const useEditStatus = () => {
     keys.forEach((key) => dirtyPaths.value.delete(key));
   };
 
-  const removeEditStatusByKey = (key: string, recursive: boolean) => {
-    const keys = recursive
-      ? dirtyPathsArray.value.filter(
-          (path) => path === key || path.startsWith(`${key}/`)
-        )
-      : [key];
-
-    keys.forEach((key) => dirtyPaths.value.delete(key));
-  };
-
   const getSchemaStatus = (
     database: ComposedDatabase,
     metadata: {
-      database: DatabaseMetadata;
       schema: SchemaMetadata;
     }
   ): EditStatus => {
@@ -99,7 +85,6 @@ export const useEditStatus = () => {
   const getTableStatus = (
     database: ComposedDatabase,
     metadata: {
-      database: DatabaseMetadata;
       schema: SchemaMetadata;
       table: TableMetadata;
     }
@@ -117,7 +102,6 @@ export const useEditStatus = () => {
   const getColumnStatus = (
     database: ComposedDatabase,
     metadata: {
-      database: DatabaseMetadata;
       schema: SchemaMetadata;
       table: TableMetadata;
       column: ColumnMetadata;
@@ -136,7 +120,6 @@ export const useEditStatus = () => {
   const getPartitionStatus = (
     database: ComposedDatabase,
     metadata: {
-      database: DatabaseMetadata;
       schema: SchemaMetadata;
       table: TableMetadata;
       partition: TablePartitionMetadata;
@@ -155,7 +138,6 @@ export const useEditStatus = () => {
   const getProcedureStatus = (
     database: ComposedDatabase,
     metadata: {
-      database: DatabaseMetadata;
       schema: SchemaMetadata;
       procedure: ProcedureMetadata;
     }
@@ -170,7 +152,6 @@ export const useEditStatus = () => {
   const getFunctionStatus = (
     database: ComposedDatabase,
     metadata: {
-      database: DatabaseMetadata;
       schema: SchemaMetadata;
       function: FunctionMetadata;
     }
@@ -185,7 +166,6 @@ export const useEditStatus = () => {
   const getViewStatus = (
     database: ComposedDatabase,
     metadata: {
-      database: DatabaseMetadata;
       schema: SchemaMetadata;
       view: ViewMetadata;
     }
@@ -207,7 +187,6 @@ export const useEditStatus = () => {
     markEditStatusByKey,
     getEditStatusByKey,
     removeEditStatus,
-    removeEditStatusByKey,
     clearEditStatus,
     getSchemaStatus,
     getTableStatus,

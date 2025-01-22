@@ -110,7 +110,6 @@
         :schema="schema"
         :table="table"
         :engine="engine"
-        :classification-config-id="project.dataClassificationConfigId"
         :disable-change-table="disableChangeTable"
         :allow-change-primary-keys="allowChangePrimaryKeys"
         :allow-reorder-columns="allowReorderColumns"
@@ -120,6 +119,7 @@
         "
         :disable-alter-column="disableAlterColumn"
         :get-column-item-computed-class-list="getColumnItemComputedClassList"
+        :show-database-catalog-column="false"
         @drop="handleDropColumn"
         @restore="handleRestoreColumn"
         @reorder="handleReorderColumn"
@@ -201,8 +201,11 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { hasFeature, pushNotification } from "@/store/modules";
 import type { ComposedDatabase } from "@/types";
 import {
+  DatabaseCatalog,
+  SchemaCatalog,
+} from "@/types/proto/v1/database_catalog_service";
+import {
   DatabaseMetadata,
-  SchemaConfig,
   type ForeignKeyMetadata,
   type SchemaMetadata,
   type TableMetadata,
@@ -262,7 +265,6 @@ interface LocalState {
 
 const { t } = useI18n();
 const {
-  project,
   readonly,
   events,
   options,
@@ -272,7 +274,9 @@ const {
   getSchemaStatus,
   getTableStatus,
   getColumnStatus,
-  upsertColumnConfig,
+  getDatabaseCatalog,
+  removeColumnCatalog,
+  upsertColumnCatalog,
   queuePendingScrollToColumn,
   selectionEnabled,
 } = useSchemaEditorContext();
@@ -301,13 +305,11 @@ const metadataForColumn = (column: ColumnMetadata) => {
 };
 const statusForSchema = () => {
   return getSchemaStatus(props.db, {
-    database: props.database,
     schema: props.schema,
   });
 };
 const statusForTable = () => {
   return getTableStatus(props.db, {
-    database: props.database,
     schema: props.schema,
     table: props.table,
   });
@@ -422,9 +424,17 @@ const handleApplyColumnTemplate = (
   /* eslint-disable-next-line vue/no-mutating-props */
   props.table.columns.push(column);
   if (template.catalog) {
-    upsertColumnConfig(props.db, metadataForColumn(column), (config) => {
-      Object.assign(config, template.catalog);
-    });
+    upsertColumnCatalog(
+      {
+        database: props.db.name,
+        schema: props.schema.name,
+        table: props.table.name,
+        column: template.column.name,
+      },
+      (catalog) => {
+        Object.assign(catalog, template.catalog);
+      }
+    );
   }
   markColumnStatus(column, "created");
   queuePendingScrollToColumn({
@@ -460,7 +470,6 @@ const handleAddPartition = () => {
   markEditStatus(
     props.db,
     {
-      database: props.database,
       schema: props.schema,
       table: props.table,
       partition,
@@ -554,6 +563,12 @@ const handleDropColumn = (column: ColumnMetadata) => {
 
     removeColumnPrimaryKey(table, column.name);
     removeColumnFromAllForeignKeys(table, column.name);
+    removeColumnCatalog({
+      database: props.db.name,
+      schema: props.schema.name,
+      table: props.table.name,
+      column: column.name,
+    });
   } else {
     markColumnStatus(column, "dropped");
   }
@@ -580,13 +595,14 @@ const handleReorderColumn = (
 
 const mocked = computed(() => {
   const { db, database, schema, table } = props;
+  const databaseCatalog = getDatabaseCatalog(db.name);
 
   const mockedTable = cloneDeep(table);
   mockedTable.columns = mockedTable.columns.filter((column) => {
-    const status = getColumnStatus(db, { database, schema, table, column });
+    const status = getColumnStatus(db, { schema, table, column });
     return status !== "dropped";
   });
-  const mockedDatabase = DatabaseMetadata.fromJSON({
+  const mockedDatabase = DatabaseMetadata.fromPartial({
     name: database.name,
     characterSet: database.characterSet,
     collation: database.collation,
@@ -597,21 +613,24 @@ const mocked = computed(() => {
       },
     ],
   });
-  const schemaConfig = database.schemaConfigs.find(
+  const mockedCatalog = DatabaseCatalog.fromPartial({
+    name: database.name,
+  });
+  const schemaCatalog = databaseCatalog.schemas.find(
     (sc) => sc.name === schema.name
   );
-  const tableConfig = schemaConfig?.tableConfigs.find(
+  const tableCatalog = schemaCatalog?.tables.find(
     (tc) => tc.name === table.name
   );
-  if (schemaConfig && tableConfig) {
-    mockedDatabase.schemaConfigs = [
-      SchemaConfig.fromJSON({
-        name: schemaConfig.name,
-        tableConfigs: [cloneDeep(tableConfig)],
+  if (schemaCatalog && tableCatalog) {
+    mockedCatalog.schemas = [
+      SchemaCatalog.fromPartial({
+        ...schemaCatalog,
+        tables: [cloneDeep(tableCatalog)],
       }),
     ];
   }
-  return mockedDatabase;
+  return { metadata: mockedDatabase, catalog: mockedCatalog };
 });
 
 const markTableStatus = (status: EditStatus) => {
@@ -625,7 +644,6 @@ const markTableStatus = (status: EditStatus) => {
   markEditStatus(
     props.db,
     {
-      database: props.database,
       schema: props.schema,
       table: props.table,
     },

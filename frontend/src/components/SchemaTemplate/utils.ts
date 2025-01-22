@@ -1,16 +1,23 @@
 import { cloneDeep } from "lodash-es";
 import { computed, reactive } from "vue";
-import { useSettingV1Store, useDatabaseCatalog } from "@/store";
+import { useSettingV1Store } from "@/store";
 import { unknownDatabase, type ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
+  DatabaseCatalog,
+  SchemaCatalog,
+  TableCatalog,
+  TableCatalog_Columns,
+} from "@/types/proto/v1/database_catalog_service";
+import {
   DatabaseMetadata,
-  SchemaConfig,
   SchemaMetadata,
-  TableConfig,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
+import {
+  SchemaTemplateSetting_TableTemplate,
+  DataClassificationSetting_DataClassificationConfig,
+} from "@/types/proto/v1/setting_service";
 
 export const engineList = [Engine.MYSQL, Engine.POSTGRES];
 
@@ -35,11 +42,13 @@ export const categoryList = computed(() => {
   return resp;
 });
 
-export const classificationConfig = computed(() => {
-  const settingStore = useSettingV1Store();
-  // TODO(ed): it's a temporary solution
-  return settingStore.classification[0];
-});
+export const classificationConfig = computed(
+  (): DataClassificationSetting_DataClassificationConfig | undefined => {
+    const settingStore = useSettingV1Store();
+    // TODO(ed): it's a temporary solution
+    return settingStore.classification[0];
+  }
+);
 
 export const mockMetadataFromTableTemplate = (
   template: SchemaTemplateSetting_TableTemplate
@@ -47,27 +56,44 @@ export const mockMetadataFromTableTemplate = (
   const db = {
     ...unknownDatabase(),
   };
-  const table = cloneDeep(template.table) ?? TableMetadata.fromPartial({});
-  const schema = SchemaMetadata.fromPartial({
+  const tableMetadata =
+    cloneDeep(template.table) ?? TableMetadata.fromPartial({});
+  const schemaMetadata = SchemaMetadata.fromPartial({
     name: "",
-    tables: [table],
+    tables: [tableMetadata],
   });
-  const tableConfig =
-    cloneDeep(template.catalog) ?? TableConfig.fromPartial({ name: "" });
-  const database = DatabaseMetadata.fromPartial({
-    schemas: [schema],
-    schemaConfigs: [
-      SchemaConfig.fromPartial({
+
+  const tableCatalog =
+    cloneDeep(template.catalog) ??
+    TableCatalog.fromPartial({
+      name: "",
+      columns: TableCatalog_Columns.fromPartial({}),
+    });
+  const databaseMetadata = DatabaseMetadata.fromPartial({
+    name: db.name,
+    schemas: [
+      SchemaMetadata.fromPartial({
         name: "",
-        tableConfigs: [tableConfig],
+        tables: [cloneDeep(template.table) ?? TableMetadata.fromPartial({})],
       }),
     ],
   });
+  const schemaCatalog = SchemaCatalog.fromPartial({
+    name: "",
+    tables: [tableCatalog],
+  });
+  const databaseCatalog = DatabaseCatalog.fromPartial({
+    name: db.name,
+    schemas: [schemaCatalog],
+  });
   return reactive({
     db,
-    database,
-    schema,
-    table,
+    databaseMetadata,
+    databaseCatalog,
+    schemaCatalog,
+    schemaMetadata,
+    tableCatalog,
+    tableMetadata,
     id: template.id,
     category: template.category,
     engine: template.engine,
@@ -76,21 +102,16 @@ export const mockMetadataFromTableTemplate = (
 
 export const rebuildTableTemplateFromMetadata = (params: {
   db: ComposedDatabase;
-  database: DatabaseMetadata;
-  schema: SchemaMetadata;
-  table: TableMetadata;
+  tableMetadata: TableMetadata;
+  tableCatalog: TableCatalog;
   id: string;
   category: string;
   engine: Engine;
 }) => {
-  const { schema, table, id, category, engine } = params;
-  const databaseCatalog = useDatabaseCatalog(params.database.name, false);
+  const { tableMetadata, tableCatalog, id, category, engine } = params;
 
-  const tableCatalog = databaseCatalog.value.schemas
-    .find((sc) => sc.name === schema.name)
-    ?.tables.find((tc) => tc.name === table.name);
   return SchemaTemplateSetting_TableTemplate.fromPartial({
-    table,
+    table: tableMetadata,
     catalog: tableCatalog,
     id,
     category,

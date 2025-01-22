@@ -32,13 +32,11 @@ const { readonly, markEditStatus, getSchemaStatus, getFunctionStatus } =
 
 const statusForSchema = () => {
   return getSchemaStatus(props.db, {
-    database: props.database,
     schema: props.schema,
   });
 };
 const status = computed(() => {
   return getFunctionStatus(props.db, {
-    database: props.database,
     schema: props.schema,
     function: props.func,
   });
@@ -47,7 +45,6 @@ const markStatus = (status: EditStatus) => {
   markEditStatus(
     props.db,
     {
-      database: props.database,
       schema: props.schema,
       function: props.func,
     },

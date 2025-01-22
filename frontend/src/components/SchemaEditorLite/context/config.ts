@@ -1,60 +1,66 @@
-import { pick } from "lodash-es";
 import type { Ref } from "vue";
 import { reactive, watch } from "vue";
-import type { ComposedDatabase } from "@/types";
-import type {
-  ColumnMetadata,
-  DatabaseMetadata,
-  SchemaMetadata,
-  TableMetadata,
-} from "@/types/proto/v1/database_service";
 import {
-  ColumnConfig,
-  SchemaConfig,
-  TableConfig,
-} from "@/types/proto/v1/database_service";
+  DatabaseCatalog,
+  SchemaCatalog,
+  TableCatalog,
+  TableCatalog_Columns,
+  ColumnCatalog,
+} from "@/types/proto/v1/database_catalog_service";
 import type { EditTarget } from "../types";
-import { keyForResource, keyForResourceName } from "./common";
+import { keyForResourceName } from "./common";
 
-export const useEditConfigs = (targets: Ref<EditTarget[]>) => {
+export const useEditCatalogs = (targets: Ref<EditTarget[]>) => {
   // Build maps from keys to metadata objects for acceleration
   const buildMaps = (targets: EditTarget[]) => {
-    const tableConfig = reactive(
+    const databaseCatalog = reactive(
+      new Map(
+        targets.map((target) => {
+          const key = keyForResourceName({
+            database: target.database.name,
+          });
+          return [key, target.catalog];
+        })
+      )
+    );
+    const tableCatalog = reactive(
       new Map(
         targets.flatMap((target) => {
-          return target.metadata.schemaConfigs.flatMap((schemaConfig) => {
-            return schemaConfig.tableConfigs.map((tableConfig) => {
+          return target.catalog.schemas.flatMap((schemaCatalog) => {
+            return schemaCatalog.tables.map((tableCatalog) => {
               const key = keyForResourceName({
                 database: target.database.name,
-                schema: schemaConfig.name,
-                table: tableConfig.name,
+                schema: schemaCatalog.name,
+                table: tableCatalog.name,
               });
-              return [key, tableConfig];
+              return [key, tableCatalog];
             });
           });
         })
       )
     );
-    const columnConfig = reactive(
+    const columnCatalog = reactive(
       new Map(
         targets.flatMap((target) => {
-          return target.metadata.schemaConfigs.flatMap((schemaConfig) => {
-            return schemaConfig.tableConfigs.flatMap((tableConfig) => {
-              return tableConfig.columnConfigs.map((columnConfig) => {
-                const key = keyForResourceName({
-                  database: target.database.name,
-                  schema: schemaConfig.name,
-                  table: tableConfig.name,
-                  column: columnConfig.name,
-                });
-                return [key, columnConfig];
-              });
+          return target.catalog.schemas.flatMap((schemaCatalog) => {
+            return schemaCatalog.tables.flatMap((tableCatalog) => {
+              return (tableCatalog.columns?.columns ?? []).map(
+                (columnCatalog) => {
+                  const key = keyForResourceName({
+                    database: target.database.name,
+                    schema: schemaCatalog.name,
+                    table: tableCatalog.name,
+                    column: columnCatalog.name,
+                  });
+                  return [key, columnCatalog];
+                }
+              );
             });
           });
         })
       )
     );
-    return { tableConfig, columnConfig };
+    return { databaseCatalog, tableCatalog, columnCatalog };
   };
 
   const maps = reactive(buildMaps(targets.value));
@@ -68,130 +74,230 @@ export const useEditConfigs = (targets: Ref<EditTarget[]>) => {
     }
   );
 
-  // TableConfig
-  const getTableConfig = (
-    database: ComposedDatabase,
-    metadata: {
-      schema: SchemaMetadata;
-      table: TableMetadata;
-    }
-  ) => {
-    const key = keyForResource(database, pick(metadata, "schema", "table"));
-    return maps.tableConfig.get(key);
-  };
-  const insertTableConfig = (
-    database: ComposedDatabase,
-    metadata: {
-      database: DatabaseMetadata;
-      schema: SchemaMetadata;
-      table: TableMetadata;
-    },
-    tableConfig: TableConfig
-  ) => {
-    let schemaConfig = metadata.database.schemaConfigs.find(
-      (sc) => sc.name === metadata.schema.name
-    );
-    if (!schemaConfig) {
-      schemaConfig = SchemaConfig.fromPartial({
-        name: metadata.schema.name,
-        tableConfigs: [],
-      });
-      metadata.database.schemaConfigs.push(schemaConfig);
-    }
-    schemaConfig.tableConfigs.push(tableConfig);
-
-    const key = keyForResource(database, pick(metadata, "schema", "table"));
-    maps.tableConfig.set(key, tableConfig);
-  };
-  const upsertTableConfig = (
-    database: ComposedDatabase,
-    metadata: {
-      database: DatabaseMetadata;
-      schema: SchemaMetadata;
-      table: TableMetadata;
-    },
-    update: (config: TableConfig) => void
-  ) => {
-    let config = getTableConfig(database, metadata);
-    if (!config) {
-      config = TableConfig.fromPartial({
-        name: metadata.table.name,
-      });
-      insertTableConfig(database, metadata, config);
-    }
-    update(config);
-    // Maintain the columnConfig map
-    config.columnConfigs.forEach((columnConfig) => {
-      const key = keyForResourceName({
-        database: database.name,
-        schema: metadata.schema.name,
-        table: metadata.table.name,
-        column: columnConfig.name,
-      });
-      maps.columnConfig.set(key, columnConfig);
+  const getDatabaseCatalog = (database: string) => {
+    const databaseKey = keyForResourceName({
+      database,
     });
+    let databaseCatalog = maps.databaseCatalog.get(databaseKey);
+    if (!databaseCatalog) {
+      databaseCatalog = DatabaseCatalog.fromPartial({
+        name: database,
+      });
+      maps.databaseCatalog.set(databaseKey, databaseCatalog);
+    }
+    return databaseCatalog;
   };
 
-  // ColumnConfig
-  const getColumnConfig = (
-    database: ComposedDatabase,
-    metadata: {
-      database: DatabaseMetadata;
-      schema: SchemaMetadata;
-      table: TableMetadata;
-      column: ColumnMetadata;
-    }
-  ) => {
-    const key = keyForResource(
+  // Table catalog
+  const getTableCatalog = ({
+    database,
+    schema,
+    table,
+  }: {
+    database: string;
+    schema: string;
+    table: string;
+  }) => {
+    const key = keyForResourceName({
       database,
-      pick(metadata, "schema", "table", "column")
-    );
-    return maps.columnConfig.get(key);
+      schema,
+      table,
+    });
+    return maps.tableCatalog.get(key);
   };
-  const insertColumnConfig = (
-    database: ComposedDatabase,
-    metadata: {
-      database: DatabaseMetadata;
-      schema: SchemaMetadata;
-      table: TableMetadata;
-      column: ColumnMetadata;
-    },
-    columnConfig: ColumnConfig
-  ) => {
-    upsertTableConfig(
+  const insertTableCatalog = ({
+    database,
+    schema,
+    table,
+  }: {
+    database: string;
+    schema: string;
+    table: TableCatalog;
+  }) => {
+    const databaseCatalog = getDatabaseCatalog(database);
+    let schemaCatalog = databaseCatalog.schemas.find(
+      (sc) => sc.name === schema
+    );
+    if (!schemaCatalog) {
+      schemaCatalog = SchemaCatalog.fromPartial({
+        name: schema,
+        tables: [],
+      });
+      databaseCatalog.schemas.push(schemaCatalog);
+    }
+    schemaCatalog.tables.push(table);
+
+    const key = keyForResourceName({
       database,
-      pick(metadata, "database", "schema", "table"),
-      (tableConfig) => {
-        tableConfig.columnConfigs.push(columnConfig);
+      schema,
+      table: table.name,
+    });
+    maps.tableCatalog.set(key, table);
+  };
+  const removeTableCatalog = ({
+    database,
+    schema,
+    table,
+  }: {
+    database: string;
+    schema: string;
+    table: string;
+  }) => {
+    const databaseCatalog = getDatabaseCatalog(database);
+    const schemaCatalog = databaseCatalog.schemas.find(
+      (sc) => sc.name === schema
+    );
+    if (schemaCatalog) {
+      schemaCatalog.tables = schemaCatalog.tables.filter(
+        (tableCatalog) => tableCatalog.name !== table
+      );
+    }
+  };
+  const upsertTableCatalog = (
+    {
+      database,
+      schema,
+      table,
+    }: {
+      database: string;
+      schema: string;
+      table: string;
+    },
+    update: (catalog: TableCatalog) => void
+  ) => {
+    let tableCatalog = getTableCatalog({
+      database,
+      schema,
+      table,
+    });
+    if (!tableCatalog) {
+      tableCatalog = TableCatalog.fromPartial({
+        name: table,
+        columns: TableCatalog_Columns.fromPartial({}),
+      });
+      insertTableCatalog({
+        database,
+        schema,
+        table: tableCatalog,
+      });
+    }
+    if (!tableCatalog.columns) {
+      tableCatalog.columns = TableCatalog_Columns.fromPartial({});
+    }
+    update(tableCatalog);
+  };
+
+  // Column catalog
+  const getColumnCatalog = ({
+    database,
+    schema,
+    table,
+    column,
+  }: {
+    database: string;
+    schema: string;
+    table: string;
+    column: string;
+  }) => {
+    const key = keyForResourceName({
+      database,
+      schema,
+      table,
+      column,
+    });
+    return maps.columnCatalog.get(key);
+  };
+  const insertColumnCatalog = ({
+    database,
+    schema,
+    table,
+    column,
+  }: {
+    database: string;
+    schema: string;
+    table: string;
+    column: ColumnCatalog;
+  }) => {
+    upsertTableCatalog(
+      {
+        database,
+        schema,
+        table,
+      },
+      (tableCatalog) => {
+        tableCatalog.columns?.columns.push(column);
       }
     );
-    // Need not to maintain columnConfig map here
-    // since `upsertTableConfig` did this already
+    // Need not to maintain column catalog map here
+    // since `upsertTableCatalog` did this already
   };
-  const upsertColumnConfig = (
-    database: ComposedDatabase,
-    metadata: {
-      database: DatabaseMetadata;
-      schema: SchemaMetadata;
-      table: TableMetadata;
-      column: ColumnMetadata;
-    },
-    update: (config: ColumnConfig) => void
-  ) => {
-    let config = getColumnConfig(database, metadata);
-    if (!config) {
-      config = ColumnConfig.fromPartial({
-        name: metadata.column.name,
-      });
-      insertColumnConfig(database, metadata, config);
+  const removeColumnCatalog = ({
+    database,
+    schema,
+    table,
+    column,
+  }: {
+    database: string;
+    schema: string;
+    table: string;
+    column: string;
+  }) => {
+    const tableCatalog = getTableCatalog({
+      database,
+      schema,
+      table,
+    });
+    if (!tableCatalog) {
+      return;
     }
-    update(config);
+    if (!tableCatalog.columns) {
+      tableCatalog.columns = TableCatalog_Columns.fromPartial({});
+    }
+    tableCatalog.columns.columns = tableCatalog.columns.columns.filter(
+      (columnCatalog) => columnCatalog.name !== column
+    );
+  };
+  const upsertColumnCatalog = (
+    {
+      database,
+      schema,
+      table,
+      column,
+    }: {
+      database: string;
+      schema: string;
+      table: string;
+      column: string;
+    },
+    update: (catalog: ColumnCatalog) => void
+  ) => {
+    let columnCatalog = getColumnCatalog({
+      database,
+      schema,
+      table,
+      column,
+    });
+    if (!columnCatalog) {
+      columnCatalog = ColumnCatalog.fromPartial({
+        name: column,
+      });
+      insertColumnCatalog({
+        database,
+        schema,
+        table,
+        column: columnCatalog,
+      });
+    }
+    update(columnCatalog);
   };
 
   return {
-    getTableConfig,
-    upsertTableConfig,
-    getColumnConfig,
-    upsertColumnConfig,
+    getDatabaseCatalog,
+    getTableCatalog,
+    upsertTableCatalog,
+    removeTableCatalog,
+    getColumnCatalog,
+    removeColumnCatalog,
+    upsertColumnCatalog,
   };
 };
