@@ -1219,7 +1219,7 @@ func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessag
 			},
 			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-					Type:          v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+					Type:          convertReleaseFileChangeTypeToPlanSpecType(file.ChangeType),
 					Target:        common.FormatDatabase(database.InstanceID, database.DatabaseName),
 					Sheet:         file.Sheet,
 					SchemaVersion: file.Version,
@@ -1239,6 +1239,21 @@ func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessag
 			Files:    modifiedFiles,
 		},
 		nil
+}
+
+func convertReleaseFileChangeTypeToPlanSpecType(t storepb.ReleasePayload_File_ChangeType) v1pb.Plan_ChangeDatabaseConfig_Type {
+	switch t {
+	case storepb.ReleasePayload_File_CHANGE_TYPE_UNSPECIFIED:
+		return v1pb.Plan_ChangeDatabaseConfig_MIGRATE
+	case storepb.ReleasePayload_File_DDL:
+		return v1pb.Plan_ChangeDatabaseConfig_MIGRATE
+	case storepb.ReleasePayload_File_DDL_GHOST:
+		return v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST
+	case storepb.ReleasePayload_File_DML:
+		return v1pb.Plan_ChangeDatabaseConfig_DATA
+	default:
+		return v1pb.Plan_ChangeDatabaseConfig_MIGRATE
+	}
 }
 
 // diffSpecs check if there are any specs removed, added or updated in the new plan.
