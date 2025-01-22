@@ -97,6 +97,23 @@ func equalSchema(s, t *storepb.SchemaMetadata) bool {
 		}
 	}
 
+	if len(s.GetMaterializedViews()) != len(t.GetMaterializedViews()) {
+		return false
+	}
+	oldMateViewMap := make(map[string]*storepb.MaterializedViewMetadata)
+	for _, mateView := range s.GetMaterializedViews() {
+		oldMateViewMap[mateView.GetName()] = mateView
+	}
+	for _, mateView := range t.GetMaterializedViews() {
+		oldMateView, ok := oldMateViewMap[mateView.GetName()]
+		if !ok {
+			return false
+		}
+		if oldMateView.GetDefinition() != mateView.GetDefinition() {
+			return false
+		}
+	}
+
 	if len(s.GetFunctions()) != len(t.GetFunctions()) {
 		return false
 	}
@@ -144,6 +161,77 @@ func equalSchema(s, t *storepb.SchemaMetadata) bool {
 			return false
 		}
 		if oldPackage.GetDefinition() != p.GetDefinition() {
+			return false
+		}
+	}
+
+	if len(s.GetSequences()) != len(t.GetSequences()) {
+		return false
+	}
+	oldSequenceMap := make(map[string]*storepb.SequenceMetadata)
+	for _, sequence := range s.GetSequences() {
+		oldSequenceMap[sequence.GetName()] = sequence
+	}
+	for _, sequence := range t.GetSequences() {
+		oldSequence, ok := oldSequenceMap[sequence.GetName()]
+		if !ok {
+			return false
+		}
+		if oldSequence.GetStart() != sequence.GetStart() {
+			return false
+		}
+		if oldSequence.GetIncrement() != sequence.GetIncrement() {
+			return false
+		}
+		if oldSequence.GetMinValue() != sequence.GetMinValue() {
+			return false
+		}
+		if oldSequence.GetMaxValue() != sequence.GetMaxValue() {
+			return false
+		}
+		if oldSequence.GetCacheSize() != sequence.GetCacheSize() {
+			return false
+		}
+		if oldSequence.GetCycle() != sequence.GetCycle() {
+			return false
+		}
+	}
+
+	if len(s.GetEnumTypes()) != len(t.GetEnumTypes()) {
+		return false
+	}
+	oldEnumTypeMap := make(map[string]*storepb.EnumTypeMetadata)
+	for _, enumType := range s.GetEnumTypes() {
+		oldEnumTypeMap[enumType.GetName()] = enumType
+	}
+	for _, enumType := range t.GetEnumTypes() {
+		oldEnumType, ok := oldEnumTypeMap[enumType.GetName()]
+		if !ok {
+			return false
+		}
+		if len(oldEnumType.GetValues()) != len(enumType.GetValues()) {
+			return false
+		}
+		for i := 0; i < len(oldEnumType.GetValues()); i++ {
+			if oldEnumType.GetValues()[i] != enumType.GetValues()[i] {
+				return false
+			}
+		}
+	}
+
+	if len(s.GetEvents()) != len(t.GetEvents()) {
+		return false
+	}
+	oldEventMap := make(map[string]*storepb.EventMetadata)
+	for _, event := range s.GetEvents() {
+		oldEventMap[event.GetName()] = event
+	}
+	for _, event := range t.GetEvents() {
+		oldEvent, ok := oldEventMap[event.GetName()]
+		if !ok {
+			return false
+		}
+		if oldEvent.GetDefinition() != event.GetDefinition() {
 			return false
 		}
 	}
