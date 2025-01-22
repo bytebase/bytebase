@@ -1,0 +1,52 @@
+{
+    "custom-approval": {
+        "approval-flow": {
+            "node": {
+                "group": {
+                    "WORKSPACE_OWNER": "Workspace Admin",
+                    "WORKSPACE_DBA": "DBA",
+                    "PROJECT_OWNER": "Project Owner",
+                    "PROJECT_MEMBER": "Project Developer"
+                }
+            },
+            "presets": {
+                "owner-dba": "The system defines the approval process, first the project Owner approves, then the DBA approves.",
+                "owner": "The system defines the approval process and only needs the project Owner to approve it.",
+                "dba": "The system defines the approval process and only needs DBA approval.",
+                "admin": "The system defines the approval process and only needs Administrator approval.",
+                "owner-dba-admin": "The system defines the approval process, first the project Owner approves, then the DBA approves, and finally the Administrator approves."
+            }
+        }
+    },
+    "activity": {
+        "sentence": {
+            "verb-type-target-by-people": "{verb} {type} {target}",
+            "verb-type-target-by-system-bot": "{type} {target} {verb}",
+            "changed-x-link": "changed {name}. {link}"
+        }
+    },
+    "settings": {
+        "sensitive-data": {
+            "semantic-types": {
+                "template": {
+                    "bb-default": {
+                        "title": "Default",
+                        "description": "Default type with full masking",
+                        "algorithm": {
+                            "title": "Full mask",
+                            "description": "All values will be masked as \"******\""
+                        }
+                    },
+                    "bb-default-partial": {
+                        "title": "Default Partial",
+                        "description": "Default partial type with partial masking",
+                        "algorithm": {
+                            "title": "Range mask",
+                            "description": "Only keep the raw data in the middle, and cover the beginning and end with \"**\".\nFor example, \"address\" will be masked as \"**dre**\"."
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
