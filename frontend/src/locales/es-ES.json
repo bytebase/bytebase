@@ -764,8 +764,6 @@
       "skipped": "omitido",
       "rolled-out": "implementado",
       "xxx-automatically": "{verb} automáticamente",
-      "verb-type-target-by-people": "{verb} {type} {target}",
-      "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "failed-to-backup": "No se pudo realizar la copia de seguridad de los datos: {error}",
       "prior-back-table": "Copia de seguridad de datos en la base de datos {database} y tablas {tables}",
       "prior-back-table-for-line": "Copia de seguridad de datos en la base de datos {database} y la tabla {tables} para DML en la línea {line}"
