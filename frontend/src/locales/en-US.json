@@ -1955,6 +1955,7 @@
     "search-database-and-table": "Search database and table",
     "search-table": "Search table",
     "search-column": "Search column",
+    "nothing-changed-for-database": "Nothing changed for database {database}",
     "actions": {
       "create-schema": "Create schema",
       "drop-schema": "Drop schema",

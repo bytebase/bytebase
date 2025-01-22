@@ -509,11 +509,10 @@ export interface StringifyMetadataRequest {
     | undefined;
   /** The database engine of the schema string. */
   engine: Engine;
-  /**
-   * If false, we will build the raw common by classification in database
-   * config.
-   */
+  /** If false, we will build the raw common by classification in database catalog. */
   classificationFromConfig: boolean;
+  /** Database catlog is required if classification_from_config is false. */
+  catalog?: DatabaseCatalog | undefined;
 }
 
 export interface StringifyMetadataResponse {
@@ -3079,7 +3078,12 @@ export const ParseMyBatisMapperResponse: MessageFns<ParseMyBatisMapperResponse> 
 };
 
 function createBaseStringifyMetadataRequest(): StringifyMetadataRequest {
-  return { metadata: undefined, engine: Engine.ENGINE_UNSPECIFIED, classificationFromConfig: false };
+  return {
+    metadata: undefined,
+    engine: Engine.ENGINE_UNSPECIFIED,
+    classificationFromConfig: false,
+    catalog: undefined,
+  };
 }
 
 export const StringifyMetadataRequest: MessageFns<StringifyMetadataRequest> = {
@@ -3092,6 +3096,9 @@ export const StringifyMetadataRequest: MessageFns<StringifyMetadataRequest> = {
     }
     if (message.classificationFromConfig !== false) {
       writer.uint32(24).bool(message.classificationFromConfig);
+    }
+    if (message.catalog !== undefined) {
+      DatabaseCatalog.encode(message.catalog, writer.uint32(34).fork()).join();
     }
     return writer;
   },
@@ -3127,6 +3134,14 @@ export const StringifyMetadataRequest: MessageFns<StringifyMetadataRequest> = {
           message.classificationFromConfig = reader.bool();
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.catalog = DatabaseCatalog.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3143,6 +3158,7 @@ export const StringifyMetadataRequest: MessageFns<StringifyMetadataRequest> = {
       classificationFromConfig: isSet(object.classificationFromConfig)
         ? globalThis.Boolean(object.classificationFromConfig)
         : false,
+      catalog: isSet(object.catalog) ? DatabaseCatalog.fromJSON(object.catalog) : undefined,
     };
   },
 
@@ -3157,6 +3173,9 @@ export const StringifyMetadataRequest: MessageFns<StringifyMetadataRequest> = {
     if (message.classificationFromConfig !== false) {
       obj.classificationFromConfig = message.classificationFromConfig;
     }
+    if (message.catalog !== undefined) {
+      obj.catalog = DatabaseCatalog.toJSON(message.catalog);
+    }
     return obj;
   },
 
@@ -3170,6 +3189,9 @@ export const StringifyMetadataRequest: MessageFns<StringifyMetadataRequest> = {
       : undefined;
     message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
     message.classificationFromConfig = object.classificationFromConfig ?? false;
+    message.catalog = (object.catalog !== undefined && object.catalog !== null)
+      ? DatabaseCatalog.fromPartial(object.catalog)
+      : undefined;
     return message;
   },
 };

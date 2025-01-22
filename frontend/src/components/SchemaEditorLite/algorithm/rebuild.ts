@@ -1,7 +1,6 @@
 import { nextTick } from "vue";
-import type { ComposedDatabase } from "@/types";
-import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import type { SchemaEditorContext } from "../context";
+import type { EditTarget } from "../types";
 import { DiffMerge } from "./diff-merge";
 
 export type RebuildMetadataEditReset = "tabs" | "tree";
@@ -10,13 +9,21 @@ export const useRebuildMetadataEdit = (context: SchemaEditorContext) => {
   const { clearEditStatus, events } = context;
 
   const rebuildMetadataEdit = (
-    database: ComposedDatabase,
-    source: DatabaseMetadata,
-    target: DatabaseMetadata,
+    target: EditTarget,
     resets: RebuildMetadataEditReset[] = ["tree"]
   ) => {
     clearEditStatus();
-    const dm = new DiffMerge(context, database, source, target);
+
+    const { database, catalog, baselineCatalog, metadata, baselineMetadata } =
+      target;
+    const dm = new DiffMerge({
+      context,
+      database,
+      sourceMetadata: baselineMetadata,
+      targetMetadata: metadata,
+      sourceCatalog: baselineCatalog,
+      targetCatalog: catalog,
+    });
     dm.merge();
     dm.timer.printAll();
     nextTick(() => {

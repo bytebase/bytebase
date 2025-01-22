@@ -97,42 +97,6 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
       );
     }
 
-    for (const schemaConfig of metadata.schemaConfigs) {
-      const schemaConfigIndex = existed.schemaConfigs.findIndex(
-        (s) => s.name === schemaConfig.name
-      );
-      if (schemaConfigIndex < 0) {
-        existed.schemaConfigs.push(schemaConfig);
-        continue;
-      }
-
-      for (const tableConfig of schemaConfig.tableConfigs) {
-        const tableIndex = existed.schemaConfigs[
-          schemaConfigIndex
-        ].tableConfigs.findIndex((t) => t.name === tableConfig.name);
-        if (tableIndex < 0) {
-          existed.schemaConfigs[schemaConfigIndex].tableConfigs.push(
-            tableConfig
-          );
-        } else {
-          existed.schemaConfigs[schemaConfigIndex].tableConfigs[tableIndex] =
-            tableConfig;
-        }
-      }
-
-      dropCacheIfNotExist(
-        dropIfNotExist,
-        schemaConfig.tableConfigs,
-        existed.schemaConfigs[schemaConfigIndex].tableConfigs
-      );
-    }
-
-    dropCacheIfNotExist(
-      dropIfNotExist,
-      metadata.schemaConfigs,
-      existed.schemaConfigs
-    );
-
     for (const schema of metadata.schemas) {
       const schemaIndex = existed.schemas.findIndex(
         (s) => s.name === schema.name

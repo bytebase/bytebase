@@ -96,7 +96,7 @@
 import { ShieldCheckIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
-import { updateColumnConfig } from "@/components/ColumnDataTable/utils";
+import { updateColumnCatalog } from "@/components/ColumnDataTable/utils";
 import {
   FeatureModal,
   FeatureBadge,
@@ -220,7 +220,7 @@ const filteredColumnList = computed(() => {
 });
 
 const removeSensitiveColumn = async (sensitiveColumn: MaskData) => {
-  await updateColumnConfig({
+  await updateColumnCatalog({
     database: props.database.name,
     schema: sensitiveColumn.schema,
     table: sensitiveColumn.table,

@@ -18,7 +18,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter, RouterLink } from "vue-router";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import SemanticTypeCell from "@/components/ColumnDataTable/SemanticTypeCell.vue";
-import { updateColumnConfig } from "@/components/ColumnDataTable/utils";
+import { updateColumnCatalog } from "@/components/ColumnDataTable/utils";
 import type { MaskData } from "@/components/SensitiveData/types";
 import { MiniActionButton } from "@/components/v2";
 import {
@@ -230,7 +230,7 @@ const onClassificationIdApply = async (
   item: MaskData,
   classification: string
 ) => {
-  await updateColumnConfig({
+  await updateColumnCatalog({
     database: props.database.name,
     schema: item.schema,
     table: item.table,

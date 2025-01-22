@@ -25,7 +25,7 @@ export const supportSetClassificationFromComment = (
   return !classificationFromConfig;
 };
 
-export const updateColumnConfig = async ({
+export const updateColumnCatalog = async ({
   database,
   schema,
   table,
@@ -83,7 +83,7 @@ export const updateColumnConfig = async ({
   });
 };
 
-export const updateTableConfig = async ({
+export const updateTableCatalog = async ({
   database,
   schema,
   table,

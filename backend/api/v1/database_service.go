@@ -506,10 +506,6 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 	if err != nil {
 		return nil, err
 	}
-	dbConfig := convertStoreDatabaseConfig(dbSchema.GetConfig(), filter)
-	if dbConfig != nil {
-		v1pbMetadata.SchemaConfigs = dbConfig.SchemaConfigs
-	}
 	v1pbMetadata.Name = fmt.Sprintf("%s%s/%s%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName, common.MetadataSuffix)
 
 	return v1pbMetadata, nil

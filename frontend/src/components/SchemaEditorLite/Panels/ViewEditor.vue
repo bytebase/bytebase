@@ -39,18 +39,21 @@ const props = defineProps<{
   view: ViewMetadata;
 }>();
 
-const { readonly, markEditStatus, getSchemaStatus, getViewStatus } =
-  useSchemaEditorContext();
+const {
+  readonly,
+  markEditStatus,
+  getDatabaseCatalog,
+  getSchemaStatus,
+  getViewStatus,
+} = useSchemaEditorContext();
 
 const statusForSchema = () => {
   return getSchemaStatus(props.db, {
-    database: props.database,
     schema: props.schema,
   });
 };
 const status = computed(() => {
   return getViewStatus(props.db, {
-    database: props.database,
     schema: props.schema,
     view: props.view,
   });
@@ -59,7 +62,6 @@ const markStatus = (status: EditStatus) => {
   markEditStatus(
     props.db,
     {
-      database: props.database,
       schema: props.schema,
       view: props.view,
     },
@@ -76,6 +78,7 @@ const disallowChangeView = computed(() => {
 
 const mocked = computed(() => {
   const { database, schema, view } = props;
+  const databaseCatalog = getDatabaseCatalog(database.name);
 
   const mockedView = cloneDeep(view);
   const mockedDatabase = DatabaseMetadata.fromJSON({
@@ -89,7 +92,9 @@ const mocked = computed(() => {
       },
     ],
   });
-  return mockedDatabase;
+  const mockedCatalog = cloneDeep(databaseCatalog);
+
+  return { metadata: mockedDatabase, catalog: mockedCatalog };
 });
 
 const handleUpdateDefinition = (code: string) => {
