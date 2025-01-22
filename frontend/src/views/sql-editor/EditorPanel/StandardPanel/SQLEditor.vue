@@ -39,6 +39,7 @@ import type {
 } from "@/components/MonacoEditor";
 import type { Selection as MonacoSelection } from "@/components/MonacoEditor";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
+import { getActiveContentByCursor } from "@/components/MonacoEditor/composables";
 import {
   extensionNameOfLanguage,
   formatEditorContent,
@@ -151,12 +152,24 @@ const handleSaveSheet = () => {
   editorEvents.emit("save-sheet", { tab });
 };
 
-const runQueryAction = (explain = false, newTab = false) => {
+const runQueryAction = ({
+  editor,
+  explain = false,
+  newTab = false,
+}: {
+  editor: IStandaloneCodeEditor;
+  explain: boolean;
+  newTab: boolean;
+}) => {
   const tab = tabStore.currentTab;
   if (!tab) {
     return;
   }
-  const statement = tab.selectedStatement || tab.statement || "";
+  const statement =
+    tab.selectedStatement ||
+    getActiveContentByCursor(editor) ||
+    tab.statement ||
+    "";
   const params: SQLEditorQueryParams = {
     connection: { ...tab.connection },
     statement,
@@ -188,7 +201,7 @@ const handleEditorReady = (
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
     contextMenuGroupId: "operation",
     contextMenuOrder: 0,
-    run: () => runQueryAction(false),
+    run: () => runQueryAction({ editor, explain: false, newTab: false }),
   });
   editor.addAction({
     id: "RunQueryInNewTab",
@@ -198,7 +211,7 @@ const handleEditorReady = (
     ],
     contextMenuGroupId: "operation",
     contextMenuOrder: 0,
-    run: () => runQueryAction(false, /* newTab */ true),
+    run: () => runQueryAction({ editor, explain: false, newTab: true }),
   });
   editor.addAction({
     id: "ExplainQuery",
@@ -206,7 +219,7 @@ const handleEditorReady = (
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE],
     contextMenuGroupId: "operation",
     contextMenuOrder: 0,
-    run: () => runQueryAction(true),
+    run: () => runQueryAction({ editor, explain: true, newTab: false }),
   });
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
     handleSaveSheet();
@@ -220,7 +233,11 @@ const handleEditorReady = (
 
       showAIPanel.value = true;
       const tab = tabStore.currentTab;
-      const statement = tab?.selectedStatement || tab?.statement;
+      const statement =
+        tab?.selectedStatement ||
+        getActiveContentByCursor(editor) ||
+        tab?.statement ||
+        "";
       if (!statement) return;
 
       await nextAnimationFrame();
