@@ -231,7 +231,8 @@
     "title": "Title",
     "text-wrap": "Text wrap",
     "catalog": "Catalog",
-    "summary": "Summary"
+    "summary": "Summary",
+    "errors": "Errors"
   },
   "error-page": {
     "go-back-home": "Go back home"

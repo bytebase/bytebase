@@ -231,7 +231,8 @@
     "title": "タイトル",
     "text-wrap": "テキストの折り返し",
     "catalog": "カタログ",
-    "summary": "まとめ"
+    "summary": "まとめ",
+    "errors": "エラー"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"

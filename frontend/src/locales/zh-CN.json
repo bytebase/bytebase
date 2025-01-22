@@ -231,7 +231,8 @@
     "title": "标题",
     "text-wrap": "文本折行",
     "catalog": "Catalog",
-    "summary": "总结"
+    "summary": "总结",
+    "errors": "错误"
   },
   "error-page": {
     "go-back-home": "回到主页"

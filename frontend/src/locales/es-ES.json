@@ -231,7 +231,8 @@
     "title": "Título",
     "text-wrap": "Ajuste de texto",
     "catalog": "Catálogo",
-    "summary": "Resumen"
+    "summary": "Resumen",
+    "errors": "Errores"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
