@@ -538,14 +538,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ColumnConfig"><span class="badge">M</span>ColumnConfig</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ColumnConfig.LabelsEntry"><span class="badge">M</span>ColumnConfig.LabelsEntry</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.ColumnMetadata"><span class="badge">M</span>ColumnMetadata</a>
                 </li>
               
@@ -559,10 +551,6 @@
               
                 <li>
                   <a href="#bytebase.v1.Database.LabelsEntry"><span class="badge">M</span>Database.LabelsEntry</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.DatabaseConfig"><span class="badge">M</span>DatabaseConfig</a>
                 </li>
               
                 <li>
@@ -714,10 +702,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.SchemaConfig"><span class="badge">M</span>SchemaConfig</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.SchemaMetadata"><span class="badge">M</span>SchemaMetadata</a>
                 </li>
               
@@ -751,10 +735,6 @@
               
                 <li>
                   <a href="#bytebase.v1.SyncDatabaseResponse"><span class="badge">M</span>SyncDatabaseResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.TableConfig"><span class="badge">M</span>TableConfig</a>
                 </li>
               
                 <li>
@@ -6492,82 +6472,6 @@ Or present but not found if deleted </p></td>
 
         
       
-        <h3 id="bytebase.v1.ColumnConfig">ColumnConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name is the name of a column. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>semantic_type_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>labels</td>
-                  <td><a href="#bytebase.v1.ColumnConfig.LabelsEntry">ColumnConfig.LabelsEntry</a></td>
-                  <td>repeated</td>
-                  <td><p>The user labels for a column. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>classification_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ColumnConfig.LabelsEntry">ColumnConfig.LabelsEntry</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.ColumnMetadata">ColumnMetadata</h3>
         <p>ColumnMetadata is the metadata for columns.</p>
 
@@ -6841,37 +6745,6 @@ https://cloud.google.com/resource-manager/docs/tags/tags-overview. </p></td>
 
         
       
-        <h3 id="bytebase.v1.DatabaseConfig">DatabaseConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema_configs</td>
-                  <td><a href="#bytebase.v1.SchemaConfig">SchemaConfig</a></td>
-                  <td>repeated</td>
-                  <td><p>The schema_configs is the list of configs for schemas in a database. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.DatabaseMetadata">DatabaseMetadata</h3>
         <p>DatabaseMetadata is the metadata for databases.</p>
 
@@ -6917,13 +6790,6 @@ Format: instances/{instance}/databases/{database}/metadata </p></td>
                   <td><a href="#bytebase.v1.ExtensionMetadata">ExtensionMetadata</a></td>
                   <td>repeated</td>
                   <td><p>The extensions is the list of extensions in a database. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema_configs</td>
-                  <td><a href="#bytebase.v1.SchemaConfig">SchemaConfig</a></td>
-                  <td>repeated</td>
-                  <td><p>The schema_configs is the list of configs for schemas in a database. </p></td>
                 </tr>
               
                 <tr>
@@ -8623,38 +8489,6 @@ projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{task
 
         
       
-        <h3 id="bytebase.v1.SchemaConfig">SchemaConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name is the schema name.
-It is an empty string for databases without such concept such as MySQL. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>table_configs</td>
-                  <td><a href="#bytebase.v1.TableConfig">TableConfig</a></td>
-                  <td>repeated</td>
-                  <td><p>The table_configs is the list of configs for tables in a schema. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.SchemaMetadata">SchemaMetadata</h3>
         <p>SchemaMetadata is the metadata for schemas.</p><p>This is the concept of schema in Postgres, but it's a no-op for MySQL.</p>
 
@@ -9231,44 +9065,6 @@ Format: instances/{instance}/databases/{database} </p></td>
         <p></p>
 
         
-
-        
-      
-        <h3 id="bytebase.v1.TableConfig">TableConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name is the name of a table. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>column_configs</td>
-                  <td><a href="#bytebase.v1.ColumnConfig">ColumnConfig</a></td>
-                  <td>repeated</td>
-                  <td><p>The column_configs is the ordered list of configs for columns in a table. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>classification_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
 
         
       
@@ -25732,8 +25528,14 @@ Pass this value in the page_token field in the subsequent call to
                   <td>classification_from_config</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>If false, we will build the raw common by classification in database
-config. </p></td>
+                  <td><p>If false, we will build the raw common by classification in database catalog. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>catalog</td>
+                  <td><a href="#bytebase.v1.DatabaseCatalog">DatabaseCatalog</a></td>
+                  <td>optional</td>
+                  <td><p>Database catlog is required if classification_from_config is false. </p></td>
                 </tr>
               
             </tbody>

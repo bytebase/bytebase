@@ -1,5 +1,12 @@
 import { cloneDeep, isEqual, pick } from "lodash-es";
 import type { ComposedDatabase } from "@/types";
+import {
+  DatabaseCatalog,
+  ColumnCatalog,
+  SchemaCatalog,
+  TableCatalog,
+  TableCatalog_Columns,
+} from "@/types/proto/v1/database_catalog_service";
 import type {
   FunctionMetadata,
   ProcedureMetadata,
@@ -13,11 +20,6 @@ import {
   type IndexMetadata,
   type SchemaMetadata,
   type TableMetadata,
-} from "@/types/proto/v1/database_service";
-import {
-  ColumnConfig,
-  SchemaConfig,
-  TableConfig,
 } from "@/types/proto/v1/database_service";
 import { ComparableTablePartitionFields, TinyTimer, keyBy } from "@/utils";
 import {
@@ -39,21 +41,14 @@ type RichTableMetadata = RichSchemaMetadata & {
 type RichColumnMetadata = RichTableMetadata & {
   column: ColumnMetadata;
 };
-type RichSchemaConfig = {
-  schemaConfig: SchemaConfig;
-};
-type RichTableConfig = RichSchemaConfig & {
-  tableConfig: TableConfig;
-};
-type RichColumnConfig = RichTableConfig & {
-  columnConfig: ColumnConfig;
-};
 
 export class DiffMerge {
   context: SchemaEditorContext;
   database: ComposedDatabase;
   sourceMetadata: DatabaseMetadata;
   targetMetadata: DatabaseMetadata;
+  sourceCatalog: DatabaseCatalog;
+  targetCatalog: DatabaseCatalog;
   sourceSchemaMap = new Map<string, SchemaMetadata>();
   targetSchemaMap = new Map<string, SchemaMetadata>();
   sourceTableMap = new Map<string, TableMetadata>();
@@ -66,12 +61,12 @@ export class DiffMerge {
   targetProcedureMap = new Map<string, ProcedureMetadata>();
   sourceFunctionMap = new Map<string, FunctionMetadata>();
   targetFunctionMap = new Map<string, FunctionMetadata>();
-  sourceSchemaConfigMap = new Map<string, SchemaConfig>();
-  targetSchemaConfigMap = new Map<string, SchemaConfig>();
-  sourceTableConfigMap = new Map<string, TableConfig>();
-  targetTableConfigMap = new Map<string, TableConfig>();
-  sourceColumnConfigMap = new Map<string, ColumnConfig>();
-  targetColumnConfigMap = new Map<string, ColumnConfig>();
+  sourceSchemaCatalogMap = new Map<string, SchemaCatalog>();
+  targetSchemaCatalogMap = new Map<string, SchemaCatalog>();
+  sourceTableCatalogMap = new Map<string, TableCatalog>();
+  targetTableCatalogMap = new Map<string, TableCatalog>();
+  sourceColumnCatalogMap = new Map<string, ColumnCatalog>();
+  targetColumnCatalogMap = new Map<string, ColumnCatalog>();
   timer = new TinyTimer<
     | "merge"
     | "mergeSchemas"
@@ -82,26 +77,37 @@ export class DiffMerge {
     | "mergeViews"
     | "mergeProcedures"
     | "mergeFunctions"
-    | "mergeSchemaConfigs"
-    | "mergeTableConfigs"
-    | "mergeColumnConfigs"
-    | "diffColumnConfig"
+    | "mergeSchemaCatalog"
+    | "mergeTableCatalog"
+    | "mergeColumnCatalog"
+    | "diffColumnCatalog"
   >("DiffMerge");
-  constructor(
-    context: SchemaEditorContext,
-    database: ComposedDatabase,
-    sourceMetadata: DatabaseMetadata,
-    targetMetadata: DatabaseMetadata
-  ) {
+  constructor({
+    context,
+    database,
+    sourceMetadata,
+    targetMetadata,
+    sourceCatalog,
+    targetCatalog,
+  }: {
+    context: SchemaEditorContext;
+    database: ComposedDatabase;
+    sourceMetadata: DatabaseMetadata;
+    targetMetadata: DatabaseMetadata;
+    sourceCatalog: DatabaseCatalog;
+    targetCatalog: DatabaseCatalog;
+  }) {
     this.context = context;
     this.database = database;
     this.sourceMetadata = sourceMetadata;
     this.targetMetadata = targetMetadata;
+    this.sourceCatalog = sourceCatalog;
+    this.targetCatalog = targetCatalog;
   }
   merge() {
     this.timer.begin("merge");
     this.mergeSchemas();
-    this.mergeSchemaConfigs();
+    this.mergeSchemaCatalog();
     this.timer.end("merge");
   }
   mergeSchemas() {
@@ -112,24 +118,12 @@ export class DiffMerge {
       targetMetadata,
       sourceSchemaMap,
       targetSchemaMap,
-      sourceSchemaConfigMap,
-      targetSchemaConfigMap,
     } = this;
     const sourceSchemas = sourceMetadata.schemas;
     const targetSchemas = targetMetadata.schemas;
     this.timer.begin("mergeSchemas");
     mapSchemas(database, sourceSchemas, sourceSchemaMap);
     mapSchemas(database, targetSchemas, targetSchemaMap);
-    mapSchemaConfigs(
-      database,
-      sourceMetadata.schemaConfigs,
-      sourceSchemaConfigMap
-    );
-    mapSchemaConfigs(
-      database,
-      targetMetadata.schemaConfigs,
-      targetSchemaConfigMap
-    );
 
     const mergedSchemas: SchemaMetadata[] = [];
     for (let i = 0; i < sourceSchemas.length; i++) {
@@ -240,6 +234,7 @@ export class DiffMerge {
           { ...source, table: sourceTable },
           { ...target, table: targetTable }
         );
+
         if (
           !isEqual(
             pick(sourceTable, ComparableTableFields),
@@ -277,6 +272,18 @@ export class DiffMerge {
         // mark it as 'created'
         mergedTables.push(targetTable);
         context.markEditStatusByKey(key, "created");
+
+        for (const column of targetTable.columns) {
+          context.markEditStatus(
+            database,
+            {
+              schema: targetSchema,
+              table: targetTable,
+              column,
+            },
+            "created"
+          );
+        }
       }
     }
     targetSchema.tables = mergedTables;
@@ -472,8 +479,7 @@ export class DiffMerge {
     );
 
     const mergedColumns: ColumnMetadata[] = [];
-    for (let i = 0; i < sourceColumns.length; i++) {
-      const sourceColumn = sourceColumns[i];
+    for (const sourceColumn of sourceColumns) {
       const key = keyForResourceName({
         database: database.name,
         schema: sourceSchema.name,
@@ -496,8 +502,7 @@ export class DiffMerge {
       mergedColumns.push(targetColumn);
       context.markEditStatusByKey(key, "dropped");
     }
-    for (let i = 0; i < targetColumns.length; i++) {
-      const targetColumn = targetColumns[i];
+    for (const targetColumn of targetColumns) {
       const key = keyForResourceName({
         database: database.name,
         schema: targetSchema.name,
@@ -699,88 +704,85 @@ export class DiffMerge {
       sourceFunctions.length + targetFunctions.length
     );
   }
-  mergeSchemaConfigs() {
+  mergeSchemaCatalog() {
     const {
       context,
       database,
-      sourceMetadata,
+      sourceCatalog,
+      targetCatalog,
       targetMetadata,
-      sourceSchemaConfigMap,
-      targetSchemaConfigMap,
+      sourceSchemaCatalogMap,
+      targetSchemaCatalogMap,
     } = this;
-    this.timer.begin("mergeSchemaConfigs");
-    const sourceSchemaConfigs = sourceMetadata.schemaConfigs;
-    const targetSchemaConfigs = targetMetadata.schemaConfigs;
-    mapSchemaConfigs(database, sourceSchemaConfigs, sourceSchemaConfigMap);
-    mapSchemaConfigs(database, targetSchemaConfigs, targetSchemaConfigMap);
-    const mergedSchemaConfigs: SchemaConfig[] = [];
+    this.timer.begin("mergeSchemaCatalog");
+    mapSchemaCatalog({
+      database: database.name,
+      schemas: sourceCatalog.schemas,
+      map: sourceSchemaCatalogMap,
+    });
+    mapSchemaCatalog({
+      database: database.name,
+      schemas: targetCatalog.schemas,
+      map: targetSchemaCatalogMap,
+    });
+    const mergedSchemaCatalogs: SchemaCatalog[] = [];
     for (let i = 0; i < targetMetadata.schemas.length; i++) {
       const schema = targetMetadata.schemas[i];
       const key = keyForResourceName({
         database: database.name,
         schema: schema.name,
       });
-      const sourceSchemaConfig = sourceSchemaConfigMap.get(key);
-      const targetSchemaConfig = targetSchemaConfigMap.get(key);
+      const sourceSchemaCatalog = sourceSchemaCatalogMap.get(key);
+      const targetSchemaCatalog = targetSchemaCatalogMap.get(key);
       const schemaStatus = context.getEditStatusByKey(key);
       if (schemaStatus === "dropped") {
-        // copy source schemaConfig for further restoring
-        if (sourceSchemaConfig) {
-          mergedSchemaConfigs.push(cloneDeep(sourceSchemaConfig));
+        // copy source schema catalog for further restoring
+        if (sourceSchemaCatalog) {
+          mergedSchemaCatalogs.push(cloneDeep(sourceSchemaCatalog));
         }
       } else if (schemaStatus === "created") {
-        // use newly created schemaConfig
-        if (targetSchemaConfig) {
-          mergedSchemaConfigs.push(targetSchemaConfig);
+        // use newly created schema catalog
+        if (targetSchemaCatalog) {
+          mergedSchemaCatalogs.push(targetSchemaCatalog);
         }
       } else {
-        // use the updated schemaConfig and diff recursively
-        if (targetSchemaConfig) {
-          mergedSchemaConfigs.push(targetSchemaConfig);
+        // use the updated schema catalog and diff recursively
+        if (targetSchemaCatalog) {
+          mergedSchemaCatalogs.push(targetSchemaCatalog);
         }
-        this.mergeTableConfigs(
+        this.mergeTableCatalog(
           schema,
-          {
-            schemaConfig:
-              sourceSchemaConfig ??
-              SchemaConfig.fromPartial({ name: schema.name }),
-          },
-          {
-            schemaConfig:
-              targetSchemaConfig ??
-              SchemaConfig.fromPartial({ name: schema.name }),
-          }
+          sourceSchemaCatalog ??
+            SchemaCatalog.fromPartial({ name: schema.name }),
+          targetSchemaCatalog ??
+            SchemaCatalog.fromPartial({ name: schema.name })
         );
       }
     }
-    targetMetadata.schemaConfigs = mergedSchemaConfigs;
-    this.timer.end("mergeSchemaConfigs", targetMetadata.schemas.length);
+    targetCatalog.schemas = mergedSchemaCatalogs;
+    this.timer.end("mergeSchemaCatalog", targetCatalog.schemas.length);
   }
-  mergeTableConfigs(
+  mergeTableCatalog(
     schema: SchemaMetadata,
-    source: RichSchemaConfig,
-    target: RichSchemaConfig
+    source: SchemaCatalog,
+    target: SchemaCatalog
   ) {
-    const { context, database, sourceTableConfigMap, targetTableConfigMap } =
+    const { context, database, sourceTableCatalogMap, targetTableCatalogMap } =
       this;
-    const { schemaConfig: sourceSchemaConfig } = source;
-    const { schemaConfig: targetSchemaConfig } = target;
-    const sourceTableConfigs = sourceSchemaConfig.tableConfigs;
-    const targetTableConfigs = targetSchemaConfig.tableConfigs;
-    this.timer.begin("mergeTableConfigs");
-    mapTableConfigs(
-      database,
-      sourceSchemaConfig,
-      sourceTableConfigs,
-      sourceTableConfigMap
-    );
-    mapTableConfigs(
-      database,
-      targetSchemaConfig,
-      targetTableConfigs,
-      targetTableConfigMap
-    );
-    const mergedTableConfigs: TableConfig[] = [];
+    this.timer.begin("mergeTableCatalog");
+    mapTableCatalog({
+      database: database.name,
+      schema: source.name,
+      tables: source.tables,
+      map: sourceTableCatalogMap,
+    });
+    mapTableCatalog({
+      database: database.name,
+      schema: target.name,
+      tables: target.tables,
+      map: targetTableCatalogMap,
+    });
+    const mergedTableCatalogs: TableCatalog[] = [];
     for (let i = 0; i < schema.tables.length; i++) {
       const table = schema.tables[i];
       const key = keyForResourceName({
@@ -788,154 +790,137 @@ export class DiffMerge {
         schema: schema.name,
         table: table.name,
       });
-      const sourceTableConfig = sourceTableConfigMap.get(key);
-      const targetTableConfig = targetTableConfigMap.get(key);
+      const sourceTableCatalog = sourceTableCatalogMap.get(key);
+      const targetTableCatalog = targetTableCatalogMap.get(key);
       const tableStatus = context.getEditStatusByKey(key);
       if (tableStatus === "dropped") {
-        // copy source tableConfig for further restoring
-        if (sourceTableConfig) {
-          mergedTableConfigs.push(cloneDeep(sourceTableConfig));
+        // copy source table catalog for further restoring
+        if (sourceTableCatalog) {
+          mergedTableCatalogs.push(cloneDeep(sourceTableCatalog));
         }
       } else if (tableStatus === "created") {
-        // use newly created tableConfig
-        if (targetTableConfig) {
-          mergedTableConfigs.push(targetTableConfig);
+        // use newly created table catalog
+        if (targetTableCatalog) {
+          mergedTableCatalogs.push(targetTableCatalog);
         }
       } else {
-        // use the updated tableConfig and diff recursively
-        if (targetTableConfig) {
-          mergedTableConfigs.push(targetTableConfig);
+        // use the updated table catalog and diff recursively
+        if (targetTableCatalog) {
+          mergedTableCatalogs.push(targetTableCatalog);
         }
-        this.mergeColumnConfigs(
-          schema,
+        this.mergeColumnCatalog(
+          schema.name,
           table,
-          {
-            ...source,
-            tableConfig:
-              sourceTableConfig ??
-              TableConfig.fromPartial({ name: table.name }),
-          },
-          {
-            ...target,
-            tableConfig:
-              targetTableConfig ??
-              TableConfig.fromPartial({ name: table.name }),
-          }
+          sourceTableCatalog ??
+            TableCatalog.fromPartial({
+              name: table.name,
+              columns: TableCatalog_Columns.fromPartial({}),
+            }),
+          targetTableCatalog ??
+            TableCatalog.fromPartial({
+              name: table.name,
+              columns: TableCatalog_Columns.fromPartial({}),
+            })
         );
       }
     }
-    targetSchemaConfig.tableConfigs = mergedTableConfigs;
-    this.timer.end("mergeTableConfigs", schema.tables.length);
+    target.tables = mergedTableCatalogs;
+    this.timer.end("mergeTableCatalog", schema.tables.length);
   }
-  mergeColumnConfigs(
-    schema: SchemaMetadata,
+  mergeColumnCatalog(
+    schema: string,
     table: TableMetadata,
-    source: RichTableConfig,
-    target: RichTableConfig
+    source: TableCatalog,
+    target: TableCatalog
   ) {
-    const { context, database, sourceColumnConfigMap, targetColumnConfigMap } =
-      this;
-    const { schemaConfig: sourceSchemaConfig, tableConfig: sourceTableConfig } =
-      source;
-    const { schemaConfig: targetSchemaConfig, tableConfig: targetTableConfig } =
-      target;
-    const sourceColumnConfigs = sourceTableConfig.columnConfigs;
-    const targetColumnConfigs = targetTableConfig.columnConfigs;
-    this.timer.begin("mergeColumnConfigs");
-    mapColumnConfigs(
+    const {
+      context,
       database,
-      sourceSchemaConfig,
-      sourceTableConfig,
-      sourceColumnConfigs,
-      sourceColumnConfigMap
-    );
-    mapColumnConfigs(
-      database,
-      targetSchemaConfig,
-      targetTableConfig,
-      targetColumnConfigs,
-      targetColumnConfigMap
-    );
-    const mergedColumnConfigs: ColumnConfig[] = [];
+      sourceColumnCatalogMap,
+      targetColumnCatalogMap,
+    } = this;
+    this.timer.begin("mergeColumnCatalog");
+    mapColumnCatalog({
+      database: database.name,
+      schema,
+      table: table.name,
+      columns: source.columns?.columns ?? [],
+      map: sourceColumnCatalogMap,
+    });
+    mapColumnCatalog({
+      database: database.name,
+      schema,
+      table: table.name,
+      columns: source.columns?.columns ?? [],
+      map: targetColumnCatalogMap,
+    });
+    const mergedColumnCatalogs: ColumnCatalog[] = [];
     for (let i = 0; i < table.columns.length; i++) {
       const column = table.columns[i];
       const key = keyForResourceName({
         database: database.name,
-        schema: schema.name,
+        schema,
         table: table.name,
         column: column.name,
       });
-      const sourceColumnConfig = sourceColumnConfigMap.get(key);
-      const targetColumnConfig = targetColumnConfigMap.get(key);
+      const sourceColumnCatalog = sourceColumnCatalogMap.get(key);
+      const targetColumnCatalog = targetColumnCatalogMap.get(key);
       const columnStatus = context.getEditStatusByKey(key);
       if (columnStatus === "dropped") {
-        // copy source columnConfig for further restoring
-        if (sourceColumnConfig) {
-          mergedColumnConfigs.push(cloneDeep(sourceColumnConfig));
+        // copy source column catalog for further restoring
+        if (sourceColumnCatalog) {
+          mergedColumnCatalogs.push(cloneDeep(sourceColumnCatalog));
         }
       } else if (columnStatus === "created") {
-        // use newly created columnConfig
-        if (targetColumnConfig) {
-          mergedColumnConfigs.push(targetColumnConfig);
+        // use newly created column catalog
+        if (targetColumnCatalog) {
+          mergedColumnCatalogs.push(targetColumnCatalog);
         }
       } else {
-        // use the updated columnConfig and diff recursively
-        if (targetColumnConfig) {
-          mergedColumnConfigs.push(targetColumnConfig);
+        // use the updated column catalog and diff recursively
+        if (targetColumnCatalog) {
+          mergedColumnCatalogs.push(targetColumnCatalog);
         }
-        this.diffColumnConfig(
+        this.diffColumnCatalog(
           schema,
-          table,
-          column,
-          {
-            ...source,
-            columnConfig:
-              sourceColumnConfig ??
-              ColumnConfig.fromPartial({ name: column.name }),
-          },
-          {
-            ...target,
-            columnConfig:
-              targetColumnConfig ??
-              ColumnConfig.fromPartial({ name: column.name }),
-          }
+          table.name,
+          sourceColumnCatalog ??
+            ColumnCatalog.fromPartial({ name: column.name }),
+          targetColumnCatalog ??
+            ColumnCatalog.fromPartial({ name: column.name })
         );
       }
     }
-    targetTableConfig.columnConfigs = mergedColumnConfigs;
-    this.timer.end("mergeColumnConfigs", table.columns.length);
+    target.columns = TableCatalog_Columns.fromPartial({
+      columns: mergedColumnCatalogs,
+    });
+    this.timer.end("mergeColumnCatalog", table.columns.length);
   }
-  diffColumnConfig(
-    schema: SchemaMetadata,
-    table: TableMetadata,
-    column: ColumnMetadata,
-    source: RichColumnConfig,
-    target: RichColumnConfig
+  diffColumnCatalog(
+    schema: string,
+    table: string,
+    source: ColumnCatalog,
+    target: ColumnCatalog
   ) {
-    const { columnConfig: sourceColumnConfig } = source;
-    const {
-      schemaConfig: targetSchemaConfig,
-      tableConfig: targetTableConfig,
-      columnConfig: targetColumnConfig,
-    } = target;
-    this.timer.begin("diffColumnConfig");
+    this.timer.begin("diffColumnCatalog");
 
-    if (!isEqual(sourceColumnConfig, targetColumnConfig)) {
+    if (!isEqual(source, target)) {
       const key = keyForResourceName({
         database: this.database.name,
-        schema: targetSchemaConfig.name,
-        table: targetTableConfig.name,
-        column: targetColumnConfig.name,
+        schema,
+        table,
+        column: target.name,
       });
       const status = this.context.getEditStatusByKey(key);
       if (status !== "created" && status !== "dropped") {
         this.context.markEditStatusByKey(key, "updated");
       }
     }
-    this.timer.end("diffColumnConfig", 1);
+    this.timer.end("diffColumnCatalog", 1);
   }
 }
 
+// database schema
 const mapSchemas = (
   database: ComposedDatabase,
   schemas: SchemaMetadata[],
@@ -1043,49 +1028,64 @@ const mapFunctions = (
     map.set(key, fn);
   });
 };
-const mapSchemaConfigs = (
-  db: ComposedDatabase,
-  schemaConfigs: SchemaConfig[],
-  map: Map<string, SchemaConfig>
-) => {
-  schemaConfigs.forEach((schemaConfig) => {
+// database catalog
+const mapSchemaCatalog = ({
+  database,
+  schemas,
+  map,
+}: {
+  database: string;
+  schemas: SchemaCatalog[];
+  map: Map<string, SchemaCatalog>;
+}) => {
+  schemas.forEach((schemaCatalog) => {
     const key = keyForResourceName({
-      database: db.name,
-      schema: schemaConfig.name,
+      database,
+      schema: schemaCatalog.name,
     });
-    map.set(key, schemaConfig);
+    map.set(key, schemaCatalog);
   });
 };
-const mapTableConfigs = (
-  db: ComposedDatabase,
-  schemaConfig: SchemaConfig,
-  tableConfigs: TableConfig[],
-  map: Map<string, TableConfig>
-) => {
-  tableConfigs.forEach((tableConfig) => {
+const mapTableCatalog = ({
+  database,
+  schema,
+  tables,
+  map,
+}: {
+  database: string;
+  schema: string;
+  tables: TableCatalog[];
+  map: Map<string, TableCatalog>;
+}) => {
+  tables.forEach((tableCatalog) => {
     const key = keyForResourceName({
-      database: db.name,
-      schema: schemaConfig.name,
-      table: tableConfig.name,
+      database,
+      schema,
+      table: tableCatalog.name,
     });
-    map.set(key, tableConfig);
+    map.set(key, tableCatalog);
   });
 };
-
-const mapColumnConfigs = (
-  db: ComposedDatabase,
-  schemaConfig: SchemaConfig,
-  tableConfig: TableConfig,
-  columnConfigs: ColumnConfig[],
-  map: Map<string, ColumnConfig>
-) => {
-  columnConfigs.forEach((columnConfig) => {
+const mapColumnCatalog = ({
+  database,
+  schema,
+  table,
+  columns,
+  map,
+}: {
+  database: string;
+  schema: string;
+  table: string;
+  columns: ColumnCatalog[];
+  map: Map<string, ColumnCatalog>;
+}) => {
+  columns.forEach((columnCatalog) => {
     const key = keyForResourceName({
-      database: db.name,
-      schema: schemaConfig.name,
-      table: tableConfig.name,
-      column: columnConfig.name,
+      database,
+      schema,
+      table,
+      column: columnCatalog.name,
     });
-    map.set(key, columnConfig);
+    map.set(key, columnCatalog);
   });
 };

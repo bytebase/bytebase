@@ -38,6 +38,7 @@ const flattenNoSQLColumn = (value: any): any => {
   const dict = value as { [key: string]: any };
   if (Object.keys(dict).length === 1 && Object.keys(dict)[0].startsWith("$")) {
     // Used by the MongoDB response.
+    // https://www.mongodb.com/zh-cn/docs/manual/reference/mongodb-extended-json/#bson-data-types-and-associated-representations
     const key = Object.keys(dict)[0];
     switch (key) {
       case "$oid":
@@ -61,6 +62,7 @@ const flattenNoSQLColumn = (value: any): any => {
       case "$timestamp":
         return (dict[key] as { t: number; i: number }).t;
       case "$binary": {
+        // https://www.mongodb.com/zh-cn/docs/manual/reference/bson-types/#binary-data
         const { base64, subType } = dict[key] as {
           base64: string;
           subType: string;

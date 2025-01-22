@@ -51,7 +51,9 @@
 
           <div class="sm:col-span-1 sm:col-start-1">
             <label for="semantic-types" class="textlabel">
-              {{ $t("settings.sensitive-data.semantic-types.table.semantic-type") }}
+              {{
+                $t("settings.sensitive-data.semantic-types.table.semantic-type")
+              }}
             </label>
             <div class="flex items-center gap-x-2 mt-3 text-sm">
               {{ columnSemanticType?.title }}
@@ -259,12 +261,8 @@ import {
   MiniActionButton,
 } from "@/components/v2";
 import { useSettingV1Store, useNotificationStore } from "@/store";
-import {
-  ColumnMetadata,
-} from "@/types/proto/v1/database_service";
-import {
-  ColumnCatalog,
-} from "@/types/proto/v1/database_catalog_service";
+import { ColumnCatalog } from "@/types/proto/v1/database_catalog_service";
+import { ColumnMetadata } from "@/types/proto/v1/database_service";
 import {
   SchemaTemplateSetting,
   SchemaTemplateSetting_FieldTemplate,
@@ -417,7 +415,10 @@ const submit = async () => {
     catalog: ColumnCatalog.fromPartial({
       ...state.catalog,
       name: state.column?.name,
-      labels: convertKVListToLabels(state.kvList, false /* !omitEmpty */),
+      labels: convertKVListToLabels(
+        state.kvList.filter((item) => item.key),
+        false /* !omitEmpty */
+      ),
     }),
   });
   const setting = await settingStore.fetchSettingByName(

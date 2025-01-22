@@ -1955,6 +1955,7 @@
     "search-database-and-table": "Buscar base de datos y tabla",
     "search-table": "Buscar tabla",
     "search-column": "Buscar columna",
+    "nothing-changed-for-database": "Nada cambió para la base de datos {database}",
     "actions": {
       "create-schema": "Crear esquema",
       "drop-schema": "Eliminar esquema",
@@ -2117,21 +2118,6 @@
     "overuse-warning": "{neededPlan} puede estar restringido en {currentPlan}, actualice ahora para asegurar un uso adecuado.",
     "overuse-modal": {
       "description": "Está utilizando una función que actualmente no está incluida en {plan}. Actualice ahora para evitar interrupciones:"
-    },
-    "features": {
-      "bb-feature-instance-count": {
-        "remaining": "Tu cuota total de instancias es de {total}, sólo te quedan {count} instancias.",
-        "runoutof": "Te has quedado sin tu cuota de instancias {total}.",
-        "upgrade": "@:{'subscription.upgrade'} para obtener más cuota de instancias."
-      },
-      "bb-feature-user-count": {
-        "remaining": "Su cuota total de usuarios es {total}, solo quedan {count} usuarios.",
-        "runoutof": "Se ha quedado sin su cuota de usuario {total}.",
-        "upgrade": "@:{'subscription.upgrade'} para obtener una cuota de usuario ilimitada."
-      },
-      "bb-feature-index-advisor": {
-        "title": "Asesor de índice"
-      }
     }
   },
   "sheet": {

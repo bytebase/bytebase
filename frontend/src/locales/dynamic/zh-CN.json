@@ -16,6 +16,16 @@
                 "admin": "系统定义的流程。只需要管理员审批。",
                 "owner-dba-admin": "系统定义的流程。先由项目所有者审批，再由 DBA 审批，最后由管理员审批。"
             }
+        },
+        "risk-rule": {
+            "template": {
+                "presets": {
+                    "environment-prod-high": "生产环境，默认为高风险",
+                    "environment-dev-low": "开发环境，默认为低风险",
+                    "dml-in-environment-prod-10k-rows-high": "生产环境中更新或删除的数据行数超过 10000，默认为高风险",
+                    "create-database-in-environment-prod-moderate": "在生产环境中创建数据库，默认为中风险"
+                }
+            }
         }
     },
     "activity": {
@@ -46,6 +56,195 @@
                         }
                     }
                 }
+            }
+        },
+        "general": {
+            "workspace": {
+                "announcement-alert-level": {
+                    "field": {
+                    "info": "普通",
+                    "warning": "警告",
+                    "critical": "重要"
+                    }
+                }
+            }
+        }
+    },
+    "subscription": {
+        "features": {
+            "bb-feature-external-secret-manager": {
+                "title": "设置外部密钥",
+                "desc": "设置 Vault 或自定义 URL 作为数据库密码的外部密钥"
+            },
+            "bb-feature-task-schedule-time": {
+                "title": "设定任务执行时间",
+                "desc": "「设定任务执行时间」可以将任务设定在特定时间执行"
+            },
+            "bb-feature-instance-count": {
+                "title": "实例数量限制",
+                "desc": "您已达最大实例数量限制，请付费升级来获取更多实例额度。",
+                "remaining": "当前总实例额度为 {total}，目前仅剩 {count} 个份额可用。",
+                "runoutof": "已用尽全部 {total} 个实例额度。",
+                "upgrade": "@:{'subscription.upgrade'}来获取更多实例额度。"
+            },
+            "bb-feature-user-count": {
+                "title": "用户数量限制",
+                "desc": "您已达最大用户数量限制，请付费升级来获取无限的用户额度。",
+                "remaining": "当前总用户额度为 {total}，目前仅剩 {count} 个份额可用。",
+                "runoutof": "已用尽全部 {total} 个用户额度。",
+                "upgrade": "@:{'subscription.upgrade'}来获取无限的用户额度。"
+            },
+            "bb-feature-multi-tenancy": {
+                "title": "批量模式",
+                "desc": "批量变更一组属于不同租户或者数据库分库的数据库。"
+            },
+            "bb-feature-rollout-policy": {
+                "title": "发布策略",
+                "desc": "「发布策略」可以控制数据库 schema 的变更是否需要手动发布"
+            },
+            "bb-feature-environment-tier-policy": {
+                "title": "环境级别",
+                "desc": "「环境级别」可以将环境标记为生产环境"
+            },
+            "bb-feature-sensitive-data": {
+                "title": "敏感数据",
+                "desc": "将数据表的列标记为敏感数据，它们在查询结果中将会被显示成 \"******\"。"
+            },
+            "bb-feature-access-control": {
+                "title": "数据访问控制",
+                "desc": "限制用户对数据的访问权限，例如禁止用户复制数据查询结果"
+            },
+            "bb-feature-lgtm": {
+                "title": "LGTM 检查",
+                "desc": "检查工单是否有 \"LGTM\" 评论。"
+            },
+            "bb-feature-im-approval": {
+                "title": "IM 集成",
+                "desc": "通过集成 IM 来批准工单。"
+            },
+            "bb-feature-sql-review": {
+                "title": "解锁 100+ SQL 审核策略",
+                "desc": "配置各种 SQL lint 规则，以在研发组织中落地 SQL 最佳实践，保障 Schema 的规范一致性。"
+            },
+            "bb-feature-custom-approval": {
+                "title": "自定义审批",
+                "desc": "为不同的任务配置风险等级和自定义审批流。"
+            },
+            "bb-feature-vcs-sql-review": {
+                "title": "GitOps 工作流中的 SQL 审核",
+                "desc": "在您的 VCS 仓库流水线上添加 SQL 审核 CI，以便在拉取请求中对变动的 SQL 文件进行自动审核。"
+            },
+            "bb-feature-rbac": {
+                "title": "角色管理",
+                "desc": "「角色管理」可以赋予成员诸如 DBA 这样的特定角色。"
+            },
+            "bb-feature-custom-role": {
+                "title": "自定义角色",
+                "desc": "定义自定义角色，你可以将它们应用到项目成员上，用于配置自定义审批。"
+            },
+            "bb-feature-watermark": {
+                "title": "水印设置",
+                "desc": "在页面上显示水印，包含用户名、ID 和 Email。"
+            },
+            "bb-feature-audit-log": {
+                "title": "审计日志",
+                "desc": "记录和查询工作空间中的用户执行的操作。"
+            },
+            "bb-feature-schema-drift": {
+                "title": "Schema 偏差",
+                "desc": "检测非预期的 schema 变更并且报告 schema 偏差。"
+            },
+            "bb-feature-branding": {
+                "title": "自定义品牌信息",
+                "desc": "定制 Logo"
+            },
+            "bb-feature-online-migration": {
+                "title": "在线大表变更",
+                "desc": "基于 gh-ost。对于大表，可以把锁表的时间从小时级降低到秒级。"
+            },
+            "bb-feature-sync-schema-all-versions": {
+                "title": "库表同步",
+                "desc": "选择某个数据库的任意一个 Schema 版本，并将其同步到目标数据库。"
+            },
+            "bb-feature-read-replica-connection": {
+                "title": "Read replica connection",
+                "desc": "使用只读副本连接到只读数据源。"
+            },
+            "bb-feature-instance-ssh-connection": {
+                "title": "SSH 实例连接",
+                "desc": "通过 SSH 连接实例。"
+            },
+            "bb.feature.custom-instance-synchronization": {
+                "title": "自定义实例同步",
+                "desc": "自定义扫描间隔、最大连接数，同步指定的数据库"
+            },
+            "bb-feature-index-advisor": {
+                "title": "索引建议",
+                "desc": "索引建议可以找到导致慢查询的索引，并提供相关的优化建议。"
+            },
+            "bb-feature-sso": {
+                "title": "Single Sign-On (SSO)",
+                "desc": "使得用户能够通过 SSO 安全地进行登录 Bytebase。"
+            },
+            "bb-feature-2fa": {
+                "title": "双重认证",
+                "desc": "双重认证为系统成员提供了一个额外的安全层。在登录时，用户需要输入由认证器应用程序生成的安全代码。"
+            },
+            "bb-feature-plugin-openai": {
+                "title": "AI 增强",
+                "desc": "AI 增强的 SQL 编辑器和索引建议功能，基于 OpenAI 技术驱动。"
+            },
+            "bb-feature-batch-query": {
+                "title": "批量查询",
+                "desc": "在 SQL Editor 中对多个数据库进行批量查询。"
+            },
+            "bb-feature-shared-sql-script": {
+                "title": "共享 SQL 脚本",
+                "desc": "将 SQL 脚本分享给项目成员，或者公开给所有人。"
+            },
+            "bb-feature-announcement": {
+                "title": "公告",
+                "desc": "配置公告横幅。"
+            },
+            "bb-feature-encrypted-secrets": {
+                "title": "保密变量",
+                "desc": "存储数据库的保密变量，并在工单的 SQL 中使用它们。"
+            },
+            "bb-feature-database-grouping": {
+                "title": "数据库分组",
+                "desc": "数据库分组让您可以对数据库分组里的数据库进行批量操作。"
+            },
+            "bb-feature-disallow-signup": {
+                "title": "禁用自助注册",
+                "desc": "禁用之后，新用户将无法自助注册，只能通过管理员邀请来创建账户。"
+            },
+            "bb-feature-disallow-password-signin": {
+                "title": "禁止使用密码登录",
+                "desc": "用户将无法通过邮箱和密码进行登录，只允许通过所配置的 SSO 进行登录。"
+            },
+            "bb-feature-schema-template": {
+                "title": "Schema 模板",
+                "desc": "预定义 Schema 模板，之后可以在变更或设计 Schema 时应用这些模板。"
+            },
+            "bb-feature-secure-token": {
+                "title": "登录频率",
+                "desc": "登录频率指定用户必须再次登录的间隔。"
+            },
+            "bb-feature-issue-advanced-search": {
+                "title": "工单高级搜索",
+                "desc": "通过高级搜索来访问无限制的历史工单。"
+            },
+            "bb-feature-issue-project-setting": {
+                "title": "工单项目设置",
+                "desc": "自定义高级工单项目设置。包括创建工单限制以及默认备份设置等。"
+            },
+            "bb-feature-password-restriction": {
+                "title": "密码限制",
+                "desc": "允许配置用户密码的规则"
+            },
+            "bb-feature-directory-sync": {
+                "title": "目录同步",
+                "desc": "将 Entra ID（以前称为 Azure AD）中的用户和组同步到您的 Bytebase 实例"
             }
         }
     }

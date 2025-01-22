@@ -23,7 +23,7 @@
 <script lang="ts" setup>
 import { Splitpanes, Pane } from "splitpanes";
 import "splitpanes/dist/splitpanes.css";
-import { reactive, computed, onMounted, toRef, watch } from "vue";
+import { reactive, computed, onMounted, toRef, ref, watch } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useSettingV1Store } from "@/store";
@@ -81,25 +81,18 @@ const combinedLoading = computed(() => {
 const context = provideSchemaEditorContext({
   targets,
   project: toRef(props, "project"),
+  classificationConfigId: ref(props.project.dataClassificationConfigId),
   readonly: toRef(props, "readonly"),
   selectedRolloutObjects: toRef(props, "selectedRolloutObjects"),
   disableDiffColoring: toRef(props, "disableDiffColoring"),
   hidePreview: toRef(props, "hidePreview"),
 });
-const { rebuildMetadataEdit, applyMetadataEdit, applySelectedMetadataEdit } =
-  useAlgorithm(context);
+const { rebuildMetadataEdit, applyMetadataEdit } = useAlgorithm(context);
 
 useEmitteryEventListener(context.events, "rebuild-edit-status", (params) => {
-  if (
-    ready.value
-  ) {
+  if (ready.value) {
     targets.value.forEach((target) => {
-      rebuildMetadataEdit(
-        target.database,
-        target.baselineMetadata,
-        target.metadata,
-        params.resets
-      );
+      rebuildMetadataEdit(target, params.resets);
     });
   }
 });
@@ -109,11 +102,7 @@ watch(
   ([ready, diffWhenReady]) => {
     if (ready && diffWhenReady) {
       targets.value.forEach((target) => {
-        rebuildMetadataEdit(
-          target.database,
-          target.baselineMetadata,
-          target.metadata
-        );
+        rebuildMetadataEdit(target);
       });
     }
   },
@@ -131,7 +120,6 @@ useEmitteryEventListener(
 defineExpose({
   rebuildMetadataEdit,
   applyMetadataEdit,
-  applySelectedMetadataEdit,
 });
 </script>
 

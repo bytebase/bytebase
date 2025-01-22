@@ -263,7 +263,6 @@ export const useBuildTree = () => {
     if (context.disableDiffColoring.value) {
       schemas = schemas.filter((schema) => {
         const status = context.getSchemaStatus(db, {
-          database,
           schema,
         });
         return status !== "dropped";

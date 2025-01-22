@@ -5,9 +5,7 @@
     <div class="w-full sticky top-0 pt-2 h-12 bg-white z-10">
       <NInput
         v-model:value="searchPattern"
-        :placeholder="
-            $t('schema-editor.search-database-and-table')
-        "
+        :placeholder="$t('schema-editor.search-database-and-table')"
       >
         <template #prefix>
           <heroicons-outline:search class="w-4 h-auto text-gray-300" />
@@ -199,7 +197,8 @@ const {
   getViewStatus,
   getProcedureStatus,
   getFunctionStatus,
-  upsertTableConfig,
+  getTableCatalog,
+  upsertTableCatalog,
   queuePendingScrollToTable,
   queuePendingScrollToColumn,
 } = useSchemaEditorContext();
@@ -665,7 +664,6 @@ const handleDuplicateTable = (treeNode: TreeNodeForTable) => {
   newTable.columns.forEach((newColumn) => {
     markEditStatus(
       db,
-
       {
         ...treeNode.metadata,
         table: newTable,
@@ -674,23 +672,26 @@ const handleDuplicateTable = (treeNode: TreeNodeForTable) => {
       "created"
     );
   });
-  const tableConfig = treeNode.metadata.database.schemaConfigs
-    .find((sc) => sc.name === schema.name)
-    ?.tableConfigs.find((tc) => tc.name === table.name);
-  if (tableConfig) {
-    const tableConfigCopy = cloneDeep(tableConfig);
-    tableConfigCopy.name = newTable.name;
-    upsertTableConfig(
-      db,
-      {
-        ...treeNode.metadata,
-        table: newTable,
-      },
-      (config) => {
-        Object.assign(config, tableConfigCopy);
-      }
-    );
-  }
+
+  upsertTableCatalog(
+    {
+      database: db.name,
+      schema: schema.name,
+      table: newTable.name,
+    },
+    (config) => {
+      Object.assign(
+        config,
+        getTableCatalog({
+          database: db.name,
+          schema: schema.name,
+          table: table.name,
+        }),
+        { name: newTable.name }
+      );
+    }
+  );
+
   addTab({
     type: "table",
     database: db,

@@ -1955,6 +1955,7 @@
     "search-database-and-table": "データベースとテーブルを検索する",
     "search-table": "検索テーブル",
     "search-column": "検索欄",
+    "nothing-changed-for-database": "データベース {database} には何も変更されていません",
     "actions": {
       "create-schema": "新しいスキーマ",
       "drop-schema": "スキーマの削除",
@@ -2117,21 +2118,6 @@
     "overuse-warning": "{neededPlan} は {currentPlan} で制限されます。通常どおり使用できるように、できるだけ早くアップグレードしてください。",
     "overuse-modal": {
       "description": "現在「{plan}」に含まれていない機能を使用しています。使用に影響を与えないように、すぐにアップグレードしてください。"
-    },
-    "features": {
-      "bb-feature-instance-count": {
-        "remaining": "現在の合計インスタンス割り当ては {total} で、使用可能な共有は {count} 個のみです。",
-        "runoutof": "すべての {total} インスタンス クレジットが使用されました。",
-        "upgrade": "@:{'subscription.upgrade'} を使用して、より多くのインスタンス割り当てを取得します。"
-      },
-      "bb-feature-user-count": {
-        "remaining": "現在の合計ユーザー割り当ては {total} で、使用できる共有は {count} 個のみです。",
-        "runoutof": "{total} 個のユーザー クレジットがすべて使用されました。",
-        "upgrade": "@:{'subscription.upgrade'} を使用すると、無制限のユーザー割り当てを取得できます。"
-      },
-      "bb-feature-index-advisor": {
-        "title": "インデックスの提案"
-      }
     }
   },
   "sheet": {

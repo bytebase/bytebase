@@ -1,4 +1,5 @@
 import type { ComposedDatabase } from "@/types";
+import type { DatabaseCatalog } from "@/types/proto/v1/database_catalog_service";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
@@ -13,6 +14,8 @@ export type EditTarget = {
   database: ComposedDatabase;
   metadata: DatabaseMetadata;
   baselineMetadata: DatabaseMetadata;
+  catalog: DatabaseCatalog;
+  baselineCatalog: DatabaseCatalog;
 };
 
 export type TabType = "database" | "table" | "view" | "procedure" | "function";
