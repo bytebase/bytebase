@@ -16,6 +16,7 @@ import sqlEditorRoutes, {
   SQL_EDITOR_SETTING_AUDIT_LOG_MODULE,
   SQL_EDITOR_SETTING_DATA_CLASSIFICATION_MODULE,
   SQL_EDITOR_SETTING_GLOBAL_MASKING_MODULE,
+  SQL_EDITOR_SETTING_DATA_SEMANTIC_TYPES,
   SQL_EDITOR_SETTING_DATABASES_MODULE,
   SQL_EDITOR_SETTING_ENVIRONMENT_MODULE,
   SQL_EDITOR_SETTING_GENERAL_MODULE,
@@ -218,6 +219,11 @@ export const useSidebarItems = (ignoreModeCheck?: MaybeRef<boolean>) => {
         type: "div",
         expand: true,
         children: [
+          {
+            title: t("settings.sensitive-data.semantic-types.self"),
+            name: SQL_EDITOR_SETTING_DATA_SEMANTIC_TYPES,
+            type: "route",
+          },
           {
             title: t("settings.sidebar.data-classification"),
             name: SQL_EDITOR_SETTING_DATA_CLASSIFICATION_MODULE,

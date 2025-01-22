@@ -325,7 +325,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_SEMANTIC_TYPES,
         meta: {
           title: () => t("settings.sensitive-data.semantic-types.self"),
-          requiredWorkspacePermissionList: () => ["bb.policies.get"],
+          requiredWorkspacePermissionList: () => ["bb.settings.get"],
         },
         component: () => import("@/views/SettingWorkspaceSemanticTypes.vue"),
         props: true,
@@ -335,7 +335,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_DATA_CLASSIFICATION,
         meta: {
           title: () => t("settings.sidebar.data-classification"),
-          requiredWorkspacePermissionList: () => ["bb.policies.get"],
+          requiredWorkspacePermissionList: () => ["bb.settings.get"],
         },
         component: () =>
           import("@/views/SettingWorkspaceDataClassification.vue"),
