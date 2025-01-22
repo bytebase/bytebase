@@ -1,0 +1,52 @@
+{
+    "custom-approval": {
+        "approval-flow": {
+            "node": {
+                "group": {
+                    "WORKSPACE_OWNER": "Administrador del espacio de trabajo",
+                    "WORKSPACE_DBA": "DBA",
+                    "PROJECT_OWNER": "Propietario del proyecto",
+                    "PROJECT_MEMBER": "Desarrollador del proyecto"
+                }
+            },
+            "presets": {
+                "owner-dba": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba.",
+                "owner": "El sistema define el proceso de aprobación y solo necesita la aprobación del dueño del proyecto.",
+                "dba": "El sistema define el proceso de aprobación y solo necesita la aprobación del DBA.",
+                "admin": "El sistema define el proceso de aprobación y solo necesita la aprobación del administrador.",
+                "owner-dba-admin": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba y finalmente el administrador lo aprueba."
+            }
+        }
+    },
+    "activity": {
+        "sentence": {
+            "verb-type-target-by-people": "{verb} {type} {target}",
+            "verb-type-target-by-system-bot": "{type} {target} {verb}",
+            "changed-x-link": "cambiado {name}. \n{link}"
+        }
+    },
+    "settings": {
+        "sensitive-data": {
+            "semantic-types": {
+                "template": {
+                    "bb-default": {
+                        "title": "Por defecto",
+                        "description": "Tipo predeterminado con enmascaramiento completo",
+                        "algorithm": {
+                            "title": "Máscara completa",
+                            "description": "Todos los valores se enmascararán como \"******\""
+                        }
+                    },
+                    "bb-default-partial": {
+                        "title": "Predeterminado Parcial",
+                        "description": "Tipo parcial predeterminado con enmascaramiento parcial",
+                        "algorithm": {
+                            "title": "Máscara de rango",
+                            "description": "Solo se conservan los datos sin procesar en el medio y se tapa el principio y el final con \"**\".\nPor ejemplo, \"dirección\" se enmascarará como \"**dre**\"."
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
