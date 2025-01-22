@@ -408,7 +408,10 @@ const categoryAndTitle = (
   }
   if (checkResult.sqlSummaryReport) {
     if (typeof checkResult.sqlSummaryReport.affectedRows === "number") {
-      return ["", t("task.check-type.affected-rows")];
+      return [
+        "",
+        `${t("task.check-type.affected-rows.self")} (${t("task.check-type.affected-rows.description")})`,
+      ];
     }
     return ["", checkResult.title];
   }
