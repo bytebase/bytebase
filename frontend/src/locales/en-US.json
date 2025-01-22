@@ -230,7 +230,9 @@
     "finish": "Finish",
     "title": "Title",
     "text-wrap": "Text wrap",
-    "catalog": "Catalog"
+    "catalog": "Catalog",
+    "summary": "Summary",
+    "errors": "Errors"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -258,7 +260,10 @@
       "connection": "Connection",
       "sql-review": "SQL review",
       "ghost-sync": "gh-ost sync",
-      "affected-rows": "Affected rows (estimation based on statistical information)",
+      "affected-rows": {
+        "self": "Affected rows",
+        "description": "Estimated by statistical information."
+      },
       "summary-report": "Summary report"
     },
     "rollout-time": "Rollout time",
