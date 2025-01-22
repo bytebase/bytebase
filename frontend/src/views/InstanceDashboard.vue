@@ -258,16 +258,16 @@ const remainingInstanceCount = computed((): number => {
 });
 
 const instanceCountAttention = computed((): string => {
-  const upgrade = t("subscription.features.bb-feature-instance-count.upgrade");
+  const upgrade = t("dynamic.subscription.features.bb-feature-instance-count.upgrade");
   let status = "";
 
   if (remainingInstanceCount.value > 0) {
-    status = t("subscription.features.bb-feature-instance-count.remaining", {
+    status = t("dynamic.subscription.features.bb-feature-instance-count.remaining", {
       total: subscriptionStore.instanceCountLimit,
       count: remainingInstanceCount.value,
     });
   } else {
-    status = t("subscription.features.bb-feature-instance-count.runoutof", {
+    status = t("dynamic.subscription.features.bb-feature-instance-count.runoutof", {
       total: subscriptionStore.instanceCountLimit,
     });
   }
