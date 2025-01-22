@@ -2,7 +2,9 @@
   <NPopover v-if="shouldShow" trigger="hover" placement="bottom">
     <template #trigger>
       <NTag round>
-        <span class="text-gray-400 text-sm mr-1">Affected Rows</span>
+        <span class="text-gray-400 text-sm mr-1">{{
+          $t("task.check-type.affected-rows.self")
+        }}</span>
         <span class="text-sm font-medium">
           {{ affectedRows }}
         </span>
