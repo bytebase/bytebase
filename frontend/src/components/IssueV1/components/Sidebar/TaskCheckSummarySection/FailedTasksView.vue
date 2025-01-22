@@ -9,7 +9,7 @@
       </NTag>
     </template>
     <div
-      class="flex flex-col justify-start items-start w-64 max-h-128 overflow-auto"
+      class="flex flex-col justify-start items-start w-72 max-h-128 overflow-auto"
     >
       <div class="font-medium text-control">Failed tasks</div>
       <div class="w-full flex flex-col mt-1 gap-y-2 divide-y">
