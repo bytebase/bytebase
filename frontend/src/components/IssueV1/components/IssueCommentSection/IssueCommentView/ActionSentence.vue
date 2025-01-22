@@ -248,15 +248,11 @@ type VerbTypeTarget = {
 };
 
 const renderVerbTypeTarget = (params: VerbTypeTarget, props: object = {}) => {
-  // Touch related keypaths to make linter happy.
-  // TODO(vh): Please remove me after dynamic i18n path is implemented.
-  t("activity.sentence.verb-type-target-by-people");
-  t("activity.sentence.verb-type-target-by-system-bot");
   const keypath =
     extractUserResourceName(params.issueComment.creator) ===
     userStore.systemBotUser?.email
-      ? "activity.sentence.verb-type-target-by-system-bot"
-      : "activity.sentence.verb-type-target-by-people";
+      ? "dynamic.activity.sentence.verb-type-target-by-system-bot"
+      : "dynamic.activity.sentence.verb-type-target-by-people";
   return (
     <Translation {...props} keypath={keypath}>
       {{

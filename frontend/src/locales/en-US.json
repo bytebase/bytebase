@@ -764,8 +764,6 @@
       "skipped": "skipped",
       "rolled-out": "rolled out",
       "xxx-automatically": "{verb} automatically",
-      "verb-type-target-by-people": "{verb} {type} {target}",
-      "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "failed-to-backup": "Failed to backup data: {error}",
       "prior-back-table": "Data backup to database {database} and tables {tables}",
       "prior-back-table-for-line": "Data backup to database {database} and table {tables} for DML in line {line}"
