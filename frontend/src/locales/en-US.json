@@ -982,7 +982,7 @@
           "database-sync": "Database sync",
           "prior-backup": "Prior backup"
         },
-        "affected-rows-n": "Affected rows: {n}",
+        "estimated-affected-rows-n": "Estimated affected rows: {n}",
         "prior-backup-tables": "Prior backup tables",
         "status-update": {
           "waiting": "Ready to be executed",
@@ -2712,7 +2712,7 @@
       "files-will-always-be-sorted-and-executed-in-version-order": "The files will always be sorted and executed in version order.",
       "cannot-modify-files-after-created": "You cannot modify files after the release is created."
     },
-    "usage-description": "The release is mainly used in custom GitOps with API integration."
+    "usage-description": "The release is only used in custom GitOps with API integration."
   },
   "export-data": {
     "export-rows": "Export rows",

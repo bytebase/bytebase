@@ -982,7 +982,7 @@
           "database-sync": "数据库同步",
           "prior-backup": "数据预备份"
         },
-        "affected-rows-n": "影响行数：{n}",
+        "estimated-affected-rows-n": "预估影响行数：{n}",
         "prior-backup-tables": "数据预备份相关的表",
         "status-update": {
           "waiting": "准备就绪，等待执行",
@@ -2712,7 +2712,7 @@
       "files-will-always-be-sorted-and-executed-in-version-order": "文件将始终按照版本顺序排序和执行。",
       "cannot-modify-files-after-created": "发布创建后您无法修改文件。"
     },
-    "usage-description": "发布包主要用于自定义的 GitOps 与 Bytebase API 集成。"
+    "usage-description": "发布包仅用于自定义的 GitOps 与 Bytebase API 集成。"
   },
   "export-data": {
     "export-rows": "导出行数",

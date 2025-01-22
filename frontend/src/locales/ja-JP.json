@@ -982,7 +982,7 @@
           "database-sync": "データベースの同期",
           "prior-backup": "事前のバックアップ"
         },
-        "affected-rows-n": "影響を受ける行: {n}",
+        "estimated-affected-rows-n": "推定影響行数: {n}",
         "prior-backup-tables": "以前のバックアップテーブル",
         "status-update": {
           "waiting": "実行の準備完了",
@@ -2712,7 +2712,7 @@
       "files-will-always-be-sorted-and-executed-in-version-order": "ファイルは常にバージョン順に並べ替えられ、実行されます。",
       "cannot-modify-files-after-created": "リリースの作成後はファイルを変更できません。"
     },
-    "usage-description": "このリリースは主に、API 統合によるカスタム GitOps で使用されます。"
+    "usage-description": "このリリースは、API統合を使用したカスタムGitOpsでのみ使用されます。"
   },
   "export-data": {
     "export-rows": "エクスポート行数",
