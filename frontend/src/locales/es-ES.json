@@ -230,7 +230,8 @@
     "finish": "Finalizar",
     "title": "Título",
     "text-wrap": "Ajuste de texto",
-    "catalog": "Catálogo"
+    "catalog": "Catálogo",
+    "summary": "Resumen"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -258,7 +259,10 @@
       "connection": "Conexión",
       "sql-review": "Revisión de SQL",
       "ghost-sync": "Sincronización gh-ost",
-      "affected-rows": "Filas afectadas (estimación basada en información estadística)",
+      "affected-rows": {
+        "self": "Filas afectadas",
+        "description": "Estimado por información estadística."
+      },
       "summary-report": "Informe resumido"
     },
     "rollout-time": "Tiempo de implementación",

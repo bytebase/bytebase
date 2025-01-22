@@ -230,7 +230,8 @@
     "finish": "完成",
     "title": "标题",
     "text-wrap": "文本折行",
-    "catalog": "Catalog"
+    "catalog": "Catalog",
+    "summary": "总结"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -258,7 +259,10 @@
       "connection": "连接",
       "sql-review": "SQL 审核",
       "ghost-sync": "gh-ost 同步",
-      "affected-rows": "影响行数（基于统计信息估算）",
+      "affected-rows": {
+        "self": "影响行数",
+        "description": "根据统计信息估算。"
+      },
       "summary-report": "概要报告"
     },
     "rollout-time": "指定发布时间",

@@ -230,7 +230,8 @@
     "finish": "仕上げる",
     "title": "タイトル",
     "text-wrap": "テキストの折り返し",
-    "catalog": "カタログ"
+    "catalog": "カタログ",
+    "summary": "まとめ"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -258,7 +259,10 @@
       "connection": "接続する",
       "sql-review": "SQL監査",
       "ghost-sync": "gh-ost同期",
-      "affected-rows": "影響を受ける行数 (統計に基づいて推定)",
+      "affected-rows": {
+        "self": "影響を受ける行",
+        "description": "統計情報から推定。"
+      },
       "summary-report": "概略報告"
     },
     "rollout-time": "公開時間を指定する",
