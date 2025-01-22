@@ -13,12 +13,12 @@
           id="modal-headline"
           class="flex self-center text-lg leading-6 font-medium text-gray-900"
         >
-          {{ $t(`subscription.features.${featureKey}.title`) }}
+          {{ $t(`dynamic.subscription.features.${featureKey}.title`) }}
         </h3>
       </div>
       <div class="mt-4">
         <p class="whitespace-pre-wrap">
-          {{ $t(`subscription.features.${featureKey}.desc`) }}
+          {{ $t(`dynamic.subscription.features.${featureKey}.desc`) }}
         </p>
       </div>
       <div class="mt-3">

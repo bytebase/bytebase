@@ -24,7 +24,7 @@
           tooltip ||
           $t("subscription.instance-assignment.missing-license-for-feature", {
             feature: $t(
-              `subscription.features.${feature.split(".").join("-")}.title`
+              `dynamic.subscription.features.${feature.split(".").join("-")}.title`
             ).toLowerCase(),
           })
         }}

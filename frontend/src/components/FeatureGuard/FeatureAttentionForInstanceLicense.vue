@@ -7,7 +7,7 @@
     "
     :class="customClass"
     :type="type ?? `info`"
-    :title="$t(`subscription.features.${featureKey}.desc`)"
+    :title="$t(`dynamic.subscription.features.${featureKey}.desc`)"
     :description="
       $t('subscription.instance-assignment.missing-license-attention')
     "
