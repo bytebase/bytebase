@@ -45,7 +45,7 @@ import { displayRoleTitle } from "./role";
 
 export const approvalNodeGroupValueText = (group: ApprovalNode_GroupValue) => {
   const name = approvalNode_GroupValueToJSON(group);
-  const keypath = `custom-approval.approval-flow.node.group.${name}`;
+  const keypath = `dynamic.custom-approval.approval-flow.node.group.${name}`;
   if (te(keypath)) {
     return t(keypath);
   }

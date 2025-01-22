@@ -15,7 +15,7 @@
     >
       {{
         $t(
-          `settings.general.workspace.announcement-alert-level.field.${AlertLevelToString(
+          `dynamic.settings.general.workspace.announcement-alert-level.field.${AlertLevelToString(
             item
           ).toLowerCase()}`
         )

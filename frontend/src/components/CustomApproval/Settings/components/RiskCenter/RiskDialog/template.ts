@@ -132,7 +132,7 @@ export const useRuleTemplates = () => {
 
 export const titleOfTemplate = (template: RuleTemplate) => {
   const { key } = template;
-  const keypath = `custom-approval.risk-rule.template.presets.${key}`;
+  const keypath = `dynamic.custom-approval.risk-rule.template.presets.${key}`;
   if (te(keypath)) {
     return t(keypath);
   }

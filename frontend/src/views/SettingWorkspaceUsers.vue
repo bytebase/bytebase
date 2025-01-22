@@ -343,16 +343,16 @@ const remainingUserCount = computed((): number => {
 });
 
 const userCountAttention = computed((): string => {
-  const upgrade = t("subscription.features.bb-feature-user-count.upgrade");
+  const upgrade = t("dynamic.subscription.features.bb-feature-user-count.upgrade");
   let status = "";
 
   if (remainingUserCount.value > 0) {
-    status = t("subscription.features.bb-feature-user-count.remaining", {
+    status = t("dynamic.subscription.features.bb-feature-user-count.remaining", {
       total: subscriptionV1Store.userCountLimit,
       count: remainingUserCount.value,
     });
   } else {
-    status = t("subscription.features.bb-feature-user-count.runoutof", {
+    status = t("dynamic.subscription.features.bb-feature-user-count.runoutof", {
       total: subscriptionV1Store.userCountLimit,
     });
   }

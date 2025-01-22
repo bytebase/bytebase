@@ -168,14 +168,14 @@ const columnList = computed(() => {
           {isBuiltinSemanticType(item.item) ? (
             <h3>
               {t(
-                `settings.sensitive-data.semantic-types.template.${item.item.id.split(".").join("-")}.algorithm.title`
+                `dynamic.settings.sensitive-data.semantic-types.template.${item.item.id.split(".").join("-")}.title`
               )}
             </h3>
           ) : (
             <h3>
               {getMaskingType(item.item.algorithm)
                 ? t(
-                    `settings.sensitive-data.algorithms.${getMaskingType(item.item.algorithm)?.toLowerCase()}.self`
+                    `dynamic.settings.sensitive-data.algorithms.${getMaskingType(item.item.algorithm)?.toLowerCase()}.self`
                   )
                 : t("settings.sensitive-data.algorithms.default")}
             </h3>
@@ -187,7 +187,7 @@ const columnList = computed(() => {
                 default: () => (
                   <div class="whitespace-pre-line">
                     {t(
-                      `settings.sensitive-data.semantic-types.template.${item.item.id.split(".").join("-")}.algorithm.description`
+                      `dynamic.settings.sensitive-data.semantic-types.template.${item.item.id.split(".").join("-")}.algorithm.description`
                     )}
                   </div>
                 ),
