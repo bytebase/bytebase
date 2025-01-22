@@ -2,6 +2,7 @@
   <div class="flex flex-col gap-y-3 py-2 px-3">
     <VCSInfo />
     <ReleaseInfo />
+    <CheckResultSummarySection />
     <ReviewSection />
     <IssueLabels />
 
@@ -14,6 +15,7 @@
 </template>
 
 <script lang="ts" setup>
+import CheckResultSummarySection from "./CheckResultSummarySection";
 import EarliestAllowedTime from "./EarliestAllowedTime.vue";
 import GhostSection from "./GhostSection";
 import IssueLabels from "./IssueLabels.vue";
