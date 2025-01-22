@@ -175,7 +175,7 @@ const columnList = computed(() => {
             <h3>
               {getMaskingType(item.item.algorithm)
                 ? t(
-                    `dynamic.settings.sensitive-data.algorithms.${getMaskingType(item.item.algorithm)?.toLowerCase()}.self`
+                    `settings.sensitive-data.algorithms.${getMaskingType(item.item.algorithm)?.toLowerCase()}.self`
                   )
                 : t("settings.sensitive-data.algorithms.default")}
             </h3>
