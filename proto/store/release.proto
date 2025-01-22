@@ -26,6 +26,14 @@ message ReleasePayload {
     string sheet_sha256 = 4;
     ReleaseFileType type = 5;
     string version = 6;
+    ChangeType change_type = 7;
+
+    enum ChangeType {
+      CHANGE_TYPE_UNSPECIFIED = 0;
+      DDL = 1;
+      DDL_GHOST = 2;
+      DML = 3;
+    }
   }
 
   message VCSSource {

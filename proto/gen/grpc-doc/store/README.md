@@ -252,6 +252,7 @@
     - [ReleasePayload.VCSSource](#bytebase-store-ReleasePayload-VCSSource)
   
     - [ReleaseFileType](#bytebase-store-ReleaseFileType)
+    - [ReleasePayload.File.ChangeType](#bytebase-store-ReleasePayload-File-ChangeType)
   
 - [store/review_config.proto](#store_review_config-proto)
     - [ReviewConfigPayload](#bytebase-store-ReviewConfigPayload)
@@ -3930,6 +3931,7 @@ SlowQueryPolicy is the policy configuration for slow query.
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
 | type | [ReleaseFileType](#bytebase-store-ReleaseFileType) |  |  |
 | version | [string](#string) |  |  |
+| change_type | [ReleasePayload.File.ChangeType](#bytebase-store-ReleasePayload-File-ChangeType) |  |  |
 
 
 
@@ -3963,6 +3965,20 @@ SlowQueryPolicy is the policy configuration for slow query.
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | VERSIONED | 1 |  |
+
+
+
+<a name="bytebase-store-ReleasePayload-File-ChangeType"></a>
+
+### ReleasePayload.File.ChangeType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CHANGE_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 |  |
+| DDL_GHOST | 2 |  |
+| DML | 3 |  |
 
 
  
