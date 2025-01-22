@@ -16,6 +16,16 @@
                 "admin": "El sistema define el proceso de aprobación y solo necesita la aprobación del administrador.",
                 "owner-dba-admin": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba y finalmente el administrador lo aprueba."
             }
+        },
+        "risk-rule": {
+            "template": {
+                "presets": {
+                    "environment-prod-high": "Se considera que el riesgo para el entorno de producción es alto.",
+                    "environment-dev-low": "El valor de riesgo para el entorno de desarrollo se considera bajo.",
+                    "dml-in-environment-prod-10k-rows-high": "En el entorno de producción, si el número de filas a actualizar o eliminar supera los 10000, se considera que el riesgo es alto.",
+                    "create-database-in-environment-prod-moderate": "Crear una base de datos en el entorno de producción se considera un riesgo moderado."
+                }
+            }
         }
     },
     "activity": {
@@ -46,6 +56,33 @@
                         }
                     }
                 }
+            }
+        },
+        "general": {
+            "workspace": {
+                "announcement-alert-level": {
+                    "field": {
+                        "info": "Común",
+                        "warning": "Advertencia",
+                        "critical": "Importante"
+                    }
+                }
+            }
+        }
+    },
+    "subscription": {
+        "features": {
+            "bb-feature-custom-approval": {
+                "title": "Aprobación personalizada",
+                "desc": "Configure el nivel de riesgo y el flujo de aprobación para diferentes tareas."
+            },
+            "bb-feature-environment-tier-policy": {
+                "title": "Nivel de entorno",
+                "desc": "Marque el entorno como producción."
+            },
+            "bb-feature-sensitive-data": {
+                "title": "Datos sensibles",
+                "desc": "Marque las columnas de la tabla como datos sensibles y el resultado de la consulta de ellos se mostrará como \"******\"."
             }
         }
     }

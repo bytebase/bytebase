@@ -16,6 +16,16 @@
                 "admin": "The system defines the approval process and only needs Administrator approval.",
                 "owner-dba-admin": "The system defines the approval process, first the project Owner approves, then the DBA approves, and finally the Administrator approves."
             }
+        },
+        "risk-rule": {
+            "template": {
+                "presets": {
+                    "environment-prod-high": "The risk for the production environment is considered to be high.",
+                    "environment-dev-low": "The risk value for the development environment is considered to be low.",
+                    "dml-in-environment-prod-10k-rows-high": "In the production environment, if the number of rows to be updated or deleted exceeds 10000, the risk is considered to be high.",
+                    "create-database-in-environment-prod-moderate": "Creating a database in the production environment is considered to be a moderate risk."
+                }
+            }
         }
     },
     "activity": {
@@ -46,6 +56,33 @@
                         }
                     }
                 }
+            }
+        },
+        "general": {
+            "workspace": {
+                "announcement-alert-level": {
+                    "field": {
+                        "info": "Normal",
+                        "warning": "Warning",
+                        "critical": "Critical"
+                    }
+                }
+            }
+        }
+    },
+    "subscription": {
+        "features": {
+            "bb-feature-custom-approval": {
+                "title": "Custom approval",
+                "desc": "Configure risk level and approval flow for different tasks."
+            },
+            "bb-feature-environment-tier-policy": {
+                "title": "Environment tier",
+                "desc": "Mark environment as production."
+            },
+            "bb-feature-sensitive-data": {
+                "title": "Sensitive data",
+                "desc": "Mark table columns as sensitive data and the query result of them will be displayed as \"******\"."
             }
         }
     }

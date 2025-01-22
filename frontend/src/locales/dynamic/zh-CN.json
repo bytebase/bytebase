@@ -16,6 +16,16 @@
                 "admin": "系统定义的流程。只需要管理员审批。",
                 "owner-dba-admin": "系统定义的流程。先由项目所有者审批，再由 DBA 审批，最后由管理员审批。"
             }
+        },
+        "risk-rule": {
+            "template": {
+                "presets": {
+                    "environment-prod-high": "生产环境，默认为高风险",
+                    "environment-dev-low": "开发环境，默认为低风险",
+                    "dml-in-environment-prod-10k-rows-high": "生产环境中更新或删除的数据行数超过 10000，默认为高风险",
+                    "create-database-in-environment-prod-moderate": "在生产环境中创建数据库，默认为中风险"
+                }
+            }
         }
     },
     "activity": {
@@ -46,6 +56,33 @@
                         }
                     }
                 }
+            }
+        },
+        "general": {
+            "workspace": {
+                "announcement-alert-level": {
+                    "field": {
+                    "info": "普通",
+                    "warning": "警告",
+                    "critical": "重要"
+                    }
+                }
+            }
+        }
+    },
+    "subscription": {
+        "features": {
+            "bb-feature-custom-approval": {
+                "title": "自定义审批",
+                "desc": "为不同的任务配置风险等级和自定义审批流。"
+            },
+            "bb-feature-environment-tier-policy": {
+                "title": "环境级别",
+                "desc": "「环境级别」可以将环境标记为生产环境"
+            },
+            "bb-feature-sensitive-data": {
+                "title": "敏感数据",
+                "desc": "将数据表的列标记为敏感数据，它们在查询结果中将会被显示成 \"******\"。"
             }
         }
     }

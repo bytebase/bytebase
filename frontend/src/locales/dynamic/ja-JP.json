@@ -16,6 +16,16 @@
                 "admin": "システム定義のプロセス。管理者の承認のみが必要です。",
                 "owner-dba-admin": "システム定義のプロセス。承認は、最初にプロジェクト所有者によって行われ、次に DBA、最後に管理者によって行われます。"
             }
+        },
+        "risk-rule": {
+            "template": {
+                "presets": {
+                    "environment-prod-high": "運用環境、デフォルトで高リスク",
+                    "environment-dev-low": "開発環境、デフォルトでは低リスク",
+                    "dml-in-environment-prod-10k-rows-high": "運用環境で更新または削除されたデータ行の数が 10,000 を超えており、デフォルトで高リスクとみなされます。",
+                    "create-database-in-environment-prod-moderate": "本番環境でデータベースを作成します。デフォルトは中リスクです"
+                }
+            }
         }
     },
     "activity": {
@@ -46,6 +56,33 @@
                         }
                     }
                 }
+            }
+        },
+        "general": {
+            "workspace": {
+                "announcement-alert-level": {
+                    "field": {
+                        "info": "情報",
+                        "warning": "警告",
+                        "critical": "重要"
+                    }
+                }
+            }
+        }
+    },
+    "subscription": {
+        "features": {
+            "bb-feature-custom-approval": {
+                "title": "カスタム承認",
+                "desc": "さまざまなタスクのリスク レベルとカスタム承認フローを設定します。"
+            },
+            "bb-feature-environment-tier-policy": {
+                "title": "環境レベル",
+                "desc": "「環境レベル」では、環境を本番環境としてマークできます。"
+            },
+            "bb-feature-sensitive-data": {
+                "title": "機密データ",
+                "desc": "データ テーブルの列を機密データとしてマークすると、クエリ結果に「******」として表示されます。"
             }
         }
     }
