@@ -28,6 +28,8 @@ export const SQL_EDITOR_SETTING_AUDIT_LOG_MODULE =
   "sql-editor.setting.audit-log";
 export const SQL_EDITOR_SETTING_DATA_CLASSIFICATION_MODULE =
   "sql-editor.setting.data-classification";
+export const SQL_EDITOR_SETTING_DATA_SEMANTIC_TYPES =
+  "sql-editor.setting.semantic-types";
 export const SQL_EDITOR_SETTING_GLOBAL_MASKING_MODULE =
   "sql-editor.setting.global-masking";
 export const SQL_EDITOR_SETTING_PROFILE_MODULE = "sql-editor.setting.profile";
@@ -189,10 +191,19 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
             path: "data-classification",
             name: SQL_EDITOR_SETTING_DATA_CLASSIFICATION_MODULE,
             meta: {
-              requiredWorkspacePermissionList: () => ["bb.policies.get"],
+              requiredWorkspacePermissionList: () => ["bb.settings.get"],
             },
             component: () =>
               import("../views/sql-editor/Setting/DataClassification"),
+          },
+          {
+            path: "semantic-types",
+            name: SQL_EDITOR_SETTING_DATA_SEMANTIC_TYPES,
+            meta: {
+              requiredWorkspacePermissionList: () => ["bb.settings.get"],
+            },
+            component: () =>
+              import("../views/sql-editor/Setting/SemanticTypes"),
           },
           {
             path: "global-masking",
