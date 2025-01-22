@@ -156,7 +156,7 @@ const renderActionSentence = () => {
       return renderVerbTypeTarget(params);
     } else if (fromSheet !== undefined && toSheet !== undefined) {
       return (
-        <Translation keypath="activity.sentence.changed-x-link">
+        <Translation keypath="dynamic.activity.sentence.changed-x-link">
           {{
             name: () => "SQL",
             link: () => (
