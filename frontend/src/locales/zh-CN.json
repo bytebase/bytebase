@@ -2118,21 +2118,6 @@
     "overuse-warning": "{neededPlan}在{currentPlan}将会受限，请尽快升级以确保正常使用。",
     "overuse-modal": {
       "description": "您正在使用当前「{plan}」不包含的功能。立即升级避免影响使用。"
-    },
-    "features": {
-      "bb-feature-instance-count": {
-        "remaining": "当前总实例额度为 {total}，目前仅剩 {count} 个份额可用。",
-        "runoutof": "已用尽全部 {total} 个实例额度。",
-        "upgrade": "@:{'subscription.upgrade'}来获取更多实例额度。"
-      },
-      "bb-feature-user-count": {
-        "remaining": "当前总用户额度为 {total}，目前仅剩 {count} 个份额可用。",
-        "runoutof": "已用尽全部 {total} 个用户额度。",
-        "upgrade": "@:{'subscription.upgrade'}来获取无限的用户额度。"
-      },
-      "bb-feature-index-advisor": {
-        "title": "索引建议"
-      }
     }
   },
   "sheet": {
