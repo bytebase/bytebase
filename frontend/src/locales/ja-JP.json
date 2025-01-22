@@ -2712,7 +2712,7 @@
       "files-will-always-be-sorted-and-executed-in-version-order": "ファイルは常にバージョン順に並べ替えられ、実行されます。",
       "cannot-modify-files-after-created": "リリースの作成後はファイルを変更できません。"
     },
-    "usage-description": "このリリースは主に、API 統合によるカスタム GitOps で使用されます。"
+    "usage-description": "このリリースは、API統合を使用したカスタムGitOpsでのみ使用されます。"
   },
   "export-data": {
     "export-rows": "エクスポート行数",
