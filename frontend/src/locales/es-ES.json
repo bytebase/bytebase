@@ -982,7 +982,7 @@
           "database-sync": "Sincronización de base de datos",
           "prior-backup": "Copia de seguridad previa"
         },
-        "affected-rows-n": "Filas afectadas: {n}",
+        "estimated-affected-rows-n": "Filas afectadas estimadas: {n}",
         "prior-backup-tables": "Tablas de respaldo anteriores",
         "status-update": {
           "waiting": "Listo para ser ejecutado",
