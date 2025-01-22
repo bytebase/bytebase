@@ -2,6 +2,10 @@
   <div class="w-full flex flex-col gap-y-4">
     <NAlert type="info">
       <span>{{ $t("release.usage-description") }}</span>
+      <LearnMoreLink
+        url="https://www.bytebase.com/docs/vcs-integration/custom/release/?source=console"
+        class="ml-1"
+      />
     </NAlert>
     <!-- Only show create button in dev mode -->
     <div v-if="isDev" class="w-full flex flex-row justify-end items-center">
@@ -38,6 +42,7 @@ import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { useReleaseStore } from "@/store";
 import type { ComposedProject } from "@/types";
 import ReleaseDataTable from "../Release/ReleaseDataTable.vue";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 
 const props = defineProps<{
   project: ComposedProject;
