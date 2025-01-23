@@ -49,7 +49,8 @@ export default defineComponent({
           path.startsWith("/?") ||
           path.startsWith("/#") ||
           path.startsWith("/403") ||
-          path.startsWith("/404")
+          path.startsWith("/404") ||
+          path.startsWith("/sql-editor")
         ) {
           return fallback();
         }

@@ -280,24 +280,33 @@
                 :placeholder="$t('instance.external-secret-vault.vault-url')"
               />
             </div>
-            <!-- AppRole is not enabled -->
-            <!-- <div class="sm:col-span-2 sm:col-start-1 space-y-2">
-          <label class="textlabel block">
-            {{ $t("instance.external-secret-vault.vault-auth-type.self") }}
-          </label>
-          <NRadioGroup
-            class="textlabel mb-2"
-            :value="dataSource.externalSecret.authType"
-            @update:value="changeExternalSecretAuthType"
-          >
-            <NRadio :value="DataSourceExternalSecret_AuthType.TOKEN">
-              {{ $t("instance.external-secret-vault.vault-auth-type.token.self") }}
-            </NRadio>
-            <NRadio :value="DataSourceExternalSecret_AuthType.VAULT_APP_ROLE">
-              {{ $t("instance.external-secret-vault.vault-auth-type.approle.self") }}
-            </NRadio>
-          </NRadioGroup>
-        </div> -->
+            <div class="sm:col-span-2 sm:col-start-1 space-y-2">
+              <label class="textlabel block">
+                {{ $t("instance.external-secret-vault.vault-auth-type.self") }}
+              </label>
+              <NRadioGroup
+                class="textlabel mb-2"
+                :value="dataSource.externalSecret.authType"
+                @update:value="changeExternalSecretAuthType"
+              >
+                <NRadio :value="DataSourceExternalSecret_AuthType.TOKEN">
+                  {{
+                    $t(
+                      "instance.external-secret-vault.vault-auth-type.token.self"
+                    )
+                  }}
+                </NRadio>
+                <NRadio
+                  :value="DataSourceExternalSecret_AuthType.VAULT_APP_ROLE"
+                >
+                  {{
+                    $t(
+                      "instance.external-secret-vault.vault-auth-type.approle.self"
+                    )
+                  }}
+                </NRadio>
+              </NRadioGroup>
+            </div>
             <div
               v-if="
                 dataSource.externalSecret.authType ===
@@ -851,6 +860,7 @@ import {
   DataSourceExternalSecret,
   DataSourceExternalSecret_AuthType,
   DataSourceExternalSecret_SecretType,
+  DataSourceExternalSecret_AppRoleAuthOption,
   DataSourceExternalSecret_AppRoleAuthOption_SecretType,
   DataSource_AuthenticationType,
 } from "@/types/proto/v1/instance_service";
@@ -1011,26 +1021,25 @@ const changeSecretType = (secretType: DataSourceExternalSecret_SecretType) => {
   state.passwordType = secretType;
 };
 
-// TODO: support change auth type.
-// const changeExternalSecretAuthType = (
-//   authType: DataSourceExternalSecret_AuthType
-// ) => {
-//   const ds = props.dataSource;
-//   if (!ds.externalSecret) {
-//     return;
-//   }
-//   if (authType === DataSourceExternalSecret_AuthType.VAULT_APP_ROLE) {
-//     ds.externalSecret.appRole =
-//       DataSourceExternalSecret_AppRoleAuthOption.fromPartial({
-//         type: DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN,
-//       });
-//     ds.externalSecret.token = undefined;
-//   } else {
-//     ds.externalSecret.token = "";
-//     ds.externalSecret.appRole = undefined;
-//   }
-//   ds.externalSecret.authType = authType;
-// };
+const changeExternalSecretAuthType = (
+  authType: DataSourceExternalSecret_AuthType
+) => {
+  const ds = props.dataSource;
+  if (!ds.externalSecret) {
+    return;
+  }
+  if (authType === DataSourceExternalSecret_AuthType.VAULT_APP_ROLE) {
+    ds.externalSecret.appRole =
+      DataSourceExternalSecret_AppRoleAuthOption.fromPartial({
+        type: DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN,
+      });
+    ds.externalSecret.token = undefined;
+  } else {
+    ds.externalSecret.token = "";
+    ds.externalSecret.appRole = undefined;
+  }
+  ds.externalSecret.authType = authType;
+};
 
 const toggleUseEmptyPassword = (on: boolean) => {
   const ds = props.dataSource;

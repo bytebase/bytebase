@@ -1192,11 +1192,13 @@
     "external-secret-vault": {
       "vault-url": "ボールトの URL",
       "vault-auth-type": {
+        "self": "認証タイプ",
         "token": {
           "self": "トークン",
           "tips": "有効期限のないルートトークン"
         },
         "approle": {
+          "self": "AppRole",
           "role-id": "認証ロールID",
           "secret-id": "認証シークレットID",
           "secret-id-plain-text": "シークレットIDのプレーンテキスト",

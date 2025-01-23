@@ -1192,11 +1192,13 @@
     "external-secret-vault": {
       "vault-url": "Vault URL",
       "vault-auth-type": {
+        "self": "Auth type",
         "token": {
           "self": "Token",
           "tips": "A root token without TTL."
         },
         "approle": {
+          "self": "AppRole",
           "role-id": "Auth role id",
           "secret-id": "Auth secret id",
           "secret-id-plain-text": "Plain text for role secret id",
