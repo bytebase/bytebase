@@ -316,7 +316,7 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 }
 
 func getProdCutoffVersion() (semver.Version, error) {
-	minorPathPrefix := fmt.Sprintf("migration/*")
+	minorPathPrefix := "migration/*"
 	names, err := fs.Glob(migrationFS, minorPathPrefix)
 	if err != nil {
 		return semver.Version{}, err
