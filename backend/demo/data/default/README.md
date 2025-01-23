@@ -21,14 +21,10 @@ Demo requires the sample test and prod instances run on port `8083` and `8084` r
 supply the --port with `8080` to make sample instances run on those 2 desired ports.
 
 ```bash
-docker run --init \
+docker run --rm --init \
   --name bytebase \
   --pull always \
-  --restart always \
   --publish 8080:8080 \
-  --health-cmd "curl --fail http://localhost:9015/healthz || exit 1" \
-  --health-interval 5m \
-  --health-timeout 60s \
   --volume ~/.bytebase/data:/var/opt/bytebase \
   bytebase/bytebase:3.3.0 \
   --data /var/opt/bytebase \
@@ -61,3 +57,7 @@ The demo data is from the release build of Bytebase. If you want to verify the d
 1. Replace https://github.com/bytebase/bytebase/blob/main/backend/bin/server/cmd/profile_dev.go#L16 with `p.PgUser = "bb"`
 
 1. Start Bytebase with `--demo default`, and do whatever you want.
+
+# API
+
+Demo data service account: ci@service.bytebase.com password: bbs_iqysPHMqhNpG4rQ5SFEJ
