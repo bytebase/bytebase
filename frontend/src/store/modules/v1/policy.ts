@@ -1,6 +1,6 @@
 import { Status, type ServerError } from "nice-grpc-common";
 import { defineStore } from "pinia";
-import { computed, unref, watchEffect } from "vue";
+import { computed, unref, watchEffect, ref } from "vue";
 import { policyServiceClient } from "@/grpcweb";
 import { policyNamePrefix } from "@/store/modules/v1/common";
 import type { MaybeRef } from "@/types";
@@ -210,16 +210,20 @@ export const usePolicyByParentAndType = (
 ) => {
   const store = usePolicyV1Store();
   const currentUserV1 = useCurrentUserV1();
+  const ready = ref(false);
+
   watchEffect(() => {
     if (currentUserV1.value.name === UNKNOWN_USER_NAME) return;
     const { policyType, parentPath } = unref(params);
-    store.getOrFetchPolicyByParentAndType({
-      parentPath,
-      policyType,
-    });
+    store
+      .getOrFetchPolicyByParentAndType({
+        parentPath,
+        policyType,
+      })
+      .then(() => (ready.value = true));
   });
 
-  return computed(() => {
+  const policy = computed(() => {
     const { parentPath, policyType } = unref(params);
     const name = replacePolicyTypeNameToLowerCase(
       `${parentPath}/${policyNamePrefix}${policyTypeToJSON(policyType)}`
@@ -227,6 +231,10 @@ export const usePolicyByParentAndType = (
     const res = store.getPolicyByName(name);
     return res;
   });
+  return {
+    policy,
+    ready,
+  };
 };
 
 // Default RolloutPolicy payload is somehow strict to prevent auto rollout

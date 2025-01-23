@@ -278,7 +278,7 @@ const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 const currentTab = computed(() => tabStore.currentTab);
 const { instance: connectedInstance } = useConnectionOfCurrentSQLEditorTab();
 
-const exportDataPolicy = usePolicyByParentAndType(
+const { policy: exportDataPolicy } = usePolicyByParentAndType(
   computed(() => ({
     parentPath: "",
     policyType: PolicyType.DATA_EXPORT,

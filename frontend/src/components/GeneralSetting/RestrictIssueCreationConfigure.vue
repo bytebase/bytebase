@@ -59,7 +59,7 @@ const allowEdit = computed(() => {
   );
 });
 
-const policy = usePolicyByParentAndType(
+const { policy } = usePolicyByParentAndType(
   computed(() => ({
     parentPath: props.resource,
     policyType: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
