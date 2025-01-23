@@ -142,6 +142,18 @@ func (g *generator) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 
 		l := &setFieldListener{}
 		antlr.ParseTreeWalkerDefault.Walk(l, ctx)
+
+		pkMap := make(map[string]bool)
+		for _, column := range g.pk.GetProto().Expressions {
+			pkMap[column] = true
+		}
+		for _, column := range l.result {
+			if pkMap[column] {
+				g.err = errors.Errorf("primary key column %s is updated", column)
+				return
+			}
+		}
+
 		var buf strings.Builder
 		if _, err := fmt.Fprintf(&buf, `INSERT INTO "%s"."%s" SELECT * FROM "%s"."%s" ON CONFLICT ON CONSTRAINT "%s" DO UPDATE SET `, g.originalSchema, g.originalTable, g.backupSchema, g.backupTable, g.pk.GetProto().Name); err != nil {
 			g.err = errors.Wrapf(err, "failed to generate update statement")

@@ -83,11 +83,6 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 		return "", errors.Errorf("table metadata not found for %s.%s", schema, backupItem.SourceTable.Table)
 	}
 
-	pk := tableMetadata.GetPrimaryKey()
-	if pk == nil {
-		return "", errors.Errorf("primary key not found for %s.%s", schema, backupItem.SourceTable.Table)
-	}
-
 	g := &generator{
 		isFirst:          true,
 		ctx:              ctx,
@@ -97,7 +92,7 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 		originalDatabase: sourceDatabase,
 		originalSchema:   schema,
 		originalTable:    backupItem.SourceTable.Table,
-		pk:               pk,
+		pk:               tableMetadata.GetPrimaryKey(),
 		table:            tableMetadata,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(g, tree.Tree)
@@ -137,11 +132,27 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 	if IsTopLevel(ctx.GetParent()) && g.isFirst {
 		g.isFirst = false
 
+		if g.pk == nil {
+			g.err = errors.Errorf("primary key not found for %s.%s.%s", g.originalDatabase, g.originalSchema, g.originalTable)
+			return
+		}
+
 		l := &updateElemListener{}
 		antlr.ParseTreeWalkerDefault.Walk(l, ctx)
 		if l.err != nil {
 			g.err = l.err
 			return
+		}
+
+		pkMap := make(map[string]bool)
+		for _, column := range g.pk.GetProto().Expressions {
+			pkMap[column] = true
+		}
+		for _, column := range l.result {
+			if pkMap[column] {
+				g.err = errors.Errorf("primary key column %s is updated for %s.%s.%s", column, g.originalDatabase, g.originalSchema, g.originalTable)
+				return
+			}
 		}
 
 		var buf strings.Builder
