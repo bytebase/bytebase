@@ -97,7 +97,7 @@ const policyV1Store = usePolicyV1Store();
 const hasWatermarkFeature = featureToRef("bb.feature.branding");
 const hasAccessControlFeature = featureToRef("bb.feature.access-control");
 
-const exportDataPolicy = usePolicyByParentAndType(
+const { policy: exportDataPolicy } = usePolicyByParentAndType(
   computed(() => ({
     parentPath: "",
     policyType: PolicyType.DATA_EXPORT,

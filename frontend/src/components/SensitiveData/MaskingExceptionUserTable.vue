@@ -6,6 +6,7 @@
     :row-key="(row: AccessUser) => row.key"
     :bordered="true"
     :striped="true"
+    :loading="!ready"
     :max-height="'calc(100vh - 15rem)'"
     virtual-scroll
   />
@@ -54,7 +55,10 @@ import type {
 } from "@/types/proto/v1/org_policy_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { autoDatabaseRoute, hasWorkspacePermissionV2 } from "@/utils";
-import { convertFromCELString } from "@/utils/issue/cel";
+import {
+  type ConditionExpression,
+  batchConvertFromCELString,
+} from "@/utils/issue/cel";
 import UserAvatar from "../User/UserAvatar.vue";
 import { type AccessUser } from "./types";
 
@@ -90,7 +94,7 @@ const hasPermission = computed(() => {
   return hasWorkspacePermissionV2("bb.policies.update");
 });
 
-const policy = usePolicyByParentAndType(
+const { policy, ready } = usePolicyByParentAndType(
   computed(() => ({
     parentPath: props.project,
     policyType: PolicyType.MASKING_EXCEPTION,
@@ -176,16 +180,16 @@ const getDatabaseAccessResource = (access: AccessUser): VNodeChild => {
 
 const expirationTimeRegex = /request.time < timestamp\("(.+)?"\)/;
 
-const getAccessUsers = async (
-  exception: MaskingExceptionPolicy_MaskingException
-): Promise<AccessUser | undefined> => {
+const getAccessUsers = (
+  exception: MaskingExceptionPolicy_MaskingException,
+  condition: ConditionExpression
+): AccessUser | undefined => {
   let expirationTimestamp: number | undefined;
   const expression = exception.condition?.expression ?? "";
   const matches = expirationTimeRegex.exec(expression);
   if (matches) {
     expirationTimestamp = new Date(matches[1]).getTime();
   }
-  const conditionExpression = await convertFromCELString(expression);
 
   const access: AccessUser = {
     type: "user",
@@ -193,8 +197,8 @@ const getAccessUsers = async (
     expirationTimestamp,
     supportActions: new Set([exception.action]),
     rawExpression: expression,
-    databaseResource: conditionExpression.databaseResources
-      ? conditionExpression.databaseResources[0]
+    databaseResource: condition.databaseResources
+      ? condition.databaseResources[0]
       : undefined,
   };
 
@@ -246,12 +250,21 @@ const updateAccessUserList = async (policy: Policy | undefined) => {
   // - 2 cannot merge: user1, action:export, level:FULL, expires at 2023-09-04
   // - 3 & 4 is merged: user1, action:export+action, level:PARTIAL, expires at 2023-09-04
   const memberMap = new Map<string, AccessUser>();
-  for (const exception of policy.maskingExceptionPolicy.maskingExceptions) {
+  const { maskingExceptions } = policy.maskingExceptionPolicy;
+  const expressionList = maskingExceptions.map(
+    (e) => e.condition?.expression ?? "true"
+  );
+  const conditionList = await batchConvertFromCELString(expressionList);
+
+  for (let i = 0; i < maskingExceptions.length; i++) {
+    const exception = maskingExceptions[i];
+    const condition = conditionList[i];
+
     if (!props.filterException(exception)) {
       continue;
     }
     const identifier = getExceptionIdentifier(exception);
-    const item = await getAccessUsers(exception);
+    const item = getAccessUsers(exception, condition);
     if (!item) {
       continue;
     }
