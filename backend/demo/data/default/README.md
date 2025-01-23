@@ -44,14 +44,20 @@ docker run --init \
 
 # How to update demo data
 
-1. Demo data is using the dev build because our demo runs in dev mode.
-
-1. Start Bytebase with `--demo default`, and do whatever you want.
+1. Start Bytebase docker image with `--demo default`, and do whatever you want.
 
 1. Dump with the following command.
 
 ```bash
-pg_dump --username bbdev --host /tmp --port 8082 --disable-triggers --column-inserts --on-conflict-do-nothing bbdev > /tmp/dump.sql
+docker exec -it bytebase pg_dump -h /tmp -p 8082 -U bb --disable-triggers --column-inserts --on-conflict-do-nothing > /tmp/dump.sql
 ```
 
-3. Copy and replace `dump.sql`.
+1. Copy and replace `dump.sql`.
+
+# How to verify the demo data
+
+The demo data is from the release build of Bytebase. If you want to verify the demo data in dev, you can use the following steps:
+
+1. Replace https://github.com/bytebase/bytebase/blob/main/backend/bin/server/cmd/profile_dev.go#L16 with `p.PgUser = "bb"`
+
+1. Start Bytebase with `--demo default`, and do whatever you want.
