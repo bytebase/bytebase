@@ -83,11 +83,17 @@ const columnList = computed(() => {
     {
       key: "type",
       title: t("changelog.change-type"),
-      width: "4rem",
+      width: "6rem",
+      resizable: true,
       render: (changelog) => {
         return (
-          <div class="flex items-center gap-x-1">
-            {getChangelogChangeType(changelog.type)}
+          <div class="flex items-center gap-x-1 flex-wrap leading-5">
+            <span>{getChangelogChangeType(changelog.type)}</span>
+            {changelog.type === Changelog_Type.BASELINE && (
+              <span class="text-gray-400 text-nowrap">
+                ({t("common.baseline")})
+              </span>
+            )}
           </div>
         );
       },
