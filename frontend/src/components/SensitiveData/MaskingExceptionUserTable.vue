@@ -251,8 +251,8 @@ const updateAccessUserList = async (policy: Policy | undefined) => {
   // - 3 & 4 is merged: user1, action:export+action, level:PARTIAL, expires at 2023-09-04
   const memberMap = new Map<string, AccessUser>();
   const { maskingExceptions } = policy.maskingExceptionPolicy;
-  const expressionList = maskingExceptions.map(
-    (e) => e.condition?.expression ?? "true"
+  const expressionList = maskingExceptions.map((e) =>
+    e.condition?.expression ? e.condition?.expression : "true"
   );
   const conditionList = await batchConvertFromCELString(expressionList);
 
