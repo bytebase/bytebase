@@ -1192,11 +1192,13 @@
     "external-secret-vault": {
       "vault-url": "Vault URL",
       "vault-auth-type": {
+        "self": "认证方式",
         "token": {
           "self": "Token",
           "tips": "没有过期时限的根 token"
         },
         "approle": {
+          "self": "AppRole",
           "role-id": "Auth role id",
           "secret-id": "Auth secret id",
           "secret-id-plain-text": "Secret id 明文",
