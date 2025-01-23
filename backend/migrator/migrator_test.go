@@ -204,7 +204,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	require.Equal(t, histories[0].Version.Version, releaseVersion.String())
 
 	// Check no migration after passing current version as the release cutoff version.
-	_, err = migrate(ctx, storeInstance, metadataDriver, releaseVersion, releaseVersion, common.ReleaseModeProd, serverVersion, databaseName)
+	_, err = migrate(ctx, storeInstance, metadataDriver, releaseVersion, serverVersion, databaseName)
 	require.NoError(t, err)
 	// Check migration history.
 	histories, err = storeInstance.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{
@@ -212,20 +212,6 @@ func TestMigrationCompatibility(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Len(t, histories, 1)
-
-	// Apply migration to dev latest if there are patches.
-	_, err = migrate(ctx, storeInstance, metadataDriver, releaseVersion, releaseVersion, common.ReleaseModeDev, serverVersion, databaseName)
-	require.NoError(t, err)
-
-	// Check migration history.
-	devMigrations, err := getDevMigrations()
-	require.NoError(t, err)
-	histories, err = storeInstance.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{
-		InstanceID: nil,
-	})
-	require.NoError(t, err)
-	// The extra one is for the initial schema setup.
-	require.Len(t, histories, len(devMigrations)+1)
 }
 
 func TestGetCutoffVersion(t *testing.T) {
