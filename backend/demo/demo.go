@@ -23,7 +23,7 @@ import (
 var demoFS embed.FS
 
 // LoadDemoDataIfNeeded loads the demo data if specified.
-func LoadDemoDataIfNeeded(ctx context.Context, storeDB *store.DB, pgBinDir, demoName string, mode common.ReleaseMode) error {
+func LoadDemoDataIfNeeded(ctx context.Context, storeDB *store.DB, demoName string, mode common.ReleaseMode) error {
 	if demoName == "" {
 		slog.Debug("Skip setting up demo data. Demo not specified.")
 		return nil
@@ -34,7 +34,7 @@ func LoadDemoDataIfNeeded(ctx context.Context, storeDB *store.DB, pgBinDir, demo
 	metadataDriver, err := dbdriver.Open(
 		ctx,
 		storepb.Engine_POSTGRES,
-		dbdriver.DriverConfig{DbBinDir: pgBinDir},
+		dbdriver.DriverConfig{},
 		storeDB.ConnCfg,
 	)
 	if err != nil {
