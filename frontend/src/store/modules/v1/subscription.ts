@@ -17,6 +17,9 @@ import {
 } from "@/types/proto/v1/subscription_service";
 import { useSettingV1Store } from "./setting";
 
+// The threshold to show the license expiration banner
+export const LICENSE_EXPIRATION_THRESHOLD = 7;
+
 interface SubscriptionState {
   subscription: Subscription | undefined;
   trialingDays: number;
