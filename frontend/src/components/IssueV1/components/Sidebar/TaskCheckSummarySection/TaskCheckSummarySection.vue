@@ -1,5 +1,5 @@
 <template>
-  <div v-show="shouldShow" class="flex flex-col gap-y-1">
+  <div v-show="shouldShow" class="flex flex-col gap-y-2">
     <div class="flex items-center gap-x-1 textlabel">
       <span>{{ $t("common.summary") }}</span>
     </div>
