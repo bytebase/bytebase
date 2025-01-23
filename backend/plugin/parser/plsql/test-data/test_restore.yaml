@@ -1,0 +1,92 @@
+- input: |-
+    UPDATE T_GENERATED SET a = 1 WHERE b = 1;
+    UPDATE T_GENERATED SET a = 2 WHERE b = 2;
+    UPDATE T_GENERATED SET a = 3 WHERE b = 3;
+    UPDATE T_GENERATED SET a = 4 WHERE b = 4;
+    UPDATE T_GENERATED SET a = 5 WHERE b = 5;
+    UPDATE T_GENERATED SET a = 6 WHERE b = 6;
+    UPDATE T_GENERATED SET a = 7 WHERE b = 7;
+  backupdatabase: bbarchive
+  backuptable: prefix_T_GENERATED
+  originaldatabase: DB
+  originaltable: T_GENERATED
+  result: |-
+    /*
+    Original SQL:
+    UPDATE T_GENERATED SET a = 1 WHERE b = 1;
+    UPDATE T_GENERATED SET a = 2 WHERE b = 2;
+    UPDATE T_GENERATED SET a = 3 WHERE b = 3;
+    UPDATE T_GENERATED SET a = 4 WHERE b = 4;
+    UPDATE T_GENERATED SET a = 5 WHERE b = 5;
+    UPDATE T_GENERATED SET a = 6 WHERE b = 6;
+    UPDATE T_GENERATED SET a = 7 WHERE b = 7
+    */
+    MERGE INTO "DB"."T_GENERATED" t
+    USING "bbarchive"."prefix_T_GENERATED" b
+      ON( t."B" = b."B")
+    WHEN MATCHED THEN
+      UPDATE SET t."A" = b."A"
+    WHEN NOT MATCHED THEN
+     INSERT ("A", "B") VALUES (b."A", b."B");
+- input: DELETE FROM T_GENERATED where a = 1;
+  backupdatabase: bbarchive
+  backuptable: prefix_1_T_GENERATED
+  originaldatabase: DB
+  originaltable: T_GENERATED
+  result: |-
+    /*
+    Original SQL:
+    DELETE FROM T_GENERATED where a = 1
+    */
+    INSERT INTO "DB"."T_GENERATED" SELECT * FROM "bbarchive"."prefix_1_T_GENERATED";
+- input: UPDATE T_GENERATED SET a = 1 WHERE a = 2;
+  backupdatabase: bbarchive
+  backuptable: prefix_1_T_GENERATED
+  originaldatabase: DB
+  originaltable: T_GENERATED
+  result: |-
+    /*
+    Original SQL:
+    UPDATE T_GENERATED SET a = 1 WHERE a = 2
+    */
+    MERGE INTO "DB"."T_GENERATED" t
+    USING "bbarchive"."prefix_1_T_GENERATED" b
+      ON( t."B" = b."B")
+    WHEN MATCHED THEN
+      UPDATE SET t."A" = b."A"
+    WHEN NOT MATCHED THEN
+     INSERT ("A", "B") VALUES (b."A", b."B");
+- input: UPDATE test SET test.c1 = 1 WHERE test.c1 = 1;
+  backupdatabase: bbarchive
+  backuptable: prefix_1_test
+  originaldatabase: DB
+  originaltable: TEST
+  result: |-
+    /*
+    Original SQL:
+    UPDATE test SET test.c1 = 1 WHERE test.c1 = 1
+    */
+    MERGE INTO "DB"."TEST" t
+    USING "bbarchive"."prefix_1_test" b
+      ON( t."A" = b."A")
+    WHEN MATCHED THEN
+      UPDATE SET t."C1" = b."C1"
+    WHEN NOT MATCHED THEN
+     INSERT ("A", "B", "C") VALUES (b."A", b."B", b."C");
+- input: UPDATE test SET c1 = 1 WHERE c1 = 1;
+  backupdatabase: bbarchive
+  backuptable: prefix_1_test
+  originaldatabase: DB
+  originaltable: TEST
+  result: |-
+    /*
+    Original SQL:
+    UPDATE test SET c1 = 1 WHERE c1 = 1
+    */
+    MERGE INTO "DB"."TEST" t
+    USING "bbarchive"."prefix_1_test" b
+      ON( t."A" = b."A")
+    WHEN MATCHED THEN
+      UPDATE SET t."C1" = b."C1"
+    WHEN NOT MATCHED THEN
+     INSERT ("A", "B", "C") VALUES (b."A", b."B", b."C");

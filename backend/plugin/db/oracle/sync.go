@@ -511,6 +511,39 @@ func getIndexes(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Inde
 		return nil, errors.Wrapf(err, "failed to close rows")
 	}
 
+	pkMap := make(map[db.TableKey]string)
+	queryPK := ""
+	if schemaName == "" {
+		queryPK = fmt.Sprintf(`
+		SELECT OWNER, TABLE_NAME, CONSTRAINT_NAME
+		FROM sys.all_constraints
+		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%' AND CONSTRAINT_TYPE = 'P'
+		ORDER BY OWNER, TABLE_NAME, CONSTRAINT_NAME`, systemSchema)
+	} else {
+		queryPK = fmt.Sprintf(`
+		SELECT OWNER, TABLE_NAME, CONSTRAINT_NAME
+		FROM sys.all_constraints
+		WHERE OWNER = '%s' AND CONSTRAINT_TYPE = 'P'
+		ORDER BY TABLE_NAME, CONSTRAINT_NAME`, schemaName)
+	}
+	slog.Debug("running get primary key query")
+	pkRows, err := txn.Query(queryPK)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, queryPK)
+	}
+	defer pkRows.Close()
+	for pkRows.Next() {
+		var schemaName, tableName, pkName string
+		if err := pkRows.Scan(&schemaName, &tableName, &pkName); err != nil {
+			return nil, err
+		}
+		key := db.TableKey{Schema: schemaName, Table: tableName}
+		pkMap[key] = pkName
+	}
+	if err := pkRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, queryPK)
+	}
+
 	query := ""
 	if schemaName == "" {
 		query = fmt.Sprintf(`
@@ -542,6 +575,10 @@ func getIndexes(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Inde
 		index.Unique = unique == "UNIQUE"
 		indexKey := db.IndexKey{Schema: schemaName, Table: tableName, Index: index.Name}
 		index.Expressions = expressionsMap[indexKey]
+
+		if pkName, ok := pkMap[db.TableKey{Schema: schemaName, Table: tableName}]; ok && pkName == index.Name {
+			index.Primary = true
+		}
 
 		key := db.TableKey{Schema: schemaName, Table: tableName}
 		indexMap[key] = append(indexMap[key], index)

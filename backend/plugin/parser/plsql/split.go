@@ -31,6 +31,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 		if stmt, ok := item.(parser.IUnit_statementContext); ok {
 			text := ""
 			lastLine := 0
+			lastColumn := 0
 			// tokens looks like
 			if startTokenIndex := stmt.GetStart().GetTokenIndex(); startTokenIndex-1 >= 0 && prevStopTokenIndex+1 <= startTokenIndex-1 {
 				byteOffsetStart += len(tokens.GetTextFromTokens(tokens.Get(prevStopTokenIndex+1), tokens.Get(stmt.GetStart().GetTokenIndex()-1)))
@@ -42,6 +43,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 			if needSemicolon(stmt) {
 				lastToken := tokens.Get(stmt.GetStop().GetTokenIndex())
 				lastLine = lastToken.GetLine()
+				lastColumn = lastToken.GetColumn()
 				text = tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
 				if lastToken.GetTokenType() != parser.PlSqlParserSEMICOLON {
 					text += ";"
@@ -53,16 +55,20 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 				}
 				lastToken := tokens.Get(stopIndex)
 				lastLine = lastToken.GetLine()
+				lastColumn = lastToken.GetColumn()
 				text = tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
 				text = strings.TrimRightFunc(text, utils.IsSpaceOrSemicolon)
 			}
 
 			result = append(result, base.SingleSQL{
-				Text:            text,
-				LastLine:        lastLine,
-				Empty:           base.IsEmpty(tokens.GetAllTokens()[stmt.GetStart().GetTokenIndex():stmt.GetStop().GetTokenIndex()+1], parser.PlSqlParserSEMICOLON),
-				ByteOffsetStart: byteOffsetStart,
-				ByteOffsetEnd:   byteOffsetEnd,
+				Text:                 text,
+				FirstStatementLine:   stmt.GetStart().GetLine(),
+				FirstStatementColumn: stmt.GetStart().GetColumn(),
+				LastLine:             lastLine,
+				LastColumn:           lastColumn,
+				Empty:                base.IsEmpty(tokens.GetAllTokens()[stmt.GetStart().GetTokenIndex():stmt.GetStop().GetTokenIndex()+1], parser.PlSqlParserSEMICOLON),
+				ByteOffsetStart:      byteOffsetStart,
+				ByteOffsetEnd:        byteOffsetEnd,
 			})
 			byteOffsetStart = byteOffsetEnd
 			prevStopTokenIndex = stmt.GetStop().GetTokenIndex()
