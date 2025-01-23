@@ -29,7 +29,7 @@ type DatabaseResourceCondition =
   | SchemaLevelCondition
   | TableLevelCondition;
 
-interface ConditionExpression {
+export interface ConditionExpression {
   databaseResources?: DatabaseResource[];
   expiredTime?: string;
   rowLimit?: number;
@@ -175,6 +175,21 @@ export const convertFromCELString = async (
   }
 
   return convertFromExpr(expr);
+};
+
+export const batchConvertFromCELString = async (
+  cels: string[]
+): Promise<ConditionExpression[]> => {
+  const celExprs = await batchConvertCELStringToParsedExpr(cels);
+  const resp: ConditionExpression[] = [];
+  for (let i = 0; i < celExprs.length; i++) {
+    if (cels[i] === "true" || !celExprs[i]) {
+      resp.push({});
+    } else {
+      resp.push(convertFromExpr(celExprs[i]));
+    }
+  }
+  return resp;
 };
 
 export const convertFromExpr = (expr: Expr): ConditionExpression => {
