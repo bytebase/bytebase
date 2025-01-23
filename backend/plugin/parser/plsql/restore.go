@@ -143,6 +143,17 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 		return
 	}
 
+	pkMap := make(map[string]bool)
+	for _, column := range g.pk.GetProto().Expressions {
+		pkMap[column] = true
+	}
+	for _, column := range l.result {
+		if pkMap[column] {
+			g.err = errors.Errorf("primary key column %s is updated", column)
+			return
+		}
+	}
+
 	var buf strings.Builder
 	if _, err := fmt.Fprintf(&buf, "MERGE INTO \"%s\".\"%s\" t\nUSING \"%s\".\"%s\" b\n  ON(", g.originalDatabase, g.originalTable, g.backupDatabase, g.backupTable); err != nil {
 		g.err = err
