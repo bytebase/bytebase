@@ -143,7 +143,14 @@ import { useRoute, useRouter } from "vue-router";
 import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
 import TrialModal from "@/components/TrialModal.vue";
 import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
-import { useActuatorV1Store, useAppFeature } from "@/store";
+import {
+  useActuatorV1Store,
+  useAppFeature,
+  useSubscriptionV1Store,
+  usePermissionStore,
+} from "@/store";
+import { PresetRoleType } from "@/types";
+import { PlanType } from "@/types/proto/v1/subscription_service";
 import DashboardHeader from "@/views/DashboardHeader.vue";
 import Quickstart from "../components/Quickstart.vue";
 import { provideBodyLayoutContext } from "./common";
@@ -155,6 +162,8 @@ interface LocalState {
 }
 
 const actuatorStore = useActuatorV1Store();
+const permissionStore = usePermissionStore();
+const subscriptionStore = useSubscriptionV1Store();
 const route = useRoute();
 const router = useRouter();
 const mounted = useMounted();
@@ -182,6 +191,12 @@ const hideQuickStart = useAppFeature("bb.feature.hide-quick-start");
 const hideReleaseRemind = useAppFeature("bb.feature.hide-release-remind");
 
 actuatorStore.tryToRemindRelease().then((openRemindModal) => {
+  if (
+    subscriptionStore.currentPlan === PlanType.ENTERPRISE &&
+    !permissionStore.currentRolesInWorkspace.has(PresetRoleType.WORKSPACE_ADMIN)
+  ) {
+    return;
+  }
   state.showReleaseModal = openRemindModal;
 });
 
