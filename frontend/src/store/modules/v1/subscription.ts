@@ -17,6 +17,10 @@ import {
 } from "@/types/proto/v1/subscription_service";
 import { useSettingV1Store } from "./setting";
 
+// The threshold of days before the license expiration date to show the warning.
+// Default is 7 days.
+export const LICENSE_EXPIRATION_THRESHOLD = 7;
+
 interface SubscriptionState {
   subscription: Subscription | undefined;
   trialingDays: number;
