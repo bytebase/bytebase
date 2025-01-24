@@ -484,6 +484,9 @@ const revokeAccessAlert = (
 
 const onRemove = async (item: AccessUser) => {
   const index = state.rawAccessList.findIndex((a) => a.key === item.key);
+  if (index < 0) {
+    return;
+  }
   state.rawAccessList.splice(index, 1);
   await onSubmit();
 };
