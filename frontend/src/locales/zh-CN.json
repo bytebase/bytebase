@@ -1714,7 +1714,7 @@
     "masking-exemption": {
       "self": "脱敏豁免",
       "grant-exemption": "授予豁免",
-      "revoke-exemption-title": "是否豁免 {member} 的导出和查询脱敏？"
+      "revoke-exemption-title": "是否撤销 {member} 的导出和查询脱敏？"
     }
   },
   "gitops": {
