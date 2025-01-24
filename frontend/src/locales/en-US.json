@@ -665,11 +665,6 @@
         },
         "select": "Select semantic type"
       },
-      "column-detail": {
-        "masking-setting-for-column": "Masking Setting for \"{column}\"",
-        "access-user-list": "Access User List",
-        "access-user-list-desc": "Users granted to access de-masked data."
-      },
       "algorithms": {
         "add": "Add algorithm",
         "edit": "Edit algorithm",
