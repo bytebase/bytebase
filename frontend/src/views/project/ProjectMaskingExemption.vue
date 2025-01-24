@@ -9,7 +9,7 @@
           :include-all="false"
           :clearable="true"
           :project-name="project.name"
-          :database-name="state.selectedDatabaseName"
+          v-model:database-name="state.selectedDatabaseName"
         />
         <MaskingActionDropdown
           v-model:action="state.selectedAction"
@@ -58,7 +58,7 @@
       :disabled="false"
       :project="project.name"
       :show-database-column="true"
-      :filter-exception="filterException"
+      :filter-access-user="filterAccessUser"
     />
   </div>
 
@@ -77,18 +77,17 @@ import { useRouter } from "vue-router";
 import { FeatureModal, FeatureBadge } from "@/components/FeatureGuard";
 import MaskingExceptionUserTable from "@/components/SensitiveData/MaskingExceptionUserTable.vue";
 import MaskingActionDropdown from "@/components/SensitiveData/components/MaskingActionDropdown.vue";
+import { type AccessUser } from "@/components/SensitiveData/types";
 import { SearchBox, DatabaseSelect } from "@/components/v2";
 import { PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE } from "@/router/dashboard/projectV1";
 import { useProjectByName, hasFeature } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import type { MaskingExceptionPolicy_MaskingException } from "@/types/proto/v1/org_policy_service";
 import { MaskingExceptionPolicy_MaskingException_Action as Action } from "@/types/proto/v1/org_policy_service";
-import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 
 interface LocalState {
   searchText: string;
   showFeatureModal: boolean;
-  selectedEnvironmentName?: string;
   selectedDatabaseName?: string;
   selectedAction?: Action;
 }
@@ -118,27 +117,23 @@ const allowCreate = computed(() => {
   );
 });
 
-const filterException = (
-  exception: MaskingExceptionPolicy_MaskingException
-): boolean => {
-  if (state.selectedAction && exception.action !== state.selectedAction) {
+const filterAccessUser = (user: AccessUser): boolean => {
+  if (state.selectedAction && !user.supportActions.has(state.selectedAction)) {
     return false;
   }
   if (
     state.searchText.trim() &&
-    !exception.member.toLowerCase().includes(state.searchText.trim())
+    !user.key.toLowerCase().includes(state.searchText.trim())
   ) {
     return false;
   }
   if (state.selectedDatabaseName) {
-    const { instanceName, databaseName } = extractDatabaseResourceName(
-      state.selectedDatabaseName
+    if (!user.databaseResource) {
+      return true;
+    }
+    return (
+      user.databaseResource.databaseFullName === state.selectedDatabaseName
     );
-    const expression = [
-      `resource.instance_id == "${instanceName}"`,
-      `resource.database_name == "${databaseName}"`,
-    ].join(" && ");
-    return exception.condition?.expression?.includes(expression) ?? false;
   }
 
   return true;

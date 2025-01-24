@@ -665,11 +665,6 @@
         },
         "select": "セマンティックタイプの選択"
       },
-      "column-detail": {
-        "masking-setting-for-column": "「{column}」の感度解除設定",
-        "access-user-list": "ユーザーアクセスリスト",
-        "access-user-list-desc": "許可されたユーザーは、感度を下げられていない生データにアクセスできます。"
-      },
       "algorithms": {
         "add": "アルゴリズムを追加",
         "edit": "アルゴリズムを編集",
