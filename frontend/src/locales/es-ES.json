@@ -665,11 +665,6 @@
         },
         "select": "Seleccionar tipo semántico"
       },
-      "column-detail": {
-        "masking-setting-for-column": "Configuración de enmascaramiento para \"{columna}\"",
-        "access-user-list": "Acceder a la lista de usuarios",
-        "access-user-list-desc": "Usuarios autorizados a acceder a datos desenmascarados."
-      },
       "algorithms": {
         "add": "Agregar algoritmo",
         "edit": "Editar algoritmo",

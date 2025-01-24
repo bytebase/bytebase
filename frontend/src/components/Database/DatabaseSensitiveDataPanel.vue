@@ -70,26 +70,6 @@
       }
     "
   />
-
-  <SensitiveColumnDrawer
-    v-if="
-      filteredColumnList.length > 0 &&
-      state.showSensitiveColumnDrawer &&
-      state.pendingGrantAccessColumn.length === 1
-    "
-    :database="database"
-    :mask="
-      state.pendingGrantAccessColumn.length === 1
-        ? state.pendingGrantAccessColumn[0]
-        : filteredColumnList[0]
-    "
-    @dismiss="
-      () => {
-        state.showSensitiveColumnDrawer = false;
-        state.pendingGrantAccessColumn = [];
-      }
-    "
-  />
 </template>
 
 <script lang="tsx" setup>
@@ -103,7 +83,6 @@ import {
   FeatureAttentionForInstanceLicense,
 } from "@/components/FeatureGuard";
 import GrantAccessDrawer from "@/components/SensitiveData/GrantAccessDrawer.vue";
-import SensitiveColumnDrawer from "@/components/SensitiveData/SensitiveColumnDrawer.vue";
 import SensitiveColumnTable from "@/components/SensitiveData/components/SensitiveColumnTable.vue";
 import type { MaskData } from "@/components/SensitiveData/types";
 import { isCurrentColumnException } from "@/components/SensitiveData/utils";
@@ -130,7 +109,6 @@ interface LocalState {
   sensitiveColumnList: MaskData[];
   pendingGrantAccessColumn: MaskData[];
   showGrantAccessDrawer: boolean;
-  showSensitiveColumnDrawer: boolean;
 }
 
 const state = reactive<LocalState>({
@@ -140,7 +118,6 @@ const state = reactive<LocalState>({
   sensitiveColumnList: [],
   pendingGrantAccessColumn: [],
   showGrantAccessDrawer: false,
-  showSensitiveColumnDrawer: false,
 });
 
 const hasUpdateCatalogPermission = computed(() => {

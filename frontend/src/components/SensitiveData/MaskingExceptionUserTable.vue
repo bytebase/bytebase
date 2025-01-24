@@ -2,7 +2,7 @@
   <NDataTable
     :size="size"
     :columns="accessTableColumns"
-    :data="state.accessList"
+    :data="filteredList"
     :row-key="(row: AccessUser) => row.key"
     :bordered="true"
     :striped="true"
@@ -49,10 +49,7 @@ import {
 } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { MaskingExceptionPolicy_MaskingException_Action } from "@/types/proto/v1/org_policy_service";
-import type {
-  Policy,
-  MaskingExceptionPolicy_MaskingException,
-} from "@/types/proto/v1/org_policy_service";
+import type { MaskingExceptionPolicy_MaskingException } from "@/types/proto/v1/org_policy_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { autoDatabaseRoute, hasWorkspacePermissionV2 } from "@/utils";
 import {
@@ -64,7 +61,7 @@ import { type AccessUser } from "./types";
 
 interface LocalState {
   processing: boolean;
-  accessList: AccessUser[];
+  rawAccessList: AccessUser[];
 }
 
 const props = defineProps<{
@@ -73,14 +70,12 @@ const props = defineProps<{
   // project full name
   project: string;
   showDatabaseColumn: boolean;
-  filterException: (
-    exception: MaskingExceptionPolicy_MaskingException
-  ) => boolean;
+  filterAccessUser: (accessUser: AccessUser) => boolean;
 }>();
 
 const state = reactive<LocalState>({
   processing: false,
-  accessList: [],
+  rawAccessList: [],
 });
 const { t } = useI18n();
 const router = useRouter();
@@ -99,6 +94,10 @@ const { policy, ready } = usePolicyByParentAndType(
     parentPath: props.project,
     policyType: PolicyType.MASKING_EXCEPTION,
   }))
+);
+
+const filteredList = computed(() =>
+  state.rawAccessList.filter(props.filterAccessUser)
 );
 
 const isValidDatabaseResource = (access: AccessUser): boolean => {
@@ -193,7 +192,7 @@ const getAccessUsers = (
 
   const access: AccessUser = {
     type: "user",
-    key: exception.member,
+    key: `${exception.member}:${expression}`,
     expirationTimestamp,
     supportActions: new Set([exception.action]),
     rawExpression: expression,
@@ -217,14 +216,6 @@ const getAccessUsers = (
   return access;
 };
 
-const getExceptionIdentifier = (
-  exception: MaskingExceptionPolicy_MaskingException
-): string => {
-  const expression = exception.condition?.expression ?? "";
-  const res: string[] = [expression];
-  return res.join(" && ");
-};
-
 const getMemberBinding = (access: AccessUser): string => {
   if (access.type === "user") {
     return getUserEmailInBinding(access.user!.email);
@@ -233,8 +224,8 @@ const getMemberBinding = (access: AccessUser): string => {
   return getGroupEmailInBinding(email);
 };
 
-const updateAccessUserList = async (policy: Policy | undefined) => {
-  if (!policy || !policy.maskingExceptionPolicy) {
+const updateAccessUserList = async () => {
+  if (!ready.value || !policy.value || !policy.value.maskingExceptionPolicy) {
     return [];
   }
 
@@ -250,7 +241,7 @@ const updateAccessUserList = async (policy: Policy | undefined) => {
   // - 2 cannot merge: user1, action:export, level:FULL, expires at 2023-09-04
   // - 3 & 4 is merged: user1, action:export+action, level:PARTIAL, expires at 2023-09-04
   const memberMap = new Map<string, AccessUser>();
-  const { maskingExceptions } = policy.maskingExceptionPolicy;
+  const { maskingExceptions } = policy.value.maskingExceptionPolicy;
   const expressionList = maskingExceptions.map((e) =>
     e.condition?.expression ? e.condition?.expression : "true"
   );
@@ -260,26 +251,21 @@ const updateAccessUserList = async (policy: Policy | undefined) => {
     const exception = maskingExceptions[i];
     const condition = conditionList[i];
 
-    if (!props.filterException(exception)) {
-      continue;
-    }
-    const identifier = getExceptionIdentifier(exception);
     const item = getAccessUsers(exception, condition);
     if (!item) {
       continue;
     }
-    const id = `${getMemberBinding(item)}:${identifier}`;
-    item.key = id;
-    const target = memberMap.get(id) ?? item;
-    if (memberMap.has(id)) {
+
+    const target = memberMap.get(item.key) ?? item;
+    if (memberMap.has(item.key)) {
       for (const action of item.supportActions) {
         target.supportActions.add(action);
       }
     }
-    memberMap.set(id, target);
+    memberMap.set(item.key, target);
   }
 
-  state.accessList = orderBy(
+  state.rawAccessList = orderBy(
     [...memberMap.values()],
     [
       (access) => (access.type === "user" ? 1 : 0),
@@ -296,9 +282,7 @@ const updateAccessUserList = async (policy: Policy | undefined) => {
   );
 };
 
-watchEffect(async () => {
-  updateAccessUserList(policy.value);
-});
+watchEffect(updateAccessUserList);
 
 const accessTableColumns = computed(
   (): DataTableColumn<AccessUser & { hide?: boolean }>[] => {
@@ -354,7 +338,7 @@ const accessTableColumns = computed(
         key: "export",
         title: t("settings.sensitive-data.action.export"),
         width: "5rem",
-        render: (item: AccessUser, row: number) => {
+        render: (item: AccessUser) => {
           return (
             <NCheckbox
               checked={item.supportActions.has(
@@ -363,7 +347,7 @@ const accessTableColumns = computed(
               disabled={!hasPermission.value || props.disabled}
               onUpdateChecked={() =>
                 onAccessControlUpdate(
-                  row,
+                  item,
                   (item) =>
                     toggleAction(
                       item,
@@ -384,7 +368,7 @@ const accessTableColumns = computed(
         key: "query",
         title: t("settings.sensitive-data.action.query"),
         width: "5rem",
-        render: (item: AccessUser, row: number) => {
+        render: (item: AccessUser) => {
           return (
             <NCheckbox
               checked={item.supportActions.has(
@@ -393,7 +377,7 @@ const accessTableColumns = computed(
               disabled={!hasPermission.value || props.disabled}
               onUpdate:checked={() =>
                 onAccessControlUpdate(
-                  row,
+                  item,
                   (item) =>
                     toggleAction(
                       item,
@@ -413,7 +397,7 @@ const accessTableColumns = computed(
       {
         key: "expire",
         title: t("common.expiration"),
-        render: (item: AccessUser, row: number) => {
+        render: (item: AccessUser) => {
           return (
             <NDatePicker
               value={item.expirationTimestamp}
@@ -425,7 +409,7 @@ const accessTableColumns = computed(
               disabled={!hasPermission.value || props.disabled}
               onUpdate:value={(val: number | undefined) =>
                 onAccessControlUpdate(
-                  row,
+                  item,
                   (item) => (item.expirationTimestamp = val)
                 )
               }
@@ -438,12 +422,12 @@ const accessTableColumns = computed(
         title: "",
         hide: !hasPermission.value,
         width: "4rem",
-        render: (_: AccessUser, row: number) => {
+        render: (item: AccessUser) => {
           return h(
             MiniActionButton,
             {
               onClick: () => {
-                revokeAccessAlert(row);
+                revokeAccessAlert(item);
               },
             },
             {
@@ -468,10 +452,9 @@ const toggleAction = (
 };
 
 const revokeAccessAlert = (
-  index: number,
+  item: AccessUser,
   revert: (item: AccessUser) => void = () => {}
 ) => {
-  const item = state.accessList[index];
   $dialog.warning({
     title: t("common.warning"),
     content: () => {
@@ -493,29 +476,29 @@ const revokeAccessAlert = (
     maskClosable: false,
     onClose: () => revert(item),
     onPositiveClick: async () => {
-      await onRemove(index);
+      await onRemove(item);
     },
     onNegativeClick: () => revert(item),
   });
 };
 
-const onRemove = async (index: number) => {
-  state.accessList.splice(index, 1);
+const onRemove = async (item: AccessUser) => {
+  const index = state.rawAccessList.findIndex((a) => a.key === item.key);
+  if (index < 0) {
+    return;
+  }
+  state.rawAccessList.splice(index, 1);
   await onSubmit();
 };
 
 const onAccessControlUpdate = async (
-  index: number,
+  item: AccessUser,
   callback: (item: AccessUser) => void,
   revert: (item: AccessUser) => void = () => {}
 ) => {
-  const item = state.accessList[index];
-  if (!item) {
-    return;
-  }
   callback(item);
   if (item.supportActions.size === 0) {
-    revokeAccessAlert(index, revert);
+    revokeAccessAlert(item, revert);
   } else {
     await onSubmit();
   }
@@ -545,11 +528,8 @@ const updateExceptionPolicy = async () => {
     return;
   }
 
-  const unChangedExceptions = (
-    policy.maskingExceptionPolicy?.maskingExceptions ?? []
-  ).filter((exception) => !props.filterException(exception));
-
-  for (const accessUser of state.accessList) {
+  const exceptions = [];
+  for (const accessUser of state.rawAccessList) {
     const expressions = accessUser.rawExpression
       .split(" && ")
       .filter((expression) => expression);
@@ -572,7 +552,7 @@ const updateExceptionPolicy = async () => {
       );
     }
     for (const action of accessUser.supportActions) {
-      unChangedExceptions.push({
+      exceptions.push({
         action,
         member: getMemberBinding(accessUser),
         condition: Expr.fromPartial({
@@ -584,7 +564,7 @@ const updateExceptionPolicy = async () => {
 
   policy.maskingExceptionPolicy = {
     ...(policy.maskingExceptionPolicy ?? {}),
-    maskingExceptions: unChangedExceptions,
+    maskingExceptions: exceptions,
   };
   await policyStore.upsertPolicy({
     parentPath: props.project,
