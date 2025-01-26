@@ -486,7 +486,7 @@ const projectV1Routes: RouteRecordRaw[] = [
               overrideTitle: true,
               requiredProjectPermissionList: () => [
                 "bb.projects.get",
-                "bb.issues.list", // TODO(steven): use release related permission instead.
+                "bb.releases.list",
               ],
             },
             component: () =>
@@ -498,7 +498,10 @@ const projectV1Routes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_RELEASE_CREATE,
             meta: {
               title: () => t("release.create"),
-              requiredProjectPermissionList: () => ["bb.projects.get"],
+              requiredProjectPermissionList: () => [
+                "bb.projects.get",
+                "bb.releases.create",
+              ],
             },
             component: () => import("@/components/Release/ReleaseCreate/"),
             props: true,
@@ -508,7 +511,10 @@ const projectV1Routes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_RELEASE_DETAIL,
             meta: {
               overrideTitle: true,
-              requiredProjectPermissionList: () => ["bb.projects.get"],
+              requiredProjectPermissionList: () => [
+                "bb.projects.get",
+                "bb.releases.get",
+              ],
             },
             component: () => import("@/components/Release/ReleaseDetail/"),
             props: true,
