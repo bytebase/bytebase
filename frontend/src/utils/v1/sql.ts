@@ -67,7 +67,9 @@ const formatTimestampWithTz = (timestampTzValue: RowValue_TimestampTZ) => {
       ? `+${timezoneOffsetPrefix}${hourOffset}`
       : `-${timezoneOffsetPrefix}${Math.abs(hourOffset)}`;
 
-  const microseconds = Math.floor(timestampTzValue.timestamp!.nanos / 1000);
+  const microseconds = Math.floor(
+    timestampTzValue.timestamp?.nanos ?? 0 / 1000
+  );
   const formattedTimestamp =
     microseconds > 0
       ? `${fullDayjs.format("YYYY-MM-DD HH:mm:ss")}.${microseconds.toString().padStart(6, "0")}${timezoneOffset}`
