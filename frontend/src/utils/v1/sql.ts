@@ -4,7 +4,10 @@ import { getDateForPbTimestamp } from "@/types";
 import { NullValue } from "@/types/proto/google/protobuf/struct";
 import type { Timestamp } from "@/types/proto/google/protobuf/timestamp";
 import { Engine } from "@/types/proto/v1/common";
-import { RowValue } from "@/types/proto/v1/sql_service";
+import {
+  RowValue,
+  type RowValue_TimestampTZ,
+} from "@/types/proto/v1/sql_service";
 import { isNullOrUndefined } from "../util";
 
 // extractSQLRowValuePlain extracts a plain value from a RowValue.
@@ -36,7 +39,7 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
     return formatTimestamp(value.timestampValue);
   }
   if (value.timestampTzValue && value.timestampTzValue.timestamp) {
-    return formatTimestampWithTz(value.timestampTzValue.timestamp);
+    return formatTimestampWithTz(value.timestampTzValue);
   }
   const key = keys[0];
   return plainObject[key];
@@ -52,13 +55,21 @@ const formatTimestamp = (timestamp: Timestamp) => {
   return formattedTimestamp;
 };
 
-const formatTimestampWithTz = (timestamp: Timestamp) => {
-  const fullDayjs = dayjs(getDateForPbTimestamp(timestamp));
-  const microseconds = Math.floor(timestamp.nanos / 1000);
-  let timezoneOffset = fullDayjs.format("Z");
-  if (timezoneOffset.endsWith(":00")) {
-    timezoneOffset = timezoneOffset.slice(0, -3);
-  }
+const formatTimestampWithTz = (timestampTzValue: RowValue_TimestampTZ) => {
+  const fullDayjs = dayjs(getDateForPbTimestamp(timestampTzValue.timestamp))
+    .utc()
+    .add(timestampTzValue.offset, "seconds");
+
+  const hourOffset = Math.floor(timestampTzValue.offset / 60 / 60);
+  const timezoneOffsetPrefix = Math.abs(hourOffset) < 10 ? "0" : "";
+  const timezoneOffset =
+    hourOffset > 0
+      ? `+${timezoneOffsetPrefix}${hourOffset}`
+      : `-${timezoneOffsetPrefix}${Math.abs(hourOffset)}`;
+
+  const microseconds = Math.floor(
+    timestampTzValue.timestamp?.nanos ?? 0 / 1000
+  );
   const formattedTimestamp =
     microseconds > 0
       ? `${fullDayjs.format("YYYY-MM-DD HH:mm:ss")}.${microseconds.toString().padStart(6, "0")}${timezoneOffset}`
