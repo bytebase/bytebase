@@ -28,7 +28,7 @@ require (
 	github.com/bytebase/mysql-parser v0.0.0-20241224071214-cb9fd84811dd
 	github.com/bytebase/plsql-parser v0.0.0-20241217100236-775726d725f9
 	github.com/bytebase/postgresql-parser v0.0.0-20241108072816-e932f744004a
-	github.com/bytebase/snowsql-parser v0.0.0-20241211024554-093949951501
+	github.com/bytebase/snowsql-parser v0.0.0-20250124075214-562d62e69c35
 	github.com/bytebase/tidb-parser v0.0.0-20240821091609-162fffe2a839
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/cockroachdb/cockroachdb-parser v0.23.2
@@ -370,3 +370,5 @@ replace github.com/microsoft/go-mssqldb => github.com/bytebase/go-mssqldb v0.0.0
 replace github.com/youmark/pkcs8 => github.com/bytebase/pkcs8 v0.0.0-20240612095628-fcd0a7484c94
 
 replace github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos => github.com/bytebase/azure-sdk-for-go/sdk/data/azcosmos v0.0.0-20250109032656-87cf24d45689
+
+replace github.com/jackc/pgx/v5 => github.com/bytebase/pgx/v5 v5.0.0-20250125144644-a7c1db04baf8
