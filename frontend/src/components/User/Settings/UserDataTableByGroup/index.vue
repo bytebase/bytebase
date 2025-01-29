@@ -5,6 +5,7 @@
     :data="userListByGroup"
     :row-key="(row) => row.name"
     :bordered="true"
+    :max-height="'calc(100vh - 15rem)'"
     :default-expanded-row-keys="expandedRowKeys"
   />
 </template>
