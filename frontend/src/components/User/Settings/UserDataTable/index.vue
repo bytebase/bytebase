@@ -5,7 +5,7 @@
     :data="userList"
     :striped="true"
     :bordered="true"
-    :max-height="'calc(100vh - 20rem)'"
+    :max-height="'calc(100vh - 15rem)'"
     :row-key="(data: User) => data.name"
     virtual-scroll
   />

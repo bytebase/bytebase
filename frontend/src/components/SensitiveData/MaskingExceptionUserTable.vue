@@ -6,7 +6,7 @@
     :row-key="(row: AccessUser) => row.key"
     :bordered="true"
     :striped="true"
-    :loading="!ready"
+    :loading="!ready || state.loading"
     :max-height="'calc(100vh - 15rem)'"
     virtual-scroll
   />
@@ -60,6 +60,7 @@ import UserAvatar from "../User/UserAvatar.vue";
 import { type AccessUser } from "./types";
 
 interface LocalState {
+  loading: boolean;
   processing: boolean;
   rawAccessList: AccessUser[];
 }
@@ -74,6 +75,7 @@ const props = defineProps<{
 }>();
 
 const state = reactive<LocalState>({
+  loading: true,
   processing: false,
   rawAccessList: [],
 });
@@ -280,6 +282,7 @@ const updateAccessUserList = async () => {
     ],
     ["desc", "desc"]
   );
+  state.loading = false;
 };
 
 watchEffect(updateAccessUserList);
@@ -505,6 +508,9 @@ const onAccessControlUpdate = async (
 };
 
 const onSubmit = async () => {
+  if (state.processing) {
+    return;
+  }
   state.processing = true;
 
   try {
