@@ -274,6 +274,14 @@ message RowValue {
     string zone = 2;
     // The offset is in seconds east of UTC
     int32 offset = 3;
+    // The accuracy is the number of digits after the decimal point.
+    int32 accuracy = 4;
+  }
+
+  message TimeStamp {
+    google.protobuf.Timestamp timestamp = 1;
+    // The accuracy is the number of digits after the decimal point.
+    int32 accuracy = 2;
   }
 
   oneof kind {
@@ -293,7 +301,7 @@ message RowValue {
     // meaning it only includes the timestamp without any time zone or location
     // info. Although it may be expressed as a UTC value, it should be seen as a
     // timestamp missing location context.
-    google.protobuf.Timestamp timestamp_value = 12;
+    TimeStamp timestamp_value = 12;
     // timestamp_tz_value is used for the timestamptz data type, which
     // accurately represents the timestamp with location information.
     TimestampTZ timestamp_tz_value = 13;
@@ -435,10 +443,9 @@ message StringifyMetadataRequest {
   DatabaseMetadata metadata = 1 [(google.api.field_behavior) = REQUIRED];
   // The database engine of the schema string.
   Engine engine = 2;
-  // If false, we will build the raw common by classification in database catalog.
+  // If false, we will build the raw common by classification in database
+  // config.
   bool classification_from_config = 3;
-  // Database catlog is required if classification_from_config is false.
-  optional DatabaseCatalog catalog = 4;
 }
 
 message StringifyMetadataResponse {

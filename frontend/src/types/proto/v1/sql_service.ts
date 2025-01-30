@@ -241,7 +241,7 @@ export interface RowValue {
    * timestamp missing location context.
    */
   timestampValue?:
-    | Timestamp
+    | RowValue_TimeStamp
     | undefined;
   /**
    * timestamp_tz_value is used for the timestamptz data type, which
@@ -265,6 +265,16 @@ export interface RowValue_TimestampTZ {
   zone: string;
   /** The offset is in seconds east of UTC */
   offset: number;
+  /** The accuracy is the number of digits after the decimal point. */
+  accuracy: number;
+}
+
+export interface RowValue_TimeStamp {
+  timestamp:
+    | Timestamp
+    | undefined;
+  /** The accuracy is the number of digits after the decimal point. */
+  accuracy: number;
 }
 
 export interface Advice {
@@ -509,10 +519,11 @@ export interface StringifyMetadataRequest {
     | undefined;
   /** The database engine of the schema string. */
   engine: Engine;
-  /** If false, we will build the raw common by classification in database catalog. */
+  /**
+   * If false, we will build the raw common by classification in database
+   * config.
+   */
   classificationFromConfig: boolean;
-  /** Database catlog is required if classification_from_config is false. */
-  catalog?: DatabaseCatalog | undefined;
 }
 
 export interface StringifyMetadataResponse {
@@ -1894,7 +1905,7 @@ export const RowValue: MessageFns<RowValue> = {
       Value.encode(Value.wrap(message.valueValue), writer.uint32(90).fork()).join();
     }
     if (message.timestampValue !== undefined) {
-      Timestamp.encode(message.timestampValue, writer.uint32(98).fork()).join();
+      RowValue_TimeStamp.encode(message.timestampValue, writer.uint32(98).fork()).join();
     }
     if (message.timestampTzValue !== undefined) {
       RowValue_TimestampTZ.encode(message.timestampTzValue, writer.uint32(106).fork()).join();
@@ -2002,7 +2013,7 @@ export const RowValue: MessageFns<RowValue> = {
             break;
           }
 
-          message.timestampValue = Timestamp.decode(reader, reader.uint32());
+          message.timestampValue = RowValue_TimeStamp.decode(reader, reader.uint32());
           continue;
         }
         case 13: {
@@ -2035,7 +2046,7 @@ export const RowValue: MessageFns<RowValue> = {
       uint32Value: isSet(object.uint32Value) ? globalThis.Number(object.uint32Value) : undefined,
       uint64Value: isSet(object.uint64Value) ? Long.fromValue(object.uint64Value) : undefined,
       valueValue: isSet(object?.valueValue) ? object.valueValue : undefined,
-      timestampValue: isSet(object.timestampValue) ? fromJsonTimestamp(object.timestampValue) : undefined,
+      timestampValue: isSet(object.timestampValue) ? RowValue_TimeStamp.fromJSON(object.timestampValue) : undefined,
       timestampTzValue: isSet(object.timestampTzValue)
         ? RowValue_TimestampTZ.fromJSON(object.timestampTzValue)
         : undefined,
@@ -2078,7 +2089,7 @@ export const RowValue: MessageFns<RowValue> = {
       obj.valueValue = message.valueValue;
     }
     if (message.timestampValue !== undefined) {
-      obj.timestampValue = fromTimestamp(message.timestampValue).toISOString();
+      obj.timestampValue = RowValue_TimeStamp.toJSON(message.timestampValue);
     }
     if (message.timestampTzValue !== undefined) {
       obj.timestampTzValue = RowValue_TimestampTZ.toJSON(message.timestampTzValue);
@@ -2107,7 +2118,7 @@ export const RowValue: MessageFns<RowValue> = {
       : undefined;
     message.valueValue = object.valueValue ?? undefined;
     message.timestampValue = (object.timestampValue !== undefined && object.timestampValue !== null)
-      ? Timestamp.fromPartial(object.timestampValue)
+      ? RowValue_TimeStamp.fromPartial(object.timestampValue)
       : undefined;
     message.timestampTzValue = (object.timestampTzValue !== undefined && object.timestampTzValue !== null)
       ? RowValue_TimestampTZ.fromPartial(object.timestampTzValue)
@@ -2117,7 +2128,7 @@ export const RowValue: MessageFns<RowValue> = {
 };
 
 function createBaseRowValue_TimestampTZ(): RowValue_TimestampTZ {
-  return { timestamp: undefined, zone: "", offset: 0 };
+  return { timestamp: undefined, zone: "", offset: 0, accuracy: 0 };
 }
 
 export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
@@ -2130,6 +2141,9 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
     }
     if (message.offset !== 0) {
       writer.uint32(24).int32(message.offset);
+    }
+    if (message.accuracy !== 0) {
+      writer.uint32(32).int32(message.accuracy);
     }
     return writer;
   },
@@ -2165,6 +2179,14 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
           message.offset = reader.int32();
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.accuracy = reader.int32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2179,6 +2201,7 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
       timestamp: isSet(object.timestamp) ? fromJsonTimestamp(object.timestamp) : undefined,
       zone: isSet(object.zone) ? globalThis.String(object.zone) : "",
       offset: isSet(object.offset) ? globalThis.Number(object.offset) : 0,
+      accuracy: isSet(object.accuracy) ? globalThis.Number(object.accuracy) : 0,
     };
   },
 
@@ -2193,6 +2216,9 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
     if (message.offset !== 0) {
       obj.offset = Math.round(message.offset);
     }
+    if (message.accuracy !== 0) {
+      obj.accuracy = Math.round(message.accuracy);
+    }
     return obj;
   },
 
@@ -2206,6 +2232,85 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
       : undefined;
     message.zone = object.zone ?? "";
     message.offset = object.offset ?? 0;
+    message.accuracy = object.accuracy ?? 0;
+    return message;
+  },
+};
+
+function createBaseRowValue_TimeStamp(): RowValue_TimeStamp {
+  return { timestamp: undefined, accuracy: 0 };
+}
+
+export const RowValue_TimeStamp: MessageFns<RowValue_TimeStamp> = {
+  encode(message: RowValue_TimeStamp, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.timestamp !== undefined) {
+      Timestamp.encode(message.timestamp, writer.uint32(10).fork()).join();
+    }
+    if (message.accuracy !== 0) {
+      writer.uint32(16).int32(message.accuracy);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RowValue_TimeStamp {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRowValue_TimeStamp();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.timestamp = Timestamp.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accuracy = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RowValue_TimeStamp {
+    return {
+      timestamp: isSet(object.timestamp) ? fromJsonTimestamp(object.timestamp) : undefined,
+      accuracy: isSet(object.accuracy) ? globalThis.Number(object.accuracy) : 0,
+    };
+  },
+
+  toJSON(message: RowValue_TimeStamp): unknown {
+    const obj: any = {};
+    if (message.timestamp !== undefined) {
+      obj.timestamp = fromTimestamp(message.timestamp).toISOString();
+    }
+    if (message.accuracy !== 0) {
+      obj.accuracy = Math.round(message.accuracy);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RowValue_TimeStamp>): RowValue_TimeStamp {
+    return RowValue_TimeStamp.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RowValue_TimeStamp>): RowValue_TimeStamp {
+    const message = createBaseRowValue_TimeStamp();
+    message.timestamp = (object.timestamp !== undefined && object.timestamp !== null)
+      ? Timestamp.fromPartial(object.timestamp)
+      : undefined;
+    message.accuracy = object.accuracy ?? 0;
     return message;
   },
 };
@@ -3078,12 +3183,7 @@ export const ParseMyBatisMapperResponse: MessageFns<ParseMyBatisMapperResponse> 
 };
 
 function createBaseStringifyMetadataRequest(): StringifyMetadataRequest {
-  return {
-    metadata: undefined,
-    engine: Engine.ENGINE_UNSPECIFIED,
-    classificationFromConfig: false,
-    catalog: undefined,
-  };
+  return { metadata: undefined, engine: Engine.ENGINE_UNSPECIFIED, classificationFromConfig: false };
 }
 
 export const StringifyMetadataRequest: MessageFns<StringifyMetadataRequest> = {
@@ -3096,9 +3196,6 @@ export const StringifyMetadataRequest: MessageFns<StringifyMetadataRequest> = {
     }
     if (message.classificationFromConfig !== false) {
       writer.uint32(24).bool(message.classificationFromConfig);
-    }
-    if (message.catalog !== undefined) {
-      DatabaseCatalog.encode(message.catalog, writer.uint32(34).fork()).join();
     }
     return writer;
   },
@@ -3134,14 +3231,6 @@ export const StringifyMetadataRequest: MessageFns<StringifyMetadataRequest> = {
           message.classificationFromConfig = reader.bool();
           continue;
         }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.catalog = DatabaseCatalog.decode(reader, reader.uint32());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3158,7 +3247,6 @@ export const StringifyMetadataRequest: MessageFns<StringifyMetadataRequest> = {
       classificationFromConfig: isSet(object.classificationFromConfig)
         ? globalThis.Boolean(object.classificationFromConfig)
         : false,
-      catalog: isSet(object.catalog) ? DatabaseCatalog.fromJSON(object.catalog) : undefined,
     };
   },
 
@@ -3173,9 +3261,6 @@ export const StringifyMetadataRequest: MessageFns<StringifyMetadataRequest> = {
     if (message.classificationFromConfig !== false) {
       obj.classificationFromConfig = message.classificationFromConfig;
     }
-    if (message.catalog !== undefined) {
-      obj.catalog = DatabaseCatalog.toJSON(message.catalog);
-    }
     return obj;
   },
 
@@ -3189,9 +3274,6 @@ export const StringifyMetadataRequest: MessageFns<StringifyMetadataRequest> = {
       : undefined;
     message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
     message.classificationFromConfig = object.classificationFromConfig ?? false;
-    message.catalog = (object.catalog !== undefined && object.catalog !== null)
-      ? DatabaseCatalog.fromPartial(object.catalog)
-      : undefined;
     return message;
   },
 };

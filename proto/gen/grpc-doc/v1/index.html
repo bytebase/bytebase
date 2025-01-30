@@ -2308,6 +2308,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.RowValue.TimeStamp"><span class="badge">M</span>RowValue.TimeStamp</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.RowValue.TimestampTZ"><span class="badge">M</span>RowValue.TimestampTZ</a>
                 </li>
               
@@ -25350,7 +25354,7 @@ The types come from the Golang SQL driver. </p></td>
               
                 <tr>
                   <td>timestamp_value</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td><a href="#bytebase.v1.RowValue.TimeStamp">RowValue.TimeStamp</a></td>
                   <td></td>
                   <td><p>timestamp_value is used for the timestamp without time zone data type,
 meaning it only includes the timestamp without any time zone or location
@@ -25364,6 +25368,37 @@ timestamp missing location context. </p></td>
                   <td></td>
                   <td><p>timestamp_tz_value is used for the timestamptz data type, which
 accurately represents the timestamp with location information. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.RowValue.TimeStamp">RowValue.TimeStamp</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>timestamp</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>accuracy</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The accuracy is the number of digits after the decimal point. </p></td>
                 </tr>
               
             </tbody>
@@ -25407,6 +25442,13 @@ time.Time.Zone() </p></td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p>The offset is in seconds east of UTC </p></td>
+                </tr>
+              
+                <tr>
+                  <td>accuracy</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The accuracy is the number of digits after the decimal point. </p></td>
                 </tr>
               
             </tbody>
@@ -25528,14 +25570,8 @@ Pass this value in the page_token field in the subsequent call to
                   <td>classification_from_config</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>If false, we will build the raw common by classification in database catalog. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>catalog</td>
-                  <td><a href="#bytebase.v1.DatabaseCatalog">DatabaseCatalog</a></td>
-                  <td>optional</td>
-                  <td><p>Database catlog is required if classification_from_config is false. </p></td>
+                  <td><p>If false, we will build the raw common by classification in database
+config. </p></td>
                 </tr>
               
             </tbody>
