@@ -12601,25 +12601,34 @@ components:
                         - $ref: '#/components/schemas/GoogleProtobufValue'
                     description: value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only.
                 timestampValue:
-                    type: string
+                    allOf:
+                        - $ref: '#/components/schemas/RowValue_Timestamp'
                     description: |-
                         timestamp_value is used for the timestamp without time zone data type,
                          meaning it only includes the timestamp without any time zone or location
                          info. Although it may be expressed as a UTC value, it should be seen as a
                          timestamp missing location context.
-                    format: date-time
                 timestampTzValue:
                     allOf:
                         - $ref: '#/components/schemas/RowValue_TimestampTZ'
                     description: |-
                         timestamp_tz_value is used for the timestamptz data type, which
                          accurately represents the timestamp with location information.
-        RowValue_TimestampTZ:
+        RowValue_Timestamp:
             type: object
             properties:
                 timestamp:
                     type: string
                     format: date-time
+                accuracy:
+                    type: integer
+                    description: The accuracy is the number of digits after the decimal point.
+                    format: int32
+        RowValue_TimestampTZ:
+            type: object
+            properties:
+                timestamp:
+                    $ref: '#/components/schemas/RowValue_Timestamp'
                 zone:
                     type: string
                     description: |-
