@@ -65,8 +65,8 @@ importers:
         specifier: ^0.9.1
         version: 0.9.3
       emittery:
-        specifier: ^1.0.3
-        version: 1.0.3
+        specifier: ^1.1.0
+        version: 1.1.0
       file-saver:
         specifier: ^2.0.5
         version: 2.0.5
@@ -2724,8 +2724,8 @@ packages:
     resolution: {integrity: sha512-L1gFY5hZlUaJ0VXsFLPO6KJIJlnu6rOBzbSXxx2f6B7zOShTxxpO+nqH0idbdOoqI2JnWyfn97RPnPgRl7Dz4Q==}
     engines: {node: '>= 0.4.0'}
 
-  emittery@1.0.3:
-    resolution: {integrity: sha512-tJdCJitoy2lrC2ldJcqN4vkqJ00lT+tOWNT1hBJjO/3FDMJa5TTIiYGCKGkn/WfCyOzUMObeohbVTj00fhiLiA==}
+  emittery@1.1.0:
+    resolution: {integrity: sha512-rsX7ktqARv/6UQDgMaLfIqUWAEzzbCQiVh7V9rhDXp6c37yoJcks12NVD+XPkgl4AEavmNhVfrhGoqYwIsMYYA==}
     engines: {node: '>=14.16'}
 
   emoji-regex@10.4.0:
@@ -7363,7 +7363,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  emittery@1.0.3: {}
+  emittery@1.1.0: {}
 
   emoji-regex@10.4.0: {}
 
