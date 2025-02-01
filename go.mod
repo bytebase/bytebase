@@ -91,7 +91,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.31.0
 	golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67
-	golang.org/x/oauth2 v0.24.0
+	golang.org/x/oauth2 v0.25.0
 	golang.org/x/text v0.21.0
 	google.golang.org/api v0.214.0
 	google.golang.org/genproto v0.0.0-20241230172942-26aa7a208def
