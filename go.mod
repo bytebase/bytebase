@@ -87,7 +87,7 @@ require (
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
 	github.com/xuri/excelize/v2 v2.9.0
 	github.com/zeebo/xxh3 v1.0.2
-	go.mongodb.org/mongo-driver v1.17.1
+	go.mongodb.org/mongo-driver v1.17.2
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.32.0
 	golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67
