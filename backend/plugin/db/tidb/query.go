@@ -49,7 +49,9 @@ func convertValue(typeName string, value any) *v1pb.RowValue {
 				}
 				return &v1pb.RowValue{
 					Kind: &v1pb.RowValue_TimestampValue{
-						TimestampValue: timestamppb.New(t),
+						TimestampValue: &v1pb.RowValue_Timestamp{
+							GoogleTimestamp: timestamppb.New(t),
+						},
 					},
 				}
 			}
