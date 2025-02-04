@@ -241,7 +241,7 @@ export interface RowValue {
    * timestamp missing location context.
    */
   timestampValue?:
-    | Timestamp
+    | RowValue_Timestamp
     | undefined;
   /**
    * timestamp_tz_value is used for the timestamptz data type, which
@@ -250,8 +250,16 @@ export interface RowValue {
   timestampTzValue?: RowValue_TimestampTZ | undefined;
 }
 
+export interface RowValue_Timestamp {
+  googleTimestamp:
+    | Timestamp
+    | undefined;
+  /** The accuracy is the number of digits after the decimal point. */
+  accuracy: number;
+}
+
 export interface RowValue_TimestampTZ {
-  timestamp:
+  googleTimestamp:
     | Timestamp
     | undefined;
   /**
@@ -265,6 +273,7 @@ export interface RowValue_TimestampTZ {
   zone: string;
   /** The offset is in seconds east of UTC */
   offset: number;
+  accuracy: number;
 }
 
 export interface Advice {
@@ -1894,7 +1903,7 @@ export const RowValue: MessageFns<RowValue> = {
       Value.encode(Value.wrap(message.valueValue), writer.uint32(90).fork()).join();
     }
     if (message.timestampValue !== undefined) {
-      Timestamp.encode(message.timestampValue, writer.uint32(98).fork()).join();
+      RowValue_Timestamp.encode(message.timestampValue, writer.uint32(98).fork()).join();
     }
     if (message.timestampTzValue !== undefined) {
       RowValue_TimestampTZ.encode(message.timestampTzValue, writer.uint32(106).fork()).join();
@@ -2002,7 +2011,7 @@ export const RowValue: MessageFns<RowValue> = {
             break;
           }
 
-          message.timestampValue = Timestamp.decode(reader, reader.uint32());
+          message.timestampValue = RowValue_Timestamp.decode(reader, reader.uint32());
           continue;
         }
         case 13: {
@@ -2035,7 +2044,7 @@ export const RowValue: MessageFns<RowValue> = {
       uint32Value: isSet(object.uint32Value) ? globalThis.Number(object.uint32Value) : undefined,
       uint64Value: isSet(object.uint64Value) ? Long.fromValue(object.uint64Value) : undefined,
       valueValue: isSet(object?.valueValue) ? object.valueValue : undefined,
-      timestampValue: isSet(object.timestampValue) ? fromJsonTimestamp(object.timestampValue) : undefined,
+      timestampValue: isSet(object.timestampValue) ? RowValue_Timestamp.fromJSON(object.timestampValue) : undefined,
       timestampTzValue: isSet(object.timestampTzValue)
         ? RowValue_TimestampTZ.fromJSON(object.timestampTzValue)
         : undefined,
@@ -2078,7 +2087,7 @@ export const RowValue: MessageFns<RowValue> = {
       obj.valueValue = message.valueValue;
     }
     if (message.timestampValue !== undefined) {
-      obj.timestampValue = fromTimestamp(message.timestampValue).toISOString();
+      obj.timestampValue = RowValue_Timestamp.toJSON(message.timestampValue);
     }
     if (message.timestampTzValue !== undefined) {
       obj.timestampTzValue = RowValue_TimestampTZ.toJSON(message.timestampTzValue);
@@ -2107,7 +2116,7 @@ export const RowValue: MessageFns<RowValue> = {
       : undefined;
     message.valueValue = object.valueValue ?? undefined;
     message.timestampValue = (object.timestampValue !== undefined && object.timestampValue !== null)
-      ? Timestamp.fromPartial(object.timestampValue)
+      ? RowValue_Timestamp.fromPartial(object.timestampValue)
       : undefined;
     message.timestampTzValue = (object.timestampTzValue !== undefined && object.timestampTzValue !== null)
       ? RowValue_TimestampTZ.fromPartial(object.timestampTzValue)
@@ -2116,20 +2125,101 @@ export const RowValue: MessageFns<RowValue> = {
   },
 };
 
+function createBaseRowValue_Timestamp(): RowValue_Timestamp {
+  return { googleTimestamp: undefined, accuracy: 0 };
+}
+
+export const RowValue_Timestamp: MessageFns<RowValue_Timestamp> = {
+  encode(message: RowValue_Timestamp, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.googleTimestamp !== undefined) {
+      Timestamp.encode(message.googleTimestamp, writer.uint32(10).fork()).join();
+    }
+    if (message.accuracy !== 0) {
+      writer.uint32(16).int32(message.accuracy);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RowValue_Timestamp {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRowValue_Timestamp();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.googleTimestamp = Timestamp.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accuracy = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RowValue_Timestamp {
+    return {
+      googleTimestamp: isSet(object.googleTimestamp) ? fromJsonTimestamp(object.googleTimestamp) : undefined,
+      accuracy: isSet(object.accuracy) ? globalThis.Number(object.accuracy) : 0,
+    };
+  },
+
+  toJSON(message: RowValue_Timestamp): unknown {
+    const obj: any = {};
+    if (message.googleTimestamp !== undefined) {
+      obj.googleTimestamp = fromTimestamp(message.googleTimestamp).toISOString();
+    }
+    if (message.accuracy !== 0) {
+      obj.accuracy = Math.round(message.accuracy);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RowValue_Timestamp>): RowValue_Timestamp {
+    return RowValue_Timestamp.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RowValue_Timestamp>): RowValue_Timestamp {
+    const message = createBaseRowValue_Timestamp();
+    message.googleTimestamp = (object.googleTimestamp !== undefined && object.googleTimestamp !== null)
+      ? Timestamp.fromPartial(object.googleTimestamp)
+      : undefined;
+    message.accuracy = object.accuracy ?? 0;
+    return message;
+  },
+};
+
 function createBaseRowValue_TimestampTZ(): RowValue_TimestampTZ {
-  return { timestamp: undefined, zone: "", offset: 0 };
+  return { googleTimestamp: undefined, zone: "", offset: 0, accuracy: 0 };
 }
 
 export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
   encode(message: RowValue_TimestampTZ, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.timestamp !== undefined) {
-      Timestamp.encode(message.timestamp, writer.uint32(10).fork()).join();
+    if (message.googleTimestamp !== undefined) {
+      Timestamp.encode(message.googleTimestamp, writer.uint32(10).fork()).join();
     }
     if (message.zone !== "") {
       writer.uint32(18).string(message.zone);
     }
     if (message.offset !== 0) {
       writer.uint32(24).int32(message.offset);
+    }
+    if (message.accuracy !== 0) {
+      writer.uint32(32).int32(message.accuracy);
     }
     return writer;
   },
@@ -2146,7 +2236,7 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
             break;
           }
 
-          message.timestamp = Timestamp.decode(reader, reader.uint32());
+          message.googleTimestamp = Timestamp.decode(reader, reader.uint32());
           continue;
         }
         case 2: {
@@ -2165,6 +2255,14 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
           message.offset = reader.int32();
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.accuracy = reader.int32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2176,22 +2274,26 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
 
   fromJSON(object: any): RowValue_TimestampTZ {
     return {
-      timestamp: isSet(object.timestamp) ? fromJsonTimestamp(object.timestamp) : undefined,
+      googleTimestamp: isSet(object.googleTimestamp) ? fromJsonTimestamp(object.googleTimestamp) : undefined,
       zone: isSet(object.zone) ? globalThis.String(object.zone) : "",
       offset: isSet(object.offset) ? globalThis.Number(object.offset) : 0,
+      accuracy: isSet(object.accuracy) ? globalThis.Number(object.accuracy) : 0,
     };
   },
 
   toJSON(message: RowValue_TimestampTZ): unknown {
     const obj: any = {};
-    if (message.timestamp !== undefined) {
-      obj.timestamp = fromTimestamp(message.timestamp).toISOString();
+    if (message.googleTimestamp !== undefined) {
+      obj.googleTimestamp = fromTimestamp(message.googleTimestamp).toISOString();
     }
     if (message.zone !== "") {
       obj.zone = message.zone;
     }
     if (message.offset !== 0) {
       obj.offset = Math.round(message.offset);
+    }
+    if (message.accuracy !== 0) {
+      obj.accuracy = Math.round(message.accuracy);
     }
     return obj;
   },
@@ -2201,11 +2303,12 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
   },
   fromPartial(object: DeepPartial<RowValue_TimestampTZ>): RowValue_TimestampTZ {
     const message = createBaseRowValue_TimestampTZ();
-    message.timestamp = (object.timestamp !== undefined && object.timestamp !== null)
-      ? Timestamp.fromPartial(object.timestamp)
+    message.googleTimestamp = (object.googleTimestamp !== undefined && object.googleTimestamp !== null)
+      ? Timestamp.fromPartial(object.googleTimestamp)
       : undefined;
     message.zone = object.zone ?? "";
     message.offset = object.offset ?? 0;
+    message.accuracy = object.accuracy ?? 0;
     return message;
   },
 };
