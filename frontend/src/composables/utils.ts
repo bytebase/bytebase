@@ -2,7 +2,6 @@ import { orderBy } from "lodash-es";
 import { stringify } from "uuid";
 import type { SQLResultSetV1 } from "@/types";
 import { NullValue } from "@/types/proto/google/protobuf/struct";
-import { Timestamp } from "@/types/proto/google/protobuf/timestamp";
 import { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
 
 type NoSQLRowData = {
@@ -162,10 +161,12 @@ const convertAnyToRowValue = (
       if (value instanceof Date) {
         return {
           value: RowValue.fromPartial({
-            timestampValue: Timestamp.fromPartial({
-              seconds: Math.floor(value.getTime() / 1000),
-              nanos: (value.getTime() % 1000) * 1e6,
-            }),
+            timestampValue: {
+              googleTimestamp: {
+                seconds: Math.floor(value.getTime() / 1000),
+                nanos: (value.getTime() % 1000) * 1e6,
+              },
+            },
           }),
           type: "DATETIME",
         };

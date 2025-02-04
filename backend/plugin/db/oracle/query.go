@@ -97,7 +97,9 @@ func convertValue(typeName string, value any) *v1pb.RowValue {
 				timeStripped := time.Date(raw.Time.Year(), raw.Time.Month(), raw.Time.Day(), raw.Time.Hour(), raw.Time.Minute(), raw.Time.Second(), raw.Time.Nanosecond(), time.UTC)
 				return &v1pb.RowValue{
 					Kind: &v1pb.RowValue_TimestampValue{
-						TimestampValue: timestamppb.New(timeStripped),
+						TimestampValue: &v1pb.RowValue_Timestamp{
+							GoogleTimestamp: timestamppb.New(timeStripped),
+						},
 					},
 				}
 			}
@@ -111,7 +113,9 @@ func convertValue(typeName string, value any) *v1pb.RowValue {
 				// TODO(d): fix the go-ora library.
 				return &v1pb.RowValue{
 					Kind: &v1pb.RowValue_TimestampValue{
-						TimestampValue: timestamppb.New(t),
+						TimestampValue: &v1pb.RowValue_Timestamp{
+							GoogleTimestamp: timestamppb.New(t),
+						},
 					},
 				}
 			}
@@ -119,9 +123,9 @@ func convertValue(typeName string, value any) *v1pb.RowValue {
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_TimestampTzValue{
 					TimestampTzValue: &v1pb.RowValue_TimestampTZ{
-						Timestamp: timestamppb.New(raw.Time),
-						Zone:      zone,
-						Offset:    int32(offset),
+						GoogleTimestamp: timestamppb.New(raw.Time),
+						Zone:            zone,
+						Offset:          int32(offset),
 					},
 				},
 			}

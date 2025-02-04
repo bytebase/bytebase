@@ -314,14 +314,14 @@ func (m *RangeMasker) Mask(data *MaskData) *v1pb.RowValue {
 			},
 		}
 	case *v1pb.RowValue_TimestampValue:
-		s := kind.TimestampValue.AsTime().Format("2006-01-02 15:04:05.000000")
+		s := kind.TimestampValue.GoogleTimestamp.AsTime().Format("2006-01-02 15:04:05.000000")
 		return &v1pb.RowValue{
 			Kind: &v1pb.RowValue_StringValue{
 				StringValue: string(fRune([]rune(s))),
 			},
 		}
 	case *v1pb.RowValue_TimestampTzValue:
-		t := kind.TimestampTzValue.Timestamp.AsTime()
+		t := kind.TimestampTzValue.GoogleTimestamp.AsTime()
 		z := time.FixedZone(kind.TimestampTzValue.GetZone(), int(kind.TimestampTzValue.GetOffset()))
 		s := t.In(z).Format(time.RFC3339Nano)
 		return &v1pb.RowValue{
@@ -409,14 +409,14 @@ func (*DefaultRangeMasker) Mask(data *MaskData) *v1pb.RowValue {
 			},
 		}
 	case *v1pb.RowValue_TimestampValue:
-		s := kind.TimestampValue.AsTime().Format("2006-01-02 15:04:05.000000")
+		s := kind.TimestampValue.GoogleTimestamp.AsTime().Format("2006-01-02 15:04:05.000000")
 		return &v1pb.RowValue{
 			Kind: &v1pb.RowValue_StringValue{
 				StringValue: string((middle([]byte(s)))),
 			},
 		}
 	case *v1pb.RowValue_TimestampTzValue:
-		t := kind.TimestampTzValue.Timestamp.AsTime()
+		t := kind.TimestampTzValue.GoogleTimestamp.AsTime()
 		z := time.FixedZone(kind.TimestampTzValue.GetZone(), int(kind.TimestampTzValue.GetOffset()))
 		s := t.In(z).Format(time.RFC3339Nano)
 		return &v1pb.RowValue{
@@ -519,14 +519,14 @@ func (m *MD5Masker) Mask(data *MaskData) *v1pb.RowValue {
 			},
 		}
 	case *v1pb.RowValue_TimestampValue:
-		s := kind.TimestampValue.AsTime().Format("2006-01-02 15:04:05.000000")
+		s := kind.TimestampValue.GoogleTimestamp.AsTime().Format("2006-01-02 15:04:05.000000")
 		return &v1pb.RowValue{
 			Kind: &v1pb.RowValue_StringValue{
 				StringValue: f(s),
 			},
 		}
 	case *v1pb.RowValue_TimestampTzValue:
-		t := kind.TimestampTzValue.Timestamp.AsTime()
+		t := kind.TimestampTzValue.GoogleTimestamp.AsTime()
 		z := time.FixedZone(kind.TimestampTzValue.GetZone(), int(kind.TimestampTzValue.GetOffset()))
 		s := t.In(z).Format(time.RFC3339Nano)
 		return &v1pb.RowValue{
@@ -699,10 +699,10 @@ func (m *InnerOuterMasker) Mask(data *MaskData) *v1pb.RowValue {
 			},
 		}
 	case *v1pb.RowValue_TimestampValue:
-		s := kind.TimestampValue.AsTime().Format("2006-01-02 15:04:05.000000")
+		s := kind.TimestampValue.GoogleTimestamp.AsTime().Format("2006-01-02 15:04:05.000000")
 		unmaskedData = s
 	case *v1pb.RowValue_TimestampTzValue:
-		t := kind.TimestampTzValue.Timestamp.AsTime()
+		t := kind.TimestampTzValue.GoogleTimestamp.AsTime()
 		z := time.FixedZone(kind.TimestampTzValue.GetZone(), int(kind.TimestampTzValue.GetOffset()))
 		s := t.In(z).Format(time.RFC3339Nano)
 		unmaskedData = s

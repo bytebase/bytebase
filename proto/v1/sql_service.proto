@@ -263,8 +263,14 @@ message QueryRow {
 }
 
 message RowValue {
+  message Timestamp {
+    google.protobuf.Timestamp google_timestamp = 1;
+    // The accuracy is the number of digits after the decimal point.
+    int32 accuracy = 2;
+  }
+
   message TimestampTZ {
-    google.protobuf.Timestamp timestamp = 1;
+    google.protobuf.Timestamp google_timestamp = 1;
     // Zone is the time zone abbreviations in timezone database such as "PDT",
     // "PST". https://en.wikipedia.org/wiki/List_of_tz_database_time_zones We
     // retrieve the time zone information from the timestamptz field in the
@@ -274,6 +280,7 @@ message RowValue {
     string zone = 2;
     // The offset is in seconds east of UTC
     int32 offset = 3;
+    int32 accuracy = 4;
   }
 
   oneof kind {
@@ -293,7 +300,7 @@ message RowValue {
     // meaning it only includes the timestamp without any time zone or location
     // info. Although it may be expressed as a UTC value, it should be seen as a
     // timestamp missing location context.
-    google.protobuf.Timestamp timestamp_value = 12;
+    Timestamp timestamp_value = 12;
     // timestamp_tz_value is used for the timestamptz data type, which
     // accurately represents the timestamp with location information.
     TimestampTZ timestamp_tz_value = 13;
