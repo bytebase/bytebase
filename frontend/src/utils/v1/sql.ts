@@ -35,10 +35,10 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
       .replace(/^0+/g, "");
     return binaryString.length === 0 ? "0" : binaryString;
   }
-  if (value.timestampValue) {
-    return formatTimestamp(value.timestampValue);
+  if (value.timestampValue && value.timestampValue.googleTimestamp) {
+    return formatTimestamp(value.timestampValue.googleTimestamp);
   }
-  if (value.timestampTzValue && value.timestampTzValue.timestamp) {
+  if (value.timestampTzValue && value.timestampTzValue.googleTimestamp) {
     return formatTimestampWithTz(value.timestampTzValue);
   }
   const key = keys[0];
@@ -56,7 +56,7 @@ const formatTimestamp = (timestamp: Timestamp) => {
 };
 
 const formatTimestampWithTz = (timestampTzValue: RowValue_TimestampTZ) => {
-  const fullDayjs = dayjs(getDateForPbTimestamp(timestampTzValue.timestamp))
+  const fullDayjs = dayjs(getDateForPbTimestamp(timestampTzValue.googleTimestamp))
     .utc()
     .add(timestampTzValue.offset, "seconds");
 
@@ -68,7 +68,7 @@ const formatTimestampWithTz = (timestampTzValue: RowValue_TimestampTZ) => {
       : `-${timezoneOffsetPrefix}${Math.abs(hourOffset)}`;
 
   const microseconds = Math.floor(
-    (timestampTzValue.timestamp?.nanos ?? 0) / 1000
+    (timestampTzValue.googleTimestamp?.nanos ?? 0) / 1000
   );
   const formattedTimestamp =
     microseconds > 0
