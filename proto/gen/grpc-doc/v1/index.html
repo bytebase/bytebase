@@ -2308,6 +2308,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.RowValue.Timestamp"><span class="badge">M</span>RowValue.Timestamp</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.RowValue.TimestampTZ"><span class="badge">M</span>RowValue.TimestampTZ</a>
                 </li>
               
@@ -25350,7 +25354,7 @@ The types come from the Golang SQL driver. </p></td>
               
                 <tr>
                   <td>timestamp_value</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td><a href="#bytebase.v1.RowValue.Timestamp">RowValue.Timestamp</a></td>
                   <td></td>
                   <td><p>timestamp_value is used for the timestamp without time zone data type,
 meaning it only includes the timestamp without any time zone or location
@@ -25373,6 +25377,37 @@ accurately represents the timestamp with location information. </p></td>
 
         
       
+        <h3 id="bytebase.v1.RowValue.Timestamp">RowValue.Timestamp</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>google_timestamp</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>accuracy</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The accuracy is the number of digits after the decimal point. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.RowValue.TimestampTZ">RowValue.TimestampTZ</h3>
         <p></p>
 
@@ -25384,7 +25419,7 @@ accurately represents the timestamp with location information. </p></td>
             <tbody>
               
                 <tr>
-                  <td>timestamp</td>
+                  <td>google_timestamp</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -25407,6 +25442,13 @@ time.Time.Zone() </p></td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p>The offset is in seconds east of UTC </p></td>
+                </tr>
+              
+                <tr>
+                  <td>accuracy</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
