@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
+	// "github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -61,7 +62,8 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	return new(sql.NullString)
 }
 
-func convertValue(typeName string, value any) *v1pb.RowValue {
+func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
+	fmt.Println("Inside convertValue")
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
@@ -117,11 +119,14 @@ func convertValue(typeName string, value any) *v1pb.RowValue {
 		}
 	case *sql.NullTime:
 		if raw.Valid {
+			fmt.Println("TypeName:", typeName)
+			_, scale, _ := columnType.DecimalSize()
 			if typeName == "DATETIME" || typeName == "DATETIME2" || typeName == "SMALLDATETIME" {
 				return &v1pb.RowValue{
 					Kind: &v1pb.RowValue_TimestampValue{
 						TimestampValue: &v1pb.RowValue_Timestamp{
 							GoogleTimestamp: timestamppb.New(raw.Time),
+							Accuracy:        int32(scale),
 						},
 					},
 				}
@@ -133,6 +138,7 @@ func convertValue(typeName string, value any) *v1pb.RowValue {
 						GoogleTimestamp: timestamppb.New(raw.Time),
 						Zone:            zone,
 						Offset:          int32(offset),
+						Accuracy:        int32(scale),
 					},
 				},
 			}

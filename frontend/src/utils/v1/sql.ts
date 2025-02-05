@@ -2,10 +2,10 @@ import dayjs from "dayjs";
 import Long from "long";
 import { getDateForPbTimestamp } from "@/types";
 import { NullValue } from "@/types/proto/google/protobuf/struct";
-import type { Timestamp } from "@/types/proto/google/protobuf/timestamp";
 import { Engine } from "@/types/proto/v1/common";
 import {
   RowValue,
+  type RowValue_Timestamp,
   type RowValue_TimestampTZ,
 } from "@/types/proto/v1/sql_service";
 import { isNullOrUndefined } from "../util";
@@ -36,7 +36,7 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
     return binaryString.length === 0 ? "0" : binaryString;
   }
   if (value.timestampValue && value.timestampValue.googleTimestamp) {
-    return formatTimestamp(value.timestampValue.googleTimestamp);
+    return formatTimestamp(value.timestampValue);
   }
   if (value.timestampTzValue && value.timestampTzValue.googleTimestamp) {
     return formatTimestampWithTz(value.timestampTzValue);
@@ -45,12 +45,12 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
   return plainObject[key];
 };
 
-const formatTimestamp = (timestamp: Timestamp) => {
-  const fullDayjs = dayjs(getDateForPbTimestamp(timestamp)).utc();
-  const microseconds = Math.floor(timestamp.nanos / 1000);
+const formatTimestamp = (timestamp: RowValue_Timestamp) => {
+  const fullDayjs = dayjs(getDateForPbTimestamp(timestamp.googleTimestamp)).utc();
+  const microseconds = Math.floor((timestamp.googleTimestamp?.nanos ?? 0) / Math.pow(10, 9 - timestamp.accuracy));
   const formattedTimestamp =
     microseconds > 0
-      ? `${fullDayjs.format("YYYY-MM-DD HH:mm:ss")}.${microseconds.toString().padStart(6, "0")}`
+      ? `${fullDayjs.format("YYYY-MM-DD HH:mm:ss")}.${microseconds.toString().padStart(timestamp.accuracy, "0")}`
       : `${fullDayjs.format("YYYY-MM-DD HH:mm:ss")}`;
   return formattedTimestamp;
 };
@@ -68,11 +68,11 @@ const formatTimestampWithTz = (timestampTzValue: RowValue_TimestampTZ) => {
       : `-${timezoneOffsetPrefix}${Math.abs(hourOffset)}`;
 
   const microseconds = Math.floor(
-    (timestampTzValue.googleTimestamp?.nanos ?? 0) / 1000
+    (timestampTzValue.googleTimestamp?.nanos ?? 0) / Math.pow(10, 9 - timestampTzValue.accuracy) 
   );
   const formattedTimestamp =
     microseconds > 0
-      ? `${fullDayjs.format("YYYY-MM-DD HH:mm:ss")}.${microseconds.toString().padStart(6, "0")}${timezoneOffset}`
+      ? `${fullDayjs.format("YYYY-MM-DD HH:mm:ss")}.${microseconds.toString().padStart(timestampTzValue.accuracy, "0")}${timezoneOffset}`
       : `${fullDayjs.format("YYYY-MM-DD HH:mm:ss")}${timezoneOffset}`;
   return formattedTimestamp;
 };

@@ -46,7 +46,7 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	}
 }
 
-func convertValue(typeName string, value any) *v1pb.RowValue {
+func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
