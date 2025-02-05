@@ -38,8 +38,8 @@ export const getActiveContentByCursor = (
   }
   return model.getValueInRange({
     startLineNumber: position.lineNumber,
-    startColumn: 0,
-    endLineNumber: position.lineNumber,
-    endColumn: editor.getBottomForLineNumber(position.lineNumber),
+    startColumn: 1,
+    endLineNumber: position.lineNumber + 1,
+    endColumn: 0,
   });
 };
