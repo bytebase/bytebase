@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/google/uuid"
@@ -367,6 +368,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 				if adviceStatus != storepb.Advice_SUCCESS {
 					response.Results = append(response.Results, &v1pb.CheckReleaseResponse_CheckResult{
 						File:    file.Path,
+						Target:  fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName),
 						Advices: advices,
 					})
 				}

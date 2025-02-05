@@ -9059,6 +9059,12 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Advice'
+                    description: The list of advice for the file.
+                target:
+                    type: string
+                    description: |-
+                        The target that the check is performed on.
+                         should be a database. Format: instances/{instance}/databases/{database}
         CheckRequest:
             required:
                 - name

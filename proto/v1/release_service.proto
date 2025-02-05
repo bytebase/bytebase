@@ -167,7 +167,12 @@ message CheckReleaseResponse {
     // The file path that is being checked.
     string file = 1;
 
+    // The list of advice for the file.
     repeated Advice advices = 2;
+
+    // The target that the check is performed on.
+    // should be a database. Format: instances/{instance}/databases/{database}
+    string target = 3;
   }
 
   repeated CheckResult results = 1;
