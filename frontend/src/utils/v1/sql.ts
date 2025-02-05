@@ -66,7 +66,7 @@ const formatTimestampWithTz = (timestampTzValue: RowValue_TimestampTZ) => {
     hourOffset > 0
       ? `+${timezoneOffsetPrefix}${hourOffset}`
       : `-${timezoneOffsetPrefix}${Math.abs(hourOffset)}`;
-
+  timestampTzValue.accuracy = (timestampTzValue.accuracy === 0) ? 6 : timestampTzValue.accuracy;
   const microseconds = Math.floor(
     (timestampTzValue.googleTimestamp?.nanos ?? 0) / Math.pow(10, 9 - timestampTzValue.accuracy) 
   );
