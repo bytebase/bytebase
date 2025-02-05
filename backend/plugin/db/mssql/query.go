@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
-	// "github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -63,7 +62,6 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 }
 
 func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
-	fmt.Println("Inside convertValue")
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
@@ -119,7 +117,6 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 		}
 	case *sql.NullTime:
 		if raw.Valid {
-			fmt.Println("TypeName:", typeName)
 			_, scale, _ := columnType.DecimalSize()
 			if typeName == "DATETIME" || typeName == "DATETIME2" || typeName == "SMALLDATETIME" {
 				return &v1pb.RowValue{

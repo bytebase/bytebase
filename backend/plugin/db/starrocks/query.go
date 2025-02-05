@@ -41,6 +41,7 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 	case *sql.NullString:
 		if raw.Valid {
 			if typeName == "TIMESTAMP" || typeName == "DATETIME" {
+				_, scale, _ := columnType.DecimalSize()
 				t, err := time.Parse(time.DateTime, raw.String)
 				if err != nil {
 					slog.Error("failed to parse time value", log.BBError(err))
@@ -50,6 +51,7 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 					Kind: &v1pb.RowValue_TimestampValue{
 						TimestampValue: &v1pb.RowValue_Timestamp{
 							GoogleTimestamp: timestamppb.New(t),
+							Accuracy:        int32(scale),
 						},
 					},
 				}
