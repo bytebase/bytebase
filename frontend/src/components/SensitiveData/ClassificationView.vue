@@ -11,7 +11,9 @@
       <div class="flex items-center space-x-2">
         <NSwitch
           :value="!state.classification.classificationFromConfig"
-          :disabled="!allowEdit || !hasSensitiveDataFeature"
+          :disabled="
+            !allowEdit || !hasSensitiveDataFeature || !hasClassificationConfig
+          "
           @update:value="onClassificationConfigChange"
         />
         <div class="font-medium leading-7 text-main">
@@ -138,6 +140,10 @@ const formerConfig = computed(() =>
     id: uuidv4(),
     ...head(settingStore.classification),
   })
+);
+
+const hasClassificationConfig = computed(
+  () => settingStore.classification.length > 0
 );
 
 const state = reactive<LocalState>({
