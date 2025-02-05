@@ -206,7 +206,7 @@ func getTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata)
 }
 
 // https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-foreign-key-columns-transact-sql?view=sql-server-ver16#example-query
-var listForeignKeyQuery string = `
+var listForeignKeyQuery = `
 SELECT fk.name AS ForeignKeyName,
        s_parent.name AS ParentSchemaName,
        t_parent.name AS ParentTableName,
