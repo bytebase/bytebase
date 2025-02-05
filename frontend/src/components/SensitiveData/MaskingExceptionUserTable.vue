@@ -227,7 +227,12 @@ const getMemberBinding = (access: AccessUser): string => {
 };
 
 const updateAccessUserList = async () => {
-  if (!ready.value || !policy.value || !policy.value.maskingExceptionPolicy) {
+  if (!ready.value) {
+    return [];
+  }
+
+  if (!policy.value || !policy.value.maskingExceptionPolicy) {
+    state.loading = false;
     return [];
   }
 
