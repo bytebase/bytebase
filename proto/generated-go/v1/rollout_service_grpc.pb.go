@@ -54,7 +54,7 @@ type RolloutServiceClient interface {
 	// BatchSkipTasks skips the specified tasks.
 	// The access is the same as BatchRunTasks().
 	BatchSkipTasks(ctx context.Context, in *BatchSkipTasksRequest, opts ...grpc.CallOption) (*BatchSkipTasksResponse, error)
-	// BatchSkipTasks cancels the specified task runs in batch.
+	// BatchCancelTaskRuns cancels the specified task runs in batch.
 	// The access is the same as BatchRunTasks().
 	BatchCancelTaskRuns(ctx context.Context, in *BatchCancelTaskRunsRequest, opts ...grpc.CallOption) (*BatchCancelTaskRunsResponse, error)
 	PreviewTaskRunRollback(ctx context.Context, in *PreviewTaskRunRollbackRequest, opts ...grpc.CallOption) (*PreviewTaskRunRollbackResponse, error)
@@ -209,7 +209,7 @@ type RolloutServiceServer interface {
 	// BatchSkipTasks skips the specified tasks.
 	// The access is the same as BatchRunTasks().
 	BatchSkipTasks(context.Context, *BatchSkipTasksRequest) (*BatchSkipTasksResponse, error)
-	// BatchSkipTasks cancels the specified task runs in batch.
+	// BatchCancelTaskRuns cancels the specified task runs in batch.
 	// The access is the same as BatchRunTasks().
 	BatchCancelTaskRuns(context.Context, *BatchCancelTaskRunsRequest) (*BatchCancelTaskRunsResponse, error)
 	PreviewTaskRunRollback(context.Context, *PreviewTaskRunRollbackRequest) (*PreviewTaskRunRollbackResponse, error)
