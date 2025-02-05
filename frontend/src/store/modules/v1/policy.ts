@@ -220,7 +220,7 @@ export const usePolicyByParentAndType = (
         parentPath,
         policyType,
       })
-      .then(() => (ready.value = true));
+      .finally(() => (ready.value = true));
   });
 
   const policy = computed(() => {
