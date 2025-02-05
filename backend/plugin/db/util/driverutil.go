@@ -45,7 +45,7 @@ var NullRowValue = &v1pb.RowValue{
 	},
 }
 
-func RowsToQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) any, rowValueConverter func(string, any) *v1pb.RowValue, limit int64) (*v1pb.QueryResult, error) {
+func RowsToQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) any, rowValueConverter func(string, *sql.ColumnType, any) *v1pb.RowValue, limit int64) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func RowsToQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) 
 
 			row := &v1pb.QueryRow{}
 			for i := 0; i < columnLength; i++ {
-				row.Values = append(row.Values, rowValueConverter(columnTypeNames[i], values[i]))
+				row.Values = append(row.Values, rowValueConverter(columnTypeNames[i], columnTypes[i], values[i]))
 			}
 
 			result.Rows = append(result.Rows, row)
@@ -115,7 +115,7 @@ func MakeCommonValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	}
 }
 
-func ConvertCommonValue(_ string, value any) *v1pb.RowValue {
+func ConvertCommonValue(_ string, _ *sql.ColumnType, value any) *v1pb.RowValue {
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
