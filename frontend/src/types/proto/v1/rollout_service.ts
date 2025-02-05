@@ -6563,7 +6563,7 @@ export const RolloutServiceDefinition = {
       },
     },
     /**
-     * BatchSkipTasks cancels the specified task runs in batch.
+     * BatchCancelTaskRuns cancels the specified task runs in batch.
      * The access is the same as BatchRunTasks().
      */
     batchCancelTaskRuns: {
