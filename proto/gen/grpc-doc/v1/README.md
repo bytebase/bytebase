@@ -9387,8 +9387,8 @@ for field description.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | file | [string](#string) |  | The file path that is being checked. |
-| advices | [Advice](#bytebase-v1-Advice) | repeated | The list of advice for the file. |
-| target | [string](#string) |  | The target that the check is performed on. should be a database. Format: instances/{instance}/databases/{database} |
+| target | [string](#string) |  | The target that the check is performed on. Should be a database. Format: instances/{instance}/databases/{database} |
+| advices | [Advice](#bytebase-v1-Advice) | repeated | The list of advice for the file and the target. |
 
 
 

@@ -9055,16 +9055,16 @@ components:
                 file:
                     type: string
                     description: The file path that is being checked.
-                advices:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Advice'
-                    description: The list of advice for the file.
                 target:
                     type: string
                     description: |-
                         The target that the check is performed on.
-                         should be a database. Format: instances/{instance}/databases/{database}
+                         Should be a database. Format: instances/{instance}/databases/{database}
+                advices:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Advice'
+                    description: The list of advice for the file and the target.
         CheckRequest:
             required:
                 - name

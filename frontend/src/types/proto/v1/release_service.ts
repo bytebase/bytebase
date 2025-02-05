@@ -161,13 +161,13 @@ export interface CheckReleaseResponse {
 export interface CheckReleaseResponse_CheckResult {
   /** The file path that is being checked. */
   file: string;
-  /** The list of advice for the file. */
-  advices: Advice[];
   /**
    * The target that the check is performed on.
-   * should be a database. Format: instances/{instance}/databases/{database}
+   * Should be a database. Format: instances/{instance}/databases/{database}
    */
   target: string;
+  /** The list of advice for the file and the target. */
+  advices: Advice[];
 }
 
 export interface Release {
@@ -942,7 +942,7 @@ export const CheckReleaseResponse: MessageFns<CheckReleaseResponse> = {
 };
 
 function createBaseCheckReleaseResponse_CheckResult(): CheckReleaseResponse_CheckResult {
-  return { file: "", advices: [], target: "" };
+  return { file: "", target: "", advices: [] };
 }
 
 export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_CheckResult> = {
@@ -950,11 +950,11 @@ export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_C
     if (message.file !== "") {
       writer.uint32(10).string(message.file);
     }
-    for (const v of message.advices) {
-      Advice.encode(v!, writer.uint32(18).fork()).join();
-    }
     if (message.target !== "") {
-      writer.uint32(26).string(message.target);
+      writer.uint32(18).string(message.target);
+    }
+    for (const v of message.advices) {
+      Advice.encode(v!, writer.uint32(26).fork()).join();
     }
     return writer;
   },
@@ -979,7 +979,7 @@ export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_C
             break;
           }
 
-          message.advices.push(Advice.decode(reader, reader.uint32()));
+          message.target = reader.string();
           continue;
         }
         case 3: {
@@ -987,7 +987,7 @@ export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_C
             break;
           }
 
-          message.target = reader.string();
+          message.advices.push(Advice.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -1002,8 +1002,8 @@ export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_C
   fromJSON(object: any): CheckReleaseResponse_CheckResult {
     return {
       file: isSet(object.file) ? globalThis.String(object.file) : "",
-      advices: globalThis.Array.isArray(object?.advices) ? object.advices.map((e: any) => Advice.fromJSON(e)) : [],
       target: isSet(object.target) ? globalThis.String(object.target) : "",
+      advices: globalThis.Array.isArray(object?.advices) ? object.advices.map((e: any) => Advice.fromJSON(e)) : [],
     };
   },
 
@@ -1012,11 +1012,11 @@ export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_C
     if (message.file !== "") {
       obj.file = message.file;
     }
-    if (message.advices?.length) {
-      obj.advices = message.advices.map((e) => Advice.toJSON(e));
-    }
     if (message.target !== "") {
       obj.target = message.target;
+    }
+    if (message.advices?.length) {
+      obj.advices = message.advices.map((e) => Advice.toJSON(e));
     }
     return obj;
   },
@@ -1027,8 +1027,8 @@ export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_C
   fromPartial(object: DeepPartial<CheckReleaseResponse_CheckResult>): CheckReleaseResponse_CheckResult {
     const message = createBaseCheckReleaseResponse_CheckResult();
     message.file = object.file ?? "";
-    message.advices = object.advices?.map((e) => Advice.fromPartial(e)) || [];
     message.target = object.target ?? "";
+    message.advices = object.advices?.map((e) => Advice.fromPartial(e)) || [];
     return message;
   },
 };
