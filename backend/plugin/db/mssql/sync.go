@@ -145,6 +145,12 @@ func getTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get indices")
 	}
+
+	fkMap, err := getForeignKeys(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get foreign keys")
+	}
+
 	// TODO(d): foreign keys.
 	tableMap := make(map[string][]*storepb.TableMetadata)
 	query := `
@@ -185,6 +191,7 @@ func getTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata)
 		key := db.TableKey{Schema: schemaName, Table: table.Name}
 		table.Columns = columnMap[key]
 		table.Indexes = indexMap[key]
+		table.ForeignKeys = fkMap[key]
 		if comment.Valid {
 			table.Comment = comment.String
 		}
@@ -196,6 +203,98 @@ func getTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata)
 	}
 
 	return tableMap, nil
+}
+
+// https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-foreign-key-columns-transact-sql?view=sql-server-ver16#example-query
+var listForeignKeyQuery string = `
+SELECT fk.name AS ForeignKeyName,
+       s_parent.name AS ParentSchemaName,
+       t_parent.name AS ParentTableName,
+       c_parent.name AS ParentColumnName,
+       s_child.name AS ReferencedSchemaName,
+       t_child.name AS ReferencedTableName,
+       c_child.name AS ReferencedColumnName,
+       CASE fk.delete_referential_action
+        WHEN 0 THEN ''
+        WHEN 1 THEN 'CASCADE'
+        WHEN 2 THEN 'SET NULL'
+        WHEN 3 THEN 'SET DEFAULT'
+       END AS OnDeleteAction,
+       CASE fk.update_referential_action
+        WHEN 0 THEN ''
+        WHEN 1 THEN 'CASCADE'
+        WHEN 2 THEN 'SET NULL'
+        WHEN 3 THEN 'SET DEFAULT'
+       END AS OnUpdateAction
+FROM sys.foreign_keys fk
+INNER JOIN sys.foreign_key_columns fkc
+    ON fkc.constraint_object_id = fk.object_id
+INNER JOIN sys.tables t_parent
+    ON t_parent.object_id = fk.parent_object_id
+INNER JOIN sys.schemas s_parent
+    ON s_parent.schema_id = t_parent.schema_id
+INNER JOIN sys.columns c_parent
+    ON fkc.parent_column_id = c_parent.column_id
+    AND c_parent.object_id = t_parent.object_id
+INNER JOIN sys.tables t_child
+    ON t_child.object_id = fk.referenced_object_id
+INNER JOIN sys.schemas s_child
+    ON s_child.schema_id = t_child.schema_id
+INNER JOIN sys.columns c_child
+    ON c_child.object_id = t_child.object_id
+    AND fkc.referenced_column_id = c_child.column_id
+ORDER BY fk.name, t_parent.name, t_child.name, c_parent.name, c_child.name;
+`
+
+func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
+	fkMap := make(map[db.TableKey]map[string]*storepb.ForeignKeyMetadata)
+
+	rows, err := txn.Query(listForeignKeyQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var fkName, parentSchemaName, parentTableName, parentColumnName, referencedSchemaName, referencedTableName, referencedColumnName, onDelete, onUpdate string
+		if err := rows.Scan(&fkName, &parentSchemaName, &parentTableName, &parentColumnName, &referencedSchemaName, &referencedTableName, &referencedColumnName, &onDelete, &onUpdate); err != nil {
+			return nil, err
+		}
+		outerKey := db.TableKey{Schema: parentSchemaName, Table: parentTableName}
+		if _, ok := fkMap[outerKey]; !ok {
+			fkMap[outerKey] = make(map[string]*storepb.ForeignKeyMetadata)
+			fkMap[outerKey][fkName] = &storepb.ForeignKeyMetadata{
+				Name:              fkName,
+				Columns:           []string{parentColumnName},
+				ReferencedSchema:  referencedSchemaName,
+				ReferencedTable:   referencedTableName,
+				ReferencedColumns: []string{referencedColumnName},
+				OnDelete:          onDelete,
+				OnUpdate:          onUpdate,
+			}
+		} else {
+			fkMap[outerKey][fkName].Columns = append(fkMap[outerKey][fkName].Columns, parentColumnName)
+			fkMap[outerKey][fkName].ReferencedColumns = append(fkMap[outerKey][fkName].ReferencedColumns, referencedColumnName)
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Aggregate the map to a slice.
+	result := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
+	for k, m := range fkMap {
+		var foreignkeyNames []string
+		for _, v := range m {
+			foreignkeyNames = append(foreignkeyNames, v.Name)
+		}
+		sort.Strings(foreignkeyNames)
+		for _, fkName := range foreignkeyNames {
+			result[k] = append(result[k], m[fkName])
+		}
+	}
+
+	return result, nil
 }
 
 // getTableColumns gets the columns of a table.
