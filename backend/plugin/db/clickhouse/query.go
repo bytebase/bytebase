@@ -113,7 +113,7 @@ func makeValueByTypeName(typeName string, columnType *sql.ColumnType) any {
 	return reflect.New(columnType.ScanType()).Interface()
 }
 
-func convertValue(_ string, value any) *v1pb.RowValue {
+func convertValue(_ string, _ *sql.ColumnType, value any) *v1pb.RowValue {
 	// handle TUPLE ARRAY MAP
 	if v, ok := value.(*any); ok && v != nil {
 		value, err := json.Marshal(v)
