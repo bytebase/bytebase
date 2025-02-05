@@ -102,7 +102,7 @@ service RolloutService {
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
-  // BatchCancelTaskRuns cancels the specified task runs.
+  // BatchCancelTaskRuns cancels the specified task runs in batch.
   // The access is the same as BatchRunTasks().
   rpc BatchCancelTaskRuns(BatchCancelTaskRunsRequest) returns (BatchCancelTaskRunsResponse) {
     option (google.api.http) = {
