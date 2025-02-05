@@ -168,5 +168,6 @@
   },
   "browserslist": [
     "> 0.08%, not dead"
-  ]
+  ],
+  "packageManager": "pnpm@10.2.0"
 }
