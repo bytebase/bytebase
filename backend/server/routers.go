@@ -4,7 +4,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"time"
 
 	grpcruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
@@ -62,22 +61,6 @@ func configureEchoRouters(
 	e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
 		Skipper: grpcSkipper,
 		Timeout: 0, // unlimited
-	}))
-	e.Use(middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
-		Skipper: grpcSkipper,
-		Store: middleware.NewRateLimiterMemoryStoreWithConfig(
-			middleware.RateLimiterMemoryStoreConfig{Rate: 30, Burst: 60, ExpiresIn: 3 * time.Minute},
-		),
-		IdentifierExtractor: func(ctx echo.Context) (string, error) {
-			id := ctx.RealIP()
-			return id, nil
-		},
-		ErrorHandler: func(context echo.Context, _ error) error {
-			return context.JSON(http.StatusForbidden, nil)
-		},
-		DenyHandler: func(context echo.Context, _ string, _ error) error {
-			return context.JSON(http.StatusTooManyRequests, nil)
-		},
 	}))
 
 	registerPprof(e, &profile.RuntimeDebug)
