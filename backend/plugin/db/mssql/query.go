@@ -47,7 +47,9 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	// // Source values of type [time.Time] may be scanned into values of type
 	// *time.Time, *interface{}, *string, or *[]byte. When converting to
 	// the latter two, [time.RFC3339Nano] is used.
-	case "SMALLDATETIME", "DATETIME", "DATETIME2", "DATE", "TIME":
+	case "TIME", "DATE":
+		return new(sql.NullString)
+	case "SMALLDATETIME", "DATETIME", "DATETIME2":
 		return new(sql.NullTime)
 	case "DATETIMEOFFSET":
 		return new(sql.NullTime)
@@ -65,6 +67,30 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
+			if columnType.DatabaseTypeName() == "TIME" {
+				timeStr := raw.String[strings.Index(raw.String, "T")+1 : len(raw.String)-1]
+				if strings.Contains(raw.String, ".") {
+					timeLeft := raw.String[strings.Index(raw.String, "T")+1 : strings.Index(raw.String, ".")]
+					timeRight := raw.String[strings.Index(raw.String, ".")+1 : len(raw.String)-1]
+					_, scale, _ := columnType.DecimalSize()
+					if int(scale) > len(timeRight) {
+						timeRight += strings.Repeat("0", int(scale)-len(timeRight))
+					}
+					timeStr = timeLeft + "." + timeRight
+				}
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: timeStr,
+					},
+				}
+			}
+			if columnType.DatabaseTypeName() == "DATE" {
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: raw.String[:strings.Index(raw.String, "T")],
+					},
+				}
+			}
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_StringValue{
 					StringValue: raw.String,
