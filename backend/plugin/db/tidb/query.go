@@ -37,10 +37,11 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	}
 }
 
-func convertValue(typeName string, value any) *v1pb.RowValue {
+func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
+			_, scale, _ := columnType.DecimalSize()
 			if typeName == "TIMESTAMP" || typeName == "DATETIME" {
 				t, err := time.Parse(time.DateTime, raw.String)
 				if err != nil {
@@ -51,6 +52,7 @@ func convertValue(typeName string, value any) *v1pb.RowValue {
 					Kind: &v1pb.RowValue_TimestampValue{
 						TimestampValue: &v1pb.RowValue_Timestamp{
 							GoogleTimestamp: timestamppb.New(t),
+							Accuracy:        int32(scale),
 						},
 					},
 				}

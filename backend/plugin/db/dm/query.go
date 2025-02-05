@@ -34,7 +34,7 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	}
 }
 
-func convertValue(typeName string, value any) *v1pb.RowValue {
+func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
@@ -78,11 +78,13 @@ func convertValue(typeName string, value any) *v1pb.RowValue {
 		}
 	case *sql.NullTime:
 		if raw.Valid {
+			_, scale, _ := columnType.DecimalSize()
 			if typeName == "DATE" || typeName == "TIMESTAMPDTY" {
 				return &v1pb.RowValue{
 					Kind: &v1pb.RowValue_TimestampValue{
 						TimestampValue: &v1pb.RowValue_Timestamp{
 							GoogleTimestamp: timestamppb.New(raw.Time),
+							Accuracy:        int32(scale),
 						},
 					},
 				}
@@ -99,6 +101,7 @@ func convertValue(typeName string, value any) *v1pb.RowValue {
 					Kind: &v1pb.RowValue_TimestampValue{
 						TimestampValue: &v1pb.RowValue_Timestamp{
 							GoogleTimestamp: timestamppb.New(t),
+							Accuracy:        int32(scale),
 						},
 					},
 				}
@@ -110,6 +113,7 @@ func convertValue(typeName string, value any) *v1pb.RowValue {
 						GoogleTimestamp: timestamppb.New(raw.Time),
 						Zone:            zone,
 						Offset:          int32(offset),
+						Accuracy:        int32(scale),
 					},
 				},
 			}
