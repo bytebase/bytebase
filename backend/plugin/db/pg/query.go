@@ -40,26 +40,9 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 		if raw.Valid {
 			// TODO: Fix DatabaseTypeName for 1266, Object ID for TIME WITHOUT TIME ZONE
 			if columnType.DatabaseTypeName() == "TIME" || columnType.DatabaseTypeName() == "1266" || columnType.DatabaseTypeName() == "INTERVAL" {
-				// Padding 0's to nanosecond precision to make sure it's always 6 digits.
-				// Since the data cannot be formatted into a time.Time, we need to pad it here.
-				// This is a workaround since we cannot determine the precision of the data type using DecimalSize().
-				dotIndex := strings.Index(raw.String, ".")
-				if dotIndex != -1 {
-					// End index is used to cut off the time zone information.
-					endIndex := len(raw.String)
-					if plusIndex := strings.Index(raw.String, "+"); plusIndex != -1 {
-						endIndex = plusIndex
-					} else if minusIndex := strings.Index(raw.String, "-"); minusIndex != -1 {
-						endIndex = minusIndex
-					}
-					decimalPart := raw.String[dotIndex+1 : endIndex]
-					if len(decimalPart) < 6 {
-						raw.String = raw.String[:endIndex] + strings.Repeat("0", 6-len(decimalPart)) + raw.String[endIndex:]
-					}
-				}
 				return &v1pb.RowValue{
 					Kind: &v1pb.RowValue_StringValue{
-						StringValue: raw.String,
+						StringValue: padZeroes(raw.String, 6),
 					},
 				}
 			}
@@ -146,4 +129,25 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 		}
 	}
 	return util.NullRowValue
+}
+
+// Padding 0's to nanosecond precision to make sure it's always 6 digits.
+// Since the data cannot be formatted into a time.Time, we need to pad it here.
+// Accuracy is passed as argument since we cannot determine the precision of the data type using DecimalSize().
+func padZeroes(rawStr string, acc int) string {
+	dotIndex := strings.Index(rawStr, ".")
+	if dotIndex != -1 {
+		// End index is used to cut off the time zone information.
+		endIndex := len(rawStr)
+		if plusIndex := strings.Index(rawStr, "+"); plusIndex != -1 {
+			endIndex = plusIndex
+		} else if minusIndex := strings.Index(rawStr, "-"); minusIndex != -1 {
+			endIndex = minusIndex
+		}
+		decimalPart := rawStr[dotIndex+1 : endIndex]
+		if len(decimalPart) < acc {
+			rawStr = rawStr[:endIndex] + strings.Repeat("0", acc-len(decimalPart)) + rawStr[endIndex:]
+		}
+	}
+	return rawStr
 }
