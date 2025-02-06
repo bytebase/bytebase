@@ -36,9 +36,13 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 	case *sql.NullString:
 		if raw.Valid {
 			if columnType.DatabaseTypeName() == "DATE" {
+				end := strings.Index(raw.String, "T")
+				if end == -1 {
+					end = len(raw.String)
+				}
 				return &v1pb.RowValue{
 					Kind: &v1pb.RowValue_StringValue{
-						StringValue: raw.String[:strings.Index(raw.String, "T")],
+						StringValue: raw.String[:end],
 					},
 				}
 			}
