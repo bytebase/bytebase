@@ -2,6 +2,8 @@ package pg
 
 import (
 	"database/sql"
+	"strings"
+	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -21,6 +23,8 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 		return new(sql.NullInt64)
 	case "FLOAT", "DOUBLE", "FLOAT4", "FLOAT8":
 		return new(sql.NullFloat64)
+	case "DATE":
+		return new(sql.NullTime)
 	case "TIMESTAMP", "TIMESTAMPTZ":
 		return new(pgtype.Timestamptz)
 	case "BIT", "VARBIT":
@@ -34,6 +38,14 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
+			// TODO: Fix DatabaseTypeName for 1266, Object ID for TIME WITHOUT TIME ZONE
+			if columnType.DatabaseTypeName() == "TIME" || columnType.DatabaseTypeName() == "1266" || columnType.DatabaseTypeName() == "INTERVAL" {
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: padZeroes(raw.String, 6),
+					},
+				}
+			}
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_StringValue{
 					StringValue: raw.String,
@@ -72,6 +84,17 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 				},
 			}
 		}
+	case *sql.NullTime:
+		if raw.Valid {
+			if columnType.DatabaseTypeName() == "DATE" {
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: raw.Time.Format(time.DateOnly),
+					},
+				}
+			}
+		}
+
 	case *pgtype.Timestamptz:
 		if raw.Valid {
 			if raw.InfinityModifier != pgtype.Finite {
@@ -106,4 +129,26 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 		}
 	}
 	return util.NullRowValue
+}
+
+// Padding 0's to nanosecond precision to make sure it's always 6 digits.
+// Since the data cannot be formatted into a time.Time, we need to pad it here.
+// Accuracy is passed as argument since we cannot determine the precision of the data type using DecimalSize().
+func padZeroes(rawStr string, acc int) string {
+	dotIndex := strings.Index(rawStr, ".")
+	if dotIndex < 0 {
+		return rawStr
+	}
+	// End index is used to cut off the time zone information.
+	endIndex := len(rawStr)
+	if plusIndex := strings.Index(rawStr, "+"); plusIndex >= 0 {
+		endIndex = plusIndex
+	} else if minusIndex := strings.Index(rawStr, "-"); minusIndex >= 0 {
+		endIndex = minusIndex
+	}
+	decimalPart := rawStr[dotIndex+1 : endIndex]
+	if len(decimalPart) < acc {
+		rawStr = rawStr[:endIndex] + strings.Repeat("0", acc-len(decimalPart)) + rawStr[endIndex:]
+	}
+	return rawStr
 }
