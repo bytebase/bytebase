@@ -262,6 +262,9 @@ func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata,
 		outerKey := db.TableKey{Schema: parentSchemaName, Table: parentTableName}
 		if _, ok := fkMap[outerKey]; !ok {
 			fkMap[outerKey] = make(map[string]*storepb.ForeignKeyMetadata)
+		}
+
+		if _, ok := fkMap[outerKey][fkName]; !ok {
 			fkMap[outerKey][fkName] = &storepb.ForeignKeyMetadata{
 				Name:              fkName,
 				Columns:           []string{parentColumnName},
