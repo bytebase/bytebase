@@ -143,7 +143,7 @@ func padZeroes(rawStr string, acc int) string {
 	endIndex := len(rawStr)
 	if plusIndex := strings.Index(rawStr, "+"); plusIndex != -1 {
 		endIndex = plusIndex
-	} else if minusIndex := strings.Index(rawStr, "-"); minusIndex != -1 {
+	} else if minusIndex := strings.Index(rawStr, "-"); minusIndex >= 0 {
 		endIndex = minusIndex
 	}
 	decimalPart := rawStr[dotIndex+1 : endIndex]
