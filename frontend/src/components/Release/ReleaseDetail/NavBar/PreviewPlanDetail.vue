@@ -1,4 +1,9 @@
 <template>
+  <NAlert v-if="shouldShowAppliedAlert" type="info">{{
+    $t(
+      "release.messages.bytebase-will-skip-those-files-has-been-applied-on-target-database"
+    )
+  }}</NAlert>
   <div class="w-full flex flex-row flex-wrap gap-2">
     <p class="w-full">
       {{ $t("release.tasks-to-apply") }}
@@ -116,10 +121,11 @@
 </template>
 
 <script lang="ts" setup>
-import { NTag, NTable } from "naive-ui";
+import { NTag, NTable, NAlert } from "naive-ui";
 import { computed } from "vue";
+import type { DatabaseSelectState } from "@/components/DatabaseAndGroupSelector";
 import DatabaseView from "@/components/v2/Model/DatabaseView.vue";
-import { useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store, useDBGroupStore } from "@/store";
 import type { ComposedDatabase, ComposedRelease } from "@/types";
 import type {
   Plan_Spec,
@@ -129,16 +135,43 @@ import type {
 const props = defineProps<{
   release: ComposedRelease;
   previewPlanResult: PreviewPlanResponse;
+  databaseSelectState?: DatabaseSelectState;
   allowOutOfOrder?: boolean;
 }>();
 
 const databaseStore = useDatabaseV1Store();
+
+const databaseGroupStore = useDBGroupStore();
 
 const flattenSpecList = computed((): Plan_Spec[] => {
   return (
     props.previewPlanResult.plan?.steps.flatMap((step) => {
       return step.specs;
     }) || []
+  );
+});
+
+const targetDatabases = computed(() => {
+  if (!props.databaseSelectState) {
+    return [];
+  }
+  if (props.databaseSelectState.changeSource === "DATABASE") {
+    return props.databaseSelectState.selectedDatabaseNameList.map((name) =>
+      databaseStore.getDatabaseByName(name)
+    );
+  } else {
+    return (
+      databaseGroupStore.getDBGroupByName(
+        props.databaseSelectState.selectedDatabaseNameList[0]
+      )?.matchedDatabases || []
+    );
+  }
+});
+
+const shouldShowAppliedAlert = computed(() => {
+  return (
+    props.release.files.length * targetDatabases.value.length >
+    flattenSpecList.value.length
   );
 });
 

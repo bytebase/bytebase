@@ -2708,7 +2708,8 @@
     "messages": {
       "succeed-to-create-release": "成功创建发布",
       "files-will-always-be-sorted-and-executed-in-version-order": "文件将始终按照版本顺序排序和执行。",
-      "cannot-modify-files-after-created": "发布创建后您无法修改文件。"
+      "cannot-modify-files-after-created": "发布创建后您无法修改文件。",
+      "bytebase-will-skip-those-files-has-been-applied-on-target-database": "Bytebase 将自动跳过那些已经在目标数据库上执行过的文件。"
     },
     "usage-description": "发布包仅用于自定义的 GitOps 与 Bytebase API 集成。"
   },

@@ -2708,7 +2708,8 @@
     "messages": {
       "succeed-to-create-release": "Tener éxito en crear el lanzamiento",
       "files-will-always-be-sorted-and-executed-in-version-order": "Los archivos siempre se ordenarán y ejecutarán en orden de versión.",
-      "cannot-modify-files-after-created": "No es posible modificar archivos una vez creada la versión."
+      "cannot-modify-files-after-created": "No es posible modificar archivos una vez creada la versión.",
+      "bytebase-will-skip-those-files-has-been-applied-on-target-database": "Bytebase omitirá automáticamente aquellos archivos que ya se hayan ejecutado en la base de datos de destino."
     },
     "usage-description": "El lanzamiento solo se utiliza en GitOps personalizado con integración de API."
   },

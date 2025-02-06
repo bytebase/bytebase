@@ -2708,7 +2708,8 @@
     "messages": {
       "succeed-to-create-release": "リリースの作成に成功",
       "files-will-always-be-sorted-and-executed-in-version-order": "ファイルは常にバージョン順に並べ替えられ、実行されます。",
-      "cannot-modify-files-after-created": "リリースの作成後はファイルを変更できません。"
+      "cannot-modify-files-after-created": "リリースの作成後はファイルを変更できません。",
+      "bytebase-will-skip-those-files-has-been-applied-on-target-database": "Bytebase は、ターゲット データベースですでに実行されているファイルを自動的にスキップします。"
     },
     "usage-description": "このリリースは、API統合を使用したカスタムGitOpsでのみ使用されます。"
   },
