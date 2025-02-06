@@ -267,7 +267,11 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 
 	response := &v1pb.CheckReleaseResponse{}
 	var errorAdviceCount, warningAdviceCount int
+	var stopChecking bool
 	for _, target := range request.Targets {
+		if stopChecking {
+			break
+		}
 		var databases []*store.DatabaseMessage
 		// Handle database target.
 		if instanceID, databaseName, err := common.GetInstanceDatabaseID(target); err == nil {
@@ -332,6 +336,9 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 		}
 
 		for _, database := range databases {
+			if stopChecking {
+				break
+			}
 			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 				ResourceID: &database.InstanceID,
 			})
@@ -347,6 +354,9 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 				return nil, status.Errorf(codes.Internal, "failed to create catalog: %v", err)
 			}
 			for _, file := range request.Release.Files {
+				if stopChecking {
+					break
+				}
 				// Check if file has been applied to database.
 				revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{
 					DatabaseUID: &database.UID,
@@ -388,12 +398,8 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 				}
 				// If we have reached the maximum number of advices for both error and warning, we will stop checking.
 				if errorAdviceCount >= common.MaximumAdvicePerStatus && warningAdviceCount >= common.MaximumAdvicePerStatus {
-					break
+					stopChecking = true
 				}
-			}
-			// If we have reached the maximum number of advices for both error and warning, we will stop checking.
-			if errorAdviceCount >= common.MaximumAdvicePerStatus && warningAdviceCount >= common.MaximumAdvicePerStatus {
-				break
 			}
 		}
 	}
