@@ -136,18 +136,19 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 // Accuracy is passed as argument since we cannot determine the precision of the data type using DecimalSize().
 func padZeroes(rawStr string, acc int) string {
 	dotIndex := strings.Index(rawStr, ".")
-	if dotIndex != -1 {
-		// End index is used to cut off the time zone information.
-		endIndex := len(rawStr)
-		if plusIndex := strings.Index(rawStr, "+"); plusIndex != -1 {
-			endIndex = plusIndex
-		} else if minusIndex := strings.Index(rawStr, "-"); minusIndex != -1 {
-			endIndex = minusIndex
-		}
-		decimalPart := rawStr[dotIndex+1 : endIndex]
-		if len(decimalPart) < acc {
-			rawStr = rawStr[:endIndex] + strings.Repeat("0", acc-len(decimalPart)) + rawStr[endIndex:]
-		}
+	if dotIndex < 0 {
+		return rawStr
+	}
+	// End index is used to cut off the time zone information.
+	endIndex := len(rawStr)
+	if plusIndex := strings.Index(rawStr, "+"); plusIndex != -1 {
+		endIndex = plusIndex
+	} else if minusIndex := strings.Index(rawStr, "-"); minusIndex != -1 {
+		endIndex = minusIndex
+	}
+	decimalPart := rawStr[dotIndex+1 : endIndex]
+	if len(decimalPart) < acc {
+		rawStr = rawStr[:endIndex] + strings.Repeat("0", acc-len(decimalPart)) + rawStr[endIndex:]
 	}
 	return rawStr
 }
