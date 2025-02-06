@@ -168,6 +168,7 @@ const targetDatabases = computed(() => {
   }
 });
 
+// Should show the alert when the number of files to apply is greater than the number of specs in the preview plan.
 const shouldShowAppliedAlert = computed(() => {
   return (
     props.release.files.length * targetDatabases.value.length >
