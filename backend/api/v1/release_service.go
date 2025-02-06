@@ -266,6 +266,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 	}
 
 	response := &v1pb.CheckReleaseResponse{}
+	var errorAdviceCount, warningAdviceCount int
 	for _, target := range request.Targets {
 		var databases []*store.DatabaseMessage
 		// Handle database target.
@@ -372,6 +373,27 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 						Advices: advices,
 					})
 				}
+				for _, advice := range advices {
+					switch advice.Status {
+					case v1pb.Advice_ERROR:
+						if errorAdviceCount < common.MaximumAdvicePerStatus {
+							errorAdviceCount++
+						}
+					case v1pb.Advice_WARNING:
+						if warningAdviceCount < common.MaximumAdvicePerStatus {
+							warningAdviceCount++
+						}
+					default:
+					}
+				}
+				// If we have reached the maximum number of advices for both error and warning, we will stop checking.
+				if errorAdviceCount >= common.MaximumAdvicePerStatus && warningAdviceCount >= common.MaximumAdvicePerStatus {
+					break
+				}
+			}
+			// If we have reached the maximum number of advices for both error and warning, we will stop checking.
+			if errorAdviceCount >= common.MaximumAdvicePerStatus && warningAdviceCount >= common.MaximumAdvicePerStatus {
+				break
 			}
 		}
 	}
