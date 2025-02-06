@@ -141,7 +141,7 @@ func padZeroes(rawStr string, acc int) string {
 	}
 	// End index is used to cut off the time zone information.
 	endIndex := len(rawStr)
-	if plusIndex := strings.Index(rawStr, "+"); plusIndex != -1 {
+	if plusIndex := strings.Index(rawStr, "+"); plusIndex >= 0 {
 		endIndex = plusIndex
 	} else if minusIndex := strings.Index(rawStr, "-"); minusIndex >= 0 {
 		endIndex = minusIndex
