@@ -3,6 +3,7 @@ package pg
 import (
 	"database/sql"
 	"strings"
+	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -22,6 +23,8 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 		return new(sql.NullInt64)
 	case "FLOAT", "DOUBLE", "FLOAT4", "FLOAT8":
 		return new(sql.NullFloat64)
+	case "DATE":
+		return new(sql.NullTime)
 	case "TIMESTAMP", "TIMESTAMPTZ":
 		return new(pgtype.Timestamptz)
 	case "BIT", "VARBIT":
@@ -35,14 +38,28 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
-			if columnType.DatabaseTypeName() == "DATE" {
-				end := strings.Index(raw.String, "T")
-				if end == -1 {
-					end = len(raw.String)
+			// TODO: Fix DatabaseTypeName for 1266, Object ID for TIME WITHOUT TIME ZONE
+			if columnType.DatabaseTypeName() == "TIME" || columnType.DatabaseTypeName() == "1266" || columnType.DatabaseTypeName() == "INTERVAL" {
+				// Padding 0's to nanosecond precision to make sure it's always 6 digits.
+				// Since the data cannot be formatted into a time.Time, we need to pad it here.
+				// This is a workaround since we cannot determine the precision of the data type using DecimalSize().
+				dotIndex := strings.Index(raw.String, ".")
+				if dotIndex != -1 {
+					// End index is used to cut off the time zone information.
+					endIndex := len(raw.String)
+					if plusIndex := strings.Index(raw.String, "+"); plusIndex != -1 {
+						endIndex = plusIndex
+					} else if minusIndex := strings.Index(raw.String, "-"); minusIndex != -1 {
+						endIndex = minusIndex
+					}
+					decimalPart := raw.String[dotIndex+1 : endIndex]
+					if len(decimalPart) < 6 {
+						raw.String = raw.String[:endIndex] + strings.Repeat("0", 6-len(decimalPart)) + raw.String[endIndex:]
+					}
 				}
 				return &v1pb.RowValue{
 					Kind: &v1pb.RowValue_StringValue{
-						StringValue: raw.String[:end],
+						StringValue: raw.String,
 					},
 				}
 			}
@@ -84,6 +101,17 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 				},
 			}
 		}
+	case *sql.NullTime:
+		if raw.Valid {
+			if columnType.DatabaseTypeName() == "DATE" {
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: raw.Time.Format(time.DateOnly),
+					},
+				}
+			}
+		}
+
 	case *pgtype.Timestamptz:
 		if raw.Valid {
 			if raw.InfinityModifier != pgtype.Finite {
