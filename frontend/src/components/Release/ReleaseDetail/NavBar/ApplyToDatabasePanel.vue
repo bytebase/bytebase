@@ -23,6 +23,7 @@
                 <PreviewPlanDetail
                   :release="release"
                   :preview-plan-result="state.previewPlanResult"
+                  :database-select-state="state.targetSelectState"
                   :allow-out-of-order="state.allowOutOfOrder"
                 />
               </div>
