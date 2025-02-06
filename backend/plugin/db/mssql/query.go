@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
@@ -47,7 +48,7 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	// // Source values of type [time.Time] may be scanned into values of type
 	// *time.Time, *interface{}, *string, or *[]byte. When converting to
 	// the latter two, [time.RFC3339Nano] is used.
-	case "SMALLDATETIME", "DATETIME", "DATETIME2", "DATE", "TIME":
+	case "TIME", "DATE", "SMALLDATETIME", "DATETIME", "DATETIME2":
 		return new(sql.NullTime)
 	case "DATETIMEOFFSET":
 		return new(sql.NullTime)
@@ -117,6 +118,20 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 		}
 	case *sql.NullTime:
 		if raw.Valid {
+			if columnType.DatabaseTypeName() == "TIME" {
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: raw.Time.Format(time.TimeOnly),
+					},
+				}
+			}
+			if columnType.DatabaseTypeName() == "DATE" {
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: raw.Time.Format(time.DateOnly),
+					},
+				}
+			}
 			_, scale, _ := columnType.DecimalSize()
 			if typeName == "DATETIME" || typeName == "DATETIME2" || typeName == "SMALLDATETIME" {
 				return &v1pb.RowValue{
