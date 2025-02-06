@@ -2,6 +2,7 @@ package pg
 
 import (
 	"database/sql"
+	"strings"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -34,6 +35,13 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
+			if columnType.DatabaseTypeName() == "DATE" {
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: raw.String[:strings.Index(raw.String, "T")],
+					},
+				}
+			}
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_StringValue{
 					StringValue: raw.String,
