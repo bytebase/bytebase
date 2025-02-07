@@ -162,6 +162,7 @@
     "success": "成功",
     "failed": "失败",
     "load-more": "加载更多",
+    "rows-per-page": "每页行数",
     "access-denied": "拒绝访问",
     "restart": "重启",
     "want-help": "加入用户群",
