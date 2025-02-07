@@ -95,7 +95,6 @@ import {
   isLocalSheet,
   setSheetStatement,
 } from "@/utils";
-import { fallbackVersionForChange } from "../../common";
 import { useChangelistDetailContext } from "../context";
 import { provideAddChangeContext } from "./context";
 import { ChangelogForm, RawSQLForm } from "./form";
@@ -166,10 +165,6 @@ const doAddChange = async () => {
       );
       change.version = changelog?.version || "";
     }
-    if (change.version === "") {
-      change.version = fallbackVersionForChange();
-    }
-
     return change;
   };
   try {

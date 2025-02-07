@@ -18,8 +18,9 @@
 import { NDataTable } from "naive-ui";
 import type { DataTableColumn, PaginationProps } from "naive-ui";
 import { computed } from "vue";
-import { I18nT, useI18n } from "vue-i18n";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBAvatar } from "@/bbkit";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { useUserStore } from "@/store";
 import { getDateForPbTimestamp } from "@/types";
@@ -72,40 +73,27 @@ const columnList = computed((): ChangelistDataTableColumn[] => {
         },
       },
       {
-        key: "updated-by",
+        key: "updated-at",
         title: t("common.updated-at"),
         width: 256,
         render: (changelist) => {
           return (
-            <I18nT keypath="common.updated-at-by">
-              {{
-                time: () => (
-                  <HumanizeDate
-                    date={getDateForPbTimestamp(changelist.createTime)}
-                  />
-                ),
-                user: () => getUser(changelist.creator)?.title,
-              }}
-            </I18nT>
+            <HumanizeDate date={getDateForPbTimestamp(changelist.createTime)} />
           );
         },
       },
       {
-        key: "created-by",
-        title: t("common.created-at"),
+        key: "creator",
+        title: t("common.creator"),
         width: 256,
         render: (changelist) => {
+          const creator = getUser(changelist.creator);
+          if (!creator) return null;
           return (
-            <I18nT keypath="common.created-at-by">
-              {{
-                time: () => (
-                  <HumanizeDate
-                    date={getDateForPbTimestamp(changelist.createTime)}
-                  />
-                ),
-                user: () => getUser(changelist.creator)?.title,
-              }}
-            </I18nT>
+            <div class="flex flex-row items-center overflow-hidden gap-x-1">
+              <BBAvatar size="SMALL" username={creator.title} />
+              <span class="truncate">{creator.title}</span>
+            </div>
           );
         },
       },
