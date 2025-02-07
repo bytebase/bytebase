@@ -162,6 +162,7 @@
     "success": "成功",
     "failed": "失敗",
     "load-more": "もっと読み込む",
+    "rows-per-page": "ページあたりの行数",
     "access-denied": "アクセスが拒否されました",
     "restart": "再起動",
     "want-help": "ユーザーグループに参加する",

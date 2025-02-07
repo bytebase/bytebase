@@ -4,6 +4,7 @@
     :columns="columnList"
     :data="auditLogList"
     :striped="true"
+    :loading="loading"
     :row-key="(data: AuditLog) => data.name"
   />
 </template>
@@ -30,9 +31,11 @@ const props = withDefaults(
   defineProps<{
     auditLogList: AuditLog[];
     showProject?: boolean;
+    loading?: boolean;
   }>(),
   {
     showProject: true,
+    loading: false,
   }
 );
 

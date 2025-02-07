@@ -25,14 +25,14 @@
       v-if="hasAuditLogFeature"
       ref="auditLogPagedTable"
       :session-key="`bb.page-audit-log-table.settings-audit-log-v1-table.${projectId}`"
-      :page-size="10"
       :fetch-list="fetchAuditLog"
     >
-      <template #table="{ list }">
+      <template #table="{ list, loading }">
         <AuditLogDataTable
           :key="`audit-log-table.${projectId}`"
           :audit-log-list="list"
           :show-project="false"
+          :loading="loading"
         />
       </template>
     </PagedTable>

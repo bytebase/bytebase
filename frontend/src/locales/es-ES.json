@@ -162,6 +162,7 @@
     "success": "Éxito",
     "failed": "Falló",
     "load-more": "Cargar más",
+    "rows-per-page": "Filas por página",
     "access-denied": "Acceso denegado",
     "restart": "Reiniciar",
     "want-help": "Buscar Ayuda",

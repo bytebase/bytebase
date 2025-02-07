@@ -7,6 +7,7 @@
     :row-key="(revision: Revision) => revision.name"
     :striped="true"
     :row-props="rowProps"
+    :loading="loading"
     @update:checked-row-keys="
       (val) => (state.selectedRevisionNameList = new Set(val as string[]))
     "
@@ -43,6 +44,7 @@ const props = defineProps<{
   revisions: Revision[];
   customClick?: boolean;
   showSelection?: boolean;
+  loading?: boolean;
 }>();
 
 interface LocalState {

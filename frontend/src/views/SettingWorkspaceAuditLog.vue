@@ -22,11 +22,14 @@
       v-if="hasAuditLogFeature"
       ref="auditLogPagedTable"
       session-key="bb.page-audit-log-table.settings-audit-log-v1-table"
-      :page-size="10"
       :fetch-list="fetchAuditLog"
     >
-      <template #table="{ list }">
-        <AuditLogDataTable key="audit-log-table" :audit-log-list="list" />
+      <template #table="{ list, loading }">
+        <AuditLogDataTable
+          key="audit-log-table"
+          :loading="loading"
+          :audit-log-list="list"
+        />
       </template>
     </PagedTable>
     <NoDataPlaceholder v-else />

@@ -3,7 +3,6 @@
     <PagedTable
       :key="project.name"
       :session-key="`project-${project.name}-releases`"
-      :page-size="50"
       :fetch-list="fetchRolloutList"
     >
       <template #table="{ list, loading }">
