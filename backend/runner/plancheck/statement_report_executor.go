@@ -16,6 +16,7 @@ import (
 	mysqldriver "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	oracledriver "github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	pgdriver "github.com/bytebase/bytebase/backend/plugin/db/pg"
+	redshiftdriver "github.com/bytebase/bytebase/backend/plugin/db/redshift"
 	tidbdriver "github.com/bytebase/bytebase/backend/plugin/db/tidb"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
@@ -173,6 +174,19 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 		}
 		explainCalculator = pd.CountAffectedRows
 
+		sqlTypes, err = pg.GetStatementTypes(asts)
+		if err != nil {
+			return nil, err
+		}
+		defaultSchema = "public"
+	case storepb.Engine_REDSHIFT:
+		rd, ok := driver.(*redshiftdriver.Driver)
+		if !ok {
+			return nil, errors.Errorf("invalid redshift driver type")
+		}
+		explainCalculator = rd.CountAffectedRows
+
+		// Use pg parser for Redshift.
 		sqlTypes, err = pg.GetStatementTypes(asts)
 		if err != nil {
 			return nil, err

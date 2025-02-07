@@ -229,7 +229,7 @@ func syntaxCheck(dbType storepb.Engine, statement string) (any, []*storepb.Advic
 		return tidbSyntaxCheck(statement)
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		return mysqlSyntaxCheck(statement)
-	case storepb.Engine_POSTGRES:
+	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT:
 		return postgresSyntaxCheck(statement)
 	case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
 		return oracleSyntaxCheck(statement)
