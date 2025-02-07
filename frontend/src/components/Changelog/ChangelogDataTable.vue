@@ -7,6 +7,7 @@
     :row-key="(changelog: Changelog) => changelog.name"
     :striped="true"
     :row-props="rowProps"
+    :loading="loading"
     :checked-row-keys="selectedChangelogs"
     @update:checked-row-keys="(keys) => $emit('update:selected-changelogs', keys as string[])"
   />
@@ -44,6 +45,7 @@ const props = defineProps<{
   selectedChangelogs?: string[];
   customClick?: boolean;
   showSelection?: boolean;
+  loading?: boolean;
 }>();
 
 const emit = defineEmits<{

@@ -27,7 +27,6 @@
       <PagedTable
         ref="planPagedTable"
         :session-key="'review-center'"
-        :page-size="50"
         :fetch-list="fetchPlanList"
       >
         <template #table="{ list, loading }">
