@@ -62,6 +62,7 @@ var (
 		storepb.Engine_ORACLE:           true,
 		storepb.Engine_OCEANBASE_ORACLE: true,
 		storepb.Engine_MSSQL:            true,
+		storepb.Engine_REDSHIFT:         true,
 	}
 )
 
