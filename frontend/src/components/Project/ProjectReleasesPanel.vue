@@ -21,7 +21,6 @@
     <PagedTable
       :key="project.name"
       :session-key="`project-${project.name}-releases`"
-      :page-size="50"
       :fetch-list="fetchReleaseList"
     >
       <template #table="{ list, loading }">
@@ -38,11 +37,11 @@
 <script lang="ts" setup>
 import { PlusIcon } from "lucide-vue-next";
 import { NAlert, NButton } from "naive-ui";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import { useReleaseStore } from "@/store";
 import type { ComposedProject } from "@/types";
 import ReleaseDataTable from "../Release/ReleaseDataTable.vue";
-import LearnMoreLink from "@/components/LearnMoreLink.vue";
 
 const props = defineProps<{
   project: ComposedProject;

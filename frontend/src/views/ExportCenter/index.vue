@@ -35,7 +35,6 @@
       <PagedTable
         ref="issuePagedTable"
         :session-key="'export-center'"
-        :page-size="50"
         :fetch-list="fetchIssueList"
       >
         <template #table="{ list, loading }">

@@ -56,7 +56,6 @@
         ref="issuePagedTable"
         :key="keyForTab(tab)"
         :session-key="`bb.issue-table.${keyForTab(tab)}`"
-        :page-size="50"
         :fetch-list="fetchIssueList"
       >
         <template #table="{ list, loading }">

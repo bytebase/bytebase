@@ -1,33 +1,40 @@
 <template>
-  <slot name="table" :list="dataList" :loading="state.loading" />
+  <div class="space-y-4">
+    <slot name="table" :list="dataList" :loading="state.loading" />
 
-  <div
-    v-if="state.loading"
-    class="flex items-center justify-center py-2 text-gray-400 text-sm"
-  >
-    <BBSpin />
-  </div>
+    <div class="flex items-center justify-end space-x-2">
+      <div class="flex items-center space-x-2">
+        <div class="textinfolabel">
+          {{ $t("common.rows-per-page") }}
+        </div>
+        <NSelect
+          :value="pageSize"
+          style="width: 5rem"
+          :size="'small'"
+          :options="options"
+          @update:value="onPageSizeChange"
+        />
+      </div>
 
-  <slot
-    v-if="!state.loading"
-    name="more"
-    :has-more="!!state.paginationToken"
-    :fetch-next-page="fetchNextPage"
-  >
-    <div
-      v-if="!hideLoadMore && pageSize > 0 && state.paginationToken"
-      class="flex items-center justify-center py-2 text-gray-400 text-sm hover:bg-gray-200 cursor-pointer"
-      @click="fetchNextPage"
-    >
-      {{ $t("common.load-more") }}
+      <NButton
+        v-if="!hideLoadMore && state.paginationToken"
+        quaternary
+        :size="'small'"
+        :loading="state.loading"
+        @click="fetchNextPage"
+      >
+        <span class="textinfolabel">
+          {{ $t("common.load-more") }}
+        </span>
+      </NButton>
     </div>
-  </slot>
+  </div>
 </template>
 
 <script lang="ts" setup generic="T extends object">
 import { useSessionStorage } from "@vueuse/core";
+import { NSelect, NButton } from "naive-ui";
 import { computed, reactive, watch, ref, type Ref } from "vue";
-import { BBSpin } from "@/bbkit";
 import { useIsLoggedIn } from "@/store";
 
 type LocalState = {
@@ -40,16 +47,15 @@ type SessionState = {
   page: number;
   // Help us to check if the session is outdated.
   updatedTs: number;
+  pageSize: number;
 };
 
-const MAX_PAGE_SIZE = 1000;
 const SESSION_LIFE = 1 * 60 * 1000; // 1 minute
 
 const props = withDefaults(
   defineProps<{
     // A unique key to identify the session state.
     sessionKey: string;
-    pageSize?: number;
     hideLoadMore?: boolean;
     fetchList: (params: {
       pageSize: number;
@@ -57,7 +63,6 @@ const props = withDefaults(
     }) => Promise<{ nextPageToken: string; list: T[] }>;
   }>(),
   {
-    pageSize: 10,
     hideLoadMore: false,
   }
 );
@@ -65,6 +70,13 @@ const props = withDefaults(
 const emit = defineEmits<{
   (event: "list:update", list: T[]): void;
 }>();
+
+const options = computed(() => {
+  return [50, 100, 200, 500, 1000].map((num) => ({
+    value: num,
+    label: `${num}`,
+  }));
+});
 
 const state = reactive<LocalState>({
   loading: false,
@@ -77,14 +89,19 @@ const dataList = ref([]) as Ref<T[]>;
 const sessionState = useSessionStorage<SessionState>(props.sessionKey, {
   page: 1,
   updatedTs: 0,
+  pageSize: options.value[0].value,
 });
 
 const isLoggedIn = useIsLoggedIn();
 
-const limit = computed(() => {
-  if (props.pageSize <= 0) return MAX_PAGE_SIZE;
-  return props.pageSize;
+const pageSize = computed(() => {
+  return Math.max(options.value[0].value, sessionState.value.pageSize ?? 0);
 });
+
+const onPageSizeChange = (size: number) => {
+  sessionState.value.pageSize = size;
+  refresh();
+};
 
 const fetchData = async (refresh = false) => {
   if (!isLoggedIn.value) {
@@ -96,9 +113,9 @@ const fetchData = async (refresh = false) => {
   const isFirstFetch = state.paginationToken === "";
   const expectedRowCount = isFirstFetch
     ? // Load one or more page for the first fetch to restore the session
-      limit.value * sessionState.value.page
+      pageSize.value * 1
     : // Always load one page if NOT the first fetch
-      limit.value;
+      pageSize.value;
 
   try {
     const { nextPageToken, list } = await props.fetchList({
@@ -129,6 +146,7 @@ const resetSession = () => {
   sessionState.value = {
     page: 1,
     updatedTs: 0,
+    pageSize: pageSize.value,
   };
 };
 
