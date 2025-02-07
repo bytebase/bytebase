@@ -59,7 +59,10 @@ import {
   type AffectedTable,
   EmptyAffectedTable,
 } from "@/types";
-import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import {
+  Changelist_Change,
+  type Changelist_Change as Change,
+} from "@/types/proto/v1/changelist_service";
 import {
   Changelog,
   Changelog_Status,
@@ -128,11 +131,12 @@ const selectedChangelogList = computed<string[]>({
       changelogs,
       [(c) => parseInt(extractIssueUID(c.issue), 10)],
       ["asc"]
-    ).map<Change>((changelog) => ({
-      sheet: changelog.statementSheet,
-      source: changelog.name,
-      version: changelog.version,
-    }));
+    ).map<Change>((changelog) =>
+      Changelist_Change.fromPartial({
+        sheet: changelog.statementSheet,
+        source: changelog.name,
+      })
+    );
     changes.value = updatedChanges;
   },
 });
