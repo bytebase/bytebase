@@ -101,7 +101,7 @@ const columnList = computed(() => {
     {
       key: "issue",
       title: t("common.issue"),
-      width: "6rem",
+      width: 96,
       resizable: true,
       render: (changelog) => {
         const uid = extractIssueUID(changelog.issue);
@@ -131,7 +131,7 @@ const columnList = computed(() => {
     {
       key: "version",
       title: t("common.version"),
-      width: "6rem",
+      width: 128,
       resizable: true,
       render: (changelog) => changelog.version || "-",
     },
@@ -156,8 +156,8 @@ const columnList = computed(() => {
       },
     },
     {
-      key: "SQL",
-      title: "SQL",
+      key: "statement",
+      title: t("common.statement"),
       resizable: true,
       minWidth: "13rem",
       ellipsis: true,
@@ -168,7 +168,7 @@ const columnList = computed(() => {
     {
       key: "created",
       title: t("common.created-at"),
-      width: "7rem",
+      width: 128,
       resizable: true,
       ellipsis: true,
       render: (changelog) => {
@@ -180,7 +180,7 @@ const columnList = computed(() => {
     {
       key: "creator",
       title: t("common.creator"),
-      width: "8rem",
+      width: 128,
       resizable: true,
       ellipsis: true,
       render: (changelog) => {
