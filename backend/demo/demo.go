@@ -8,7 +8,6 @@ import (
 	"io/fs"
 	"log/slog"
 	"sort"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -89,11 +88,6 @@ func applyDataFile(name string, db *sql.DB, mode common.ReleaseMode) error {
 		return err
 	}
 	stmt := string(buf)
-	// The demo dump is generated from dev mode and using "bbdev" as the owner. For release mode,
-	// we need to replace with "bb".
-	if mode == common.ReleaseModeProd {
-		stmt = strings.ReplaceAll(stmt, "bbdev", "bb")
-	}
 	if _, err := tx.Exec(stmt); err != nil {
 		return err
 	}
