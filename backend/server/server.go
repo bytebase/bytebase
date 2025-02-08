@@ -205,7 +205,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		if err := demo.LoadDemoDataIfNeeded(ctx, storeDB, profile.DemoName); err != nil {
 			return nil, errors.Wrapf(err, "failed to load demo data")
 		}
-		if _, err := migrator.MigrateSchema(ctx, storeDB, storeInstance, profile.Version); err != nil {
+		if _, err := migrator.MigrateSchema(ctx, storeDB, storeInstance); err != nil {
 			return nil, err
 		}
 	}
