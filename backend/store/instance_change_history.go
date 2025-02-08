@@ -52,7 +52,7 @@ func (s *Store) CreateInstanceChangeHistoryForMigrator(ctx context.Context, crea
 }
 
 // CreatePendingInstanceChangeHistory creates an instance change history.
-func (s *Store) CreatePendingInstanceChangeHistoryForMigrator(ctx context.Context, prevSchema string, m *db.MigrationInfo, statement string, sheetID *int, version model.Version) (string, error) {
+func (s *Store) CreatePendingInstanceChangeHistoryForMigrator(ctx context.Context, m *db.MigrationInfo, statement string, version model.Version) (string, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return "", err

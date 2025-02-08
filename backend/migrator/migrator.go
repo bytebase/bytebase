@@ -471,7 +471,7 @@ func beginMigration(ctx context.Context, stores *store.Store, m *dbdriver.Migrat
 
 	// Phase 2 - Record migration history as PENDING.
 	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
-	insertedID, err := stores.CreatePendingInstanceChangeHistoryForMigrator(ctx, "" /* prevSchema */, m, statementRecord, nil /* sheetID */, version)
+	insertedID, err := stores.CreatePendingInstanceChangeHistoryForMigrator(ctx, m, statementRecord, version)
 	if err != nil {
 		return "", err
 	}
