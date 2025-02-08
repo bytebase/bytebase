@@ -8,8 +8,7 @@ This is the demo data for https://demo.bytebase.com.
 
 1. Sample test and prod PG instances running on port `8083` and `8084`.
 1. [GitHub hr-sample](https://github.com/s-bytebase/hr-sample) to demonstrate GitOps Workflow.
-1. Enterprise license. https://demo.bytebase.com runs in dev mode, thus it bundles a dev license. If
-   you want to run the demo in release mode. You need to supply your own release license.
+2. Enterprise license. https://demo.bytebase.com runs in dev mode using a dev license.
 
 # How to use
 
