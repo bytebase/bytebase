@@ -139,8 +139,7 @@ func TestGetPatchVersions(t *testing.T) {
 }
 
 var (
-	pgPort        = 6000
-	serverVersion = "server-version"
+	pgPort = 6000
 )
 
 func TestMigrationCompatibility(t *testing.T) {
@@ -202,7 +201,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	require.Equal(t, histories[0].Version.Version, releaseVersion.String())
 
 	// Check no migration after passing current version as the release cutoff version.
-	_, err = migrate(ctx, storeInstance, metadataDriver, releaseVersion, serverVersion, databaseName)
+	_, err = migrate(ctx, storeInstance, metadataDriver, releaseVersion)
 	require.NoError(t, err)
 	// Check migration history.
 	histories, err = storeInstance.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{})

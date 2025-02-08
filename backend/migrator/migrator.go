@@ -86,7 +86,7 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
 
-	if _, err := migrate(ctx, storeInstance, metadataDriver, verBefore, serverVersion, storeDB.ConnCfg.Database); err != nil {
+	if _, err := migrate(ctx, storeInstance, metadataDriver, verBefore); err != nil {
 		return nil, errors.Wrap(err, "failed to migrate")
 	}
 
@@ -237,7 +237,7 @@ const (
 // file run in a transaction to prevent partial migrations.
 //
 // The procedure follows https://github.com/bytebase/bytebase/blob/main/docs/schema-update-guide.md.
-func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbdriver.Driver, curVer semver.Version, serverVersion, databaseName string) (bool, error) {
+func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbdriver.Driver, curVer semver.Version) (bool, error) {
 	slog.Info("Apply database migration if needed...")
 	slog.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
 
