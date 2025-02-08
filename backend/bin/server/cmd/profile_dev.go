@@ -13,7 +13,7 @@ func activeProfile(dataDir string) *config.Profile {
 	p := getBaseProfile(dataDir)
 	p.RuntimeDebug.Store(p.Debug)
 	p.Mode = common.ReleaseModeDev
-	p.PgUser = "bbdev"
+	p.PgUser = "bb"
 	p.BackupRunnerInterval = 10 * time.Second
 	p.AppRunnerInterval = 30 * time.Second
 	p.EnableMetric = false
