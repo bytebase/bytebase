@@ -41,3 +41,4 @@
           schema: dbo
           table: mytable1
           column: ""
+    predicatecolumns: []

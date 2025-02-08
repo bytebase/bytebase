@@ -47,6 +47,7 @@
           schema: ""
           table: v2
           column: ""
+    predicatecolumns: []
 - description: Test For cluster name
   statement: SELECT * FROM v1
   defaultDatabase: db
@@ -92,3 +93,4 @@
           schema: ""
           table: v1
           column: ""
+    predicatecolumns: []

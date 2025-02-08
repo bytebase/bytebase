@@ -107,3 +107,4 @@
           schema: PUBLIC
           table: T3
           column: ""
+    predicatecolumns: []

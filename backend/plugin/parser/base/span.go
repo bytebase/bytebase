@@ -60,7 +60,10 @@ type QuerySpan struct {
 	// SourceColumns are the source columns contributing to the span.
 	// SourceColumns here are the source columns for the whole query span, containing fields, where conditions, join conditions, etc.
 	SourceColumns SourceColumnSet
-	NotFoundError error
+	// PredicateColumns are the source columns contributing to the span.
+	// PredicateColumns here are the source columns for the where conditions.
+	PredicateColumns SourceColumnSet
+	NotFoundError    error
 }
 
 // QuerySpanResult is the result column of a query span.
@@ -334,9 +337,10 @@ type GetLinkedDatabaseMetadataFunc func(context.Context, string, string, string)
 
 func (s *QuerySpan) ToYaml() *YamlQuerySpan {
 	y := &YamlQuerySpan{
-		Type:          s.Type,
-		Results:       []YamlQuerySpanResult{},
-		SourceColumns: []ColumnResource{},
+		Type:             s.Type,
+		Results:          []YamlQuerySpanResult{},
+		SourceColumns:    []ColumnResource{},
+		PredicateColumns: []ColumnResource{},
 	}
 	for _, result := range s.Results {
 		yamlResult := &YamlQuerySpanResult{
@@ -360,13 +364,21 @@ func (s *QuerySpan) ToYaml() *YamlQuerySpan {
 		vi, vj := y.SourceColumns[i], y.SourceColumns[j]
 		return vi.String() < vj.String()
 	})
+	for k := range s.PredicateColumns {
+		y.PredicateColumns = append(y.PredicateColumns, k)
+	}
+	sort.Slice(y.PredicateColumns, func(i, j int) bool {
+		vi, vj := y.PredicateColumns[i], y.PredicateColumns[j]
+		return vi.String() < vj.String()
+	})
 	return y
 }
 
 type YamlQuerySpan struct {
-	Type          QueryType
-	Results       []YamlQuerySpanResult
-	SourceColumns []ColumnResource
+	Type             QueryType
+	Results          []YamlQuerySpanResult
+	SourceColumns    []ColumnResource
+	PredicateColumns []ColumnResource
 }
 
 type YamlQuerySpanResult struct {
