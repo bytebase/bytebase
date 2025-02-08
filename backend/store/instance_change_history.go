@@ -17,7 +17,6 @@ type InstanceChangeHistoryMessage struct {
 	UpdatedTs           int64
 	Status              db.MigrationStatus
 	Version             model.Version
-	Statement           string
 	ExecutionDurationNs int64
 
 	// Output only
@@ -52,7 +51,7 @@ func (s *Store) CreateInstanceChangeHistoryForMigrator(ctx context.Context, crea
 }
 
 // CreatePendingInstanceChangeHistory creates an instance change history.
-func (s *Store) CreatePendingInstanceChangeHistoryForMigrator(ctx context.Context, m *db.MigrationInfo, statement string, version model.Version) (string, error) {
+func (s *Store) CreatePendingInstanceChangeHistoryForMigrator(ctx context.Context, version model.Version) (string, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return "", err
@@ -62,7 +61,6 @@ func (s *Store) CreatePendingInstanceChangeHistoryForMigrator(ctx context.Contex
 	instanceChange := &InstanceChangeHistoryMessage{
 		Status:              db.Pending,
 		Version:             version,
-		Statement:           statement,
 		ExecutionDurationNs: 0,
 	}
 	var uid string
@@ -84,9 +82,8 @@ func (*Store) createInstanceChangeHistoryImplForMigrator(ctx context.Context, tx
 		INSERT INTO instance_change_history (
 			status,
 			version,
-			statement,
 			execution_duration_ns
-		) VALUES ($1, $2, $3, $4)
+		) VALUES ($1, $2, $3)
 		RETURNING id`
 
 	storedVersion, err := create.Version.Marshal()
@@ -98,7 +95,6 @@ func (*Store) createInstanceChangeHistoryImplForMigrator(ctx context.Context, tx
 	if err := tx.QueryRowContext(ctx, query,
 		create.Status,
 		storedVersion,
-		create.Statement,
 		create.ExecutionDurationNs,
 	).Scan(&uid); err != nil {
 		return "", err
@@ -157,7 +153,6 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 			updated_ts,
 			status,
 			version,
-			statement,
 			execution_duration_ns
 		FROM instance_change_history
 		WHERE ` + strings.Join(where, " AND ") + ` ORDER BY id DESC`
@@ -184,7 +179,6 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 			&changeHistory.UpdatedTs,
 			&changeHistory.Status,
 			&storedVersion,
-			&changeHistory.Statement,
 			&changeHistory.ExecutionDurationNs,
 		); err != nil {
 			return nil, err

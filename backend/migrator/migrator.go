@@ -51,8 +51,13 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.
 		return nil, errors.Wrapf(err, "failed to get cutoff version")
 	}
 	slog.Info(fmt.Sprintf("The prod cutoff schema version: %s", cutoffSchemaVersion))
-	if err := initializeSchema(ctx, storeInstance, metadataDriver, cutoffSchemaVersion, serverVersion); err != nil {
+	if err := initializeSchema(ctx, storeInstance, metadataDriver, cutoffSchemaVersion); err != nil {
 		return nil, err
+	}
+	var c int
+	err = metadataDriver.GetDB().QueryRowContext(ctx, "SELECT count(1) FROM instance_change_history WHERE database_id IS NOT NULL").Scan(c)
+	if err != nil && c > 0 {
+		return nil, errors.Errorf("Must upgrade to Bytebase 3.3.1 first")
 	}
 	if _, err := metadataDriver.GetDB().ExecContext(ctx, `
 	ALTER TABLE instance_change_history
@@ -69,9 +74,11 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.
 	DROP COLUMN IF EXISTS type,
 	DROP COLUMN IF EXISTS description,
 	DROP COLUMN IF EXISTS sheet_id,
+	DROP COLUMN IF EXISTS statement,
 	DROP COLUMN IF EXISTS schema,
 	DROP COLUMN IF EXISTS schema_prev,
-	DROP COLUMN IF EXISTS payload;`); err != nil {
+	DROP COLUMN IF EXISTS payload;
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_instance_change_history_unique_version ON instance_change_history (version);`); err != nil {
 		return nil, err
 	}
 
@@ -93,7 +100,7 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.
 	return &verAfter, nil
 }
 
-func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataDriver dbdriver.Driver, cutoffSchemaVersion semver.Version, serverVersion string) error {
+func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataDriver dbdriver.Driver, cutoffSchemaVersion semver.Version) error {
 	// We use environment table to determine whether we've initialized the schema.
 	var exists bool
 	if err := metadataDriver.GetDB().QueryRowContext(ctx,
@@ -132,7 +139,6 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 	if err := storeInstance.CreateInstanceChangeHistoryForMigrator(ctx, &store.InstanceChangeHistoryMessage{
 		Status:              dbdriver.Done,
 		Version:             version,
-		Statement:           stmt,
 		ExecutionDurationNs: 0,
 	}); err != nil {
 		return err
@@ -200,17 +206,12 @@ func getLatestVersion(ctx context.Context, storeInstance *store.Store) (semver.V
 
 	for _, h := range histories {
 		if h.Status != dbdriver.Done {
-			stmt := h.Statement
-			// Only print out first 200 chars.
-			if len(stmt) > 200 {
-				stmt = stmt[:200]
-			}
 			// Non-success migration history record is an anomaly, in the case where the actual
 			// migration has been applied, the followup migration will likely fail because the
 			// schema has already been applied. Thus emitting a warning here will assist debugging.
-			slog.Warn(fmt.Sprintf("Found %s migration history", h.Status),
+			slog.Warn("Found stale migration history",
+				slog.String("status", string(h.Status)),
 				slog.String("version", h.Version.Version),
-				slog.String("statement", stmt),
 			)
 			continue
 		}
@@ -282,7 +283,7 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 				Type:           dbdriver.Migrate,
 				Description:    fmt.Sprintf("Migrate version %s server version %s with files %s.", pv.version, serverVersion, pv.filename),
 			}
-			if _, _, err := executeMigrationDefault(ctx, ctx, storeInstance, metadataDriver, mi, string(buf), version); err != nil {
+			if _, _, err := executeMigrationDefault(ctx, storeInstance, metadataDriver, mi, string(buf), version); err != nil {
 				return false, err
 			}
 			retVersion = pv.version
@@ -416,8 +417,8 @@ func getMinorVersions(names []string) ([]semver.Version, error) {
 }
 
 // executeMigrationDefault executes migration.
-func executeMigrationDefault(ctx context.Context, driverCtx context.Context, stores *store.Store, driver dbdriver.Driver, mi *dbdriver.MigrationInfo, statement string, version model.Version) (migrationHistoryID string, updatedSchema string, resErr error) {
-	insertedID, err := beginMigration(ctx, stores, mi, statement, version)
+func executeMigrationDefault(ctx context.Context, stores *store.Store, driver dbdriver.Driver, mi *dbdriver.MigrationInfo, statement string, version model.Version) (migrationHistoryID string, updatedSchema string, resErr error) {
+	insertedID, err := beginMigration(ctx, stores, mi, version)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to begin migration")
 	}
@@ -441,7 +442,7 @@ func executeMigrationDefault(ctx context.Context, driverCtx context.Context, sto
 }
 
 // beginMigration checks before executing migration and inserts a migration history record with pending status.
-func beginMigration(ctx context.Context, stores *store.Store, m *dbdriver.MigrationInfo, statement string, version model.Version) (string, error) {
+func beginMigration(ctx context.Context, stores *store.Store, mi *dbdriver.MigrationInfo, version model.Version) (string, error) {
 	// Phase 1 - Pre-check before executing migration
 	// Check if the same migration version has already been applied.
 	if list, err := stores.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{
@@ -452,17 +453,17 @@ func beginMigration(ctx context.Context, stores *store.Store, m *dbdriver.Migrat
 		migrationHistory := list[0]
 		switch migrationHistory.Status {
 		case dbdriver.Done:
-			err := common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s, hint: the version might be duplicate, please check the version", m.Database, version.Version)
+			err := common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s, hint: the version might be duplicate, please check the version", mi.Database, version.Version)
 			slog.Debug(err.Error())
 			// Force migration
 			return migrationHistory.UID, nil
 		case dbdriver.Pending:
-			err := errors.Errorf("database %q version %s migration is already in progress", m.Database, version.Version)
+			err := errors.Errorf("database %q version %s migration is already in progress", mi.Database, version.Version)
 			slog.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
 			return migrationHistory.UID, nil
 		case dbdriver.Failed:
-			err := errors.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version", m.Database, version.Version)
+			err := errors.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version", mi.Database, version.Version)
 			slog.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
 			return migrationHistory.UID, nil
@@ -470,8 +471,7 @@ func beginMigration(ctx context.Context, stores *store.Store, m *dbdriver.Migrat
 	}
 
 	// Phase 2 - Record migration history as PENDING.
-	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
-	insertedID, err := stores.CreatePendingInstanceChangeHistoryForMigrator(ctx, m, statementRecord, version)
+	insertedID, err := stores.CreatePendingInstanceChangeHistoryForMigrator(ctx, version)
 	if err != nil {
 		return "", err
 	}

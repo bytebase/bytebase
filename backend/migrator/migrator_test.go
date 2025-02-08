@@ -193,12 +193,10 @@ func TestMigrationCompatibility(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create initial schema.
-	err = initializeSchema(ctx, storeInstance, metadataDriver, releaseVersion, serverVersion)
+	err = initializeSchema(ctx, storeInstance, metadataDriver, releaseVersion)
 	require.NoError(t, err)
 	// Check migration history.
-	histories, err := storeInstance.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{
-		InstanceID: nil,
-	})
+	histories, err := storeInstance.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{})
 	require.NoError(t, err)
 	require.Len(t, histories, 1)
 	require.Equal(t, histories[0].Version.Version, releaseVersion.String())
@@ -207,9 +205,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	_, err = migrate(ctx, storeInstance, metadataDriver, releaseVersion, serverVersion, databaseName)
 	require.NoError(t, err)
 	// Check migration history.
-	histories, err = storeInstance.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{
-		InstanceID: nil,
-	})
+	histories, err = storeInstance.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{})
 	require.NoError(t, err)
 	require.Len(t, histories, 1)
 }
