@@ -5,8 +5,6 @@ CREATE TYPE row_status AS ENUM ('NORMAL', 'ARCHIVED');
 CREATE TABLE idp (
   id SERIAL PRIMARY KEY,
   row_status row_status NOT NULL DEFAULT 'NORMAL',
-  created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-  updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
   resource_id TEXT NOT NULL,
   name TEXT NOT NULL,
   domain TEXT NOT NULL,
