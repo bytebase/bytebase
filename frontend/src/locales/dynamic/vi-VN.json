@@ -1,0 +1,251 @@
+{
+    "custom-approval": {
+        "approval-flow": {
+            "node": {
+                "group": {
+                    "WORKSPACE_OWNER": "Quản trị viên không gian làm việc",
+                    "WORKSPACE_DBA": "DBA",
+                    "PROJECT_OWNER": "Chủ sở hữu dự án",
+                    "PROJECT_MEMBER": "Nhà phát triển dự án"
+                }
+            },
+            "presets": {
+                "owner-dba": "Hệ thống xác định quy trình phê duyệt, đầu tiên là Chủ sở hữu dự án phê duyệt, sau đó là DBA phê duyệt.",
+                "owner": "Hệ thống xác định quy trình phê duyệt và chỉ cần Chủ sở hữu dự án phê duyệt.",
+                "dba": "Hệ thống xác định quy trình phê duyệt và chỉ cần DBA phê duyệt.",
+                "admin": "Hệ thống xác định quy trình phê duyệt và chỉ cần Quản trị viên phê duyệt.",
+                "owner-dba-admin": "Hệ thống xác định quy trình phê duyệt, đầu tiên là Chủ sở hữu dự án phê duyệt, sau đó là DBA phê duyệt, và cuối cùng là Quản trị viên phê duyệt."
+            }
+        },
+        "risk-rule": {
+            "template": {
+                "presets": {
+                    "environment-prod-high": "Rủi ro cho môi trường sản xuất được coi là cao.",
+                    "environment-dev-low": "Giá trị rủi ro cho môi trường phát triển được coi là thấp.",
+                    "dml-in-environment-prod-10k-rows-high": "Trong môi trường sản xuất, nếu số lượng hàng cần cập nhật hoặc xóa vượt quá 10000, rủi ro được coi là cao.",
+                    "create-database-in-environment-prod-moderate": "Tạo cơ sở dữ liệu trong môi trường sản xuất được coi là rủi ro trung bình."
+                }
+            }
+        }
+    },
+    "activity": {
+        "sentence": {
+            "verb-type-target-by-people": "{verb} {type} {target}",
+            "verb-type-target-by-system-bot": "{type} {target} {verb}",
+            "changed-x-link": "đã thay đổi {name}. {link}"
+        }
+    },
+    "settings": {
+        "sensitive-data": {
+            "semantic-types": {
+                "template": {
+                    "bb-default": {
+                        "title": "Mặc định",
+                        "description": "Loại mặc định với che giấu toàn bộ",
+                        "algorithm": {
+                            "title": "Che giấu toàn bộ",
+                            "description": "Tất cả các giá trị sẽ được che giấu thành \"******\""
+                        }
+                    },
+                    "bb-default-partial": {
+                        "title": "Mặc định một phần",
+                        "description": "Loại mặc định một phần với che giấu một phần",
+                        "algorithm": {
+                            "title": "Che giấu phạm vi",
+                            "description": "Chỉ giữ lại dữ liệu thô ở giữa và che phần đầu và phần cuối bằng \"**\".\nVí dụ: \"address\" sẽ được che giấu thành \"**dre**\"."
+                        }
+                    }
+                }
+            }
+        },
+        "general": {
+            "workspace": {
+                "announcement-alert-level": {
+                    "field": {
+                        "info": "Bình thường",
+                        "warning": "Cảnh báo",
+                        "critical": "Quan trọng"
+                    }
+                }
+            }
+        }
+    },
+    "subscription": {
+        "features": {
+            "bb-feature-external-secret-manager": {
+                "title": "Đặt bí mật bên ngoài",
+                "desc": "Sử dụng Vault hoặc URL tùy chỉnh làm bí mật bên ngoài cho mật khẩu cơ sở dữ liệu."
+            },
+            "bb-feature-task-schedule-time": {
+                "title": "Đặt thời gian lập lịch tác vụ",
+                "desc": "Đặt thời gian lập lịch tác vụ cho phép bạn đặt thời gian cụ thể để chạy tác vụ của mình."
+            },
+            "bb-feature-instance-count": {
+                "title": "Giới hạn số lượng phiên bản",
+                "desc": "Bạn đã đạt đến giới hạn số lượng phiên bản tối đa. Vui lòng nâng cấp để có thêm hạn ngạch phiên bản.",
+                "remaining": "Tổng hạn ngạch phiên bản của bạn là {total}, chỉ còn lại {count} phiên bản.",
+                "runoutof": "Bạn đã hết hạn ngạch {total} phiên bản của mình.",
+                "upgrade": "@:{'subscription.upgrade'} để có thêm hạn ngạch phiên bản."
+            },
+            "bb-feature-user-count": {
+                "title": "Giới hạn số lượng người dùng",
+                "desc": "Bạn đã đạt đến giới hạn số lượng người dùng tối đa. Vui lòng nâng cấp để có hạn ngạch người dùng không giới hạn.",
+                "remaining": "Tổng hạn ngạch người dùng của bạn là {total}, chỉ còn lại {count} người dùng.",
+                "runoutof": "Bạn đã hết hạn ngạch {total} người dùng của mình.",
+                "upgrade": "@:{'subscription.upgrade'} để có hạn ngạch người dùng không giới hạn."
+            },
+            "bb-feature-multi-tenancy": {
+                "title": "Chế độ hàng loạt",
+                "desc": "Thay đổi hàng loạt một nhóm cơ sở dữ liệu từ các đối tượng thuê hoặc phân vùng khác nhau."
+            },
+            "bb-feature-rollout-policy": {
+                "title": "Chính sách triển khai",
+                "desc": "Chính sách triển khai kiểm soát xem tác vụ thay đổi lược đồ có yêu cầu triển khai thủ công hay không."
+            },
+            "bb-feature-environment-tier-policy": {
+                "title": "Cấp môi trường",
+                "desc": "Đánh dấu môi trường là sản xuất."
+            },
+            "bb-feature-sensitive-data": {
+                "title": "Dữ liệu nhạy cảm",
+                "desc": "Đánh dấu các cột bảng là dữ liệu nhạy cảm và kết quả truy vấn của chúng sẽ được hiển thị là \"******\"."
+            },
+            "bb-feature-access-control": {
+                "title": "Kiểm soát truy cập dữ liệu",
+                "desc": "Hạn chế người dùng truy cập dữ liệu, chẳng hạn như cấm người dùng sao chép kết quả truy vấn dữ liệu."
+            },
+            "bb-feature-lgtm": {
+                "title": "Kiểm tra LGTM",
+                "desc": "Kiểm tra xem vấn đề có bình luận \"LGTM\" hay không."
+            },
+            "bb-feature-im-approval": {
+                "title": "Phê duyệt IM",
+                "desc": "Phê duyệt vấn đề với tích hợp IM."
+            },
+            "bb-feature-sql-review": {
+                "title": "Mở khóa hơn 100 kiểm tra Đánh giá SQL",
+                "desc": "Chỉ định quy tắc lint SQL để áp dụng thực tiễn tốt nhất về SQL và thực thi tính nhất quán của lược đồ trên toàn tổ chức kỹ thuật."
+            },
+            "bb-feature-custom-approval": {
+                "title": "Phê duyệt tùy chỉnh",
+                "desc": "Định cấu hình mức độ rủi ro và quy trình phê duyệt cho các tác vụ khác nhau."
+            },
+            "bb-feature-vcs-sql-review": {
+                "title": "Đánh giá SQL trong quy trình GitOps",
+                "desc": "Thêm Đánh giá SQL CI vào quy trình kho lưu trữ VCS của bạn. Đánh giá SQL sẽ được kích hoạt trong yêu cầu kéo cho các tệp SQL đã thay đổi."
+            },
+            "bb-feature-rbac": {
+                "title": "Quản lý vai trò",
+                "desc": "Quản lý vai trò có thể gán một vai trò cụ thể (ví dụ: DBA) cho một thành viên."
+            },
+            "bb-feature-custom-role": {
+                "title": "Vai trò tùy chỉnh",
+                "desc": "Xác định vai trò tùy chỉnh. Bạn có thể áp dụng chúng cho các thành viên dự án và được sử dụng trong phê duyệt tùy chỉnh."
+            },
+            "bb-feature-watermark": {
+                "title": "Hình mờ",
+                "desc": "Hiển thị hình mờ hiển thị trên các trang, bao gồm tên người dùng, ID và email."
+            },
+            "bb-feature-audit-log": {
+                "title": "Nhật ký kiểm tra",
+                "desc": "Ghi lại và truy vấn các hoạt động được thực hiện bởi người dùng trong không gian làm việc."
+            },
+            "bb-feature-schema-drift": {
+                "title": "Độ lệch lược đồ",
+                "desc": "Phát hiện các thay đổi lược đồ ngoài băng tần và báo cáo độ lệch lược đồ."
+            },
+            "bb-feature-branding": {
+                "title": "Thương hiệu",
+                "desc": "Tùy chỉnh logo."
+            },
+            "bb-feature-online-migration": {
+                "title": "Di chuyển trực tuyến",
+                "desc": "Dựa trên gh-ost. Đối với các bảng lớn, nó có thể giảm thời gian khóa bảng từ hàng giờ xuống còn vài giây."
+            },
+            "bb-feature-sync-schema-all-versions": {
+                "title": "Đồng bộ hóa tất cả các phiên bản lược đồ",
+                "desc": "Chọn bất kỳ phiên bản di chuyển tùy ý nào từ cơ sở dữ liệu cơ sở và đồng bộ hóa nó với cơ sở dữ liệu đích."
+            },
+            "bb-feature-read-replica-connection": {
+                "title": "Kết nối bản sao chỉ đọc",
+                "desc": "Kết nối với bản sao chỉ đọc cho nguồn dữ liệu chỉ đọc."
+            },
+            "bb-feature-instance-ssh-connection": {
+                "title": "Kết nối SSH phiên bản",
+                "desc": "Kết nối với một phiên bản qua SSH."
+            },
+            "bb.feature.custom-instance-synchronization": {
+                "title": "Đồng bộ hóa phiên bản tùy chỉnh",
+                "desc": "Tùy chỉnh khoảng thời gian quét, số lượng kết nối tối đa và đồng bộ hóa cơ sở dữ liệu cụ thể"
+            },
+            "bb-feature-index-advisor": {
+                "title": "Cố vấn chỉ mục",
+                "desc": "Cố vấn chỉ mục có thể giúp bạn tìm các chỉ mục bị thiếu trong các truy vấn chậm."
+            },
+            "bb-feature-sso": {
+                "title": "Đăng nhập một lần (SSO)",
+                "desc": "Cho phép người dùng xác thực an toàn với nhiều ứng dụng và trang web thông qua một bộ thông tin đăng nhập duy nhất."
+            },
+            "bb-feature-2fa": {
+                "title": "Xác thực hai yếu tố (2FA)",
+                "desc": "Xác thực hai yếu tố cung cấp một lớp bảo mật bổ sung cho các tài khoản thành viên. Khi đăng nhập, bạn sẽ được yêu cầu nhập mã bảo mật do Ứng dụng xác thực của bạn tạo."
+            },
+            "bb-feature-plugin-openai": {
+                "title": "Tăng cường AI",
+                "desc": "Các tính năng Trình soạn thảo SQL và cố vấn chỉ mục được tăng cường bởi AI được cung cấp bởi OpenAI."
+            },
+            "bb-feature-batch-query": {
+                "title": "Truy vấn hàng loạt",
+                "desc": "Truy vấn hàng loạt cơ sở dữ liệu bổ sung trong cùng một dự án trong Trình soạn thảo SQL."
+            },
+            "bb-feature-shared-sql-script": {
+                "title": "Tập lệnh SQL được chia sẻ",
+                "desc": "Chia sẻ tập lệnh SQL của bạn với đồng đội trong dự án hoặc công khai cho tất cả mọi người."
+            },
+            "bb-feature-announcement": {
+                "title": "Thông báo",
+                "desc": "Định cấu hình Biểu ngữ thông báo."
+            },
+            "bb-feature-encrypted-secrets": {
+                "title": "Bí mật được mã hóa",
+                "desc": "Lưu trữ bí mật của cơ sở dữ liệu của bạn và sử dụng chúng trong tập lệnh SQL vấn đề của bạn."
+            },
+            "bb-feature-database-grouping": {
+                "title": "Nhóm cơ sở dữ liệu",
+                "desc": "Nhóm cơ sở dữ liệu cho phép bạn áp dụng các hoạt động hàng loạt cho cơ sở dữ liệu từ nhóm cơ sở dữ liệu."
+            },
+            "bb-feature-disallow-signup": {
+                "title": "Tắt đăng ký tự phục vụ",
+                "desc": "Khi bị tắt, người dùng không thể tự đăng ký và chỉ có thể được mời bởi quản trị viên không gian làm việc."
+            },
+            "bb-feature-disallow-password-signin": {
+                "title": "Không cho phép đăng nhập bằng email & mật khẩu",
+                "desc": "Người dùng không thể đăng nhập bằng email & mật khẩu, chỉ cho phép SSO."
+            },
+            "bb-feature-schema-template": {
+                "title": "Mẫu lược đồ",
+                "desc": "Xác định trước mẫu trường, sau đó áp dụng mẫu trong quá trình thay đổi lược đồ."
+            },
+            "bb-feature-secure-token": {
+                "title": "Tần suất đăng nhập",
+                "desc": "Tần suất đăng nhập là khoảng thời gian trước khi người dùng phải đăng nhập lại."
+            },
+            "bb-feature-issue-advanced-search": {
+                "title": "Tìm kiếm vấn đề nâng cao",
+                "desc": "Truy cập lịch sử vấn đề không giới hạn với tìm kiếm vấn đề nâng cao."
+            },
+            "bb-feature-issue-project-setting": {
+                "title": "Cài đặt dự án vấn đề",
+                "desc": "Tùy chỉnh cài đặt dự án vấn đề nâng cao. Bao gồm các hạn chế tạo vấn đề và cài đặt sao lưu mặc định."
+            },
+            "bb-feature-password-restriction": {
+                "title": "Hạn chế mật khẩu",
+                "desc": "Cho phép định cấu hình hạn chế cho mật khẩu của người dùng"
+            },
+            "bb-feature-directory-sync": {
+                "title": "Đồng bộ hóa thư mục",
+                "desc": "Đồng bộ người dùng và nhóm từ Entra ID (trước đây là Azure AD) vào phiên bản Bytebase của bạn"
+            }
+        }
+    }
+}

@@ -41,6 +41,10 @@ const languageList = [
     label: "日本語",
     value: "ja-JP",
   },
+  {
+    label: "Tiếng việt",
+    value: "vi-VN",
+  },
 ];
 const localeLabel =
   locale.value === "zh-CN" || locale.value === "zh"
@@ -49,7 +53,9 @@ const localeLabel =
       ? "Español"
       : locale.value === "ja-JP" || locale.value === "ja"
         ? "日本語"
-        : "English";
+        : locale.value === "vi-VN" || locale.value === "vi"
+          ? "Tiếng việt"
+          : "English";
 const selectedLanguage = ref(localeLabel);
 const year = new Date().getFullYear();
 
