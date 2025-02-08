@@ -25,7 +25,7 @@ docker run --rm --init \
   --pull always \
   --publish 8080:8080 \
   --volume ~/.bytebase/data:/var/opt/bytebase \
-  bytebase/bytebase:3.3.0 \
+  bytebase/bytebase:3.4.0 \
   --data /var/opt/bytebase \
   --port 8080 \
   --demo default
