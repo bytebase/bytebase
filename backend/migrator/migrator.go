@@ -18,7 +18,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -272,18 +271,7 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 			}
 			slog.Info(fmt.Sprintf("Migrating %s...", pv.version))
 			version := model.Version{Semantic: true, Version: pv.version.String(), Suffix: time.Now().Format("20060102150405")}
-			mi := &dbdriver.MigrationInfo{
-				InstanceID:     nil,
-				CreatorID:      api.SystemBotID,
-				ReleaseVersion: serverVersion,
-				Namespace:      databaseName,
-				Database:       databaseName,
-				Environment:    "", /* unused in execute migration */
-				Source:         dbdriver.LIBRARY,
-				Type:           dbdriver.Migrate,
-				Description:    fmt.Sprintf("Migrate version %s server version %s with files %s.", pv.version, serverVersion, pv.filename),
-			}
-			if _, _, err := executeMigrationDefault(ctx, storeInstance, metadataDriver, mi, string(buf), version); err != nil {
+			if _, _, err := executeMigrationDefault(ctx, storeInstance, metadataDriver, string(buf), version); err != nil {
 				return false, err
 			}
 			retVersion = pv.version
@@ -417,8 +405,8 @@ func getMinorVersions(names []string) ([]semver.Version, error) {
 }
 
 // executeMigrationDefault executes migration.
-func executeMigrationDefault(ctx context.Context, stores *store.Store, driver dbdriver.Driver, mi *dbdriver.MigrationInfo, statement string, version model.Version) (migrationHistoryID string, updatedSchema string, resErr error) {
-	insertedID, err := beginMigration(ctx, stores, mi, version)
+func executeMigrationDefault(ctx context.Context, stores *store.Store, driver dbdriver.Driver, statement string, version model.Version) (migrationHistoryID string, updatedSchema string, resErr error) {
+	insertedID, err := beginMigration(ctx, stores, version)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to begin migration")
 	}
@@ -442,7 +430,7 @@ func executeMigrationDefault(ctx context.Context, stores *store.Store, driver db
 }
 
 // beginMigration checks before executing migration and inserts a migration history record with pending status.
-func beginMigration(ctx context.Context, stores *store.Store, mi *dbdriver.MigrationInfo, version model.Version) (string, error) {
+func beginMigration(ctx context.Context, stores *store.Store, version model.Version) (string, error) {
 	// Phase 1 - Pre-check before executing migration
 	// Check if the same migration version has already been applied.
 	if list, err := stores.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{
@@ -453,17 +441,17 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *dbdriver.Migra
 		migrationHistory := list[0]
 		switch migrationHistory.Status {
 		case dbdriver.Done:
-			err := common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s, hint: the version might be duplicate, please check the version", mi.Database, version.Version)
+			err := common.Errorf(common.MigrationAlreadyApplied, "already applied version %s, hint: the version might be duplicate, please check the version", version.Version)
 			slog.Debug(err.Error())
 			// Force migration
 			return migrationHistory.UID, nil
 		case dbdriver.Pending:
-			err := errors.Errorf("database %q version %s migration is already in progress", mi.Database, version.Version)
+			err := errors.Errorf("version %s migration is already in progress", version.Version)
 			slog.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
 			return migrationHistory.UID, nil
 		case dbdriver.Failed:
-			err := errors.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version", mi.Database, version.Version)
+			err := errors.Errorf("version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version", version.Version)
 			slog.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
 			return migrationHistory.UID, nil
