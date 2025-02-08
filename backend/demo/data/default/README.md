@@ -44,7 +44,7 @@ docker run --rm --init \
 1. Dump with the following command.
 
 ```bash
-docker exec -it bytebase pg_dump -h /tmp -p 8082 -U bb --disable-triggers --column-inserts --on-conflict-do-nothing > /tmp/dump.sql
+docker exec -it bytebase pg_dump -h /tmp -p 8082 -U bb --disable-triggers --no-owner --column-inserts --on-conflict-do-nothing > /tmp/dump.sql
 ```
 
 1. Copy and replace `dump.sql`.
