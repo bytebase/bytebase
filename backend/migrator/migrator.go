@@ -28,7 +28,7 @@ import (
 var migrationFS embed.FS
 
 // MigrateSchema migrates the schema for metadata database.
-func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.Store, serverVersion string) (*semver.Version, error) {
+func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.Store) (*semver.Version, error) {
 	metadataDriver, err := dbdriver.Open(
 		ctx,
 		storepb.Engine_POSTGRES,
