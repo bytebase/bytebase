@@ -74,6 +74,7 @@
           schema: ""
           table: Orders
           column: ""
+    predicatecolumns: []
 - description: Except and replace
   statement: SELECT * EXCEPT (ID) REPLACE (ID/2 AS NAME) FROM people;
   defaultDatabase: ds1
@@ -116,6 +117,7 @@
           schema: ""
           table: people
           column: ""
+    predicatecolumns: []
 - description: Set operation
   statement: WITH CTE_1 AS (SELECT * FROM people), CTE_2 AS (SELECT * FROM address) SELECT * FROM CTE_1 UNION ALL SELECT * FROM CTE_2;
   defaultDatabase: ds1
@@ -202,6 +204,7 @@
           schema: ""
           table: people
           column: ""
+    predicatecolumns: []
 - description: Parenthesized join
   statement: SELECT ID, NAME, ADDRESS FROM (people JOIN address ON people.ID = address.PEOPLE_ID USING (ID));
   defaultDatabase: ds1
@@ -279,6 +282,7 @@
           schema: ""
           table: people
           column: ""
+    predicatecolumns: []
 - description: Join using
   statement: SELECT ID, NAME, ADDRESS FROM people JOIN address ON people.ID = address.PEOPLE_ID USING (ID);
   defaultDatabase: ds1
@@ -356,6 +360,7 @@
           schema: ""
           table: people
           column: ""
+    predicatecolumns: []
 - description: Simple join
   statement: SELECT ID, NAME, ADDRESS FROM people JOIN address ON people.ID = address.PEOPLE_ID;
   defaultDatabase: maskingdb
@@ -430,6 +435,7 @@
           schema: ""
           table: people
           column: ""
+    predicatecolumns: []
 - description: Recursive cte
   statement: |-
     WITH RECURSIVE CTE_01 AS (
@@ -525,6 +531,7 @@
           schema: ""
           table: T1
           column: ""
+    predicatecolumns: []
 - description: Simple normal cte
   statement: WITH CTE_1 AS (SELECT Id, Name FROM Customers) SELECT * FROM CTE_1;
   defaultDatabase: maskingdb
@@ -580,6 +587,7 @@
           schema: ""
           table: Customers
           column: ""
+    predicatecolumns: []
 - description: Correlated subquery in the target field clause.
   statement: SELECT city, (SELECT COUNT(*) FROM paintings p WHERE g.id = p.gallery_id) AS total_paintings FROM galleries g;
   defaultDatabase: ds1
@@ -647,6 +655,7 @@
           schema: ""
           table: paintings
           column: ""
+    predicatecolumns: []
 - description: FIXME(zp)Expression subquery
   statement: SELECT (SELECT Name FROM Customers), ID FROM Customers;
   defaultDatabase: maskingdb
@@ -692,6 +701,7 @@
           schema: ""
           table: Customers
           column: ""
+    predicatecolumns: []
 - description: Table subquery
   statement: WITH A AS (SELECT * FROM Customers) SELECT result.ID, * FROM (SELECT * FROM A) result;
   defaultDatabase: maskingdb
@@ -755,6 +765,7 @@
           schema: ""
           table: Customers
           column: ""
+    predicatecolumns: []
 - description: Wild projecter
   statement: SELECT s.* FROM Customers s;
   defaultDatabase: maskingdb
@@ -805,6 +816,7 @@
           schema: ""
           table: Customers
           column: ""
+    predicatecolumns: []
 - description: Simple projecter
   statement: SELECT Id, Name FROM Customers;
   defaultDatabase: maskingdb
@@ -855,6 +867,7 @@
           schema: ""
           table: Customers
           column: ""
+    predicatecolumns: []
 - description: Expression in target field
   statement: SELECT Id+1, Id+Name, foo(bar(Id), Name) FROM Customers;
   defaultDatabase: maskingdb
@@ -923,6 +936,7 @@
           schema: ""
           table: Customers
           column: ""
+    predicatecolumns: []
 - description: Simple select asterisk statement
   statement: SELECT * FROM Customers;
   defaultDatabase: maskingdb
@@ -973,3 +987,4 @@
           schema: ""
           table: Customers
           column: ""
+    predicatecolumns: []

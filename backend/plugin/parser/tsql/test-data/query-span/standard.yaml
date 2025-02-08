@@ -45,6 +45,7 @@
               column: a
           isplainfield: true
     sourcecolumns: []
+    predicatecolumns: []
 - description: Test for builtin functions
   statement: SELECT NEWID() as uuid;
   defaultDatabase: db
@@ -84,6 +85,7 @@
           sourcecolumns: []
           isplainfield: false
     sourcecolumns: []
+    predicatecolumns: []
 - description: Test for view
   statement: SELECT * FROM MyView1;
   defaultDatabase: db
@@ -141,6 +143,7 @@
           schema: dbo
           table: MyView1
           column: ""
+    predicatecolumns: []
 - description: Simple select asterisk statement
   statement: SELECT * FROM MyTable1;
   defaultDatabase: db
@@ -192,6 +195,7 @@
           schema: dbo
           table: MyTable1
           column: ""
+    predicatecolumns: []
 - description: Alias table source
   statement: SELECT T1.* FROM MyTable1 AS T1;
   defaultDatabase: db
@@ -243,6 +247,7 @@
           schema: dbo
           table: MyTable1
           column: ""
+    predicatecolumns: []
 - description: Subquery in Select target list
   statement: SELECT (SELECT MAX(d) FROM MyTable2) FROM MyTable1;
   defaultDatabase: db
@@ -302,6 +307,7 @@
           schema: dbo
           table: MyTable2
           column: ""
+    predicatecolumns: []
 - description: Union
   statement: SELECT a FROM MyTable1 UNION SELECT c FROM MyTable2;
   defaultDatabase: db
@@ -366,6 +372,7 @@
           schema: dbo
           table: MyTable2
           column: ""
+    predicatecolumns: []
 - description: Join
   statement: SELECT a, b, c, d FROM MyTable1 JOIN MyTable2 ON MyTable1.a = MyTable2.d;
   defaultDatabase: db
@@ -449,6 +456,7 @@
           schema: dbo
           table: MyTable2
           column: ""
+    predicatecolumns: []
 - description: Table Source List
   statement: SELECT a, b, c, d FROM MyTable1, MyTable2;
   defaultDatabase: db
@@ -532,6 +540,7 @@
           schema: dbo
           table: MyTable2
           column: ""
+    predicatecolumns: []
 - description: Test for subquery in from cluase with as alias.
   statement: SELECT tt.a, b FROM (SELECT * FROM MyTable1) AS tt;
   defaultDatabase: db
@@ -594,6 +603,7 @@
           schema: dbo
           table: MyTable1
           column: ""
+    predicatecolumns: []
 - description: Test for CTE
   statement: WITH tt1(aa, bb) AS ( SELECT a, b FROM MyTable1 ) SELECT tt1.aa, bb FROM tt1;
   defaultDatabase: db
@@ -661,6 +671,7 @@
           schema: dbo
           table: tt1
           column: ""
+    predicatecolumns: []
 - description: Test for multiple CTE.
   statement: |-
     WITH tt1(aa, bb) AS (
@@ -753,6 +764,7 @@
           schema: dbo
           table: tt2
           column: ""
+    predicatecolumns: []
 - description: Test for recursive CTE
   statement: |-
     WITH cte_01 AS (
@@ -849,3 +861,4 @@
           schema: dbo
           table: cte_01
           column: ""
+    predicatecolumns: []

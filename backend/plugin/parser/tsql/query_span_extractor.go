@@ -37,6 +37,8 @@ type querySpanExtractor struct {
 
 	// tableSourcesFrom is the list of table sources from the FROM clause.
 	tableSourcesFrom []base.TableSource
+
+	predicateColumns base.SourceColumnSet
 }
 
 func newQuerySpanExtractor(defaultDatabase string, defaultSchema string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
@@ -50,6 +52,7 @@ func newQuerySpanExtractor(defaultDatabase string, defaultSchema string, gCtx ba
 		defaultSchema:       defaultSchema,
 		gCtx:                gCtx,
 		ignoreCaseSensitive: ignoreCaseSensitive,
+		predicateColumns:    make(base.SourceColumnSet),
 	}
 }
 
@@ -97,7 +100,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	// We assumes the caller had handled the statement type case,
 	// so we only need to handle the determined statement type here.
 	// In order to decrease the maintenance cost, we use listener
-	// to handlet the select statement precisely.
+	// to handle the select statement precisely.
 	listener := &tsqlSelectOnlyListener{
 		extractor: q,
 	}
@@ -117,9 +120,10 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	}
 
 	return &base.QuerySpan{
-		Type:          queryTypeListener.result,
-		SourceColumns: accessTables,
-		Results:       listener.result,
+		Type:             queryTypeListener.result,
+		SourceColumns:    accessTables,
+		Results:          listener.result,
+		PredicateColumns: q.predicateColumns,
 	}, nil
 }
 
@@ -411,6 +415,12 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromQuerySpecification(ct
 				return nil, errors.Wrapf(err, "failed to check if the expression element is sensitive")
 			}
 			result.Columns = append(result.Columns, querySpanResult)
+		}
+	}
+
+	if where := ctx.Search_condition(); where != nil {
+		if err := q.extractPredicateColumnFromSearchCondition(where); err != nil {
+			return nil, errors.Wrapf(err, "failed to extract predicate columns from search condition")
 		}
 	}
 

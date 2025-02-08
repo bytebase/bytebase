@@ -1,5 +1,4 @@
-- description: Join Alias and Asterisk
-  statement: SELECT t.* FROM MyTable1 t JOIN MyTable2 u ON t.a = u.id;
+- statement: SELECT * FROM t WHERE a in (SELECT c FROM t1 WHERE CONTAINS(b, 'foo'))
   defaultDatabase: db
   ignoreCaseSensitive: true
   metadata: |-
@@ -10,7 +9,7 @@
           "name": "dbo",
           "tables":  [
             {
-              "name":  "MyTable1",
+              "name":  "t",
               "columns":  [
                 {
                   "name":  "a"
@@ -21,13 +20,16 @@
               ]
             },
             {
-              "name":  "MyTable2",
+              "name":  "t1",
               "columns":  [
                 {
-                  "name":  "c"
+                  "name":  "a"
                 },
                 {
-                  "name":  "d"
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
                 }
               ]
             }
@@ -43,7 +45,7 @@
             - server: ""
               database: db
               schema: dbo
-              table: MyTable1
+              table: t
               column: a
           isplainfield: true
         - name: b
@@ -51,23 +53,37 @@
             - server: ""
               database: db
               schema: dbo
-              table: MyTable1
+              table: t
               column: b
           isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
           schema: dbo
-          table: MyTable1
+          table: t
           column: ""
         - server: ""
           database: db
           schema: dbo
-          table: MyTable2
+          table: t1
           column: ""
-    predicatecolumns: []
-- description: Join Alias
-  statement: SELECT t.a, t.b FROM MyTable1 t JOIN MyTable2 u ON t.a = u.id;
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: dbo
+          table: t
+          column: a
+        - server: ""
+          database: db
+          schema: dbo
+          table: t1
+          column: b
+        - server: ""
+          database: db
+          schema: dbo
+          table: t1
+          column: c
+- statement: SELECT * FROM t WHERE a = 1
   defaultDatabase: db
   ignoreCaseSensitive: true
   metadata: |-
@@ -78,24 +94,13 @@
           "name": "dbo",
           "tables":  [
             {
-              "name":  "MyTable1",
+              "name":  "t",
               "columns":  [
                 {
                   "name":  "a"
                 },
                 {
                   "name":  "b"
-                }
-              ]
-            },
-            {
-              "name":  "MyTable2",
-              "columns":  [
-                {
-                  "name":  "c"
-                },
-                {
-                  "name":  "d"
                 }
               ]
             }
@@ -111,7 +116,7 @@
             - server: ""
               database: db
               schema: dbo
-              table: MyTable1
+              table: t
               column: a
           isplainfield: true
         - name: b
@@ -119,18 +124,18 @@
             - server: ""
               database: db
               schema: dbo
-              table: MyTable1
+              table: t
               column: b
           isplainfield: true
     sourcecolumns:
         - server: ""
           database: db
           schema: dbo
-          table: MyTable1
+          table: t
           column: ""
+    predicatecolumns:
         - server: ""
           database: db
           schema: dbo
-          table: MyTable2
-          column: ""
-    predicatecolumns: []
+          table: t
+          column: a

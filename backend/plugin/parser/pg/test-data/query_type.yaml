@@ -9,6 +9,7 @@
     type: 1
     results: []
     sourcecolumns: []
+    predicatecolumns: []
 - description: DML
   statement: INSERT INTO t (a, b, c, d) VALUES (1, 2, 3, 4);
   defaultDatabase: db
@@ -61,6 +62,7 @@
     type: 5
     results: []
     sourcecolumns: []
+    predicatecolumns: []
 - description: DDL
   statement: create table t (a int, b int, c int, d int);
   defaultDatabase: db
@@ -113,6 +115,7 @@
     type: 4
     results: []
     sourcecolumns: []
+    predicatecolumns: []
 - description: Explain
   statement: EXPLAIN SELECT * FROM t;
   defaultDatabase: db
@@ -165,6 +168,7 @@
     type: 2
     results: []
     sourcecolumns: []
+    predicatecolumns: []
 - description: Explain Analyze
   statement: EXPLAIN ANALYZE SELECT * FROM t1;
   defaultDatabase: db
@@ -222,3 +226,4 @@
           schema: public
           table: t1
           column: ""
+    predicatecolumns: []

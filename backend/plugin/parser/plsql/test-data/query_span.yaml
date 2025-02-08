@@ -27,6 +27,7 @@
     type: 3
     results: []
     sourcecolumns: []
+    predicatecolumns: []
 - description: Test for Explain
   statement: EXPLAIN PLAN FOR SELECT * FROM SCHEMA1.V1;
   defaultDatabase: PUBLIC
@@ -56,6 +57,7 @@
     type: 2
     results: []
     sourcecolumns: []
+    predicatecolumns: []
 - description: Test for DDL
   statement: create table t(a int);
   defaultDatabase: PUBLIC
@@ -85,6 +87,7 @@
     type: 4
     results: []
     sourcecolumns: []
+    predicatecolumns: []
 - description: Test for DML
   statement: insert into t values(1);
   defaultDatabase: PUBLIC
@@ -114,6 +117,7 @@
     type: 5
     results: []
     sourcecolumns: []
+    predicatecolumns: []
 - description: Test for cross-schema view
   statement: SELECT * FROM SCHEMA1.V1;
   defaultDatabase: PUBLIC
@@ -192,6 +196,7 @@
           schema: ""
           table: V1
           column: ""
+    predicatecolumns: []
 - description: Test for alias.* with join
   statement: SELECT t1.*, alias1.* FROM t1 JOIN (select * from t1) alias1 on t1.a = alias1.a;
   defaultDatabase: PUBLIC
@@ -258,6 +263,7 @@
           schema: ""
           table: T1
           column: ""
+    predicatecolumns: []
 - description: Test for Join
   statement: SELECT T1.* FROM T1 JOIN T2;
   defaultDatabase: PUBLIC
@@ -321,6 +327,7 @@
           schema: ""
           table: T2
           column: ""
+    predicatecolumns: []
 - description: Test For Database Link With View
   statement: SELECT * FROM SCHEMA1.LV1@REMOTE;
   defaultDatabase: PUBLIC
@@ -369,6 +376,7 @@
               column: LC2
           isplainfield: false
     sourcecolumns: []
+    predicatecolumns: []
 - description: Test For Database Link
   statement: SELECT * FROM SCHEMA1.LT1@REMOTE;
   defaultDatabase: PUBLIC
@@ -409,6 +417,7 @@
               column: LC1
           isplainfield: true
     sourcecolumns: []
+    predicatecolumns: []
 - description: Test For Explain statements
   statement: EXPLAIN PLAN for SELECT 1 FROM DUAL;
   defaultDatabase: PUBLIC
@@ -435,6 +444,7 @@
     type: 2
     results: []
     sourcecolumns: []
+    predicatecolumns: []
 - description: Test for simple select const
   statement: SELECT 1 FROM DUAL;
   defaultDatabase: PUBLIC
@@ -464,6 +474,7 @@
           sourcecolumns: []
           isplainfield: false
     sourcecolumns: []
+    predicatecolumns: []
 - description: Test asterisk and column
   statement: SELECT A, T.* FROM T;
   defaultDatabase: PUBLIC
@@ -544,6 +555,7 @@
           schema: ""
           table: T
           column: ""
+    predicatecolumns: []
 - description: Happy path for A simple select statement
   statement: SELECT * FROM T
   defaultDatabase: PUBLIC
@@ -616,6 +628,7 @@
           schema: ""
           table: T
           column: ""
+    predicatecolumns: []
 - description: Referenced table fields by different format
   statement: SELECT A, T.B, PUBLIC.T.C, PUBLIC.T.D FROM T;
   defaultDatabase: PUBLIC
@@ -688,6 +701,7 @@
           schema: ""
           table: T
           column: ""
+    predicatecolumns: []
 - description: Scalar subquery in select fields
   statement: SELECT 1 AS col_1, (SELECT(2) FROM DUAL) AS col_2, (SELECT AVG(A + B * C) FROM T) AS avg_a_b_c FROM T;
   defaultDatabase: PUBLIC
@@ -752,6 +766,7 @@
           schema: ""
           table: T
           column: ""
+    predicatecolumns: []
 - description: Multiple-Row subquery in where clause
   statement: SELECT 1 FROM T WHERE A IN (SELECT A FROM T);
   defaultDatabase: PUBLIC
@@ -795,6 +810,7 @@
           schema: ""
           table: T
           column: ""
+    predicatecolumns: []
 - description: Correlated subquery in the target field clause.
   statement: SELECT CITY, (SELECT COUNT(*) FROM PAINTINGS p WHERE g.ID = p.GALLERY_ID) AS total_paintings FROM GALLERIES g;
   defaultDatabase: PUBLIC
@@ -862,6 +878,7 @@
           schema: ""
           table: PAINTINGS
           column: ""
+    predicatecolumns: []
 - description: Test for functions
   statement: SELECT max(A), A-B AS c1, A=B AS c2, A>B, B in (A, C, D) from (SELECT * FROM T) result;
   defaultDatabase: PUBLIC
@@ -972,6 +989,7 @@
           schema: ""
           table: T
           column: ""
+    predicatecolumns: []
 - description: Test for SELECT partial FROM JOIN clause
   statement: SELECT T1.*, T2.C, 0 FROM T1 JOIN T2 ON 1 = 1;
   defaultDatabase: PUBLIC
@@ -1049,6 +1067,7 @@
           schema: ""
           table: T2
           column: ""
+    predicatecolumns: []
 - description: Test for JOIN with USING clause
   statement: SELECT * FROM T T1 JOIN T T2 USING(A);
   defaultDatabase: PUBLIC
@@ -1145,6 +1164,7 @@
           schema: ""
           table: T
           column: ""
+    predicatecolumns: []
 - description: Simple CTE
   statement: WITH T1 AS (SELECT * FROM T) SELECT * FROM T1;
   defaultDatabase: PUBLIC
@@ -1217,6 +1237,7 @@
           schema: ""
           table: T
           column: ""
+    predicatecolumns: []
 - description: Multi-level CTE
   statement: WITH tt2 AS (WITH tt2 AS (SELECT * FROM T) SELECT MAX(A) FROM tt2) SELECT * FROM tt2;
   defaultDatabase: PUBLIC
@@ -1265,6 +1286,7 @@
           schema: ""
           table: T
           column: ""
+    predicatecolumns: []
 - description: Test for CTE rename fields name
   statement: WITH T1(D, C, B, A) AS (SELECT * FROM T) SELECT * FROM T1;
   defaultDatabase: PUBLIC
@@ -1337,6 +1359,7 @@
           schema: ""
           table: T
           column: ""
+    predicatecolumns: []
 - description: Test for Recursive Common Table Expression dependent closures
   statement: WITH T1(cc1, cc2, cc3, n) AS (SELECT A AS c1, B AS c2, C AS c3, 1 AS n FROM T UNION ALL SELECT cc1*cc2, cc2 + cc1, cc3 * cc2, n+1 FROM T1 WHERE n < 10) SELECT * FROM T1;
   defaultDatabase: PUBLIC
@@ -1424,6 +1447,7 @@
           schema: ""
           table: T
           column: ""
+    predicatecolumns: []
 - description: Test for Non-Recursive Common Table Expression with RECURSIVE key words
   statement: WITH T1 AS (SELECT 1 AS c1, 2 AS c2, 3 AS c3, 4 AS c4 FROM DUAL UNION ALL SELECT A, B, D, C FROM T) SELECT * FROM T1;
   defaultDatabase: PUBLIC
@@ -1496,3 +1520,4 @@
           schema: ""
           table: T
           column: ""
+    predicatecolumns: []

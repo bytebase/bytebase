@@ -35,6 +35,7 @@ func TestGetQuerySpan(t *testing.T) {
 			"test-data/query-span/join.yaml",
 			"test-data/query-span/case-sensitivity.yaml",
 			"test-data/query-span/query_type.yaml",
+			"test-data/query-span/predicate.yaml",
 		}
 	)
 
