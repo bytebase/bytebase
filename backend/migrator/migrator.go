@@ -64,14 +64,8 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
 
-	migrated, err := migrate(ctx, storeInstance, metadataDriver, verBefore, serverVersion, storeDB.ConnCfg.Database)
-	if err != nil {
+	if _, err := migrate(ctx, storeInstance, metadataDriver, verBefore, serverVersion, storeDB.ConnCfg.Database); err != nil {
 		return nil, errors.Wrap(err, "failed to migrate")
-	}
-	if migrated {
-		if err := backfillOracleSchema(ctx, storeInstance); err != nil {
-			return nil, errors.Wrap(err, "failed to backfill oracle schema")
-		}
 	}
 
 	verAfter, err := getLatestVersion(ctx, storeInstance)
@@ -423,34 +417,6 @@ func getMinorVersions(names []string) ([]semver.Version, error) {
 		return versions[i].LT(versions[j])
 	})
 	return versions, nil
-}
-
-func backfillOracleSchema(ctx context.Context, stores *store.Store) error {
-	engine := storepb.Engine_ORACLE
-	databases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{Engine: &engine})
-	if err != nil {
-		return err
-	}
-	for _, database := range databases {
-		dbSchema, err := stores.GetDBSchema(ctx, database.UID)
-		if err != nil {
-			return err
-		}
-		if dbSchema == nil {
-			continue
-		}
-		dbMetadata := dbSchema.GetMetadata()
-		if dbMetadata == nil {
-			continue
-		}
-		for _, schema := range dbMetadata.Schemas {
-			schema.Name = ""
-		}
-		if err := stores.UpsertDBSchema(ctx, database.UID, dbSchema, api.SystemBotID); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // executeMigrationDefault executes migration.
