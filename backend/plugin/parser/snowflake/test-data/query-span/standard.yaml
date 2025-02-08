@@ -99,6 +99,7 @@
           schema: PUBLIC
           table: T1
           column: ""
+    predicatecolumns: []
 - description: If do not specify the JOIN type explicitly, the default JOIN type is CROSS JOIN.
   statement: SELECT * FROM T1, T2, T3;
   defaultDatabase: SNOWFLAKE
@@ -258,6 +259,7 @@
           schema: PUBLIC
           table: T3
           column: ""
+    predicatecolumns: []
 - description: Natural Join
   statement: SELECT A, E, F FROM T1 NATURAL JOIN T2 NATURAL JOIN T3;
   defaultDatabase: SNOWFLAKE
@@ -361,6 +363,7 @@
           schema: PUBLIC
           table: T3
           column: ""
+    predicatecolumns: []
 - description: Column name projection
   statement: SELECT A, B FROM T1;
   defaultDatabase: SNOWFLAKE
@@ -418,6 +421,7 @@
           schema: PUBLIC
           table: T1
           column: ""
+    predicatecolumns: []
 - description: Simple select asterisk statement
   statement: SELECT * FROM T1;
   defaultDatabase: SNOWFLAKE
@@ -491,3 +495,4 @@
           schema: PUBLIC
           table: T1
           column: ""
+    predicatecolumns: []
