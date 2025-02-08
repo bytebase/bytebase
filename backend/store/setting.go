@@ -23,17 +23,14 @@ type FindSettingMessage struct {
 
 // SetSettingMessage is the message for updating setting.
 type SetSettingMessage struct {
-	Name        api.SettingName
-	Value       string
-	Description *string
+	Name  api.SettingName
+	Value string
 }
 
 // SettingMessage is the message of setting.
 type SettingMessage struct {
-	Name        api.SettingName
-	Value       string
-	Description string
-	CreatedTs   int64
+	Name  api.SettingName
+	Value string
 }
 
 func (s *Store) GetPasswordRestrictionSetting(ctx context.Context) (*storepb.PasswordRestrictionSetting, error) {
@@ -268,16 +265,10 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, 
 	updateFields := []string{"value = EXCLUDED.value", "updater_id = EXCLUDED.updater_id", "updated_ts = EXCLUDED.updated_ts"}
 	valuePlaceholders, args := []string{"$1", "$2", "$3", "$4", "$5"}, []any{principalUID, principalUID, time.Now().Unix(), update.Name, update.Value}
 
-	if v := update.Description; v != nil {
-		fields = append(fields, "description")
-		valuePlaceholders = append(valuePlaceholders, fmt.Sprintf("$%d", len(args)+1))
-		updateFields = append(updateFields, "description = EXCLUDED.description")
-		args = append(args, *v)
-	}
 	query := `INSERT INTO setting (` + strings.Join(fields, ", ") + `) 
 		VALUES (` + strings.Join(valuePlaceholders, ", ") + `) 
 		ON CONFLICT (name) DO UPDATE SET ` + strings.Join(updateFields, ", ") + `
-		RETURNING name, value, description, created_ts`
+		RETURNING name, value`
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -289,8 +280,6 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, 
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&setting.Name,
 		&setting.Value,
-		&setting.Description,
-		&setting.CreatedTs,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("setting not found: %s", update.Name)}
@@ -306,7 +295,7 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, 
 }
 
 // CreateSettingIfNotExistV2 creates a new setting only if the named setting doesn't exist.
-func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMessage, principalUID int) (*SettingMessage, bool, error) {
+func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMessage) (*SettingMessage, bool, error) {
 	if v, ok := s.settingCache.Get(create.Name); ok {
 		return v, false, nil
 	}
@@ -329,17 +318,15 @@ func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMe
 	}
 
 	fields := []string{"creator_id", "updater_id", "name", "value", "description"}
-	valuesPlaceholders, args := []string{"$1", "$2", "$3", "$4", "$5"}, []any{principalUID, principalUID, create.Name, create.Value, create.Description}
+	valuesPlaceholders, args := []string{"$1", "$2"}, []any{create.Name, create.Value}
 
 	query := `INSERT INTO setting (` + strings.Join(fields, ",") + `)
 		VALUES (` + strings.Join(valuesPlaceholders, ",") + `)
-		RETURNING name, value, description, created_ts`
+		RETURNING name, value`
 	var setting SettingMessage
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&setting.Name,
 		&setting.Value,
-		&setting.Description,
-		&setting.CreatedTs,
 	); err != nil {
 		return nil, false, err
 	}
@@ -379,9 +366,7 @@ func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			name,
-			value,
-			description,
-			created_ts
+			value
 		FROM setting
 		WHERE `+strings.Join(where, " AND "), args...)
 	if err != nil {
@@ -395,8 +380,6 @@ func listSettingV2Impl(ctx context.Context, tx *Tx, find *FindSettingMessage) ([
 		if err := rows.Scan(
 			&settingMessage.Name,
 			&settingMessage.Value,
-			&settingMessage.Description,
-			&settingMessage.CreatedTs,
 		); err != nil {
 			return nil, err
 		}

@@ -24,10 +24,9 @@ func (s *Server) getInitSetting(ctx context.Context) (string, error) {
 
 	// initial branding
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingBrandingLogo,
-		Value:       "",
-		Description: "The branding slogo image in base64 string format.",
-	}, api.SystemBotID); err != nil {
+		Name:  api.SettingBrandingLogo,
+		Value: "",
+	}); err != nil {
 		return "", err
 	}
 
@@ -37,10 +36,9 @@ func (s *Server) getInitSetting(ctx context.Context) (string, error) {
 		return "", errors.Wrap(err, "failed to generate random JWT secret")
 	}
 	authSetting, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingAuthSecret,
-		Value:       secret,
-		Description: "Random string used to sign the JWT auth token.",
-	}, api.SystemBotID)
+		Name:  api.SettingAuthSecret,
+		Value: secret,
+	})
 	if err != nil {
 		return "", err
 	}
@@ -49,10 +47,9 @@ func (s *Server) getInitSetting(ctx context.Context) (string, error) {
 
 	// initial workspace
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingWorkspaceID,
-		Value:       uuid.New().String(),
-		Description: "The workspace identifier",
-	}, api.SystemBotID); err != nil {
+		Name:  api.SettingWorkspaceID,
+		Value: uuid.New().String(),
+	}); err != nil {
 		return "", err
 	}
 
@@ -68,10 +65,9 @@ func (s *Server) getInitSetting(ctx context.Context) (string, error) {
 		return "", errors.Wrap(err, "failed to marshal initial scim setting")
 	}
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingSCIM,
-		Value:       string(scimSettingValue),
-		Description: "The SCIM sync",
-	}, api.SystemBotID); err != nil {
+		Name:  api.SettingSCIM,
+		Value: string(scimSettingValue),
+	}); err != nil {
 		return "", err
 	}
 
@@ -88,62 +84,55 @@ func (s *Server) getInitSetting(ctx context.Context) (string, error) {
 		return "", errors.Wrap(err, "failed to marshal initial password validation setting")
 	}
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingPasswordRestriction,
-		Value:       string(passwordSettingValue),
-		Description: "The password validation",
-	}, api.SystemBotID); err != nil {
+		Name:  api.SettingPasswordRestriction,
+		Value: string(passwordSettingValue),
+	}); err != nil {
 		return "", err
 	}
 
 	// initial license
 	if _, _, err = s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingEnterpriseLicense,
-		Value:       "",
-		Description: "Enterprise license",
-	}, api.SystemBotID); err != nil {
+		Name:  api.SettingEnterpriseLicense,
+		Value: "",
+	}); err != nil {
 		return "", err
 	}
 
 	// initial IM app
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingAppIM,
-		Value:       "{}",
-		Description: "",
-	}, api.SystemBotID); err != nil {
+		Name:  api.SettingAppIM,
+		Value: "{}",
+	}); err != nil {
 		return "", err
 	}
 
 	// initial watermark setting
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingWatermark,
-		Value:       "0",
-		Description: "Display watermark",
-	}, api.SystemBotID); err != nil {
+		Name:  api.SettingWatermark,
+		Value: "0",
+	}); err != nil {
 		return "", err
 	}
 
 	// initial OpenAI key setting
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingPluginOpenAIKey,
-		Value:       "",
-		Description: "API key to request OpenAI (ChatGPT)",
-	}, api.SystemBotID); err != nil {
+		Name:  api.SettingPluginOpenAIKey,
+		Value: "",
+	}); err != nil {
 		return "", err
 	}
 
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingPluginOpenAIEndpoint,
-		Value:       "",
-		Description: "API Endpoint for OpenAI",
-	}, api.SystemBotID); err != nil {
+		Name:  api.SettingPluginOpenAIEndpoint,
+		Value: "",
+	}); err != nil {
 		return "", err
 	}
 
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingPluginOpenAIModel,
-		Value:       "",
-		Description: "Model for OpenAI",
-	}, api.SystemBotID); err != nil {
+		Name:  api.SettingPluginOpenAIModel,
+		Value: "",
+	}); err != nil {
 		return "", err
 	}
 
@@ -153,10 +142,9 @@ func (s *Server) getInitSetting(ctx context.Context) (string, error) {
 		return "", errors.Wrap(err, "failed to marshal initial external approval setting")
 	}
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingWorkspaceExternalApproval,
-		Value:       string(externalApprovalSettingValue),
-		Description: "The external approval setting",
-	}, api.SystemBotID); err != nil {
+		Name:  api.SettingWorkspaceExternalApproval,
+		Value: string(externalApprovalSettingValue),
+	}); err != nil {
 		return "", err
 	}
 
@@ -166,10 +154,9 @@ func (s *Server) getInitSetting(ctx context.Context) (string, error) {
 		return "", errors.Wrap(err, "failed to marshal initial schema template setting")
 	}
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingSchemaTemplate,
-		Value:       string(schemaTemplateSettingValue),
-		Description: "The schema template setting",
-	}, api.SystemBotID); err != nil {
+		Name:  api.SettingSchemaTemplate,
+		Value: string(schemaTemplateSettingValue),
+	}); err != nil {
 		return "", err
 	}
 
@@ -179,10 +166,9 @@ func (s *Server) getInitSetting(ctx context.Context) (string, error) {
 		return "", errors.Wrap(err, "failed to marshal initial data classification setting")
 	}
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingDataClassification,
-		Value:       string(dataClassificationSettingValue),
-		Description: "The data classification setting",
-	}, api.SystemBotID); err != nil {
+		Name:  api.SettingDataClassification,
+		Value: string(dataClassificationSettingValue),
+	}); err != nil {
 		return "", err
 	}
 
@@ -194,9 +180,8 @@ func (s *Server) getInitSetting(ctx context.Context) (string, error) {
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name: api.SettingWorkspaceApproval,
 		// Value is ""
-		Value:       string(approvalSettingValue),
-		Description: "The workspace approval setting",
-	}, api.SystemBotID); err != nil {
+		Value: string(approvalSettingValue),
+	}); err != nil {
 		return "", err
 	}
 

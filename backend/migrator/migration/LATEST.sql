@@ -39,14 +39,8 @@ CREATE TABLE principal (
 -- Setting
 CREATE TABLE setting (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
-    value TEXT NOT NULL,
-    description TEXT NOT NULL DEFAULT ''
+    value TEXT NOT NULL
 );
 
 CREATE UNIQUE INDEX idx_setting_unique_name ON setting(name);
