@@ -202,7 +202,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	if profile.Readonly {
 		slog.Info("Database is opened in readonly mode. Skip migration and demo data setup.")
 	} else {
-		if err := demo.LoadDemoDataIfNeeded(ctx, storeDB, profile.DemoName, profile.Mode); err != nil {
+		if err := demo.LoadDemoDataIfNeeded(ctx, storeDB, profile.DemoName); err != nil {
 			return nil, errors.Wrapf(err, "failed to load demo data")
 		}
 		if _, err := migrator.MigrateSchema(ctx, storeDB, storeInstance, profile.Version); err != nil {

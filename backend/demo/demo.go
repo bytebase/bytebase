@@ -8,11 +8,9 @@ import (
 	"io/fs"
 	"log/slog"
 	"sort"
-	"strings"
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/store"
 
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
@@ -23,7 +21,7 @@ import (
 var demoFS embed.FS
 
 // LoadDemoDataIfNeeded loads the demo data if specified.
-func LoadDemoDataIfNeeded(ctx context.Context, storeDB *store.DB, demoName string, mode common.ReleaseMode) error {
+func LoadDemoDataIfNeeded(ctx context.Context, storeDB *store.DB, demoName string) error {
 	if demoName == "" {
 		slog.Debug("Skip setting up demo data. Demo not specified.")
 		return nil
@@ -66,7 +64,7 @@ func LoadDemoDataIfNeeded(ctx context.Context, storeDB *store.DB, demoName strin
 
 	// Loop over all data files and execute them in order.
 	for _, name := range names {
-		if err := applyDataFile(name, metadataDriver.GetDB(), mode); err != nil {
+		if err := applyDataFile(name, metadataDriver.GetDB()); err != nil {
 			return errors.Wrapf(err, "Failed to load file: %q", name)
 		}
 	}
@@ -75,7 +73,7 @@ func LoadDemoDataIfNeeded(ctx context.Context, storeDB *store.DB, demoName strin
 }
 
 // applyDataFile runs a single demo data file within a transaction.
-func applyDataFile(name string, db *sql.DB, mode common.ReleaseMode) error {
+func applyDataFile(name string, db *sql.DB) error {
 	slog.Info(fmt.Sprintf("Applying data file %s...", name))
 	tx, err := db.Begin()
 	if err != nil {
@@ -89,11 +87,6 @@ func applyDataFile(name string, db *sql.DB, mode common.ReleaseMode) error {
 		return err
 	}
 	stmt := string(buf)
-	// The demo dump is generated from dev mode and using "bbdev" as the owner. For release mode,
-	// we need to replace with "bb".
-	if mode == common.ReleaseModeProd {
-		stmt = strings.ReplaceAll(stmt, "bbdev", "bb")
-	}
 	if _, err := tx.Exec(stmt); err != nil {
 		return err
 	}
