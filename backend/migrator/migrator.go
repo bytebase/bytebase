@@ -101,14 +101,7 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 	if err != nil {
 		return errors.Wrapf(err, "failed to read latest schema %q", latestSchemaPath)
 	}
-	latestDataPath := fmt.Sprintf("migration/%s", latestDataFile)
-	dataBuf, err := migrationFS.ReadFile(latestDataPath)
-	if err != nil {
-		return errors.Wrapf(err, "failed to read latest data %q", latestSchemaPath)
-	}
-
-	// We will create the database together with initial schema and data migration.
-	stmt := fmt.Sprintf("%s\n%s", buf, dataBuf)
+	stmt := string(buf)
 
 	version := model.Version{Semantic: true, Version: cutoffSchemaVersion.String(), Suffix: time.Now().Format("20060102150405")}
 	// Set role to database owner so that the schema owner and database owner are consistent.
@@ -243,7 +236,6 @@ func getLatestVersion(ctx context.Context, storeInstance *store.Store) (semver.V
 
 const (
 	latestSchemaFile = "LATEST.sql"
-	latestDataFile   = "LATEST_DATA.sql"
 )
 
 // migrate sets up migration tracking and executes pending migration files.
@@ -415,7 +407,7 @@ func getMinorVersions(names []string) ([]semver.Version, error) {
 	var versions []semver.Version
 	for _, name := range names {
 		baseName := filepath.Base(name)
-		if baseName == latestSchemaFile || baseName == latestDataFile {
+		if baseName == latestSchemaFile {
 			continue
 		}
 		// Convert minor version to semantic version format, e.g. "1.12" will be "1.12.0".

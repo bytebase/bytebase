@@ -36,52 +36,6 @@ CREATE TABLE principal (
     profile JSONB NOT NULL DEFAULT '{}'
 );
 
--- Default bytebase system account id is 1
-INSERT INTO
-    principal (
-        id,
-        creator_id,
-        updater_id,
-        type,
-        name,
-        email,
-        password_hash
-    )
-VALUES
-    (
-        1,
-        1,
-        1,
-        'SYSTEM_BOT',
-        'Bytebase',
-        'support@bytebase.com',
-        ''
-    );
-
--- Pseudo allUsers account id is 2.
-INSERT INTO
-    principal (
-        id,
-        creator_id,
-        updater_id,
-        type,
-        name,
-        email,
-        password_hash
-    )
-VALUES
-    (
-        2,
-        2,
-        2,
-        'SYSTEM_BOT',
-        'All Users',
-        'allUsers',
-        ''
-    );
-
-ALTER SEQUENCE principal_id_seq RESTART WITH 101;
-
 -- Setting
 CREATE TABLE setting (
     id SERIAL PRIMARY KEY,
@@ -176,27 +130,6 @@ CREATE TABLE project (
 CREATE UNIQUE INDEX idx_project_unique_key ON project(key);
 
 CREATE UNIQUE INDEX idx_project_unique_resource_id ON project(resource_id);
-
-INSERT INTO
-    project (
-        id,
-        creator_id,
-        updater_id,
-        name,
-        key,
-        resource_id
-    )
-VALUES
-    (
-        1,
-        1,
-        1,
-        'Default',
-        'DEFAULT',
-        'default'
-    );
-
-ALTER SEQUENCE project_id_seq RESTART WITH 101;
 
 -- Project Hook
 CREATE TABLE project_webhook (
@@ -900,30 +833,6 @@ CREATE UNIQUE INDEX idx_changelist_project_id_name ON changelist(project_id, nam
 
 ALTER SEQUENCE changelist_id_seq RESTART WITH 101;
 
-CREATE TABLE branch (
-  id SERIAL PRIMARY KEY,
-  row_status row_status NOT NULL DEFAULT 'NORMAL',
-  creator_id INTEGER NOT NULL REFERENCES principal (id),
-  created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-  updater_id INTEGER NOT NULL REFERENCES principal (id),
-  updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-  project_id INTEGER NOT NULL REFERENCES project (id),
-  name TEXT NOT NULL,
-  engine TEXT NOT NULL,
-  base JSONB NOT NULL DEFAULT '{}',
-  head JSONB NOT NULL DEFAULT '{}',
-  base_schema TEXT NOT NULL DEFAULT '',
-  head_schema TEXT NOT NULL DEFAULT '',
-  reconcile_state TEXT NOT NULL DEFAULT '',
-  config JSONB NOT NULL DEFAULT '{}'
-);
-
-CREATE UNIQUE INDEX idx_branch_unique_project_id_name ON branch(project_id, name);
-
-CREATE INDEX idx_branch_reconcile_state ON branch(reconcile_state);
-
-ALTER SEQUENCE branch_id_seq RESTART WITH 101;
-
 CREATE TABLE export_archive (
   id SERIAL PRIMARY KEY,
   created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
@@ -1021,3 +930,20 @@ CREATE TABLE IF NOT EXISTS release (
 ALTER SEQUENCE release_id_seq RESTART WITH 101;
 
 CREATE INDEX idx_release_project_id ON release (project_id);
+
+
+-- Default bytebase system account id is 1.
+INSERT INTO principal (id, creator_id, updater_id, type, name, email, password_hash) VALUES (1, 1, 1, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '');
+
+ALTER SEQUENCE principal_id_seq RESTART WITH 101;
+
+-- Default project.
+INSERT INTO project (id, creator_id, updater_id, name, key, resource_id) VALUES (1, 1, 1, 'Default', 'DEFAULT', 'default');
+
+ALTER SEQUENCE project_id_seq RESTART WITH 101;
+
+-- Create "test" and "prod" environments
+INSERT INTO environment (id, creator_id, updater_id, name, "order", resource_id) VALUES (101, 1, 1, 'Test', 0, 'test');
+INSERT INTO environment (id, creator_id, updater_id, name, "order", resource_id) VALUES (102, 1, 1, 'Prod', 1, 'prod');
+
+ALTER SEQUENCE environment_id_seq RESTART WITH 103;
