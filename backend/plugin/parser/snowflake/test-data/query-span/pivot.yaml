@@ -90,6 +90,7 @@
           schema: PUBLIC
           table: T1
           column: ""
+    predicatecolumns: []
 - description: Pivot
   statement: SELECT TT1.* FROM T1 PIVOT(MAX(A) FOR B IN ('a', 'b', 'c')) AS TT1
   defaultDatabase: SNOWFLAKE
@@ -193,3 +194,4 @@
           schema: PUBLIC
           table: T1
           column: ""
+    predicatecolumns: []

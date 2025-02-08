@@ -38,3 +38,4 @@
           schema: ""
           table: T
           column: ""
+    predicatecolumns: []
