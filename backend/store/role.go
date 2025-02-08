@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -19,14 +18,10 @@ type RoleMessage struct {
 	Name        string
 	Description string
 	Permissions map[string]bool
-
-	// Output only
-	CreatorID int
 }
 
 // UpdateRoleMessage is the message for updating roles.
 type UpdateRoleMessage struct {
-	UpdaterID  int
 	ResourceID string
 
 	Name        *string
@@ -50,11 +45,11 @@ func (s *Store) CheckRoleInUse(ctx context.Context, role string) (bool, error) {
 }
 
 // CreateRole creates a new role.
-func (s *Store) CreateRole(ctx context.Context, create *RoleMessage, creatorID int) (*RoleMessage, error) {
+func (s *Store) CreateRole(ctx context.Context, create *RoleMessage) (*RoleMessage, error) {
 	query := `
 		INSERT INTO
-			role (creator_id, updater_id, resource_id, name, description, permissions)
-		VALUES ($1, $2, $3, $4, $5, $6)
+			role (resource_id, name, description, permissions)
+		VALUES ($1, $2, $3, $4)
 	`
 	p := &storepb.RolePermissions{}
 	for k := range create.Permissions {
@@ -64,7 +59,7 @@ func (s *Store) CreateRole(ctx context.Context, create *RoleMessage, creatorID i
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.db.db.ExecContext(ctx, query, creatorID, creatorID, create.ResourceID, create.Name, create.Description, permissionBytes); err != nil {
+	if _, err := s.db.db.ExecContext(ctx, query, create.ResourceID, create.Name, create.Description, permissionBytes); err != nil {
 		return nil, err
 	}
 	s.rolesCache.Add(create.ResourceID, create)
@@ -78,7 +73,7 @@ func (s *Store) GetRole(ctx context.Context, resourceID string) (*RoleMessage, e
 	}
 	query := `
 		SELECT
-			creator_id, name, description, permissions
+			name, description, permissions
 		FROM role
 		WHERE resource_id = $1
 	`
@@ -86,7 +81,7 @@ func (s *Store) GetRole(ctx context.Context, resourceID string) (*RoleMessage, e
 		Permissions: map[string]bool{},
 	}
 	var permissions []byte
-	if err := s.db.db.QueryRowContext(ctx, query, resourceID).Scan(&role.CreatorID, &role.Name, &role.Description, &permissions); err != nil {
+	if err := s.db.db.QueryRowContext(ctx, query, resourceID).Scan(&role.Name, &role.Description, &permissions); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -108,7 +103,7 @@ func (s *Store) GetRole(ctx context.Context, resourceID string) (*RoleMessage, e
 func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 	query := `
 		SELECT
-			creator_id, resource_id, name, description, permissions
+			resource_id, name, description, permissions
 		FROM role
 	`
 	rows, err := s.db.db.QueryContext(ctx, query)
@@ -123,7 +118,7 @@ func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 			Permissions: map[string]bool{},
 		}
 		var permissionBytes []byte
-		if err := rows.Scan(&role.CreatorID, &role.ResourceID, &role.Name, &role.Description, &permissionBytes); err != nil {
+		if err := rows.Scan(&role.ResourceID, &role.Name, &role.Description, &permissionBytes); err != nil {
 			return nil, err
 		}
 		var rolePermissions storepb.RolePermissions
@@ -146,7 +141,7 @@ func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 
 // UpdateRole updates an existing role.
 func (s *Store) UpdateRole(ctx context.Context, patch *UpdateRoleMessage) (*RoleMessage, error) {
-	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{patch.UpdaterID, time.Now().Unix()}
+	set, args := []string{}, []any{}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
@@ -170,7 +165,7 @@ func (s *Store) UpdateRole(ctx context.Context, patch *UpdateRoleMessage) (*Role
 		UPDATE role
 		SET `+strings.Join(set, ", ")+`
 		WHERE resource_id = $%d
-		RETURNING creator_id, name, description, permissions
+		RETURNING name, description, permissions
 	`, len(args))
 
 	role := &RoleMessage{
@@ -178,7 +173,7 @@ func (s *Store) UpdateRole(ctx context.Context, patch *UpdateRoleMessage) (*Role
 		Permissions: map[string]bool{},
 	}
 	var permissionBytes []byte
-	if err := s.db.db.QueryRowContext(ctx, query, args...).Scan(&role.CreatorID, &role.Name, &role.Description, &permissionBytes); err != nil {
+	if err := s.db.db.QueryRowContext(ctx, query, args...).Scan(&role.Name, &role.Description, &permissionBytes); err != nil {
 		return nil, err
 	}
 	s.rolesCache.Remove(patch.ResourceID)

@@ -50,12 +50,7 @@ ALTER SEQUENCE setting_id_seq RESTART WITH 101;
 -- Role
 CREATE TABLE role (
     id BIGSERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    resource_id TEXT NOT NULL, -- user-defined id, such as projectDBA
+    resource_id TEXT NOT NULL,
     name TEXT NOT NULL,
     description TEXT NOT NULL,
     permissions JSONB NOT NULL DEFAULT '{}',

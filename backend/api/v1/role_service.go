@@ -84,10 +84,6 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureCustomRole); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
 
 	if predefinedRole := s.getBuildinRole(request.RoleId); predefinedRole != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "role %s is a built-in role", request.RoleId)
@@ -110,7 +106,7 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 	if ok := iam.PermissionsExist(request.Role.Permissions...); !ok {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid permissions")
 	}
-	roleMessage, err := s.store.CreateRole(ctx, create, principalID)
+	roleMessage, err := s.store.CreateRole(ctx, create)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create role: %v", err)
 	}
@@ -127,10 +123,6 @@ func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRe
 	}
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
-	}
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 	roleID, err := common.GetRoleID(request.Role.Name)
 	if err != nil {
@@ -153,7 +145,6 @@ func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRe
 		return nil, status.Errorf(codes.NotFound, "role not found: %s", roleID)
 	}
 	patch := &store.UpdateRoleMessage{
-		UpdaterID:  principalID,
 		ResourceID: roleID,
 	}
 	for _, path := range request.UpdateMask.Paths {
