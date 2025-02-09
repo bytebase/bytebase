@@ -492,7 +492,6 @@ ALTER SEQUENCE issue_comment_id_seq RESTART WITH 101;
 
 CREATE TABLE query_history (
     id BIGSERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id TEXT NOT NULL, -- the project resource id
@@ -509,11 +508,6 @@ ALTER SEQUENCE query_history_id_seq RESTART WITH 101;
 -- vcs table stores the version control provider config
 CREATE TABLE vcs (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     resource_id TEXT NOT NULL,
     name TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('GITLAB', 'GITHUB', 'BITBUCKET', 'AZURE_DEVOPS')),
@@ -528,11 +522,6 @@ ALTER SEQUENCE vcs_id_seq RESTART WITH 101;
 -- vcs_connector table stores vcs connectors for a project
 CREATE TABLE vcs_connector (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     vcs_id INTEGER NOT NULL REFERENCES vcs (id),
     project_id INTEGER NOT NULL REFERENCES project (id),
     resource_id TEXT NOT NULL,

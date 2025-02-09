@@ -68,11 +68,7 @@ func (s *VCSProviderService) CreateVCSProvider(ctx context.Context, request *v1p
 		return nil, err
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	storeVCSProvider, err := s.store.CreateVCSProvider(ctx, principalID, vcsProvider)
+	storeVCSProvider, err := s.store.CreateVCSProvider(ctx, vcsProvider)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to create vcs provider: %v", err)
 	}
@@ -108,11 +104,7 @@ func (s *VCSProviderService) UpdateVCSProvider(ctx context.Context, request *v1p
 		}
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	vcsProvider, err = s.store.UpdateVCSProvider(ctx, principalID, vcsProvider.ID, update)
+	vcsProvider, err = s.store.UpdateVCSProvider(ctx, vcsProvider.ID, update)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
