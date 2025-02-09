@@ -53,10 +53,6 @@ func (s *EnvironmentService) ListEnvironments(ctx context.Context, request *v1pb
 
 // CreateEnvironment creates an environment.
 func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1pb.CreateEnvironmentRequest) (*v1pb.Environment, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
 	if request.Environment == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "environment must be set")
 	}
@@ -93,7 +89,6 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1p
 
 	environment, err := s.store.CreateEnvironmentV2(ctx,
 		pendingCreate,
-		principalID,
 	)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

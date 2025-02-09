@@ -109,7 +109,7 @@ func (s *Store) ListEnvironmentV2(ctx context.Context, find *FindEnvironmentMess
 }
 
 // CreateEnvironmentV2 creates an environment.
-func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMessage, creatorID int) (*EnvironmentMessage, error) {
+func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMessage) (*EnvironmentMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -121,18 +121,14 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 			INSERT INTO environment (
 				resource_id,
 				name,
-				"order",
-				creator_id,
-				updater_id
+				"order"
 			)
-			VALUES ($1, $2, $3, $4, $5)
+			VALUES ($1, $2, $3)
 			RETURNING id
 		`,
 		create.ResourceID,
 		create.Title,
 		create.Order,
-		creatorID,
-		creatorID,
 	).Scan(
 		&uid,
 	); err != nil {
