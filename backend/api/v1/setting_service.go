@@ -627,7 +627,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 	setting, err := s.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
 		Name:  apiSettingName,
 		Value: storeSettingValue,
-	}, principalID)
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to set setting: %v", err)
 	}

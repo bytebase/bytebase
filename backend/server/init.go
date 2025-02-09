@@ -212,7 +212,7 @@ func (s *Server) getInitSetting(ctx context.Context) (string, error) {
 	if _, err := s.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
 		Name:  api.SettingWorkspaceProfile,
 		Value: string(bytes),
-	}, api.SystemBotID); err != nil {
+	}); err != nil {
 		return "", err
 	}
 

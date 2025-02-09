@@ -259,7 +259,7 @@ func (s *Store) ListSettingV2(ctx context.Context, find *FindSettingMessage) ([]
 }
 
 // UpsertSettingV2 upserts the setting by name.
-func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, principalUID int) (*SettingMessage, error) {
+func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage) (*SettingMessage, error) {
 	fields := []string{"name", "value"}
 	updateFields := []string{"value = EXCLUDED.value"}
 	valuePlaceholders, args := []string{"$1", "$2"}, []any{update.Name, update.Value}

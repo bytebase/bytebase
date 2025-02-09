@@ -180,7 +180,7 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 }
 
 // UpdateEnvironmentV2 updates an environment.
-func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, patch *UpdateEnvironmentMessage, updaterID int) (*EnvironmentMessage, error) {
+func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, patch *UpdateEnvironmentMessage) (*EnvironmentMessage, error) {
 	set, args := []string{}, []any{}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
