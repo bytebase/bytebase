@@ -155,7 +155,7 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 	if err != nil {
 		return nil, err
 	}
-	v1VCSConnector, err := convertStoreVCSConnector(ctx, vcsConnector)
+	v1VCSConnector, err := convertStoreVCSConnector(vcsConnector)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func (s *VCSConnectorService) GetVCSConnector(ctx context.Context, request *v1pb
 	if vcsConnector == nil {
 		return nil, status.Errorf(codes.NotFound, "vcs connector %q not found", vcsConnectorID)
 	}
-	v1VCSConnector, err := convertStoreVCSConnector(ctx, vcsConnector)
+	v1VCSConnector, err := convertStoreVCSConnector(vcsConnector)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func (s *VCSConnectorService) ListVCSConnectors(ctx context.Context, request *v1
 
 	resp := &v1pb.ListVCSConnectorsResponse{}
 	for _, vcsConnector := range vcsConnectors {
-		v1VCSConnector, err := convertStoreVCSConnector(ctx, vcsConnector)
+		v1VCSConnector, err := convertStoreVCSConnector(vcsConnector)
 		if err != nil {
 			return nil, err
 		}
@@ -303,7 +303,7 @@ func (s *VCSConnectorService) UpdateVCSConnector(ctx context.Context, request *v
 		return nil, err
 	}
 
-	v1VCSConnector, err := convertStoreVCSConnector(ctx, vcsConnector)
+	v1VCSConnector, err := convertStoreVCSConnector(vcsConnector)
 	if err != nil {
 		return nil, err
 	}
@@ -365,7 +365,7 @@ func (s *VCSConnectorService) DeleteVCSConnector(ctx context.Context, request *v
 	return &emptypb.Empty{}, nil
 }
 
-func convertStoreVCSConnector(ctx context.Context, vcsConnector *store.VCSConnectorMessage) (*v1pb.VCSConnector, error) {
+func convertStoreVCSConnector(vcsConnector *store.VCSConnectorMessage) (*v1pb.VCSConnector, error) {
 	v1VCSConnector := &v1pb.VCSConnector{
 		Name:          fmt.Sprintf("%s/%s%s", common.FormatProject(vcsConnector.ProjectID), common.VCSConnectorPrefix, vcsConnector.ResourceID),
 		Title:         vcsConnector.Payload.Title,
