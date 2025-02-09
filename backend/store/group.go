@@ -100,7 +100,7 @@ func (*Store) listGroupImpl(ctx context.Context, tx *Tx, find *FindGroupMessage)
 		payload
 	FROM user_group
 	WHERE %s
-	ORDER BY id
+	ORDER BY email
 	`, strings.Join(where, " AND ")), args...)
 	if err != nil {
 		return nil, err
