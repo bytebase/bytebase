@@ -291,7 +291,6 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	updateInstance := &store.UpdateInstanceMessage{
 		ResourceID: instance.ResourceID,
 		Metadata:   instanceMeta.Metadata,
-		UpdaterID:  api.SystemBotID,
 	}
 	if instanceMeta.Version != instance.EngineVersion {
 		updateInstance.EngineVersion = &instanceMeta.Version

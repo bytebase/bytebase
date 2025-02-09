@@ -128,10 +128,6 @@ ALTER SEQUENCE project_webhook_id_seq RESTART WITH 101;
 CREATE TABLE instance (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     environment TEXT REFERENCES environment (resource_id),
     name TEXT NOT NULL,
     engine TEXT NOT NULL,
@@ -147,23 +143,6 @@ CREATE TABLE instance (
 CREATE UNIQUE INDEX idx_instance_unique_resource_id ON instance(resource_id);
 
 ALTER SEQUENCE instance_id_seq RESTART WITH 101;
-
--- Instance user stores the users for a particular instance
-CREATE TABLE instance_user (
-    id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    instance_id INTEGER NOT NULL REFERENCES instance (id),
-    name TEXT NOT NULL,
-    "grant" TEXT NOT NULL
-);
-
-ALTER SEQUENCE instance_user_id_seq RESTART WITH 101;
-
-CREATE UNIQUE INDEX idx_instance_user_unique_instance_id_name ON instance_user(instance_id, name);
 
 -- db stores the databases for a particular instance
 -- data is synced periodically from the instance
@@ -217,11 +196,6 @@ ALTER SEQUENCE db_schema_id_seq RESTART WITH 101;
 -- data_source table stores the data source for a particular database
 CREATE TABLE data_source (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     name TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('ADMIN', 'RW', 'RO')),

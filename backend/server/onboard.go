@@ -55,7 +55,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		},
 		EnvironmentID: api.DefaultTestEnvironmentID,
 		Activation:    false,
-	}, userID, -1)
+	}, -1)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create test onboarding instance")
 	}
@@ -114,7 +114,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		},
 		EnvironmentID: api.DefaultProdEnvironmentID,
 		Activation:    false,
-	}, userID, -1)
+	}, -1)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create prod onboarding instance")
 	}
