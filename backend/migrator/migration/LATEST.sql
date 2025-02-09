@@ -611,11 +611,6 @@ ALTER SEQUENCE external_approval_id_seq RESTART WITH 101;
 -- risk stores the definition of a risk.
 CREATE TABLE risk (
     id BIGSERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     source TEXT NOT NULL CHECK (source LIKE 'bb.risk.%'),
     -- how risky is the risk, the higher the riskier
     level BIGINT NOT NULL,

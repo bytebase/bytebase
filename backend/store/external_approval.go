@@ -58,6 +58,8 @@ func (s *Store) CreateExternalApprovalV2(ctx context.Context, create *ExternalAp
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
+	defer tx.Rollback()
+
 	var externalApproval ExternalApprovalMessage
 	if err := tx.QueryRowContext(ctx, query,
 		create.IssueUID,
@@ -74,6 +76,7 @@ func (s *Store) CreateExternalApprovalV2(ctx context.Context, create *ExternalAp
 	); err != nil {
 		return nil, err
 	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
@@ -105,6 +108,7 @@ func (s *Store) GetExternalApprovalByIssueIDV2(ctx context.Context, issueID int)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
+	defer tx.Rollback()
 
 	externalApprovals, err := s.findExternalApprovalImplV2(ctx, tx, &ListExternalApprovalMessage{IssueUID: &issueID})
 	if err != nil {
@@ -129,6 +133,7 @@ func (s *Store) DeleteExternalApprovalV2(ctx context.Context, id int) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin transaction")
 	}
+	defer tx.Rollback()
 
 	if _, err := tx.ExecContext(ctx, `DELETE FROM external_approval WHERE id = $1`, id); err != nil {
 		return err
