@@ -169,7 +169,7 @@ func (s *VCSProviderService) ListVCSConnectorsInProvider(ctx context.Context, re
 
 	resp := &v1pb.ListVCSConnectorsInProviderResponse{}
 	for _, vcsConnector := range vcsConnectors {
-		v1VCSConnector, err := convertStoreVCSConnector(ctx, s.store, vcsConnector)
+		v1VCSConnector, err := convertStoreVCSConnector(ctx, vcsConnector)
 		if err != nil {
 			return nil, err
 		}
