@@ -604,7 +604,7 @@ CREATE TABLE external_approval (
     payload JSONB NOT NULL
 );
 
-CREATE INDEX idx_external_approval_row_status_issue_id ON external_approval(row_status, issue_id);
+CREATE INDEX idx_external_approval_issue_id ON external_approval(issue_id);
 
 ALTER SEQUENCE external_approval_id_seq RESTART WITH 101;
 

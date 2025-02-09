@@ -26,3 +26,5 @@ DROP TABLE IF EXISTS sql_lint_config;
 ALTER TABLE user_group DROP COLUMN IF EXISTS creator_id, DROP COLUMN IF EXISTS created_ts, DROP COLUMN IF EXISTS updater_id, DROP COLUMN IF EXISTS updated_ts;
 ALTER TABLE review_config DROP COLUMN IF EXISTS creator_id, DROP COLUMN IF EXISTS created_ts, DROP COLUMN IF EXISTS updater_id, DROP COLUMN IF EXISTS updated_ts;
 ALTER TABLE sync_history DROP COLUMN IF EXISTS creator_id;
+DROP INDEX IF EXISTS idx_external_approval_row_status_issue_id;
+CREATE INDEX idx_external_approval_issue_id ON external_approval(issue_id);
