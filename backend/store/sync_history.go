@@ -67,7 +67,7 @@ func (s *Store) CreateSyncHistory(ctx context.Context, databaseID int, metadata 
 			metadata,
 			raw_dump
 		)
-		VALUES ($1, $2, $3, $4)
+		VALUES ($1, $2, $3)
 		RETURNING id
 	`
 	tx, err := s.db.BeginTx(ctx, nil)
