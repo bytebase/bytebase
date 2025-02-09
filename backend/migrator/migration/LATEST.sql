@@ -309,11 +309,8 @@ ALTER SEQUENCE task_id_seq RESTART WITH 101;
 -- from_task_id blocks to_task_id
 CREATE TABLE task_dag (
     id SERIAL PRIMARY KEY,
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     from_task_id INTEGER NOT NULL REFERENCES task (id),
-    to_task_id INTEGER NOT NULL REFERENCES task (id),
-    payload JSONB NOT NULL DEFAULT '{}'
+    to_task_id INTEGER NOT NULL REFERENCES task (id)
 );
 
 CREATE INDEX idx_task_dag_from_task_id ON task_dag(from_task_id);
