@@ -597,9 +597,6 @@ CREATE INDEX idx_worksheet_organizer_principal_id ON worksheet_organizer(princip
 -- external_approval stores approval instances of third party applications.
 CREATE TABLE external_approval ( 
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     issue_id INTEGER NOT NULL REFERENCES issue (id),
     requester_id INTEGER NOT NULL REFERENCES principal (id),
     approver_id INTEGER NOT NULL REFERENCES principal (id),

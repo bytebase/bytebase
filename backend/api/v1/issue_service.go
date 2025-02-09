@@ -1572,10 +1572,7 @@ func (s *IssueService) updateExternalApprovalWithStatus(ctx context.Context, iss
 		}
 	}
 
-	if _, err := s.store.UpdateExternalApprovalV2(ctx, &store.UpdateExternalApprovalMessage{
-		ID:        approval.ID,
-		RowStatus: api.Archived,
-	}); err != nil {
+	if err := s.store.DeleteExternalApprovalV2(ctx, approval.ID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update external approval, error: %v", err)
 	}
 

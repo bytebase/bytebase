@@ -33,16 +33,6 @@ type ExternalApprovalMessage struct {
 	ID int
 }
 
-// UpdateExternalApprovalMessage is the message for updating an external approval.
-type UpdateExternalApprovalMessage struct {
-	// ID is the unique identifier of the external approval.
-	ID int
-	// RowStatus is the row status of the external approval.
-	RowStatus api.RowStatus
-	// Payload is the external approval payload.
-	Payload *string
-}
-
 // ListExternalApprovalMessage is the message for listing external approvals.
 type ListExternalApprovalMessage struct {
 	// IssueUID is the unique identifier of the issue.
@@ -133,40 +123,21 @@ func (s *Store) GetExternalApprovalByIssueIDV2(ctx context.Context, issueID int)
 	return externalApprovals[0], nil
 }
 
-// UpdateExternalApprovalV2 updates an ExternalApproval.
-func (s *Store) UpdateExternalApprovalV2(ctx context.Context, update *UpdateExternalApprovalMessage) (*ExternalApprovalMessage, error) {
-	set, args := []string{"row_status = $1"}, []any{update.RowStatus}
-	if v := update.Payload; v != nil {
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
-	}
-	args = append(args, update.ID)
-
+// DeleteExternalApprovalV2 updates an ExternalApproval.
+func (s *Store) DeleteExternalApprovalV2(ctx context.Context, id int) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin transaction")
+		return errors.Wrapf(err, "failed to begin transaction")
 	}
 
-	var externalApproval ExternalApprovalMessage
-	query := fmt.Sprintf(`
-    UPDATE external_approval
-    SET `+strings.Join(set, ", ")+` 
-    WHERE id = $%d
-    RETURNING id, issue_id, approver_id, type, payload
-  `, len(args))
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(
-		&externalApproval.ID,
-		&externalApproval.IssueUID,
-		&externalApproval.ApproverUID,
-		&externalApproval.Type,
-		&externalApproval.Payload,
-	); err != nil {
-		return nil, err
+	if _, err := tx.ExecContext(ctx, `DELETE FROM external_approval WHERE id = $1`, id); err != nil {
+		return err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
+		return errors.Wrapf(err, "failed to commit transaction")
 	}
-	return &externalApproval, nil
+	return nil
 }
 
 func (*Store) findExternalApprovalImplV2(ctx context.Context, tx *Tx, find *ListExternalApprovalMessage) ([]*ExternalApprovalMessage, error) {
