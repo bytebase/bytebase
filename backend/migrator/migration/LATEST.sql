@@ -459,30 +459,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_instance_change_history_unique_version ON 
 
 ALTER SEQUENCE instance_change_history_id_seq RESTART WITH 101;
 
--- activity table stores the activity for the container such as issue
-CREATE TABLE activity (
-    id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    resource_container TEXT NOT NULL DEFAULT '',
-    container_id INTEGER NOT NULL CHECK (container_id > 0),
-    type TEXT NOT NULL CHECK (type LIKE 'bb.%'),
-    level TEXT NOT NULL CHECK (level IN ('INFO', 'WARN', 'ERROR')),
-    comment TEXT NOT NULL DEFAULT '',
-    payload JSONB NOT NULL DEFAULT '{}'
-);
-
-CREATE INDEX idx_activity_resource_container ON activity(resource_container);
-
-CREATE INDEX idx_activity_container_id ON activity(container_id);
-
-CREATE INDEX idx_activity_created_ts ON activity(created_ts);
-
-ALTER SEQUENCE activity_id_seq RESTART WITH 101;
-
 CREATE TABLE audit_log (
     id BIGSERIAL PRIMARY KEY,
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
