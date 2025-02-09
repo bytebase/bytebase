@@ -417,11 +417,6 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	creatorUID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "cannot get principal ID from context")
-	}
-
 	if err := s.validateIAMPolicy(ctx, request.Policy); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -465,7 +460,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		InheritFromParent: false,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
-	}, creatorUID); err != nil {
+	}); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 

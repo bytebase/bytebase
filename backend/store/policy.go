@@ -36,9 +36,8 @@ func (s *Store) GetWorkspaceIamPolicy(ctx context.Context) (*IamPolicyMessage, e
 }
 
 type PatchIamPolicyMessage struct {
-	Member     string
-	Roles      []string
-	UpdaterUID int
+	Member string
+	Roles  []string
 }
 
 // PatchWorkspaceIamPolicy will set or remove the member for the workspace role.
@@ -89,7 +88,7 @@ func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPoli
 		InheritFromParent: false,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
-	}, patch.UpdaterUID); err != nil {
+	}); err != nil {
 		return nil, err
 	}
 
@@ -349,7 +348,6 @@ type FindPolicyMessage struct {
 
 // UpdatePolicyMessage is the message for updating a policy.
 type UpdatePolicyMessage struct {
-	UpdaterID         int
 	ResourceType      api.PolicyResourceType
 	ResourceUID       int
 	Type              api.PolicyType
@@ -424,14 +422,14 @@ func (s *Store) ListPoliciesV2(ctx context.Context, find *FindPolicyMessage) ([]
 }
 
 // CreatePolicyV2 creates a policy.
-func (s *Store) CreatePolicyV2(ctx context.Context, create *PolicyMessage, creatorID int) (*PolicyMessage, error) {
+func (s *Store) CreatePolicyV2(ctx context.Context, create *PolicyMessage) (*PolicyMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	policy, err := upsertPolicyV2Impl(ctx, tx, create, creatorID)
+	policy, err := upsertPolicyV2Impl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -447,7 +445,7 @@ func (s *Store) CreatePolicyV2(ctx context.Context, create *PolicyMessage, creat
 
 // UpdatePolicyV2 updates the policy.
 func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) (*PolicyMessage, error) {
-	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{patch.UpdaterID, time.Now().Unix()}
+	set, args := []string{"updated_ts = $1"}, []any{time.Now()}
 	if v := patch.InheritFromParent; v != nil {
 		set, args = append(set, fmt.Sprintf("inherit_from_parent = $%d", len(args)+1)), append(args, *v)
 	}
@@ -475,7 +473,6 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 		Type:         patch.Type,
 	}
 	var rowStatus string
-	var updatedTs int64
 
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			UPDATE policy
@@ -492,7 +489,7 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 		&policy.Payload,
 		&policy.InheritFromParent,
 		&rowStatus,
-		&updatedTs,
+		&policy.UpdatedTime,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -502,7 +499,6 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 	if rowStatus == string(api.Normal) {
 		policy.Enforce = true
 	}
-	policy.UpdatedTime = time.Unix(updatedTs, 0)
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -538,9 +534,8 @@ func (s *Store) DeletePolicyV2(ctx context.Context, policy *PolicyMessage) error
 	return nil
 }
 
-func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage, creatorID int) (*PolicyMessage, error) {
+func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage) (*PolicyMessage, error) {
 	var uid int
-	var updatedTs int64
 
 	rowStatus := api.Normal
 	if !create.Enforce {
@@ -548,8 +543,6 @@ func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage, crea
 	}
 	if err := tx.QueryRowContext(ctx, `
 			INSERT INTO policy (
-				creator_id,
-				updater_id,
 				resource_type,
 				resource_id,
 				inherit_from_parent,
@@ -557,19 +550,15 @@ func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage, crea
 				payload,
 				row_status
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			VALUES ($1, $2, $3, $4, $5, $6)
 			ON CONFLICT(resource_type, resource_id, type) DO UPDATE SET
 				inherit_from_parent = EXCLUDED.inherit_from_parent,
 				payload = EXCLUDED.payload,
-				updated_ts = extract(epoch from now()),
-				row_status = EXCLUDED.row_status,
-				updater_id = EXCLUDED.updater_id
+				row_status = EXCLUDED.row_status
 			RETURNING
 				id,
 				updated_ts
 		`,
-		creatorID,
-		creatorID,
 		create.ResourceType,
 		create.ResourceUID,
 		create.InheritFromParent,
@@ -578,12 +567,11 @@ func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage, crea
 		rowStatus,
 	).Scan(
 		&uid,
-		&updatedTs,
+		&create.UpdatedTime,
 	); err != nil {
 		return nil, err
 	}
 	create.UID = uid
-	create.UpdatedTime = time.Unix(updatedTs, 0)
 	return create, nil
 }
 
@@ -625,11 +613,10 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 	for rows.Next() {
 		var policyMessage PolicyMessage
 		var rowStatus api.RowStatus
-		var updatedTs int64
 
 		if err := rows.Scan(
 			&policyMessage.UID,
-			&updatedTs,
+			&policyMessage.UpdatedTime,
 			&policyMessage.ResourceType,
 			&policyMessage.ResourceUID,
 			&policyMessage.InheritFromParent,
@@ -642,7 +629,6 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 		if rowStatus == api.Normal {
 			policyMessage.Enforce = true
 		}
-		policyMessage.UpdatedTime = time.Unix(updatedTs, 0)
 		policyList = append(policyList, &policyMessage)
 	}
 	if err := rows.Err(); err != nil {

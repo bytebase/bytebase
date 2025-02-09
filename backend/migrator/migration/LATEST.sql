@@ -63,10 +63,6 @@ ALTER SEQUENCE role_id_seq RESTART WITH 101;
 CREATE TABLE environment (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
     "order" INTEGER NOT NULL CHECK ("order" >= 0),
     resource_id TEXT NOT NULL
@@ -84,10 +80,7 @@ CREATE TYPE resource_type AS ENUM ('WORKSPACE', 'ENVIRONMENT', 'PROJECT', 'INSTA
 CREATE TABLE policy (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    updated_ts TIMESTAMPTZ NOT NULL DEFAULT now(),
     type TEXT NOT NULL CHECK (type LIKE 'bb.policy.%'),
     payload JSONB NOT NULL DEFAULT '{}',
     resource_type resource_type NOT NULL,

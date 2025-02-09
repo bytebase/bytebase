@@ -7,7 +7,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
@@ -61,14 +60,8 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, request *v1pb.SetIa
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to marshal iam policy with error: %v", err.Error())
 	}
-
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
 	payloadStr := string(payloadBytes)
 	patch := &store.UpdatePolicyMessage{
-		UpdaterID:    principalID,
 		ResourceType: api.PolicyResourceTypeWorkspace,
 		Type:         api.PolicyTypeIAM,
 		Payload:      &payloadStr,

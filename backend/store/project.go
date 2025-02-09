@@ -199,7 +199,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		InheritFromParent: false,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
-	}, creatorID); err != nil {
+	}); err != nil {
 		return nil, err
 	}
 

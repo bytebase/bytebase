@@ -222,7 +222,6 @@ func (s *Server) getInitSetting(ctx context.Context) (string, error) {
 		Roles: []string{
 			common.FormatRole(api.WorkspaceAdmin.String()),
 		},
-		UpdaterUID: api.SystemBotID,
 	}); err != nil {
 		return "", err
 	}
@@ -231,7 +230,6 @@ func (s *Server) getInitSetting(ctx context.Context) (string, error) {
 		Roles: []string{
 			common.FormatRole(api.WorkspaceMember.String()),
 		},
-		UpdaterUID: api.SystemBotID,
 	}); err != nil {
 		return "", err
 	}

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -261,9 +260,9 @@ func (s *Store) ListSettingV2(ctx context.Context, find *FindSettingMessage) ([]
 
 // UpsertSettingV2 upserts the setting by name.
 func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage, principalUID int) (*SettingMessage, error) {
-	fields := []string{"creator_id", "updater_id", "updated_ts", "name", "value"}
-	updateFields := []string{"value = EXCLUDED.value", "updater_id = EXCLUDED.updater_id", "updated_ts = EXCLUDED.updated_ts"}
-	valuePlaceholders, args := []string{"$1", "$2", "$3", "$4", "$5"}, []any{principalUID, principalUID, time.Now().Unix(), update.Name, update.Value}
+	fields := []string{"name", "value"}
+	updateFields := []string{"value = EXCLUDED.value"}
+	valuePlaceholders, args := []string{"$1", "$2"}, []any{update.Name, update.Value}
 
 	query := `INSERT INTO setting (` + strings.Join(fields, ", ") + `) 
 		VALUES (` + strings.Join(valuePlaceholders, ", ") + `) 
@@ -317,7 +316,7 @@ func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMe
 		return settings[0], false, nil
 	}
 
-	fields := []string{"creator_id", "updater_id", "name", "value", "description"}
+	fields := []string{"name", "value"}
 	valuesPlaceholders, args := []string{"$1", "$2"}, []any{create.Name, create.Value}
 
 	query := `INSERT INTO setting (` + strings.Join(fields, ",") + `)

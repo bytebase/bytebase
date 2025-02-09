@@ -186,7 +186,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		InheritFromParent: true,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
-	}, userID)
+	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create onboarding environment tag policy")
 	}

@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -158,7 +157,7 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 		InheritFromParent: true,
 		Payload:           string(payload),
 		Enforce:           true,
-	}, creatorID); err != nil {
+	}); err != nil {
 		return nil, err
 	}
 
@@ -182,7 +181,7 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 
 // UpdateEnvironmentV2 updates an environment.
 func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, patch *UpdateEnvironmentMessage, updaterID int) (*EnvironmentMessage, error) {
-	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{updaterID, time.Now().Unix()}
+	set, args := []string{}, []any{}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
@@ -262,7 +261,7 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 			InheritFromParent: true,
 			Payload:           string(payload),
 			Enforce:           true,
-		}, updaterID); err != nil {
+		}); err != nil {
 			return nil, err
 		}
 	}
