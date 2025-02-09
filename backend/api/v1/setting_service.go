@@ -620,10 +620,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 	default:
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	}
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
 	setting, err := s.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
 		Name:  apiSettingName,
 		Value: storeSettingValue,
@@ -646,7 +642,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		}
 		for _, project := range projects {
 			patch := &store.UpdateProjectMessage{
-				UpdaterID:                  principalID,
 				ResourceID:                 project.ResourceID,
 				DataClassificationConfigID: &classificationID,
 			}

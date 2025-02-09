@@ -166,12 +166,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.InvalidArgument, "default project cannot be updated")
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
 	patch := &store.UpdateProjectMessage{
-		UpdaterID:  principalID,
 		ResourceID: project.ResourceID,
 	}
 
@@ -310,12 +305,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 		}
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
 	if _, err := s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
-		UpdaterID:  principalID,
 		ResourceID: project.ResourceID,
 		Delete:     &deletePatch,
 	}); err != nil {
@@ -335,12 +325,7 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 		return nil, status.Errorf(codes.InvalidArgument, "project %q is active", request.Name)
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
 	project, err = s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
-		UpdaterID:  principalID,
 		ResourceID: project.ResourceID,
 		Delete:     &undeletePatch,
 	})
