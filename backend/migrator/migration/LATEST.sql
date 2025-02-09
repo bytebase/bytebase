@@ -683,14 +683,9 @@ CREATE TABLE user_group (
 );
 
 -- review config table.
-CREATE TABLE review_config
-(
+CREATE TABLE review_config (
     id TEXT NOT NULL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
     payload JSONB NOT NULL DEFAULT '{}'
 );
@@ -714,7 +709,6 @@ CREATE INDEX IF NOT EXISTS idx_revision_database_id_version ON revision (databas
 
 CREATE TABLE sync_history (
     id BIGSERIAL PRIMARY KEY,
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts TIMESTAMPTZ NOT NULL DEFAULT now(),
     database_id INTEGER NOT NULL REFERENCES db (id),
     metadata JSON NOT NULL DEFAULT '{}',

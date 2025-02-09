@@ -18,7 +18,6 @@ type SyncHistory struct {
 	Schema      string
 	Metadata    *storepb.DatabaseSchemaMetadata
 
-	CreatorUID int
 	CreateTime time.Time
 }
 
@@ -26,7 +25,6 @@ func (s *Store) GetSyncHistoryByUID(ctx context.Context, uid int64) (*SyncHistor
 	query := `
 		SELECT
 			id,
-			creator_id,
 			created_ts,
 			database_id,
 			metadata,
@@ -41,7 +39,6 @@ func (s *Store) GetSyncHistoryByUID(ctx context.Context, uid int64) (*SyncHistor
 	var m []byte
 	if err := s.db.db.QueryRowContext(ctx, query, uid).Scan(
 		&h.UID,
-		&h.CreatorUID,
 		&h.CreateTime,
 		&h.DatabaseUID,
 		&m,
@@ -58,7 +55,7 @@ func (s *Store) GetSyncHistoryByUID(ctx context.Context, uid int64) (*SyncHistor
 }
 
 // UpsertDBSchema upserts a database schema.
-func (s *Store) CreateSyncHistory(ctx context.Context, databaseID int, metadata *storepb.DatabaseSchemaMetadata, schema string, updaterID int) (int64, error) {
+func (s *Store) CreateSyncHistory(ctx context.Context, databaseID int, metadata *storepb.DatabaseSchemaMetadata, schema string) (int64, error) {
 	metadataBytes, err := protojson.Marshal(metadata)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to marshal")
@@ -66,7 +63,6 @@ func (s *Store) CreateSyncHistory(ctx context.Context, databaseID int, metadata 
 
 	query := `
 		INSERT INTO sync_history (
-			creator_id,
 			database_id,
 			metadata,
 			raw_dump
@@ -82,7 +78,6 @@ func (s *Store) CreateSyncHistory(ctx context.Context, databaseID int, metadata 
 
 	var id int64
 	if err := tx.QueryRowContext(ctx, query,
-		updaterID,
 		databaseID,
 		metadataBytes,
 		schema,
