@@ -22,7 +22,6 @@ type IssueCommentMessage struct {
 	Creator   *UserMessage
 
 	creatorUID int
-	updaterUID int
 }
 
 type FindIssueCommentMessage struct {
@@ -34,8 +33,7 @@ type FindIssueCommentMessage struct {
 }
 
 type UpdateIssueCommentMessage struct {
-	UID       int
-	UpdaterID int
+	UID int
 
 	Comment *string
 }
@@ -79,7 +77,6 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 			id,
 			creator_id,
 			created_ts,
-			updater_id,
 			updated_ts,
 			issue_id,
 			payload
@@ -104,7 +101,6 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 			&ic.UID,
 			&ic.creatorUID,
 			&ic.CreatedTs,
-			&ic.updaterUID,
 			&ic.UpdatedTs,
 			&ic.IssueUID,
 			&p,
@@ -154,14 +150,12 @@ func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMess
 	query := `
 		INSERT INTO issue_comment (
 			creator_id,
-			updater_id,
 			issue_id,
 			payload
 		) VALUES (
 			$1,
 			$2,
-			$3,
-			$4
+			$3
 		) RETURNING id, created_ts, updated_ts
 	`
 
@@ -172,7 +166,7 @@ func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMess
 
 	var id int
 	var createdTs, updatedTs int64
-	if err := s.db.db.QueryRowContext(ctx, query, creatorUID, creatorUID, create.IssueUID, payload).Scan(&id, &createdTs, &updatedTs); err != nil {
+	if err := s.db.db.QueryRowContext(ctx, query, creatorUID, create.IssueUID, payload).Scan(&id, &createdTs, &updatedTs); err != nil {
 		return nil, errors.Wrapf(err, "failed to insert")
 	}
 
@@ -183,7 +177,6 @@ func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMess
 		IssueUID:   create.IssueUID,
 		Payload:    create.Payload,
 		creatorUID: creatorUID,
-		updaterUID: creatorUID,
 	}
 
 	creator, err := s.GetUserByID(ctx, ic.creatorUID)
@@ -196,7 +189,7 @@ func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMess
 }
 
 func (s *Store) UpdateIssueComment(ctx context.Context, patch *UpdateIssueCommentMessage) error {
-	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{patch.UpdaterID, time.Now().Unix()}
+	set, args := []string{"updated_ts = $2"}, []any{time.Now().Unix()}
 
 	if v := patch.Comment; v != nil {
 		set, args = append(set, fmt.Sprintf("payload = payload || jsonb_build_object('comment',$%d::TEXT)", len(args)+1)), append(args, *v)

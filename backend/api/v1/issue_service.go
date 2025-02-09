@@ -1516,13 +1516,8 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 		return nil, status.Errorf(codes.NotFound, "issue comment not found")
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
-	}
 	update := &store.UpdateIssueCommentMessage{
-		UID:       issueCommentUID,
-		UpdaterID: user.ID,
+		UID: issueCommentUID,
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
