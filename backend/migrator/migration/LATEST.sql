@@ -754,12 +754,12 @@ INSERT INTO principal (id, creator_id, updater_id, type, name, email, password_h
 ALTER SEQUENCE principal_id_seq RESTART WITH 101;
 
 -- Default project.
-INSERT INTO project (id, creator_id, updater_id, name, key, resource_id) VALUES (1, 1, 1, 'Default', 'DEFAULT', 'default');
+INSERT INTO project (id, name, key, resource_id) VALUES (1, 'Default', 'DEFAULT', 'default');
 
 ALTER SEQUENCE project_id_seq RESTART WITH 101;
 
 -- Create "test" and "prod" environments
-INSERT INTO environment (id, creator_id, updater_id, name, "order", resource_id) VALUES (101, 1, 1, 'Test', 0, 'test');
-INSERT INTO environment (id, creator_id, updater_id, name, "order", resource_id) VALUES (102, 1, 1, 'Prod', 1, 'prod');
+INSERT INTO environment (id, name, "order", resource_id) VALUES (101, 'Test', 0, 'test');
+INSERT INTO environment (id, name, "order", resource_id) VALUES (102, 'Prod', 1, 'prod');
 
 ALTER SEQUENCE environment_id_seq RESTART WITH 103;
