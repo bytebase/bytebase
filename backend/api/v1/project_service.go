@@ -667,11 +667,7 @@ func (s *ProjectService) AddWebhook(ctx context.Context, request *v1pb.AddWebhoo
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	if _, err := s.store.CreateProjectWebhookV2(ctx, principalID, project.UID, project.ResourceID, create); err != nil {
+	if _, err := s.store.CreateProjectWebhookV2(ctx, project.UID, project.ResourceID, create); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -746,11 +742,7 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.Update
 		}
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	if _, err := s.store.UpdateProjectWebhookV2(ctx, principalID, project.ResourceID, webhook.ID, update); err != nil {
+	if _, err := s.store.UpdateProjectWebhookV2(ctx, project.ResourceID, webhook.ID, update); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
