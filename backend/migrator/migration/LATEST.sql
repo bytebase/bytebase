@@ -624,12 +624,6 @@ ALTER SEQUENCE risk_id_seq RESTART WITH 101;
 -- slow_query stores slow query statistics for each database.
 CREATE TABLE slow_query (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    -- updated_ts is used to identify the latest timestamp for syncing slow query logs.
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     -- In MySQL, users can query without specifying a database. In this case, instance_id is used to identify the instance.
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     -- In MySQL, users can query without specifying a database. In this case, database_id is NULL.
@@ -649,11 +643,6 @@ ALTER SEQUENCE slow_query_id_seq RESTART WITH 101;
 
 CREATE TABLE db_group (
     id BIGSERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
     resource_id TEXT NOT NULL,
     placeholder TEXT NOT NULL DEFAULT '',
@@ -670,11 +659,6 @@ ALTER SEQUENCE db_group_id_seq RESTART WITH 101;
 -- changelist table stores project changelists.
 CREATE TABLE changelist (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
     name TEXT NOT NULL,
     payload JSONB NOT NULL DEFAULT '{}'
