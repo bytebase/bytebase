@@ -537,10 +537,6 @@ ALTER SEQUENCE vcs_connector_id_seq RESTART WITH 101;
 -- For now, anomaly can be associated with a particular instance or database.
 CREATE TABLE anomaly (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project TEXT NOT NULL,
     instance_id INTEGER NOT NULL REFERENCES instance (id),

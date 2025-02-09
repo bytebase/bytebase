@@ -600,7 +600,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 			}
 			latestSchema := string(rawDump)
 			if changelog.Schema != latestSchema {
-				if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
+				if _, err = s.store.UpsertActiveAnomalyV2(ctx, &store.AnomalyMessage{
 					ProjectID:   database.ProjectID,
 					InstanceUID: instance.UID,
 					DatabaseUID: database.UID,
@@ -668,7 +668,7 @@ func (s *Syncer) hasBackupSchema(ctx context.Context, instance *store.InstanceMe
 
 func (s *Syncer) upsertDatabaseConnectionAnomaly(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, connErr error) {
 	if connErr != nil {
-		if _, err := s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
+		if _, err := s.store.UpsertActiveAnomalyV2(ctx, &store.AnomalyMessage{
 			ProjectID:   database.ProjectID,
 			InstanceUID: instance.UID,
 			DatabaseUID: database.UID,
