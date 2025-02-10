@@ -131,6 +131,7 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 	if err != nil {
 		return err
 	}
+	defer conn.Close()
 	if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET ROLE '%s'", owner)); err != nil {
 		return err
 	}
