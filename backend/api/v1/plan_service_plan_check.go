@@ -217,11 +217,9 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 
 	var planCheckRuns []*store.PlanCheckRunMessage
 	planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
-		CreatorUID: api.SystemBotID,
-		UpdaterUID: api.SystemBotID,
-		PlanUID:    plan.UID,
-		Status:     store.PlanCheckRunStatusRunning,
-		Type:       store.PlanCheckDatabaseConnect,
+		PlanUID: plan.UID,
+		Status:  store.PlanCheckRunStatusRunning,
+		Type:    store.PlanCheckDatabaseConnect,
 		Config: &storepb.PlanCheckRunConfig{
 			SheetUid:           int32(sheetUID),
 			ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
@@ -241,11 +239,9 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		}
 	}
 	planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
-		CreatorUID: api.SystemBotID,
-		UpdaterUID: api.SystemBotID,
-		PlanUID:    plan.UID,
-		Status:     store.PlanCheckRunStatusRunning,
-		Type:       store.PlanCheckDatabaseStatementAdvise,
+		PlanUID: plan.UID,
+		Status:  store.PlanCheckRunStatusRunning,
+		Type:    store.PlanCheckDatabaseStatementAdvise,
 		Config: &storepb.PlanCheckRunConfig{
 			SheetUid:              int32(sheetUID),
 			ChangeDatabaseType:    convertToChangeDatabaseType(config.Type),
@@ -255,11 +251,9 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		},
 	})
 	planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
-		CreatorUID: api.SystemBotID,
-		UpdaterUID: api.SystemBotID,
-		PlanUID:    plan.UID,
-		Status:     store.PlanCheckRunStatusRunning,
-		Type:       store.PlanCheckDatabaseStatementSummaryReport,
+		PlanUID: plan.UID,
+		Status:  store.PlanCheckRunStatusRunning,
+		Type:    store.PlanCheckDatabaseStatementSummaryReport,
 		Config: &storepb.PlanCheckRunConfig{
 			SheetUid:           int32(sheetUID),
 			ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
@@ -269,11 +263,9 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 	})
 	if config.Type == storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST {
 		planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
-			CreatorUID: api.SystemBotID,
-			UpdaterUID: api.SystemBotID,
-			PlanUID:    plan.UID,
-			Status:     store.PlanCheckRunStatusRunning,
-			Type:       store.PlanCheckDatabaseGhostSync,
+			PlanUID: plan.UID,
+			Status:  store.PlanCheckRunStatusRunning,
+			Type:    store.PlanCheckDatabaseGhostSync,
 			Config: &storepb.PlanCheckRunConfig{
 				SheetUid:           int32(sheetUID),
 				ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
@@ -339,11 +331,9 @@ func getPlanCheckRunsFromExportDataConfigForDatabase(ctx context.Context, s *sto
 	planCheckRuns := []*store.PlanCheckRunMessage{}
 	for _, planCheckRunType := range planCheckRunTypes {
 		planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
-			CreatorUID: api.SystemBotID,
-			UpdaterUID: api.SystemBotID,
-			PlanUID:    plan.UID,
-			Status:     store.PlanCheckRunStatusRunning,
-			Type:       planCheckRunType,
+			PlanUID: plan.UID,
+			Status:  store.PlanCheckRunStatusRunning,
+			Type:    planCheckRunType,
 			Config: &storepb.PlanCheckRunConfig{
 				SheetUid:           int32(sheetUID),
 				ChangeDatabaseType: storepb.PlanCheckRunConfig_DML,

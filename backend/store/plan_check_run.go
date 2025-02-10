@@ -47,11 +47,9 @@ const (
 
 // PlanCheckRunMessage is the message for a plan check run.
 type PlanCheckRunMessage struct {
-	UID        int
-	CreatorUID int
-	CreatedTs  int64
-	UpdaterUID int
-	UpdatedTs  int64
+	UID       int
+	CreatedTs int64
+	UpdatedTs int64
 
 	PlanUID int64
 
@@ -100,8 +98,6 @@ func (s *Store) CreatePlanCheckRuns(ctx context.Context, creates ...*PlanCheckRu
 			return errors.Wrapf(err, "failed to marshal create result %v", create.Result)
 		}
 		values = append(values,
-			create.CreatorUID,
-			create.UpdaterUID,
 			create.PlanUID,
 			create.Status,
 			create.Type,
@@ -113,7 +109,7 @@ func (s *Store) CreatePlanCheckRuns(ctx context.Context, creates ...*PlanCheckRu
 				return err
 			}
 		}
-		count := 7
+		count := 5
 		if _, err := query.WriteString(getPlaceholders(i*count+1, count)); err != nil {
 			return err
 		}
@@ -153,9 +149,7 @@ func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMes
 SELECT
 	%s
 	plan_check_run.id,
-	plan_check_run.creator_id,
 	plan_check_run.created_ts,
-	plan_check_run.updater_id,
 	plan_check_run.updated_ts,
 	plan_check_run.plan_id,
 	plan_check_run.status,
@@ -180,9 +174,7 @@ WHERE %s
 		var config, result string
 		if err := rows.Scan(
 			&planCheckRun.UID,
-			&planCheckRun.CreatorUID,
 			&planCheckRun.CreatedTs,
-			&planCheckRun.UpdaterUID,
 			&planCheckRun.UpdatedTs,
 			&planCheckRun.PlanUID,
 			&planCheckRun.Status,

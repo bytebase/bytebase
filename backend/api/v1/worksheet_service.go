@@ -284,8 +284,7 @@ func (s *WorksheetService) UpdateWorksheet(ctx context.Context, request *v1pb.Up
 	}
 
 	worksheetPatch := &store.PatchWorkSheetMessage{
-		UID:       worksheet.UID,
-		UpdaterID: principalID,
+		UID: worksheet.UID,
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {

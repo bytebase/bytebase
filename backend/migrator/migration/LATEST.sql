@@ -340,6 +340,8 @@ ALTER SEQUENCE plan_id_seq RESTART WITH 101;
 
 CREATE TABLE plan_check_run (
     id SERIAL PRIMARY KEY,
+    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     plan_id BIGINT NOT NULL REFERENCES plan (id),
     status TEXT NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     type TEXT NOT NULL CHECK (type LIKE 'bb.plan-check.%'),

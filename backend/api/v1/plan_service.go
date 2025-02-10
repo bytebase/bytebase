@@ -333,8 +333,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 	}
 
 	planUpdate := &store.UpdatePlanMessage{
-		UID:       oldPlan.UID,
-		UpdaterID: user.ID,
+		UID: oldPlan.UID,
 	}
 
 	var planCheckRunsTrigger bool
@@ -796,7 +795,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 								ApprovalFindingDone: false,
 							},
 						},
-					}, api.SystemBotID)
+					})
 					if err != nil {
 						return errors.Errorf("failed to update issue: %v", err)
 					}
