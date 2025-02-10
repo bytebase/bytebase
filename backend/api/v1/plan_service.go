@@ -920,18 +920,6 @@ func (s *PlanService) BatchCancelPlanCheckRuns(ctx context.Context, request *v1p
 		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	user, err := s.store.GetUserByID(ctx, principalID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find user, error: %v", err)
-	}
-	if user == nil {
-		return nil, status.Errorf(codes.NotFound, "user %v not found", principalID)
-	}
-
 	var planCheckRunIDs []int
 	for _, planCheckRun := range request.PlanCheckRuns {
 		_, _, planCheckRunID, err := common.GetProjectIDPlanIDPlanCheckRunID(planCheckRun)
@@ -963,7 +951,7 @@ func (s *PlanService) BatchCancelPlanCheckRuns(ctx context.Context, request *v1p
 		}
 	}
 	// Update the status of the plan check runs to canceled.
-	if err := s.store.BatchCancelPlanCheckRuns(ctx, planCheckRunIDs, principalID); err != nil {
+	if err := s.store.BatchCancelPlanCheckRuns(ctx, planCheckRunIDs); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to batch patch task run status to canceled, error: %v", err)
 	}
 

@@ -280,8 +280,6 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		RETURNING id`
 	var databaseUID int
 	if err := tx.QueryRowContext(ctx, query,
-		api.SystemBotID,
-		api.SystemBotID,
 		instance.UID,
 		project.UID,
 		environment,

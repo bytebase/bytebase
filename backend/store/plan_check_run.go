@@ -77,8 +77,6 @@ func (s *Store) CreatePlanCheckRuns(ctx context.Context, creates ...*PlanCheckRu
 	var query strings.Builder
 	var values []any
 	if _, err := query.WriteString(`INSERT INTO plan_check_run (
-		creator_id,
-		updater_id,
 		plan_id,
 		status,
 		type,
@@ -201,7 +199,7 @@ WHERE %s
 }
 
 // UpdatePlanCheckRun updates a plan check run.
-func (s *Store) UpdatePlanCheckRun(ctx context.Context, updaterUID int, status PlanCheckRunStatus, result *storepb.PlanCheckRunResult, uid int) error {
+func (s *Store) UpdatePlanCheckRun(ctx context.Context, status PlanCheckRunStatus, result *storepb.PlanCheckRunResult, uid int) error {
 	resultBytes, err := protojson.Marshal(result)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal result %v", result)
@@ -209,27 +207,25 @@ func (s *Store) UpdatePlanCheckRun(ctx context.Context, updaterUID int, status P
 	query := `
     UPDATE plan_check_run
     SET
-		updater_id = $1,
-		updated_ts = $2,
-		status = $3,
-		result = $4
-	WHERE id = $5`
-	if _, err := s.db.db.ExecContext(ctx, query, updaterUID, time.Now().Unix(), status, resultBytes, uid); err != nil {
+		updated_ts = $1,
+		status = $2,
+		result = $3
+	WHERE id = $4`
+	if _, err := s.db.db.ExecContext(ctx, query, time.Now().Unix(), status, resultBytes, uid); err != nil {
 		return errors.Wrapf(err, "failed to update plan check run")
 	}
 	return nil
 }
 
 // BatchCancelPlanCheckRuns updates the status of planCheckRuns to CANCELED.
-func (s *Store) BatchCancelPlanCheckRuns(ctx context.Context, planCheckRunUIDs []int, updaterID int) error {
+func (s *Store) BatchCancelPlanCheckRuns(ctx context.Context, planCheckRunUIDs []int) error {
 	query := `
 		UPDATE plan_check_run
 		SET 
 			status = $1, 
-			updater_id = $2, 
-			updated_ts = $3
-		WHERE id = ANY($4)`
-	if _, err := s.db.db.ExecContext(ctx, query, PlanCheckRunStatusCanceled, updaterID, time.Now().Unix(), planCheckRunUIDs); err != nil {
+			updated_ts = $2
+		WHERE id = ANY($3)`
+	if _, err := s.db.db.ExecContext(ctx, query, PlanCheckRunStatusCanceled, time.Now().Unix(), planCheckRunUIDs); err != nil {
 		return err
 	}
 	return nil
