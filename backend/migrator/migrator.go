@@ -63,6 +63,8 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.
 	DROP COLUMN IF EXISTS row_status,
 	DROP COLUMN IF EXISTS creator_id,
 	DROP COLUMN IF EXISTS updater_id,
+	DROP COLUMN IF EXISTS created_ts,
+	DROP COLUMN IF EXISTS updated_ts,
 	DROP COLUMN IF EXISTS instance_id,
 	DROP COLUMN IF EXISTS database_id,
 	DROP COLUMN IF EXISTS project_id,

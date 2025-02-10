@@ -13,8 +13,6 @@ import (
 // InstanceChangeHistoryMessage records the change history of an instance.
 // it deprecates the old MigrationHistory.
 type InstanceChangeHistoryMessage struct {
-	CreatedTs           int64
-	UpdatedTs           int64
 	Status              db.MigrationStatus
 	Version             model.Version
 	ExecutionDurationNs int64
@@ -149,8 +147,6 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 	query := `
 		SELECT
 			id,
-			created_ts,
-			updated_ts,
 			status,
 			version,
 			execution_duration_ns
@@ -175,8 +171,6 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 		var storedVersion string
 		if err := rows.Scan(
 			&changeHistory.UID,
-			&changeHistory.CreatedTs,
-			&changeHistory.UpdatedTs,
 			&changeHistory.Status,
 			&storedVersion,
 			&changeHistory.ExecutionDurationNs,
