@@ -38,6 +38,9 @@ type FindEnvironmentMessage struct {
 
 // UpdateEnvironmentMessage is the message for updating an environment.
 type UpdateEnvironmentMessage struct {
+	UID        int
+	ResourceID string
+
 	Name      *string
 	Order     *int32
 	Protected *bool
@@ -176,7 +179,7 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 }
 
 // UpdateEnvironmentV2 updates an environment.
-func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, patch *UpdateEnvironmentMessage) (*EnvironmentMessage, error) {
+func (s *Store) UpdateEnvironmentV2(ctx context.Context, patch *UpdateEnvironmentMessage) (*EnvironmentMessage, error) {
 	set, args := []string{}, []any{}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
@@ -191,7 +194,7 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 		}
 		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
 	}
-	args = append(args, environmentID)
+	args = append(args, patch.UID)
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -199,21 +202,19 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 	}
 	defer tx.Rollback()
 
-	var environmentUID int
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+	if len(set) > 0 {
+		if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
 			UPDATE environment
 			SET `+strings.Join(set, ", ")+`
-			WHERE resource_id = $%d
-			RETURNING id
+			WHERE id = $%d
 		`, len(args)),
-		args...,
-	).Scan(
-		&environmentUID,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
+			args...,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, nil
+			}
+			return nil, err
 		}
-		return nil, err
 	}
 
 	// TODO(d): consider moving tier to environment table to simplify things.
@@ -223,7 +224,7 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 		policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 			ResourceType: &resourceType,
 			Type:         &policyType,
-			ResourceUID:  &environmentUID,
+			ResourceUID:  &patch.UID,
 		})
 		if err != nil {
 			return nil, err
@@ -252,7 +253,7 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 		}
 		if _, err := upsertPolicyV2Impl(ctx, tx, &PolicyMessage{
 			ResourceType:      resourceType,
-			ResourceUID:       environmentUID,
+			ResourceUID:       patch.UID,
 			Type:              policyType,
 			InheritFromParent: true,
 			Payload:           string(payload),
@@ -266,11 +267,11 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 		return nil, err
 	}
 	// Invalid the cache and read the value again.
-	s.environmentCache.Remove(environmentID)
-	s.environmentIDCache.Remove(environmentUID)
+	s.environmentCache.Remove(patch.ResourceID)
+	s.environmentIDCache.Remove(patch.UID)
 
 	return s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{
-		ResourceID: &environmentID,
+		ResourceID: &patch.ResourceID,
 	})
 }
 
