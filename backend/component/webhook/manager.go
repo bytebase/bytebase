@@ -457,7 +457,7 @@ func maybeGetPhoneFromUser(user *store.UserMessage) (string, error) {
 // ChangeIssueStatus changes the status of an issue.
 func ChangeIssueStatus(ctx context.Context, stores *store.Store, webhookManager *Manager, issue *store.IssueMessage, newStatus api.IssueStatus, updater *store.UserMessage, comment string) error {
 	updateIssueMessage := &store.UpdateIssueMessage{Status: &newStatus}
-	updatedIssue, err := stores.UpdateIssueV2(ctx, issue.UID, updateIssueMessage, updater.ID)
+	updatedIssue, err := stores.UpdateIssueV2(ctx, issue.UID, updateIssueMessage)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
 	}

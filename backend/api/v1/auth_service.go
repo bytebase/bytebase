@@ -215,13 +215,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		PasswordHash: string(passwordHash),
 	}
 
-	creatorUID := api.SystemBotID
-	u, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if ok && u != nil {
-		creatorUID = u.ID
-	}
-
-	user, err := s.store.CreateUser(ctx, userMessage, creatorUID)
+	user, err := s.store.CreateUser(ctx, userMessage)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create user, error: %v", err)
 	}
@@ -462,7 +456,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		}
 	}
 
-	user, err = s.store.UpdateUser(ctx, user, patch, callerUser.ID)
+	user, err = s.store.UpdateUser(ctx, user, patch)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update user, error: %v", err)
 	}
@@ -513,7 +507,7 @@ func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 		return nil, status.Errorf(codes.InvalidArgument, "workspace must have at least one admin")
 	}
 
-	if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &deletePatch}, callerUser.ID); err != nil {
+	if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &deletePatch}); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &emptypb.Empty{}, nil
@@ -569,7 +563,7 @@ func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUs
 		return nil, status.Errorf(codes.InvalidArgument, "user %q is already active", userID)
 	}
 
-	user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &undeletePatch}, callerUser.ID)
+	user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &undeletePatch})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -797,7 +791,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 			LastLoginTime:          timestamppb.Now(),
 			LastChangePasswordTime: loginUser.Profile.GetLastChangePasswordTime(),
 		},
-	}, api.SystemBotID); err != nil {
+	}); err != nil {
 		slog.Error("failed to update user profile", log.BBError(err), slog.String("user", loginUser.Email))
 	}
 
@@ -978,7 +972,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	if user != nil {
 		if user.MemberDeleted {
 			// Undelete the user when login via SSO.
-			user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &undeletePatch}, api.SystemBotID)
+			user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &undeletePatch})
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to undelete user: %v", err)
 			}
@@ -1004,7 +998,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		Phone:        userInfo.Phone,
 		Type:         api.EndUser,
 		PasswordHash: string(passwordHash),
-	}, api.SystemBotID)
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create user, error: %v", err)
 	}
@@ -1028,7 +1022,7 @@ func (s *AuthService) challengeRecoveryCode(ctx context.Context, user *store.Use
 					OtpSecret:     user.MFAConfig.OtpSecret,
 					RecoveryCodes: user.MFAConfig.RecoveryCodes,
 				},
-			}, user.ID)
+			})
 			if err != nil {
 				return status.Errorf(codes.Internal, "failed to update user: %v", err)
 			}

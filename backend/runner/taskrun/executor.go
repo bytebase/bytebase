@@ -110,7 +110,6 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 	mi := &db.MigrationInfo{
 		InstanceID:     &instance.UID,
 		DatabaseID:     &database.UID,
-		CreatorID:      task.CreatorID,
 		ReleaseVersion: profile.Version,
 		Type:           migrationType,
 		Description:    task.Name,
@@ -231,18 +230,6 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 	}
 
 	mi.Source = db.UI
-	creator, err := stores.GetUserByID(ctx, task.CreatorID)
-	if err != nil {
-		// If somehow we unable to find the principal, we just emit the error since it's not
-		// critical enough to fail the entire operation.
-		slog.Error("Failed to fetch creator for composing the migration info",
-			slog.Int("task_id", task.ID),
-			log.BBError(err),
-		)
-	} else {
-		mi.Creator = creator.Name
-		mi.CreatorID = creator.ID
-	}
 
 	statement = strings.TrimSpace(statement)
 	// Only baseline and SDL migration can have empty sql statement, which indicates empty database.
@@ -509,7 +496,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 			Sheet:            mc.sheetName,
 			Version:          mc.version,
 			Type:             convertTaskType(mc.task.Type),
-		}}, mi.CreatorID)
+		}})
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to create changelog")
 	}
@@ -551,7 +538,7 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mi *db.Migrat
 				r.Payload.SheetSha256 = mc.sheet.GetSha256Hex()
 			}
 
-			revision, err := storeInstance.CreateRevision(ctx, r, mi.CreatorID)
+			revision, err := storeInstance.CreateRevision(ctx, r)
 			if err != nil {
 				return errors.Wrapf(err, "failed to create revision")
 			}

@@ -277,7 +277,7 @@ func (s *Server) migrateMaskingData(ctx context.Context) error {
 			}
 		}
 
-		if err := s.store.UpdateDBSchema(ctx, policy.ResourceUID, &store.UpdateDBSchemaMessage{Config: dbModelConfig.BuildDatabaseConfig()}, api.SystemBotID); err != nil {
+		if err := s.store.UpdateDBSchema(ctx, policy.ResourceUID, &store.UpdateDBSchemaMessage{Config: dbModelConfig.BuildDatabaseConfig()}); err != nil {
 			return errors.Wrapf(err, "failed to update db config for database %v", policy.ResourceUID)
 		}
 		if err := s.store.DeletePolicyV2(ctx, &store.PolicyMessage{
@@ -338,7 +338,7 @@ func (s *Server) migrateCatalog(ctx context.Context) error {
 			}
 		}
 		if updated {
-			if err := s.store.UpdateDBSchema(ctx, databaseID, &store.UpdateDBSchemaMessage{Config: cfg}, api.SystemBotID); err != nil {
+			if err := s.store.UpdateDBSchema(ctx, databaseID, &store.UpdateDBSchemaMessage{Config: cfg}); err != nil {
 				return errors.Wrapf(err, "failed to update db config for database %v", databaseID)
 			}
 			slog.Info("migrated catalog for database", slog.Int("databaseID", databaseID))

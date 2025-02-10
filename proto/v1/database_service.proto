@@ -1403,9 +1403,6 @@ message Revision {
   // Can be empty.
   string release = 2 [(google.api.resource_reference) = {type: "bytebase.com/Release"}];
 
-  // Format: users/hello@world.com
-  string creator = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
-
   google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Format: users/hello@world.com
@@ -1537,8 +1534,6 @@ message Changelog {
   // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
   string name = 1;
 
-  // Format: users/hello@world.com
-  string creator = 2;
   google.protobuf.Timestamp create_time = 3;
 
   enum Status {

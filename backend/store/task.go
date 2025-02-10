@@ -8,7 +8,6 @@ import (
 	"math"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
@@ -20,12 +19,6 @@ import (
 // TaskMessage is the message for tasks.
 type TaskMessage struct {
 	ID int
-
-	// Standard fields
-	CreatorID int
-	CreatedTs int64
-	UpdaterID int
-	UpdatedTs int64
 
 	// Related fields
 	PipelineID int
@@ -117,8 +110,6 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 
 	_, _ = query.WriteString(
 		`INSERT INTO task (
-			creator_id,
-			updater_id,
 			pipeline_id,
 			stage_id,
 			instance_id,
@@ -136,8 +127,6 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 			create.Payload = "{}"
 		}
 		values = append(values,
-			create.CreatorID,
-			create.CreatorID,
 			create.PipelineID,
 			create.StageID,
 			create.InstanceID,
@@ -147,11 +136,11 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 			create.Payload,
 			create.EarliestAllowedTs,
 		)
-		const count = 10
-		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, 'PENDING_APPROVAL', $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, i*count+7, i*count+8, i*count+9, i*count+10))
+		const count = 8
+		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, 'PENDING_APPROVAL', $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, i*count+7, i*count+8))
 	}
 	_, _ = query.WriteString(strings.Join(queryValues, ","))
-	_, _ = query.WriteString(` RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, type, payload, earliest_allowed_ts`)
+	_, _ = query.WriteString(` RETURNING id, pipeline_id, stage_id, instance_id, database_id, name, type, payload, earliest_allowed_ts`)
 
 	var tasks []*TaskMessage
 	rows, err := tx.QueryContext(ctx, query.String(), values...)
@@ -164,10 +153,6 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 		var databaseID sql.NullInt32
 		if err := rows.Scan(
 			&task.ID,
-			&task.CreatorID,
-			&task.CreatedTs,
-			&task.UpdaterID,
-			&task.UpdatedTs,
 			&task.PipelineID,
 			&task.StageID,
 			&task.InstanceID,
@@ -261,10 +246,6 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			task.id,
-			task.creator_id,
-			task.created_ts,
-			task.updater_id,
-			task.updated_ts,
 			task.pipeline_id,
 			task.stage_id,
 			task.instance_id,
@@ -302,10 +283,6 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 		var dependsOn pgtype.Int4Array
 		if err := rows.Scan(
 			&task.ID,
-			&task.CreatorID,
-			&task.CreatedTs,
-			&task.UpdaterID,
-			&task.UpdatedTs,
 			&task.PipelineID,
 			&task.StageID,
 			&task.InstanceID,
@@ -336,7 +313,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 // UpdateTaskV2 updates an existing task.
 // Returns ENOTFOUND if task does not exist.
 func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMessage, error) {
-	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{patch.UpdaterID, time.Now().Unix()}
+	set, args := []string{}, []any{}
 	if v := patch.DatabaseID; v != nil {
 		set, args = append(set, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -397,15 +374,11 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, type, payload, earliest_allowed_ts
+		RETURNING id, pipeline_id, stage_id, instance_id, database_id, name, type, payload, earliest_allowed_ts
 	`, len(args)),
 		args...,
 	).Scan(
 		&task.ID,
-		&task.CreatorID,
-		&task.CreatedTs,
-		&task.UpdaterID,
-		&task.UpdatedTs,
 		&task.PipelineID,
 		&task.StageID,
 		&task.InstanceID,
@@ -429,12 +402,12 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 }
 
 // BatchSkipTasks batch skip tasks.
-func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment string, updaterUID int) error {
+func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment string) error {
 	query := `
 	UPDATE task
-	SET updater_id = $1, payload = payload || jsonb_build_object('skipped', $2::BOOLEAN) || jsonb_build_object('skippedReason', $3::TEXT)
-	WHERE id = ANY($4)`
-	args := []any{updaterUID, true, comment, taskUIDs}
+	SET payload = payload || jsonb_build_object('skipped', $1::BOOLEAN) || jsonb_build_object('skippedReason', $2::TEXT)
+	WHERE id = ANY($3)`
+	args := []any{true, comment, taskUIDs}
 
 	if _, err := s.db.db.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to batch skip tasks")

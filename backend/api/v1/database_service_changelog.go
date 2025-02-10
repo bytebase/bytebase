@@ -95,7 +95,7 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, request *v1pb.List
 	}
 
 	// no subsequent pages
-	converted, err := s.convertToChangelogs(ctx, database, changelogs)
+	converted, err := s.convertToChangelogs(database, changelogs)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert changelogs, error: %v", err)
 	}
@@ -148,7 +148,7 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, request *v1pb.GetCha
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 
-	converted, err := s.convertToChangelog(ctx, database, changelog)
+	converted, err := s.convertToChangelog(database, changelog)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert changelog, error: %v", err)
 	}
@@ -172,10 +172,10 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, request *v1pb.GetCha
 	return converted, nil
 }
 
-func (s *DatabaseService) convertToChangelogs(ctx context.Context, d *store.DatabaseMessage, cs []*store.ChangelogMessage) ([]*v1pb.Changelog, error) {
+func (s *DatabaseService) convertToChangelogs(d *store.DatabaseMessage, cs []*store.ChangelogMessage) ([]*v1pb.Changelog, error) {
 	var changelogs []*v1pb.Changelog
 	for _, c := range cs {
-		changelog, err := s.convertToChangelog(ctx, d, c)
+		changelog, err := s.convertToChangelog(d, c)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to convert to changelog")
 		}
@@ -184,10 +184,9 @@ func (s *DatabaseService) convertToChangelogs(ctx context.Context, d *store.Data
 	return changelogs, nil
 }
 
-func (s *DatabaseService) convertToChangelog(ctx context.Context, d *store.DatabaseMessage, c *store.ChangelogMessage) (*v1pb.Changelog, error) {
+func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.ChangelogMessage) (*v1pb.Changelog, error) {
 	cl := &v1pb.Changelog{
 		Name:             common.FormatChangelog(d.InstanceID, d.DatabaseName, c.UID),
-		Creator:          "",
 		CreateTime:       timestamppb.New(c.CreatedTime),
 		Status:           convertToChangelogStatus(c.Status),
 		Statement:        "",
@@ -214,12 +213,6 @@ func (s *DatabaseService) convertToChangelog(ctx context.Context, d *store.Datab
 	if id := c.Payload.GetRevision(); id != 0 {
 		cl.Revision = common.FormatRevision(d.InstanceID, d.DatabaseName, id)
 	}
-
-	creator, err := s.store.GetUserByID(ctx, c.CreatorUID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get creator")
-	}
-	cl.Creator = common.FormatUserEmail(creator.Email)
 
 	if v := c.PrevSyncHistoryUID; v != nil {
 		cl.PrevSchema = c.PrevSchema

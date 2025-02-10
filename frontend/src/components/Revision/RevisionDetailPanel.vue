@@ -9,13 +9,6 @@
     <div
       class="mt-3 text-control text-base space-x-4 flex flex-row items-center flex-wrap"
     >
-      <div
-        v-if="creator"
-        class="flex flex-row items-center overflow-hidden gap-x-1"
-      >
-        <BBAvatar size="SMALL" :username="creator.title" />
-        <span class="truncate">{{ creator.title }}</span>
-      </div>
       <span>
         {{ $t("database.revision.applied-at") }}:
         <HumanizeDate :date="getDateForPbTimestamp(revision.createTime)" />
@@ -61,12 +54,10 @@
 import { ClipboardIcon } from "lucide-vue-next";
 import { NDivider } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
-import BBAvatar from "@/bbkit/BBAvatar.vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { rolloutServiceClient } from "@/grpcweb";
 import {
   pushNotification,
-  useUserStore,
   useRevisionStore,
   useSheetV1Store,
 } from "@/store";
@@ -74,7 +65,6 @@ import { getDateForPbTimestamp, type ComposedDatabase } from "@/types";
 import type { TaskRun } from "@/types/proto/v1/rollout_service";
 import {
   extractIssueUID,
-  extractUserResourceName,
   getSheetStatement,
   toClipboard,
 } from "@/utils";
@@ -140,14 +130,6 @@ const relatedIssueUID = computed(() => {
   const uid = extractIssueUID(revision.value?.issue || "");
   if (!uid) return null;
   return uid;
-});
-
-const creator = computed(() => {
-  if (!revision.value) {
-    return undefined;
-  }
-  const email = extractUserResourceName(revision.value.creator);
-  return useUserStore().getUserByEmail(email);
 });
 
 const copyStatement = async () => {
