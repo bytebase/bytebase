@@ -163,8 +163,5 @@ func (m *maskingLevelEvaluator) isSensitiveColumn(database *store.DatabaseMessag
 }
 
 func isPredicateColumnsCheckEnabled(engine storepb.Engine) bool {
-	if engine == storepb.Engine_MSSQL {
-		return true
-	}
-	return false
+	return engine == storepb.Engine_MSSQL
 }
