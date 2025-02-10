@@ -1,1 +1,0 @@
-ALTER TABLE issue ALTER COLUMN assignee_id DROP NOT NULL;

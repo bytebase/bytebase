@@ -1,1 +1,0 @@
-ALTER TABLE db ADD COLUMN service_name TEXT NOT NULL DEFAULT '';
