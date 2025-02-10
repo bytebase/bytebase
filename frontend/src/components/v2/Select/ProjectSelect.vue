@@ -216,10 +216,9 @@ watchEffect(() => {
 const filterByName = (pattern: string, option: SelectOption) => {
   const { project } = option as ProjectSelectOption;
   pattern = pattern.toLowerCase();
-  return (
-    project.name.toLowerCase().includes(pattern) ||
-    project.key.toLowerCase().includes(pattern)
-  );
+  return extractProjectResourceName(project.name)
+    .toLowerCase()
+    .includes(pattern);
 };
 
 const renderLabel = (option: SelectOption) => {

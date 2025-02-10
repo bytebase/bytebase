@@ -15,7 +15,6 @@
     "overview": "Tổng quan",
     "changelog": "Nhật ký thay đổi",
     "webhooks": "Webhooks",
-    "key": "Key",
     "activity": "Hoạt động",
     "sign-in": "Đăng nhập",
     "sign-in-as-admin": "Đăng nhập với tư cách quản trị viên",
@@ -1552,12 +1551,10 @@
   },
   "project": {
     "table": {
-      "key": "@:common.key",
       "name": "@:common.name"
     },
     "create-modal": {
       "project-name": "@:common.project @:common.name",
-      "key": "@:common.key",
       "success-prompt": "Đã tạo thành công dự án {name}."
     },
     "overview": {
@@ -1699,7 +1696,6 @@
     },
     "select": "Chọn Dự án",
     "all": "Tất cả dự án",
-    "key-hint": "Chữ cái chữ số mô tả ngắn để xác định dự án này.",
     "gitops-connector": {
       "add": "Thêm trình kết nối GitOps",
       "delete": "Xóa trình kết nối GitOps",

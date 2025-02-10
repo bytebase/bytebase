@@ -46,7 +46,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
           <div class="flex items-center overflow-hidden space-x-2">
             <IssueStatusIconWithTaskSummary issue={issue} />
             <div class="whitespace-nowrap text-control">
-              {issue.projectEntity.key}-{extractIssueUID(issue.name)}
+              {extractIssueUID(issue.name)}
             </div>
             <NPerformantEllipsis class="flex-1 truncate">
               {{

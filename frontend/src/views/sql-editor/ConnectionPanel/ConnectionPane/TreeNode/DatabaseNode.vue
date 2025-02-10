@@ -15,7 +15,7 @@
     <DatabaseIcon />
 
     <span class="text-control-light">
-      {{ database.projectEntity.key }}
+      {{ extractProjectResourceName(database.projectEntity.name) }}
     </span>
 
     <span class="flex-1 truncate">
@@ -43,7 +43,7 @@ import type {
   SQLEditorTreeNode as TreeNode,
   SQLEditorTreeFactor as Factor,
 } from "@/types";
-import { isDatabaseV1Queryable } from "@/utils";
+import { extractProjectResourceName, isDatabaseV1Queryable } from "@/utils";
 import RequestQueryButton from "../../../EditorCommon/ResultView/RequestQueryButton.vue";
 import HighlightLabelText from "./HighlightLabelText.vue";
 
