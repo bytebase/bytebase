@@ -406,7 +406,7 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 	var wheres []string
 	args := []any{project.UID}
 	for i, database := range databases {
-		wheres = append(wheres, fmt.Sprintf("(instance.resource_id = $%d AND db.name = $%d)", 2*i+3, 2*i+4))
+		wheres = append(wheres, fmt.Sprintf("(instance.resource_id = $%d AND db.name = $%d)", 2*i+2, 2*i+3))
 		args = append(args, database.InstanceID, database.DatabaseName)
 	}
 	databaseClause := ""
