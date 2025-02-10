@@ -12515,10 +12515,6 @@ components:
                     readOnly: true
                     type: string
                     format: date-time
-                updateTime:
-                    readOnly: true
-                    type: string
-                    format: date-time
                 issue:
                     readOnly: true
                     type: string
@@ -13337,11 +13333,6 @@ components:
                     type: string
                     description: The create time of the sheet.
                     format: date-time
-                updateTime:
-                    readOnly: true
-                    type: string
-                    description: The last update time of the sheet.
-                    format: date-time
                 content:
                     type: string
                     description: |-
@@ -13922,9 +13913,6 @@ components:
                     type: string
                     description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
                 creator:
-                    type: string
-                    description: 'Format: user/hello@world.com'
-                updater:
                     type: string
                     description: 'Format: user/hello@world.com'
                 createTime:

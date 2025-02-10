@@ -10366,7 +10366,6 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | stages | [Stage](#bytebase-v1-Stage) | repeated | stages and thus tasks of the rollout. |
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | issue | [string](#string) |  | The issue associated with the rollout. Could be empty. Format: projects/{project}/issues/{issue} |
 
 
@@ -10532,7 +10531,6 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 | creator | [string](#string) |  | Format: user/hello@world.com |
-| updater | [string](#string) |  | Format: user/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | title | [string](#string) |  |  |
@@ -11090,7 +11088,6 @@ Read from `pg_stat_activity`
 | title | [string](#string) |  | The title of the sheet. |
 | creator | [string](#string) |  | The creator of the Sheet. Format: users/{email} |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The create time of the sheet. |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last update time of the sheet. |
 | content | [bytes](#bytes) |  | The content of the sheet. By default, it will be cut off, if it doesn&#39;t match the `content_size`, you can set the `raw` to true in GetSheet request to retrieve the full content. |
 | content_size | [int64](#int64) |  | content_size is the full size of the content, may not match the size of the `content` field. |
 | payload | [SheetPayload](#bytebase-v1-SheetPayload) |  |  |
