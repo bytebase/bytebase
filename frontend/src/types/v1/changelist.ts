@@ -8,7 +8,6 @@ export const unknownChangelist = () => {
     name: UNKNOWN_CHANGELIST_NAME,
     description: "<<Unknown Changelist>>",
     creator: SYSTEM_BOT_USER_NAME,
-    updater: SYSTEM_BOT_USER_NAME,
   });
 };
 

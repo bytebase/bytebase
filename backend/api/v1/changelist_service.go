@@ -271,21 +271,12 @@ func (s *ChangelistService) convertStoreChangelist(ctx context.Context, changeli
 	if creator == nil {
 		return nil, status.Errorf(codes.NotFound, "cannot find the creator: %d", changelist.CreatorID)
 	}
-	updater, err := s.store.GetUserByID(ctx, changelist.UpdaterID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get updater: %v", err)
-	}
-	if updater == nil {
-		return nil, status.Errorf(codes.NotFound, "cannot find the updater: %d", changelist.UpdaterID)
-	}
 
 	v1Changelist := &v1pb.Changelist{
 		Name:        fmt.Sprintf("projects/%s/changelists/%s", changelist.ProjectID, changelist.ResourceID),
 		Description: changelist.Payload.Description,
-		CreateTime:  timestamppb.New(changelist.CreatedTime),
 		UpdateTime:  timestamppb.New(changelist.UpdatedTime),
 		Creator:     fmt.Sprintf("users/%s", creator.Email),
-		Updater:     fmt.Sprintf("users/%s", updater.Email),
 	}
 	for _, change := range changelist.Payload.Changes {
 		v1Changelist.Changes = append(v1Changelist.Changes, &v1pb.Changelist_Change{

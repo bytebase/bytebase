@@ -24,8 +24,6 @@ type ChangelistMessage struct {
 	// Output only fields
 	UID         int
 	CreatorID   int
-	UpdaterID   int
-	CreatedTime time.Time
 	UpdatedTime time.Time
 }
 
@@ -79,8 +77,6 @@ func (s *Store) ListChangelists(ctx context.Context, find *FindChangelistMessage
 		SELECT
 			changelist.id,
 			changelist.creator_id,
-			changelist.created_ts,
-			changelist.updater_id,
 			changelist.updated_ts,
 			project.resource_id AS project_id,
 			changelist.name,
@@ -98,13 +94,11 @@ func (s *Store) ListChangelists(ctx context.Context, find *FindChangelistMessage
 	var changelists []*ChangelistMessage
 	for rows.Next() {
 		var changelist ChangelistMessage
-		var createdTs, updatedTs int64
+		var updatedTs int64
 		var payload []byte
 		if err := rows.Scan(
 			&changelist.UID,
 			&changelist.CreatorID,
-			&createdTs,
-			&changelist.UpdaterID,
 			&updatedTs,
 			&changelist.ProjectID,
 			&changelist.ResourceID,
@@ -117,7 +111,6 @@ func (s *Store) ListChangelists(ctx context.Context, find *FindChangelistMessage
 			return nil, err
 		}
 		changelist.Payload = changelistPayload
-		changelist.CreatedTime = time.Unix(createdTs, 0)
 		changelist.UpdatedTime = time.Unix(updatedTs, 0)
 
 		changelists = append(changelists, &changelist)
@@ -141,7 +134,6 @@ func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage)
 	if create.Payload == nil {
 		create.Payload = &storepb.Changelist{}
 	}
-	create.UpdaterID = create.CreatorID
 	payload, err := protojson.Marshal(create.Payload)
 	if err != nil {
 		return nil, err
@@ -150,13 +142,12 @@ func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage)
 	query := `
 		INSERT INTO changelist (
 			creator_id,
-			updater_id,
 			project_id,
 			name,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, created_ts, updated_ts;
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, updated_ts;
 	`
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -164,21 +155,18 @@ func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage)
 		return nil, err
 	}
 	defer tx.Rollback()
-	var createdTs, updatedTs int64
+	var updatedTs int64
 	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
 		create.CreatorID,
 		project.UID,
 		create.ResourceID,
 		payload,
 	).Scan(
 		&create.UID,
-		&createdTs,
 		&updatedTs,
 	); err != nil {
 		return nil, err
 	}
-	create.CreatedTime = time.Unix(createdTs, 0)
 	create.UpdatedTime = time.Unix(updatedTs, 0)
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -199,7 +187,7 @@ func (s *Store) UpdateChangelist(ctx context.Context, update *UpdateChangelistMe
 		return errors.Wrapf(err, "failed to begin transaction")
 	}
 
-	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{update.UpdaterID, time.Now().Unix()}
+	set, args := []string{"updated_ts = $1"}, []any{time.Now().Unix()}
 	if v := update.Payload; v != nil {
 		payload, err := protojson.Marshal(update.Payload)
 		if err != nil {

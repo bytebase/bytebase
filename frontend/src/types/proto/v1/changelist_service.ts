@@ -111,15 +111,6 @@ export interface Changelist {
    * Format: users/{email}
    */
   creator: string;
-  /**
-   * The updater of the changelist.
-   * Format: users/{email}
-   */
-  updater: string;
-  /** The create time of the changelist. */
-  createTime:
-    | Timestamp
-    | undefined;
   /** The last update time of the changelist. */
   updateTime: Timestamp | undefined;
   changes: Changelist_Change[];
@@ -597,15 +588,7 @@ export const DeleteChangelistRequest: MessageFns<DeleteChangelistRequest> = {
 };
 
 function createBaseChangelist(): Changelist {
-  return {
-    name: "",
-    description: "",
-    creator: "",
-    updater: "",
-    createTime: undefined,
-    updateTime: undefined,
-    changes: [],
-  };
+  return { name: "", description: "", creator: "", updateTime: undefined, changes: [] };
 }
 
 export const Changelist: MessageFns<Changelist> = {
@@ -618,12 +601,6 @@ export const Changelist: MessageFns<Changelist> = {
     }
     if (message.creator !== "") {
       writer.uint32(26).string(message.creator);
-    }
-    if (message.updater !== "") {
-      writer.uint32(34).string(message.updater);
-    }
-    if (message.createTime !== undefined) {
-      Timestamp.encode(message.createTime, writer.uint32(42).fork()).join();
     }
     if (message.updateTime !== undefined) {
       Timestamp.encode(message.updateTime, writer.uint32(50).fork()).join();
@@ -665,22 +642,6 @@ export const Changelist: MessageFns<Changelist> = {
           message.creator = reader.string();
           continue;
         }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.updater = reader.string();
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.createTime = Timestamp.decode(reader, reader.uint32());
-          continue;
-        }
         case 6: {
           if (tag !== 50) {
             break;
@@ -711,8 +672,6 @@ export const Changelist: MessageFns<Changelist> = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       description: isSet(object.description) ? globalThis.String(object.description) : "",
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
-      updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
-      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       changes: globalThis.Array.isArray(object?.changes)
         ? object.changes.map((e: any) => Changelist_Change.fromJSON(e))
@@ -731,12 +690,6 @@ export const Changelist: MessageFns<Changelist> = {
     if (message.creator !== "") {
       obj.creator = message.creator;
     }
-    if (message.updater !== "") {
-      obj.updater = message.updater;
-    }
-    if (message.createTime !== undefined) {
-      obj.createTime = fromTimestamp(message.createTime).toISOString();
-    }
     if (message.updateTime !== undefined) {
       obj.updateTime = fromTimestamp(message.updateTime).toISOString();
     }
@@ -754,10 +707,6 @@ export const Changelist: MessageFns<Changelist> = {
     message.name = object.name ?? "";
     message.description = object.description ?? "";
     message.creator = object.creator ?? "";
-    message.updater = object.updater ?? "";
-    message.createTime = (object.createTime !== undefined && object.createTime !== null)
-      ? Timestamp.fromPartial(object.createTime)
-      : undefined;
     message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
       ? Timestamp.fromPartial(object.updateTime)
       : undefined;
