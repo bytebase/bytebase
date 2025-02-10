@@ -251,7 +251,6 @@ const validGroup = computed(() => {
   return Group.fromPartial({
     name: `${groupNamePrefix}${state.group.email}`,
     title: state.group.title,
-    creator: props.group?.creator ?? "",
     description: state.group.description,
     members: [...memberMap.values()],
   });
