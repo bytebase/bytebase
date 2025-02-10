@@ -5,7 +5,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useProjectV1List } from "@/store";
 import { DEFAULT_PROJECT_NAME } from "@/types";
-import { hasProjectPermissionV2 } from "@/utils";
+import { extractProjectResourceName, hasProjectPermissionV2 } from "@/utils";
 
 export const useProjectActions = (limit: number) => {
   const { t } = useI18n();
@@ -33,9 +33,11 @@ export const useProjectActions = (limit: number) => {
         id: `bb.project.${project.name}`,
         section: t("common.projects"),
         name: project.title,
-        keywords: ["project", project.key].join(" "),
+        keywords: ["project", extractProjectResourceName(project.name)].join(
+          " "
+        ),
         data: {
-          tags: [project.key],
+          tags: [extractProjectResourceName(project.name)],
         },
         perform: () => {
           router.push({ path: `/${project.name}` });

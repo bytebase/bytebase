@@ -15,38 +15,18 @@
           </label>
           <BBTextField
             v-model:value="state.project.title"
-            class="mt-4 w-full"
+            class="mt-2 mb-1 w-full"
             :required="true"
             :placeholder="$t('project.create-modal.project-name')"
           />
           <ResourceIdField
             ref="resourceIdField"
-            editing-class="mt-3"
+            editing-class="mt-2"
             resource-type="project"
             :value="state.resourceId"
             :resource-title="state.project.title"
             :validate="validateResourceId"
             @update:value="state.resourceId = $event"
-          />
-        </div>
-        <div class="col-span-1">
-          <label
-            for="name"
-            class="flex text-base leading-6 font-medium text-control"
-          >
-            {{ $t("project.create-modal.key") }}
-            <NTooltip>
-              <template #trigger>
-                <InfoIcon class="ml-1 w-4 h-4" />
-              </template>
-              {{ $t("project.key-hint") }}
-            </NTooltip>
-            <span class="text-red-600">*</span>
-          </label>
-          <BBTextField
-            v-model:value="state.project.key"
-            class="mt-4 w-full uppercase"
-            :required="true"
           />
         </div>
       </div>
@@ -84,8 +64,7 @@
 
 <script lang="ts" setup>
 import { isEmpty } from "lodash-es";
-import { InfoIcon } from "lucide-vue-next";
-import { NButton, NTooltip } from "naive-ui";
+import { NButton } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -99,7 +78,6 @@ import { useProjectV1Store } from "@/store/modules/v1/project";
 import type { ResourceId, ValidatedMessage } from "@/types";
 import { emptyProject } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
-import { randomString } from "@/utils";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 import { FeatureModal } from "../FeatureGuard";
@@ -128,7 +106,6 @@ const state = reactive<LocalState>({
   project: {
     ...emptyProject(),
     title: "New Project",
-    key: randomString(3).toUpperCase(),
     // Default to enabled for new project.
     allowModifyStatement: true,
     autoResolveIssue: true,

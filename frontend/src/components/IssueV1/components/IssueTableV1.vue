@@ -107,9 +107,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
           <div class="flex items-center space-x-2">
             <IssueStatusIconWithTaskSummary issue={issue} />
             <div class="whitespace-nowrap text-control text-opacity-80">
-              {props.mode == "ALL"
-                ? `${issue.projectEntity.key}-${extractIssueUID(issue.name)}`
-                : `#${extractIssueUID(issue.name)}`}
+              {`#${extractIssueUID(issue.name)}`}
             </div>
             <NPerformantEllipsis>
               {{

@@ -62,7 +62,7 @@ const columnList = computed((): DataTableColumn<ComposedPlan>[] => {
         return (
           <div class="flex items-center overflow-hidden space-x-2">
             <div class="whitespace-nowrap text-control opacity-60">
-              {plan.projectEntity.key}-{extractPlanUID(plan.name)}
+              {extractPlanUID(plan.name)}
             </div>
             <NPerformantEllipsis class="flex-1 truncate">
               {{
