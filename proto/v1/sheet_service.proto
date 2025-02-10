@@ -130,9 +130,6 @@ message Sheet {
   // The create time of the sheet.
   google.protobuf.Timestamp create_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The last update time of the sheet.
-  google.protobuf.Timestamp update_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
-
   // The content of the sheet.
   // By default, it will be cut off, if it doesn't match the `content_size`, you can
   // set the `raw` to true in GetSheet request to retrieve the full content.
