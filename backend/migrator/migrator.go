@@ -55,7 +55,7 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.
 	}
 	var c int
 	err = metadataDriver.GetDB().QueryRowContext(ctx, "SELECT count(1) FROM instance_change_history WHERE database_id IS NOT NULL").Scan(&c)
-	if err != nil && c > 0 {
+	if err == nil && c > 0 {
 		return nil, errors.Errorf("Must upgrade to Bytebase 3.3.1 first")
 	}
 	if _, err := metadataDriver.GetDB().ExecContext(ctx, `
