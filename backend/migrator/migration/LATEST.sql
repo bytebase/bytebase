@@ -749,7 +749,7 @@ INSERT INTO principal (id, creator_id, updater_id, type, name, email, password_h
 ALTER SEQUENCE principal_id_seq RESTART WITH 101;
 
 -- Default project.
-INSERT INTO project (id, name, key, resource_id) VALUES (1, 'Default', 'DEFAULT', 'default');
+INSERT INTO project (id, name, resource_id) VALUES (1, 'Default', 'default');
 
 ALTER SEQUENCE project_id_seq RESTART WITH 101;
 
