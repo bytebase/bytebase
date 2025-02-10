@@ -703,7 +703,7 @@ CREATE INDEX idx_release_project_id ON release (project_id);
 
 
 -- Default bytebase system account id is 1.
-INSERT INTO principal (id, creator_id, updater_id, type, name, email, password_hash) VALUES (1, 1, 1, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '');
+INSERT INTO principal (id, type, name, email, password_hash) VALUES (1, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '');
 
 ALTER SEQUENCE principal_id_seq RESTART WITH 101;
 
