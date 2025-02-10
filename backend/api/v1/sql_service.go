@@ -219,7 +219,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
-	results, spans, duration, queryErr := queryRetry(ctx, s.store, user, instance, database, driver, conn, statement, request.Timeout, queryContext, false, s.licenseService, s.accessCheck, s.schemaSyncer)
+	results, spans, duration, queryErr := queryRetry(ctx, s.store, user, instance, database, driver, conn, statement, request.Timeout, queryContext, false, s.licenseService, s.accessCheck, s.schemaSyncer, storepb.MaskingExceptionPolicy_MaskingException_QUERY)
 
 	// Update activity.
 	if err = s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, statement, user.ID, duration, queryErr); err != nil {
@@ -401,8 +401,10 @@ func queryRetry(
 	licenseService enterprise.LicenseService,
 	optionalAccessCheck accessCheckFunc,
 	schemaSyncer *schemasync.Syncer,
+	action storepb.MaskingExceptionPolicy_MaskingException_Action,
 ) ([]*v1pb.QueryResult, []*base.QuerySpan, time.Duration, error) {
 	var spans []*base.QuerySpan
+	var sensitivePredicateColumns [][]base.ColumnResource
 	var err error
 	if !queryContext.Explain {
 		spans, err = base.GetQuerySpan(
@@ -430,6 +432,13 @@ func queryRetry(
 		if optionalAccessCheck != nil {
 			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Limit, queryContext.Explain, isExport); err != nil {
 				return nil, nil, time.Duration(0), err
+			}
+		}
+		if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
+			masker := NewQueryResultMasker(stores)
+			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, action)
+			if err != nil {
+				return nil, nil, time.Duration(0), status.Error(codes.Internal, err.Error())
 			}
 		}
 	}
@@ -488,6 +497,13 @@ func queryRetry(
 		if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
 			slog.Debug("failed to replace backup table with source", log.BBError(err))
 		}
+		if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
+			masker := NewQueryResultMasker(stores)
+			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, action)
+			if err != nil {
+				return nil, nil, time.Duration(0), status.Error(codes.Internal, err.Error())
+			}
+		}
 	}
 	// The second query span should not tolerate any error, but we should retail the original error from database if possible.
 	for i, result := range results {
@@ -498,11 +514,35 @@ func queryRetry(
 
 	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil && !queryContext.Explain {
 		masker := NewQueryResultMasker(stores)
-		if err := masker.MaskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_QUERY); err != nil {
+		if err := masker.MaskResults(ctx, spans, results, instance, action); err != nil {
 			return nil, nil, duration, status.Error(codes.Internal, err.Error())
+		}
+
+		for i, result := range results {
+			if i >= len(sensitivePredicateColumns) {
+				continue
+			}
+			if len(sensitivePredicateColumns[i]) == 0 {
+				continue
+			}
+			result.Error = getSensitivePredicateColumnErrorMessages(sensitivePredicateColumns[i])
+			result.Rows = nil
+			result.RowsCount = 0
 		}
 	}
 	return results, spans, duration, nil
+}
+
+func getSensitivePredicateColumnErrorMessages(sensitiveColumns []base.ColumnResource) string {
+	var buf bytes.Buffer
+	_, _ = buf.WriteString("Using sensitive columns in WHERE clause is not allowed: ")
+	for j, column := range sensitiveColumns {
+		if j > 0 {
+			_, _ = buf.WriteString(", ")
+		}
+		_, _ = buf.WriteString(column.String())
+	}
+	return buf.String()
 }
 
 func executeWithTimeout(ctx context.Context, driver db.Driver, conn *sql.Conn, statement string, timeout *durationpb.Duration, queryContext db.QueryContext) ([]*v1pb.QueryResult, time.Duration, error) {
@@ -674,7 +714,7 @@ func DoExport(
 		Limit:         int(request.Limit),
 		OperatorEmail: user.Email,
 	}
-	results, spans, duration, queryErr := queryRetry(ctx, storeInstance, user, instance, database, driver, conn, request.Statement, nil /* timeDuration */, queryContext, true, licenseService, optionalAccessCheck, schemaSyncer)
+	results, spans, duration, queryErr := queryRetry(ctx, storeInstance, user, instance, database, driver, conn, request.Statement, nil /* timeDuration */, queryContext, true, licenseService, optionalAccessCheck, schemaSyncer, storepb.MaskingExceptionPolicy_MaskingException_EXPORT)
 	if queryErr != nil {
 		return nil, duration, err
 	}
