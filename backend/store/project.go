@@ -19,7 +19,6 @@ import (
 type ProjectMessage struct {
 	ResourceID                 string
 	Title                      string
-	Key                        string
 	Webhooks                   []*ProjectWebhookMessage
 	DataClassificationConfigID string
 	Setting                    *storepb.Project
@@ -47,7 +46,6 @@ type UpdateProjectMessage struct {
 	ResourceID string
 
 	Title                      *string
-	Key                        *string
 	DataClassificationConfigID *string
 	Setting                    *storepb.Project
 	Delete                     *bool
@@ -141,7 +139,6 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 	project := &ProjectMessage{
 		ResourceID:                 create.ResourceID,
 		Title:                      create.Title,
-		Key:                        create.Key,
 		DataClassificationConfigID: create.DataClassificationConfigID,
 		Setting:                    create.Setting,
 	}
@@ -149,16 +146,14 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 			INSERT INTO project (
 				resource_id,
 				name,
-				key,
 				data_classification_config_id,
 				setting
 			)
-			VALUES ($1, $2, $3, $4, $5)
+			VALUES ($1, $2, $3, $4)
 			RETURNING id
 		`,
 		create.ResourceID,
 		create.Title,
-		create.Key,
 		create.DataClassificationConfigID,
 		payload,
 	).Scan(
@@ -231,9 +226,6 @@ func updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdateProjectMessag
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.Key; v != nil {
-		set, args = append(set, fmt.Sprintf("key = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := patch.Delete; v != nil {
 		rowStatus := api.Normal
 		if *patch.Delete {
@@ -282,7 +274,6 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			id,
 			resource_id,
 			name,
-			key,
 			data_classification_config_id,
 			(SELECT COUNT(1) FROM vcs_connector WHERE project.id = vcs_connector.project_id) AS connectors,
 			setting,
@@ -305,7 +296,6 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			&projectMessage.UID,
 			&projectMessage.ResourceID,
 			&projectMessage.Title,
-			&projectMessage.Key,
 			&projectMessage.DataClassificationConfigID,
 			&projectMessage.VCSConnectorsCount,
 			&payload,

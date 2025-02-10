@@ -255,7 +255,6 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 	project, err := ctl.projectServiceClient.CreateProject(metaCtx, &v1pb.CreateProjectRequest{
 		Project: &v1pb.Project{
 			Title: projectID,
-			Key:   projectID,
 		},
 		ProjectId: projectID,
 	})

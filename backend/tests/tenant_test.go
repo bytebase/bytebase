@@ -42,7 +42,6 @@ func TestTenant(t *testing.T) {
 		Project: &v1pb.Project{
 			Name:  fmt.Sprintf("projects/%s", projectID),
 			Title: projectID,
-			Key:   projectID,
 		},
 		ProjectId: projectID,
 	})
