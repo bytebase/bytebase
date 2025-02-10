@@ -9,7 +9,6 @@ import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import Long from "long";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
-import { Timestamp } from "../google/protobuf/timestamp";
 import { SQLReviewRule } from "./org_policy_service";
 
 export const protobufPackage = "bytebase.v1";
@@ -92,10 +91,6 @@ export interface ReviewConfig {
   name: string;
   title: string;
   enabled: boolean;
-  /** Format: users/hello@world.com */
-  creator: string;
-  createTime: Timestamp | undefined;
-  updateTime: Timestamp | undefined;
   rules: SQLReviewRule[];
   /**
    * resources using the config.
@@ -529,16 +524,7 @@ export const DeleteReviewConfigRequest: MessageFns<DeleteReviewConfigRequest> = 
 };
 
 function createBaseReviewConfig(): ReviewConfig {
-  return {
-    name: "",
-    title: "",
-    enabled: false,
-    creator: "",
-    createTime: undefined,
-    updateTime: undefined,
-    rules: [],
-    resources: [],
-  };
+  return { name: "", title: "", enabled: false, rules: [], resources: [] };
 }
 
 export const ReviewConfig: MessageFns<ReviewConfig> = {
@@ -551,15 +537,6 @@ export const ReviewConfig: MessageFns<ReviewConfig> = {
     }
     if (message.enabled !== false) {
       writer.uint32(24).bool(message.enabled);
-    }
-    if (message.creator !== "") {
-      writer.uint32(34).string(message.creator);
-    }
-    if (message.createTime !== undefined) {
-      Timestamp.encode(message.createTime, writer.uint32(42).fork()).join();
-    }
-    if (message.updateTime !== undefined) {
-      Timestamp.encode(message.updateTime, writer.uint32(50).fork()).join();
     }
     for (const v of message.rules) {
       SQLReviewRule.encode(v!, writer.uint32(58).fork()).join();
@@ -601,30 +578,6 @@ export const ReviewConfig: MessageFns<ReviewConfig> = {
           message.enabled = reader.bool();
           continue;
         }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.creator = reader.string();
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.createTime = Timestamp.decode(reader, reader.uint32());
-          continue;
-        }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.updateTime = Timestamp.decode(reader, reader.uint32());
-          continue;
-        }
         case 7: {
           if (tag !== 58) {
             break;
@@ -655,9 +608,6 @@ export const ReviewConfig: MessageFns<ReviewConfig> = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       enabled: isSet(object.enabled) ? globalThis.Boolean(object.enabled) : false,
-      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
-      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
-      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       rules: globalThis.Array.isArray(object?.rules) ? object.rules.map((e: any) => SQLReviewRule.fromJSON(e)) : [],
       resources: globalThis.Array.isArray(object?.resources)
         ? object.resources.map((e: any) => globalThis.String(e))
@@ -676,15 +626,6 @@ export const ReviewConfig: MessageFns<ReviewConfig> = {
     if (message.enabled !== false) {
       obj.enabled = message.enabled;
     }
-    if (message.creator !== "") {
-      obj.creator = message.creator;
-    }
-    if (message.createTime !== undefined) {
-      obj.createTime = fromTimestamp(message.createTime).toISOString();
-    }
-    if (message.updateTime !== undefined) {
-      obj.updateTime = fromTimestamp(message.updateTime).toISOString();
-    }
     if (message.rules?.length) {
       obj.rules = message.rules.map((e) => SQLReviewRule.toJSON(e));
     }
@@ -702,13 +643,6 @@ export const ReviewConfig: MessageFns<ReviewConfig> = {
     message.name = object.name ?? "";
     message.title = object.title ?? "";
     message.enabled = object.enabled ?? false;
-    message.creator = object.creator ?? "";
-    message.createTime = (object.createTime !== undefined && object.createTime !== null)
-      ? Timestamp.fromPartial(object.createTime)
-      : undefined;
-    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
-      ? Timestamp.fromPartial(object.updateTime)
-      : undefined;
     message.rules = object.rules?.map((e) => SQLReviewRule.fromPartial(e)) || [];
     message.resources = object.resources?.map((e) => e) || [];
     return message;
@@ -1150,32 +1084,6 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-function toTimestamp(date: Date): Timestamp {
-  const seconds = numberToLong(Math.trunc(date.getTime() / 1_000));
-  const nanos = (date.getTime() % 1_000) * 1_000_000;
-  return { seconds, nanos };
-}
-
-function fromTimestamp(t: Timestamp): Date {
-  let millis = (t.seconds.toNumber() || 0) * 1_000;
-  millis += (t.nanos || 0) / 1_000_000;
-  return new globalThis.Date(millis);
-}
-
-function fromJsonTimestamp(o: any): Timestamp {
-  if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
-  } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
-  } else {
-    return Timestamp.fromJSON(o);
-  }
-}
-
-function numberToLong(number: number) {
-  return Long.fromNumber(number);
-}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

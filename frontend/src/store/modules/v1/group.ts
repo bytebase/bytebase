@@ -21,8 +21,8 @@ export const useGroupStore = defineStore("group", () => {
   const groupList = computed(() => {
     return orderBy(
       Array.from(groupMapByName.values()),
-      (group) => group.createTime,
-      "desc"
+      (group) => group.name,
+      "asc"
     );
   });
 

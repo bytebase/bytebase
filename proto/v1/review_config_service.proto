@@ -8,7 +8,6 @@ import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
-import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/org_policy_service.proto";
 
@@ -132,13 +131,6 @@ message ReviewConfig {
   string title = 2;
 
   bool enabled = 3;
-
-  // Format: users/hello@world.com
-  string creator = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  google.protobuf.Timestamp create_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  google.protobuf.Timestamp update_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   repeated SQLReviewRule rules = 7;
 
