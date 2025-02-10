@@ -183,7 +183,6 @@ func (*Store) createPipeline(ctx context.Context, tx *Tx, create *PipelineMessag
 	if err := tx.QueryRowContext(ctx, query,
 		create.ProjectID,
 		creatorUID,
-		creatorUID,
 		create.Name,
 	).Scan(
 		&pipeline.ID,
