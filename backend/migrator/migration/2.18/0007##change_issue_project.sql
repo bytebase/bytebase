@@ -1,2 +1,0 @@
-ALTER TABLE instance_change_history ADD COLUMN IF NOT EXISTS project_id INTEGER REFERENCES project (id);
-UPDATE instance_change_history SET project_id = (SELECT project_id FROM issue WHERE issue.id = instance_change_history.issue_id) WHERE instance_change_history.issue_id IS NOT NULL;

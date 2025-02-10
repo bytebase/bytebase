@@ -1,1 +1,0 @@
-ALTER TABLE principal ADD COLUMN phone TEXT NOT NULL DEFAULT '';

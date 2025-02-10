@@ -1,1 +1,0 @@
-DROP INDEX IF EXISTS idx_repository_unique_webhook_endpoint_id;
