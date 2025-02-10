@@ -96,14 +96,18 @@ const scopeOptions = computed((): ScopeOption[] => {
       id: "project",
       title: t("issue.advanced-search.scope.project.title"),
       description: t("issue.advanced-search.scope.project.description"),
-      options: projectList.value.map<ValueOption>((proj) => {
-        const name = extractProjectResourceName(proj.name);
+      options: projectList.value.map<ValueOption>((project) => {
+        const name = extractProjectResourceName(project.name);
         return {
           value: name,
-          keywords: [name, proj.title, proj.key],
+          keywords: [
+            name,
+            project.title,
+            extractProjectResourceName(project.name),
+          ],
           render: () => {
-            const children = [<ProjectV1Name project={proj} link={false} />];
-            if (proj.workflow === Workflow.VCS) {
+            const children = [<ProjectV1Name project={project} link={false} />];
+            if (project.workflow === Workflow.VCS) {
               children.push(<GitIcon class="h-4" />);
             }
             return <div class="flex items-center gap-x-2">{children}</div>;

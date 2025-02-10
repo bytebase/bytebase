@@ -34,7 +34,7 @@ import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { getProjectName } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
-import { getHighlightHTMLByRegExp } from "@/utils";
+import { extractProjectResourceName, getHighlightHTMLByRegExp } from "@/utils";
 
 type ProjectDataTableColumn = DataTableColumn<ComposedProject> & {
   hide?: boolean;
@@ -91,14 +91,14 @@ const columnList = computed((): ProjectDataTableColumn[] => {
         },
       },
       {
-        key: "key",
-        title: t("project.table.key"),
+        key: "id",
+        title: t("common.id"),
         width: 112,
         render: (project) => {
           return (
             <span
               innerHTML={getHighlightHTMLByRegExp(
-                project.key,
+                extractProjectResourceName(project.name),
                 props.keyword ?? ""
               )}
             ></span>
