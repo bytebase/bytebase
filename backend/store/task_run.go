@@ -480,7 +480,7 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 }
 
 // BatchCancelTaskRuns updates the status of taskRuns to CANCELED.
-func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int, updaterID int) error {
+func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int) error {
 	query := `
 		UPDATE task_run
 		SET status = $1

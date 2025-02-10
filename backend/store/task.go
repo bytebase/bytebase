@@ -402,7 +402,7 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 }
 
 // BatchSkipTasks batch skip tasks.
-func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment string, updaterUID int) error {
+func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment string) error {
 	query := `
 	UPDATE task
 	SET payload = payload || jsonb_build_object('skipped', $1::BOOLEAN) || jsonb_build_object('skippedReason', $2::TEXT)
