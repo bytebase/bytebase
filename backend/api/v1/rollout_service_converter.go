@@ -484,7 +484,6 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 	t := &v1pb.TaskRun{
 		Name:          common.FormatTaskRun(taskRun.ProjectID, taskRun.PipelineUID, taskRun.StageUID, taskRun.TaskUID, taskRun.ID),
 		Creator:       common.FormatUserEmail(taskRun.Creator.Email),
-		Updater:       common.FormatUserEmail(taskRun.Updater.Email),
 		CreateTime:    timestamppb.New(time.Unix(taskRun.CreatedTs, 0)),
 		UpdateTime:    timestamppb.New(time.Unix(taskRun.UpdatedTs, 0)),
 		StartTime:     timestamppb.New(time.Unix(taskRun.StartedTs, 0)),
@@ -652,7 +651,6 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 		Title:      rollout.Name,
 		Stages:     nil,
 		CreateTime: timestamppb.New(time.Unix(rollout.CreatedTs, 0)),
-		UpdateTime: timestamppb.New(time.Unix(rollout.UpdatedTs, 0)),
 	}
 
 	creator, err := s.GetUserByID(ctx, rollout.CreatorUID)

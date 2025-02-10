@@ -317,8 +317,6 @@ message Rollout {
 
   google.protobuf.Timestamp create_time = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp update_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-
   // The issue associated with the rollout. Could be empty.
   // Format: projects/{project}/issues/{issue}
   string issue = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -472,8 +470,6 @@ message TaskRun {
 
   // Format: user/hello@world.com
   string creator = 3;
-  // Format: user/hello@world.com
-  string updater = 4;
   google.protobuf.Timestamp create_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp update_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 

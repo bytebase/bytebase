@@ -209,8 +209,7 @@ export interface Rollout {
   stages: Stage[];
   /** Format: users/hello@world.com */
   creator: string;
-  createTime: Timestamp | undefined;
-  updateTime:
+  createTime:
     | Timestamp
     | undefined;
   /**
@@ -534,8 +533,6 @@ export interface TaskRun {
   name: string;
   /** Format: user/hello@world.com */
   creator: string;
-  /** Format: user/hello@world.com */
-  updater: string;
   createTime: Timestamp | undefined;
   updateTime: Timestamp | undefined;
   title: string;
@@ -2157,16 +2154,7 @@ export const GetTaskRunLogRequest: MessageFns<GetTaskRunLogRequest> = {
 };
 
 function createBaseRollout(): Rollout {
-  return {
-    name: "",
-    plan: "",
-    title: "",
-    stages: [],
-    creator: "",
-    createTime: undefined,
-    updateTime: undefined,
-    issue: "",
-  };
+  return { name: "", plan: "", title: "", stages: [], creator: "", createTime: undefined, issue: "" };
 }
 
 export const Rollout: MessageFns<Rollout> = {
@@ -2188,9 +2176,6 @@ export const Rollout: MessageFns<Rollout> = {
     }
     if (message.createTime !== undefined) {
       Timestamp.encode(message.createTime, writer.uint32(58).fork()).join();
-    }
-    if (message.updateTime !== undefined) {
-      Timestamp.encode(message.updateTime, writer.uint32(66).fork()).join();
     }
     if (message.issue !== "") {
       writer.uint32(74).string(message.issue);
@@ -2253,14 +2238,6 @@ export const Rollout: MessageFns<Rollout> = {
           message.createTime = Timestamp.decode(reader, reader.uint32());
           continue;
         }
-        case 8: {
-          if (tag !== 66) {
-            break;
-          }
-
-          message.updateTime = Timestamp.decode(reader, reader.uint32());
-          continue;
-        }
         case 9: {
           if (tag !== 74) {
             break;
@@ -2286,7 +2263,6 @@ export const Rollout: MessageFns<Rollout> = {
       stages: globalThis.Array.isArray(object?.stages) ? object.stages.map((e: any) => Stage.fromJSON(e)) : [],
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
-      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       issue: isSet(object.issue) ? globalThis.String(object.issue) : "",
     };
   },
@@ -2311,9 +2287,6 @@ export const Rollout: MessageFns<Rollout> = {
     if (message.createTime !== undefined) {
       obj.createTime = fromTimestamp(message.createTime).toISOString();
     }
-    if (message.updateTime !== undefined) {
-      obj.updateTime = fromTimestamp(message.updateTime).toISOString();
-    }
     if (message.issue !== "") {
       obj.issue = message.issue;
     }
@@ -2332,9 +2305,6 @@ export const Rollout: MessageFns<Rollout> = {
     message.creator = object.creator ?? "";
     message.createTime = (object.createTime !== undefined && object.createTime !== null)
       ? Timestamp.fromPartial(object.createTime)
-      : undefined;
-    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
-      ? Timestamp.fromPartial(object.updateTime)
       : undefined;
     message.issue = object.issue ?? "";
     return message;
@@ -3334,7 +3304,6 @@ function createBaseTaskRun(): TaskRun {
   return {
     name: "",
     creator: "",
-    updater: "",
     createTime: undefined,
     updateTime: undefined,
     title: "",
@@ -3357,9 +3326,6 @@ export const TaskRun: MessageFns<TaskRun> = {
     }
     if (message.creator !== "") {
       writer.uint32(26).string(message.creator);
-    }
-    if (message.updater !== "") {
-      writer.uint32(34).string(message.updater);
     }
     if (message.createTime !== undefined) {
       Timestamp.encode(message.createTime, writer.uint32(42).fork()).join();
@@ -3421,14 +3387,6 @@ export const TaskRun: MessageFns<TaskRun> = {
           }
 
           message.creator = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.updater = reader.string();
           continue;
         }
         case 5: {
@@ -3540,7 +3498,6 @@ export const TaskRun: MessageFns<TaskRun> = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
-      updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
@@ -3567,9 +3524,6 @@ export const TaskRun: MessageFns<TaskRun> = {
     }
     if (message.creator !== "") {
       obj.creator = message.creator;
-    }
-    if (message.updater !== "") {
-      obj.updater = message.updater;
     }
     if (message.createTime !== undefined) {
       obj.createTime = fromTimestamp(message.createTime).toISOString();
@@ -3617,7 +3571,6 @@ export const TaskRun: MessageFns<TaskRun> = {
     const message = createBaseTaskRun();
     message.name = object.name ?? "";
     message.creator = object.creator ?? "";
-    message.updater = object.updater ?? "";
     message.createTime = (object.createTime !== undefined && object.createTime !== null)
       ? Timestamp.fromPartial(object.createTime)
       : undefined;
