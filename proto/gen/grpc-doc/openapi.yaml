@@ -8947,9 +8947,6 @@ components:
                 name:
                     type: string
                     description: 'Format: instances/{instance}/databases/{database}/changelogs/{changelog}'
-                creator:
-                    type: string
-                    description: 'Format: users/hello@world.com'
                 createTime:
                     type: string
                     format: date-time
@@ -12384,10 +12381,6 @@ components:
                     description: |-
                         Format: projects/{project}/releases/{release}
                          Can be empty.
-                creator:
-                    readOnly: true
-                    type: string
-                    description: 'Format: users/hello@world.com'
                 createTime:
                     readOnly: true
                     type: string

@@ -19,8 +19,6 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { RouterLink } from "vue-router";
-import { BBAvatar } from "@/bbkit";
-import { useUserStore } from "@/store";
 import { getDateForPbTimestamp } from "@/types";
 import type { Changelog } from "@/types/proto/v1/database_service";
 import {
@@ -30,7 +28,6 @@ import {
 import {
   extractIssueUID,
   getAffectedTableDisplayName,
-  extractUserResourceName,
 } from "@/utils";
 import {
   changelogLink,
@@ -176,25 +173,6 @@ const columnList = computed(() => {
       render: (changelog) => {
         return (
           <HumanizeDate date={getDateForPbTimestamp(changelog.createTime)} />
-        );
-      },
-    },
-    {
-      key: "creator",
-      title: t("common.creator"),
-      width: 128,
-      resizable: true,
-      ellipsis: true,
-      render: (changelog) => {
-        const creator = useUserStore().getUserByEmail(
-          extractUserResourceName(changelog.creator)
-        );
-        if (!creator) return null;
-        return (
-          <div class="flex flex-row items-center overflow-hidden gap-x-1">
-            <BBAvatar size="SMALL" username={creator.title} />
-            <span class="truncate">{creator.title}</span>
-          </div>
         );
       },
     },

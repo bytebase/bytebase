@@ -21,7 +21,6 @@ type SheetMessage struct {
 	ProjectUID int
 
 	CreatorID int
-	UpdaterID int
 
 	Title     string
 	Statement string
@@ -34,11 +33,9 @@ type SheetMessage struct {
 	UID         int
 	Size        int64
 	CreatedTime time.Time
-	UpdatedTime time.Time
 
 	// Internal fields
 	createdTs int64
-	updatedTs int64
 }
 
 func (s *SheetMessage) GetSha256Hex() string {
@@ -149,8 +146,6 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 			sheet.id,
 			sheet.creator_id,
 			sheet.created_ts,
-			sheet.updater_id,
-			sheet.updated_ts,
 			sheet.project_id,
 			sheet.name,
 			%s,
@@ -175,8 +170,6 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 			&sheet.UID,
 			&sheet.CreatorID,
 			&sheet.createdTs,
-			&sheet.UpdaterID,
-			&sheet.updatedTs,
 			&sheet.ProjectUID,
 			&sheet.Title,
 			&sheet.Statement,
@@ -203,7 +196,6 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 
 	for _, sheet := range sheets {
 		sheet.CreatedTime = time.Unix(sheet.createdTs, 0)
-		sheet.UpdatedTime = time.Unix(sheet.updatedTs, 0)
 	}
 
 	return sheets, nil
@@ -231,14 +223,13 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 	query := `
 		INSERT INTO sheet (
 			creator_id,
-			updater_id,
 			project_id,
 			name,
 			sha256,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING id, created_ts, updated_ts
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, created_ts
 	`
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -246,9 +237,7 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 		return nil, err
 	}
 	defer tx.Rollback()
-	create.UpdaterID = create.CreatorID
 	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
 		create.CreatorID,
 		create.ProjectUID,
 		create.Title,
@@ -257,7 +246,6 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 	).Scan(
 		&create.UID,
 		&create.createdTs,
-		&create.updatedTs,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -270,7 +258,6 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 
 	create.Size = int64(len(create.Statement))
 	create.CreatedTime = time.Unix(create.createdTs, 0)
-	create.UpdatedTime = time.Unix(create.updatedTs, 0)
 
 	return create, nil
 }
@@ -307,7 +294,6 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectUID int, creates []
 	query := `
 		INSERT INTO sheet (
 			creator_id,
-			updater_id,
 			project_id,
 			name,
 			sha256,
@@ -315,11 +301,10 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectUID int, creates []
 		) SELECT
 			$1,
 			$2,
-			$3,
-			unnest(CAST($4 AS TEXT[])),
-			unnest(CAST($5 AS BYTEA[])),
-			unnest(CAST($6 AS JSONB[]))
-		RETURNING id, created_ts, updated_ts
+			unnest(CAST($3 AS TEXT[])),
+			unnest(CAST($4 AS BYTEA[])),
+			unnest(CAST($5 AS JSONB[]))
+		RETURNING id, created_ts
 	`
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -328,27 +313,24 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectUID int, creates []
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, query, creatorUID, creatorUID, projectUID, names, sha256s, payloads)
+	rows, err := tx.QueryContext(ctx, query, creatorUID, projectUID, names, sha256s, payloads)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query")
 	}
 	defer rows.Close()
 
 	for i := 0; rows.Next(); i++ {
-		creates[i].UpdaterID = creatorUID
 		creates[i].CreatorID = creatorUID
 
 		if err := rows.Scan(
 			&creates[i].UID,
 			&creates[i].createdTs,
-			&creates[i].updatedTs,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")
 		}
 
 		creates[i].Size = int64(len(creates[i].Statement))
 		creates[i].CreatedTime = time.Unix(creates[i].createdTs, 0)
-		creates[i].UpdatedTime = time.Unix(creates[i].updatedTs, 0)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -396,14 +378,10 @@ func (s *Store) PatchSheet(ctx context.Context, patch *PatchSheetMessage) (*Shee
 	if err := s.db.db.QueryRowContext(ctx, `
 		UPDATE sheet
 		SET 
-			updater_id = $1,
-			updated_ts = $2,
-			sha256 = $3
-		WHERE id = $4
+			sha256 = $1
+		WHERE id = $2
 		RETURNING id
 	`,
-		patch.UpdaterID,
-		time.Now().Unix(),
 		h[:],
 		patch.UID,
 	).Scan(

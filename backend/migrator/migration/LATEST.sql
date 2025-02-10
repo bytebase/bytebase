@@ -647,7 +647,6 @@ CREATE TABLE review_config (
 CREATE TABLE revision (
     id BIGSERIAL PRIMARY KEY,
     database_id INTEGER NOT NULL REFERENCES db (id),
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleter_id INTEGER REFERENCES principal (id),
     deleted_ts TIMESTAMPTZ,

@@ -70,7 +70,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		DatabaseName: postgres.SampleDatabaseTest,
 		ProjectID:    &project.ResourceID,
 	}
-	_, err = s.store.UpdateDatabase(ctx, transferDatabaseMessage, userID)
+	_, err = s.store.UpdateDatabase(ctx, transferDatabaseMessage)
 	if err != nil {
 		return errors.Wrapf(err, "failed to transfer test sample database")
 	}
@@ -129,7 +129,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		DatabaseName: postgres.SampleDatabaseProd,
 		ProjectID:    &project.ResourceID,
 	}
-	_, err = s.store.UpdateDatabase(ctx, transferDatabaseMessage, userID)
+	_, err = s.store.UpdateDatabase(ctx, transferDatabaseMessage)
 	if err != nil {
 		return errors.Wrapf(err, "failed to transfer prod sample database")
 	}
@@ -319,7 +319,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	columnConfig := tableConfig.CreateOrGetColumnConfig("amount")
 	columnConfig.SemanticType = "default"
 
-	if err := s.store.UpdateDBSchema(ctx, prodDatabase.UID, &store.UpdateDBSchemaMessage{Config: dbModelConfig.BuildDatabaseConfig()}, userID); err != nil {
+	if err := s.store.UpdateDBSchema(ctx, prodDatabase.UID, &store.UpdateDBSchemaMessage{Config: dbModelConfig.BuildDatabaseConfig()}); err != nil {
 		return errors.Wrapf(err, "failed to update db config for database %v", prodDatabase.UID)
 	}
 

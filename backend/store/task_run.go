@@ -32,8 +32,6 @@ type TaskRunMessage struct {
 	CreatorID int
 	Creator   *UserMessage
 	CreatedTs int64
-	UpdaterID int
-	Updater   *UserMessage
 	UpdatedTs int64
 	ProjectID string
 	StartedTs int64
@@ -105,7 +103,6 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			task_run.id,
 			task_run.creator_id,
 			task_run.created_ts,
-			task_run.updater_id,
 			task_run.updated_ts,
 			task_run.task_id,
 			task_run.name,
@@ -137,7 +134,6 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			&taskRun.ID,
 			&taskRun.CreatorID,
 			&taskRun.CreatedTs,
-			&taskRun.UpdaterID,
 			&taskRun.UpdatedTs,
 			&taskRun.TaskUID,
 			&taskRun.Name,
@@ -171,11 +167,6 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			return nil, err
 		}
 		taskRun.Creator = creator
-		updater, err := s.GetUserByID(ctx, taskRun.UpdaterID)
-		if err != nil {
-			return nil, err
-		}
-		taskRun.Updater = updater
 	}
 
 	return taskRuns, nil
@@ -327,16 +318,14 @@ func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMess
 	query := `
 		INSERT INTO task_run (
 			creator_id,
-			updater_id,
 			task_id,
 			sheet_id,
 			attempt,
 			name,
 			status
-		) VALUES ($1, $2, $3, $4, $5, $6, $7)
+		) VALUES ($1, $2, $3, $4, $5, $6)
 	`
 	if _, err := tx.ExecContext(ctx, query,
-		creatorID,
 		creatorID,
 		create.TaskUID,
 		create.SheetUID,
@@ -351,7 +340,7 @@ func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMess
 
 // patchTaskRunStatusImpl updates a taskRun status. Returns the new state of the taskRun after update.
 func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRunStatusPatch) (*TaskRunMessage, error) {
-	set, args := []string{"updater_id = $1", "updated_ts = $2", "status = $3"}, []any{patch.UpdaterID, time.Now().Unix(), patch.Status}
+	set, args := []string{"updated_ts = $1", "status = $2"}, []any{time.Now().Unix(), patch.Status}
 	if v := patch.Code; v != nil {
 		set, args = append(set, fmt.Sprintf("code = $%d", len(args)+1)), append(args, *v)
 	}
@@ -375,14 +364,13 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRun
 		UPDATE task_run
 		SET `+strings.Join(set, ", ")+`
 		WHERE `+strings.Join(where, " AND ")+`
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, task_id, name, status, code, result
+		RETURNING id, creator_id, created_ts, updated_ts, task_id, name, status, code, result
 	`,
 		args...,
 	).Scan(
 		&taskRun.ID,
 		&taskRun.CreatorID,
 		&taskRun.CreatedTs,
-		&taskRun.UpdaterID,
 		&taskRun.UpdatedTs,
 		&taskRun.TaskUID,
 		&taskRun.Name,
@@ -444,7 +432,6 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 			task_run.id,
 			task_run.creator_id,
 			task_run.created_ts,
-			task_run.updater_id,
 			task_run.updated_ts,
 			task_run.task_id,
 			task_run.name,
@@ -471,7 +458,6 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 			&taskRun.ID,
 			&taskRun.CreatorID,
 			&taskRun.CreatedTs,
-			&taskRun.UpdaterID,
 			&taskRun.UpdatedTs,
 			&taskRun.TaskUID,
 			&taskRun.Name,
@@ -497,9 +483,9 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int, updaterID int) error {
 	query := `
 		UPDATE task_run
-		SET status = $1, updater_id = $2
-		WHERE id = ANY($3)`
-	if _, err := s.db.db.ExecContext(ctx, query, api.TaskRunCanceled, updaterID, taskRunIDs); err != nil {
+		SET status = $1
+		WHERE id = ANY($2)`
+	if _, err := s.db.db.ExecContext(ctx, query, api.TaskRunCanceled, taskRunIDs); err != nil {
 		return err
 	}
 	return nil

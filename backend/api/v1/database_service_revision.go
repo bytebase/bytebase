@@ -102,10 +102,6 @@ func (s *DatabaseService) GetRevision(ctx context.Context, request *v1pb.GetRevi
 }
 
 func (s *DatabaseService) CreateRevision(ctx context.Context, request *v1pb.CreateRevisionRequest) (*v1pb.Revision, error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
-	}
 	instanceID, databaseID, err := common.GetInstanceDatabaseID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get instance and database from %v, err: %v", request.Parent, err)
@@ -196,7 +192,7 @@ func (s *DatabaseService) CreateRevision(ctx context.Context, request *v1pb.Crea
 	}
 
 	revisionCreate := convertRevision(request.Revision, database, sheet)
-	revisionM, err := s.store.CreateRevision(ctx, revisionCreate, user.ID)
+	revisionM, err := s.store.CreateRevision(ctx, revisionCreate)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create revision, err: %v", err)
 	}
@@ -236,13 +232,6 @@ func convertToRevisions(ctx context.Context, s *store.Store, parent string, revi
 }
 
 func convertToRevision(ctx context.Context, s *store.Store, parent string, revision *store.RevisionMessage) (*v1pb.Revision, error) {
-	creator, err := s.GetUserByID(ctx, revision.CreatorUID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get creator")
-	}
-	if creator == nil {
-		return nil, errors.Errorf("creator %v not found", revision.CreatorUID)
-	}
 	_, sheetUID, err := common.GetProjectResourceIDSheetUID(revision.Payload.Sheet)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheetUID from %q", revision.Payload.Sheet)
@@ -274,7 +263,6 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 		Name:          fmt.Sprintf("%s/%s%d", parent, common.RevisionNamePrefix, revision.UID),
 		Release:       revision.Payload.Release,
 		CreateTime:    timestamppb.New(revision.CreateTime),
-		Creator:       common.FormatUserEmail(creator.Email),
 		Sheet:         revision.Payload.Sheet,
 		SheetSha256:   revision.Payload.SheetSha256,
 		Statement:     sheet.Statement,

@@ -154,7 +154,6 @@ type MigrationInfo struct {
 	DatabaseID *int
 	ProjectUID *int
 	IssueUID   *int
-	CreatorID  int
 
 	ReleaseVersion string
 	Namespace      string
@@ -164,7 +163,6 @@ type MigrationInfo struct {
 	Type           MigrationType
 	Status         MigrationStatus
 	Description    string
-	Creator        string
 	// Payload contains JSON-encoded string of VCS push event if the migration is triggered by a VCS push event.
 	Payload *storepb.InstanceChangeHistoryPayload
 
