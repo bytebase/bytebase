@@ -53,7 +53,6 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 		Subscribers:          nil,
 		Creator:              common.FormatUserEmail(issue.Creator.Email),
 		CreateTime:           timestamppb.New(issue.CreatedTime),
-		UpdateTime:           timestamppb.New(issue.UpdatedTime),
 		Plan:                 "",
 		Rollout:              "",
 		GrantRequest:         convertedGrantRequest,
