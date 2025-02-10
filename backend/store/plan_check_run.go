@@ -47,11 +47,9 @@ const (
 
 // PlanCheckRunMessage is the message for a plan check run.
 type PlanCheckRunMessage struct {
-	UID        int
-	CreatorUID int
-	CreatedTs  int64
-	UpdaterUID int
-	UpdatedTs  int64
+	UID       int
+	CreatedTs int64
+	UpdatedTs int64
 
 	PlanUID int64
 
@@ -79,8 +77,6 @@ func (s *Store) CreatePlanCheckRuns(ctx context.Context, creates ...*PlanCheckRu
 	var query strings.Builder
 	var values []any
 	if _, err := query.WriteString(`INSERT INTO plan_check_run (
-		creator_id,
-		updater_id,
 		plan_id,
 		status,
 		type,
@@ -100,8 +96,6 @@ func (s *Store) CreatePlanCheckRuns(ctx context.Context, creates ...*PlanCheckRu
 			return errors.Wrapf(err, "failed to marshal create result %v", create.Result)
 		}
 		values = append(values,
-			create.CreatorUID,
-			create.UpdaterUID,
 			create.PlanUID,
 			create.Status,
 			create.Type,
@@ -113,7 +107,7 @@ func (s *Store) CreatePlanCheckRuns(ctx context.Context, creates ...*PlanCheckRu
 				return err
 			}
 		}
-		count := 7
+		count := 5
 		if _, err := query.WriteString(getPlaceholders(i*count+1, count)); err != nil {
 			return err
 		}
@@ -153,9 +147,7 @@ func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMes
 SELECT
 	%s
 	plan_check_run.id,
-	plan_check_run.creator_id,
 	plan_check_run.created_ts,
-	plan_check_run.updater_id,
 	plan_check_run.updated_ts,
 	plan_check_run.plan_id,
 	plan_check_run.status,
@@ -180,9 +172,7 @@ WHERE %s
 		var config, result string
 		if err := rows.Scan(
 			&planCheckRun.UID,
-			&planCheckRun.CreatorUID,
 			&planCheckRun.CreatedTs,
-			&planCheckRun.UpdaterUID,
 			&planCheckRun.UpdatedTs,
 			&planCheckRun.PlanUID,
 			&planCheckRun.Status,
@@ -209,7 +199,7 @@ WHERE %s
 }
 
 // UpdatePlanCheckRun updates a plan check run.
-func (s *Store) UpdatePlanCheckRun(ctx context.Context, updaterUID int, status PlanCheckRunStatus, result *storepb.PlanCheckRunResult, uid int) error {
+func (s *Store) UpdatePlanCheckRun(ctx context.Context, status PlanCheckRunStatus, result *storepb.PlanCheckRunResult, uid int) error {
 	resultBytes, err := protojson.Marshal(result)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal result %v", result)
@@ -217,27 +207,25 @@ func (s *Store) UpdatePlanCheckRun(ctx context.Context, updaterUID int, status P
 	query := `
     UPDATE plan_check_run
     SET
-		updater_id = $1,
-		updated_ts = $2,
-		status = $3,
-		result = $4
-	WHERE id = $5`
-	if _, err := s.db.db.ExecContext(ctx, query, updaterUID, time.Now().Unix(), status, resultBytes, uid); err != nil {
+		updated_ts = $1,
+		status = $2,
+		result = $3
+	WHERE id = $4`
+	if _, err := s.db.db.ExecContext(ctx, query, time.Now().Unix(), status, resultBytes, uid); err != nil {
 		return errors.Wrapf(err, "failed to update plan check run")
 	}
 	return nil
 }
 
 // BatchCancelPlanCheckRuns updates the status of planCheckRuns to CANCELED.
-func (s *Store) BatchCancelPlanCheckRuns(ctx context.Context, planCheckRunUIDs []int, updaterID int) error {
+func (s *Store) BatchCancelPlanCheckRuns(ctx context.Context, planCheckRunUIDs []int) error {
 	query := `
 		UPDATE plan_check_run
 		SET 
 			status = $1, 
-			updater_id = $2, 
-			updated_ts = $3
-		WHERE id = ANY($4)`
-	if _, err := s.db.db.ExecContext(ctx, query, PlanCheckRunStatusCanceled, updaterID, time.Now().Unix(), planCheckRunUIDs); err != nil {
+			updated_ts = $2
+		WHERE id = ANY($3)`
+	if _, err := s.db.db.ExecContext(ctx, query, PlanCheckRunStatusCanceled, time.Now().Unix(), planCheckRunUIDs); err != nil {
 		return err
 	}
 	return nil

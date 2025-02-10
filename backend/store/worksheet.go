@@ -35,7 +35,6 @@ type WorkSheetMessage struct {
 	DatabaseUID *int
 
 	CreatorID int
-	UpdaterID int
 
 	Title      string
 	Statement  string
@@ -79,7 +78,6 @@ type FindWorkSheetMessage struct {
 // PatchWorkSheetMessage is the message to patch a sheet.
 type PatchWorkSheetMessage struct {
 	UID         int
-	UpdaterID   int
 	Title       *string
 	Statement   *string
 	Visibility  *string
@@ -149,7 +147,6 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 			worksheet.id,
 			worksheet.creator_id,
 			worksheet.created_ts,
-			worksheet.updater_id,
 			worksheet.updated_ts,
 			worksheet.project_id,
 			worksheet.database_id,
@@ -175,7 +172,6 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 			&sheet.UID,
 			&sheet.CreatorID,
 			&sheet.createdTs,
-			&sheet.UpdaterID,
 			&sheet.updatedTs,
 			&sheet.ProjectUID,
 			&sheet.DatabaseUID,
@@ -215,7 +211,6 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 	query := `
 		INSERT INTO worksheet (
 			creator_id,
-			updater_id,
 			project_id,
 			database_id,
 			name,
@@ -223,7 +218,7 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 			visibility,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, created_ts, updated_ts, OCTET_LENGTH(statement)
 	`
 
@@ -232,9 +227,7 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 		return nil, err
 	}
 	defer tx.Rollback()
-	create.UpdaterID = create.CreatorID
 	if err := tx.QueryRowContext(ctx, query,
-		create.CreatorID,
 		create.CreatorID,
 		create.ProjectUID,
 		create.DatabaseUID,
@@ -300,7 +293,7 @@ func (s *Store) DeleteWorkSheet(ctx context.Context, sheetUID int) error {
 
 // patchWorkSheetImpl updates a sheet's name/statement/visibility/database_id/project_id.
 func patchWorkSheetImpl(ctx context.Context, tx *Tx, patch *PatchWorkSheetMessage) error {
-	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{patch.UpdaterID, time.Now().Unix()}
+	set, args := []string{"updated_ts = $1"}, []any{time.Now().Unix()}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}

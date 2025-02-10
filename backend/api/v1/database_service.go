@@ -324,11 +324,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 		}
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	updatedDatabase, err := s.store.UpdateDatabase(ctx, patch, principalID)
+	updatedDatabase, err := s.store.UpdateDatabase(ctx, patch)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -432,12 +428,8 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 	}
 
 	response := &v1pb.BatchUpdateDatabasesResponse{}
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
 	if len(databases) > 0 {
-		updatedDatabases, err := s.store.BatchUpdateDatabaseProject(ctx, databases, project.ResourceID, principalID)
+		updatedDatabases, err := s.store.BatchUpdateDatabaseProject(ctx, databases, project.ResourceID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -859,11 +851,7 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 	}
 	updateDatabaseMessage.InstanceID = database.InstanceID
 	updateDatabaseMessage.DatabaseName = database.DatabaseName
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	updatedDatabase, err := s.store.UpdateDatabase(ctx, &updateDatabaseMessage, principalID)
+	updatedDatabase, err := s.store.UpdateDatabase(ctx, &updateDatabaseMessage)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -932,11 +920,7 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 	}
 	updateDatabaseMessage.InstanceID = database.InstanceID
 	updateDatabaseMessage.DatabaseName = database.DatabaseName
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	if _, err := s.store.UpdateDatabase(ctx, &updateDatabaseMessage, principalID); err != nil {
+	if _, err := s.store.UpdateDatabase(ctx, &updateDatabaseMessage); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 

@@ -20,8 +20,6 @@ type PipelineMessage struct {
 	ID         int
 	CreatorUID int
 	CreatedTs  int64
-	UpdaterUID int
-	UpdatedTs  int64
 	IssueID    *int
 }
 
@@ -79,7 +77,7 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 		}
 	}
 
-	createdStages, err := s.createStages(ctx, tx, stagesToCreate, createdPipelineUID, creatorUID)
+	createdStages, err := s.createStages(ctx, tx, stagesToCreate, createdPipelineUID)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to create stages")
 	}
@@ -88,7 +86,6 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 		var taskCreateList []*TaskMessage
 		for _, taskCreate := range stage.TaskList {
 			c := taskCreate
-			c.CreatorID = creatorUID
 			c.PipelineID = createdPipelineUID
 			c.StageID = stage.ID
 			taskCreateList = append(taskCreateList, c)
@@ -169,26 +166,22 @@ func (*Store) createPipeline(ctx context.Context, tx *Tx, create *PipelineMessag
 		INSERT INTO pipeline (
 			project_id,
 			creator_id,
-			updater_id,
 			name
 		)
 		VALUES (
 			(SELECT project.id FROM project WHERE project.resource_id = $1),
 			$2,
-			$3,
-			$4
+			$3
 		)
 		RETURNING id, created_ts
 	`
 	pipeline := &PipelineMessage{
 		ProjectID:  create.ProjectID,
 		CreatorUID: creatorUID,
-		UpdaterUID: creatorUID,
 		Name:       create.Name,
 	}
 	if err := tx.QueryRowContext(ctx, query,
 		create.ProjectID,
-		creatorUID,
 		creatorUID,
 		create.Name,
 	).Scan(
@@ -201,7 +194,6 @@ func (*Store) createPipeline(ctx context.Context, tx *Tx, create *PipelineMessag
 		return nil, errors.Wrapf(err, "failed to insert")
 	}
 
-	pipeline.UpdatedTs = pipeline.CreatedTs
 	return pipeline, nil
 }
 
@@ -238,8 +230,6 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 			pipeline.id,
 			pipeline.creator_id,
 			pipeline.created_ts,
-			pipeline.updater_id,
-			pipeline.updated_ts,
 			project.resource_id,
 			pipeline.name,
 			issue.id
@@ -274,8 +264,6 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 			&pipeline.ID,
 			&pipeline.CreatorUID,
 			&pipeline.CreatedTs,
-			&pipeline.UpdaterUID,
-			&pipeline.UpdatedTs,
 			&pipeline.ProjectID,
 			&pipeline.Name,
 			&pipeline.IssueID,

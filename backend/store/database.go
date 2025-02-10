@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -182,12 +181,8 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectUID,
 		return 0, err
 	}
 
-	// We will do on conflict update the column updater_id for returning the ID because on conflict do nothing will not return anything.
-	// We will also move the deleted database into default project.
 	query := `
 		INSERT INTO db (
-			creator_id,
-			updater_id,
 			instance_id,
 			project_id,
 			name,
@@ -198,9 +193,8 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectUID,
 			datashare,
 			service_name
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		ON CONFLICT (instance_id, name) DO UPDATE SET
-			updater_id = EXCLUDED.updater_id,
 			project_id = EXCLUDED.project_id,
 			sync_status = EXCLUDED.sync_status,
 			last_successful_sync_ts = EXCLUDED.last_successful_sync_ts,
@@ -209,8 +203,6 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectUID,
 		RETURNING id`
 	var databaseUID int
 	if err := tx.QueryRowContext(ctx, query,
-		api.SystemBotID,
-		api.SystemBotID,
 		instanceUID,
 		projectUID,
 		create.DatabaseName,
@@ -264,11 +256,8 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	if create.EnvironmentID != "" {
 		environment = &create.EnvironmentID
 	}
-	// We will do on conflict update the column updater_id for returning the ID because on conflict do nothing will not return anything.
 	query := `
 		INSERT INTO db (
-			creator_id,
-			updater_id,
 			instance_id,
 			project_id,
 			environment,
@@ -281,19 +270,16 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 			service_name,
 			metadata
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '', $9, $10, $11, $12)
+		VALUES ($1, $2, $3, $4, $5, $6, '', $7, $8, $9, $10)
 		ON CONFLICT (instance_id, name) DO UPDATE SET
 			project_id = EXCLUDED.project_id,
 			environment = EXCLUDED.environment,
 			name = EXCLUDED.name,
 			schema_version = EXCLUDED.schema_version,
-			metadata = EXCLUDED.metadata,
-			updated_ts = extract(epoch from now())
+			metadata = EXCLUDED.metadata
 		RETURNING id`
 	var databaseUID int
 	if err := tx.QueryRowContext(ctx, query,
-		api.SystemBotID,
-		api.SystemBotID,
 		instance.UID,
 		project.UID,
 		environment,
@@ -320,13 +306,13 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 }
 
 // UpdateDatabase updates a database.
-func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage, updaterID int) (*DatabaseMessage, error) {
+func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage) (*DatabaseMessage, error) {
 	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &patch.InstanceID})
 	if err != nil {
 		return nil, err
 	}
 
-	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{updaterID, time.Now().Unix()}
+	set, args := []string{}, []any{}
 	if v := patch.ProjectID; v != nil {
 		project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: patch.ProjectID})
 		if err != nil {
@@ -402,7 +388,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 }
 
 // BatchUpdateDatabaseProject updates the project for databases in batch.
-func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*DatabaseMessage, projectID string, updaterID int) ([]*DatabaseMessage, error) {
+func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*DatabaseMessage, projectID string) ([]*DatabaseMessage, error) {
 	if len(databases) == 0 {
 		return nil, errors.Errorf("there is no database in the project")
 	}
@@ -418,7 +404,7 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 	defer tx.Rollback()
 
 	var wheres []string
-	args := []any{project.UID, updaterID}
+	args := []any{project.UID}
 	for i, database := range databases {
 		wheres = append(wheres, fmt.Sprintf("(instance.resource_id = $%d AND db.name = $%d)", 2*i+3, 2*i+4))
 		args = append(args, database.InstanceID, database.DatabaseName)
@@ -429,7 +415,7 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 	}
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
 			UPDATE db
-			SET project_id = $1, updater_id = $2
+			SET project_id = $1
 			FROM instance
 			WHERE db.instance_id = instance.id %s;`, databaseClause),
 		args...,
