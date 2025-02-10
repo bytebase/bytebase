@@ -133,13 +133,6 @@ message ReviewConfig {
 
   bool enabled = 3;
 
-  // Format: users/hello@world.com
-  string creator = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  google.protobuf.Timestamp create_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  google.protobuf.Timestamp update_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
-
   repeated SQLReviewRule rules = 7;
 
   // resources using the config.

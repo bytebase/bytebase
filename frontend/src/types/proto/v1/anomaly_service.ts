@@ -67,7 +67,6 @@ export interface Anomaly {
   /** severity is the severity of the anomaly. */
   severity: Anomaly_AnomalySeverity;
   createTime: Timestamp | undefined;
-  updateTime: Timestamp | undefined;
 }
 
 /** AnomalyType is the type of the anomaly. */
@@ -392,7 +391,6 @@ function createBaseAnomaly(): Anomaly {
     type: Anomaly_AnomalyType.ANOMALY_TYPE_UNSPECIFIED,
     severity: Anomaly_AnomalySeverity.ANOMALY_SEVERITY_UNSPECIFIED,
     createTime: undefined,
-    updateTime: undefined,
   };
 }
 
@@ -409,9 +407,6 @@ export const Anomaly: MessageFns<Anomaly> = {
     }
     if (message.createTime !== undefined) {
       Timestamp.encode(message.createTime, writer.uint32(74).fork()).join();
-    }
-    if (message.updateTime !== undefined) {
-      Timestamp.encode(message.updateTime, writer.uint32(82).fork()).join();
     }
     return writer;
   },
@@ -455,14 +450,6 @@ export const Anomaly: MessageFns<Anomaly> = {
           message.createTime = Timestamp.decode(reader, reader.uint32());
           continue;
         }
-        case 10: {
-          if (tag !== 82) {
-            break;
-          }
-
-          message.updateTime = Timestamp.decode(reader, reader.uint32());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -482,7 +469,6 @@ export const Anomaly: MessageFns<Anomaly> = {
         ? anomaly_AnomalySeverityFromJSON(object.severity)
         : Anomaly_AnomalySeverity.ANOMALY_SEVERITY_UNSPECIFIED,
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
-      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
     };
   },
 
@@ -500,9 +486,6 @@ export const Anomaly: MessageFns<Anomaly> = {
     if (message.createTime !== undefined) {
       obj.createTime = fromTimestamp(message.createTime).toISOString();
     }
-    if (message.updateTime !== undefined) {
-      obj.updateTime = fromTimestamp(message.updateTime).toISOString();
-    }
     return obj;
   },
 
@@ -516,9 +499,6 @@ export const Anomaly: MessageFns<Anomaly> = {
     message.severity = object.severity ?? Anomaly_AnomalySeverity.ANOMALY_SEVERITY_UNSPECIFIED;
     message.createTime = (object.createTime !== undefined && object.createTime !== null)
       ? Timestamp.fromPartial(object.createTime)
-      : undefined;
-    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
-      ? Timestamp.fromPartial(object.updateTime)
       : undefined;
     return message;
   },

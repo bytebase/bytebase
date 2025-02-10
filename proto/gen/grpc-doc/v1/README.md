@@ -5201,7 +5201,6 @@ The theme resources.
 | type | [Anomaly.AnomalyType](#bytebase-v1-Anomaly-AnomalyType) |  | type is the type of the anomaly. |
 | severity | [Anomaly.AnomalySeverity](#bytebase-v1-Anomaly-AnomalySeverity) |  | severity is the severity of the anomaly. |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 
@@ -6574,9 +6573,7 @@ The environment&#39;s `name` field is used to identify the environment to update
 | name | [string](#string) |  | The name of the group to retrieve. Format: groups/{group}, group is an email. |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
-| creator | [string](#string) |  | The name for the creator. Format: users/hello@world.com |
 | members | [GroupMember](#bytebase-v1-GroupMember) | repeated |  |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the group was created. |
 | source | [string](#string) |  | source means where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. |
 
 
@@ -9716,9 +9713,6 @@ When paginating, all other parameters provided to `ListReviewConfigs` must match
 | name | [string](#string) |  | The name of the sql review to retrieve. Format: reviewConfigs/{reviewConfig} |
 | title | [string](#string) |  |  |
 | enabled | [bool](#bool) |  |  |
-| creator | [string](#string) |  | Format: users/hello@world.com |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | rules | [SQLReviewRule](#bytebase-v1-SQLReviewRule) | repeated |  |
 | resources | [string](#string) | repeated | resources using the config. Format: {resurce}/{resource id}, for example, environments/test. |
 
@@ -11312,10 +11306,6 @@ The vcsConnector&#39;s `name` field is used to identify the vcsConnector to upda
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the vcsConnector resource. Canonical parent is project. Format: projects/{project}/vcsConnectors/{vcsConnector} |
 | title | [string](#string) |  | The title of the vcs connector. |
-| creator | [string](#string) |  | The creator of the vcsConnector. Format: users/{email} |
-| updater | [string](#string) |  | The updater of the vcsConnector. Format: users/{email} |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The create time of the vcsConnector. |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last update time of the vcsConnector. |
 | vcs_provider | [string](#string) |  | The name of the VCS. Format: vcsProviders/{vcsProvider} |
 | external_id | [string](#string) |  | The reposition external id in target VCS. |
 | base_directory | [string](#string) |  | The root directory where Bytebase observes the file change. If empty, then it observes the entire repository. |
