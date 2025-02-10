@@ -173,13 +173,8 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		return nil, err
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
 	instance, err := s.store.CreateInstanceV2(ctx,
 		instanceMessage,
-		principalID,
 		instanceCountLimit,
 	)
 	if err != nil {
@@ -267,13 +262,8 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance.Name)
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
 	patch := &store.UpdateInstanceMessage{
 		ResourceID: instance.ResourceID,
-		UpdaterID:  principalID,
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
@@ -556,14 +546,9 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 		}
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
 	if _, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
 		ResourceID: instance.ResourceID,
 		Deleted:    &deletePatch,
-		UpdaterID:  principalID,
 	}, -1 /* don't need to pass the instance limition */); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -581,14 +566,9 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 		return nil, status.Errorf(codes.InvalidArgument, "instance %q is active", request.Name)
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
 	ins, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
 		ResourceID: instance.ResourceID,
 		Deleted:    &undeletePatch,
-		UpdaterID:  principalID,
 	}, -1 /* don't need to pass the instance limition */)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -705,11 +685,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	if err := s.store.AddDataSourceToInstanceV2(ctx, instance.UID, principalID, instance.ResourceID, dataSource); err != nil {
+	if err := s.store.AddDataSourceToInstanceV2(ctx, instance.UID, instance.ResourceID, dataSource); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -759,12 +735,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		}
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
 	patch := &store.UpdateDataSourceMessage{
-		UpdaterID:    principalID,
 		InstanceUID:  instance.UID,
 		InstanceID:   instance.ResourceID,
 		DataSourceID: request.DataSource.Id,

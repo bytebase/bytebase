@@ -198,8 +198,6 @@ type UpsertSlowLogMessage struct {
 	InstanceUID int
 	LogDate     time.Time
 	SlowLog     *storepb.SlowQueryStatistics
-
-	UpdaterID int
 }
 
 // UpsertSlowLog upserts slow query logs.
@@ -236,16 +234,12 @@ func (s *Store) UpsertSlowLog(ctx context.Context, upsert *UpsertSlowLogMessage)
 
 	query := `
 		INSERT INTO slow_query (
-			creator_id,
-			updater_id,
 			instance_id,
 			database_id,
 			log_date_ts,
 			slow_query_statistics
-		) VALUES ( $1, $2, $3, $4, $5, $6 )
+		) VALUES ($1, $2, $3, $4)
 		ON CONFLICT (database_id, log_date_ts) DO UPDATE SET
-			updater_id = EXCLUDED.updater_id,
-			updated_ts = extract(epoch from now()),
 			slow_query_statistics = EXCLUDED.slow_query_statistics
 	`
 
@@ -256,8 +250,6 @@ func (s *Store) UpsertSlowLog(ctx context.Context, upsert *UpsertSlowLogMessage)
 	defer tx.Rollback()
 
 	if _, err := tx.ExecContext(ctx, query,
-		upsert.UpdaterID,
-		upsert.UpdaterID,
 		upsert.InstanceUID,
 		databaseUID,
 		logDate,

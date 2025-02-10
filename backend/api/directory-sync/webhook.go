@@ -318,7 +318,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			Payload: &storepb.GroupPayload{
 				Source: entraIDSource,
 			},
-		}, api.SystemBotID)
+		})
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to create group, error %v", err))
 		}
@@ -544,7 +544,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			}
 		}
 
-		updatedGroup, err := s.store.UpdateGroup(ctx, group.Email, updateGroup, api.SystemBotID)
+		updatedGroup, err := s.store.UpdateGroup(ctx, group.Email, updateGroup)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to update group, error %v", err))
 		}

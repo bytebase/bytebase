@@ -54,17 +54,15 @@ func (*Store) createTaskDAG(ctx context.Context, tx *Tx, create *TaskDAGMessage)
 	query := `
 		INSERT INTO task_dag (
 			from_task_id,
-			to_task_id,
-			payload
+			to_task_id
 		)
-		VALUES ($1, $2, $3)
+		VALUES ($1, $2)
 		RETURNING from_task_id, to_task_id
 	`
 	var taskDAG TaskDAGMessage
 	if err := tx.QueryRowContext(ctx, query,
 		create.FromTaskID,
 		create.ToTaskID,
-		"{}", /* payload */
 	).Scan(
 		&taskDAG.FromTaskID,
 		&taskDAG.ToTaskID,

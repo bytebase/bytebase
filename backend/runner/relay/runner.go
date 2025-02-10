@@ -133,20 +133,14 @@ func (r *Runner) checkExternalApproval(ctx context.Context, approval *store.Exte
 		if err := r.ApproveExternalApprovalNode(ctx, approval.IssueUID); err != nil {
 			return err
 		}
-		if _, err := r.store.UpdateExternalApprovalV2(ctx, &store.UpdateExternalApprovalMessage{
-			ID:        approval.ID,
-			RowStatus: api.Archived,
-		}); err != nil {
+		if err := r.store.DeleteExternalApprovalV2(ctx, approval.ID); err != nil {
 			return err
 		}
 	} else if resp.Status == relayplugin.StatusRejected {
 		if err := r.RejectExternalApprovalNode(ctx, approval.IssueUID); err != nil {
 			return err
 		}
-		if _, err := r.store.UpdateExternalApprovalV2(ctx, &store.UpdateExternalApprovalMessage{
-			ID:        approval.ID,
-			RowStatus: api.Archived,
-		}); err != nil {
+		if err := r.store.DeleteExternalApprovalV2(ctx, approval.ID); err != nil {
 			return err
 		}
 	}
@@ -178,10 +172,7 @@ func (r *Runner) cancelExternalApproval(ctx context.Context, issueUID int) {
 		return
 	}
 	for _, approval := range approvals {
-		if _, err := r.store.UpdateExternalApprovalV2(ctx, &store.UpdateExternalApprovalMessage{
-			ID:        approval.ID,
-			RowStatus: api.Archived,
-		}); err != nil {
+		if err := r.store.DeleteExternalApprovalV2(ctx, approval.ID); err != nil {
 			slog.Error("failed to archive external approval", log.BBError(err))
 			continue
 		}

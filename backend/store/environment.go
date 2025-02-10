@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -110,7 +109,7 @@ func (s *Store) ListEnvironmentV2(ctx context.Context, find *FindEnvironmentMess
 }
 
 // CreateEnvironmentV2 creates an environment.
-func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMessage, creatorID int) (*EnvironmentMessage, error) {
+func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMessage) (*EnvironmentMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -122,18 +121,14 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 			INSERT INTO environment (
 				resource_id,
 				name,
-				"order",
-				creator_id,
-				updater_id
+				"order"
 			)
-			VALUES ($1, $2, $3, $4, $5)
+			VALUES ($1, $2, $3)
 			RETURNING id
 		`,
 		create.ResourceID,
 		create.Title,
 		create.Order,
-		creatorID,
-		creatorID,
 	).Scan(
 		&uid,
 	); err != nil {
@@ -158,7 +153,7 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 		InheritFromParent: true,
 		Payload:           string(payload),
 		Enforce:           true,
-	}, creatorID); err != nil {
+	}); err != nil {
 		return nil, err
 	}
 
@@ -181,8 +176,8 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 }
 
 // UpdateEnvironmentV2 updates an environment.
-func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, patch *UpdateEnvironmentMessage, updaterID int) (*EnvironmentMessage, error) {
-	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{updaterID, time.Now().Unix()}
+func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, patch *UpdateEnvironmentMessage) (*EnvironmentMessage, error) {
+	set, args := []string{}, []any{}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
@@ -262,7 +257,7 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 			InheritFromParent: true,
 			Payload:           string(payload),
 			Enforce:           true,
-		}, updaterID); err != nil {
+		}); err != nil {
 			return nil, err
 		}
 	}

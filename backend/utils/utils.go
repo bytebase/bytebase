@@ -433,7 +433,7 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 		InheritFromParent: false,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
-	}, api.SystemBotID); err != nil {
+	}); err != nil {
 		return err
 	}
 

@@ -5,8 +5,6 @@ CREATE TYPE row_status AS ENUM ('NORMAL', 'ARCHIVED');
 CREATE TABLE idp (
   id SERIAL PRIMARY KEY,
   row_status row_status NOT NULL DEFAULT 'NORMAL',
-  created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-  updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
   resource_id TEXT NOT NULL,
   name TEXT NOT NULL,
   domain TEXT NOT NULL,
@@ -39,14 +37,8 @@ CREATE TABLE principal (
 -- Setting
 CREATE TABLE setting (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
-    value TEXT NOT NULL,
-    description TEXT NOT NULL DEFAULT ''
+    value TEXT NOT NULL
 );
 
 CREATE UNIQUE INDEX idx_setting_unique_name ON setting(name);
@@ -56,12 +48,7 @@ ALTER SEQUENCE setting_id_seq RESTART WITH 101;
 -- Role
 CREATE TABLE role (
     id BIGSERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    resource_id TEXT NOT NULL, -- user-defined id, such as projectDBA
+    resource_id TEXT NOT NULL,
     name TEXT NOT NULL,
     description TEXT NOT NULL,
     permissions JSONB NOT NULL DEFAULT '{}',
@@ -76,10 +63,6 @@ ALTER SEQUENCE role_id_seq RESTART WITH 101;
 CREATE TABLE environment (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
     "order" INTEGER NOT NULL CHECK ("order" >= 0),
     resource_id TEXT NOT NULL
@@ -97,10 +80,7 @@ CREATE TYPE resource_type AS ENUM ('WORKSPACE', 'ENVIRONMENT', 'PROJECT', 'INSTA
 CREATE TABLE policy (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    updated_ts TIMESTAMPTZ NOT NULL DEFAULT now(),
     type TEXT NOT NULL CHECK (type LIKE 'bb.policy.%'),
     payload JSONB NOT NULL DEFAULT '{}',
     resource_type resource_type NOT NULL,
@@ -116,10 +96,6 @@ ALTER SEQUENCE policy_id_seq RESTART WITH 101;
 CREATE TABLE project (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
     key TEXT NOT NULL,
     resource_id TEXT NOT NULL,
@@ -134,11 +110,6 @@ CREATE UNIQUE INDEX idx_project_unique_resource_id ON project(resource_id);
 -- Project Hook
 CREATE TABLE project_webhook (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
     type TEXT NOT NULL CHECK (type LIKE 'bb.plugin.webhook.%'),
     name TEXT NOT NULL,
@@ -157,10 +128,6 @@ ALTER SEQUENCE project_webhook_id_seq RESTART WITH 101;
 CREATE TABLE instance (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     environment TEXT REFERENCES environment (resource_id),
     name TEXT NOT NULL,
     engine TEXT NOT NULL,
@@ -176,23 +143,6 @@ CREATE TABLE instance (
 CREATE UNIQUE INDEX idx_instance_unique_resource_id ON instance(resource_id);
 
 ALTER SEQUENCE instance_id_seq RESTART WITH 101;
-
--- Instance user stores the users for a particular instance
-CREATE TABLE instance_user (
-    id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    instance_id INTEGER NOT NULL REFERENCES instance (id),
-    name TEXT NOT NULL,
-    "grant" TEXT NOT NULL
-);
-
-ALTER SEQUENCE instance_user_id_seq RESTART WITH 101;
-
-CREATE UNIQUE INDEX idx_instance_user_unique_instance_id_name ON instance_user(instance_id, name);
 
 -- db stores the databases for a particular instance
 -- data is synced periodically from the instance
@@ -246,11 +196,6 @@ ALTER SEQUENCE db_schema_id_seq RESTART WITH 101;
 -- data_source table stores the data source for a particular database
 CREATE TABLE data_source (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     name TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('ADMIN', 'RW', 'RO')),
@@ -364,11 +309,8 @@ ALTER SEQUENCE task_id_seq RESTART WITH 101;
 -- from_task_id blocks to_task_id
 CREATE TABLE task_dag (
     id SERIAL PRIMARY KEY,
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     from_task_id INTEGER NOT NULL REFERENCES task (id),
-    to_task_id INTEGER NOT NULL REFERENCES task (id),
-    payload JSONB NOT NULL DEFAULT '{}'
+    to_task_id INTEGER NOT NULL REFERENCES task (id)
 );
 
 CREATE INDEX idx_task_dag_from_task_id ON task_dag(from_task_id);
@@ -517,30 +459,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_instance_change_history_unique_version ON 
 
 ALTER SEQUENCE instance_change_history_id_seq RESTART WITH 101;
 
--- activity table stores the activity for the container such as issue
-CREATE TABLE activity (
-    id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    resource_container TEXT NOT NULL DEFAULT '',
-    container_id INTEGER NOT NULL CHECK (container_id > 0),
-    type TEXT NOT NULL CHECK (type LIKE 'bb.%'),
-    level TEXT NOT NULL CHECK (level IN ('INFO', 'WARN', 'ERROR')),
-    comment TEXT NOT NULL DEFAULT '',
-    payload JSONB NOT NULL DEFAULT '{}'
-);
-
-CREATE INDEX idx_activity_resource_container ON activity(resource_container);
-
-CREATE INDEX idx_activity_container_id ON activity(container_id);
-
-CREATE INDEX idx_activity_created_ts ON activity(created_ts);
-
-ALTER SEQUENCE activity_id_seq RESTART WITH 101;
-
 CREATE TABLE audit_log (
     id BIGSERIAL PRIMARY KEY,
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
@@ -561,10 +479,8 @@ ALTER SEQUENCE audit_log_id_seq RESTART WITH 101;
 
 CREATE TABLE issue_comment (
     id BIGSERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     issue_id INTEGER NOT NULL REFERENCES issue (id),
     payload JSONB NOT NULL DEFAULT '{}'
@@ -576,7 +492,6 @@ ALTER SEQUENCE issue_comment_id_seq RESTART WITH 101;
 
 CREATE TABLE query_history (
     id BIGSERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id TEXT NOT NULL, -- the project resource id
@@ -593,11 +508,6 @@ ALTER SEQUENCE query_history_id_seq RESTART WITH 101;
 -- vcs table stores the version control provider config
 CREATE TABLE vcs (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     resource_id TEXT NOT NULL,
     name TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('GITLAB', 'GITHUB', 'BITBUCKET', 'AZURE_DEVOPS')),
@@ -612,11 +522,6 @@ ALTER SEQUENCE vcs_id_seq RESTART WITH 101;
 -- vcs_connector table stores vcs connectors for a project
 CREATE TABLE vcs_connector (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     vcs_id INTEGER NOT NULL REFERENCES vcs (id),
     project_id INTEGER NOT NULL REFERENCES project (id),
     resource_id TEXT NOT NULL,
@@ -632,10 +537,6 @@ ALTER SEQUENCE vcs_connector_id_seq RESTART WITH 101;
 -- For now, anomaly can be associated with a particular instance or database.
 CREATE TABLE anomaly (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project TEXT NOT NULL,
     instance_id INTEGER NOT NULL REFERENCES instance (id),
@@ -652,11 +553,6 @@ ALTER SEQUENCE anomaly_id_seq RESTART WITH 101;
 -- deployment_config stores deployment configurations at project level.
 CREATE TABLE deployment_config (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
     name TEXT NOT NULL,
     config JSONB NOT NULL DEFAULT '{}'
@@ -701,9 +597,6 @@ CREATE INDEX idx_worksheet_organizer_principal_id ON worksheet_organizer(princip
 -- external_approval stores approval instances of third party applications.
 CREATE TABLE external_approval ( 
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     issue_id INTEGER NOT NULL REFERENCES issue (id),
     requester_id INTEGER NOT NULL REFERENCES principal (id),
     approver_id INTEGER NOT NULL REFERENCES principal (id),
@@ -711,18 +604,13 @@ CREATE TABLE external_approval (
     payload JSONB NOT NULL
 );
 
-CREATE INDEX idx_external_approval_row_status_issue_id ON external_approval(row_status, issue_id);
+CREATE INDEX idx_external_approval_issue_id ON external_approval(issue_id);
 
 ALTER SEQUENCE external_approval_id_seq RESTART WITH 101;
 
 -- risk stores the definition of a risk.
 CREATE TABLE risk (
     id BIGSERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     source TEXT NOT NULL CHECK (source LIKE 'bb.risk.%'),
     -- how risky is the risk, the higher the riskier
     level BIGINT NOT NULL,
@@ -736,12 +624,6 @@ ALTER SEQUENCE risk_id_seq RESTART WITH 101;
 -- slow_query stores slow query statistics for each database.
 CREATE TABLE slow_query (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    -- updated_ts is used to identify the latest timestamp for syncing slow query logs.
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     -- In MySQL, users can query without specifying a database. In this case, instance_id is used to identify the instance.
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     -- In MySQL, users can query without specifying a database. In this case, database_id is NULL.
@@ -761,11 +643,6 @@ ALTER SEQUENCE slow_query_id_seq RESTART WITH 101;
 
 CREATE TABLE db_group (
     id BIGSERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
     resource_id TEXT NOT NULL,
     placeholder TEXT NOT NULL DEFAULT '',
@@ -782,11 +659,6 @@ ALTER SEQUENCE db_group_id_seq RESTART WITH 101;
 -- changelist table stores project changelists.
 CREATE TABLE changelist (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
     name TEXT NOT NULL,
     payload JSONB NOT NULL DEFAULT '{}'
@@ -803,35 +675,17 @@ CREATE TABLE export_archive (
   payload JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE TABLE sql_lint_config (
-  id TEXT NOT NULL PRIMARY KEY,
-  creator_id INTEGER NOT NULL REFERENCES principal (id),
-  created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-  updater_id INTEGER NOT NULL REFERENCES principal (id),
-  updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-  config JSONB NOT NULL DEFAULT '{}'
-);
-
 CREATE TABLE user_group (
   email TEXT PRIMARY KEY,
-  creator_id INTEGER NOT NULL REFERENCES principal (id),
-  created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-  updater_id INTEGER NOT NULL REFERENCES principal (id),
-  updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
   name TEXT NOT NULL,
   description TEXT NOT NULL DEFAULT '',
   payload JSONB NOT NULL DEFAULT '{}'
 );
 
 -- review config table.
-CREATE TABLE review_config
-(
+CREATE TABLE review_config (
     id TEXT NOT NULL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     name TEXT NOT NULL,
     payload JSONB NOT NULL DEFAULT '{}'
 );
@@ -855,7 +709,6 @@ CREATE INDEX IF NOT EXISTS idx_revision_database_id_version ON revision (databas
 
 CREATE TABLE sync_history (
     id BIGSERIAL PRIMARY KEY,
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts TIMESTAMPTZ NOT NULL DEFAULT now(),
     database_id INTEGER NOT NULL REFERENCES db (id),
     metadata JSON NOT NULL DEFAULT '{}',
@@ -901,12 +754,12 @@ INSERT INTO principal (id, creator_id, updater_id, type, name, email, password_h
 ALTER SEQUENCE principal_id_seq RESTART WITH 101;
 
 -- Default project.
-INSERT INTO project (id, creator_id, updater_id, name, key, resource_id) VALUES (1, 1, 1, 'Default', 'DEFAULT', 'default');
+INSERT INTO project (id, name, key, resource_id) VALUES (1, 'Default', 'DEFAULT', 'default');
 
 ALTER SEQUENCE project_id_seq RESTART WITH 101;
 
 -- Create "test" and "prod" environments
-INSERT INTO environment (id, creator_id, updater_id, name, "order", resource_id) VALUES (101, 1, 1, 'Test', 0, 'test');
-INSERT INTO environment (id, creator_id, updater_id, name, "order", resource_id) VALUES (102, 1, 1, 'Prod', 1, 'prod');
+INSERT INTO environment (id, name, "order", resource_id) VALUES (101, 'Test', 0, 'test');
+INSERT INTO environment (id, name, "order", resource_id) VALUES (102, 'Prod', 1, 'prod');
 
 ALTER SEQUENCE environment_id_seq RESTART WITH 103;

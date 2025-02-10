@@ -225,7 +225,6 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 			InstanceUID:   instance.UID,
 			LogDate:       latestLogDate,
 			SlowLog:       statistics,
-			UpdaterID:     api.SystemBotID,
 		}); err != nil {
 			slog.Warn("Failed to upsert slow query log",
 				slog.String("instance", instance.ResourceID),
@@ -324,7 +323,6 @@ func (s *Syncer) syncMySQLSlowQuery(ctx context.Context, instance *store.Instanc
 				InstanceUID:   instance.UID,
 				LogDate:       date,
 				SlowLog:       slowLog,
-				UpdaterID:     api.SystemBotID,
 			}); err != nil {
 				return err
 			}

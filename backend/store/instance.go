@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
@@ -50,7 +49,6 @@ type UpdateInstanceMessage struct {
 	EnvironmentID       string
 
 	// Output only.
-	UpdaterID  int
 	ResourceID string
 }
 
@@ -128,7 +126,7 @@ func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) 
 }
 
 // CreateInstanceV2 creates the instance.
-func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMessage, creatorID, maximumActivation int) (*InstanceMessage, error) {
+func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMessage, maximumActivation int) (*InstanceMessage, error) {
 	if err := validateDataSourceList(instanceCreate.DataSources); err != nil {
 		return nil, err
 	}
@@ -162,8 +160,6 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			INSERT INTO instance (
 				resource_id,
-				creator_id,
-				updater_id,
 				environment,
 				name,
 				engine,
@@ -172,13 +168,11 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 				options,
 				metadata
 			)
-			SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+			SELECT $1, $2, $3, $4, $5, $6, $7, $8
 			%s
 			RETURNING id
 		`, where),
 		instanceCreate.ResourceID,
-		creatorID,
-		creatorID,
 		environment,
 		instanceCreate.Title,
 		instanceCreate.Engine.String(),
@@ -191,7 +185,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 	}
 
 	for _, ds := range instanceCreate.DataSources {
-		if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceID, creatorID, ds); err != nil {
+		if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceID, ds); err != nil {
 			return nil, err
 		}
 	}
@@ -232,7 +226,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		}
 	}
 
-	set, args, where := []string{"updater_id = $1", "updated_ts = $2"}, []any{patch.UpdaterID, time.Now().Unix()}, []string{}
+	set, args, where := []string{}, []any{}, []string{}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
@@ -341,7 +335,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		}
 
 		for _, ds := range *patch.DataSources {
-			if err := s.addDataSourceToInstanceImplV2(ctx, tx, instance.UID, patch.UpdaterID, ds); err != nil {
+			if err := s.addDataSourceToInstanceImplV2(ctx, tx, instance.UID, ds); err != nil {
 				return nil, err
 			}
 		}
