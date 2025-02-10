@@ -10461,6 +10461,7 @@ components:
                     type: string
                     format: date-time
                 creator:
+                    readOnly: true
                     type: string
                     description: 'Format: users/{email}'
                 approval:

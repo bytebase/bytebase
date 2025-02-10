@@ -547,7 +547,7 @@ message IssueComment {
   google.protobuf.Timestamp update_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Format: users/{email}
-  string creator = 7;
+  string creator = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   oneof event {
     Approval approval = 8;

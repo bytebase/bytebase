@@ -157,13 +157,6 @@ message Changelist {
   // Format: users/{email}
   string creator = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The updater of the changelist.
-  // Format: users/{email}
-  string updater = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The create time of the changelist.
-  google.protobuf.Timestamp create_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
-
   // The last update time of the changelist.
   google.protobuf.Timestamp update_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
