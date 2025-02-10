@@ -43,13 +43,6 @@
                 #{{ extractIssueUID(changelog.issue) }}
               </router-link>
             </dd>
-            <dt class="sr-only">{{ $t("common.creator") }}</dt>
-            <dd v-if="creator" class="flex items-center text-sm md:mr-4">
-              <span class="textlabel"
-                >{{ $t("common.creator") }}&nbsp;-&nbsp;</span
-              >
-              {{ creator.title }}
-            </dd>
           </dl>
         </div>
       </div>
@@ -156,7 +149,6 @@ import {
   pushNotification,
   useChangelogStore,
   useDBSchemaV1Store,
-  useUserStore,
   useDatabaseV1ByName,
 } from "@/store";
 import { getDateForPbTimestamp } from "@/types";
@@ -168,7 +160,6 @@ import {
 } from "@/types/proto/v1/database_service";
 import {
   extractIssueUID,
-  extractUserResourceName,
   toClipboard,
   getStatementSize,
   hasProjectPermissionV2,
@@ -211,15 +202,6 @@ const changelogName = computed(() => {
 
 const changelog = computed((): Changelog | undefined => {
   return changelogStore.getChangelogByName(changelogName.value);
-});
-
-const creator = computed(() => {
-  if (!changelog.value) {
-    return undefined;
-  }
-  return useUserStore().getUserByEmail(
-    extractUserResourceName(changelog.value.creator)
-  );
 });
 
 const changelogSchema = computed(() => {

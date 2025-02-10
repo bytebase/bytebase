@@ -37,7 +37,6 @@ type ChangelogMessage struct {
 
 	// output only
 	UID         int64
-	CreatorUID  int
 	CreatedTime time.Time
 
 	PrevSchema    string
@@ -70,10 +69,9 @@ type UpdateChangelogMessage struct {
 	Status         *ChangelogStatus
 }
 
-func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage, creatorUID int) (int64, error) {
+func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (int64, error) {
 	query := `
 		INSERT INTO changelog (
-			creator_id,
 			database_id,
 			status,
 			prev_sync_history_id,
@@ -84,8 +82,7 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage, c
 			$2,
 			$3,
 			$4,
-			$5,
-			$6
+			$5
 		)
 		RETURNING id
 	`
@@ -102,7 +99,7 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage, c
 	}
 
 	var id int64
-	if err := tx.QueryRowContext(ctx, query, creatorUID, create.DatabaseUID, create.Status, create.PrevSyncHistoryUID, create.SyncHistoryUID, p).Scan(&id); err != nil {
+	if err := tx.QueryRowContext(ctx, query, create.DatabaseUID, create.Status, create.PrevSyncHistoryUID, create.SyncHistoryUID, p).Scan(&id); err != nil {
 		return 0, errors.Wrapf(err, "failed to insert")
 	}
 
@@ -204,7 +201,6 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 	query := fmt.Sprintf(`
 		SELECT
 			changelog.id,
-			changelog.creator_id,
 			changelog.created_ts,
 			changelog.database_id,
 			changelog.status,
@@ -249,7 +245,6 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 
 		if err := rows.Scan(
 			&c.UID,
-			&c.CreatorUID,
 			&c.CreatedTime,
 			&c.DatabaseUID,
 			&c.Status,

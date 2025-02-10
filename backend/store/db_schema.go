@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -70,7 +69,7 @@ func (s *Store) GetDBSchema(ctx context.Context, databaseID int) (*model.DBSchem
 }
 
 // UpsertDBSchema upserts a database schema.
-func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *model.DBSchema, updaterID int) error {
+func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *model.DBSchema) error {
 	metadataBytes, err := protojson.Marshal(dbSchema.GetMetadata())
 	if err != nil {
 		return err
@@ -82,19 +81,16 @@ func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *mo
 
 	query := `
 		INSERT INTO db_schema (
-			creator_id,
-			updater_id,
 			database_id,
 			metadata,
 			raw_dump,
 			config
 		)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		VALUES ($1, $2, $3, $4)
 		ON CONFLICT(database_id) DO UPDATE SET
 			metadata = EXCLUDED.metadata,
 			raw_dump = EXCLUDED.raw_dump,
-			config = EXCLUDED.config,
-			updated_ts = extract(epoch from now())
+			config = EXCLUDED.config
 		RETURNING metadata, raw_dump, config
 	`
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -105,8 +101,6 @@ func (s *Store) UpsertDBSchema(ctx context.Context, databaseID int, dbSchema *mo
 
 	var metadata, schema, config []byte
 	if err := tx.QueryRowContext(ctx, query,
-		updaterID,
-		updaterID,
 		databaseID,
 		metadataBytes,
 		// Convert to string because []byte{} is null which violates db schema constraints.
@@ -163,8 +157,8 @@ func (s *Store) ListLegacyCatalog(ctx context.Context) ([]int, error) {
 }
 
 // UpdateDBSchema updates a database schema.
-func (s *Store) UpdateDBSchema(ctx context.Context, databaseID int, patch *UpdateDBSchemaMessage, updaterID int) error {
-	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{updaterID, time.Now().Unix()}
+func (s *Store) UpdateDBSchema(ctx context.Context, databaseID int, patch *UpdateDBSchemaMessage) error {
+	set, args := []string{}, []any{}
 	if v := patch.Config; v != nil {
 		bytes, err := protojson.Marshal(v)
 		if err != nil {

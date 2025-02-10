@@ -260,7 +260,7 @@ func (r *Runner) ApproveExternalApprovalNode(ctx context.Context, issueUID int) 
 		PayloadUpsert: &storepb.IssuePayload{
 			Approval: payload.Approval,
 		},
-	}, api.SystemBotID)
+	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to update issue")
 	}
@@ -379,7 +379,7 @@ func (r *Runner) RejectExternalApprovalNode(ctx context.Context, issueUID int) e
 		PayloadUpsert: &storepb.IssuePayload{
 			Approval: payload.Approval,
 		},
-	}, api.SystemBotID)
+	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to update issue")
 	}

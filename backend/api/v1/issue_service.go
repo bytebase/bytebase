@@ -767,7 +767,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		PayloadUpsert: &storepb.IssuePayload{
 			Approval: payload.Approval,
 		},
-	}, api.SystemBotID)
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
 	}
@@ -976,7 +976,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 		PayloadUpsert: &storepb.IssuePayload{
 			Approval: payload.Approval,
 		},
-	}, api.SystemBotID)
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
 	}
@@ -1064,7 +1064,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 		PayloadUpsert: &storepb.IssuePayload{
 			Approval: payload.Approval,
 		},
-	}, api.SystemBotID)
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
 	}
@@ -1283,7 +1283,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 		}
 	}
 
-	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, patch, user.ID)
+	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, patch)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update issue, error: %v", err)
 	}
@@ -1350,7 +1350,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 		return nil, status.Errorf(codes.InvalidArgument, "failed to convert to issue status, err: %v", err)
 	}
 
-	if err := s.store.BatchUpdateIssueStatuses(ctx, issueIDs, newStatus, user.ID); err != nil {
+	if err := s.store.BatchUpdateIssueStatuses(ctx, issueIDs, newStatus); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to batch update issues, err: %v", err)
 	}
 
@@ -1490,7 +1490,7 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.Cre
 		issue.Subscribers = append(issue.Subscribers, user)
 		if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
 			Subscribers: &issue.Subscribers,
-		}, user.ID); err != nil {
+		}); err != nil {
 			return nil, err
 		}
 	}

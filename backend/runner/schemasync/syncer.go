@@ -338,7 +338,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 				InstanceID:   instance.ResourceID,
 				DatabaseName: database.DatabaseName,
 				SyncState:    &syncStatus,
-			}, api.SystemBotID); err != nil {
+			}); err != nil {
 				return nil, nil, nil, errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, instance.ResourceID)
 			}
 		}
@@ -419,7 +419,7 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 			LastSyncTime:    timestamppb.New(time.Unix(ts, 0)),
 			BackupAvailable: s.hasBackupSchema(ctx, instance, databaseMetadata),
 		},
-	}, api.SystemBotID); err != nil {
+	}); err != nil {
 		return 0, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
 
@@ -443,7 +443,6 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 	if err := s.store.UpsertDBSchema(ctx,
 		database.UID,
 		model.NewDBSchema(databaseMetadata, rawDump, dbModelConfig.BuildDatabaseConfig()),
-		api.SystemBotID,
 	); err != nil {
 		if strings.Contains(err.Error(), "escape sequence") {
 			if metadataBytes, err := protojson.Marshal(databaseMetadata); err == nil {
@@ -538,7 +537,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 			LastSyncTime:    timestamppb.New(time.Unix(ts, 0)),
 			BackupAvailable: s.hasBackupSchema(ctx, instance, databaseMetadata),
 		},
-	}, api.SystemBotID); err != nil {
+	}); err != nil {
 		return errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
 
@@ -562,7 +561,6 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	if err := s.store.UpsertDBSchema(ctx,
 		database.UID,
 		model.NewDBSchema(databaseMetadata, rawDump, dbModelConfig.BuildDatabaseConfig()),
-		api.SystemBotID,
 	); err != nil {
 		if strings.Contains(err.Error(), "escape sequence") {
 			if metadataBytes, err := protojson.Marshal(databaseMetadata); err == nil {

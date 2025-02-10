@@ -238,7 +238,7 @@ func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMe
 }
 
 // CreateUser creates an user.
-func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID int) (*UserMessage, error) {
+func (s *Store) CreateUser(ctx context.Context, create *UserMessage) (*UserMessage, error) {
 	// Double check the passing-in emails.
 	// We use lower-case for emails.
 	if create.Email != strings.ToLower(create.Email) {
@@ -259,8 +259,8 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 		return nil, err
 	}
 
-	set := []string{"creator_id", "updater_id", "email", "name", "type", "password_hash", "phone", "profile"}
-	args := []any{creatorID, creatorID, create.Email, create.Name, create.Type, create.PasswordHash, create.Phone, profileBytes}
+	set := []string{"email", "name", "type", "password_hash", "phone", "profile"}
+	args := []any{create.Email, create.Name, create.Type, create.PasswordHash, create.Phone, profileBytes}
 	placeholder := []string{}
 	for index := range set {
 		placeholder = append(placeholder, fmt.Sprintf("$%d", index+1))
@@ -301,12 +301,12 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 }
 
 // UpdateUser updates a user.
-func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch *UpdateUserMessage, updaterID int) (*UserMessage, error) {
+func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch *UpdateUserMessage) (*UserMessage, error) {
 	if currentUser.ID == api.SystemBotID {
 		return nil, errors.Errorf("cannot update system bot")
 	}
 
-	principalSet, principalArgs := []string{"updater_id = $1", "updated_ts = $2"}, []any{updaterID, time.Now().Unix()}
+	principalSet, principalArgs := []string{}, []any{}
 	if v := patch.Delete; v != nil {
 		rowStatus := api.Normal
 		if *patch.Delete {

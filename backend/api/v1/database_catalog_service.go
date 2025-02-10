@@ -9,7 +9,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -102,7 +101,7 @@ func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, requ
 	}
 
 	databaseConfig := convertDatabaseCatalog(request.GetCatalog())
-	if err := s.store.UpdateDBSchema(ctx, database.UID, &store.UpdateDBSchemaMessage{Config: databaseConfig}, api.SystemBotID); err != nil {
+	if err := s.store.UpdateDBSchema(ctx, database.UID, &store.UpdateDBSchemaMessage{Config: databaseConfig}); err != nil {
 		return nil, err
 	}
 

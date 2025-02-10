@@ -168,7 +168,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		InstanceID:   instance.ResourceID,
 		DatabaseName: payload.DatabaseName,
 		SyncState:    &syncStatus,
-	}, api.SystemBotID); err != nil {
+	}); err != nil {
 		return true, nil, err
 	}
 
@@ -314,8 +314,6 @@ func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *
 					continue
 				}
 				taskCreate := &store.TaskMessage{
-					CreatorID:         api.SystemBotID,
-					UpdaterID:         api.SystemBotID,
 					PipelineID:        task.PipelineID,
 					StageID:           task.StageID,
 					Name:              fmt.Sprintf("Copied task for database %q from %q", createdDatabase.DatabaseName, peerDatabase.DatabaseName),
@@ -362,7 +360,6 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 	// TODO(d): support semantic versioning.
 	mi := &db.MigrationInfo{
 		InstanceID:     &task.InstanceID,
-		CreatorID:      task.CreatorID,
 		ReleaseVersion: exec.profile.Version,
 		Namespace:      database.DatabaseName,
 		Database:       database.DatabaseName,
@@ -372,17 +369,7 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		Type:           db.Migrate,
 		Description:    "Create database",
 	}
-	creator, err := exec.store.GetUserByID(ctx, task.CreatorID)
-	if err != nil {
-		// If somehow we unable to find the principal, we just emit the error since it's not
-		// critical enough to fail the entire operation.
-		slog.Error("Failed to fetch creator for composing the migration info",
-			slog.Int("task_id", task.ID),
-			log.BBError(err),
-		)
-	} else {
-		mi.Creator = creator.Name
-	}
+
 	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		// If somehow we unable to find the issue, we just emit the error since it's not

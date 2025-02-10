@@ -850,7 +850,7 @@ func updateIssueApprovalPayload(ctx context.Context, s *store.Store, issue *stor
 		PayloadUpsert: &storepb.IssuePayload{
 			Approval: approval,
 		},
-	}, api.SystemBotID); err != nil {
+	}); err != nil {
 		return errors.Wrap(err, "failed to update issue payload")
 	}
 	return nil

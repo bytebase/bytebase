@@ -376,7 +376,6 @@ func (s *Service) createReleaseFromPRInfo(ctx context.Context, project *store.Pr
 		sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 			ProjectUID: project.UID,
 			CreatorID:  user.ID,
-			UpdaterID:  user.ID,
 			Title:      "",
 			Statement:  f.content,
 		})

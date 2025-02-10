@@ -21,7 +21,6 @@ type RevisionMessage struct {
 
 	// output only
 	UID        int64
-	CreatorUID int
 	CreateTime time.Time
 	DeleterUID *int
 	DeleteTime *time.Time
@@ -70,7 +69,6 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 		SELECT
 			id,
 			database_id,
-			creator_id,
 			created_ts,
 			deleter_id,
 			deleted_ts,
@@ -103,7 +101,6 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 		if err := rows.Scan(
 			&r.UID,
 			&r.DatabaseUID,
-			&r.CreatorUID,
 			&r.CreateTime,
 			&r.DeleterUID,
 			&r.DeleteTime,
@@ -145,18 +142,16 @@ func (s *Store) GetRevision(ctx context.Context, uid int64) (*RevisionMessage, e
 	return revisions[0], nil
 }
 
-func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage, creatorUID int) (*RevisionMessage, error) {
+func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage) (*RevisionMessage, error) {
 	query := `
 		INSERT INTO revision (
 			database_id,
-			creator_id,
 			version,
 			payload
 		) VALUES (
 		 	$1,
 			$2,
-			$3,
-			$4
+			$3
 		)
 		RETURNING id, created_ts
 	`
@@ -176,7 +171,6 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage, c
 	var createTime time.Time
 	if err := tx.QueryRowContext(ctx, query,
 		revision.DatabaseUID,
-		creatorUID,
 		revision.Version,
 		p,
 	).Scan(&id, &createTime); err != nil {

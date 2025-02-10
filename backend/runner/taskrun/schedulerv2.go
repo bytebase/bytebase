@@ -838,7 +838,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 						}
 
 						newStatus := api.IssueDone
-						updatedIssue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus}, api.SystemBotID)
+						updatedIssue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
 						if err != nil {
 							return errors.Wrapf(err, "failed to update issue status")
 						}

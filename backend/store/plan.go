@@ -26,7 +26,6 @@ type PlanMessage struct {
 	UID        int64
 	CreatorUID int
 	CreatedTs  int64
-	UpdaterUID int
 	UpdatedTs  int64
 
 	PlanCheckRunStatusCount map[string]int32
@@ -56,7 +55,6 @@ type UpdatePlanMessage struct {
 	Name        *string
 	Description *string
 	Steps       *[]*storepb.PlanConfig_Step
-	UpdaterID   int
 }
 
 // CreatePlan creates a new plan.
@@ -64,7 +62,6 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creatorUID in
 	query := `
 		INSERT INTO plan (
 			creator_id,
-			updater_id,
 			project_id,
 			pipeline_id,
 			name,
@@ -72,12 +69,11 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creatorUID in
 			config
 		) VALUES (
 			$1,
-			$2,
-			(SELECT project.id FROM project WHERE project.resource_id = $3),
+			(SELECT project.id FROM project WHERE project.resource_id = $2),
+			$3,
 			$4,
 			$5,
-			$6,
-			$7
+			$6
 		) RETURNING id, created_ts
 	`
 
@@ -93,7 +89,6 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creatorUID in
 
 	var id, createdTs int64
 	if err := tx.QueryRowContext(ctx, query,
-		creatorUID,
 		creatorUID,
 		plan.ProjectID,
 		plan.PipelineUID,
@@ -111,7 +106,6 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creatorUID in
 	plan.UID = id
 	plan.CreatorUID = creatorUID
 	plan.CreatedTs = createdTs
-	plan.UpdaterUID = creatorUID
 	plan.UpdatedTs = createdTs
 	return plan, nil
 }
@@ -167,7 +161,6 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			plan.id,
 			plan.creator_id,
 			plan.created_ts,
-			plan.updater_id,
 			plan.updated_ts,
 			project.resource_id,
 			plan.pipeline_id,
@@ -227,7 +220,6 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			&plan.UID,
 			&plan.CreatorUID,
 			&plan.CreatedTs,
-			&plan.UpdaterUID,
 			&plan.UpdatedTs,
 			&plan.ProjectID,
 			&plan.PipelineUID,
@@ -259,7 +251,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 
 // UpdatePlan updates an existing plan.
 func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) error {
-	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{patch.UpdaterID, time.Now().Unix()}
+	set, args := []string{"updated_ts = $1"}, []any{time.Now().Unix()}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
