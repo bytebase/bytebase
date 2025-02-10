@@ -448,8 +448,6 @@ CREATE INDEX idx_issue_subscriber_subscriber_id ON issue_subscriber(subscriber_i
 -- instance change history records the changes an instance and its databases.
 CREATE TABLE instance_change_history (
     id BIGSERIAL PRIMARY KEY,
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     status TEXT NOT NULL CONSTRAINT instance_change_history_status_check CHECK (status IN ('PENDING', 'DONE', 'FAILED')),
     version TEXT NOT NULL,
     execution_duration_ns BIGINT NOT NULL
