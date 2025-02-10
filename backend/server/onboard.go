@@ -29,7 +29,6 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	project, err := s.store.CreateProjectV2(ctx, &store.ProjectMessage{
 		ResourceID: "project-sample",
 		Title:      "Sample Project",
-		Key:        "SAM",
 		Setting:    setting,
 	}, userID)
 	if err != nil {
