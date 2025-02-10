@@ -93,7 +93,7 @@ const columnList = computed((): ProjectDataTableColumn[] => {
       {
         key: "id",
         title: t("common.id"),
-        width: 112,
+        resizable: true,
         render: (project) => {
           return (
             <span
