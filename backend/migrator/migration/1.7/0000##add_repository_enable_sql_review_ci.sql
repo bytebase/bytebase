@@ -1,1 +1,0 @@
-ALTER TABLE repository ADD COLUMN IF NOT EXISTS enable_sql_review_ci BOOLEAN NOT NULL DEFAULT false;

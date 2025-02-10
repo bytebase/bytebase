@@ -1,3 +1,0 @@
-DROP INDEX idx_project_member_unique_project_id_principal_id;
-
-CREATE UNIQUE INDEX idx_project_member_unique_project_id_principal_id_role ON project_member(project_id, principal_id, role);

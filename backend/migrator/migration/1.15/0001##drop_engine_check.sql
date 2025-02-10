@@ -1,1 +1,0 @@
-ALTER TABLE instance DROP CONSTRAINT instance_engine_check;

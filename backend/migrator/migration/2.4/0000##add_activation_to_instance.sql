@@ -1,1 +1,0 @@
-ALTER TABLE instance ADD COLUMN activation BOOLEAN NOT NULL DEFAULT false;

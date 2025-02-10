@@ -1,1 +1,0 @@
-ALTER TABLE db_group ADD COLUMN payload JSONB NOT NULL DEFAULT '{}';
