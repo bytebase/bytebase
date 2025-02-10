@@ -147,7 +147,6 @@ func (s *Store) DeleteExternalApprovalV2(ctx context.Context, id int) error {
 
 func (*Store) findExternalApprovalImplV2(ctx context.Context, tx *Tx, find *ListExternalApprovalMessage) ([]*ExternalApprovalMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
-	where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
 	if v := find.IssueUID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue_id = $%d", len(args)+1)), append(args, *v)
 	}
