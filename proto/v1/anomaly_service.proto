@@ -100,6 +100,4 @@ message Anomaly {
   AnomalySeverity severity = 3;
 
   google.protobuf.Timestamp create_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  google.protobuf.Timestamp update_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

@@ -9,7 +9,6 @@ import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import Long from "long";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
-import { Timestamp } from "../google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -163,16 +162,7 @@ export interface Group {
   name: string;
   title: string;
   description: string;
-  /**
-   * The name for the creator.
-   * Format: users/hello@world.com
-   */
-  creator: string;
   members: GroupMember[];
-  /** The timestamp when the group was created. */
-  createTime:
-    | Timestamp
-    | undefined;
   /** source means where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. */
   source: string;
 }
@@ -690,7 +680,7 @@ export const GroupMember: MessageFns<GroupMember> = {
 };
 
 function createBaseGroup(): Group {
-  return { name: "", title: "", description: "", creator: "", members: [], createTime: undefined, source: "" };
+  return { name: "", title: "", description: "", members: [], source: "" };
 }
 
 export const Group: MessageFns<Group> = {
@@ -704,14 +694,8 @@ export const Group: MessageFns<Group> = {
     if (message.description !== "") {
       writer.uint32(26).string(message.description);
     }
-    if (message.creator !== "") {
-      writer.uint32(34).string(message.creator);
-    }
     for (const v of message.members) {
       GroupMember.encode(v!, writer.uint32(42).fork()).join();
-    }
-    if (message.createTime !== undefined) {
-      Timestamp.encode(message.createTime, writer.uint32(50).fork()).join();
     }
     if (message.source !== "") {
       writer.uint32(58).string(message.source);
@@ -750,28 +734,12 @@ export const Group: MessageFns<Group> = {
           message.description = reader.string();
           continue;
         }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.creator = reader.string();
-          continue;
-        }
         case 5: {
           if (tag !== 42) {
             break;
           }
 
           message.members.push(GroupMember.decode(reader, reader.uint32()));
-          continue;
-        }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.createTime = Timestamp.decode(reader, reader.uint32());
           continue;
         }
         case 7: {
@@ -796,9 +764,7 @@ export const Group: MessageFns<Group> = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       description: isSet(object.description) ? globalThis.String(object.description) : "",
-      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       members: globalThis.Array.isArray(object?.members) ? object.members.map((e: any) => GroupMember.fromJSON(e)) : [],
-      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       source: isSet(object.source) ? globalThis.String(object.source) : "",
     };
   },
@@ -814,14 +780,8 @@ export const Group: MessageFns<Group> = {
     if (message.description !== "") {
       obj.description = message.description;
     }
-    if (message.creator !== "") {
-      obj.creator = message.creator;
-    }
     if (message.members?.length) {
       obj.members = message.members.map((e) => GroupMember.toJSON(e));
-    }
-    if (message.createTime !== undefined) {
-      obj.createTime = fromTimestamp(message.createTime).toISOString();
     }
     if (message.source !== "") {
       obj.source = message.source;
@@ -837,11 +797,7 @@ export const Group: MessageFns<Group> = {
     message.name = object.name ?? "";
     message.title = object.title ?? "";
     message.description = object.description ?? "";
-    message.creator = object.creator ?? "";
     message.members = object.members?.map((e) => GroupMember.fromPartial(e)) || [];
-    message.createTime = (object.createTime !== undefined && object.createTime !== null)
-      ? Timestamp.fromPartial(object.createTime)
-      : undefined;
     message.source = object.source ?? "";
     return message;
   },
@@ -1034,32 +990,6 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-function toTimestamp(date: Date): Timestamp {
-  const seconds = numberToLong(Math.trunc(date.getTime() / 1_000));
-  const nanos = (date.getTime() % 1_000) * 1_000_000;
-  return { seconds, nanos };
-}
-
-function fromTimestamp(t: Timestamp): Date {
-  let millis = (t.seconds.toNumber() || 0) * 1_000;
-  millis += (t.nanos || 0) / 1_000_000;
-  return new globalThis.Date(millis);
-}
-
-function fromJsonTimestamp(o: any): Timestamp {
-  if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
-  } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
-  } else {
-    return Timestamp.fromJSON(o);
-  }
-}
-
-function numberToLong(number: number) {
-  return Long.fromNumber(number);
-}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

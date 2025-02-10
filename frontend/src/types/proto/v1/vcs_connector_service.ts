@@ -9,7 +9,6 @@ import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import Long from "long";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
-import { Timestamp } from "../google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -107,24 +106,6 @@ export interface VCSConnector {
   name: string;
   /** The title of the vcs connector. */
   title: string;
-  /**
-   * The creator of the vcsConnector.
-   * Format: users/{email}
-   */
-  creator: string;
-  /**
-   * The updater of the vcsConnector.
-   * Format: users/{email}
-   */
-  updater: string;
-  /** The create time of the vcsConnector. */
-  createTime:
-    | Timestamp
-    | undefined;
-  /** The last update time of the vcsConnector. */
-  updateTime:
-    | Timestamp
-    | undefined;
   /**
    * The name of the VCS.
    * Format: vcsProviders/{vcsProvider}
@@ -612,10 +593,6 @@ function createBaseVCSConnector(): VCSConnector {
   return {
     name: "",
     title: "",
-    creator: "",
-    updater: "",
-    createTime: undefined,
-    updateTime: undefined,
     vcsProvider: "",
     externalId: "",
     baseDirectory: "",
@@ -633,18 +610,6 @@ export const VCSConnector: MessageFns<VCSConnector> = {
     }
     if (message.title !== "") {
       writer.uint32(18).string(message.title);
-    }
-    if (message.creator !== "") {
-      writer.uint32(26).string(message.creator);
-    }
-    if (message.updater !== "") {
-      writer.uint32(34).string(message.updater);
-    }
-    if (message.createTime !== undefined) {
-      Timestamp.encode(message.createTime, writer.uint32(42).fork()).join();
-    }
-    if (message.updateTime !== undefined) {
-      Timestamp.encode(message.updateTime, writer.uint32(50).fork()).join();
     }
     if (message.vcsProvider !== "") {
       writer.uint32(58).string(message.vcsProvider);
@@ -691,38 +656,6 @@ export const VCSConnector: MessageFns<VCSConnector> = {
           }
 
           message.title = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.creator = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.updater = reader.string();
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.createTime = Timestamp.decode(reader, reader.uint32());
-          continue;
-        }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.updateTime = Timestamp.decode(reader, reader.uint32());
           continue;
         }
         case 7: {
@@ -794,10 +727,6 @@ export const VCSConnector: MessageFns<VCSConnector> = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
-      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
-      updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
-      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
-      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       vcsProvider: isSet(object.vcsProvider) ? globalThis.String(object.vcsProvider) : "",
       externalId: isSet(object.externalId) ? globalThis.String(object.externalId) : "",
       baseDirectory: isSet(object.baseDirectory) ? globalThis.String(object.baseDirectory) : "",
@@ -815,18 +744,6 @@ export const VCSConnector: MessageFns<VCSConnector> = {
     }
     if (message.title !== "") {
       obj.title = message.title;
-    }
-    if (message.creator !== "") {
-      obj.creator = message.creator;
-    }
-    if (message.updater !== "") {
-      obj.updater = message.updater;
-    }
-    if (message.createTime !== undefined) {
-      obj.createTime = fromTimestamp(message.createTime).toISOString();
-    }
-    if (message.updateTime !== undefined) {
-      obj.updateTime = fromTimestamp(message.updateTime).toISOString();
     }
     if (message.vcsProvider !== "") {
       obj.vcsProvider = message.vcsProvider;
@@ -859,14 +776,6 @@ export const VCSConnector: MessageFns<VCSConnector> = {
     const message = createBaseVCSConnector();
     message.name = object.name ?? "";
     message.title = object.title ?? "";
-    message.creator = object.creator ?? "";
-    message.updater = object.updater ?? "";
-    message.createTime = (object.createTime !== undefined && object.createTime !== null)
-      ? Timestamp.fromPartial(object.createTime)
-      : undefined;
-    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
-      ? Timestamp.fromPartial(object.updateTime)
-      : undefined;
     message.vcsProvider = object.vcsProvider ?? "";
     message.externalId = object.externalId ?? "";
     message.baseDirectory = object.baseDirectory ?? "";
@@ -1412,32 +1321,6 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-function toTimestamp(date: Date): Timestamp {
-  const seconds = numberToLong(Math.trunc(date.getTime() / 1_000));
-  const nanos = (date.getTime() % 1_000) * 1_000_000;
-  return { seconds, nanos };
-}
-
-function fromTimestamp(t: Timestamp): Date {
-  let millis = (t.seconds.toNumber() || 0) * 1_000;
-  millis += (t.nanos || 0) / 1_000_000;
-  return new globalThis.Date(millis);
-}
-
-function fromJsonTimestamp(o: any): Timestamp {
-  if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
-  } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
-  } else {
-    return Timestamp.fromJSON(o);
-  }
-}
-
-function numberToLong(number: number) {
-  return Long.fromNumber(number);
-}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

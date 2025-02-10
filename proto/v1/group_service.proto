@@ -8,7 +8,6 @@ import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
-import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 
 option go_package = "generated-go/v1";
@@ -158,14 +157,7 @@ message Group {
 
   string description = 3;
 
-  // The name for the creator.
-  // Format: users/hello@world.com
-  string creator = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-
   repeated GroupMember members = 5;
-
-  // The timestamp when the group was created.
-  google.protobuf.Timestamp create_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // source means where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
   string source = 7;

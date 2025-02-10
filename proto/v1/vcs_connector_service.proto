@@ -8,7 +8,6 @@ import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
-import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 
 option go_package = "generated-go/v1";
@@ -156,20 +155,6 @@ message VCSConnector {
 
   // The title of the vcs connector.
   string title = 2;
-
-  // The creator of the vcsConnector.
-  // Format: users/{email}
-  string creator = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The updater of the vcsConnector.
-  // Format: users/{email}
-  string updater = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The create time of the vcsConnector.
-  google.protobuf.Timestamp create_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The last update time of the vcsConnector.
-  google.protobuf.Timestamp update_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The name of the VCS.
   // Format: vcsProviders/{vcsProvider}

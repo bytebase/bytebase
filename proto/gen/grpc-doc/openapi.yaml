@@ -8408,10 +8408,6 @@ components:
                     readOnly: true
                     type: string
                     format: date-time
-                updateTime:
-                    readOnly: true
-                    type: string
-                    format: date-time
         AppIMSetting:
             type: object
             properties:
@@ -10023,21 +10019,10 @@ components:
                     type: string
                 description:
                     type: string
-                creator:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The name for the creator.
-                         Format: users/hello@world.com
                 members:
                     type: array
                     items:
                         $ref: '#/components/schemas/GroupMember'
-                createTime:
-                    readOnly: true
-                    type: string
-                    description: The timestamp when the group was created.
-                    format: date-time
                 source:
                     type: string
                     description: source means where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
@@ -12376,18 +12361,6 @@ components:
                     type: string
                 enabled:
                     type: boolean
-                creator:
-                    readOnly: true
-                    type: string
-                    description: 'Format: users/hello@world.com'
-                createTime:
-                    readOnly: true
-                    type: string
-                    format: date-time
-                updateTime:
-                    readOnly: true
-                    type: string
-                    format: date-time
                 rules:
                     type: array
                     items:
