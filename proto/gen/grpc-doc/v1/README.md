@@ -5995,8 +5995,6 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | name | [string](#string) |  | The name of the changelist resource. Canonical parent is project. Format: projects/{project}/changelists/{changelist} |
 | description | [string](#string) |  |  |
 | creator | [string](#string) |  | The creator of the changelist. Format: users/{email} |
-| updater | [string](#string) |  | The updater of the changelist. Format: users/{email} |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The create time of the changelist. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last update time of the changelist. |
 | changes | [Changelist.Change](#bytebase-v1-Changelist-Change) | repeated |  |
 
