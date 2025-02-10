@@ -1552,12 +1552,10 @@
   },
   "project": {
     "table": {
-      "key": "@:common.key",
       "name": "@:common.name"
     },
     "create-modal": {
       "project-name": "@:common.project @:common.name",
-      "key": "@:common.key",
       "success-prompt": "Proyecto {name} creado exitosamente."
     },
     "overview": {
@@ -1699,7 +1697,6 @@
     },
     "select": "Seleccionar Proyecto",
     "all": "Todos los proyectos",
-    "key-hint": "Letras alfanuméricas descriptivas cortas para identificar este proyecto..",
     "gitops-connector": {
       "add": "Agregar conector GitOps",
       "delete": "Eliminar conector GitOps",

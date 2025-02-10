@@ -1552,12 +1552,10 @@
   },
   "project": {
     "table": {
-      "key": "@:common.key",
       "name": "@:common.name"
     },
     "create-modal": {
       "project-name": "@:{'common.project'}@:{'common.name'}",
-      "key": "@:common.key",
       "success-prompt": "{name} が正常に作成されました。"
     },
     "overview": {
@@ -1699,7 +1697,6 @@
     },
     "select": "アイテムを選択",
     "all": "全てのアイテム",
-    "key-hint": "アイテムを識別するには、短く識別可能な英数字の組み合わせが使用されます。",
     "gitops-connector": {
       "add": "新しい GitOps 接続を追加",
       "delete": "GitOps接続を削除する",

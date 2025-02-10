@@ -1552,12 +1552,10 @@
   },
   "project": {
     "table": {
-      "key": "@:common.key",
       "name": "@:common.name"
     },
     "create-modal": {
       "project-name": "@:{'common.project'}@:{'common.name'}",
-      "key": "@:common.key",
       "success-prompt": "成功创建 {name}."
     },
     "overview": {
@@ -1699,7 +1697,6 @@
     },
     "select": "选择项目",
     "all": "所有项目",
-    "key-hint": "简短且有辨识度的字母数字组合用于识别该项目。",
     "gitops-connector": {
       "add": "新增 GitOps 连接",
       "delete": "删除 GitOps 连接",
