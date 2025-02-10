@@ -291,7 +291,6 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	updateInstance := &store.UpdateInstanceMessage{
 		ResourceID: instance.ResourceID,
 		Metadata:   instanceMeta.Metadata,
-		UpdaterID:  api.SystemBotID,
 	}
 	if instanceMeta.Version != instance.EngineVersion {
 		updateInstance.EngineVersion = &instanceMeta.Version
@@ -454,7 +453,7 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 		return 0, errors.Wrapf(err, "failed to upsert database schema for database %q", database.DatabaseName)
 	}
 
-	id, err := s.store.CreateSyncHistory(ctx, database.UID, databaseMetadata, string(rawDump), api.SystemBotID)
+	id, err := s.store.CreateSyncHistory(ctx, database.UID, databaseMetadata, string(rawDump))
 	if err != nil {
 		if strings.Contains(err.Error(), "escape sequence") {
 			if metadataBytes, err := protojson.Marshal(databaseMetadata); err == nil {
@@ -601,7 +600,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 			}
 			latestSchema := string(rawDump)
 			if changelog.Schema != latestSchema {
-				if _, err = s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
+				if _, err = s.store.UpsertActiveAnomalyV2(ctx, &store.AnomalyMessage{
 					ProjectID:   database.ProjectID,
 					InstanceUID: instance.UID,
 					DatabaseUID: database.UID,
@@ -669,7 +668,7 @@ func (s *Syncer) hasBackupSchema(ctx context.Context, instance *store.InstanceMe
 
 func (s *Syncer) upsertDatabaseConnectionAnomaly(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, connErr error) {
 	if connErr != nil {
-		if _, err := s.store.UpsertActiveAnomalyV2(ctx, api.SystemBotID, &store.AnomalyMessage{
+		if _, err := s.store.UpsertActiveAnomalyV2(ctx, &store.AnomalyMessage{
 			ProjectID:   database.ProjectID,
 			InstanceUID: instance.UID,
 			DatabaseUID: database.UID,

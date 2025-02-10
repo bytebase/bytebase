@@ -6,7 +6,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/iam"
@@ -82,12 +81,7 @@ func (s *GroupService) CreateGroup(ctx context.Context, request *v1pb.CreateGrou
 		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", groupMessage.Email, err)
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-
-	group, err := s.store.CreateGroup(ctx, groupMessage, principalID)
+	group, err := s.store.CreateGroup(ctx, groupMessage)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -157,7 +151,7 @@ func (s *GroupService) UpdateGroup(ctx context.Context, request *v1pb.UpdateGrou
 		}
 	}
 
-	groupMessage, err := s.store.UpdateGroup(ctx, groupEmail, patch, user.ID)
+	groupMessage, err := s.store.UpdateGroup(ctx, groupEmail, patch)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -282,20 +276,11 @@ func (s *GroupService) convertToV1Group(ctx context.Context, groupMessage *store
 	if groupMessage == nil {
 		return nil, status.Errorf(codes.NotFound, "cannot found group")
 	}
-	creator, err := s.store.GetUserByID(ctx, groupMessage.CreatorUID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get creator, error %v", err)
-	}
-	if creator == nil {
-		return nil, status.Errorf(codes.NotFound, "creator %d not found", groupMessage.CreatorUID)
-	}
 
 	group := &v1pb.Group{
 		Name:        common.FormatGroupEmail(groupMessage.Email),
 		Title:       groupMessage.Title,
 		Description: groupMessage.Description,
-		Creator:     common.FormatUserEmail(creator.Email),
-		CreateTime:  timestamppb.New(groupMessage.CreatedTime),
 		Source:      groupMessage.Payload.Source,
 	}
 

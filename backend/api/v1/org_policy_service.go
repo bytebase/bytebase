@@ -104,16 +104,12 @@ func (s *OrgPolicyService) ListPolicies(ctx context.Context, request *v1pb.ListP
 
 // CreatePolicy creates a policy in a specific resource.
 func (s *OrgPolicyService) CreatePolicy(ctx context.Context, request *v1pb.CreatePolicyRequest) (*v1pb.Policy, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
 	if request.Policy == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "policy must be set")
 	}
 
 	// TODO(d): validate policy.
-	return s.createPolicyMessage(ctx, principalID, request.Parent, request.Policy)
+	return s.createPolicyMessage(ctx, request.Parent, request.Policy)
 }
 
 // UpdatePolicy updates a policy in a specific resource.
@@ -122,15 +118,11 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 		return nil, status.Errorf(codes.InvalidArgument, "policy must be set")
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
 	policy, parent, err := s.findPolicyMessage(ctx, request.Policy.Name)
 	if err != nil {
 		st := status.Convert(err)
 		if st.Code() == codes.NotFound && request.AllowMissing {
-			return s.createPolicyMessage(ctx, principalID, parent, request.Policy)
+			return s.createPolicyMessage(ctx, parent, request.Policy)
 		}
 		return nil, err
 	}
@@ -140,7 +132,6 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 	}
 
 	patch := &store.UpdatePolicyMessage{
-		UpdaterID:    principalID,
 		ResourceType: policy.ResourceType,
 		Type:         policy.Type,
 		ResourceUID:  policy.ResourceUID,
@@ -376,7 +367,7 @@ func (s *OrgPolicyService) findActiveDatabase(ctx context.Context, find *store.F
 	return database, nil
 }
 
-func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, creatorID int, parent string, policy *v1pb.Policy) (*v1pb.Policy, error) {
+func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, parent string, policy *v1pb.Policy) (*v1pb.Policy, error) {
 	resourceType, resourceID, err := s.getPolicyResourceTypeAndID(ctx, parent)
 	if err != nil {
 		return nil, err
@@ -415,7 +406,7 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, creatorID in
 		create.ResourceUID = *resourceID
 	}
 
-	p, err := s.store.CreatePolicyV2(ctx, create, creatorID)
+	p, err := s.store.CreatePolicyV2(ctx, create)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

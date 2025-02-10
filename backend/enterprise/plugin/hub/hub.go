@@ -63,7 +63,7 @@ func (p *Provider) StoreLicense(ctx context.Context, patch *enterprise.Subscript
 	if _, err := p.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
 		Name:  api.SettingEnterpriseLicense,
 		Value: patch.License,
-	}, patch.UpdaterID); err != nil {
+	}); err != nil {
 		return err
 	}
 
@@ -112,7 +112,7 @@ func (p *Provider) fetchLicense(ctx context.Context) (*enterprise.License, error
 	if _, err := p.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
 		Name:  api.SettingEnterpriseLicense,
 		Value: license,
-	}, api.SystemBotID); err != nil {
+	}); err != nil {
 		return nil, errors.Wrapf(err, "failed to store the license")
 	}
 

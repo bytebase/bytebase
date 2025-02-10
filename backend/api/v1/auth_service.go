@@ -229,9 +229,8 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	if firstEndUser {
 		// The first end user should be workspace admin.
 		updateRole := &store.PatchIamPolicyMessage{
-			Member:     common.FormatUserUID(user.ID),
-			UpdaterUID: creatorUID,
-			Roles:      []string{common.FormatRole(api.WorkspaceAdmin.String())},
+			Member: common.FormatUserUID(user.ID),
+			Roles:  []string{common.FormatRole(api.WorkspaceAdmin.String())},
 		}
 		if _, err := s.store.PatchWorkspaceIamPolicy(ctx, updateRole); err != nil {
 			return nil, err

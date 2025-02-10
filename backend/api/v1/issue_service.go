@@ -1516,13 +1516,8 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 		return nil, status.Errorf(codes.NotFound, "issue comment not found")
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
-	}
 	update := &store.UpdateIssueCommentMessage{
-		UID:       issueCommentUID,
-		UpdaterID: user.ID,
+		UID: issueCommentUID,
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
@@ -1577,10 +1572,7 @@ func (s *IssueService) updateExternalApprovalWithStatus(ctx context.Context, iss
 		}
 	}
 
-	if _, err := s.store.UpdateExternalApprovalV2(ctx, &store.UpdateExternalApprovalMessage{
-		ID:        approval.ID,
-		RowStatus: api.Archived,
-	}); err != nil {
+	if err := s.store.DeleteExternalApprovalV2(ctx, approval.ID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update external approval, error: %v", err)
 	}
 

@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -18,11 +17,7 @@ import (
 // DatabaseGroupMessage is the message for database groups.
 type DatabaseGroupMessage struct {
 	// Output only fields.
-	UID       int64
-	CreatedTs int64
-	UpdatedTs int64
-	CreatorID int
-	UpdaterID int
+	UID int64
 
 	// Normal fields.
 	ProjectUID  int
@@ -153,10 +148,6 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatab
 	}
 	fields := []string{
 		"id",
-		"created_ts",
-		"updated_ts",
-		"creator_id",
-		"updater_id",
 		"project_id",
 		"resource_id",
 		"placeholder",
@@ -175,10 +166,6 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatab
 		var exprBytes, payloadBytes []byte
 		dest := []any{
 			&databaseGroup.UID,
-			&databaseGroup.CreatedTs,
-			&databaseGroup.UpdatedTs,
-			&databaseGroup.CreatorID,
-			&databaseGroup.UpdaterID,
 			&databaseGroup.ProjectUID,
 			&databaseGroup.ResourceID,
 			&databaseGroup.Placeholder,
@@ -207,8 +194,8 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, tx *Tx, find *FindDatab
 }
 
 // UpdateDatabaseGroup updates a database group.
-func (s *Store) UpdateDatabaseGroup(ctx context.Context, updaterPrincipalID int, databaseGroupUID int64, patch *UpdateDatabaseGroupMessage) (*DatabaseGroupMessage, error) {
-	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{updaterPrincipalID, time.Now().Unix()}
+func (s *Store) UpdateDatabaseGroup(ctx context.Context, databaseGroupUID int64, patch *UpdateDatabaseGroupMessage) (*DatabaseGroupMessage, error) {
+	set, args := []string{}, []any{}
 	if v := patch.Placeholder; v != nil {
 		set, args = append(set, fmt.Sprintf("placeholder = $%d", len(args)+1)), append(args, *v)
 	}
@@ -231,7 +218,7 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, updaterPrincipalID int,
 		UPDATE db_group SET 
 			%s 
 		WHERE id = $%d
-		RETURNING id, created_ts, updated_ts, creator_id, updater_id, project_id, resource_id, placeholder, expression, payload;
+		RETURNING id, project_id, resource_id, placeholder, expression, payload;
 	`, strings.Join(set, ", "), len(args))
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -247,10 +234,6 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, updaterPrincipalID int,
 		args...,
 	).Scan(
 		&updatedDatabaseGroup.UID,
-		&updatedDatabaseGroup.CreatedTs,
-		&updatedDatabaseGroup.UpdatedTs,
-		&updatedDatabaseGroup.CreatorID,
-		&updatedDatabaseGroup.UpdaterID,
 		&updatedDatabaseGroup.ProjectUID,
 		&updatedDatabaseGroup.ResourceID,
 		&updatedDatabaseGroup.Placeholder,
@@ -278,18 +261,16 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, updaterPrincipalID int,
 }
 
 // CreateDatabaseGroup creates a database group.
-func (s *Store) CreateDatabaseGroup(ctx context.Context, creatorPrincipalID int, create *DatabaseGroupMessage) (*DatabaseGroupMessage, error) {
+func (s *Store) CreateDatabaseGroup(ctx context.Context, create *DatabaseGroupMessage) (*DatabaseGroupMessage, error) {
 	query := `
 	INSERT INTO db_group (
-		creator_id,
-		updater_id,
 		project_id,
 		resource_id,
 		placeholder,
 		expression,
 		payload
-	) VALUES ($1, $2, $3, $4, $5, $6, $7)
-	RETURNING id, created_ts, updated_ts;
+	) VALUES ($1, $2, $3, $4, $5)
+	RETURNING id;
 	`
 	exprBytes, err := protojson.Marshal(create.Expression)
 	if err != nil {
@@ -309,8 +290,6 @@ func (s *Store) CreateDatabaseGroup(ctx context.Context, creatorPrincipalID int,
 	if err := tx.QueryRowContext(
 		ctx,
 		query,
-		creatorPrincipalID,
-		creatorPrincipalID,
 		create.ProjectUID,
 		create.ResourceID,
 		create.Placeholder,
@@ -318,8 +297,6 @@ func (s *Store) CreateDatabaseGroup(ctx context.Context, creatorPrincipalID int,
 		payloadBytes,
 	).Scan(
 		&create.UID,
-		&create.CreatedTs,
-		&create.UpdatedTs,
 	); err != nil {
 		return nil, errors.Wrapf(err, "failed to scan")
 	}
@@ -327,8 +304,6 @@ func (s *Store) CreateDatabaseGroup(ctx context.Context, creatorPrincipalID int,
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	create.CreatorID = creatorPrincipalID
-	create.UpdaterID = creatorPrincipalID
 	s.databaseGroupCache.Add(getDatabaseGroupCacheKey(create.ProjectUID, create.ResourceID), create)
 	s.databaseGroupIDCache.Add(create.UID, create)
 	return create, nil

@@ -178,7 +178,6 @@ func loadPredefinedRoles() ([]*store.RoleMessage, error) {
 			permissions[p] = true
 		}
 		roles = append(roles, &store.RoleMessage{
-			CreatorID:   api.SystemBotID,
 			ResourceID:  resourceID,
 			Name:        role.Title,
 			Description: "",

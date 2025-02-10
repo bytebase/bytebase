@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -110,7 +109,6 @@ func (m *DataSourceMessage) Copy() *DataSourceMessage {
 
 // UpdateDataSourceMessage is the message for the data source.
 type UpdateDataSourceMessage struct {
-	UpdaterID    int
 	InstanceUID  int
 	InstanceID   string
 	DataSourceID string
@@ -286,14 +284,14 @@ func (s *Store) GetDataSource(ctx context.Context, find *FindDataSourceMessage) 
 }
 
 // AddDataSourceToInstanceV2 adds a RO data source to an instance and return the instance where the data source is added.
-func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID, creatorID int, instanceID string, dataSource *DataSourceMessage) error {
+func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID int, instanceID string, dataSource *DataSourceMessage) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.New("Failed to begin transaction")
 	}
 	defer tx.Rollback()
 
-	if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceUID, creatorID, dataSource); err != nil {
+	if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceUID, dataSource); err != nil {
 		return err
 	}
 
@@ -340,7 +338,7 @@ func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, instanc
 
 // UpdateDataSourceV2 updates a data source and returns the instance.
 func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceMessage) error {
-	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{patch.UpdaterID, time.Now().Unix()}
+	set, args := []string{}, []any{}
 
 	if v := patch.Username; v != nil {
 		set, args = append(set, fmt.Sprintf("username = $%d", len(args)+1)), append(args, *v)
@@ -494,7 +492,7 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	return nil
 }
 
-func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanceUID, creatorID int, dataSource *DataSourceMessage) error {
+func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanceUID int, dataSource *DataSourceMessage) error {
 	// We flatten the data source fields in DataSourceMessage, so we need to compose them in store layer before INSERT.
 	dataSourceOptions := storepb.DataSourceOptions{
 		Srv:                                dataSource.SRV,
@@ -528,8 +526,6 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO data_source (
-			creator_id,
-			updater_id,
 			instance_id,
 			name,
 			type,
@@ -543,8 +539,8 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 			options,
 			database
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-	`, creatorID, creatorID, instanceUID, dataSource.ID,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+	`, instanceUID, dataSource.ID,
 		dataSource.Type, dataSource.Username, dataSource.ObfuscatedPassword, dataSource.ObfuscatedSslKey,
 		dataSource.ObfuscatedSslCert, dataSource.ObfuscatedSslCa, dataSource.Host, dataSource.Port,
 		protoBytes, dataSource.Database,
