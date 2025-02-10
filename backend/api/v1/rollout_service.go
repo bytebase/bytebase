@@ -708,7 +708,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		}
 	}
 
-	if err := s.store.BatchSkipTasks(ctx, taskUIDs, request.Reason, user.ID); err != nil {
+	if err := s.store.BatchSkipTasks(ctx, taskUIDs, request.Reason); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to skip tasks, error: %v", err)
 	}
 
@@ -846,7 +846,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		}
 	}
 
-	if err := s.store.BatchCancelTaskRuns(ctx, taskRunIDs, principalID); err != nil {
+	if err := s.store.BatchCancelTaskRuns(ctx, taskRunIDs); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to batch patch task run status to canceled, error: %v", err)
 	}
 

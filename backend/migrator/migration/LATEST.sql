@@ -21,10 +21,7 @@ ALTER SEQUENCE idp_id_seq RESTART WITH 101;
 CREATE TABLE principal (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     type TEXT NOT NULL CHECK (type IN ('END_USER', 'SYSTEM_BOT', 'SERVICE_ACCOUNT')),
     name TEXT NOT NULL,
     email TEXT NOT NULL,
@@ -145,11 +142,6 @@ ALTER SEQUENCE instance_id_seq RESTART WITH 101;
 -- data is synced periodically from the instance
 CREATE TABLE db (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     project_id INTEGER NOT NULL REFERENCES project (id),
     environment TEXT REFERENCES environment (resource_id),
@@ -175,11 +167,6 @@ ALTER SEQUENCE db_id_seq RESTART WITH 101;
 -- db_schema stores the database schema metadata for a particular database.
 CREATE TABLE db_schema (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     database_id INTEGER NOT NULL REFERENCES db (id) ON DELETE CASCADE,
     metadata JSON NOT NULL DEFAULT '{}',
     raw_dump TEXT NOT NULL DEFAULT '',
@@ -219,24 +206,16 @@ CREATE TABLE sheet_blob (
 -- sheet table stores general statements.
 CREATE TABLE sheet (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
     name TEXT NOT NULL,
     sha256 BYTEA NOT NULL,
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE INDEX idx_sheet_creator_id ON sheet(creator_id);
-
 CREATE INDEX idx_sheet_project_id ON sheet(project_id);
 
-CREATE INDEX idx_sheet_name ON sheet(name);
-
-CREATE INDEX idx_sheet_project_id_row_status ON sheet(project_id, row_status);
 
 ALTER SEQUENCE sheet_id_seq RESTART WITH 101;
 
@@ -245,11 +224,8 @@ ALTER SEQUENCE sheet_id_seq RESTART WITH 101;
 -- pipeline table
 CREATE TABLE pipeline (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
     name TEXT NOT NULL
 );
@@ -259,11 +235,6 @@ ALTER SEQUENCE pipeline_id_seq RESTART WITH 101;
 -- stage table stores the stage for the pipeline
 CREATE TABLE stage (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
     environment_id INTEGER NOT NULL REFERENCES environment (id),
     deployment_id TEXT NOT NULL DEFAULT '',
@@ -277,11 +248,6 @@ ALTER SEQUENCE stage_id_seq RESTART WITH 101;
 -- task table stores the task for the stage
 CREATE TABLE task (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
     stage_id INTEGER NOT NULL REFERENCES stage (id),
     instance_id INTEGER NOT NULL REFERENCES instance (id),
@@ -321,7 +287,6 @@ CREATE TABLE task_run (
     id SERIAL PRIMARY KEY,
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     task_id INTEGER NOT NULL REFERENCES task (id),
     sheet_id INTEGER REFERENCES sheet (id),
@@ -359,7 +324,6 @@ CREATE TABLE plan (
     row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
     pipeline_id INTEGER REFERENCES pipeline (id),
@@ -376,9 +340,7 @@ ALTER SEQUENCE plan_id_seq RESTART WITH 101;
 
 CREATE TABLE plan_check_run (
     id SERIAL PRIMARY KEY,
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     plan_id BIGINT NOT NULL REFERENCES plan (id),
     status TEXT NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
@@ -400,7 +362,6 @@ CREATE TABLE issue (
     row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
     plan_id BIGINT REFERENCES plan (id),
@@ -560,10 +521,8 @@ ALTER SEQUENCE deployment_config_id_seq RESTART WITH 101;
 -- worksheet table stores worksheets in SQL Editor.
 CREATE TABLE worksheet (
     id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
     database_id INTEGER NULL REFERENCES db (id),
@@ -690,7 +649,6 @@ CREATE TABLE review_config (
 CREATE TABLE revision (
     id BIGSERIAL PRIMARY KEY,
     database_id INTEGER NOT NULL REFERENCES db (id),
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleter_id INTEGER REFERENCES principal (id),
     deleted_ts TIMESTAMPTZ,
@@ -718,7 +676,6 @@ CREATE INDEX IF NOT EXISTS idx_sync_history_database_id_created_ts ON sync_histo
 
 CREATE TABLE changelog (
     id BIGSERIAL PRIMARY KEY,
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts TIMESTAMPTZ NOT NULL DEFAULT now(),
     database_id INTEGER NOT NULL REFERENCES db (id),
     status TEXT NOT NULL CONSTRAINT changelog_status_check CHECK (status IN ('PENDING', 'DONE', 'FAILED')),
@@ -746,7 +703,7 @@ CREATE INDEX idx_release_project_id ON release (project_id);
 
 
 -- Default bytebase system account id is 1.
-INSERT INTO principal (id, creator_id, updater_id, type, name, email, password_hash) VALUES (1, 1, 1, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '');
+INSERT INTO principal (id, type, name, email, password_hash) VALUES (1, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '');
 
 ALTER SEQUENCE principal_id_seq RESTART WITH 101;
 

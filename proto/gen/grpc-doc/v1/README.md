@@ -2042,7 +2042,6 @@ AdviseIndexResponse is the response of advising index.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
-| creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | status | [Changelog.Status](#bytebase-v1-Changelog-Status) |  |  |
 | statement | [string](#string) |  | The statement is used for preview purpose. |
@@ -2823,7 +2822,6 @@ ProcedureMetadata is the metadata for procedures.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: instances/{instance}/databases/{database}/revisions/{revision} |
 | release | [string](#string) |  | Format: projects/{project}/releases/{release} Can be empty. |
-| creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | deleter | [string](#string) |  | Format: users/hello@world.com Can be empty. |
 | delete_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Can be empty. |

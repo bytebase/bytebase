@@ -1502,8 +1502,6 @@ export interface Revision {
    * Can be empty.
    */
   release: string;
-  /** Format: users/hello@world.com */
-  creator: string;
   createTime:
     | Timestamp
     | undefined;
@@ -1627,8 +1625,6 @@ export interface GetChangelogRequest {
 export interface Changelog {
   /** Format: instances/{instance}/databases/{database}/changelogs/{changelog} */
   name: string;
-  /** Format: users/hello@world.com */
-  creator: string;
   createTime: Timestamp | undefined;
   status: Changelog_Status;
   /** The statement is used for preview purpose. */
@@ -9599,7 +9595,6 @@ function createBaseRevision(): Revision {
   return {
     name: "",
     release: "",
-    creator: "",
     createTime: undefined,
     deleter: "",
     deleteTime: undefined,
@@ -9621,9 +9616,6 @@ export const Revision: MessageFns<Revision> = {
     }
     if (message.release !== "") {
       writer.uint32(18).string(message.release);
-    }
-    if (message.creator !== "") {
-      writer.uint32(26).string(message.creator);
     }
     if (message.createTime !== undefined) {
       Timestamp.encode(message.createTime, writer.uint32(34).fork()).join();
@@ -9682,14 +9674,6 @@ export const Revision: MessageFns<Revision> = {
           }
 
           message.release = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.creator = reader.string();
           continue;
         }
         case 4: {
@@ -9793,7 +9777,6 @@ export const Revision: MessageFns<Revision> = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       release: isSet(object.release) ? globalThis.String(object.release) : "",
-      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       deleter: isSet(object.deleter) ? globalThis.String(object.deleter) : "",
       deleteTime: isSet(object.deleteTime) ? fromJsonTimestamp(object.deleteTime) : undefined,
@@ -9815,9 +9798,6 @@ export const Revision: MessageFns<Revision> = {
     }
     if (message.release !== "") {
       obj.release = message.release;
-    }
-    if (message.creator !== "") {
-      obj.creator = message.creator;
     }
     if (message.createTime !== undefined) {
       obj.createTime = fromTimestamp(message.createTime).toISOString();
@@ -9862,7 +9842,6 @@ export const Revision: MessageFns<Revision> = {
     const message = createBaseRevision();
     message.name = object.name ?? "";
     message.release = object.release ?? "";
-    message.creator = object.creator ?? "";
     message.createTime = (object.createTime !== undefined && object.createTime !== null)
       ? Timestamp.fromPartial(object.createTime)
       : undefined;
@@ -10181,7 +10160,6 @@ export const GetChangelogRequest: MessageFns<GetChangelogRequest> = {
 function createBaseChangelog(): Changelog {
   return {
     name: "",
-    creator: "",
     createTime: undefined,
     status: Changelog_Status.STATUS_UNSPECIFIED,
     statement: "",
@@ -10204,9 +10182,6 @@ export const Changelog: MessageFns<Changelog> = {
   encode(message: Changelog, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.creator !== "") {
-      writer.uint32(18).string(message.creator);
     }
     if (message.createTime !== undefined) {
       Timestamp.encode(message.createTime, writer.uint32(26).fork()).join();
@@ -10269,14 +10244,6 @@ export const Changelog: MessageFns<Changelog> = {
           }
 
           message.name = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.creator = reader.string();
           continue;
         }
         case 3: {
@@ -10411,7 +10378,6 @@ export const Changelog: MessageFns<Changelog> = {
   fromJSON(object: any): Changelog {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       status: isSet(object.status) ? changelog_StatusFromJSON(object.status) : Changelog_Status.STATUS_UNSPECIFIED,
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
@@ -10434,9 +10400,6 @@ export const Changelog: MessageFns<Changelog> = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.creator !== "") {
-      obj.creator = message.creator;
     }
     if (message.createTime !== undefined) {
       obj.createTime = fromTimestamp(message.createTime).toISOString();
@@ -10492,7 +10455,6 @@ export const Changelog: MessageFns<Changelog> = {
   fromPartial(object: DeepPartial<Changelog>): Changelog {
     const message = createBaseChangelog();
     message.name = object.name ?? "";
-    message.creator = object.creator ?? "";
     message.createTime = (object.createTime !== undefined && object.createTime !== null)
       ? Timestamp.fromPartial(object.createTime)
       : undefined;

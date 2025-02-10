@@ -32,11 +32,10 @@ import { type DataTableColumn, NDataTable, NButton, useDialog } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { RouterLink, useRouter } from "vue-router";
-import { BBAvatar } from "@/bbkit";
-import { useRevisionStore, useUserStore } from "@/store";
+import { useRevisionStore } from "@/store";
 import { getDateForPbTimestamp } from "@/types";
 import type { Revision } from "@/types/proto/v1/database_service";
-import { extractIssueUID, extractUserResourceName } from "@/utils";
+import { extractIssueUID } from "@/utils";
 import { useDatabaseDetailContext } from "../Database/context";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 
@@ -132,23 +131,6 @@ const columnList = computed(() => {
         <HumanizeDate date={getDateForPbTimestamp(revision.createTime)} />
       ),
     },
-    {
-      key: "creator",
-      title: t("common.creator"),
-      width: 128,
-      resizable: true,
-      ellipsis: true,
-      render: (revision) => {
-        const creator = creatorOfRevision(revision);
-        if (!creator) return null;
-        return (
-          <div class="flex flex-row items-center overflow-hidden gap-x-1">
-            <BBAvatar size="SMALL" username={creator.title} />
-            <span class="truncate">{creator.title}</span>
-          </div>
-        );
-      },
-    },
   ];
   return columns.filter((col) => !col.hide);
 });
@@ -169,11 +151,6 @@ const rowProps = (revision: Revision) => {
       }
     },
   };
-};
-
-const creatorOfRevision = (revision: Revision) => {
-  const email = extractUserResourceName(revision.creator);
-  return useUserStore().getUserByEmail(email);
 };
 
 const onDelete = () => {

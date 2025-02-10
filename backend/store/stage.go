@@ -33,7 +33,7 @@ type TaskIndexDAG struct {
 	ToIndex   int
 }
 
-func (*Store) createStages(ctx context.Context, tx *Tx, stagesCreate []*StageMessage, pipelineUID int, creatorID int) ([]*StageMessage, error) {
+func (*Store) createStages(ctx context.Context, tx *Tx, stagesCreate []*StageMessage, pipelineUID int) ([]*StageMessage, error) {
 	if len(stagesCreate) == 0 {
 		return nil, nil
 	}
@@ -48,22 +48,18 @@ func (*Store) createStages(ctx context.Context, tx *Tx, stagesCreate []*StageMes
 
 	query := `
 		INSERT INTO stage (
-			creator_id,
-			updater_id,
 			pipeline_id,
 			environment_id,
 			name,
 			deployment_id
 		) SELECT
 			$1,
-			$1,
-			$2,
-			unnest(CAST($3 AS INTEGER[])) AS environment_id,
-			unnest(CAST($4 AS TEXT[])),
-			unnest(CAST($5 AS TEXT[])) AS deployment_id
+			unnest(CAST($2 AS INTEGER[])) AS environment_id,
+			unnest(CAST($3 AS TEXT[])),
+			unnest(CAST($4 AS TEXT[])) AS deployment_id
 		RETURNING id
     `
-	rows, err := tx.QueryContext(ctx, query, creatorID, pipelineUID, environmentIDs, names, deploymentIDs)
+	rows, err := tx.QueryContext(ctx, query, pipelineUID, environmentIDs, names, deploymentIDs)
 	if err != nil {
 		return nil, err
 	}

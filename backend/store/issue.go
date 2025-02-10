@@ -49,7 +49,6 @@ type IssueMessage struct {
 	UID         int
 	Creator     *UserMessage
 	CreatedTime time.Time
-	Updater     *UserMessage
 	UpdatedTime time.Time
 
 	// Internal fields.
@@ -57,7 +56,6 @@ type IssueMessage struct {
 	subscriberUIDs []int
 	creatorUID     int
 	createdTs      int64
-	updaterUID     int
 	updatedTs      int64
 }
 
@@ -155,7 +153,6 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 	query := `
 		INSERT INTO issue (
 			creator_id,
-			updater_id,
 			project_id,
 			pipeline_id,
 			plan_id,
@@ -166,7 +163,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 			payload,
 			ts_vector
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id, created_ts, updated_ts
 	`
 
@@ -177,7 +174,6 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 	defer tx.Rollback()
 
 	if err := tx.QueryRowContext(ctx, query,
-		creatorID,
 		creatorID,
 		create.Project.UID,
 		create.PipelineUID,
@@ -201,7 +197,6 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 	create.CreatedTime = time.Unix(create.createdTs, 0)
 	create.UpdatedTime = time.Unix(create.updatedTs, 0)
 	create.Creator = creator
-	create.Updater = creator
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -215,13 +210,13 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 }
 
 // UpdateIssueV2 updates an issue.
-func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMessage, updaterID int) (*IssueMessage, error) {
+func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMessage) (*IssueMessage, error) {
 	oldIssue, err := s.GetIssueV2(ctx, &FindIssueMessage{UID: &uid})
 	if err != nil {
 		return nil, err
 	}
 
-	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{updaterID, time.Now().Unix()}
+	set, args := []string{"updated_ts = $1"}, []any{time.Now().Unix()}
 	if v := patch.PipelineUID; v != nil {
 		set, args = append(set, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -454,7 +449,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		issue.id,
 		issue.creator_id,
 		issue.created_ts,
-		issue.updater_id,
 		issue.updated_ts,
 		issue.project_id,
 		issue.pipeline_id,
@@ -512,7 +506,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			&issue.UID,
 			&issue.creatorUID,
 			&issue.createdTs,
-			&issue.updaterUID,
 			&issue.updatedTs,
 			&issue.projectUID,
 			&issue.PipelineUID,
@@ -558,11 +551,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			return nil, err
 		}
 		issue.Creator = creator
-		updater, err := s.GetUserByID(ctx, issue.updaterUID)
-		if err != nil {
-			return nil, err
-		}
-		issue.Updater = updater
 		for _, subscriberUID := range issue.subscriberUIDs {
 			subscriber, err := s.GetUserByID(ctx, subscriberUID)
 			if err != nil {
@@ -583,14 +571,14 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 }
 
 // BatchUpdateIssueStatuses updates the status of multiple issues.
-func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, status api.IssueStatus, updaterID int) error {
+func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, status api.IssueStatus) error {
 	var ids []string
 	for _, id := range issueUIDs {
 		ids = append(ids, fmt.Sprintf("%d", id))
 	}
 	query := fmt.Sprintf(`
 		UPDATE issue
-		SET status = $1, updater_id = $2
+		SET status = $1
 		WHERE id IN (%s)
 		RETURNING id, pipeline_id;
 	`, strings.Join(ids, ","))
@@ -601,7 +589,7 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, s
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, query, status, updaterID)
+	rows, err := tx.QueryContext(ctx, query, status)
 	if err != nil {
 		return errors.Wrapf(err, "failed to query")
 	}
