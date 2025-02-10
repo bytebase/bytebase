@@ -13,5 +13,5 @@ ALTER TABLE plan DROP COLUMN IF EXISTS updater_id;
 ALTER TABLE plan_check_run DROP COLUMN IF EXISTS creator_id, DROP COLUMN IF EXISTS updater_id;
 ALTER TABLE issue DROP COLUMN IF EXISTS updater_id;
 ALTER TABLE worksheet DROP COLUMN IF EXISTS row_status, DROP COLUMN IF EXISTS updater_id;
-ALTER TABLE changelog DROP COLUMN IF EXISTS creator_id;
 ALTER TABLE revision DROP COLUMN IF EXISTS creator_id;
+ALTER TABLE changelog DROP COLUMN IF EXISTS creator_id;
