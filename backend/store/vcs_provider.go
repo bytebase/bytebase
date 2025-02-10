@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -101,7 +100,7 @@ func (s *Store) ListVCSProviders(ctx context.Context) ([]*VCSProviderMessage, er
 }
 
 // CreateVCSProvider creates an VCS provider.
-func (s *Store) CreateVCSProvider(ctx context.Context, principalUID int, create *VCSProviderMessage) (*VCSProviderMessage, error) {
+func (s *Store) CreateVCSProvider(ctx context.Context, create *VCSProviderMessage) (*VCSProviderMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
@@ -110,20 +109,16 @@ func (s *Store) CreateVCSProvider(ctx context.Context, principalUID int, create 
 
 	query := `
 		INSERT INTO vcs (
-			creator_id,
-			updater_id,
 			resource_id,
 			name,
 			type,
 			instance_url,
 			access_token
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id
 	`
 	if err := tx.QueryRowContext(ctx, query,
-		principalUID,
-		principalUID,
 		create.ResourceID,
 		create.Title,
 		create.Type.String(),
@@ -147,8 +142,8 @@ func (s *Store) CreateVCSProvider(ctx context.Context, principalUID int, create 
 }
 
 // UpdateVCSProvider updates an VCS provider.
-func (s *Store) UpdateVCSProvider(ctx context.Context, principalUID int, vcsProviderUID int, update *UpdateVCSProviderMessage) (*VCSProviderMessage, error) {
-	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{principalUID, time.Now().Unix()}
+func (s *Store) UpdateVCSProvider(ctx context.Context, vcsProviderUID int, update *UpdateVCSProviderMessage) (*VCSProviderMessage, error) {
+	set, args := []string{}, []any{}
 	if v := update.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}

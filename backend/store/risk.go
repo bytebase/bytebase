@@ -5,14 +5,12 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 // RiskSource is the source of the risk.
@@ -44,8 +42,7 @@ type RiskMessage struct {
 	Expression *expr.Expr // *v1alpha1.ParsedExpr
 
 	// Output only
-	ID      int64
-	Deleted bool
+	ID int64
 }
 
 // UpdateRiskMessage is the message for updating a risk.
@@ -54,7 +51,6 @@ type UpdateRiskMessage struct {
 	Active     *bool
 	Level      *int32
 	Expression *expr.Expr
-	RowStatus  *api.RowStatus
 }
 
 // GetRisk gets a risk.
@@ -66,8 +62,7 @@ func (s *Store) GetRisk(ctx context.Context, id int64) (*RiskMessage, error) {
 			level,
 			name,
 			active,
-			expression,
-			row_status
+			expression
 		FROM risk
 		WHERE id = $1`
 
@@ -79,7 +74,6 @@ func (s *Store) GetRisk(ctx context.Context, id int64) (*RiskMessage, error) {
 
 	var risk RiskMessage
 	var expressionBytes []byte
-	var rowStatus api.RowStatus
 	if err := tx.QueryRowContext(ctx, query, id).Scan(
 		&risk.ID,
 		&risk.Source,
@@ -87,15 +81,12 @@ func (s *Store) GetRisk(ctx context.Context, id int64) (*RiskMessage, error) {
 		&risk.Name,
 		&risk.Active,
 		&expressionBytes,
-		&rowStatus,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, errors.Wrap(err, "failed to scan")
 	}
-
-	risk.Deleted = convertRowStatusToDeleted(string(rowStatus))
 
 	var expression expr.Expr // v1alpha1.ParsedExpr
 	if err := common.ProtojsonUnmarshaler.Unmarshal(expressionBytes, &expression); err != nil {
@@ -126,7 +117,6 @@ func (s *Store) ListRisks(ctx context.Context) ([]*RiskMessage, error) {
 			active,
 			expression
 		FROM risk
-		WHERE row_status = 'NORMAL'
 		ORDER BY source, level DESC, id
 	`
 
@@ -178,17 +168,15 @@ func (s *Store) ListRisks(ctx context.Context) ([]*RiskMessage, error) {
 }
 
 // CreateRisk creates a risk.
-func (s *Store) CreateRisk(ctx context.Context, risk *RiskMessage, creatorID int) (*RiskMessage, error) {
+func (s *Store) CreateRisk(ctx context.Context, risk *RiskMessage) (*RiskMessage, error) {
 	query := `
 		INSERT INTO risk (
-			creator_id,
-			updater_id,
 			source,
 			level,
 			name,
 			active,
 			expression
-		) VALUES ($1, $2, $3, $4, $5, $6, $7)
+		) VALUES ($1, $2, $3, $4, $5)
 		RETURNING id
 	`
 	expressionBytes, err := protojson.Marshal(risk.Expression)
@@ -203,7 +191,7 @@ func (s *Store) CreateRisk(ctx context.Context, risk *RiskMessage, creatorID int
 	defer tx.Rollback()
 
 	var id int64
-	if err := tx.QueryRowContext(ctx, query, creatorID, creatorID, risk.Source, risk.Level, risk.Name, risk.Active, string(expressionBytes)).Scan(&id); err != nil {
+	if err := tx.QueryRowContext(ctx, query, risk.Source, risk.Level, risk.Name, risk.Active, string(expressionBytes)).Scan(&id); err != nil {
 		return nil, err
 	}
 
@@ -223,8 +211,8 @@ func (s *Store) CreateRisk(ctx context.Context, risk *RiskMessage, creatorID int
 }
 
 // UpdateRisk updates a risk.
-func (s *Store) UpdateRisk(ctx context.Context, patch *UpdateRiskMessage, id int64, updaterID int) (*RiskMessage, error) {
-	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{updaterID, time.Now().Unix()}
+func (s *Store) UpdateRisk(ctx context.Context, patch *UpdateRiskMessage, id int64) (*RiskMessage, error) {
+	set, args := []string{}, []any{}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
@@ -240,9 +228,6 @@ func (s *Store) UpdateRisk(ctx context.Context, patch *UpdateRiskMessage, id int
 			return nil, err
 		}
 		set, args = append(set, fmt.Sprintf("expression = $%d", len(args)+1)), append(args, string(expressionBytes))
-	}
-	if v := patch.RowStatus; v != nil {
-		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, *v)
 	}
 	args = append(args, id)
 
@@ -267,4 +252,23 @@ func (s *Store) UpdateRisk(ctx context.Context, patch *UpdateRiskMessage, id int
 
 	s.risksCache.Remove(0)
 	return s.GetRisk(ctx, id)
+}
+
+func (s *Store) DeleteRisk(ctx context.Context, id int64) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to begin tx")
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM risk WHERE id = $1`, id); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(err, "failed to commit")
+	}
+
+	s.risksCache.Remove(0)
+	return nil
 }

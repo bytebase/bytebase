@@ -55,7 +55,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		},
 		EnvironmentID: api.DefaultTestEnvironmentID,
 		Activation:    false,
-	}, userID, -1)
+	}, -1)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create test onboarding instance")
 	}
@@ -114,7 +114,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		},
 		EnvironmentID: api.DefaultProdEnvironmentID,
 		Activation:    false,
-	}, userID, -1)
+	}, -1)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create prod onboarding instance")
 	}
@@ -157,11 +157,10 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	// Add a sample SQL Review policy to the prod environment. This pairs with the following schema
 	// change issue to demonstrate the SQL Review feature.
 	sqlReviewConfig := &store.ReviewConfigMessage{
-		ID:         "sample",
-		Name:       "SQL Review Sample Policy",
-		CreatorUID: userID,
-		Enforce:    true,
-		Payload:    getSampleSQLReviewPayload(),
+		ID:      "sample",
+		Name:    "SQL Review Sample Policy",
+		Enforce: true,
+		Payload: getSampleSQLReviewPayload(),
 	}
 
 	config, err := s.store.CreateReviewConfig(ctx, sqlReviewConfig)
@@ -186,7 +185,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		InheritFromParent: true,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
-	}, userID)
+	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create onboarding environment tag policy")
 	}

@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -73,7 +72,7 @@ func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectUID int) (*Dep
 }
 
 // UpsertDeploymentConfigV2 upserts the deployment config.
-func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, projectUID, principalUID int, upsert *DeploymentConfigMessage) (*DeploymentConfigMessage, error) {
+func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, projectUID int, upsert *DeploymentConfigMessage) (*DeploymentConfigMessage, error) {
 	configB, err := protojson.Marshal(upsert.Config)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal deployment config")
@@ -81,17 +80,12 @@ func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, projectUID, princi
 
 	query := `
 		INSERT INTO deployment_config (
-			creator_id,
-			updater_id,
-			updated_ts,
 			project_id,
 			name,
 			config
 		)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		VALUES ($1, $2, $3)
 		ON CONFLICT(project_id) DO UPDATE SET
-			updater_id = excluded.updater_id,
-			updated_ts = excluded.updated_ts,
 			name = excluded.name,
 			config = excluded.config
 		RETURNING id, name, config
@@ -108,9 +102,6 @@ func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, projectUID, princi
 	defer tx.Rollback()
 
 	if err := tx.QueryRowContext(ctx, query,
-		principalUID,
-		principalUID,
-		time.Now().Unix(),
 		projectUID,
 		upsert.Name,
 		configB,

@@ -44,10 +44,8 @@ func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.Sear
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	rowStatus := api.Normal
 	find := &store.ListAnomalyMessage{
 		ProjectID: projectID,
-		RowStatus: &rowStatus,
 	}
 	if request.Filter != "" {
 		// We only support filter by type and resource now.
@@ -114,7 +112,7 @@ func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.Sear
 
 func (s *AnomalyService) convertToAnomaly(ctx context.Context, anomaly *store.AnomalyMessage) (*v1pb.Anomaly, error) {
 	pbAnomaly := &v1pb.Anomaly{
-		CreateTime: timestamppb.New(time.Unix(anomaly.CreatedTs, 0)),
+		CreateTime: timestamppb.New(time.Unix(anomaly.UpdatedTs, 0)),
 		UpdateTime: timestamppb.New(time.Unix(anomaly.UpdatedTs, 0)),
 	}
 

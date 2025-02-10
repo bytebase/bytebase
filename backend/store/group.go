@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -31,9 +30,7 @@ type GroupMessage struct {
 	Email       string
 	Title       string
 	Description string
-	CreatorUID  int
 	Payload     *storepb.GroupPayload
-	CreatedTime time.Time
 }
 
 // GetGroup gets a group.
@@ -98,14 +95,12 @@ func (*Store) listGroupImpl(ctx context.Context, tx *Tx, find *FindGroupMessage)
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 	SELECT
 		email,
-		created_ts,
-		creator_id,
 		name,
 		description,
 		payload
 	FROM user_group
 	WHERE %s
-	ORDER BY created_ts DESC
+	ORDER BY email
 	`, strings.Join(where, " AND ")), args...)
 	if err != nil {
 		return nil, err
@@ -115,18 +110,14 @@ func (*Store) listGroupImpl(ctx context.Context, tx *Tx, find *FindGroupMessage)
 	for rows.Next() {
 		var group GroupMessage
 		var payload []byte
-		var createdTs int64
 		if err := rows.Scan(
 			&group.Email,
-			&createdTs,
-			&group.CreatorUID,
 			&group.Title,
 			&group.Description,
 			&payload,
 		); err != nil {
 			return nil, err
 		}
-		group.CreatedTime = time.Unix(createdTs, 0)
 		groupPayload := storepb.GroupPayload{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, &groupPayload); err != nil {
 			return nil, err
@@ -142,22 +133,18 @@ func (*Store) listGroupImpl(ctx context.Context, tx *Tx, find *FindGroupMessage)
 }
 
 // CreateGroup creates a group.
-func (s *Store) CreateGroup(ctx context.Context, create *GroupMessage, creatorUID int) (*GroupMessage, error) {
+func (s *Store) CreateGroup(ctx context.Context, create *GroupMessage) (*GroupMessage, error) {
 	if create.Payload == nil {
 		create.Payload = &storepb.GroupPayload{}
 	}
-	create.CreatorUID = creatorUID
 
 	query := `
 		INSERT INTO user_group (
 			email,
-			creator_id,
-			updater_id,
 			name,
 			description,
 			payload
-		) VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING created_ts
+		) VALUES ($1, $2, $3, $4)
 	`
 	payloadBytes, err := protojson.Marshal(create.Payload)
 	if err != nil {
@@ -170,20 +157,16 @@ func (s *Store) CreateGroup(ctx context.Context, create *GroupMessage, creatorUI
 	}
 	defer tx.Rollback()
 
-	var createdTs int64
-	if err := tx.QueryRowContext(
+	if _, err := tx.ExecContext(
 		ctx,
 		query,
 		create.Email,
-		create.CreatorUID,
-		create.CreatorUID,
 		create.Title,
 		create.Description,
 		payloadBytes,
-	).Scan(&createdTs); err != nil {
+	); err != nil {
 		return nil, err
 	}
-	create.CreatedTime = time.Unix(createdTs, 0)
 
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "failed to commit")
@@ -194,13 +177,13 @@ func (s *Store) CreateGroup(ctx context.Context, create *GroupMessage, creatorUI
 }
 
 // UpdateGroup updates a group.
-func (s *Store) UpdateGroup(ctx context.Context, email string, patch *UpdateGroupMessage, updaterID int) (*GroupMessage, error) {
+func (s *Store) UpdateGroup(ctx context.Context, email string, patch *UpdateGroupMessage) (*GroupMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
 
-	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{updaterID, time.Now().Unix()}
+	set, args := []string{}, []any{}
 
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
@@ -219,7 +202,6 @@ func (s *Store) UpdateGroup(ctx context.Context, email string, patch *UpdateGrou
 
 	var group GroupMessage
 	var payload []byte
-	var createdTs int64
 
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE user_group
@@ -227,15 +209,11 @@ func (s *Store) UpdateGroup(ctx context.Context, email string, patch *UpdateGrou
 		WHERE email = $%d
 		RETURNING
 			email,
-			created_ts,
-			creator_id,
 			name,
 			description,
 			payload
 		`, strings.Join(set, ", "), len(set)+1), args...).Scan(
 		&group.Email,
-		&createdTs,
-		&group.CreatorUID,
 		&group.Title,
 		&group.Description,
 		&payload,
@@ -243,7 +221,6 @@ func (s *Store) UpdateGroup(ctx context.Context, email string, patch *UpdateGrou
 		return nil, err
 	}
 
-	group.CreatedTime = time.Unix(createdTs, 0)
 	groupPayload := storepb.GroupPayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, &groupPayload); err != nil {
 		return nil, err

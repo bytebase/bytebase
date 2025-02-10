@@ -25,8 +25,6 @@ type AnomalyMessage struct {
 	//
 	// UID is the unique identifier of the anomaly.
 	UID int
-	// CreatedTs is the timestamp when the anomaly is created.
-	CreatedTs int64
 	// UpdatedTs is the timestamp when the anomaly is updated.
 	UpdatedTs int64
 }
@@ -34,7 +32,6 @@ type AnomalyMessage struct {
 // ListAnomalyMessage is the message to list anomalies.
 type ListAnomalyMessage struct {
 	ProjectID   string
-	RowStatus   *api.RowStatus
 	InstanceID  *string
 	DatabaseUID *int
 	Types       []api.AnomalyType
@@ -48,7 +45,7 @@ type DeleteAnomalyMessage struct {
 }
 
 // UpsertActiveAnomalyV2 upserts an instance of anomaly.
-func (s *Store) UpsertActiveAnomalyV2(ctx context.Context, principalUID int, upsert *AnomalyMessage) (*AnomalyMessage, error) {
+func (s *Store) UpsertActiveAnomalyV2(ctx context.Context, upsert *AnomalyMessage) (*AnomalyMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -56,27 +53,20 @@ func (s *Store) UpsertActiveAnomalyV2(ctx context.Context, principalUID int, ups
 	defer tx.Rollback()
 
 	t := time.Now().Unix()
-	upsert.CreatedTs = t
 	upsert.UpdatedTs = t
 	query := `
 	INSERT INTO anomaly (
-		creator_id,
-		updater_id,
-		created_ts,
 		updated_ts,
 		project,
 		instance_id,
 		database_id,
 		type
 	)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	VALUES ($1, $2, $3, $4, $5)
 	ON CONFLICT (project, database_id, type) DO UPDATE SET
 		updated_ts = EXCLUDED.updated_ts
 `
 	if _, err := tx.ExecContext(ctx, query,
-		principalUID,
-		principalUID,
-		t,
 		t,
 		upsert.ProjectID,
 		upsert.InstanceUID,
@@ -135,9 +125,6 @@ func (s *Store) DeleteAnomalyV2(ctx context.Context, d *DeleteAnomalyMessage) er
 func (*Store) listAnomalyImplV2(ctx context.Context, tx *Tx, list *ListAnomalyMessage) ([]*AnomalyMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	where, args = append(where, fmt.Sprintf("anomaly.project = $%d", len(args)+1)), append(args, list.ProjectID)
-	if v := list.RowStatus; v != nil {
-		where, args = append(where, fmt.Sprintf("anomaly.row_status = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := list.InstanceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -155,7 +142,6 @@ func (*Store) listAnomalyImplV2(ctx context.Context, tx *Tx, list *ListAnomalyMe
 	query := fmt.Sprintf(`
 		SELECT
 			anomaly.id,
-			anomaly.created_ts,
 			anomaly.updated_ts,
 			anomaly.instance_id,
 			anomaly.database_id,
@@ -166,7 +152,7 @@ func (*Store) listAnomalyImplV2(ctx context.Context, tx *Tx, list *ListAnomalyMe
 			AND EXISTS (
 				SELECT 1
 				FROM instance
-				WHERE instance.id = anomaly.instance_id AND instance.row_status != 'ARCHIVED'
+				WHERE instance.id = anomaly.instance_id
 			)
 		)
 	`, strings.Join(where, " AND "))
@@ -184,7 +170,6 @@ func (*Store) listAnomalyImplV2(ctx context.Context, tx *Tx, list *ListAnomalyMe
 		var databaseID sql.NullInt32
 		if err := rows.Scan(
 			&anomaly.UID,
-			&anomaly.CreatedTs,
 			&anomaly.UpdatedTs,
 			&anomaly.InstanceUID,
 			&databaseID,

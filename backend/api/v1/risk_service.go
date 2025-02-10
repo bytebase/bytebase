@@ -67,10 +67,6 @@ func (s *RiskService) CreateRisk(ctx context.Context, request *v1pb.CreateRiskRe
 	if _, err := common.ConvertUnparsedRisk(request.Risk.Condition); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to validate risk expression, error: %v", err)
 	}
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
 
 	risk, err := s.store.CreateRisk(ctx, &store.RiskMessage{
 		Source:     convertSource(request.Risk.Source),
@@ -78,7 +74,7 @@ func (s *RiskService) CreateRisk(ctx context.Context, request *v1pb.CreateRiskRe
 		Name:       request.Risk.Title,
 		Active:     request.Risk.Active,
 		Expression: request.Risk.Condition,
-	}, principalID)
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -89,10 +85,6 @@ func (s *RiskService) CreateRisk(ctx context.Context, request *v1pb.CreateRiskRe
 func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRequest) (*v1pb.Risk, error) {
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
-	}
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
@@ -107,9 +99,6 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 	}
 	if risk == nil {
 		return nil, status.Errorf(codes.NotFound, "risk %v not found", request.Risk.Name)
-	}
-	if risk.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "risk %v has been deleted", request.Risk.Name)
 	}
 
 	patch := &store.UpdateRiskMessage{}
@@ -129,7 +118,7 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 		}
 	}
 
-	risk, err = s.store.UpdateRisk(ctx, patch, riskID, principalID)
+	risk, err = s.store.UpdateRisk(ctx, patch, riskID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -139,10 +128,6 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 
 // DeleteRisk deletes a risk.
 func (s *RiskService) DeleteRisk(ctx context.Context, request *v1pb.DeleteRiskRequest) (*emptypb.Empty, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
 	riskID, err := common.GetRiskID(request.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -154,17 +139,8 @@ func (s *RiskService) DeleteRisk(ctx context.Context, request *v1pb.DeleteRiskRe
 	if risk == nil {
 		return nil, status.Errorf(codes.NotFound, "risk %v not found", request.Name)
 	}
-	if risk.Deleted {
-		return nil, status.Errorf(codes.InvalidArgument, "risk %v has been deleted", request.Name)
-	}
 
-	rowStatusArchived := api.Archived
-	if _, err := s.store.UpdateRisk(ctx,
-		&store.UpdateRiskMessage{
-			RowStatus: &rowStatusArchived,
-		},
-		riskID,
-		principalID); err != nil {
+	if err := s.store.DeleteRisk(ctx, riskID); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 

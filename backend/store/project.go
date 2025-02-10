@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -45,7 +44,6 @@ type FindProjectMessage struct {
 
 // UpdateProjectMessage is the message for updating a project.
 type UpdateProjectMessage struct {
-	UpdaterID  int
 	ResourceID string
 
 	Title                      *string
@@ -149,19 +147,15 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 	}
 	if err := tx.QueryRowContext(ctx, `
 			INSERT INTO project (
-				creator_id,
-				updater_id,
 				resource_id,
 				name,
 				key,
 				data_classification_config_id,
 				setting
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			VALUES ($1, $2, $3, $4, $5)
 			RETURNING id
 		`,
-		creatorID,
-		creatorID,
 		create.ResourceID,
 		create.Title,
 		create.Key,
@@ -199,7 +193,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		InheritFromParent: false,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
-	}, creatorID); err != nil {
+	}); err != nil {
 		return nil, err
 	}
 
@@ -233,7 +227,7 @@ func (s *Store) UpdateProjectV2(ctx context.Context, patch *UpdateProjectMessage
 }
 
 func updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdateProjectMessage) error {
-	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{patch.UpdaterID, time.Now().Unix()}
+	set, args := []string{}, []any{}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}

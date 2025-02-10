@@ -6,7 +6,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/pkg/errors"
 
@@ -47,12 +46,6 @@ func (s *ReviewConfigService) CreateReviewConfig(ctx context.Context, request *v
 		return nil, err
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-
-	reviewConfigMessage.CreatorUID = principalID
 	created, err := s.store.CreateReviewConfig(ctx, reviewConfigMessage)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -104,10 +97,6 @@ func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, request *v
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
 
 	existed, err := s.store.GetReviewConfig(ctx, id)
 	if err != nil {
@@ -123,8 +112,7 @@ func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, request *v
 	}
 
 	patch := &store.PatchReviewConfigMessage{
-		ID:        id,
-		UpdaterID: principalID,
+		ID: id,
 	}
 
 	for _, path := range request.UpdateMask.Paths {
@@ -193,14 +181,6 @@ func convertToReviewConfigMessage(reviewConfig *v1pb.ReviewConfig) (*store.Revie
 }
 
 func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, reviewConfigMessage *store.ReviewConfigMessage) (*v1pb.ReviewConfig, error) {
-	creator, err := s.store.GetUserByID(ctx, reviewConfigMessage.CreatorUID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get creator, error %v", err)
-	}
-	if creator == nil {
-		return nil, status.Errorf(codes.NotFound, "creator %d not found", reviewConfigMessage.CreatorUID)
-	}
-
 	policyType := api.PolicyTypeTag
 	tagPolicies, err := s.store.ListPoliciesV2(ctx, &store.FindPolicyMessage{
 		Type:        &policyType,
@@ -211,13 +191,10 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 	}
 
 	config := &v1pb.ReviewConfig{
-		Name:       common.FormatReviewConfig(reviewConfigMessage.ID),
-		Creator:    common.FormatUserEmail(creator.Email),
-		CreateTime: timestamppb.New(reviewConfigMessage.CreatedTime),
-		UpdateTime: timestamppb.New(reviewConfigMessage.CreatedTime),
-		Title:      reviewConfigMessage.Name,
-		Enabled:    reviewConfigMessage.Enforce,
-		Rules:      convertToV1PBSQLReviewRules(reviewConfigMessage.Payload.SqlReviewRules),
+		Name:    common.FormatReviewConfig(reviewConfigMessage.ID),
+		Title:   reviewConfigMessage.Name,
+		Enabled: reviewConfigMessage.Enforce,
+		Rules:   convertToV1PBSQLReviewRules(reviewConfigMessage.Payload.SqlReviewRules),
 	}
 
 	for _, policy := range tagPolicies {
