@@ -97,13 +97,10 @@ CREATE TABLE project (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
     name TEXT NOT NULL,
-    key TEXT NOT NULL,
     resource_id TEXT NOT NULL,
     data_classification_config_id TEXT NOT NULL DEFAULT '',
     setting JSONB NOT NULL DEFAULT '{}'
 );
-
-CREATE UNIQUE INDEX idx_project_unique_key ON project(key);
 
 CREATE UNIQUE INDEX idx_project_unique_resource_id ON project(resource_id);
 
@@ -754,7 +751,7 @@ INSERT INTO principal (id, creator_id, updater_id, type, name, email, password_h
 ALTER SEQUENCE principal_id_seq RESTART WITH 101;
 
 -- Default project.
-INSERT INTO project (id, name, key, resource_id) VALUES (1, 'Default', 'DEFAULT', 'default');
+INSERT INTO project (id, name, resource_id) VALUES (1, 'Default', 'default');
 
 ALTER SEQUENCE project_id_seq RESTART WITH 101;
 

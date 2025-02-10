@@ -190,8 +190,6 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		switch path {
 		case "title":
 			patch.Title = &request.Project.Title
-		case "key":
-			patch.Key = &request.Project.Key
 		case "data_classification_config_id":
 			setting, err := s.store.GetDataClassificationSetting(ctx)
 			if err != nil {
@@ -1259,7 +1257,6 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		Name:                       common.FormatProject(projectMessage.ResourceID),
 		State:                      convertDeletedToState(projectMessage.Deleted),
 		Title:                      projectMessage.Title,
-		Key:                        projectMessage.Key,
 		Workflow:                   workflow,
 		Webhooks:                   projectWebhooks,
 		DataClassificationConfigId: projectMessage.DataClassificationConfigID,
@@ -1288,7 +1285,6 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) (*store.P
 	return &store.ProjectMessage{
 		ResourceID: resourceID,
 		Title:      project.Title,
-		Key:        project.Key,
 		Setting:    setting,
 	}, nil
 }

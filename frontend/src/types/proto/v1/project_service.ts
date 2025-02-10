@@ -271,8 +271,6 @@ export interface Project {
   state: State;
   /** The title or name of a project. It's not unique within the workspace. */
   title: string;
-  /** The key is a short and upper-case identifier for a project. It's unique within the workspace. */
-  key: string;
   workflow: Workflow;
   webhooks: Webhook[];
   dataClassificationConfigId: string;
@@ -1823,7 +1821,6 @@ function createBaseProject(): Project {
     name: "",
     state: State.STATE_UNSPECIFIED,
     title: "",
-    key: "",
     workflow: Workflow.WORKFLOW_UNSPECIFIED,
     webhooks: [],
     dataClassificationConfigId: "",
@@ -1849,9 +1846,6 @@ export const Project: MessageFns<Project> = {
     }
     if (message.title !== "") {
       writer.uint32(34).string(message.title);
-    }
-    if (message.key !== "") {
-      writer.uint32(42).string(message.key);
     }
     if (message.workflow !== Workflow.WORKFLOW_UNSPECIFIED) {
       writer.uint32(48).int32(workflowToNumber(message.workflow));
@@ -1921,14 +1915,6 @@ export const Project: MessageFns<Project> = {
           }
 
           message.title = reader.string();
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.key = reader.string();
           continue;
         }
         case 6: {
@@ -2041,7 +2027,6 @@ export const Project: MessageFns<Project> = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
       workflow: isSet(object.workflow) ? workflowFromJSON(object.workflow) : Workflow.WORKFLOW_UNSPECIFIED,
       webhooks: globalThis.Array.isArray(object?.webhooks) ? object.webhooks.map((e: any) => Webhook.fromJSON(e)) : [],
       dataClassificationConfigId: isSet(object.dataClassificationConfigId)
@@ -2075,9 +2060,6 @@ export const Project: MessageFns<Project> = {
     }
     if (message.title !== "") {
       obj.title = message.title;
-    }
-    if (message.key !== "") {
-      obj.key = message.key;
     }
     if (message.workflow !== Workflow.WORKFLOW_UNSPECIFIED) {
       obj.workflow = workflowToJSON(message.workflow);
@@ -2126,7 +2108,6 @@ export const Project: MessageFns<Project> = {
     message.name = object.name ?? "";
     message.state = object.state ?? State.STATE_UNSPECIFIED;
     message.title = object.title ?? "";
-    message.key = object.key ?? "";
     message.workflow = object.workflow ?? Workflow.WORKFLOW_UNSPECIFIED;
     message.webhooks = object.webhooks?.map((e) => Webhook.fromPartial(e)) || [];
     message.dataClassificationConfigId = object.dataClassificationConfigId ?? "";

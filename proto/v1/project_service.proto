@@ -294,9 +294,6 @@ message Project {
   // The title or name of a project. It's not unique within the workspace.
   string title = 4;
 
-  // The key is a short and upper-case identifier for a project. It's unique within the workspace.
-  string key = 5;
-
   Workflow workflow = 6;
 
   repeated Webhook webhooks = 11;
