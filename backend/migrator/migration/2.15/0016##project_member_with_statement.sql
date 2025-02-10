@@ -1,1 +1,0 @@
-DELETE FROM project_member WHERE (condition->>'expression')::text LIKE '%request.statement%';
