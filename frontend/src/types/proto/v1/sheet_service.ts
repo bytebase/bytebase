@@ -85,10 +85,6 @@ export interface Sheet {
   createTime:
     | Timestamp
     | undefined;
-  /** The last update time of the sheet. */
-  updateTime:
-    | Timestamp
-    | undefined;
   /**
    * The content of the sheet.
    * By default, it will be cut off, if it doesn't match the `content_size`, you can
@@ -531,7 +527,6 @@ function createBaseSheet(): Sheet {
     title: "",
     creator: "",
     createTime: undefined,
-    updateTime: undefined,
     content: new Uint8Array(0),
     contentSize: Long.ZERO,
     payload: undefined,
@@ -552,9 +547,6 @@ export const Sheet: MessageFns<Sheet> = {
     }
     if (message.createTime !== undefined) {
       Timestamp.encode(message.createTime, writer.uint32(42).fork()).join();
-    }
-    if (message.updateTime !== undefined) {
-      Timestamp.encode(message.updateTime, writer.uint32(50).fork()).join();
     }
     if (message.content.length !== 0) {
       writer.uint32(58).bytes(message.content);
@@ -610,14 +602,6 @@ export const Sheet: MessageFns<Sheet> = {
           message.createTime = Timestamp.decode(reader, reader.uint32());
           continue;
         }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.updateTime = Timestamp.decode(reader, reader.uint32());
-          continue;
-        }
         case 7: {
           if (tag !== 58) {
             break;
@@ -665,7 +649,6 @@ export const Sheet: MessageFns<Sheet> = {
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
-      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0),
       contentSize: isSet(object.contentSize) ? Long.fromValue(object.contentSize) : Long.ZERO,
       payload: isSet(object.payload) ? SheetPayload.fromJSON(object.payload) : undefined,
@@ -686,9 +669,6 @@ export const Sheet: MessageFns<Sheet> = {
     }
     if (message.createTime !== undefined) {
       obj.createTime = fromTimestamp(message.createTime).toISOString();
-    }
-    if (message.updateTime !== undefined) {
-      obj.updateTime = fromTimestamp(message.updateTime).toISOString();
     }
     if (message.content.length !== 0) {
       obj.content = base64FromBytes(message.content);
@@ -715,9 +695,6 @@ export const Sheet: MessageFns<Sheet> = {
     message.creator = object.creator ?? "";
     message.createTime = (object.createTime !== undefined && object.createTime !== null)
       ? Timestamp.fromPartial(object.createTime)
-      : undefined;
-    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
-      ? Timestamp.fromPartial(object.updateTime)
       : undefined;
     message.content = object.content ?? new Uint8Array(0);
     message.contentSize = (object.contentSize !== undefined && object.contentSize !== null)
