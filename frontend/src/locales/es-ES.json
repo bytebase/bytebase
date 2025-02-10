@@ -861,7 +861,7 @@
       "open": "Abierto",
       "closed": "Cerrado",
       "name": "Nombre",
-      "updated": "Actualizado",
+      "created-time": "Tiempo de creación",
       "creator": "Creador",
       "current-approver": "Aprobador actual"
     },

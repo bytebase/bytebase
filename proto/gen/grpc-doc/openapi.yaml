@@ -10380,10 +10380,6 @@ components:
                     readOnly: true
                     type: string
                     format: date-time
-                updateTime:
-                    readOnly: true
-                    type: string
-                    format: date-time
                 plan:
                     type: string
                     description: |-
@@ -10461,6 +10457,7 @@ components:
                     type: string
                     format: date-time
                 creator:
+                    readOnly: true
                     type: string
                     description: 'Format: users/{email}'
                 approval:

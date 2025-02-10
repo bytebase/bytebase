@@ -256,8 +256,7 @@ export interface Issue {
   subscribers: string[];
   /** Format: users/hello@world.com */
   creator: string;
-  createTime: Timestamp | undefined;
-  updateTime:
+  createTime:
     | Timestamp
     | undefined;
   /**
@@ -2011,7 +2010,6 @@ function createBaseIssue(): Issue {
     subscribers: [],
     creator: "",
     createTime: undefined,
-    updateTime: undefined,
     plan: "",
     rollout: "",
     grantRequest: undefined,
@@ -2059,9 +2057,6 @@ export const Issue: MessageFns<Issue> = {
     }
     if (message.createTime !== undefined) {
       Timestamp.encode(message.createTime, writer.uint32(122).fork()).join();
-    }
-    if (message.updateTime !== undefined) {
-      Timestamp.encode(message.updateTime, writer.uint32(130).fork()).join();
     }
     if (message.plan !== "") {
       writer.uint32(138).string(message.plan);
@@ -2190,14 +2185,6 @@ export const Issue: MessageFns<Issue> = {
           message.createTime = Timestamp.decode(reader, reader.uint32());
           continue;
         }
-        case 16: {
-          if (tag !== 130) {
-            break;
-          }
-
-          message.updateTime = Timestamp.decode(reader, reader.uint32());
-          continue;
-        }
         case 17: {
           if (tag !== 138) {
             break;
@@ -2286,7 +2273,6 @@ export const Issue: MessageFns<Issue> = {
         : [],
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
-      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       plan: isSet(object.plan) ? globalThis.String(object.plan) : "",
       rollout: isSet(object.rollout) ? globalThis.String(object.rollout) : "",
       grantRequest: isSet(object.grantRequest) ? GrantRequest.fromJSON(object.grantRequest) : undefined,
@@ -2346,9 +2332,6 @@ export const Issue: MessageFns<Issue> = {
     if (message.createTime !== undefined) {
       obj.createTime = fromTimestamp(message.createTime).toISOString();
     }
-    if (message.updateTime !== undefined) {
-      obj.updateTime = fromTimestamp(message.updateTime).toISOString();
-    }
     if (message.plan !== "") {
       obj.plan = message.plan;
     }
@@ -2397,9 +2380,6 @@ export const Issue: MessageFns<Issue> = {
     message.creator = object.creator ?? "";
     message.createTime = (object.createTime !== undefined && object.createTime !== null)
       ? Timestamp.fromPartial(object.createTime)
-      : undefined;
-    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
-      ? Timestamp.fromPartial(object.updateTime)
       : undefined;
     message.plan = object.plan ?? "";
     message.rollout = object.rollout ?? "";

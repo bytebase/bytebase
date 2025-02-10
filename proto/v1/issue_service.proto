@@ -353,8 +353,6 @@ message Issue {
 
   google.protobuf.Timestamp create_time = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp update_time = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
-
   // The plan associated with the issue.
   // Can be empty.
   // Format: projects/{project}/plans/{plan}
@@ -547,7 +545,7 @@ message IssueComment {
   google.protobuf.Timestamp update_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Format: users/{email}
-  string creator = 7;
+  string creator = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   oneof event {
     Approval approval = 8;

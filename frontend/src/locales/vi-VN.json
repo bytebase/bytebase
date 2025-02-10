@@ -861,7 +861,7 @@
       "open": "Mở",
       "closed": "Đã đóng",
       "name": "Tên",
-      "updated": "Đã cập nhật",
+      "created-time": "Thời gian tạo",
       "creator": "Người tạo",
       "current-approver": "Người phê duyệt hiện tại"
     },

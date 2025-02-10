@@ -122,13 +122,13 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       },
     },
     {
-      key: "updateTime",
-      title: t("issue.table.updated"),
+      key: "createdTime",
+      title: t("issue.table.created-time"),
       width: 150,
       resizable: true,
       hide: !showExtendedColumns.value,
       render: (issue) =>
-        humanizeTs(getTimeForPbTimestamp(issue.updateTime, 0) / 1000),
+        humanizeTs(getTimeForPbTimestamp(issue.createTime, 0) / 1000),
     },
   ];
   return columns.filter((column) => !column.hide);

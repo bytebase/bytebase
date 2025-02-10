@@ -861,9 +861,9 @@
       "open": "Open",
       "closed": "Closed",
       "name": "Name",
-      "updated": "Updated",
+      "created-time": "Created At",
       "creator": "Creator",
-      "current-approver": "Current approver"
+      "current-approver": "Current Approver"
     },
     "stage-select": {
       "current": "{name} (current)"

@@ -861,7 +861,7 @@
       "open": "开启中",
       "closed": "已关闭",
       "name": "名称",
-      "updated": "更新于",
+      "created-time": "创建时间",
       "creator": "创建人",
       "current-approver": "当前审批人"
     },

@@ -861,7 +861,7 @@
       "open": "オープン",
       "closed": "クローズ　",
       "name": "名前",
-      "updated": "更新日時",
+      "created-time": "作成時間",
       "creator": "作成者",
       "current-approver": "現在の承認者"
     },
