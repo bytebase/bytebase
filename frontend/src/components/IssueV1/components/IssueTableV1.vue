@@ -135,6 +135,13 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       },
     },
     {
+      key: "project",
+      title: t("common.project"),
+      width: 150,
+      hide: !showExtendedColumns.value || props.mode === "PROJECT",
+      render: (issue) => issue.projectEntity.title,
+    },
+    {
       key: "updateTime",
       title: t("issue.table.updated"),
       width: 150,
