@@ -186,7 +186,7 @@ func GetPostponeFlagFilename(taskID int, databaseID int, databaseName, tableName
 }
 
 // NewMigrationContext is the context for gh-ost migration.
-func NewMigrationContext(ctx context.Context, taskID int, taskCreatedTs int64, database *store.DatabaseMessage, dataSource *store.DataSourceMessage, secret string, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*base.MigrationContext, error) {
+func NewMigrationContext(ctx context.Context, taskID int, database *store.DatabaseMessage, dataSource *store.DataSourceMessage, secret string, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*base.MigrationContext, error) {
 	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, secret)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get password")
