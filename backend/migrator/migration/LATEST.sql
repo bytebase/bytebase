@@ -657,6 +657,8 @@ ALTER SEQUENCE db_group_id_seq RESTART WITH 101;
 -- changelist table stores project changelists.
 CREATE TABLE changelist (
     id SERIAL PRIMARY KEY,
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
     name TEXT NOT NULL,
     payload JSONB NOT NULL DEFAULT '{}'
