@@ -24,28 +24,6 @@
           />
         </div>
       </dl>
-
-      <dl class="">
-        <dt class="flex text-sm font-medium text-control-light">
-          {{ $t("common.key") }}
-          <NTooltip>
-            <template #trigger>
-              <heroicons-outline:information-circle class="ml-1 w-4 h-auto" />
-            </template>
-            {{ $t("project.key-hint") }}
-          </NTooltip>
-          <span class="text-red-600">*</span>
-        </dt>
-        <dd class="mt-1 text-sm text-main">
-          <NInput
-            id="projectKey"
-            v-model:value="state.key"
-            :disabled="!allowEdit"
-            required
-            @update:value="(val: string) => (state.key = val.toUpperCase())"
-          />
-        </dd>
-      </dl>
     </div>
 
     <div v-if="allowEdit" class="flex justify-end">
@@ -64,7 +42,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEmpty } from "lodash-es";
-import { NButton, NInput, NTooltip } from "naive-ui";
+import { NButton, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { FeatureModal } from "@/components/FeatureGuard";
@@ -77,7 +55,6 @@ import { extractProjectResourceName } from "@/utils";
 
 interface LocalState {
   title: string;
-  key: string;
   requiredFeature: FeatureType | undefined;
 }
 
@@ -91,7 +68,6 @@ const projectV1Store = useProjectV1Store();
 
 const state = reactive<LocalState>({
   title: props.project.title,
-  key: props.project.key,
   requiredFeature: undefined,
 });
 
@@ -99,7 +75,7 @@ const allowSave = computed((): boolean => {
   return (
     props.project.name !== DEFAULT_PROJECT_NAME &&
     !isEmpty(state.title) &&
-    (state.title !== props.project.title || state.key !== props.project.key)
+    state.title !== props.project.title
   );
 });
 
@@ -109,10 +85,6 @@ const save = () => {
   if (state.title !== props.project.title) {
     projectPatch.title = state.title;
     updateMask.push("title");
-  }
-  if (state.key !== props.project.key) {
-    projectPatch.key = state.key;
-    updateMask.push("key");
   }
   projectV1Store.updateProject(projectPatch, updateMask).then(() => {
     pushNotification({
