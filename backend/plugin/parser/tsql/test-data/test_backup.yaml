@@ -10,17 +10,17 @@
     - statement: |-
         SELECT * INTO "backupDB"."dbo"."rollback_test_db" FROM (
           SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 1
-          UNION ALL
+          UNION
           SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 2
-          UNION ALL
+          UNION
           SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 3
-          UNION ALL
+          UNION
           SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 4
-          UNION ALL
+          UNION
           SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 5
-          UNION ALL
+          UNION
           SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 6
-          UNION ALL
+          UNION
           SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 7) AS backup_table;
       sourceschema: dbo
       sourcetablename: test
@@ -36,10 +36,12 @@
     FROM test AS t_alias
     WHERE t_alias.c1 = 1;
   result:
-    - statement: SELECT "t_alias".* INTO "backupDB"."dbo"."rollback_0_test" FROM test AS t_alias WHERE t_alias.c1 = 1;
+    - statement: |-
+        SELECT * INTO "backupDB"."dbo"."rollback_test_db" FROM (
+          SELECT "t_alias".* FROM test AS t_alias WHERE t_alias.c1 = 1) AS backup_table;
       sourceschema: dbo
       sourcetablename: test
-      targettablename: rollback_0_test
+      targettablename: rollback_test_db
       startposition:
         line: 1
         column: 0
@@ -52,10 +54,12 @@
     FROM test AS t_alias
     WHERE t_alias.c1 = 1;
   result:
-    - statement: SELECT "t_alias".* INTO "backupDB"."dbo"."rollback_0_test" FROM test AS t_alias WHERE t_alias.c1 = 1;
+    - statement: |-
+        SELECT * INTO "backupDB"."dbo"."rollback_test_db" FROM (
+          SELECT "t_alias".* FROM test AS t_alias WHERE t_alias.c1 = 1) AS backup_table;
       sourceschema: dbo
       sourcetablename: test
-      targettablename: rollback_0_test
+      targettablename: rollback_test_db
       startposition:
         line: 1
         column: 0
@@ -67,10 +71,12 @@
     FROM test JOIN test2 ON test.c1 = test2.c1
     WHERE test.c1 = 1;
   result:
-    - statement: SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_0_test" FROM test JOIN test2 ON test.c1 = test2.c1 WHERE test.c1 = 1;
+    - statement: |-
+        SELECT * INTO "backupDB"."dbo"."rollback_test_db" FROM (
+          SELECT "db"."dbo"."test".* FROM test JOIN test2 ON test.c1 = test2.c1 WHERE test.c1 = 1) AS backup_table;
       sourceschema: dbo
       sourcetablename: test
-      targettablename: rollback_0_test
+      targettablename: rollback_test_db
       startposition:
         line: 1
         column: 0
@@ -83,10 +89,12 @@
     FROM test JOIN test2 ON test.c1 = test2.c1
     WHERE test.c1 = 1;
   result:
-    - statement: SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_0_test" FROM test JOIN test2 ON test.c1 = test2.c1 WHERE test.c1 = 1;
+    - statement: |-
+        SELECT * INTO "backupDB"."dbo"."rollback_test_db" FROM (
+          SELECT "db"."dbo"."test".* FROM test JOIN test2 ON test.c1 = test2.c1 WHERE test.c1 = 1) AS backup_table;
       sourceschema: dbo
       sourcetablename: test
-      targettablename: rollback_0_test
+      targettablename: rollback_test_db
       startposition:
         line: 1
         column: 0
@@ -94,23 +102,27 @@
         line: 4
         column: 17
 - input: |-
-    DELETE FROM test WHERE c1 = 1;
+    DELETE FROM test1 WHERE c1 = 1;
     UPDATE test SET test.c1 = 2 WHERE test.c1 = 1;
   result:
-    - statement: SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_0_test" FROM test WHERE c1 = 1;
+    - statement: |-
+        SELECT * INTO "backupDB"."dbo"."rollback_test1_db" FROM (
+          SELECT "db"."dbo"."test1".* FROM test1 WHERE c1 = 1) AS backup_table;
       sourceschema: dbo
-      sourcetablename: test
-      targettablename: rollback_0_test
+      sourcetablename: test1
+      targettablename: rollback_test1_db
       startposition:
         line: 1
         column: 0
       endposition:
         line: 1
-        column: 29
-    - statement: SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_1_test" FROM test WHERE test.c1 = 1;
+        column: 30
+    - statement: |-
+        SELECT * INTO "backupDB"."dbo"."rollback_test_db" FROM (
+          SELECT "db"."dbo"."test".* FROM test WHERE test.c1 = 1) AS backup_table;
       sourceschema: dbo
       sourcetablename: test
-      targettablename: rollback_1_test
+      targettablename: rollback_test_db
       startposition:
         line: 2
         column: 0
@@ -119,10 +131,12 @@
         column: 45
 - input: DELETE FROM test WHERE c1 = 1;
   result:
-    - statement: SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_0_test" FROM test WHERE c1 = 1;
+    - statement: |-
+        SELECT * INTO "backupDB"."dbo"."rollback_test_db" FROM (
+          SELECT "db"."dbo"."test".* FROM test WHERE c1 = 1) AS backup_table;
       sourceschema: dbo
       sourcetablename: test
-      targettablename: rollback_0_test
+      targettablename: rollback_test_db
       startposition:
         line: 1
         column: 0
@@ -131,10 +145,12 @@
         column: 29
 - input: UPDATE test SET c1 = 1 WHERE c1=2;
   result:
-    - statement: SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_0_test" FROM test WHERE c1=2;
+    - statement: |-
+        SELECT * INTO "backupDB"."dbo"."rollback_test_db" FROM (
+          SELECT "db"."dbo"."test".* FROM test WHERE c1=2) AS backup_table;
       sourceschema: dbo
       sourcetablename: test
-      targettablename: rollback_0_test
+      targettablename: rollback_test_db
       startposition:
         line: 1
         column: 0
@@ -142,26 +158,20 @@
         line: 1
         column: 33
 - input: |-
-    UPDATE test SET test.c1 = 2 WHERE test.c1 = 1 ;
-    UPDATE test SET test.c1 = 3 WHERE test.c1 = 5 ;
+    UPDATE test SET test.c1 = 2 WHERE test.c1 = 1;
+    UPDATE test SET test.c1 = 3 WHERE test.c1 = 5;
   result:
-    - statement: SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_0_test" FROM test WHERE test.c1 = 1 ;
+    - statement: |-
+        SELECT * INTO "backupDB"."dbo"."rollback_test_db" FROM (
+          SELECT "db"."dbo"."test".* FROM test WHERE test.c1 = 1
+          UNION
+          SELECT "db"."dbo"."test".* FROM test WHERE test.c1 = 5) AS backup_table;
       sourceschema: dbo
       sourcetablename: test
-      targettablename: rollback_0_test
+      targettablename: rollback_test_db
       startposition:
         line: 1
         column: 0
       endposition:
-        line: 1
-        column: 46
-    - statement: SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_1_test" FROM test WHERE test.c1 = 5 ;
-      sourceschema: dbo
-      sourcetablename: test
-      targettablename: rollback_1_test
-      startposition:
         line: 2
-        column: 0
-      endposition:
-        line: 2
-        column: 46
+        column: 45
