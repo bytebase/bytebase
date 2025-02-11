@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sort"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -18,15 +19,25 @@ import (
 )
 
 const (
+	defaultSchema      = "public"
 	maxTableNameLength = 63
-	maxMixedDMLCount   = 5
+)
+
+type StatementType int
+
+const (
+	StatementTypeUnknown StatementType = iota
+	StatementTypeUpdate
+	StatementTypeInsert
+	StatementTypeDelete
 )
 
 type TableReference struct {
-	Database string
-	Schema   string
-	Table    string
-	Alias    string
+	Database      string
+	Schema        string
+	Table         string
+	Alias         string
+	StatementType StatementType
 }
 
 func (t *TableReference) String() string {
@@ -62,22 +73,51 @@ func TransformDMLToSelect(_ context.Context, _ base.TransformContext, statement 
 }
 
 func generateSQL(statementInfoList []statementInfo, targetSchema string, tablePrefix string) ([]base.BackupStatement, error) {
-	if len(statementInfoList) <= maxMixedDMLCount {
-		return generateSQLMixedDML(statementInfoList, targetSchema, tablePrefix)
-	}
-	return generateSQLInOneTable(statementInfoList, targetSchema, tablePrefix)
-}
-
-func generateSQLInOneTable(statementInfoList []statementInfo, targetSchema string, tablePrefix string) ([]base.BackupStatement, error) {
-	table := statementInfoList[0].table
-
+	groupByTable := make(map[string][]statementInfo)
 	for _, item := range statementInfoList {
-		if !equalTable(item.table, table) {
-			return nil, errors.Errorf("prior backup cannot handle statements on different tables more than %d", maxMixedDMLCount)
+		key := fmt.Sprintf("%s.%s", item.table.Schema, item.table.Table)
+		groupByTable[key] = append(groupByTable[key], item)
+	}
+
+	// Check if the statement type is the same for all statements on the same table.
+	for key, list := range groupByTable {
+		statementType := StatementTypeUnknown
+		for _, item := range list {
+			if statementType == StatementTypeUnknown {
+				statementType = item.table.StatementType
+			}
+			if statementType != item.table.StatementType {
+				return nil, errors.Errorf("The statement type is not the same for all statements on the same table %q", key)
+			}
 		}
 	}
 
-	targetTable := fmt.Sprintf("%s_%s", tablePrefix, table.Table)
+	var result []base.BackupStatement
+	for key, list := range groupByTable {
+		backupStatement, err := generateSQLForTable(list, targetSchema, tablePrefix)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to generate SQL for table %q", key)
+		}
+		result = append(result, *backupStatement)
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].StartPosition.Line != result[j].StartPosition.Line {
+			return result[i].StartPosition.Line < result[j].StartPosition.Line
+		}
+		if result[i].StartPosition.Column != result[j].StartPosition.Column {
+			return result[i].StartPosition.Column < result[j].StartPosition.Column
+		}
+		return result[i].SourceTableName < result[j].SourceTableName
+	})
+
+	return result, nil
+}
+
+func generateSQLForTable(statementInfoList []statementInfo, targetSchema string, tablePrefix string) (*base.BackupStatement, error) {
+	table := statementInfoList[0].table
+
+	targetTable := fmt.Sprintf("%s_%s_%s", tablePrefix, table.Table, table.Schema)
 	targetTable, _ = common.TruncateString(targetTable, maxTableNameLength)
 	var buf strings.Builder
 	if _, err := fmt.Fprintf(&buf, `CREATE TABLE "%s"."%s" AS`+"\n", targetSchema, targetTable); err != nil {
@@ -86,7 +126,7 @@ func generateSQLInOneTable(statementInfoList []statementInfo, targetSchema strin
 
 	for i, item := range statementInfoList {
 		if i != 0 {
-			if _, err := buf.WriteString("\n  UNION ALL\n"); err != nil {
+			if _, err := buf.WriteString("\n  UNION\n"); err != nil {
 				return nil, errors.Wrap(err, "failed to write to buffer")
 			}
 		}
@@ -109,88 +149,20 @@ func generateSQLInOneTable(statementInfoList []statementInfo, targetSchema strin
 		return nil, errors.Wrap(err, "failed to write to buffer")
 	}
 
-	return []base.BackupStatement{
-		{
-			Statement:       buf.String(),
-			SourceSchema:    table.Schema,
-			SourceTableName: table.Table,
-			TargetTableName: targetTable,
-			StartPosition: &storebp.Position{
-				Line:   int32(statementInfoList[0].tree.GetStart().GetLine()),
-				Column: int32(statementInfoList[0].tree.GetStart().GetColumn()),
-			},
-			EndPosition: &storebp.Position{
-				Line:   int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetLine()),
-				Column: int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetColumn()),
-			},
+	return &base.BackupStatement{
+		Statement:       buf.String(),
+		SourceSchema:    table.Schema,
+		SourceTableName: table.Table,
+		TargetTableName: targetTable,
+		StartPosition: &storebp.Position{
+			Line:   int32(statementInfoList[0].tree.GetStart().GetLine()),
+			Column: int32(statementInfoList[0].tree.GetStart().GetColumn()),
+		},
+		EndPosition: &storebp.Position{
+			Line:   int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetLine()),
+			Column: int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetColumn()),
 		},
 	}, nil
-}
-
-func equalTable(a, b *TableReference) bool {
-	if a == nil || b == nil {
-		return false
-	}
-
-	if a.Database != "" && b.Database != "" && a.Database != b.Database {
-		return false
-	}
-	if a.Schema != "" && b.Schema != "" && a.Schema != b.Schema {
-		return false
-	}
-	return a.Table == b.Table
-}
-
-func generateSQLMixedDML(statementInfoList []statementInfo, targetSchema string, tablePrefix string) ([]base.BackupStatement, error) {
-	var result []base.BackupStatement
-	offsetLength := 1
-	if len(statementInfoList) > 1 {
-		offsetLength = base.GetOffsetLength(statementInfoList[len(statementInfoList)-1].offset)
-	}
-
-	for _, info := range statementInfoList {
-		table := info.table
-		targetTable := fmt.Sprintf("%s_%0*d_%s", tablePrefix, offsetLength, info.offset, table.Table)
-		targetTable, _ = common.TruncateString(targetTable, maxTableNameLength)
-		var buf strings.Builder
-		if _, err := fmt.Fprintf(&buf, `CREATE TABLE "%s"."%s" AS SELECT `, targetSchema, targetTable); err != nil {
-			return nil, errors.Wrap(err, "failed to write to buffer")
-		}
-		if table.Alias != "" {
-			if _, err := fmt.Fprintf(&buf, `"%s".* `, table.Alias); err != nil {
-				return nil, errors.Wrap(err, "failed to write to buffer")
-			}
-		} else {
-			if _, err := fmt.Fprintf(&buf, `%s.* `, table.String()); err != nil {
-				return nil, errors.Wrap(err, "failed to write to buffer")
-			}
-		}
-
-		if err := writeSuffixSelectClause(&buf, info.tree); err != nil {
-			return nil, errors.Wrap(err, "failed to write suffix select clause")
-		}
-
-		if _, err := buf.WriteString(";"); err != nil {
-			return nil, errors.Wrap(err, "failed to write to buffer")
-		}
-
-		result = append(result, base.BackupStatement{
-			Statement:       buf.String(),
-			SourceSchema:    table.Schema,
-			SourceTableName: table.Table,
-			TargetTableName: targetTable,
-			StartPosition: &storebp.Position{
-				Line:   int32(info.tree.GetStart().GetLine()),
-				Column: int32(info.tree.GetStart().GetColumn()),
-			},
-			EndPosition: &storebp.Position{
-				Line:   int32(info.tree.GetStop().GetLine()),
-				Column: int32(info.tree.GetStop().GetColumn()),
-			},
-		})
-	}
-
-	return result, nil
 }
 
 func writeSuffixSelectClause(buf *strings.Builder, tree antlr.Tree) error {
@@ -297,7 +269,7 @@ func (e *dmlExtractor) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 		if table == nil {
 			return
 		}
-
+		table.StatementType = StatementTypeUpdate
 		e.dmls = append(e.dmls, statementInfo{
 			offset:    e.offset,
 			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
@@ -313,7 +285,7 @@ func (e *dmlExtractor) EnterDeletestmt(ctx *parser.DeletestmtContext) {
 		if table == nil {
 			return
 		}
-
+		table.StatementType = StatementTypeDelete
 		e.dmls = append(e.dmls, statementInfo{
 			offset:    e.offset,
 			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
@@ -345,6 +317,7 @@ func extractTableReference(ctx parser.IRelation_expr_opt_aliasContext) *TableRef
 		table.Schema = list[0]
 		table.Table = list[1]
 	case 1:
+		table.Schema = defaultSchema
 		table.Table = list[0]
 	default:
 		slog.Debug("Invalid table name", log.BBError(errors.Errorf("Invalid table name: %v", list)))

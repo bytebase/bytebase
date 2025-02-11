@@ -8,23 +8,23 @@
     UPDATE test SET test.c1 = 7 WHERE test.b1 = 7;
   result:
     - statement: |-
-        CREATE TABLE "backupSchema"."rollback_test" AS
-          SELECT "test".* FROM test WHERE test.b1 = 1
-          UNION ALL
-          SELECT "test".* FROM test WHERE test.b1 = 2
-          UNION ALL
-          SELECT "test".* FROM test WHERE test.b1 = 3
-          UNION ALL
-          SELECT "test".* FROM test WHERE test.b1 = 4
-          UNION ALL
-          SELECT "test".* FROM test WHERE test.b1 = 5
-          UNION ALL
-          SELECT "test".* FROM test WHERE test.b1 = 6
-          UNION ALL
-          SELECT "test".* FROM test WHERE test.b1 = 7;
-      sourceschema: ""
+        CREATE TABLE "backupSchema"."rollback_test_public" AS
+          SELECT "public"."test".* FROM test WHERE test.b1 = 1
+          UNION
+          SELECT "public"."test".* FROM test WHERE test.b1 = 2
+          UNION
+          SELECT "public"."test".* FROM test WHERE test.b1 = 3
+          UNION
+          SELECT "public"."test".* FROM test WHERE test.b1 = 4
+          UNION
+          SELECT "public"."test".* FROM test WHERE test.b1 = 5
+          UNION
+          SELECT "public"."test".* FROM test WHERE test.b1 = 6
+          UNION
+          SELECT "public"."test".* FROM test WHERE test.b1 = 7;
+      sourceschema: public
       sourcetablename: test
-      targettablename: rollback_test
+      targettablename: rollback_test_public
       startposition:
         line: 1
         column: 0
@@ -36,10 +36,12 @@
     USING test
     WHERE t.c1 = 1 and t.a1 = test.a1;
   result:
-    - statement: CREATE TABLE "backupSchema"."rollback_0_t" AS SELECT "t".* FROM t, test WHERE t.c1 = 1 and t.a1 = test.a1;
-      sourceschema: ""
+    - statement: |-
+        CREATE TABLE "backupSchema"."rollback_t_public" AS
+          SELECT "public"."t".* FROM t, test WHERE t.c1 = 1 and t.a1 = test.a1;
+      sourceschema: public
       sourcetablename: t
-      targettablename: rollback_0_t
+      targettablename: rollback_t_public
       startposition:
         line: 1
         column: 0
@@ -51,10 +53,12 @@
     USING test2
     WHERE test.c1 = 1 and test.c1 = test2.c1;
   result:
-    - statement: CREATE TABLE "backupSchema"."rollback_0_test" AS SELECT "test".* FROM test, test2 WHERE test.c1 = 1 and test.c1 = test2.c1;
-      sourceschema: ""
+    - statement: |-
+        CREATE TABLE "backupSchema"."rollback_test_public" AS
+          SELECT "public"."test".* FROM test, test2 WHERE test.c1 = 1 and test.c1 = test2.c1;
+      sourceschema: public
       sourcetablename: test
-      targettablename: rollback_0_test
+      targettablename: rollback_test_public
       startposition:
         line: 1
         column: 0
@@ -67,10 +71,12 @@
     FROM test2
     WHERE test.c1 = 1 and test.c1 = test2.c1;
   result:
-    - statement: CREATE TABLE "backupSchema"."rollback_0_test" AS SELECT "test".* FROM test, test2 WHERE test.c1 = 1 and test.c1 = test2.c1;
-      sourceschema: ""
+    - statement: |-
+        CREATE TABLE "backupSchema"."rollback_test_public" AS
+          SELECT "public"."test".* FROM test, test2 WHERE test.c1 = 1 and test.c1 = test2.c1;
+      sourceschema: public
       sourcetablename: test
-      targettablename: rollback_0_test
+      targettablename: rollback_test_public
       startposition:
         line: 1
         column: 0
@@ -78,23 +84,27 @@
         line: 4
         column: 38
 - input: |-
-    DELETE FROM test WHERE c1 = 1;
+    DELETE FROM test1 WHERE c1 = 1;
     UPDATE test SET test.c1 = 2 WHERE test.c1 = 1;
   result:
-    - statement: CREATE TABLE "backupSchema"."rollback_0_test" AS SELECT "test".* FROM test WHERE c1 = 1;
-      sourceschema: ""
-      sourcetablename: test
-      targettablename: rollback_0_test
+    - statement: |-
+        CREATE TABLE "backupSchema"."rollback_test1_public" AS
+          SELECT "public"."test1".* FROM test1 WHERE c1 = 1;
+      sourceschema: public
+      sourcetablename: test1
+      targettablename: rollback_test1_public
       startposition:
         line: 1
         column: 0
       endposition:
         line: 1
-        column: 28
-    - statement: CREATE TABLE "backupSchema"."rollback_1_test" AS SELECT "test".* FROM test WHERE test.c1 = 1;
-      sourceschema: ""
+        column: 29
+    - statement: |-
+        CREATE TABLE "backupSchema"."rollback_test_public" AS
+          SELECT "public"."test".* FROM test WHERE test.c1 = 1;
+      sourceschema: public
       sourcetablename: test
-      targettablename: rollback_1_test
+      targettablename: rollback_test_public
       startposition:
         line: 2
         column: 0
@@ -103,10 +113,12 @@
         column: 44
 - input: DELETE FROM test WHERE c1 = 1;
   result:
-    - statement: CREATE TABLE "backupSchema"."rollback_0_test" AS SELECT "test".* FROM test WHERE c1 = 1;
-      sourceschema: ""
+    - statement: |-
+        CREATE TABLE "backupSchema"."rollback_test_public" AS
+          SELECT "public"."test".* FROM test WHERE c1 = 1;
+      sourceschema: public
       sourcetablename: test
-      targettablename: rollback_0_test
+      targettablename: rollback_test_public
       startposition:
         line: 1
         column: 0
@@ -115,10 +127,12 @@
         column: 28
 - input: UPDATE test SET c1 = 1 WHERE c1=2;
   result:
-    - statement: CREATE TABLE "backupSchema"."rollback_0_test" AS SELECT "test".* FROM test WHERE c1=2;
-      sourceschema: ""
+    - statement: |-
+        CREATE TABLE "backupSchema"."rollback_test_public" AS
+          SELECT "public"."test".* FROM test WHERE c1=2;
+      sourceschema: public
       sourcetablename: test
-      targettablename: rollback_0_test
+      targettablename: rollback_test_public
       startposition:
         line: 1
         column: 0
@@ -129,22 +143,16 @@
     UPDATE test SET test.c1 = 2 WHERE test.c1 = 1 ;
     UPDATE test SET test.c1 = 3 WHERE test.c1 = 5 ;
   result:
-    - statement: CREATE TABLE "backupSchema"."rollback_0_test" AS SELECT "test".* FROM test WHERE test.c1 = 1;
-      sourceschema: ""
+    - statement: |-
+        CREATE TABLE "backupSchema"."rollback_test_public" AS
+          SELECT "public"."test".* FROM test WHERE test.c1 = 1
+          UNION
+          SELECT "public"."test".* FROM test WHERE test.c1 = 5;
+      sourceschema: public
       sourcetablename: test
-      targettablename: rollback_0_test
+      targettablename: rollback_test_public
       startposition:
         line: 1
-        column: 0
-      endposition:
-        line: 1
-        column: 44
-    - statement: CREATE TABLE "backupSchema"."rollback_1_test" AS SELECT "test".* FROM test WHERE test.c1 = 5;
-      sourceschema: ""
-      sourcetablename: test
-      targettablename: rollback_1_test
-      startposition:
-        line: 2
         column: 0
       endposition:
         line: 2
