@@ -175,3 +175,14 @@ ALTER TABLE sync_history ALTER COLUMN db_name SET NOT NULL;
 ALTER TABLE sync_history ADD constraint sync_history_instance_db_name_fkey FOREIGN KEY (instance, db_name) references db(instance, name);
 ALTER TABLE sync_history DROP COLUMN database_id;
 CREATE INDEX IF NOT EXISTS idx_sync_history_instance_db_name_created_at ON sync_history (instance, db_name, created_at);
+
+DROP INDEX IF EXISTS idx_changelog_database_id;
+ALTER TABLE changelog ADD COLUMN instance TEXT;
+ALTER TABLE changelog ADD COLUMN db_name TEXT;
+UPDATE changelog SET instance = db.instance, db_name = db.name FROM db WHERE db.id = changelog.database_id;
+ALTER TABLE changelog ALTER COLUMN instance SET NOT NULL;
+ALTER TABLE changelog ALTER COLUMN db_name SET NOT NULL;
+ALTER TABLE changelog ADD constraint changelog_instance_db_name_fkey FOREIGN KEY (instance, db_name) references db(instance, name);
+ALTER TABLE changelog DROP COLUMN database_id;
+CREATE INDEX IF NOT EXISTS idx_changelog_instance_db_name ON changelog (instance, db_name);
+

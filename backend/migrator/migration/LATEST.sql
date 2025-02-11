@@ -675,16 +675,18 @@ CREATE INDEX IF NOT EXISTS idx_sync_history_instance_db_name_created_at ON sync_
 CREATE TABLE changelog (
     id BIGSERIAL PRIMARY KEY,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    database_id INTEGER NOT NULL REFERENCES db (id),
+    instance TEXT NOT NULL,
+    db_name TEXT NOT NULL,
     status TEXT NOT NULL CONSTRAINT changelog_status_check CHECK (status IN ('PENDING', 'DONE', 'FAILED')),
-    prev_sync_history_id BIGINT REFERENCES sync_history (id),
-    sync_history_id BIGINT REFERENCES sync_history (id),
-    payload JSONB NOT NULL DEFAULT '{}'
+    prev_sync_history_id BIGINT REFERENCES sync_history(id),
+    sync_history_id BIGINT REFERENCES sync_history(id),
+    payload JSONB NOT NULL DEFAULT '{}',
+    CONSTRAINT changelog_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
 
 ALTER SEQUENCE changelog_id_seq RESTART WITH 101;
 
-CREATE INDEX IF NOT EXISTS idx_changelog_database_id ON changelog (database_id);
+CREATE INDEX IF NOT EXISTS idx_changelog_instance_db_name ON changelog (instance, db_name);
 
 CREATE TABLE IF NOT EXISTS release (
     id BIGSERIAL PRIMARY KEY,
