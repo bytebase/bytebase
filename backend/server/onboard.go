@@ -206,9 +206,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	// Create a schema update issue and start with creating the sheet for the schema update.
 	testSheet, err := s.sheetManager.CreateSheet(ctx, &store.SheetMessage{
 		CreatorID: api.SystemBotID,
-
-		ProjectUID: project.UID,
-
+		ProjectID: project.ResourceID,
 		Title:     "Alter table to test sample instance for sample issue",
 		Statement: "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
 
@@ -222,12 +220,9 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	prodSheet, err := s.sheetManager.CreateSheet(ctx, &store.SheetMessage{
 		CreatorID: api.SystemBotID,
-
-		ProjectUID: project.UID,
-
+		ProjectID: project.ResourceID,
 		Title:     "Alter table to prod sample instance for sample issue",
 		Statement: "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
-
 		Payload: &storepb.SheetPayload{
 			Engine: prodInstance.Engine,
 		},

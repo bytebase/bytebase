@@ -374,10 +374,10 @@ func (s *Service) createReleaseFromPRInfo(ctx context.Context, project *store.Pr
 	var sheetNames []string
 	for _, f := range allFiles {
 		sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
-			ProjectUID: project.UID,
-			CreatorID:  user.ID,
-			Title:      "",
-			Statement:  f.content,
+			ProjectID: project.ResourceID,
+			CreatorID: user.ID,
+			Title:     "",
+			Statement: f.content,
 		})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create sheet")
@@ -435,10 +435,10 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 	var sheets []int
 	for _, change := range prInfo.changes {
 		sheet, err := s.sheetManager.CreateSheet(ctx, &store.SheetMessage{
-			CreatorID:  creatorID,
-			ProjectUID: project.UID,
-			Title:      change.path,
-			Statement:  change.content,
+			CreatorID: creatorID,
+			ProjectID: project.ResourceID,
+			Title:     change.path,
+			Statement: change.content,
 
 			Payload: &storepb.SheetPayload{
 				Engine: instance.Engine,

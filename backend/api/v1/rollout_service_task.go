@@ -225,10 +225,10 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			return nil, err
 		}
 		sheet, err := sheetManager.CreateSheet(ctx, &store.SheetMessage{
-			CreatorID:  api.SystemBotID,
-			ProjectUID: project.UID,
-			Title:      fmt.Sprintf("Sheet for creating database %v", databaseName),
-			Statement:  statement,
+			CreatorID: api.SystemBotID,
+			ProjectID: project.ResourceID,
+			Title:     fmt.Sprintf("Sheet for creating database %v", databaseName),
+			Statement: statement,
 			Payload: &storepb.SheetPayload{
 				Engine: instance.Engine,
 			},
