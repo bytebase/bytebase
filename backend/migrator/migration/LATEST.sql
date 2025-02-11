@@ -112,9 +112,7 @@ CREATE TABLE project_webhook (
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE INDEX idx_project_webhook_project_id ON project_webhook(project_id);
-
-CREATE UNIQUE INDEX idx_project_webhook_unique_project_id_url ON project_webhook(project_id, url);
+CREATE INDEX idx_project_webhook_project ON project_webhook(project);
 
 ALTER SEQUENCE project_webhook_id_seq RESTART WITH 101;
 
@@ -180,7 +178,7 @@ ALTER SEQUENCE db_schema_id_seq RESTART WITH 101;
 -- data_source table stores the data source for a particular database
 CREATE TABLE data_source (
     id SERIAL PRIMARY KEY,
-    instance INTEGER NOT NULL REFERENCES instance(resource_id),
+    instance TEXT NOT NULL REFERENCES instance(resource_id),
     name TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('ADMIN', 'RW', 'RO')),
     username TEXT NOT NULL,
@@ -236,7 +234,7 @@ ALTER SEQUENCE pipeline_id_seq RESTART WITH 101;
 CREATE TABLE stage (
     id SERIAL PRIMARY KEY,
     pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
-    environment TEXT NOT NULL REFERENCES environments (resource_id),
+    environment TEXT NOT NULL REFERENCES environment (resource_id),
     deployment_id TEXT NOT NULL DEFAULT '',
     name TEXT NOT NULL
 );

@@ -9,6 +9,7 @@ UPDATE project_webhook SET project = project.resource_id FROM project WHERE proj
 ALTER TABLE project_webhook DROP COLUMN project_id;
 ALTER TABLE project_webhook ALTER COLUMN project SET NOT NULL;
 ALTER TABLE project_webhook ADD constraint project_webhook_project_fkey FOREIGN KEY (project) references project(resource_id);
+CREATE INDEX idx_project_webhook_project ON project_webhook(project);
 
 DROP INDEX IF EXISTS idx_db_instance_id;
 DROP INDEX IF EXISTS idx_db_unique_instance_id_name;

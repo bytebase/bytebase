@@ -465,10 +465,8 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	}
 	defer tx.Rollback()
 
-	// Only update the data source if the
-	query := `UPDATE data_source SET ` + strings.Join(set, ", ") +
-		` WHERE instance = ` + fmt.Sprintf("%d", patch.InstanceID) +
-		` AND name = ` + fmt.Sprintf(`'%s'`, patch.DataSourceID)
+	query := fmt.Sprintf(`UPDATE data_source SET %s WHERE instance = $%d AND name = $%d`, strings.Join(set, ", "), len(args)+1, len(args)+2)
+	args = append(args, patch.InstanceID, patch.DataSourceID)
 	result, err := tx.ExecContext(ctx, query, args...)
 	if err != nil {
 		return err
