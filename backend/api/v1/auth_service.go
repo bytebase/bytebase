@@ -1023,7 +1023,11 @@ func validateEmail(email string) error {
 
 func (s *AuthService) validateEmailWithDomains(ctx context.Context, email string, isServiceAccount bool) error {
 	if s.licenseService.IsFeatureEnabled(api.FeatureDomainRestriction) != nil {
-		// feature not enabled, skip validation.
+		// nolint:nilerr
+		// feature not enabled, skip domain validation.
+		if err := validateEmail(email); err != nil {
+			return status.Errorf(codes.InvalidArgument, "invalid email: %v", err.Error())
+		}
 		return nil
 	}
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
