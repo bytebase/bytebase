@@ -77,7 +77,7 @@ func (s *Store) ListChangelists(ctx context.Context, find *FindChangelistMessage
 		SELECT
 			changelist.id,
 			changelist.creator_id,
-			changelist.updated_ts,
+			changelist.updated_at,
 			project.resource_id AS project_id,
 			changelist.name,
 			changelist.payload
@@ -94,12 +94,11 @@ func (s *Store) ListChangelists(ctx context.Context, find *FindChangelistMessage
 	var changelists []*ChangelistMessage
 	for rows.Next() {
 		var changelist ChangelistMessage
-		var updatedTs int64
 		var payload []byte
 		if err := rows.Scan(
 			&changelist.UID,
 			&changelist.CreatorID,
-			&updatedTs,
+			&changelist.UpdatedTime,
 			&changelist.ProjectID,
 			&changelist.ResourceID,
 			&payload,
@@ -111,7 +110,6 @@ func (s *Store) ListChangelists(ctx context.Context, find *FindChangelistMessage
 			return nil, err
 		}
 		changelist.Payload = changelistPayload
-		changelist.UpdatedTime = time.Unix(updatedTs, 0)
 
 		changelists = append(changelists, &changelist)
 	}
@@ -147,7 +145,7 @@ func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage)
 			payload
 		)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, updated_ts;
+		RETURNING id, updated_at;
 	`
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -155,7 +153,6 @@ func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage)
 		return nil, err
 	}
 	defer tx.Rollback()
-	var updatedTs int64
 	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
 		project.UID,
@@ -163,11 +160,10 @@ func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage)
 		payload,
 	).Scan(
 		&create.UID,
-		&updatedTs,
+		&create.UpdatedTime,
 	); err != nil {
 		return nil, err
 	}
-	create.UpdatedTime = time.Unix(updatedTs, 0)
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -187,7 +183,7 @@ func (s *Store) UpdateChangelist(ctx context.Context, update *UpdateChangelistMe
 		return errors.Wrapf(err, "failed to begin transaction")
 	}
 
-	set, args := []string{"updated_ts = $1"}, []any{time.Now().Unix()}
+	set, args := []string{"updated_at = $1"}, []any{time.Now()}
 	if v := update.Payload; v != nil {
 		payload, err := protojson.Marshal(update.Payload)
 		if err != nil {

@@ -48,8 +48,8 @@ const (
 // PlanCheckRunMessage is the message for a plan check run.
 type PlanCheckRunMessage struct {
 	UID       int
-	CreatedTs int64
-	UpdatedTs int64
+	CreatedTs time.Time
+	UpdatedTs time.Time
 
 	PlanUID int64
 
@@ -147,8 +147,8 @@ func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMes
 SELECT
 	%s
 	plan_check_run.id,
-	plan_check_run.created_ts,
-	plan_check_run.updated_ts,
+	plan_check_run.created_at,
+	plan_check_run.updated_at,
 	plan_check_run.plan_id,
 	plan_check_run.status,
 	plan_check_run.type,
@@ -207,11 +207,11 @@ func (s *Store) UpdatePlanCheckRun(ctx context.Context, status PlanCheckRunStatu
 	query := `
     UPDATE plan_check_run
     SET
-		updated_ts = $1,
+		updated_at = $1,
 		status = $2,
 		result = $3
 	WHERE id = $4`
-	if _, err := s.db.db.ExecContext(ctx, query, time.Now().Unix(), status, resultBytes, uid); err != nil {
+	if _, err := s.db.db.ExecContext(ctx, query, time.Now(), status, resultBytes, uid); err != nil {
 		return errors.Wrapf(err, "failed to update plan check run")
 	}
 	return nil
@@ -223,9 +223,9 @@ func (s *Store) BatchCancelPlanCheckRuns(ctx context.Context, planCheckRunUIDs [
 		UPDATE plan_check_run
 		SET 
 			status = $1, 
-			updated_ts = $2
+			updated_at = $2
 		WHERE id = ANY($3)`
-	if _, err := s.db.db.ExecContext(ctx, query, PlanCheckRunStatusCanceled, time.Now().Unix(), planCheckRunUIDs); err != nil {
+	if _, err := s.db.db.ExecContext(ctx, query, PlanCheckRunStatusCanceled, time.Now(), planCheckRunUIDs); err != nil {
 		return err
 	}
 	return nil

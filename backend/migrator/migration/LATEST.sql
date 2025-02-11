@@ -21,7 +21,7 @@ ALTER SEQUENCE idp_id_seq RESTART WITH 101;
 CREATE TABLE principal (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     type TEXT NOT NULL CHECK (type IN ('END_USER', 'SYSTEM_BOT', 'SERVICE_ACCOUNT')),
     name TEXT NOT NULL,
     email TEXT NOT NULL,
@@ -146,7 +146,7 @@ CREATE TABLE db (
     project_id INTEGER NOT NULL REFERENCES project (id),
     environment TEXT REFERENCES environment (resource_id),
     sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
-    last_successful_sync_ts BIGINT NOT NULL,
+    sync_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     schema_version TEXT NOT NULL,
     name TEXT NOT NULL,
     secrets JSONB NOT NULL DEFAULT '{}',
@@ -207,7 +207,7 @@ CREATE TABLE sheet_blob (
 CREATE TABLE sheet (
     id SERIAL PRIMARY KEY,
     creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     project_id INTEGER NOT NULL REFERENCES project (id),
     name TEXT NOT NULL,
     sha256 BYTEA NOT NULL,
@@ -225,7 +225,7 @@ ALTER SEQUENCE sheet_id_seq RESTART WITH 101;
 CREATE TABLE pipeline (
     id SERIAL PRIMARY KEY,
     creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     project_id INTEGER NOT NULL REFERENCES project (id),
     name TEXT NOT NULL
 );
@@ -257,7 +257,7 @@ CREATE TABLE task (
     status TEXT NOT NULL CHECK (status IN ('PENDING', 'PENDING_APPROVAL', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     type TEXT NOT NULL CHECK (type LIKE 'bb.task.%'),
     payload JSONB NOT NULL DEFAULT '{}',
-    earliest_allowed_ts BIGINT NOT NULL DEFAULT 0
+    earliest_allowed_at TIMESTAMPTZ NULL
 );
 
 CREATE INDEX idx_task_pipeline_id_stage_id ON task(pipeline_id, stage_id);
@@ -286,14 +286,14 @@ ALTER SEQUENCE task_dag_id_seq RESTART WITH 101;
 CREATE TABLE task_run (
     id SERIAL PRIMARY KEY,
     creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     task_id INTEGER NOT NULL REFERENCES task (id),
     sheet_id INTEGER REFERENCES sheet (id),
     attempt INTEGER NOT NULL,
     name TEXT NOT NULL,
     status TEXT NOT NULL CHECK (status IN ('PENDING', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
-    started_ts BIGINT NOT NULL DEFAULT 0,
+    started_at TIMESTAMPTZ NULL,
     code INTEGER NOT NULL DEFAULT 0,
     -- result saves the task run result in json format
     result  JSONB NOT NULL DEFAULT '{}'
@@ -323,8 +323,8 @@ CREATE TABLE plan (
     id BIGSERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     project_id INTEGER NOT NULL REFERENCES project (id),
     pipeline_id INTEGER REFERENCES pipeline (id),
     name TEXT NOT NULL,
@@ -340,8 +340,8 @@ ALTER SEQUENCE plan_id_seq RESTART WITH 101;
 
 CREATE TABLE plan_check_run (
     id SERIAL PRIMARY KEY,
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     plan_id BIGINT NOT NULL REFERENCES plan (id),
     status TEXT NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     type TEXT NOT NULL CHECK (type LIKE 'bb.plan-check.%'),
@@ -361,8 +361,8 @@ CREATE TABLE issue (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     project_id INTEGER NOT NULL REFERENCES project (id),
     plan_id BIGINT REFERENCES plan (id),
     pipeline_id INTEGER REFERENCES pipeline (id),
@@ -417,7 +417,7 @@ ALTER SEQUENCE instance_change_history_id_seq RESTART WITH 101;
 
 CREATE TABLE audit_log (
     id BIGSERIAL PRIMARY KEY,
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
@@ -436,8 +436,8 @@ ALTER SEQUENCE audit_log_id_seq RESTART WITH 101;
 CREATE TABLE issue_comment (
     id BIGSERIAL PRIMARY KEY,
     creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     issue_id INTEGER NOT NULL REFERENCES issue (id),
     payload JSONB NOT NULL DEFAULT '{}'
 );
@@ -449,7 +449,7 @@ ALTER SEQUENCE issue_comment_id_seq RESTART WITH 101;
 CREATE TABLE query_history (
     id BIGSERIAL PRIMARY KEY,
     creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     project_id TEXT NOT NULL, -- the project resource id
     database TEXT NOT NULL, -- the database resource name, for example, instances/{instance}/databases/{database}
     statement TEXT NOT NULL,
@@ -493,7 +493,7 @@ ALTER SEQUENCE vcs_connector_id_seq RESTART WITH 101;
 -- For now, anomaly can be associated with a particular instance or database.
 CREATE TABLE anomaly (
     id SERIAL PRIMARY KEY,
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     project TEXT NOT NULL,
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     database_id INTEGER NULL REFERENCES db (id),
@@ -522,8 +522,8 @@ ALTER SEQUENCE deployment_config_id_seq RESTART WITH 101;
 CREATE TABLE worksheet (
     id SERIAL PRIMARY KEY,
     creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     project_id INTEGER NOT NULL REFERENCES project (id),
     database_id INTEGER NULL REFERENCES db (id),
     name TEXT NOT NULL,
@@ -614,7 +614,7 @@ ALTER SEQUENCE db_group_id_seq RESTART WITH 101;
 CREATE TABLE changelist (
     id SERIAL PRIMARY KEY,
     creator_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     project_id INTEGER NOT NULL REFERENCES project (id),
     name TEXT NOT NULL,
     payload JSONB NOT NULL DEFAULT '{}'
@@ -626,7 +626,7 @@ ALTER SEQUENCE changelist_id_seq RESTART WITH 101;
 
 CREATE TABLE export_archive (
   id SERIAL PRIMARY KEY,
-  created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   bytes BYTEA,
   payload JSONB NOT NULL DEFAULT '{}'
 );

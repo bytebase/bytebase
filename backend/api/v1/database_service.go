@@ -1240,7 +1240,7 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 	return &v1pb.Database{
 		Name:                 common.FormatDatabase(database.InstanceID, database.DatabaseName),
 		SyncState:            syncState,
-		SuccessfulSyncTime:   timestamppb.New(time.Unix(database.SuccessfulSyncTimeTs, 0)),
+		SuccessfulSyncTime:   timestamppb.New(time.Unix(database.SyncAt, 0)),
 		Project:              common.FormatProject(database.ProjectID),
 		Environment:          environment,
 		EffectiveEnvironment: effectiveEnvironment,

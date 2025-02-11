@@ -33,9 +33,6 @@ type SheetMessage struct {
 	UID         int
 	Size        int64
 	CreatedTime time.Time
-
-	// Internal fields
-	createdTs int64
 }
 
 func (s *SheetMessage) GetSha256Hex() string {
@@ -145,7 +142,7 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 		SELECT
 			sheet.id,
 			sheet.creator_id,
-			sheet.created_ts,
+			sheet.created_at,
 			sheet.project_id,
 			sheet.name,
 			%s,
@@ -169,7 +166,7 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 		if err := rows.Scan(
 			&sheet.UID,
 			&sheet.CreatorID,
-			&sheet.createdTs,
+			&sheet.CreatedTime,
 			&sheet.ProjectUID,
 			&sheet.Title,
 			&sheet.Statement,
@@ -192,10 +189,6 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
-	}
-
-	for _, sheet := range sheets {
-		sheet.CreatedTime = time.Unix(sheet.createdTs, 0)
 	}
 
 	return sheets, nil
@@ -229,7 +222,7 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 			payload
 		)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, created_ts
+		RETURNING id, created_at
 	`
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -245,7 +238,7 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 		payload,
 	).Scan(
 		&create.UID,
-		&create.createdTs,
+		&create.CreatedTime,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -257,7 +250,6 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 	}
 
 	create.Size = int64(len(create.Statement))
-	create.CreatedTime = time.Unix(create.createdTs, 0)
 
 	return create, nil
 }
@@ -304,7 +296,7 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectUID int, creates []
 			unnest(CAST($3 AS TEXT[])),
 			unnest(CAST($4 AS BYTEA[])),
 			unnest(CAST($5 AS JSONB[]))
-		RETURNING id, created_ts
+		RETURNING id, created_at
 	`
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -324,13 +316,12 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectUID int, creates []
 
 		if err := rows.Scan(
 			&creates[i].UID,
-			&creates[i].createdTs,
+			&creates[i].CreatedTime,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")
 		}
 
 		creates[i].Size = int64(len(creates[i].Statement))
-		creates[i].CreatedTime = time.Unix(creates[i].createdTs, 0)
 	}
 
 	if err := rows.Err(); err != nil {

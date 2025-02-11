@@ -31,10 +31,10 @@ type TaskRunMessage struct {
 	ID        int
 	CreatorID int
 	Creator   *UserMessage
-	CreatedTs int64
-	UpdatedTs int64
+	CreatedTs time.Time
+	UpdatedTs time.Time
 	ProjectID string
-	StartedTs int64
+	StartedTs *time.Time
 }
 
 // FindTaskRunMessage is the message for finding task runs.
@@ -102,12 +102,12 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 		SELECT
 			task_run.id,
 			task_run.creator_id,
-			task_run.created_ts,
-			task_run.updated_ts,
+			task_run.created_at,
+			task_run.updated_at,
 			task_run.task_id,
 			task_run.name,
 			task_run.status,
-			task_run.started_ts,
+			task_run.started_at,
 			task_run.code,
 			task_run.result,
 			task_run.sheet_id,
@@ -130,6 +130,7 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 	var taskRuns []*TaskRunMessage
 	for rows.Next() {
 		var taskRun TaskRunMessage
+		var startedAt sql.NullTime
 		if err := rows.Scan(
 			&taskRun.ID,
 			&taskRun.CreatorID,
@@ -138,7 +139,7 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			&taskRun.TaskUID,
 			&taskRun.Name,
 			&taskRun.Status,
-			&taskRun.StartedTs,
+			&startedAt,
 			&taskRun.Code,
 			&taskRun.Result,
 			&taskRun.SheetUID,
@@ -149,6 +150,9 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			return nil, err
 		}
 
+		if startedAt.Valid {
+			taskRun.StartedTs = &startedAt.Time
+		}
 		var resultProto storepb.TaskRunResult
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(taskRun.Result), &resultProto); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal task run result: %s", taskRun.Result)
@@ -340,7 +344,7 @@ func (*Store) createTaskRunImpl(ctx context.Context, tx *Tx, create *TaskRunMess
 
 // patchTaskRunStatusImpl updates a taskRun status. Returns the new state of the taskRun after update.
 func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRunStatusPatch) (*TaskRunMessage, error) {
-	set, args := []string{"updated_ts = $1", "status = $2"}, []any{time.Now().Unix(), patch.Status}
+	set, args := []string{"updated_at = $1", "status = $2"}, []any{time.Now(), patch.Status}
 	if v := patch.Code; v != nil {
 		set, args = append(set, fmt.Sprintf("code = $%d", len(args)+1)), append(args, *v)
 	}
@@ -352,7 +356,7 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRun
 		set, args = append(set, fmt.Sprintf("result = $%d", len(args)+1)), append(args, result)
 	}
 	if patch.Status == api.TaskRunRunning {
-		set = append(set, "started_ts = extract(epoch from now())")
+		set = append(set, "started_at = extract(epoch from now())")
 	}
 
 	// Build WHERE clause.
@@ -364,7 +368,7 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRun
 		UPDATE task_run
 		SET `+strings.Join(set, ", ")+`
 		WHERE `+strings.Join(where, " AND ")+`
-		RETURNING id, creator_id, created_ts, updated_ts, task_id, name, status, code, result
+		RETURNING id, creator_id, created_at, updated_at, task_id, name, status, code, result
 	`,
 		args...,
 	).Scan(
@@ -431,8 +435,8 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 		SELECT
 			task_run.id,
 			task_run.creator_id,
-			task_run.created_ts,
-			task_run.updated_ts,
+			task_run.created_at,
+			task_run.updated_at,
 			task_run.task_id,
 			task_run.name,
 			task_run.status,

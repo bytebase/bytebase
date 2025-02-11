@@ -55,8 +55,6 @@ type IssueMessage struct {
 	projectUID     int
 	subscriberUIDs []int
 	creatorUID     int
-	createdTs      int64
-	updatedTs      int64
 }
 
 // UpdateIssueMessage is the message for updating an issue.
@@ -83,8 +81,8 @@ type FindIssueMessage struct {
 	// Only principleID or one of the following three fields can be set.
 	CreatorID       *int
 	SubscriberID    *int
-	CreatedTsBefore *int64
-	CreatedTsAfter  *int64
+	CreatedTsBefore *time.Time
+	CreatedTsAfter  *time.Time
 	Types           *[]api.IssueType
 
 	StatusList []api.IssueStatus
@@ -164,7 +162,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 			ts_vector
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, created_ts, updated_ts
+		RETURNING id, created_at, updated_at
 	`
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -186,16 +184,14 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		tsVector,
 	).Scan(
 		&create.UID,
-		&create.createdTs,
-		&create.updatedTs,
+		&create.CreatedTime,
+		&create.UpdatedTime,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
 		return nil, err
 	}
-	create.CreatedTime = time.Unix(create.createdTs, 0)
-	create.UpdatedTime = time.Unix(create.updatedTs, 0)
 	create.Creator = creator
 
 	if err := tx.Commit(); err != nil {
@@ -216,7 +212,7 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 		return nil, err
 	}
 
-	set, args := []string{"updated_ts = $1"}, []any{time.Now().Unix()}
+	set, args := []string{"updated_at = $1"}, []any{time.Now()}
 	if v := patch.PipelineUID; v != nil {
 		set, args = append(set, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -390,10 +386,10 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		where, args = append(where, fmt.Sprintf("issue.creator_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.CreatedTsBefore; v != nil {
-		where, args = append(where, fmt.Sprintf("issue.created_ts < $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("issue.created_at < $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.CreatedTsAfter; v != nil {
-		where, args = append(where, fmt.Sprintf("issue.created_ts > $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("issue.created_at > $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.SubscriberID; v != nil {
 		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id AND issue_subscriber.subscriber_id = $%d)", len(args)+1)), append(args, *v)
@@ -448,8 +444,8 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	SELECT
 		issue.id,
 		issue.creator_id,
-		issue.created_ts,
-		issue.updated_ts,
+		issue.created_at,
+		issue.updated_at,
 		issue.project_id,
 		issue.pipeline_id,
 		issue.plan_id,
@@ -505,8 +501,8 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		if err := rows.Scan(
 			&issue.UID,
 			&issue.creatorUID,
-			&issue.createdTs,
-			&issue.updatedTs,
+			&issue.CreatedTime,
+			&issue.UpdatedTime,
 			&issue.projectUID,
 			&issue.PipelineUID,
 			&issue.PlanUID,
@@ -558,8 +554,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			}
 			issue.Subscribers = append(issue.Subscribers, subscriber)
 		}
-		issue.CreatedTime = time.Unix(issue.createdTs, 0)
-		issue.UpdatedTime = time.Unix(issue.updatedTs, 0)
 
 		s.issueCache.Add(issue.UID, issue)
 		if issue.PipelineUID != nil {

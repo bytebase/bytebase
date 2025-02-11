@@ -25,8 +25,8 @@ type PlanMessage struct {
 	// output only
 	UID        int64
 	CreatorUID int
-	CreatedTs  int64
-	UpdatedTs  int64
+	CreatedTs  time.Time
+	UpdatedTs  time.Time
 
 	PlanCheckRunStatusCount map[string]int32
 }
@@ -38,8 +38,8 @@ type FindPlanMessage struct {
 	ProjectIDs      *[]string
 	CreatorID       *int
 	PipelineID      *int
-	CreatedTsBefore *int64
-	CreatedTsAfter  *int64
+	CreatedTsBefore *time.Time
+	CreatedTsAfter  *time.Time
 
 	Limit  *int
 	Offset *int
@@ -74,7 +74,7 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creatorUID in
 			$4,
 			$5,
 			$6
-		) RETURNING id, created_ts
+		) RETURNING id, created_at, updated_at
 	`
 
 	config, err := protojson.Marshal(plan.Config)
@@ -87,7 +87,7 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creatorUID in
 	}
 	defer tx.Rollback()
 
-	var id, createdTs int64
+	var id int64
 	if err := tx.QueryRowContext(ctx, query,
 		creatorUID,
 		plan.ProjectID,
@@ -95,7 +95,7 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creatorUID in
 		plan.Name,
 		plan.Description,
 		config,
-	).Scan(&id, &createdTs); err != nil {
+	).Scan(&id, &plan.CreatedTs, &plan.UpdatedTs); err != nil {
 		return nil, errors.Wrap(err, "failed to insert plan")
 	}
 
@@ -105,8 +105,6 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creatorUID in
 
 	plan.UID = id
 	plan.CreatorUID = creatorUID
-	plan.CreatedTs = createdTs
-	plan.UpdatedTs = createdTs
 	return plan, nil
 }
 
@@ -144,10 +142,10 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		where, args = append(where, fmt.Sprintf("plan.creator_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.CreatedTsBefore; v != nil {
-		where, args = append(where, fmt.Sprintf("plan.created_ts < $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("plan.created_at < $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.CreatedTsAfter; v != nil {
-		where, args = append(where, fmt.Sprintf("plan.created_ts > $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("plan.created_at > $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.NoIssue; v {
 		where = append(where, "issue.id IS NULL")
@@ -160,8 +158,8 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		SELECT
 			plan.id,
 			plan.creator_id,
-			plan.created_ts,
-			plan.updated_ts,
+			plan.created_at,
+			plan.updated_at,
 			project.resource_id,
 			plan.pipeline_id,
 			plan.name,
@@ -251,7 +249,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 
 // UpdatePlan updates an existing plan.
 func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) error {
-	set, args := []string{"updated_ts = $1"}, []any{time.Now().Unix()}
+	set, args := []string{"updated_at = $1"}, []any{time.Now().Unix()}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}

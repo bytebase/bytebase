@@ -46,10 +46,6 @@ type WorkSheetMessage struct {
 	CreatedTime time.Time
 	UpdatedTime time.Time
 	Starred     bool
-
-	// Internal fields
-	createdTs int64
-	updatedTs int64
 }
 
 // FindWorkSheetMessage is the API message for finding sheets.
@@ -146,8 +142,8 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 		SELECT
 			worksheet.id,
 			worksheet.creator_id,
-			worksheet.created_ts,
-			worksheet.updated_ts,
+			worksheet.created_at,
+			worksheet.updated_at,
 			worksheet.project_id,
 			worksheet.database_id,
 			worksheet.name,
@@ -171,8 +167,8 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 		if err := rows.Scan(
 			&sheet.UID,
 			&sheet.CreatorID,
-			&sheet.createdTs,
-			&sheet.updatedTs,
+			&sheet.CreatedTime,
+			&sheet.UpdatedTime,
 			&sheet.ProjectUID,
 			&sheet.DatabaseUID,
 			&sheet.Title,
@@ -191,11 +187,6 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
-	}
-
-	for _, sheet := range sheets {
-		sheet.CreatedTime = time.Unix(sheet.createdTs, 0)
-		sheet.UpdatedTime = time.Unix(sheet.updatedTs, 0)
 	}
 
 	return sheets, nil
@@ -219,7 +210,7 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 			payload
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id, created_ts, updated_ts, OCTET_LENGTH(statement)
+		RETURNING id, created_at, updated_at, OCTET_LENGTH(statement)
 	`
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -237,8 +228,8 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 		payload,
 	).Scan(
 		&create.UID,
-		&create.createdTs,
-		&create.updatedTs,
+		&create.CreatedTime,
+		&create.UpdatedTime,
 		&create.Size,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -249,9 +240,6 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
-
-	create.CreatedTime = time.Unix(create.createdTs, 0)
-	create.UpdatedTime = time.Unix(create.updatedTs, 0)
 
 	return create, nil
 }
@@ -293,7 +281,7 @@ func (s *Store) DeleteWorkSheet(ctx context.Context, sheetUID int) error {
 
 // patchWorkSheetImpl updates a sheet's name/statement/visibility/database_id/project_id.
 func patchWorkSheetImpl(ctx context.Context, tx *Tx, patch *PatchWorkSheetMessage) error {
-	set, args := []string{"updated_ts = $1"}, []any{time.Now().Unix()}
+	set, args := []string{"updated_at = $1"}, []any{time.Now()}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}

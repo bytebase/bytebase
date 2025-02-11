@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -22,11 +23,11 @@ type DatabaseMessage struct {
 	EnvironmentID          string
 	EffectiveEnvironmentID string
 
-	DatabaseName         string
-	SyncState            api.SyncStatus
-	SuccessfulSyncTimeTs int64
-	Secrets              *storepb.Secrets
-	DataShare            bool
+	DatabaseName string
+	SyncState    api.SyncStatus
+	SyncAt       time.Time
+	Secrets      *storepb.Secrets
+	DataShare    bool
 	// ServiceName is the Oracle specific field.
 	ServiceName string
 	Metadata    *storepb.DatabaseMetadata
@@ -41,7 +42,7 @@ type UpdateDatabaseMessage struct {
 
 	ProjectID            *string
 	SyncState            *api.SyncStatus
-	SuccessfulSyncTimeTs *int64
+	SuccessfulSyncTimeTs *time.Time
 	SourceBackupID       *int
 	Secrets              *storepb.Secrets
 	DataShare            *bool
@@ -187,7 +188,6 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectUID,
 			project_id,
 			name,
 			sync_status,
-			last_successful_sync_ts,
 			schema_version,
 			secrets,
 			datashare,
@@ -197,7 +197,6 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectUID,
 		ON CONFLICT (instance_id, name) DO UPDATE SET
 			project_id = EXCLUDED.project_id,
 			sync_status = EXCLUDED.sync_status,
-			last_successful_sync_ts = EXCLUDED.last_successful_sync_ts,
 			datashare = EXCLUDED.datashare,
 			service_name = EXCLUDED.service_name
 		RETURNING id`
@@ -207,7 +206,7 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectUID,
 		projectUID,
 		create.DatabaseName,
 		api.OK,
-		0,             /* last_successful_sync_ts */
+		nil,           /* sync_at */
 		"",            /* schema_version */
 		secretsString, /* secrets */
 		create.DataShare,
@@ -263,7 +262,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 			environment,
 			name,
 			sync_status,
-			last_successful_sync_ts,
+			last_successful_sync_at,
 			schema_version,
 			secrets,
 			datashare,
@@ -285,7 +284,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		environment,
 		create.DatabaseName,
 		create.SyncState,
-		create.SuccessfulSyncTimeTs,
+		create.SyncAt,
 		secretsString,
 		create.DataShare,
 		create.ServiceName,
@@ -331,7 +330,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		set, args = append(set, fmt.Sprintf("sync_status = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.SuccessfulSyncTimeTs; v != nil {
-		set, args = append(set, fmt.Sprintf("last_successful_sync_ts = $%d", len(args)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("sync_at = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Secrets; v != nil {
 		secretsString, err := protojson.Marshal(v)
@@ -495,7 +494,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			instance.resource_id AS instance_id,
 			db.name,
 			db.sync_status,
-			db.last_successful_sync_ts,
+			db.last_successful_sync_at,
 			COALESCE(
 				(
 					SELECT revision.version
@@ -543,7 +542,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			&databaseMessage.InstanceID,
 			&databaseMessage.DatabaseName,
 			&databaseMessage.SyncState,
-			&databaseMessage.SuccessfulSyncTimeTs,
+			&databaseMessage.SyncAt,
 			&databaseMessage.SchemaVersion,
 			&secretsString,
 			&databaseMessage.DataShare,

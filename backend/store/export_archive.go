@@ -58,7 +58,7 @@ func (s *Store) ListExportArchives(ctx context.Context, find *FindExportArchiveM
 	query := fmt.Sprintf(`
 		SELECT
 			id,
-			created_ts,
+			created_at,
 			bytes,
 			payload
 		FROM export_archive
@@ -74,11 +74,10 @@ func (s *Store) ListExportArchives(ctx context.Context, find *FindExportArchiveM
 	var exportArchives []*ExportArchiveMessage
 	for rows.Next() {
 		var exportArchive ExportArchiveMessage
-		var createdTs int64
 		var bytes, payload []byte
 		if err := rows.Scan(
 			&exportArchive.UID,
-			&createdTs,
+			&exportArchive.CreatedTime,
 			&bytes,
 			&payload,
 		); err != nil {
@@ -115,7 +114,7 @@ func (s *Store) CreateExportArchive(ctx context.Context, create *ExportArchiveMe
 			payload
 		)
 		VALUES ($1, $2)
-		RETURNING id, created_ts;
+		RETURNING id, created_at;
 	`
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -123,17 +122,15 @@ func (s *Store) CreateExportArchive(ctx context.Context, create *ExportArchiveMe
 		return nil, err
 	}
 	defer tx.Rollback()
-	var createdTs int64
 	if err := tx.QueryRowContext(ctx, query,
 		create.Bytes,
 		payload,
 	).Scan(
 		&create.UID,
-		&createdTs,
+		&create.CreatedTime,
 	); err != nil {
 		return nil, err
 	}
-	create.CreatedTime = time.Unix(createdTs, 0)
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}

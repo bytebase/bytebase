@@ -409,7 +409,7 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 	}
 
 	syncStatus := api.OK
-	ts := time.Now().Unix()
+	ts := time.Now()
 	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:           database.InstanceID,
 		DatabaseName:         database.DatabaseName,
