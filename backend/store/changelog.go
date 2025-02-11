@@ -201,7 +201,7 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 	query := fmt.Sprintf(`
 		SELECT
 			changelog.id,
-			changelog.created_ts,
+			changelog.created_at,
 			changelog.database_id,
 			changelog.status,
 			changelog.prev_sync_history_id,

@@ -28,7 +28,7 @@ func (s *Store) CreateTaskRunLog(ctx context.Context, taskRunUID int, t time.Tim
 	query := `
 		INSERT INTO task_run_log (
 			task_run_id,
-			created_ts,
+			created_at,
 			payload
 		) VALUES (
 			$1,
@@ -50,7 +50,7 @@ func (s *Store) CreateTaskRunLog(ctx context.Context, taskRunUID int, t time.Tim
 func (s *Store) ListTaskRunLogs(ctx context.Context, taskRunUID int) ([]*TaskRunLog, error) {
 	query := `
 		SELECT
-			created_ts,
+			created_at,
 			payload
 		FROM task_run_log
 		WHERE task_run_log.task_run_id = $1
