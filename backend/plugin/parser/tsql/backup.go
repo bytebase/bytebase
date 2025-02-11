@@ -26,7 +26,6 @@ const (
 	// TODO(zp): We should support default schema in the future.
 	defaultSchema      = "dbo"
 	maxTableNameLength = 128
-	maxMixedDMLCount   = 5
 )
 
 type StatementType int
