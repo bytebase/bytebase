@@ -153,3 +153,25 @@ ALTER TABLE changelist DROP COLUMN project_id;
 ALTER TABLE changelist ALTER COLUMN project SET NOT NULL;
 ALTER TABLE changelist ADD constraint changelist_project_fkey FOREIGN KEY (project) references project(resource_id);
 CREATE UNIQUE INDEX idx_changelist_project_name ON changelist(project, name);
+
+DROP INDEX IF EXISTS idx_revision_unique_database_id_version_deleted_at_null;
+DROP INDEX IF EXISTS idx_revision_database_id_version;
+ALTER TABLE revision ADD COLUMN instance TEXT;
+ALTER TABLE revision ADD COLUMN db_name TEXT;
+UPDATE revision SET instance = db.instance, db_name = db.name FROM db WHERE db.id = revision.database_id;
+ALTER TABLE revision ALTER COLUMN instance SET NOT NULL;
+ALTER TABLE revision ALTER COLUMN db_name SET NOT NULL;
+ALTER TABLE revision ADD constraint revision_instance_db_name_fkey FOREIGN KEY (instance, db_name) references db(instance, name);
+ALTER TABLE revision DROP COLUMN database_id;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_revision_unique_instance_db_name_version_deleted_at_null ON revision(instance, db_name, version) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_revision_instance_db_name_version ON revision(instance, db_name, version);
+
+DROP INDEX IF EXISTS idx_sync_history_database_id_created_at;
+ALTER TABLE sync_history ADD COLUMN instance TEXT;
+ALTER TABLE sync_history ADD COLUMN db_name TEXT;
+UPDATE sync_history SET instance = db.instance, db_name = db.name FROM db WHERE db.id = sync_history.database_id;
+ALTER TABLE sync_history ALTER COLUMN instance SET NOT NULL;
+ALTER TABLE sync_history ALTER COLUMN db_name SET NOT NULL;
+ALTER TABLE sync_history ADD constraint sync_history_instance_db_name_fkey FOREIGN KEY (instance, db_name) references db(instance, name);
+ALTER TABLE sync_history DROP COLUMN database_id;
+CREATE INDEX IF NOT EXISTS idx_sync_history_instance_db_name_created_at ON sync_history (instance, db_name, created_at);

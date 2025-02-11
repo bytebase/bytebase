@@ -642,31 +642,35 @@ CREATE TABLE review_config (
 
 CREATE TABLE revision (
     id BIGSERIAL PRIMARY KEY,
-    database_id INTEGER NOT NULL REFERENCES db (id),
+    instance TEXT NOT NULL,
+    db_name TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleter_id INTEGER REFERENCES principal(id),
     deleted_at TIMESTAMPTZ,
     version TEXT NOT NULL,
-    payload JSONB NOT NULL DEFAULT '{}'
+    payload JSONB NOT NULL DEFAULT '{}',
+    CONSTRAINT revision_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
 
 ALTER SEQUENCE revision_id_seq RESTART WITH 101;
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_revision_unique_database_id_version_deleted_at_null ON revision (database_id, version) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_revision_unique_instance_db_name_version_deleted_at_null ON revision(instance, db_name, version) WHERE deleted_at IS NULL;
 
-CREATE INDEX IF NOT EXISTS idx_revision_database_id_version ON revision (database_id, version);
+CREATE INDEX IF NOT EXISTS idx_revision_instance_db_name_version ON revision(instance, db_name, version);
 
 CREATE TABLE sync_history (
     id BIGSERIAL PRIMARY KEY,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    database_id INTEGER NOT NULL REFERENCES db(id),
+    instance TEXT NOT NULL,
+    db_name TEXT NOT NULL,
     metadata JSON NOT NULL DEFAULT '{}',
-    raw_dump TEXT NOT NULL DEFAULT ''
+    raw_dump TEXT NOT NULL DEFAULT '',
+    CONSTRAINT sync_history_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
 
 ALTER SEQUENCE sync_history_id_seq RESTART WITH 101;
 
-CREATE INDEX IF NOT EXISTS idx_sync_history_database_id_created_at ON sync_history (database_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_sync_history_instance_db_name_created_at ON sync_history (instance, db_name, created_at);
 
 CREATE TABLE changelog (
     id BIGSERIAL PRIMARY KEY,
