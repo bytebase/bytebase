@@ -186,3 +186,10 @@ ALTER TABLE changelog ADD constraint changelog_instance_db_name_fkey FOREIGN KEY
 ALTER TABLE changelog DROP COLUMN database_id;
 CREATE INDEX IF NOT EXISTS idx_changelog_instance_db_name ON changelog (instance, db_name);
 
+DROP INDEX IF EXISTS idx_release_project_id;
+ALTER TABLE release ADD COLUMN project TEXT;
+UPDATE release SET project = project.resource_id FROM project WHERE project.id = release.project_id;
+ALTER TABLE release DROP COLUMN project_id;
+ALTER TABLE release ALTER COLUMN project SET NOT NULL;
+ALTER TABLE release ADD constraint release_project_fkey FOREIGN KEY (project) references project(resource_id);
+CREATE INDEX idx_release_project ON release(project);

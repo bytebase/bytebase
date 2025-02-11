@@ -691,7 +691,7 @@ CREATE INDEX IF NOT EXISTS idx_changelog_instance_db_name ON changelog (instance
 CREATE TABLE IF NOT EXISTS release (
     id BIGSERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
-    project_id INTEGER NOT NULL REFERENCES project (id),
+    project TEXT NOT NULL REFERENCES project(resource_id),
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     payload JSONB NOT NULL DEFAULT '{}'
@@ -699,7 +699,7 @@ CREATE TABLE IF NOT EXISTS release (
 
 ALTER SEQUENCE release_id_seq RESTART WITH 101;
 
-CREATE INDEX idx_release_project_id ON release (project_id);
+CREATE INDEX idx_release_project ON release(project);
 
 
 -- Default bytebase system account id is 1.
