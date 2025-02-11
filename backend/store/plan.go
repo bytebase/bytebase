@@ -249,7 +249,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 
 // UpdatePlan updates an existing plan.
 func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) error {
-	set, args := []string{"updated_at = $1"}, []any{time.Now().Unix()}
+	set, args := []string{"updated_at = $1"}, []any{time.Now()}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
