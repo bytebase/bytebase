@@ -77,7 +77,7 @@ CREATE TYPE resource_type AS ENUM ('WORKSPACE', 'ENVIRONMENT', 'PROJECT', 'INSTA
 CREATE TABLE policy (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
-    updated_ts TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     type TEXT NOT NULL CHECK (type LIKE 'bb.policy.%'),
     payload JSONB NOT NULL DEFAULT '{}',
     resource_type resource_type NOT NULL,
@@ -308,7 +308,7 @@ ALTER SEQUENCE task_run_id_seq RESTART WITH 101;
 CREATE TABLE task_run_log (
     id BIGSERIAL PRIMARY KEY,
     task_run_id INTEGER NOT NULL REFERENCES task_run (id),
-    created_ts TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
@@ -649,22 +649,22 @@ CREATE TABLE review_config (
 CREATE TABLE revision (
     id BIGSERIAL PRIMARY KEY,
     database_id INTEGER NOT NULL REFERENCES db (id),
-    created_ts TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleter_id INTEGER REFERENCES principal (id),
-    deleted_ts TIMESTAMPTZ,
+    deleted_at TIMESTAMPTZ,
     version TEXT NOT NULL,
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
 ALTER SEQUENCE revision_id_seq RESTART WITH 101;
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_revision_unique_database_id_version_deleted_ts_null ON revision (database_id, version) WHERE deleted_ts IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_revision_unique_database_id_version_deleted_at_null ON revision (database_id, version) WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_revision_database_id_version ON revision (database_id, version);
 
 CREATE TABLE sync_history (
     id BIGSERIAL PRIMARY KEY,
-    created_ts TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     database_id INTEGER NOT NULL REFERENCES db (id),
     metadata JSON NOT NULL DEFAULT '{}',
     raw_dump TEXT NOT NULL DEFAULT ''
@@ -672,11 +672,11 @@ CREATE TABLE sync_history (
 
 ALTER SEQUENCE sync_history_id_seq RESTART WITH 101;
 
-CREATE INDEX IF NOT EXISTS idx_sync_history_database_id_created_ts ON sync_history (database_id, created_ts);
+CREATE INDEX IF NOT EXISTS idx_sync_history_database_id_created_at ON sync_history (database_id, created_at);
 
 CREATE TABLE changelog (
     id BIGSERIAL PRIMARY KEY,
-    created_ts TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     database_id INTEGER NOT NULL REFERENCES db (id),
     status TEXT NOT NULL CONSTRAINT changelog_status_check CHECK (status IN ('PENDING', 'DONE', 'FAILED')),
     prev_sync_history_id BIGINT REFERENCES sync_history (id),
@@ -693,7 +693,7 @@ CREATE TABLE IF NOT EXISTS release (
     row_status row_status NOT NULL DEFAULT 'NORMAL',
     project_id INTEGER NOT NULL REFERENCES project (id),
     creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
