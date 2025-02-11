@@ -37,3 +37,11 @@ ALTER TABLE db_schema ALTER COLUMN db_name SET NOT NULL;
 ALTER TABLE db_schema ADD constraint db_instance_fkey FOREIGN KEY (instance) references instance(resource_id);
 ALTER TABLE db_schema DROP COLUMN database_id;
 CREATE UNIQUE INDEX idx_db_schema_unique_instance_db_name ON db_schema(instance, db_name);
+
+DROP INDEX IF EXISTS idx_data_source_unique_instance_id_name;
+ALTER TABLE data_source ADD COLUMN instance TEXT;
+UPDATE data_source SET instance = instance.resource_id FROM instance WHERE instance.id = data_source.instance_id;
+ALTER TABLE data_source DROP COLUMN instance_id;
+ALTER TABLE data_source ALTER COLUMN instance SET NOT NULL;
+ALTER TABLE data_source ADD constraint data_source_instance_fkey FOREIGN KEY (instance) references instance(resource_id);
+CREATE UNIQUE INDEX idx_data_source_unique_instance_name ON data_source(instance, name);

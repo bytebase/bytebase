@@ -180,7 +180,7 @@ ALTER SEQUENCE db_schema_id_seq RESTART WITH 101;
 -- data_source table stores the data source for a particular database
 CREATE TABLE data_source (
     id SERIAL PRIMARY KEY,
-    instance_id INTEGER NOT NULL REFERENCES instance (id),
+    instance INTEGER NOT NULL REFERENCES instance(resource_id),
     name TEXT NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('ADMIN', 'RW', 'RO')),
     username TEXT NOT NULL,
@@ -194,7 +194,7 @@ CREATE TABLE data_source (
     database TEXT NOT NULL DEFAULT ''
 );
 
-CREATE UNIQUE INDEX idx_data_source_unique_instance_id_name ON data_source(instance_id, name);
+CREATE UNIQUE INDEX idx_data_source_unique_instance_name ON data_source(instance, name);
 
 ALTER SEQUENCE data_source_id_seq RESTART WITH 101;
 

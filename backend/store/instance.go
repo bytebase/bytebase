@@ -185,7 +185,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 	}
 
 	for _, ds := range instanceCreate.DataSources {
-		if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceID, ds); err != nil {
+		if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceCreate.ResourceID, ds); err != nil {
 			return nil, err
 		}
 	}
@@ -353,12 +353,12 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	}
 
 	if patch.DataSources != nil {
-		if err := s.clearDataSourceImpl(ctx, tx, instance.UID); err != nil {
+		if err := s.clearDataSourceImpl(ctx, tx, instance.ResourceID); err != nil {
 			return nil, err
 		}
 
 		for _, ds := range *patch.DataSources {
-			if err := s.addDataSourceToInstanceImplV2(ctx, tx, instance.UID, ds); err != nil {
+			if err := s.addDataSourceToInstanceImplV2(ctx, tx, instance.ResourceID, ds); err != nil {
 				return nil, err
 			}
 		}
