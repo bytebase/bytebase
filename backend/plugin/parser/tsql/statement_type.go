@@ -28,7 +28,6 @@ func GetStatementTypes(asts any) ([]string, error) {
 	return sqlTypes, nil
 }
 
-// GetStatementType return the type of statement.
 func getStatementType(node antlr.Tree) string {
 	switch ctx := node.(type) {
 	case *parser.Tsql_fileContext, *parser.Batch_without_goContext, *parser.Batch_level_statementContext:
