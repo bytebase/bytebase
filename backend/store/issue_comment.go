@@ -168,7 +168,8 @@ func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMess
 		return nil, errors.Wrapf(err, "failed to insert")
 	}
 
-	creator, err := s.GetUserByID(ctx, create.creatorUID)
+	create.creatorUID = creatorUID
+	creator, err := s.GetUserByID(ctx, creatorUID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get creator")
 	}
@@ -178,7 +179,7 @@ func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMess
 }
 
 func (s *Store) UpdateIssueComment(ctx context.Context, patch *UpdateIssueCommentMessage) error {
-	set, args := []string{"updated_at = $2"}, []any{time.Now()}
+	set, args := []string{"updated_at = $1"}, []any{time.Now()}
 
 	if v := patch.Comment; v != nil {
 		set, args = append(set, fmt.Sprintf("payload = payload || jsonb_build_object('comment',$%d::TEXT)", len(args)+1)), append(args, *v)
