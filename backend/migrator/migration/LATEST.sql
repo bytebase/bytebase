@@ -658,7 +658,7 @@ CREATE TABLE revision (
 
 ALTER SEQUENCE revision_id_seq RESTART WITH 101;
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_revision_unique_database_id_version_deleted_ts_null ON revision (database_id, version) WHERE deleted_ts IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_revision_unique_database_id_version_deleted_at_null ON revision (database_id, version) WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_revision_database_id_version ON revision (database_id, version);
 
