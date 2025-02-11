@@ -77,8 +77,13 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 
 	var items []lsp.CompletionItem
 	for _, candidate := range candidates {
+		label := candidate.Text
+		// Remove the double quote if it's quoted.
+		if len(label) > 1 && label[0] == '"' && label[len(label)-1] == '"' {
+			label = label[1 : len(label)-1]
+		}
 		completionItem := lsp.CompletionItem{
-			Label: candidate.Text,
+			Label: label,
 			LabelDetails: &lsp.CompletionItemLabelDetails{
 				Detail:      fmt.Sprintf("(%s)", string(candidate.Type)),
 				Description: candidate.Definition,
