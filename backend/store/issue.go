@@ -52,7 +52,7 @@ type IssueMessage struct {
 	UpdatedAt time.Time
 
 	// Internal fields.
-	projectUID     int
+	projectID      string
 	subscriberUIDs []int
 	creatorUID     int
 }
@@ -151,7 +151,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 	query := `
 		INSERT INTO issue (
 			creator_id,
-			project_id,
+			project,
 			pipeline_id,
 			plan_id,
 			name,
@@ -173,7 +173,7 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 
 	if err := tx.QueryRowContext(ctx, query,
 		creatorID,
-		create.Project.UID,
+		create.Project.ResourceID,
 		create.PipelineUID,
 		create.PlanUID,
 		create.Title,
@@ -446,7 +446,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		issue.creator_id,
 		issue.created_at,
 		issue.updated_at,
-		issue.project_id,
+		issue.project,
 		issue.pipeline_id,
 		issue.plan_id,
 		issue.name,
@@ -457,7 +457,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		(SELECT ARRAY_AGG (issue_subscriber.subscriber_id) FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id) subscribers,
 		COALESCE(task_run_status_count.status_count, '{}'::jsonb)
 	FROM %s
-	LEFT JOIN project ON issue.project_id = project.id
 	LEFT JOIN LATERAL (
 		SELECT
 			jsonb_object_agg(t.status, t.count) AS status_count
@@ -503,7 +502,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			&issue.creatorUID,
 			&issue.CreatedAt,
 			&issue.UpdatedAt,
-			&issue.projectUID,
+			&issue.projectID,
 			&issue.PipelineUID,
 			&issue.PlanUID,
 			&issue.Title,
@@ -537,7 +536,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 
 	// Populate from internal fields.
 	for _, issue := range issues {
-		project, err := s.GetProjectV2(ctx, &FindProjectMessage{UID: &issue.projectUID})
+		project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &issue.projectID})
 		if err != nil {
 			return nil, err
 		}
