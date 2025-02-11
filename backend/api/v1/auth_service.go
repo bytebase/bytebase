@@ -1024,7 +1024,7 @@ func validateEmail(email string) error {
 func (s *AuthService) validateEmailWithDomains(ctx context.Context, email string, isServiceAccount bool) error {
 	if s.licenseService.IsFeatureEnabled(api.FeatureDomainRestriction) != nil {
 		// nolint:nilerr
-		// feature not enabled, skip domain validation.
+		// feature not enabled, only validate email and skip domain restriction.
 		if err := validateEmail(email); err != nil {
 			return status.Errorf(codes.InvalidArgument, "invalid email: %v", err.Error())
 		}
