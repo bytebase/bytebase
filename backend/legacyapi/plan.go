@@ -328,7 +328,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureInstanceSSHConnection:         {false, false, true},
 	FeatureCustomInstanceSynchronization: {false, false, true},
 	FeatureSyncSchemaAllVersions:         {false, true, true},
-	FeatureIndexAdvisor:                  {false, false, true},
+	FeatureIndexAdvisor:                  {true, true, true},
 	// Policy Control
 	FeatureRolloutPolicy:         {false, true, true},
 	FeatureEnvironmentTierPolicy: {false, false, true},
@@ -338,7 +338,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	// Efficiency
 	FeatureBatchQuery: {false, true, true},
 	// Collaboration
-	FeatureSharedSQLScript: {false, true, true},
+	FeatureSharedSQLScript: {true, true, true},
 	// Plugins
 	FeatureAIAssistant: {true, true, true},
 }
