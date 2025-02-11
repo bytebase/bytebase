@@ -54,7 +54,7 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 		args = append(args, *v)
 	}
 	if !find.ShowDeleted {
-		where = append(where, "deleted_ts IS NULL")
+		where = append(where, "deleted_at IS NULL")
 	}
 
 	limitOffsetClause := ""
@@ -69,9 +69,9 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 		SELECT
 			id,
 			database_id,
-			created_ts,
+			created_at,
 			deleter_id,
-			deleted_ts,
+			deleted_at,
 			version,
 			payload
 		FROM revision
@@ -153,7 +153,7 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage) (
 			$2,
 			$3
 		)
-		RETURNING id, created_ts
+		RETURNING id, created_at
 	`
 
 	p, err := protojson.Marshal(revision.Payload)
@@ -190,7 +190,7 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage) (
 func (s *Store) DeleteRevision(ctx context.Context, uid int64, deleterUID int) error {
 	query :=
 		`UPDATE revision
-		SET deleter_id = $1, deleted_ts = now()
+		SET deleter_id = $1, deleted_at = now()
 		WHERE id = $2`
 
 	tx, err := s.db.BeginTx(ctx, nil)

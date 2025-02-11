@@ -445,7 +445,7 @@ func (s *Store) CreatePolicyV2(ctx context.Context, create *PolicyMessage) (*Pol
 
 // UpdatePolicyV2 updates the policy.
 func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) (*PolicyMessage, error) {
-	set, args := []string{"updated_ts = $1"}, []any{time.Now()}
+	set, args := []string{"updated_at = $1"}, []any{time.Now()}
 	if v := patch.InheritFromParent; v != nil {
 		set, args = append(set, fmt.Sprintf("inherit_from_parent = $%d", len(args)+1)), append(args, *v)
 	}
@@ -482,7 +482,7 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 				payload,
 				inherit_from_parent,
 				row_status,
-				updated_ts
+				updated_at
 		`, len(args)-2, len(args)-1, len(args)),
 		args...,
 	).Scan(
@@ -557,7 +557,7 @@ func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage) (*Po
 				row_status = EXCLUDED.row_status
 			RETURNING
 				id,
-				updated_ts
+				updated_at
 		`,
 		create.ResourceType,
 		create.ResourceUID,
@@ -593,7 +593,7 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
-			updated_ts,
+			updated_at,
 			resource_type,
 			resource_id,
 			inherit_from_parent,

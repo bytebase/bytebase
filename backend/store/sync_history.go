@@ -25,7 +25,7 @@ func (s *Store) GetSyncHistoryByUID(ctx context.Context, uid int64) (*SyncHistor
 	query := `
 		SELECT
 			id,
-			created_ts,
+			created_at,
 			database_id,
 			metadata,
 			raw_dump
