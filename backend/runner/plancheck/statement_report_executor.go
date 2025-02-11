@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -227,6 +228,12 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 		}
 		explainCalculator = od.CountAffectedRows
 
+		if instance.Engine != storepb.Engine_OCEANBASE_ORACLE {
+			sqlTypes, err = plsql.GetStatementTypes(asts)
+			if err != nil {
+				return nil, err
+			}
+		}
 		defaultSchema = database.DatabaseName
 	case storepb.Engine_MSSQL:
 		md, ok := driver.(*mssqldriver.Driver)
