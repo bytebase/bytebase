@@ -6,8 +6,10 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
-	tsql "github.com/bytebase/tsql-parser"
+	parser "github.com/bytebase/tsql-parser"
+	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -16,8 +18,7 @@ import (
 const (
 	// The default schema is 'dbo' for MSSQL.
 	// TODO(zp): We should support default schema in the future.
-	defaultSchema    = "dbo"
-	maxMixedDMLCount = 5
+	defaultSchema = "dbo"
 )
 
 var (
@@ -48,14 +49,27 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 	}
 	title := string(ctx.Rule.Type)
 
-	if !advisor.DatabaseExists(ctx, extractDatabaseName(ctx.PreUpdateBackupDetail.Database)) {
+	if len(ctx.Statements) > common.MaxSheetCheckSize {
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:  level,
+			Title:   title,
+			Content: fmt.Sprintf("The size of statements in the sheet exceeds the limit of %d", common.MaxSheetCheckSize),
+			Code:    advisor.BuiltinPriorBackupCheck.Int32(),
+			StartPosition: &storepb.Position{
+				Line: 1,
+			},
+		})
+	}
+
+	databaseName := extractDatabaseName(ctx.PreUpdateBackupDetail.Database)
+	if !advisor.DatabaseExists(ctx, databaseName) {
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:  level,
 			Title:   title,
 			Content: fmt.Sprintf("Need database %q to do prior backup but it does not exist", ctx.PreUpdateBackupDetail.Database),
 			Code:    advisor.DatabaseNotExists.Int32(),
 			StartPosition: &storepb.Position{
-				Line: 0,
+				Line: 1,
 			},
 		})
 		return adviceList, nil
@@ -76,202 +90,227 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 		})
 	}
 
-	if len(checker.updateStatements)+len(checker.deleteStatements) > maxMixedDMLCount && !updateForOneTableWithUnique(ctx.DBSchema, checker) {
-		adviceList = append(adviceList, &storepb.Advice{
-			Status:  level,
-			Title:   title,
-			Content: fmt.Sprintf("Prior backup is feasible only with up to %d statements that are either UPDATE or DELETE, or if all UPDATEs target the same table with a PRIMARY or UNIQUE KEY in the WHERE clause", maxMixedDMLCount),
-			Code:    int32(advisor.BuiltinPriorBackupCheck),
-			StartPosition: &storepb.Position{
-				Line: 0,
-			},
-		})
+	statementInfoList, err := prepareTransformation(ctx.DBSchema.Name, ctx.Statements)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to prepare transformation")
+	}
+
+	groupByTable := make(map[string][]statementInfo)
+	for _, item := range statementInfoList {
+		key := fmt.Sprintf("%s.%s.%s", item.table.Database, item.table.Schema, item.table.Table)
+		groupByTable[key] = append(groupByTable[key], item)
+	}
+
+	// Check if the statement type is the same for all statements on the same table.
+	for key, list := range groupByTable {
+		statementType := StatementTypeUnknown
+		for _, item := range list {
+			if statementType == StatementTypeUnknown {
+				statementType = item.table.StatementType
+			}
+			if statementType != item.table.StatementType {
+				adviceList = append(adviceList, &storepb.Advice{
+					Status:  level,
+					Title:   title,
+					Content: fmt.Sprintf("The statement type is not the same for all statements on the same table %q", key),
+					Code:    advisor.BuiltinPriorBackupCheck.Int32(),
+					StartPosition: &storepb.Position{
+						Line: 1,
+					},
+				})
+				break
+			}
+		}
 	}
 
 	return adviceList, nil
 }
 
-type tableRef struct {
-	database string
-	schema   string
-	table    string
+type StatementType int
+
+const (
+	StatementTypeUnknown StatementType = iota
+	StatementTypeUpdate
+	StatementTypeInsert
+	StatementTypeDelete
+)
+
+type TableReference struct {
+	Database      string
+	Schema        string
+	Table         string
+	Alias         string
+	StatementType StatementType
 }
 
-func updateForOneTableWithUnique(dbSchema *storepb.DatabaseSchemaMetadata, checker *statementDisallowMixDMLChecker) bool {
-	if len(checker.deleteStatements) > 0 {
-		return false
-	}
-
-	var table *tableRef
-	for _, update := range checker.updateStatements {
-		extractor := &tableExtractor{
-			databaseName: dbSchema.Name,
-		}
-		antlr.ParseTreeWalkerDefault.Walk(extractor, update)
-
-		if table == nil {
-			table = extractor.table
-		} else if !equalTable(table, extractor.table) {
-			return false
-		}
-		if !hasUniqueInWhereClause(dbSchema, table, update) {
-			return false
-		}
-	}
-
-	return true
+type statementInfo struct {
+	offset    int
+	statement string
+	tree      antlr.ParserRuleContext
+	table     *TableReference
 }
 
-func hasUniqueInWhereClause(dbSchema *storepb.DatabaseSchemaMetadata, table *tableRef, update *tsql.Update_statementContext) bool {
-	if update.Search_condition() == nil {
-		return false
+func prepareTransformation(databaseName, statement string) ([]statementInfo, error) {
+	parseResult, err := tsqlparser.ParseTSQL(statement)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse statement")
 	}
 
-	if dbSchema == nil {
-		return false
+	extractor := &dmlExtractor{
+		databaseName: databaseName,
 	}
-
-	list := extractColumnsInEqualCondition(dbSchema.Name, table, update.Search_condition())
-	columnMap := make(map[string]bool)
-	for _, column := range list {
-		columnMap[strings.ToLower(column)] = true
-	}
-
-	for _, schema := range dbSchema.Schemas {
-		if !strings.EqualFold(schema.Name, table.schema) {
-			continue
-		}
-		for _, t := range schema.Tables {
-			if !strings.EqualFold(t.Name, table.table) {
-				continue
-			}
-			for _, index := range t.Indexes {
-				if index.Unique || index.Primary {
-					exists := true
-					for _, column := range index.Expressions {
-						if !columnMap[strings.ToLower(column)] {
-							exists = false
-							break
-						}
-					}
-					if exists {
-						return true
-					}
-				}
-			}
-		}
-	}
-
-	return false
+	antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
+	return extractor.dmls, nil
 }
 
-func extractColumnsInEqualCondition(database string, table *tableRef, ctx antlr.ParserRuleContext) []string {
+type dmlExtractor struct {
+	*parser.BaseTSqlParserListener
+
+	databaseName string
+	dmls         []statementInfo
+	offset       int
+}
+
+func IsTopLevel(ctx antlr.Tree) bool {
 	if ctx == nil {
-		return nil
-	}
-
-	switch n := ctx.(type) {
-	case *tsql.Search_conditionContext:
-		switch {
-		case n.AND() != nil:
-			return append(extractColumnsInEqualCondition(database, table, n.Search_condition(0)), extractColumnsInEqualCondition(database, table, n.Search_condition(1))...)
-		case n.OR() != nil:
-			return nil
-		case len(n.AllNOT()) > 0:
-			return nil
-		default:
-			if n.Predicate() != nil {
-				return extractColumnsInEqualCondition(database, table, n.Predicate())
-			}
-			if len(n.AllSearch_condition()) == 1 {
-				return extractColumnsInEqualCondition(database, table, n.Search_condition(0))
-			}
-		}
-	case *tsql.PredicateContext:
-		if n.Comparison_operator() == nil {
-			return nil
-		}
-		if n.Comparison_operator().GetText() != "=" {
-			return nil
-		}
-		if n.Subquery() != nil {
-			return nil
-		}
-		if len(n.AllExpression()) != 2 {
-			return nil
-		}
-		if isConstant(n.Expression(0)) {
-			return extractColumnsInEqualCondition(database, table, n.Expression(1))
-		}
-		if isConstant(n.Expression(1)) {
-			return extractColumnsInEqualCondition(database, table, n.Expression(0))
-		}
-	case *tsql.ExpressionContext:
-		return extractColumnsInEqualCondition(database, table, n.Full_column_name())
-	case *tsql.Full_column_nameContext:
-		if n.Full_table_name() != nil {
-			databaseName, schemaName, tableName := extractFullTableName(n.Full_table_name(), database, defaultSchema)
-			if !equalTable(table, &tableRef{
-				database: databaseName,
-				schema:   schemaName,
-				table:    tableName,
-			}) {
-				return nil
-			}
-			if n.Id_() == nil {
-				return nil
-			}
-			_, columnName := tsqlparser.NormalizeTSQLIdentifier(n.Id_())
-			return []string{columnName}
-		}
-	}
-
-	return nil
-}
-
-func isConstant(ctx antlr.ParserRuleContext) bool {
-	if ctx == nil {
-		return false
-	}
-	switch n := ctx.(type) {
-	case *tsql.ExpressionContext:
-		return isConstant(n.Primitive_expression())
-	case *tsql.Primitive_expressionContext:
-		return isConstant(n.Primitive_constant())
-	case *tsql.Primitive_constantContext:
 		return true
-	case *tsql.Unary_operator_expressionContext:
-		return isConstant(n.Expression())
 	}
-	return false
-}
-
-func equalTable(a, b *tableRef) bool {
-	if a == nil || b == nil {
+	switch ctx := ctx.(type) {
+	case *parser.Dml_clauseContext,
+		*parser.Sql_clausesContext,
+		*parser.Batch_without_goContext:
+		return IsTopLevel(ctx.GetParent())
+	case *parser.Tsql_fileContext:
+		return true
+	default:
 		return false
 	}
+}
 
-	return a.database == b.database && a.schema == b.schema && a.table == b.table
+func (e *dmlExtractor) ExitBatch(ctx *parser.Batch_without_goContext) {
+	if len(ctx.AllSql_clauses()) == 0 {
+		e.offset++
+	}
+}
+
+func (e *dmlExtractor) ExitSql_clauses(ctx *parser.Sql_clausesContext) {
+	if IsTopLevel(ctx.GetParent()) {
+		e.offset++
+	}
+}
+
+func (e *dmlExtractor) EnterUpdate_statement(ctx *parser.Update_statementContext) {
+	if IsTopLevel(ctx.GetParent()) && ctx.Ddl_object() != nil {
+		extractor := &tableExtractor{
+			databaseName: e.databaseName,
+		}
+		antlr.ParseTreeWalkerDefault.Walk(extractor, ctx.Ddl_object())
+
+		table := extractor.table
+		if extractor.table != nil && ctx.Table_sources() != nil && table.Database == e.databaseName && table.Schema == defaultSchema {
+			table = extractPhysicalTable(ctx.Table_sources(), extractor.table)
+		}
+		table.StatementType = StatementTypeUpdate
+		e.dmls = append(e.dmls, statementInfo{
+			offset:    e.offset,
+			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
+			tree:      ctx,
+			table:     table,
+		})
+	}
+}
+
+func (e *dmlExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext) {
+	if IsTopLevel(ctx.GetParent()) {
+		extractor := &tableExtractor{
+			databaseName: e.databaseName,
+		}
+		antlr.ParseTreeWalkerDefault.Walk(extractor, ctx.Delete_statement_from())
+
+		table := extractor.table
+		if extractor.table != nil && ctx.From_table_sources() != nil && table.Database == e.databaseName && table.Schema == defaultSchema {
+			table = extractPhysicalTable(ctx.From_table_sources().Table_sources(), extractor.table)
+		}
+		table.StatementType = StatementTypeDelete
+		e.dmls = append(e.dmls, statementInfo{
+			offset:    e.offset,
+			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
+			tree:      ctx,
+			table:     table,
+		})
+	}
+}
+
+func extractPhysicalTable(ctx antlr.Tree, table *TableReference) *TableReference {
+	if ctx == nil || table == nil {
+		return table
+	}
+
+	extractor := &physicalTableExtractor{
+		table: table,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(extractor, ctx)
+	if extractor.result != nil {
+		return extractor.result
+	}
+	return table
+}
+
+type physicalTableExtractor struct {
+	*parser.BaseTSqlParserListener
+
+	table  *TableReference
+	result *TableReference
+}
+
+func (e *physicalTableExtractor) EnterTable_source_item(ctx *parser.Table_source_itemContext) {
+	if ctx.As_table_alias() != nil && ctx.Full_table_name() != nil {
+		alias := unquote(ctx.As_table_alias().Table_alias().GetText())
+		if alias == e.table.Table {
+			databaseName, schemaName, tableName := extractFullTableName(ctx.Full_table_name(), e.table.Database, e.table.Schema)
+			e.result = &TableReference{
+				Database:      databaseName,
+				Schema:        schemaName,
+				Table:         tableName,
+				Alias:         alias,
+				StatementType: e.table.StatementType,
+			}
+		}
+	}
+}
+
+func unquote(name string) string {
+	if len(name) < 2 {
+		return name
+	}
+	if name[0] == '[' && name[len(name)-1] == ']' {
+		return name[1 : len(name)-1]
+	}
+
+	if len(name) > 3 && name[0] == 'N' && name[1] == '\'' && name[len(name)-1] == '\'' {
+		return name[2 : len(name)-1]
+	}
+	return name
 }
 
 type tableExtractor struct {
-	*tsql.BaseTSqlParserListener
+	*parser.BaseTSqlParserListener
 
 	databaseName string
-	table        *tableRef
+	table        *TableReference
 }
 
-func (e *tableExtractor) EnterFull_table_name(ctx *tsql.Full_table_nameContext) {
+func (e *tableExtractor) EnterFull_table_name(ctx *parser.Full_table_nameContext) {
 	databaseName, schemaName, tableName := extractFullTableName(ctx, e.databaseName, defaultSchema)
-	table := tableRef{
-		database: databaseName,
-		schema:   schemaName,
-		table:    tableName,
+	table := TableReference{
+		Database: databaseName,
+		Schema:   schemaName,
+		Table:    tableName,
 	}
 	e.table = &table
 }
 
-func extractFullTableName(ctx tsql.IFull_table_nameContext, defaultDatabase string, defaultSchema string) (string, string, string) {
+func extractFullTableName(ctx parser.IFull_table_nameContext, defaultDatabase string, defaultSchema string) (string, string, string) {
 	name, err := tsqlparser.NormalizeFullTableName(ctx)
 	if err != nil {
 		slog.Debug("Failed to normalize full table name", "error", err)
@@ -289,24 +328,24 @@ func extractFullTableName(ctx tsql.IFull_table_nameContext, defaultDatabase stri
 }
 
 type statementDisallowMixDMLChecker struct {
-	*tsql.BaseTSqlParserListener
+	*parser.BaseTSqlParserListener
 
-	updateStatements []*tsql.Update_statementContext
-	deleteStatements []*tsql.Delete_statementContext
+	updateStatements []*parser.Update_statementContext
+	deleteStatements []*parser.Delete_statementContext
 	hasDDL           bool
 }
 
-func (l *statementDisallowMixDMLChecker) EnterDdl_clause(_ *tsql.Ddl_clauseContext) {
+func (l *statementDisallowMixDMLChecker) EnterDdl_clause(_ *parser.Ddl_clauseContext) {
 	l.hasDDL = true
 }
 
-func (l *statementDisallowMixDMLChecker) EnterUpdate_statement(ctx *tsql.Update_statementContext) {
+func (l *statementDisallowMixDMLChecker) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 	if tsqlparser.IsTopLevel(ctx.GetParent()) {
 		l.updateStatements = append(l.updateStatements, ctx)
 	}
 }
 
-func (l *statementDisallowMixDMLChecker) EnterDelete_statement(ctx *tsql.Delete_statementContext) {
+func (l *statementDisallowMixDMLChecker) EnterDelete_statement(ctx *parser.Delete_statementContext) {
 	if tsqlparser.IsTopLevel(ctx.GetParent()) {
 		l.deleteStatements = append(l.deleteStatements, ctx)
 	}
