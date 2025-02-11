@@ -26,8 +26,8 @@ const (
 // QueryHistoryMessage is the API message for query history.
 type QueryHistoryMessage struct {
 	// Output only fields
-	UID         int
-	CreatedTime time.Time
+	UID       int
+	CreatedAt time.Time
 
 	// Related fields
 	CreatorUID int
@@ -40,8 +40,6 @@ type QueryHistoryMessage struct {
 	Payload   *storepb.QueryHistoryPayload
 	// Database is the database resource name, like instances/{instance}/databases/{database}
 	Database string
-
-	createdTs int64
 }
 
 // FindQueryHistoryMessage is the API message for finding query histories.
@@ -83,7 +81,7 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING
 			id,
-			created_ts
+			created_at
 	`,
 		create.CreatorUID,
 		create.ProjectID,
@@ -93,15 +91,13 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 		payload,
 	).Scan(
 		&create.UID,
-		&create.createdTs,
+		&create.CreatedAt,
 	); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
-
-	create.CreatedTime = time.Unix(create.createdTs, 0)
 
 	return create, nil
 }
@@ -135,7 +131,7 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 		SELECT
 			query_history.id,
 			query_history.creator_id,
-			query_history.created_ts,
+			query_history.created_at,
 			query_history.project_id,
 			query_history.database,
 			query_history.statement,
@@ -143,7 +139,7 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 			query_history.payload
 		FROM query_history
 		WHERE %s
-		ORDER BY created_ts DESC
+		ORDER BY id DESC
 	`, strings.Join(where, " AND "))
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
@@ -165,7 +161,7 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 		if err := rows.Scan(
 			&queryHistory.UID,
 			&queryHistory.CreatorUID,
-			&queryHistory.createdTs,
+			&queryHistory.CreatedAt,
 			&queryHistory.ProjectID,
 			&queryHistory.Database,
 			&queryHistory.Statement,
@@ -180,7 +176,6 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 			return nil, err
 		}
 		queryHistory.Payload = &payload
-		queryHistory.CreatedTime = time.Unix(queryHistory.createdTs, 0)
 
 		queryHistories = append(queryHistories, queryHistory)
 	}

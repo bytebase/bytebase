@@ -516,7 +516,7 @@ func convertToReleases(ctx context.Context, s *store.Store, releases []*store.Re
 func convertToRelease(ctx context.Context, s *store.Store, release *store.ReleaseMessage) (*v1pb.Release, error) {
 	r := &v1pb.Release{
 		Title:      release.Payload.Title,
-		CreateTime: timestamppb.New(release.CreatedTime),
+		CreateTime: timestamppb.New(release.At),
 		VcsSource:  convertToReleaseVcsSource(release.Payload.VcsSource),
 		State:      convertDeletedToState(release.Deleted),
 	}

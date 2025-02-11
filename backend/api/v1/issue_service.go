@@ -162,19 +162,17 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "failed to parse create_time %s, err: %v", spec.Value, err)
 			}
-			ts := t.Unix()
 			if spec.Operator == ComparatorTypeGreaterEqual {
-				issueFind.CreatedTsAfter = &ts
+				issueFind.CreatedAtAfter = &t
 			} else {
-				issueFind.CreatedTsBefore = &ts
+				issueFind.CreatedAtBefore = &t
 			}
 		case "create_time_after":
 			t, err := time.Parse(time.RFC3339, spec.Value)
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "failed to parse create_time_after %s, err: %v", spec.Value, err)
 			}
-			ts := t.Unix()
-			issueFind.CreatedTsAfter = &ts
+			issueFind.CreatedAtAfter = &t
 		case "type":
 			if spec.Operator != ComparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "type" filter`)

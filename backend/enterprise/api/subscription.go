@@ -9,7 +9,7 @@ import (
 // SubscriptionPatch is the API message for update the subscription.
 type SubscriptionPatch struct {
 	UpdaterID int
-	License   string `jsonapi:"attr,license"`
+	License   string
 }
 
 // Subscription is the API message for subscription.

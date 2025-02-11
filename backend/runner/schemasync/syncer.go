@@ -409,14 +409,14 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 	}
 
 	syncStatus := api.OK
-	ts := time.Now().Unix()
+	ts := time.Now()
 	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		InstanceID:           database.InstanceID,
-		DatabaseName:         database.DatabaseName,
-		SyncState:            &syncStatus,
-		SuccessfulSyncTimeTs: &ts,
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+		SyncState:    &syncStatus,
+		SyncAt:       &ts,
 		MetadataUpsert: &storepb.DatabaseMetadata{
-			LastSyncTime:    timestamppb.New(time.Unix(ts, 0)),
+			LastSyncTime:    timestamppb.New(ts),
 			BackupAvailable: s.hasBackupSchema(ctx, instance, databaseMetadata),
 		},
 	}); err != nil {
@@ -527,14 +527,14 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	}
 
 	syncStatus := api.OK
-	ts := time.Now().Unix()
+	ts := time.Now()
 	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		InstanceID:           database.InstanceID,
-		DatabaseName:         database.DatabaseName,
-		SyncState:            &syncStatus,
-		SuccessfulSyncTimeTs: &ts,
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+		SyncState:    &syncStatus,
+		SyncAt:       &ts,
 		MetadataUpsert: &storepb.DatabaseMetadata{
-			LastSyncTime:    timestamppb.New(time.Unix(ts, 0)),
+			LastSyncTime:    timestamppb.New(ts),
 			BackupAvailable: s.hasBackupSchema(ctx, instance, databaseMetadata),
 		},
 	}); err != nil {

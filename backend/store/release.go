@@ -20,10 +20,10 @@ type ReleaseMessage struct {
 	Payload    *storepb.ReleasePayload
 
 	// output only
-	UID         int64
-	Deleted     bool
-	CreatorUID  int
-	CreatedTime time.Time
+	UID        int64
+	Deleted    bool
+	CreatorUID int
+	At         time.Time
 }
 
 type FindReleaseMessage struct {
@@ -81,7 +81,7 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 
 	release.UID = id
 	release.CreatorUID = creatorUID
-	release.CreatedTime = createdTime
+	release.At = createdTime
 
 	return release, nil
 }
@@ -159,7 +159,7 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 			&rowStatus,
 			&r.ProjectUID,
 			&r.CreatorUID,
-			&r.CreatedTime,
+			&r.At,
 			&payload,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan rows")

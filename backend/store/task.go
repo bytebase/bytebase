@@ -8,6 +8,7 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
@@ -32,7 +33,7 @@ type TaskMessage struct {
 	Name              string
 	Type              api.TaskType
 	Payload           string
-	EarliestAllowedTs int64
+	EarliestAllowedAt *time.Time
 	DependsOn         []int
 
 	DatabaseName string
@@ -118,7 +119,7 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 			status,
 			type,
 			payload,
-			earliest_allowed_ts
+			earliest_allowed_at
 		)
 		VALUES
     `)
@@ -134,13 +135,13 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 			create.Name,
 			create.Type,
 			create.Payload,
-			create.EarliestAllowedTs,
+			create.EarliestAllowedAt,
 		)
 		const count = 8
 		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, 'PENDING_APPROVAL', $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, i*count+7, i*count+8))
 	}
 	_, _ = query.WriteString(strings.Join(queryValues, ","))
-	_, _ = query.WriteString(` RETURNING id, pipeline_id, stage_id, instance_id, database_id, name, type, payload, earliest_allowed_ts`)
+	_, _ = query.WriteString(` RETURNING id, pipeline_id, stage_id, instance_id, database_id, name, type, payload, earliest_allowed_at`)
 
 	var tasks []*TaskMessage
 	rows, err := tx.QueryContext(ctx, query.String(), values...)
@@ -151,6 +152,7 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 	for rows.Next() {
 		task := &TaskMessage{}
 		var databaseID sql.NullInt32
+		var earliestAllowedAt sql.NullTime
 		if err := rows.Scan(
 			&task.ID,
 			&task.PipelineID,
@@ -160,13 +162,16 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 			&task.Name,
 			&task.Type,
 			&task.Payload,
-			&task.EarliestAllowedTs,
+			&earliestAllowedAt,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan rows")
 		}
 		if databaseID.Valid {
 			val := int(databaseID.Int32)
 			task.DatabaseID = &val
+		}
+		if earliestAllowedAt.Valid {
+			task.EarliestAllowedAt = &earliestAllowedAt.Time
 		}
 		tasks = append(tasks, task)
 	}
@@ -254,7 +259,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			latest_task_run.status AS latest_task_run_status,
 			task.type,
 			task.payload,
-			task.earliest_allowed_ts,
+			task.earliest_allowed_at,
 			(SELECT ARRAY_AGG (task_dag.from_task_id) FROM task_dag WHERE task_dag.to_task_id = task.id) blocked_by
 		FROM task
 		LEFT JOIN LATERAL (
@@ -280,6 +285,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 	var tasks []*TaskMessage
 	for rows.Next() {
 		task := &TaskMessage{}
+		var earliestAllowedAt sql.NullTime
 		var dependsOn pgtype.Int4Array
 		if err := rows.Scan(
 			&task.ID,
@@ -291,13 +297,16 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			&task.LatestTaskRunStatus,
 			&task.Type,
 			&task.Payload,
-			&task.EarliestAllowedTs,
+			&earliestAllowedAt,
 			&dependsOn,
 		); err != nil {
 			return nil, err
 		}
 		if err := dependsOn.AssignTo(&task.DependsOn); err != nil {
 			return nil, err
+		}
+		if earliestAllowedAt.Valid {
+			task.EarliestAllowedAt = &earliestAllowedAt.Time
 		}
 		tasks = append(tasks, task)
 	}
@@ -358,7 +367,7 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, payload)
 	}
 	if v := patch.EarliestAllowedTs; v != nil {
-		set, args = append(set, fmt.Sprintf("earliest_allowed_ts = $%d", len(args)+1)), append(args, *v)
+		set, args = append(set, fmt.Sprintf("earliest_allowed_at = $%d", len(args)+1)), append(args, *v)
 	}
 	args = append(args, patch.ID)
 
@@ -369,12 +378,12 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 	defer tx.Rollback()
 
 	task := &TaskMessage{}
-	// Execute update query with RETURNING.
+	var earliestAllowedAt sql.NullTime
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, pipeline_id, stage_id, instance_id, database_id, name, type, payload, earliest_allowed_ts
+		RETURNING id, pipeline_id, stage_id, instance_id, database_id, name, type, payload, earliest_allowed_at
 	`, len(args)),
 		args...,
 	).Scan(
@@ -386,7 +395,7 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 		&task.Name,
 		&task.Type,
 		&task.Payload,
-		&task.EarliestAllowedTs,
+		&earliestAllowedAt,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("task not found with ID %d", patch.ID)}
@@ -394,6 +403,9 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 		return nil, err
 	}
 
+	if earliestAllowedAt.Valid {
+		task.EarliestAllowedAt = &earliestAllowedAt.Time
+	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}

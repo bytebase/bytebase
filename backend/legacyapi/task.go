@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -137,13 +138,14 @@ type TaskPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	DatabaseID        *int
-	EarliestAllowedTs *int64 `jsonapi:"attr,earliestAllowedTs"`
+	DatabaseID              *int
+	EarliestAllowedTs       *time.Time
+	UpdateEarliestAllowedTs bool
 
 	// Payload and others cannot be set at the same time.
 	Payload *string
 
-	SheetID               *int `jsonapi:"attr,sheetId"`
+	SheetID               *int
 	SchemaVersion         *string
 	ExportFormat          *storepb.ExportFormat
 	ExportPassword        *string
