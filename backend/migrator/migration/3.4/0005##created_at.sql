@@ -1,5 +1,4 @@
 ALTER TABLE task_run_log RENAME COLUMN created_ts TO created_at;
-DROP INDEX IF EXISTS idx_revision_unique_database_id_version_deleted_ts_null;
 ALTER TABLE revision RENAME COLUMN created_ts TO created_at;
 ALTER TABLE revision RENAME COLUMN deleted_ts TO deleted_at;
 ALTER INDEX idx_revision_unique_database_id_version_deleted_ts_null RENAME TO idx_revision_unique_database_id_version_deleted_at_null;
