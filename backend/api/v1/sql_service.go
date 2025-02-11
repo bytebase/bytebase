@@ -937,7 +937,7 @@ func (s *SQLService) convertToV1QueryHistory(ctx context.Context, history *store
 		Error:      history.Payload.Error,
 		Database:   history.Database,
 		Creator:    common.FormatUserEmail(user.Email),
-		CreateTime: timestamppb.New(history.CreatedTime),
+		CreateTime: timestamppb.New(history.CreatedAt),
 		Duration:   history.Payload.Duration,
 		Type:       historyType,
 	}, nil

@@ -182,7 +182,7 @@ func convertToAuditLog(ctx context.Context, stores *store.Store, l *store.AuditL
 	}
 	return &v1pb.AuditLog{
 		Name:        fmt.Sprintf("%s/%s%d", l.Payload.Parent, common.AuditLogPrefix, l.ID),
-		CreateTime:  timestamppb.New(time.Unix(l.CreatedTs, 0)),
+		CreateTime:  timestamppb.New(l.CreatedAt),
 		User:        user,
 		Method:      l.Payload.Method,
 		Severity:    convertToAuditLogSeverity(l.Payload.Severity),
@@ -316,12 +316,11 @@ func (s *AuditLogService) getSearchAuditLogsFilter(ctx context.Context, filter s
 				if err != nil {
 					return "", errors.Errorf("failed to parse time %v, error: %v", value, err)
 				}
-				ts := t.Unix()
-				positionalArgs = append(positionalArgs, ts)
+				positionalArgs = append(positionalArgs, t)
 				if functionName == "_>=_" {
-					return fmt.Sprintf("created_ts >= $%d", len(positionalArgs)), nil
+					return fmt.Sprintf("created_at >= $%d", len(positionalArgs)), nil
 				}
-				return fmt.Sprintf("created_ts <= $%d", len(positionalArgs)), nil
+				return fmt.Sprintf("created_at <= $%d", len(positionalArgs)), nil
 
 			default:
 				return "", errors.Errorf("unexpected function %v", functionName)
@@ -353,7 +352,7 @@ func getSearchAuditLogsOrderByKeys(orderBy string) ([]store.OrderByKey, error) {
 	for _, orderByKey := range keys {
 		key := ""
 		if orderByKey.key == "create_time" {
-			key = "created_ts"
+			key = "created_at"
 		}
 		if key == "" {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid order by key %v", orderByKey.key)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -24,7 +25,7 @@ func (m AuditLogMethod) String() string {
 
 type AuditLog struct {
 	ID        int
-	CreatedTs int64
+	CreatedAt time.Time
 	Payload   *storepb.AuditLog
 }
 
@@ -71,7 +72,7 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 	query := fmt.Sprintf(`
 		SELECT
 			id,
-			created_ts,
+			created_at,
 			payload
 		FROM audit_log
 		WHERE %s`, strings.Join(where, " AND "))
@@ -83,7 +84,7 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 		}
 		query += fmt.Sprintf(" ORDER BY %s", strings.Join(orderBy, ", "))
 	} else {
-		query += " ORDER BY created_ts DESC"
+		query += " ORDER BY id DESC"
 	}
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
@@ -107,7 +108,7 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 
 		if err := rows.Scan(
 			&l.ID,
-			&l.CreatedTs,
+			&l.CreatedAt,
 			&payload,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")

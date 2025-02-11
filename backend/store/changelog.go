@@ -36,8 +36,8 @@ type ChangelogMessage struct {
 	Status             ChangelogStatus
 
 	// output only
-	UID         int64
-	CreatedTime time.Time
+	UID       int64
+	CreatedAt time.Time
 
 	PrevSchema    string
 	Schema        string
@@ -245,7 +245,7 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 
 		if err := rows.Scan(
 			&c.UID,
-			&c.CreatedTime,
+			&c.CreatedAt,
 			&c.DatabaseUID,
 			&c.Status,
 			&c.PrevSyncHistoryUID,

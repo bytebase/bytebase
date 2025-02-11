@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -52,8 +51,8 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 		ApprovalFindingError: "",
 		Subscribers:          nil,
 		Creator:              common.FormatUserEmail(issue.Creator.Email),
-		CreateTime:           timestamppb.New(issue.CreatedTime),
-		UpdateTime:           timestamppb.New(issue.UpdatedTime),
+		CreateTime:           timestamppb.New(issue.CreatedAt),
+		UpdateTime:           timestamppb.New(issue.UpdatedAt),
 		Plan:                 "",
 		Rollout:              "",
 		GrantRequest:         convertedGrantRequest,
@@ -340,8 +339,8 @@ func convertToIssueComments(issueName string, issueComments []*store.IssueCommen
 func convertToIssueComment(issueName string, ic *store.IssueCommentMessage) *v1pb.IssueComment {
 	r := &v1pb.IssueComment{
 		Comment:    ic.Payload.Comment,
-		CreateTime: timestamppb.New(time.Unix(ic.CreatedTs, 0)),
-		UpdateTime: timestamppb.New(time.Unix(ic.UpdatedTs, 0)),
+		CreateTime: timestamppb.New(ic.CreatedAt),
+		UpdateTime: timestamppb.New(ic.UpdatedAt),
 		Name:       fmt.Sprintf("%s/%s%d", issueName, common.IssueCommentNamePrefix, ic.UID),
 		Creator:    common.FormatUserEmail(ic.Creator.Email),
 	}
