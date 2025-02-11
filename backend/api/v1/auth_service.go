@@ -168,12 +168,8 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		}
 	}
 
-	var allowedDomains []string
-	if setting.EnforceIdentityDomain {
-		allowedDomains = setting.Domains
-	}
-	if err := validateEmailWithDomains(request.User.Email, allowedDomains, principalType == api.ServiceAccount); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", request.User.Email, err)
+	if err := s.validateEmailWithDomains(ctx, request.User.Email, principalType == api.ServiceAccount); err != nil {
+		return nil, err
 	}
 	existingUser, err := s.store.GetUserByEmail(ctx, request.User.Email)
 	if err != nil {
@@ -317,11 +313,6 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		}
 	}
 
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find workspace setting, error: %v", err)
-	}
-
 	var passwordPatch *string
 	patch := &store.UpdateUserMessage{}
 	for _, path := range request.UpdateMask.Paths {
@@ -330,12 +321,8 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			if user.Profile.Source != "" {
 				return nil, status.Errorf(codes.InvalidArgument, "cannot change email for external user")
 			}
-			var allowedDomains []string
-			if setting.EnforceIdentityDomain {
-				allowedDomains = setting.Domains
-			}
-			if err := validateEmailWithDomains(request.User.Email, allowedDomains, user.Type == api.ServiceAccount); err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", request.User.Email, err)
+			if err := s.validateEmailWithDomains(ctx, request.User.Email, user.Type == api.ServiceAccount); err != nil {
+				return nil, err
 			}
 			existedUser, err := s.store.GetUserByEmail(ctx, request.User.Email)
 			if err != nil {
@@ -729,12 +716,8 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 			return nil, status.Errorf(codes.PermissionDenied, "password signin is disallowed")
 		}
 		// Check domain restriction for end users.
-		var allowedDomains []string
-		if setting.EnforceIdentityDomain {
-			allowedDomains = setting.Domains
-		}
-		if err := validateEmailWithDomains(loginUser.Email, allowedDomains, false); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", loginUser.Email, err)
+		if err := s.validateEmailWithDomains(ctx, loginUser.Email, false); err != nil {
+			return nil, err
 		}
 	}
 
@@ -947,10 +930,6 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 
 	// The userinfo's email comes from identity provider, it has to be converted to lower-case.
 	email := strings.ToLower(userInfo.Identifier)
-	var allowedDomains []string
-	if setting.EnforceIdentityDomain {
-		allowedDomains = setting.Domains
-	}
 	if err := validateEmail(email); err != nil {
 		// If the email is invalid, we will try to use the domain and identifier to construct the email.
 		domain := extractDomain(idp.Domain)
@@ -961,8 +940,8 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		}
 	}
 	// If the email is still invalid, we will return an error.
-	if err := validateEmailWithDomains(email, allowedDomains, false /* isServiceAccount */); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", userInfo.Identifier, err)
+	if err := s.validateEmailWithDomains(ctx, email, false /* isServiceAccount */); err != nil {
+		return nil, err
 	}
 
 	user, err := s.store.GetUserByEmail(ctx, email)
@@ -1038,6 +1017,26 @@ func validateEmail(email string) error {
 	}
 	if _, err := mail.ParseAddress(email); err != nil {
 		return err
+	}
+	return nil
+}
+
+func (s *AuthService) validateEmailWithDomains(ctx context.Context, email string, isServiceAccount bool) error {
+	if s.licenseService.IsFeatureEnabled(api.FeatureDomainRestriction) != nil {
+		// feature not enabled, skip validation.
+		return nil
+	}
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to find workspace setting, error: %v", err)
+	}
+
+	var allowedDomains []string
+	if setting.EnforceIdentityDomain {
+		allowedDomains = setting.Domains
+	}
+	if err := validateEmailWithDomains(email, allowedDomains, isServiceAccount); err != nil {
+		return status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", email, err)
 	}
 	return nil
 }

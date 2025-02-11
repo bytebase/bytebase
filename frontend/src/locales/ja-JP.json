@@ -668,7 +668,6 @@
       "algorithms": {
         "add": "アルゴリズムを追加",
         "edit": "アルゴリズムを編集",
-        "default": "デフォルト",
         "table": {
           "masking-type": "アルゴリズムの種類"
         },

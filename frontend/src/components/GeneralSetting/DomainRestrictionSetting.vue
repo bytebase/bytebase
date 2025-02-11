@@ -66,6 +66,7 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { FeatureBadge } from "../FeatureGuard";
 
 const getInitialState = (): LocalState => {
   const defaultState: LocalState = {

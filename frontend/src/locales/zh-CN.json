@@ -668,7 +668,6 @@
       "algorithms": {
         "add": "添加算法",
         "edit": "编辑算法",
-        "default": "默认",
         "table": {
           "masking-type": "算法类型"
         },
