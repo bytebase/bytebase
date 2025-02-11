@@ -80,7 +80,7 @@
         </NTooltip>
         <template v-if="!disallowExportQueryData">
           <DataExportButton
-            v-if="allowToExportData"
+            v-if="allowExport"
             size="small"
             :file-type="'zip'"
             :disabled="props.result === null || isEmpty(props.result)"
@@ -157,13 +157,6 @@
   <template v-else-if="viewMode === 'EMPTY'">
     <EmptyView />
   </template>
-  <template v-else-if="viewMode === 'ERROR'">
-    <ErrorView
-      :error="result.error"
-      :execute-params="params"
-      :result-set="sqlResultSet"
-    />
-  </template>
 </template>
 
 <script lang="ts" setup>
@@ -208,11 +201,7 @@ import {
   useStorageStore,
 } from "@/store";
 import { useExportData } from "@/store/modules/export";
-import type {
-  ComposedDatabase,
-  SQLEditorQueryParams,
-  SQLResultSetV1,
-} from "@/types";
+import type { ComposedDatabase, SQLEditorQueryParams } from "@/types";
 import { isValidDatabaseName, isValidInstanceName } from "@/types";
 import { ExportFormat } from "@/types/proto/v1/common";
 import { Engine } from "@/types/proto/v1/common";
@@ -256,9 +245,9 @@ const storedPageSize = useLocalStorage<number>(
 const props = defineProps<{
   params: SQLEditorQueryParams;
   database?: ComposedDatabase;
-  sqlResultSet: SQLResultSetV1;
   result: QueryResult;
   setIndex: number;
+  allowExport: boolean;
 }>();
 
 const state = reactive<LocalState>({
@@ -312,10 +301,6 @@ const showSearchFeature = computed(() => {
     return false;
   }
   return instanceV1HasStructuredQueryResult(connectedInstance.value);
-});
-
-const allowToExportData = computed(() => {
-  return props.sqlResultSet?.allowExport || false;
 });
 
 const allowToRequestExportData = computed(() => {
@@ -515,13 +500,14 @@ const showVisualizeButton = computed((): boolean => {
 
 const visualizeExplain = () => {
   try {
-    const { params, sqlResultSet } = props;
-    if (!sqlResultSet) return;
-
+    const { params, result } = props;
     const { statement } = params;
     if (!statement) return;
 
-    const explain = explainFromSQLResultSetV1(sqlResultSet);
+    const lines = result.rows.map((row) =>
+      row.values.map((value) => String(extractSQLRowValuePlain(value)))
+    );
+    const explain = lines.map((line) => line[0]).join("\n");
     if (!explain) return;
 
     const token = createExplainToken(statement, explain);
@@ -534,15 +520,6 @@ const visualizeExplain = () => {
 
 const handleChangePage = (page: number) => {
   table.setPageIndex(page - 1);
-};
-
-const explainFromSQLResultSetV1 = (resultSet: SQLResultSetV1 | undefined) => {
-  if (!resultSet) return "";
-  const lines = resultSet.results[0].rows.map((row) =>
-    row.values.map((value) => String(extractSQLRowValuePlain(value)))
-  );
-  const explain = lines.map((line) => line[0]).join("\n");
-  return explain;
 };
 
 const queryTime = computed(() => {
