@@ -366,8 +366,12 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 		}
 		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, payload)
 	}
-	if v := patch.EarliestAllowedTs; v != nil {
-		set, args = append(set, fmt.Sprintf("earliest_allowed_at = $%d", len(args)+1)), append(args, *v)
+	if patch.UpdateEarliestAllowedTs {
+		if patch.EarliestAllowedTs == nil {
+			set = append(set, "earliest_allowed_at = null")
+		} else {
+			set, args = append(set, fmt.Sprintf("earliest_allowed_at = $%d", len(args)+1)), append(args, *patch.EarliestAllowedTs)
+		}
 	}
 	args = append(args, patch.ID)
 
