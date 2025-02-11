@@ -668,7 +668,6 @@
       "algorithms": {
         "add": "Thêm thuật toán",
         "edit": "Chỉnh sửa thuật toán",
-        "default": "Mặc định",
         "table": {
           "masking-type": "Loại che"
         },
@@ -2707,7 +2706,6 @@
       "files-will-always-be-sorted-and-executed-in-version-order": "Các tệp sẽ luôn được sắp xếp và thực hiện theo thứ tự phiên bản.",
       "cannot-modify-files-after-created": "Bạn không thể sửa đổi tệp sau khi bản phát hành được tạo.",
       "bytebase-will-skip-those-files-has-been-applied-on-target-database": "Bytebase sẽ tự động bỏ qua những file đã được thực thi trên cơ sở dữ liệu đích."
-   
     },
     "usage-description": "Bản phát hành chỉ được sử dụng trong GitOps tùy chỉnh với tích hợp API."
   },

@@ -668,7 +668,6 @@
       "algorithms": {
         "add": "Add algorithm",
         "edit": "Edit algorithm",
-        "default": "Default",
         "table": {
           "masking-type": "Masking Type"
         },

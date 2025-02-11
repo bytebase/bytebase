@@ -282,6 +282,7 @@ planList:
       - type: disallow-signup
       - type: announcement-banner
       - type: external-secret-manager
+      - type: domain-restriction
       # Bespoke
       - type: support
         content: support-sla

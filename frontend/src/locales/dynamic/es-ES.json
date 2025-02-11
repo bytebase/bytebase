@@ -1,251 +1,255 @@
 {
-    "custom-approval": {
-        "approval-flow": {
-            "node": {
-                "group": {
-                    "WORKSPACE_OWNER": "Administrador del espacio de trabajo",
-                    "WORKSPACE_DBA": "DBA",
-                    "PROJECT_OWNER": "Propietario del proyecto",
-                    "PROJECT_MEMBER": "Desarrollador del proyecto"
-                }
-            },
-            "presets": {
-                "owner-dba": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba.",
-                "owner": "El sistema define el proceso de aprobación y solo necesita la aprobación del dueño del proyecto.",
-                "dba": "El sistema define el proceso de aprobación y solo necesita la aprobación del DBA.",
-                "admin": "El sistema define el proceso de aprobación y solo necesita la aprobación del administrador.",
-                "owner-dba-admin": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba y finalmente el administrador lo aprueba."
-            }
-        },
-        "risk-rule": {
-            "template": {
-                "presets": {
-                    "environment-prod-high": "Se considera que el riesgo para el entorno de producción es alto.",
-                    "environment-dev-low": "El valor de riesgo para el entorno de desarrollo se considera bajo.",
-                    "dml-in-environment-prod-10k-rows-high": "En el entorno de producción, si el número de filas a actualizar o eliminar supera los 10000, se considera que el riesgo es alto.",
-                    "create-database-in-environment-prod-moderate": "Crear una base de datos en el entorno de producción se considera un riesgo moderado."
-                }
-            }
+  "custom-approval": {
+    "approval-flow": {
+      "node": {
+        "group": {
+          "WORKSPACE_OWNER": "Administrador del espacio de trabajo",
+          "WORKSPACE_DBA": "DBA",
+          "PROJECT_OWNER": "Propietario del proyecto",
+          "PROJECT_MEMBER": "Desarrollador del proyecto"
         }
+      },
+      "presets": {
+        "owner-dba": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba.",
+        "owner": "El sistema define el proceso de aprobación y solo necesita la aprobación del dueño del proyecto.",
+        "dba": "El sistema define el proceso de aprobación y solo necesita la aprobación del DBA.",
+        "admin": "El sistema define el proceso de aprobación y solo necesita la aprobación del administrador.",
+        "owner-dba-admin": "El sistema define el proceso de aprobación, primero aprueba el dueño del proyecto, luego el DBA lo aprueba y finalmente el administrador lo aprueba."
+      }
     },
-    "activity": {
-        "sentence": {
-            "verb-type-target-by-people": "{verb} {type} {target}",
-            "verb-type-target-by-system-bot": "{type} {target} {verb}",
-            "changed-x-link": "cambiado {name}. \n{link}"
+    "risk-rule": {
+      "template": {
+        "presets": {
+          "environment-prod-high": "Se considera que el riesgo para el entorno de producción es alto.",
+          "environment-dev-low": "El valor de riesgo para el entorno de desarrollo se considera bajo.",
+          "dml-in-environment-prod-10k-rows-high": "En el entorno de producción, si el número de filas a actualizar o eliminar supera los 10000, se considera que el riesgo es alto.",
+          "create-database-in-environment-prod-moderate": "Crear una base de datos en el entorno de producción se considera un riesgo moderado."
         }
-    },
-    "settings": {
-        "sensitive-data": {
-            "semantic-types": {
-                "template": {
-                    "bb-default": {
-                        "title": "Por defecto",
-                        "description": "Tipo predeterminado con enmascaramiento completo",
-                        "algorithm": {
-                            "title": "Máscara completa",
-                            "description": "Todos los valores se enmascararán como \"******\""
-                        }
-                    },
-                    "bb-default-partial": {
-                        "title": "Predeterminado Parcial",
-                        "description": "Tipo parcial predeterminado con enmascaramiento parcial",
-                        "algorithm": {
-                            "title": "Máscara de rango",
-                            "description": "Solo se conservan los datos sin procesar en el medio y se tapa el principio y el final con \"**\".\nPor ejemplo, \"dirección\" se enmascarará como \"**dre**\"."
-                        }
-                    }
-                }
-            }
-        },
-        "general": {
-            "workspace": {
-                "announcement-alert-level": {
-                    "field": {
-                        "info": "Común",
-                        "warning": "Advertencia",
-                        "critical": "Importante"
-                    }
-                }
-            }
-        }
-    },
-    "subscription": {
-        "features": {
-            "bb-feature-external-secret-manager": {
-                "title": "Establecer secreto externo",
-                "desc": "Utilice Vault o una URL personalizada como secreto externo para la contraseña de la base de datos."
-            },
-            "bb-feature-task-schedule-time": {
-                "title": "Establecer horario de tareas",
-                "desc": "Establecer horario de tareas te permite programar una hora específica para ejecutar tus tareas."
-            },
-            "bb-feature-instance-count": {
-                "title": "Límite de cantidad de instancias",
-                "desc": "Has alcanzado el límite máximo de cantidad de instancias. Por favor, actualiza para obtener más cuota de instancias.",
-                "remaining": "Tu cuota total de instancias es de {total}, sólo te quedan {count} instancias.",
-                "runoutof": "Te has quedado sin tu cuota de instancias {total}.",
-                "upgrade": "@:{'subscription.upgrade'} para obtener más cuota de instancias."
-            },
-            "bb-feature-user-count": {
-                "title": "Límite de conteo de usuarios",
-                "desc": "Ha alcanzado el límite máximo de recuento de usuarios. Actualice para obtener una cuota de usuario ilimitada.",
-                "remaining": "Su cuota total de usuarios es {total}, solo quedan {count} usuarios.",
-                "runoutof": "Se ha quedado sin su cuota de usuario {total}.",
-                "upgrade": "@:{'subscription.upgrade'} para obtener una cuota de usuario ilimitada."
-            },
-            "bb-feature-multi-tenancy": {
-                "title": "Modo Lote",
-                "desc": "Cambio por lotes de un grupo de bases de datos de diferentes inquilinos o particiones."
-            },
-            "bb-feature-rollout-policy": {
-                "title": "Política de implementación",
-                "desc": "La política de implementación controla si la tarea de cambio de esquema requiere una implementación manual."
-            },
-            "bb-feature-environment-tier-policy": {
-                "title": "Nivel de entorno",
-                "desc": "Marque el entorno como producción."
-            },
-            "bb-feature-sensitive-data": {
-                "title": "Datos sensibles",
-                "desc": "Marque las columnas de la tabla como datos sensibles y el resultado de la consulta de ellos se mostrará como \"******\"."
-            },
-            "bb-feature-access-control": {
-                "title": "Control de acceso a datos",
-                "desc": "Restringir el acceso de los usuarios a los datos, como prohibir a los usuarios copiar los resultados de consultas de datos."
-            },
-            "bb-feature-lgtm": {
-                "title": "Verificación LGTM",
-                "desc": "Comprueba si la incidencia tiene un comentario \"LGTM\"."
-            },
-            "bb-feature-im-approval": {
-                "title": "Aprobación IM",
-                "desc": "Aprobación de incidencias con integración de IM."
-            },
-            "bb-feature-sql-review": {
-                "title": "Desbloquee más de 100 verificaciones de revisión de SQL",
-                "desc": "Especifique las reglas de linting de SQL para adoptar las mejores prácticas de SQL y hacer cumplir la coherencia del esquema en toda la organización de ingeniería."
-            },
-            "bb-feature-custom-approval": {
-                "title": "Aprobación personalizada",
-                "desc": "Configure el nivel de riesgo y el flujo de aprobación para diferentes tareas."
-            },
-            "bb-feature-vcs-sql-review": {
-                "title": "Revisión de SQL en el flujo de trabajo de GitOps",
-                "desc": "Agregue la integración de revisión de SQL a la tubería del repositorio de VCS. La revisión de SQL se activará en la solicitud de extracción para los archivos SQL modificados."
-            },
-            "bb-feature-rbac": {
-                "title": "Gestión de roles",
-                "desc": "Permite asignar un rol particular (por ejemplo, DBA) a un miembro."
-            },
-            "bb-feature-custom-role": {
-                "title": "Roles personalizados",
-                "desc": "Definición de roles personalizados. \nPuede aplicarlos a los miembros del proyecto y utilizarlos en un flujo de aprobación personalizado."
-            },
-            "bb-feature-watermark": {
-                "title": "Marca de agua",
-                "desc": "Muestra marcas de agua visibles en las páginas, incluyendo el nombre de usuario, ID y correo electrónico."
-            },
-            "bb-feature-audit-log": {
-                "title": "Registro de auditoría",
-                "desc": "Registra y consulta las operaciones realizadas por los usuarios en el espacio de trabajo."
-            },
-            "bb-feature-schema-drift": {
-                "title": "Desviación de esquema",
-                "desc": "Detecte cambios de esquema fuera de banda e informe la desviación del esquema."
-            },
-            "bb-feature-branding": {
-                "title": "Personalización",
-                "desc": "Personaliza el logo."
-            },
-            "bb-feature-online-migration": {
-                "title": "Migración en línea",
-                "desc": "Basado en gh-ost. Para tablas grandes, puede reducir la duración del bloqueo de la tabla de horas a segundos."
-            },
-            "bb-feature-sync-schema-all-versions": {
-                "title": "Sincronización de esquemas de todas las versiones",
-                "desc": "Selecciona cualquier versión de migración arbitraria de la base de datos y sincronízala con la base de datos de destino."
-            },
-            "bb-feature-read-replica-connection": {
-                "title": "Conexión a réplica de lectura",
-                "desc": "Conéctate a una réplica de lectura para obtener una fuente de datos de solo lectura."
-            },
-            "bb-feature-instance-ssh-connection": {
-                "title": "Instancia de Conexión SSH",
-                "desc": "Conéctese a una instancia a través de SSH."
-            },
-            "bb.feature.custom-instance-synchronization": {
-                "title": "Sincronización de instancias personalizadas",
-                "desc": "Personalice el intervalo de escaneo, las conexiones máximas y sincronice bases de datos específicas"
-            },
-            "bb-feature-index-advisor": {
-                "title": "Asesor de índice",
-                "desc": "El asesor de índices puede ayudarle a encontrar los índices que faltan en las consultas lentas."
-            },
-            "bb-feature-sso": {
-                "title": "Inicio de sesión único (SSO)",
-                "desc": "Permite a los usuarios autenticarse de manera segura en varias aplicaciones y sitios web mediante un único conjunto de credenciales."
-            },
-            "bb-feature-2fa": {
-                "title": "Autenticación de dos factores (2FA)",
-                "desc": "La autenticación de dos factores proporciona una capa adicional de seguridad para las cuentas de los miembros. Al iniciar sesión, se requerirá ingresar el código de seguridad generado por tu aplicación autenticadora."
-            },
-            "bb-feature-plugin-openai": {
-                "title": "Aumento de AI",
-                "desc": "Editor de SQL aumentado con IA y características de asesoramiento de índice impulsadas por OpenAI."
-            },
-            "bb-feature-batch-query": {
-                "title": "Consulta por lotes",
-                "desc": "Consulta por lotes bases de datos adicionales en el mismo proyecto en el Editor SQL."
-            },
-            "bb-feature-shared-sql-script": {
-                "title": "Script SQL compartido",
-                "desc": "Comparte tus scripts SQL con los compañeros de proyecto o hazlos públicos para todos."
-            },
-            "bb-feature-announcement": {
-                "title": "Anuncio personalizado",
-                "desc": "Configurar un banner de anuncio."
-            },
-            "bb-feature-encrypted-secrets": {
-                "title": "Secretos Encriptados",
-                "desc": "Almacene sus secretos de base de datos y utilícelos en sus scripts de SQL de Incidencias."
-            },
-            "bb-feature-database-grouping": {
-                "title": "Grupo de base de datos",
-                "desc": "El grupo de base de datos le permite aplicar operaciones por lotes a las base de datos del grupo de base de datos."
-            },
-            "bb-feature-disallow-signup": {
-                "title": "Deshabilitar el registro de autoservicio",
-                "desc": "Una vez deshabilitados, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el administrador del espacio de trabajo."
-            },
-            "bb-feature-disallow-password-signin": {
-                "title": "No permitir el inicio de sesión con correo electrónico y contraseña",
-                "desc": "Los usuarios no pueden iniciar sesión con correo electrónico y contraseña, solo se permite SSO."
-            },
-            "bb-feature-schema-template": {
-                "title": "Plantilla de esquema",
-                "desc": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema."
-            },
-            "bb-feature-secure-token": {
-                "title": "Frecuencia de inicio de sesión",
-                "desc": "La frecuencia de inicio de sesión es el período antes de que un usuario deba iniciar sesión nuevamente."
-            },
-            "bb-feature-issue-advanced-search": {
-                "title": "Búsqueda avanzada de problemas",
-                "desc": "Acceda a un historial de problemas ilimitado con búsqueda avanzada de problemas."
-            },
-            "bb-feature-issue-project-setting": {
-                "title": "Configuración avanzada de proyectos de problemas",
-                "desc": "Personalice la configuración avanzada del proyecto de problemas, incluida la creación de restricciones de problemas y configuraciones de copia de seguridad predeterminadas."
-            },
-            "bb-feature-password-restriction": {
-                "title": "Restricción de contraseña",
-                "desc": "Permitir configurar la restricción de contraseña de los usuarios"
-            },
-            "bb-feature-directory-sync": {
-                "title": "Sincronización de directorios",
-                "desc": "Sincronice usuarios y grupos de Entra ID (anteriormente Azure AD) con su instancia de Bytebase"
-            }
-        }
+      }
     }
+  },
+  "activity": {
+    "sentence": {
+      "verb-type-target-by-people": "{verb} {type} {target}",
+      "verb-type-target-by-system-bot": "{type} {target} {verb}",
+      "changed-x-link": "cambiado {name}. \n{link}"
+    }
+  },
+  "settings": {
+    "sensitive-data": {
+      "semantic-types": {
+        "template": {
+          "bb-default": {
+            "title": "Por defecto",
+            "description": "Tipo predeterminado con enmascaramiento completo",
+            "algorithm": {
+              "title": "Máscara completa",
+              "description": "Todos los valores se enmascararán como \"******\""
+            }
+          },
+          "bb-default-partial": {
+            "title": "Predeterminado Parcial",
+            "description": "Tipo parcial predeterminado con enmascaramiento parcial",
+            "algorithm": {
+              "title": "Máscara de rango",
+              "description": "Solo se conservan los datos sin procesar en el medio y se tapa el principio y el final con \"**\".\nPor ejemplo, \"dirección\" se enmascarará como \"**dre**\"."
+            }
+          }
+        }
+      }
+    },
+    "general": {
+      "workspace": {
+        "announcement-alert-level": {
+          "field": {
+            "info": "Común",
+            "warning": "Advertencia",
+            "critical": "Importante"
+          }
+        }
+      }
+    }
+  },
+  "subscription": {
+    "features": {
+      "bb-feature-external-secret-manager": {
+        "title": "Establecer secreto externo",
+        "desc": "Utilice Vault o una URL personalizada como secreto externo para la contraseña de la base de datos."
+      },
+      "bb-feature-task-schedule-time": {
+        "title": "Establecer horario de tareas",
+        "desc": "Establecer horario de tareas te permite programar una hora específica para ejecutar tus tareas."
+      },
+      "bb-feature-instance-count": {
+        "title": "Límite de cantidad de instancias",
+        "desc": "Has alcanzado el límite máximo de cantidad de instancias. Por favor, actualiza para obtener más cuota de instancias.",
+        "remaining": "Tu cuota total de instancias es de {total}, sólo te quedan {count} instancias.",
+        "runoutof": "Te has quedado sin tu cuota de instancias {total}.",
+        "upgrade": "@:{'subscription.upgrade'} para obtener más cuota de instancias."
+      },
+      "bb-feature-user-count": {
+        "title": "Límite de conteo de usuarios",
+        "desc": "Ha alcanzado el límite máximo de recuento de usuarios. Actualice para obtener una cuota de usuario ilimitada.",
+        "remaining": "Su cuota total de usuarios es {total}, solo quedan {count} usuarios.",
+        "runoutof": "Se ha quedado sin su cuota de usuario {total}.",
+        "upgrade": "@:{'subscription.upgrade'} para obtener una cuota de usuario ilimitada."
+      },
+      "bb-feature-multi-tenancy": {
+        "title": "Modo Lote",
+        "desc": "Cambio por lotes de un grupo de bases de datos de diferentes inquilinos o particiones."
+      },
+      "bb-feature-rollout-policy": {
+        "title": "Política de implementación",
+        "desc": "La política de implementación controla si la tarea de cambio de esquema requiere una implementación manual."
+      },
+      "bb-feature-environment-tier-policy": {
+        "title": "Nivel de entorno",
+        "desc": "Marque el entorno como producción."
+      },
+      "bb-feature-sensitive-data": {
+        "title": "Datos sensibles",
+        "desc": "Marque las columnas de la tabla como datos sensibles y el resultado de la consulta de ellos se mostrará como \"******\"."
+      },
+      "bb-feature-access-control": {
+        "title": "Control de acceso a datos",
+        "desc": "Restringir el acceso de los usuarios a los datos, como prohibir a los usuarios copiar los resultados de consultas de datos."
+      },
+      "bb-feature-lgtm": {
+        "title": "Verificación LGTM",
+        "desc": "Comprueba si la incidencia tiene un comentario \"LGTM\"."
+      },
+      "bb-feature-im-approval": {
+        "title": "Aprobación IM",
+        "desc": "Aprobación de incidencias con integración de IM."
+      },
+      "bb-feature-sql-review": {
+        "title": "Desbloquee más de 100 verificaciones de revisión de SQL",
+        "desc": "Especifique las reglas de linting de SQL para adoptar las mejores prácticas de SQL y hacer cumplir la coherencia del esquema en toda la organización de ingeniería."
+      },
+      "bb-feature-custom-approval": {
+        "title": "Aprobación personalizada",
+        "desc": "Configure el nivel de riesgo y el flujo de aprobación para diferentes tareas."
+      },
+      "bb-feature-vcs-sql-review": {
+        "title": "Revisión de SQL en el flujo de trabajo de GitOps",
+        "desc": "Agregue la integración de revisión de SQL a la tubería del repositorio de VCS. La revisión de SQL se activará en la solicitud de extracción para los archivos SQL modificados."
+      },
+      "bb-feature-rbac": {
+        "title": "Gestión de roles",
+        "desc": "Permite asignar un rol particular (por ejemplo, DBA) a un miembro."
+      },
+      "bb-feature-custom-role": {
+        "title": "Roles personalizados",
+        "desc": "Definición de roles personalizados. \nPuede aplicarlos a los miembros del proyecto y utilizarlos en un flujo de aprobación personalizado."
+      },
+      "bb-feature-watermark": {
+        "title": "Marca de agua",
+        "desc": "Muestra marcas de agua visibles en las páginas, incluyendo el nombre de usuario, ID y correo electrónico."
+      },
+      "bb-feature-audit-log": {
+        "title": "Registro de auditoría",
+        "desc": "Registra y consulta las operaciones realizadas por los usuarios en el espacio de trabajo."
+      },
+      "bb-feature-schema-drift": {
+        "title": "Desviación de esquema",
+        "desc": "Detecte cambios de esquema fuera de banda e informe la desviación del esquema."
+      },
+      "bb-feature-branding": {
+        "title": "Personalización",
+        "desc": "Personaliza el logo."
+      },
+      "bb-feature-online-migration": {
+        "title": "Migración en línea",
+        "desc": "Basado en gh-ost. Para tablas grandes, puede reducir la duración del bloqueo de la tabla de horas a segundos."
+      },
+      "bb-feature-sync-schema-all-versions": {
+        "title": "Sincronización de esquemas de todas las versiones",
+        "desc": "Selecciona cualquier versión de migración arbitraria de la base de datos y sincronízala con la base de datos de destino."
+      },
+      "bb-feature-read-replica-connection": {
+        "title": "Conexión a réplica de lectura",
+        "desc": "Conéctate a una réplica de lectura para obtener una fuente de datos de solo lectura."
+      },
+      "bb-feature-instance-ssh-connection": {
+        "title": "Instancia de Conexión SSH",
+        "desc": "Conéctese a una instancia a través de SSH."
+      },
+      "bb.feature.custom-instance-synchronization": {
+        "title": "Sincronización de instancias personalizadas",
+        "desc": "Personalice el intervalo de escaneo, las conexiones máximas y sincronice bases de datos específicas"
+      },
+      "bb-feature-index-advisor": {
+        "title": "Asesor de índice",
+        "desc": "El asesor de índices puede ayudarle a encontrar los índices que faltan en las consultas lentas."
+      },
+      "bb-feature-sso": {
+        "title": "Inicio de sesión único (SSO)",
+        "desc": "Permite a los usuarios autenticarse de manera segura en varias aplicaciones y sitios web mediante un único conjunto de credenciales."
+      },
+      "bb-feature-2fa": {
+        "title": "Autenticación de dos factores (2FA)",
+        "desc": "La autenticación de dos factores proporciona una capa adicional de seguridad para las cuentas de los miembros. Al iniciar sesión, se requerirá ingresar el código de seguridad generado por tu aplicación autenticadora."
+      },
+      "bb-feature-plugin-openai": {
+        "title": "Aumento de AI",
+        "desc": "Editor de SQL aumentado con IA y características de asesoramiento de índice impulsadas por OpenAI."
+      },
+      "bb-feature-batch-query": {
+        "title": "Consulta por lotes",
+        "desc": "Consulta por lotes bases de datos adicionales en el mismo proyecto en el Editor SQL."
+      },
+      "bb-feature-shared-sql-script": {
+        "title": "Script SQL compartido",
+        "desc": "Comparte tus scripts SQL con los compañeros de proyecto o hazlos públicos para todos."
+      },
+      "bb-feature-announcement": {
+        "title": "Anuncio personalizado",
+        "desc": "Configurar un banner de anuncio."
+      },
+      "bb-feature-encrypted-secrets": {
+        "title": "Secretos Encriptados",
+        "desc": "Almacene sus secretos de base de datos y utilícelos en sus scripts de SQL de Incidencias."
+      },
+      "bb-feature-database-grouping": {
+        "title": "Grupo de base de datos",
+        "desc": "El grupo de base de datos le permite aplicar operaciones por lotes a las base de datos del grupo de base de datos."
+      },
+      "bb-feature-disallow-signup": {
+        "title": "Deshabilitar el registro de autoservicio",
+        "desc": "Una vez deshabilitados, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el administrador del espacio de trabajo."
+      },
+      "bb-feature-disallow-password-signin": {
+        "title": "No permitir el inicio de sesión con correo electrónico y contraseña",
+        "desc": "Los usuarios no pueden iniciar sesión con correo electrónico y contraseña, solo se permite SSO."
+      },
+      "bb-feature-schema-template": {
+        "title": "Plantilla de esquema",
+        "desc": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema."
+      },
+      "bb-feature-secure-token": {
+        "title": "Frecuencia de inicio de sesión",
+        "desc": "La frecuencia de inicio de sesión es el período antes de que un usuario deba iniciar sesión nuevamente."
+      },
+      "bb-feature-issue-advanced-search": {
+        "title": "Búsqueda avanzada de problemas",
+        "desc": "Acceda a un historial de problemas ilimitado con búsqueda avanzada de problemas."
+      },
+      "bb-feature-issue-project-setting": {
+        "title": "Configuración avanzada de proyectos de problemas",
+        "desc": "Personalice la configuración avanzada del proyecto de problemas, incluida la creación de restricciones de problemas y configuraciones de copia de seguridad predeterminadas."
+      },
+      "bb-feature-password-restriction": {
+        "title": "Restricción de contraseña",
+        "desc": "Permitir configurar la restricción de contraseña de los usuarios"
+      },
+      "bb-feature-directory-sync": {
+        "title": "Sincronización de directorios",
+        "desc": "Sincronice usuarios y grupos de Entra ID (anteriormente Azure AD) con su instancia de Bytebase"
+      },
+      "bb-feature-domain-restriction": {
+        "title": "Dominio de espacio de trabajo",
+        "desc": "Restrinja el inicio de sesión a usuarios con direcciones de correo electrónico de los dominios especificados."
+      }
+    }
+  }
 }
