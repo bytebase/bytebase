@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sort"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -25,7 +26,6 @@ const (
 	// TODO(zp): We should support default schema in the future.
 	defaultSchema      = "dbo"
 	maxTableNameLength = 128
-	maxMixedDMLCount   = 5
 )
 
 type StatementType int
@@ -62,20 +62,49 @@ func TransformDMLToSelect(_ context.Context, _ base.TransformContext, statement 
 }
 
 func generateSQL(statementInfoList []statementInfo, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
-	if len(statementInfoList) <= maxMixedDMLCount {
-		return generateSQLForMixedDML(statementInfoList, targetDatabase, tablePrefix)
-	}
-	return generateSQLForSingleTable(statementInfoList, targetDatabase, tablePrefix)
-}
-
-func generateSQLForSingleTable(statementInfoList []statementInfo, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
-	table := statementInfoList[0].table
-
+	groupByTable := make(map[string][]statementInfo)
 	for _, item := range statementInfoList {
-		if !equalTable(table, item.table) {
-			return nil, errors.Errorf("prior backup cannot handle statements on different tables more than %d", maxMixedDMLCount)
+		key := fmt.Sprintf("%s.%s.%s", item.table.Database, item.table.Schema, item.table.Table)
+		groupByTable[key] = append(groupByTable[key], item)
+	}
+
+	// Check if the statement type is the same for all statements on the same table.
+	for key, list := range groupByTable {
+		statementType := StatementTypeUnknown
+		for _, item := range list {
+			if statementType == StatementTypeUnknown {
+				statementType = item.table.StatementType
+			}
+			if statementType != item.table.StatementType {
+				return nil, errors.Errorf("prior backup cannot handle mixed DMLs on the same table %s", key)
+			}
 		}
 	}
+
+	var result []base.BackupStatement
+	for key, list := range groupByTable {
+		backupStatement, err := generateSQLForTable(list, targetDatabase, tablePrefix)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to generate SQL for table %s", key)
+		}
+		result = append(result, *backupStatement)
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].StartPosition.Line != result[j].StartPosition.Line {
+			return result[i].StartPosition.Line < result[j].StartPosition.Line
+		}
+		if result[i].StartPosition.Column != result[j].StartPosition.Column {
+			return result[i].StartPosition.Column < result[j].StartPosition.Column
+		}
+		return result[i].SourceTableName < result[j].SourceTableName
+	})
+
+	return result, nil
+}
+
+func generateSQLForTable(statementInfoList []statementInfo, targetDatabase string, tablePrefix string) (*base.BackupStatement, error) {
+	table := statementInfoList[0].table
 
 	targetTable := fmt.Sprintf("%s_%s_%s", tablePrefix, table.Table, table.Database)
 	targetTable, _ = common.TruncateString(targetTable, maxTableNameLength)
@@ -85,7 +114,7 @@ func generateSQLForSingleTable(statementInfoList []statementInfo, targetDatabase
 	}
 	for i, item := range statementInfoList {
 		if i > 0 {
-			if _, err := buf.WriteString("\n  UNION ALL\n"); err != nil {
+			if _, err := buf.WriteString("\n  UNION\n"); err != nil {
 				return nil, errors.Wrap(err, "failed to write buffer")
 			}
 		}
@@ -119,91 +148,20 @@ func generateSQLForSingleTable(statementInfoList []statementInfo, targetDatabase
 	if _, err := buf.WriteString(") AS backup_table;"); err != nil {
 		return nil, errors.Wrap(err, "failed to write buffer")
 	}
-	return []base.BackupStatement{
-		{
-			Statement:       buf.String(),
-			SourceSchema:    table.Schema,
-			SourceTableName: table.Table,
-			TargetTableName: targetTable,
-			StartPosition: &storepb.Position{
-				Line:   int32(statementInfoList[0].tree.GetStart().GetLine()),
-				Column: int32(statementInfoList[0].tree.GetStart().GetColumn()),
-			},
-			EndPosition: &storepb.Position{
-				Line:   int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetLine()),
-				Column: int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetColumn()),
-			},
+	return &base.BackupStatement{
+		Statement:       buf.String(),
+		SourceSchema:    table.Schema,
+		SourceTableName: table.Table,
+		TargetTableName: targetTable,
+		StartPosition: &storepb.Position{
+			Line:   int32(statementInfoList[0].tree.GetStart().GetLine()),
+			Column: int32(statementInfoList[0].tree.GetStart().GetColumn()),
+		},
+		EndPosition: &storepb.Position{
+			Line:   int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetLine()),
+			Column: int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetColumn()),
 		},
 	}, nil
-}
-
-func equalTable(a, b *TableReference) bool {
-	if a == nil || b == nil {
-		return false
-	}
-
-	return strings.EqualFold(a.Database, b.Database) && strings.EqualFold(a.Schema, b.Schema) && strings.EqualFold(a.Table, b.Table)
-}
-
-func generateSQLForMixedDML(statementInfoList []statementInfo, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
-	var result []base.BackupStatement
-	offsetLength := 1
-	if len(statementInfoList) > 1 {
-		offsetLength = base.GetOffsetLength(statementInfoList[len(statementInfoList)-1].offset)
-	}
-	for _, statementInfo := range statementInfoList {
-		table := statementInfo.table
-		targetTable := fmt.Sprintf("%s_%0*d_%s", tablePrefix, offsetLength, statementInfo.offset, table.Table)
-		targetTable, _ = common.TruncateString(targetTable, maxTableNameLength)
-		topClause, fromClause, err := extractSuffixSelectStatement(statementInfo.tree)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to extract suffix select statement")
-		}
-		var buf strings.Builder
-		if len(table.Alias) == 0 {
-			if _, err := buf.WriteString(fmt.Sprintf(`SELECT "%s"."%s"."%s".* `, table.Database, table.Schema, table.Table)); err != nil {
-				return nil, errors.Wrap(err, "failed to write buffer")
-			}
-		} else {
-			if _, err := buf.WriteString(fmt.Sprintf(`SELECT "%s".* `, table.Alias)); err != nil {
-				return nil, errors.Wrap(err, "failed to write buffer")
-			}
-		}
-		if len(topClause) > 0 {
-			if _, err := buf.WriteString(topClause); err != nil {
-				return nil, errors.Wrap(err, "failed to write buffer")
-			}
-			if _, err := buf.WriteString(" "); err != nil {
-				return nil, errors.Wrap(err, "failed to write buffer")
-			}
-		}
-		if _, err := buf.WriteString(fmt.Sprintf(`INTO "%s"."%s"."%s" `, targetDatabase, defaultSchema, targetTable)); err != nil {
-			return nil, errors.Wrap(err, "failed to write buffer")
-		}
-		if len(fromClause) > 0 {
-			if _, err := buf.WriteString(fromClause); err != nil {
-				return nil, errors.Wrap(err, "failed to write buffer")
-			}
-		}
-		if _, err := buf.WriteString(";"); err != nil {
-			return nil, errors.Wrap(err, "failed to write buffer")
-		}
-		result = append(result, base.BackupStatement{
-			Statement:       buf.String(),
-			SourceSchema:    table.Schema,
-			SourceTableName: table.Table,
-			TargetTableName: targetTable,
-			StartPosition: &storepb.Position{
-				Line:   int32(statementInfo.tree.GetStart().GetLine()),
-				Column: int32(statementInfo.tree.GetStart().GetColumn()),
-			},
-			EndPosition: &storepb.Position{
-				Line:   int32(statementInfo.tree.GetStop().GetLine()),
-				Column: int32(statementInfo.tree.GetStop().GetColumn()),
-			},
-		})
-	}
-	return result, nil
 }
 
 func extractSuffixSelectStatement(tree antlr.Tree) (string, string, error) {
@@ -415,6 +373,7 @@ func (e *dmlExtractor) EnterUpdate_statement(ctx *parser.Update_statementContext
 		if extractor.table != nil && ctx.Table_sources() != nil && table.Database == e.databaseName && table.Schema == defaultSchema {
 			table = extractPhysicalTable(ctx.Table_sources(), extractor.table)
 		}
+		table.StatementType = StatementTypeUpdate
 		e.dmls = append(e.dmls, statementInfo{
 			offset:    e.offset,
 			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
@@ -435,7 +394,7 @@ func (e *dmlExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext
 		if extractor.table != nil && ctx.From_table_sources() != nil && table.Database == e.databaseName && table.Schema == defaultSchema {
 			table = extractPhysicalTable(ctx.From_table_sources().Table_sources(), extractor.table)
 		}
-
+		table.StatementType = StatementTypeDelete
 		e.dmls = append(e.dmls, statementInfo{
 			offset:    e.offset,
 			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
