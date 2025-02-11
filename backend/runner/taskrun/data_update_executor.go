@@ -358,7 +358,7 @@ func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) base.GetDatabaseMe
 		if database == nil {
 			return "", nil, nil
 		}
-		databaseMetadata, err := storeInstance.GetDBSchema(ctx, database.UID)
+		databaseMetadata, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
 			return "", nil, err
 		}

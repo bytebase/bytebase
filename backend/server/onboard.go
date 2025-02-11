@@ -306,7 +306,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	// Add a sensitive data policy to pair it with the sample query below. So that user can
 	// experience the sensitive data masking feature from SQL Editor.
-	dbSchema, err := s.store.GetDBSchema(ctx, prodDatabase.UID)
+	dbSchema, err := s.store.GetDBSchema(ctx, prodDatabase.InstanceID, prodDatabase.DatabaseName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get db schema for database %v", prodDatabase.UID)
 	}
@@ -319,7 +319,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	columnConfig := tableConfig.CreateOrGetColumnConfig("amount")
 	columnConfig.SemanticType = "default"
 
-	if err := s.store.UpdateDBSchema(ctx, prodDatabase.UID, &store.UpdateDBSchemaMessage{Config: dbModelConfig.BuildDatabaseConfig()}); err != nil {
+	if err := s.store.UpdateDBSchema(ctx, prodDatabase.InstanceID, prodDatabase.DatabaseName, &store.UpdateDBSchemaMessage{Config: dbModelConfig.BuildDatabaseConfig()}); err != nil {
 		return errors.Wrapf(err, "failed to update db config for database %v", prodDatabase.UID)
 	}
 

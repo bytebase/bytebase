@@ -375,7 +375,7 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 		return 0, errors.Wrapf(err, "failed to sync database schema for database %q", database.DatabaseName)
 	}
 
-	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get database schema for database %q", database.DatabaseName)
 	}
@@ -441,7 +441,7 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 	}
 
 	if err := s.store.UpsertDBSchema(ctx,
-		database.UID,
+		database.InstanceID, database.DatabaseName,
 		model.NewDBSchema(databaseMetadata, rawDump, dbModelConfig.BuildDatabaseConfig()),
 	); err != nil {
 		if strings.Contains(err.Error(), "escape sequence") {
@@ -493,7 +493,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		return errors.Wrapf(err, "failed to sync database schema for database %q", database.DatabaseName)
 	}
 
-	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get database schema for database %q", database.DatabaseName)
 	}
@@ -559,7 +559,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	}
 
 	if err := s.store.UpsertDBSchema(ctx,
-		database.UID,
+		database.InstanceID, database.DatabaseName,
 		model.NewDBSchema(databaseMetadata, rawDump, dbModelConfig.BuildDatabaseConfig()),
 	); err != nil {
 		if strings.Contains(err.Error(), "escape sequence") {

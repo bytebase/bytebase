@@ -25,6 +25,15 @@ UPDATE db SET instance = instance.resource_id FROM instance WHERE instance.id = 
 ALTER TABLE db DROP COLUMN instance_id;
 ALTER TABLE db ALTER COLUMN instance SET NOT NULL;
 ALTER TABLE db ADD constraint db_instance_fkey FOREIGN KEY (instance) references instance(resource_id);
-
 CREATE INDEX idx_db_project ON db(project);
 CREATE UNIQUE INDEX idx_db_unique_instance_name ON db(instance, name);
+
+DROP INDEX IF EXISTS idx_db_schema_unique_database_id;
+ALTER TABLE db_schema ADD COLUMN instance TEXT;
+ALTER TABLE db_schema ADD COLUMN db_name TEXT;
+UPDATE db_schema SET instance = db.instance, db_name = db.name FROM db WHERE db.id = db_schema.database_id;
+ALTER TABLE db_schema ALTER COLUMN instance SET NOT NULL;
+ALTER TABLE db_schema ALTER COLUMN db_name SET NOT NULL;
+ALTER TABLE db_schema ADD constraint db_instance_fkey FOREIGN KEY (instance) references instance(resource_id);
+ALTER TABLE db_schema DROP COLUMN database_id;
+CREATE UNIQUE INDEX idx_db_schema_unique_instance_db_name ON db_schema(instance, db_name);

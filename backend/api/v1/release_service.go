@@ -347,7 +347,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 			return nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
 		}
 
-		catalog, err := catalog.NewCatalog(ctx, s.store, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil)
+		catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create catalog: %v", err)
 		}
@@ -414,7 +414,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		return storepb.Advice_SUCCESS, nil, nil
 	}
 
-	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %v", database.UID)
 	}
@@ -422,7 +422,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to sync database schema for database %v", database.UID)
 		}
-		dbSchema, err = s.store.GetDBSchema(ctx, database.UID)
+		dbSchema, err = s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
 			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %v", database.UID)
 		}

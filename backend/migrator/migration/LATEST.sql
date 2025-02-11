@@ -165,13 +165,15 @@ ALTER SEQUENCE db_id_seq RESTART WITH 101;
 -- db_schema stores the database schema metadata for a particular database.
 CREATE TABLE db_schema (
     id SERIAL PRIMARY KEY,
-    database_id INTEGER NOT NULL REFERENCES db (id) ON DELETE CASCADE,
+    instance TEXT NOT NULL,
+    db_name TEXT NOT NULL,
     metadata JSON NOT NULL DEFAULT '{}',
     raw_dump TEXT NOT NULL DEFAULT '',
-    config JSONB NOT NULL DEFAULT '{}'
+    config JSONB NOT NULL DEFAULT '{}',
+    CONSTRAINT db_schema_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
 
-CREATE UNIQUE INDEX idx_db_schema_unique_database_id ON db_schema(database_id);
+CREATE UNIQUE INDEX idx_db_schema_unique_instance_db_name ON db_schema(instance, db_name);
 
 ALTER SEQUENCE db_schema_id_seq RESTART WITH 101;
 
