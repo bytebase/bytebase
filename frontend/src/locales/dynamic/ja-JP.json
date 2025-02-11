@@ -1,251 +1,255 @@
 {
-    "custom-approval": {
-        "approval-flow": {
-            "node": {
-                "group": {
-                    "WORKSPACE_OWNER": "ワークスペース管理者",
-                    "WORKSPACE_DBA": "DBA",
-                    "PROJECT_OWNER": "プロジェクトオーナー",
-                    "PROJECT_MEMBER": "プロジェクト開発者"
-                }
-            },
-            "presets": {
-                "owner-dba": "システム定義のプロセス。承認は最初にプロジェクト所有者によって行われ、次に DBA によって行われます。",
-                "owner": "システム定義のプロセス。プロジェクト所有者の承認のみが必要です。",
-                "dba": "システム定義のプロセス。 DBA の承認のみが必要です。",
-                "admin": "システム定義のプロセス。管理者の承認のみが必要です。",
-                "owner-dba-admin": "システム定義のプロセス。承認は、最初にプロジェクト所有者によって行われ、次に DBA、最後に管理者によって行われます。"
-            }
-        },
-        "risk-rule": {
-            "template": {
-                "presets": {
-                    "environment-prod-high": "運用環境、デフォルトで高リスク",
-                    "environment-dev-low": "開発環境、デフォルトでは低リスク",
-                    "dml-in-environment-prod-10k-rows-high": "運用環境で更新または削除されたデータ行の数が 10,000 を超えており、デフォルトで高リスクとみなされます。",
-                    "create-database-in-environment-prod-moderate": "本番環境でデータベースを作成します。デフォルトは中リスクです"
-                }
-            }
+  "custom-approval": {
+    "approval-flow": {
+      "node": {
+        "group": {
+          "WORKSPACE_OWNER": "ワークスペース管理者",
+          "WORKSPACE_DBA": "DBA",
+          "PROJECT_OWNER": "プロジェクトオーナー",
+          "PROJECT_MEMBER": "プロジェクト開発者"
         }
+      },
+      "presets": {
+        "owner-dba": "システム定義のプロセス。承認は最初にプロジェクト所有者によって行われ、次に DBA によって行われます。",
+        "owner": "システム定義のプロセス。プロジェクト所有者の承認のみが必要です。",
+        "dba": "システム定義のプロセス。 DBA の承認のみが必要です。",
+        "admin": "システム定義のプロセス。管理者の承認のみが必要です。",
+        "owner-dba-admin": "システム定義のプロセス。承認は、最初にプロジェクト所有者によって行われ、次に DBA、最後に管理者によって行われます。"
+      }
     },
-    "activity": {
-        "sentence": {
-            "verb-type-target-by-people": "{verb} {type} {target}",
-            "verb-type-target-by-system-bot": "{type} {target} {verb}",
-            "changed-x-link": "{name} が変更されました。 {link}"
+    "risk-rule": {
+      "template": {
+        "presets": {
+          "environment-prod-high": "運用環境、デフォルトで高リスク",
+          "environment-dev-low": "開発環境、デフォルトでは低リスク",
+          "dml-in-environment-prod-10k-rows-high": "運用環境で更新または削除されたデータ行の数が 10,000 を超えており、デフォルトで高リスクとみなされます。",
+          "create-database-in-environment-prod-moderate": "本番環境でデータベースを作成します。デフォルトは中リスクです"
         }
-    },
-    "settings": {
-        "sensitive-data": {
-            "semantic-types": {
-                "template": {
-                    "bb-default": {
-                        "title": "デフォルト",
-                        "description": "完全なマスク付きのデフォルトタイプ",
-                        "algorithm": {
-                            "title": "フルマスク",
-                            "description": "すべての値は「******」としてマスクされます"
-                        }
-                    },
-                    "bb-default-partial": {
-                        "title": "デフォルト 部分的",
-                        "description": "部分マスク付きのデフォルトの部分タイプ",
-                        "algorithm": {
-                            "title": "範囲マスク",
-                            "description": "中央の生データのみを保持し、先頭と末尾を「**」で覆います。\nたとえば、「address」は「**dre**」としてマスクされます。"
-                        }
-                    }
-                }
-            }
-        },
-        "general": {
-            "workspace": {
-                "announcement-alert-level": {
-                    "field": {
-                        "info": "情報",
-                        "warning": "警告",
-                        "critical": "重要"
-                    }
-                }
-            }
-        }
-    },
-    "subscription": {
-        "features": {
-            "bb-feature-external-secret-manager": {
-                "title": "外部キーを設定する",
-                "desc": "データベース パスワードの外部キーとして Vault またはカスタム URL を設定します。"
-            },
-            "bb-feature-task-schedule-time": {
-                "title": "タスクの実行時間を設定する",
-                "desc": "「タスク実行時刻の設定」では、特定の時刻に実行するタスクを設定できます"
-            },
-            "bb-feature-instance-count": {
-                "title": "インスタンスの制限",
-                "desc": "インスタンスの最大制限に達しました。追加のインスタンス割り当てを取得するには、アップグレードに料金を支払ってください。",
-                "remaining": "現在の合計インスタンス割り当ては {total} で、使用可能な共有は {count} 個のみです。",
-                "runoutof": "すべての {total} インスタンス クレジットが使用されました。",
-                "upgrade": "@:{'subscription.upgrade'} を使用して、より多くのインスタンス割り当てを取得します。"
-            },
-            "bb-feature-user-count": {
-                "title": "ユーザー制限",
-                "desc": "ユーザーの最大数に達しました。無制限のユーザー割り当てを取得するには、アップグレードに料金を支払ってください。",
-                "remaining": "現在の合計ユーザー割り当ては {total} で、使用できる共有は {count} 個のみです。",
-                "runoutof": "{total} 個のユーザー クレジットがすべて使用されました。",
-                "upgrade": "@:{'subscription.upgrade'} を使用すると、無制限のユーザー割り当てを取得できます。"
-            },
-            "bb-feature-multi-tenancy": {
-                "title": "バッチモード",
-                "desc": "異なるテナントまたはデータベース シャードに属するデータベースのグループに対するバッチ変更。"
-            },
-            "bb-feature-rollout-policy": {
-                "title": "リリース戦略",
-                "desc": "「リリース戦略」は、データベーススキーマへの変更を手動でリリースする必要があるかどうかを制御できます。"
-            },
-            "bb-feature-environment-tier-policy": {
-                "title": "環境レベル",
-                "desc": "「環境レベル」では、環境を本番環境としてマークできます。"
-            },
-            "bb-feature-sensitive-data": {
-                "title": "機密データ",
-                "desc": "データ テーブルの列を機密データとしてマークすると、クエリ結果に「******」として表示されます。"
-            },
-            "bb-feature-access-control": {
-                "title": "データアクセス制御",
-                "desc": "ユーザーによるデータ クエリ結果のコピーの禁止など、データへのユーザー アクセスを制限します。"
-            },
-            "bb-feature-lgtm": {
-                "title": "LGTM検査",
-                "desc": "イシューに「LGTM」コメントがあるかどうかを確認してください。"
-            },
-            "bb-feature-im-approval": {
-                "title": "IMの統合",
-                "desc": "統合された IM を使用してイシューを承認します。"
-            },
-            "bb-feature-sql-review": {
-                "title": "100 を超える SQL 監査ポリシーのロックを解除します",
-                "desc": "さまざまな SQL lint ルールを設定して、研究開発組織に SQL のベスト プラクティスを実装し、スキーマ仕様の一貫性を確保します。"
-            },
-            "bb-feature-custom-approval": {
-                "title": "カスタム承認",
-                "desc": "さまざまなタスクのリスク レベルとカスタム承認フローを設定します。"
-            },
-            "bb-feature-vcs-sql-review": {
-                "title": "GitOps ワークフローでの SQL 監査",
-                "desc": "SQL 監査 CI を VCS リポジトリ パイプラインに追加して、プル リクエストで変更された SQL ファイルを自動的に監査します。"
-            },
-            "bb-feature-rbac": {
-                "title": "役割管理",
-                "desc": "「ロール管理」では、DBAなどのメンバーに特定のロールを割り当てることができます。"
-            },
-            "bb-feature-custom-role": {
-                "title": "カスタムロール",
-                "desc": "カスタム承認を設定するためにプロジェクト メンバーに適用できるカスタム ロールを定義します。"
-            },
-            "bb-feature-watermark": {
-                "title": "ウォーターマークの設定",
-                "desc": "ユーザー名、ID、メールアドレスを含むページにウォーターマークを表示します。"
-            },
-            "bb-feature-audit-log": {
-                "title": "監査ログ",
-                "desc": "ワークスペースでユーザーが実行したアクションを記録およびクエリします。"
-            },
-            "bb-feature-schema-drift": {
-                "title": "スキーマの逸脱",
-                "desc": "予期しないスキーマ変更を検出し、スキーマの逸脱を報告します。"
-            },
-            "bb-feature-branding": {
-                "title": "カスタムブランド情報",
-                "desc": "カスタマイズされたロゴ"
-            },
-            "bb-feature-online-migration": {
-                "title": "オンラインでの大規模なテーブル変更",
-                "desc": "gh-ostをベースにしています。大きなテーブルの場合、テーブルのロック時間を数時間から数秒に短縮できます。"
-            },
-            "bb-feature-sync-schema-all-versions": {
-                "title": "データベーステーブルの同期",
-                "desc": "データベースのスキーマ バージョンを選択し、ターゲット データベースと同期します。"
-            },
-            "bb-feature-read-replica-connection": {
-                "title": "リードレプリカ接続",
-                "desc": "リードレプリカを使用して、読み取り専用データ ソースに接続します。"
-            },
-            "bb-feature-instance-ssh-connection": {
-                "title": "SSHインスタンス接続",
-                "desc": "SSH 経由でインスタンスに接続します。"
-            },
-            "bb.feature.custom-instance-synchronization": {
-                "title": "カスタムインスタンス同期",
-                "desc": "スキャン間隔、最大接続数、特定のデータベースの同期をカスタマイズします"
-            },
-            "bb-feature-index-advisor": {
-                "title": "インデックスの提案",
-                "desc": "インデックスの推奨事項により、クエリの遅延の原因となっているインデックスを検出し、関連する最適化の推奨事項を提供できます。"
-            },
-            "bb-feature-sso": {
-                "title": "シングル サインオン (SSO)",
-                "desc": "ユーザーが SSO を通じて Bytebase に安全にログインできるようにします。"
-            },
-            "bb-feature-2fa": {
-                "title": "二要素認証",
-                "desc": "2 要素認証は、システム メンバーに追加のセキュリティレイヤーを提供します。ログインするとき、ユーザーは認証アプリケーションによって生成されたセキュリティ コードを入力する必要があります。"
-            },
-            "bb-feature-plugin-openai": {
-                "title": "AIの強化",
-                "desc": "OpenAI テクノロジーを活用した、AI で強化された SQL エディターとインデックス提案機能。"
-            },
-            "bb-feature-batch-query": {
-                "title": "バッチクエリ",
-                "desc": "SQL エディターで複数のデータベースに対してバッチ クエリを実行します。"
-            },
-            "bb-feature-shared-sql-script": {
-                "title": "共有SQLスクリプト",
-                "desc": "SQL スクリプトをプロジェクト メンバーと共有するか、誰でも利用できるようにします。"
-            },
-            "bb-feature-announcement": {
-                "title": "発表",
-                "desc": "お知らせバナーを設定します。"
-            },
-            "bb-feature-encrypted-secrets": {
-                "title": "秘密変数",
-                "desc": "シークレット変数をデータベースに保存し、イシューの SQL で使用します。"
-            },
-            "bb-feature-database-grouping": {
-                "title": "データベースのグループ化",
-                "desc": "データベースをグループ化すると、データベース グループ内のデータベースに対してバッチ操作を実行できます。"
-            },
-            "bb-feature-disallow-signup": {
-                "title": "セルフサービス登録を無効にする",
-                "desc": "無効化されると、新しいユーザーは自己登録できなくなり、管理者の招待を通じてのみアカウントを作成できます。"
-            },
-            "bb-feature-disallow-password-signin": {
-                "title": "メールアドレスとパスワードによるサインインを禁止する",
-                "desc": "ユーザーはメールとパスワードでサインインすることはできず、SSO のみが許可されます。"
-            },
-            "bb-feature-schema-template": {
-                "title": "スキーマテンプレート",
-                "desc": "スキーマの変更または設計時に適用できるスキーマ テンプレートを事前定義します。"
-            },
-            "bb-feature-secure-token": {
-                "title": "ログイン頻度",
-                "desc": "ログイン頻度は、ユーザーが再度ログインする必要がある間隔を指定します。"
-            },
-            "bb-feature-issue-advanced-search": {
-                "title": "イシューの詳細検索",
-                "desc": "高度な検索機能を使用して、無制限の過去のイシューにアクセスできます。"
-            },
-            "bb-feature-issue-project-setting": {
-                "title": "高度な問題プロジェクト設定",
-                "desc": "高度な問題プロジェクト設定をカスタマイズします。問題制限の作成やデフォルトのバックアップ設定などが含まれます。"
-            },
-            "bb-feature-password-restriction": {
-                "title": "パスワード制限",
-                "desc": "ユーザーのパスワードの制限を設定できるようにする"
-            },
-            "bb-feature-directory-sync": {
-                "title": "ディレクトリ同期",
-                "desc": "Entra ID (旧 Azure AD) のユーザーとグループを Bytebase インスタンスに同期します"
-            }
-        }
+      }
     }
+  },
+  "activity": {
+    "sentence": {
+      "verb-type-target-by-people": "{verb} {type} {target}",
+      "verb-type-target-by-system-bot": "{type} {target} {verb}",
+      "changed-x-link": "{name} が変更されました。 {link}"
+    }
+  },
+  "settings": {
+    "sensitive-data": {
+      "semantic-types": {
+        "template": {
+          "bb-default": {
+            "title": "デフォルト",
+            "description": "完全なマスク付きのデフォルトタイプ",
+            "algorithm": {
+              "title": "フルマスク",
+              "description": "すべての値は「******」としてマスクされます"
+            }
+          },
+          "bb-default-partial": {
+            "title": "デフォルト 部分的",
+            "description": "部分マスク付きのデフォルトの部分タイプ",
+            "algorithm": {
+              "title": "範囲マスク",
+              "description": "中央の生データのみを保持し、先頭と末尾を「**」で覆います。\nたとえば、「address」は「**dre**」としてマスクされます。"
+            }
+          }
+        }
+      }
+    },
+    "general": {
+      "workspace": {
+        "announcement-alert-level": {
+          "field": {
+            "info": "情報",
+            "warning": "警告",
+            "critical": "重要"
+          }
+        }
+      }
+    }
+  },
+  "subscription": {
+    "features": {
+      "bb-feature-external-secret-manager": {
+        "title": "外部キーを設定する",
+        "desc": "データベース パスワードの外部キーとして Vault またはカスタム URL を設定します。"
+      },
+      "bb-feature-task-schedule-time": {
+        "title": "タスクの実行時間を設定する",
+        "desc": "「タスク実行時刻の設定」では、特定の時刻に実行するタスクを設定できます"
+      },
+      "bb-feature-instance-count": {
+        "title": "インスタンスの制限",
+        "desc": "インスタンスの最大制限に達しました。追加のインスタンス割り当てを取得するには、アップグレードに料金を支払ってください。",
+        "remaining": "現在の合計インスタンス割り当ては {total} で、使用可能な共有は {count} 個のみです。",
+        "runoutof": "すべての {total} インスタンス クレジットが使用されました。",
+        "upgrade": "@:{'subscription.upgrade'} を使用して、より多くのインスタンス割り当てを取得します。"
+      },
+      "bb-feature-user-count": {
+        "title": "ユーザー制限",
+        "desc": "ユーザーの最大数に達しました。無制限のユーザー割り当てを取得するには、アップグレードに料金を支払ってください。",
+        "remaining": "現在の合計ユーザー割り当ては {total} で、使用できる共有は {count} 個のみです。",
+        "runoutof": "{total} 個のユーザー クレジットがすべて使用されました。",
+        "upgrade": "@:{'subscription.upgrade'} を使用すると、無制限のユーザー割り当てを取得できます。"
+      },
+      "bb-feature-multi-tenancy": {
+        "title": "バッチモード",
+        "desc": "異なるテナントまたはデータベース シャードに属するデータベースのグループに対するバッチ変更。"
+      },
+      "bb-feature-rollout-policy": {
+        "title": "リリース戦略",
+        "desc": "「リリース戦略」は、データベーススキーマへの変更を手動でリリースする必要があるかどうかを制御できます。"
+      },
+      "bb-feature-environment-tier-policy": {
+        "title": "環境レベル",
+        "desc": "「環境レベル」では、環境を本番環境としてマークできます。"
+      },
+      "bb-feature-sensitive-data": {
+        "title": "機密データ",
+        "desc": "データ テーブルの列を機密データとしてマークすると、クエリ結果に「******」として表示されます。"
+      },
+      "bb-feature-access-control": {
+        "title": "データアクセス制御",
+        "desc": "ユーザーによるデータ クエリ結果のコピーの禁止など、データへのユーザー アクセスを制限します。"
+      },
+      "bb-feature-lgtm": {
+        "title": "LGTM検査",
+        "desc": "イシューに「LGTM」コメントがあるかどうかを確認してください。"
+      },
+      "bb-feature-im-approval": {
+        "title": "IMの統合",
+        "desc": "統合された IM を使用してイシューを承認します。"
+      },
+      "bb-feature-sql-review": {
+        "title": "100 を超える SQL 監査ポリシーのロックを解除します",
+        "desc": "さまざまな SQL lint ルールを設定して、研究開発組織に SQL のベスト プラクティスを実装し、スキーマ仕様の一貫性を確保します。"
+      },
+      "bb-feature-custom-approval": {
+        "title": "カスタム承認",
+        "desc": "さまざまなタスクのリスク レベルとカスタム承認フローを設定します。"
+      },
+      "bb-feature-vcs-sql-review": {
+        "title": "GitOps ワークフローでの SQL 監査",
+        "desc": "SQL 監査 CI を VCS リポジトリ パイプラインに追加して、プル リクエストで変更された SQL ファイルを自動的に監査します。"
+      },
+      "bb-feature-rbac": {
+        "title": "役割管理",
+        "desc": "「ロール管理」では、DBAなどのメンバーに特定のロールを割り当てることができます。"
+      },
+      "bb-feature-custom-role": {
+        "title": "カスタムロール",
+        "desc": "カスタム承認を設定するためにプロジェクト メンバーに適用できるカスタム ロールを定義します。"
+      },
+      "bb-feature-watermark": {
+        "title": "ウォーターマークの設定",
+        "desc": "ユーザー名、ID、メールアドレスを含むページにウォーターマークを表示します。"
+      },
+      "bb-feature-audit-log": {
+        "title": "監査ログ",
+        "desc": "ワークスペースでユーザーが実行したアクションを記録およびクエリします。"
+      },
+      "bb-feature-schema-drift": {
+        "title": "スキーマの逸脱",
+        "desc": "予期しないスキーマ変更を検出し、スキーマの逸脱を報告します。"
+      },
+      "bb-feature-branding": {
+        "title": "カスタムブランド情報",
+        "desc": "カスタマイズされたロゴ"
+      },
+      "bb-feature-online-migration": {
+        "title": "オンラインでの大規模なテーブル変更",
+        "desc": "gh-ostをベースにしています。大きなテーブルの場合、テーブルのロック時間を数時間から数秒に短縮できます。"
+      },
+      "bb-feature-sync-schema-all-versions": {
+        "title": "データベーステーブルの同期",
+        "desc": "データベースのスキーマ バージョンを選択し、ターゲット データベースと同期します。"
+      },
+      "bb-feature-read-replica-connection": {
+        "title": "リードレプリカ接続",
+        "desc": "リードレプリカを使用して、読み取り専用データ ソースに接続します。"
+      },
+      "bb-feature-instance-ssh-connection": {
+        "title": "SSHインスタンス接続",
+        "desc": "SSH 経由でインスタンスに接続します。"
+      },
+      "bb.feature.custom-instance-synchronization": {
+        "title": "カスタムインスタンス同期",
+        "desc": "スキャン間隔、最大接続数、特定のデータベースの同期をカスタマイズします"
+      },
+      "bb-feature-index-advisor": {
+        "title": "インデックスの提案",
+        "desc": "インデックスの推奨事項により、クエリの遅延の原因となっているインデックスを検出し、関連する最適化の推奨事項を提供できます。"
+      },
+      "bb-feature-sso": {
+        "title": "シングル サインオン (SSO)",
+        "desc": "ユーザーが SSO を通じて Bytebase に安全にログインできるようにします。"
+      },
+      "bb-feature-2fa": {
+        "title": "二要素認証",
+        "desc": "2 要素認証は、システム メンバーに追加のセキュリティレイヤーを提供します。ログインするとき、ユーザーは認証アプリケーションによって生成されたセキュリティ コードを入力する必要があります。"
+      },
+      "bb-feature-plugin-openai": {
+        "title": "AIの強化",
+        "desc": "OpenAI テクノロジーを活用した、AI で強化された SQL エディターとインデックス提案機能。"
+      },
+      "bb-feature-batch-query": {
+        "title": "バッチクエリ",
+        "desc": "SQL エディターで複数のデータベースに対してバッチ クエリを実行します。"
+      },
+      "bb-feature-shared-sql-script": {
+        "title": "共有SQLスクリプト",
+        "desc": "SQL スクリプトをプロジェクト メンバーと共有するか、誰でも利用できるようにします。"
+      },
+      "bb-feature-announcement": {
+        "title": "発表",
+        "desc": "お知らせバナーを設定します。"
+      },
+      "bb-feature-encrypted-secrets": {
+        "title": "秘密変数",
+        "desc": "シークレット変数をデータベースに保存し、イシューの SQL で使用します。"
+      },
+      "bb-feature-database-grouping": {
+        "title": "データベースのグループ化",
+        "desc": "データベースをグループ化すると、データベース グループ内のデータベースに対してバッチ操作を実行できます。"
+      },
+      "bb-feature-disallow-signup": {
+        "title": "セルフサービス登録を無効にする",
+        "desc": "無効化されると、新しいユーザーは自己登録できなくなり、管理者の招待を通じてのみアカウントを作成できます。"
+      },
+      "bb-feature-disallow-password-signin": {
+        "title": "メールアドレスとパスワードによるサインインを禁止する",
+        "desc": "ユーザーはメールとパスワードでサインインすることはできず、SSO のみが許可されます。"
+      },
+      "bb-feature-schema-template": {
+        "title": "スキーマテンプレート",
+        "desc": "スキーマの変更または設計時に適用できるスキーマ テンプレートを事前定義します。"
+      },
+      "bb-feature-secure-token": {
+        "title": "ログイン頻度",
+        "desc": "ログイン頻度は、ユーザーが再度ログインする必要がある間隔を指定します。"
+      },
+      "bb-feature-issue-advanced-search": {
+        "title": "イシューの詳細検索",
+        "desc": "高度な検索機能を使用して、無制限の過去のイシューにアクセスできます。"
+      },
+      "bb-feature-issue-project-setting": {
+        "title": "高度な問題プロジェクト設定",
+        "desc": "高度な問題プロジェクト設定をカスタマイズします。問題制限の作成やデフォルトのバックアップ設定などが含まれます。"
+      },
+      "bb-feature-password-restriction": {
+        "title": "パスワード制限",
+        "desc": "ユーザーのパスワードの制限を設定できるようにする"
+      },
+      "bb-feature-directory-sync": {
+        "title": "ディレクトリ同期",
+        "desc": "Entra ID (旧 Azure AD) のユーザーとグループを Bytebase インスタンスに同期します"
+      },
+      "bb-feature-domain-restriction": {
+        "title": "ワークスペースドメイン",
+        "desc": "指定されたドメインの電子メール アドレスを持つユーザーのみにサインインを制限します。"
+      }
+    }
+  }
 }
