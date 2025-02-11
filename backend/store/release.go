@@ -51,7 +51,7 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 			$1,
 			$2,
 			$3
-		) RETURNING id, created_ts
+		) RETURNING id, created_at
 	`
 
 	p, err := protojson.Marshal(release.Payload)
@@ -120,7 +120,7 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 			row_status,
 			project_id,
 			creator_id,
-			created_ts,
+			created_at,
 			payload
 		FROM release
 		WHERE %s
