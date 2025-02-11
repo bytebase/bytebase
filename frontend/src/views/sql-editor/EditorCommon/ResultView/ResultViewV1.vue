@@ -35,7 +35,6 @@
               />
             </template>
             <SingleResultViewV1
-              v-if="resultSet"
               :params="executeParams"
               :sql-result-set="resultSet"
               :database="database"
