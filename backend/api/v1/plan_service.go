@@ -457,17 +457,27 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					}
 
 					// EarliestAllowedTs
-					if spec.EarliestAllowedTime.GetSeconds() != task.EarliestAllowedTs {
-						seconds := spec.EarliestAllowedTime.GetSeconds()
-						taskPatch.EarliestAllowedTs = &seconds
+					taskEarliest := int64(0)
+					if task.EarliestAllowedAt != nil {
+						taskEarliest = task.EarliestAllowedAt.Unix()
+					}
+					specEarliest := spec.EarliestAllowedTime.GetSeconds()
+					if specEarliest != taskEarliest {
+						taskPatch.UpdateEarliestAllowedTs = true
+						if specEarliest == 0 {
+							taskPatch.EarliestAllowedTs = nil
+						} else {
+							v := spec.EarliestAllowedTime.AsTime()
+							taskPatch.EarliestAllowedTs = &v
+						}
 						doUpdate = true
 
 						var fromEarliestAllowedTime, toEarliestAllowedTime *timestamppb.Timestamp
-						if task.EarliestAllowedTs != 0 {
-							fromEarliestAllowedTime = timestamppb.New(time.Unix(task.EarliestAllowedTs, 0))
+						if task.EarliestAllowedAt != nil {
+							fromEarliestAllowedTime = timestamppb.New(*task.EarliestAllowedAt)
 						}
-						if seconds != 0 {
-							toEarliestAllowedTime = timestamppb.New(time.Unix(seconds, 0))
+						if specEarliest != 0 {
+							toEarliestAllowedTime = spec.EarliestAllowedTime
 						}
 						issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
 							IssueUID: issue.UID,
@@ -982,11 +992,10 @@ func (s *PlanService) buildPlanFindWithFilter(ctx context.Context, planFind *sto
 			if err != nil {
 				return errors.Wrap(err, "failed to parse create_time value")
 			}
-			ts := t.Unix()
 			if spec.Operator == ComparatorTypeGreaterEqual {
-				planFind.CreatedTsAfter = &ts
+				planFind.CreatedAtAfter = &t
 			} else {
-				planFind.CreatedTsBefore = &ts
+				planFind.CreatedAtBefore = &t
 			}
 		case "has_pipeline":
 			if spec.Operator != ComparatorTypeEqual {

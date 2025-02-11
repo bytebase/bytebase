@@ -187,7 +187,7 @@ func (s *DatabaseService) convertToChangelogs(d *store.DatabaseMessage, cs []*st
 func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.ChangelogMessage) (*v1pb.Changelog, error) {
 	cl := &v1pb.Changelog{
 		Name:             common.FormatChangelog(d.InstanceID, d.DatabaseName, c.UID),
-		CreateTime:       timestamppb.New(c.CreatedTime),
+		CreateTime:       timestamppb.New(c.CreatedAt),
 		Status:           convertToChangelogStatus(c.Status),
 		Statement:        "",
 		StatementSize:    0,

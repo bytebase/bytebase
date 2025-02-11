@@ -262,7 +262,7 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 	r := &v1pb.Revision{
 		Name:          fmt.Sprintf("%s/%s%d", parent, common.RevisionNamePrefix, revision.UID),
 		Release:       revision.Payload.Release,
-		CreateTime:    timestamppb.New(revision.CreateTime),
+		CreateTime:    timestamppb.New(revision.CreatedAt),
 		Sheet:         revision.Payload.Sheet,
 		SheetSha256:   revision.Payload.SheetSha256,
 		Statement:     sheet.Statement,
@@ -283,8 +283,8 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 		}
 		r.Deleter = common.FormatUserEmail(deleter.Email)
 	}
-	if revision.DeleteTime != nil {
-		r.DeleteTime = timestamppb.New(*revision.DeleteTime)
+	if revision.DeletedAt != nil {
+		r.DeleteTime = timestamppb.New(*revision.DeletedAt)
 	}
 
 	return r, nil

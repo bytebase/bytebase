@@ -113,12 +113,12 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		}
 	}
 	database, err := exec.store.UpsertDatabase(ctx, &store.DatabaseMessage{
-		ProjectID:            project.ResourceID,
-		InstanceID:           instance.ResourceID,
-		DatabaseName:         payload.DatabaseName,
-		EnvironmentID:        payload.EnvironmentId,
-		SyncState:            api.NotFound,
-		SuccessfulSyncTimeTs: time.Now().Unix(),
+		ProjectID:     project.ResourceID,
+		InstanceID:    instance.ResourceID,
+		DatabaseName:  payload.DatabaseName,
+		EnvironmentID: payload.EnvironmentId,
+		SyncState:     api.NotFound,
+		SyncAt:        time.Now(),
 		Metadata: &storepb.DatabaseMetadata{
 			Labels: labels,
 		},
@@ -320,7 +320,7 @@ func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *
 					InstanceID:        task.InstanceID,
 					DatabaseID:        &createdDatabase.UID,
 					Type:              task.Type,
-					EarliestAllowedTs: task.EarliestAllowedTs,
+					EarliestAllowedAt: task.EarliestAllowedAt,
 					Payload:           task.Payload,
 				}
 				creates = append(creates, taskCreate)

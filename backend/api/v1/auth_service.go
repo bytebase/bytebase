@@ -634,7 +634,7 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 	}
 
 	if passwordRestriction.PasswordRotation != nil && passwordRestriction.PasswordRotation.GetNanos() > 0 {
-		lastChangePasswordTime := user.CreatedTime
+		lastChangePasswordTime := user.CreatedAt
 		if user.Profile.LastChangePasswordTime != nil {
 			lastChangePasswordTime = user.Profile.LastChangePasswordTime.AsTime()
 		}

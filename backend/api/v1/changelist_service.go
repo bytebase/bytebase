@@ -275,7 +275,7 @@ func (s *ChangelistService) convertStoreChangelist(ctx context.Context, changeli
 	v1Changelist := &v1pb.Changelist{
 		Name:        fmt.Sprintf("projects/%s/changelists/%s", changelist.ProjectID, changelist.ResourceID),
 		Description: changelist.Payload.Description,
-		UpdateTime:  timestamppb.New(changelist.UpdatedTime),
+		UpdateTime:  timestamppb.New(changelist.UpdatedAt),
 		Creator:     fmt.Sprintf("users/%s", creator.Email),
 	}
 	for _, change := range changelist.Payload.Changes {
