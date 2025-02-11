@@ -90,7 +90,7 @@ ALTER TABLE vcs_connector ADD COLUMN vcs TEXT;
 UPDATE vcs_connector SET vcs = vcs.resource_id FROM vcs WHERE vcs.id = vcs_connector.vcs_id;
 ALTER TABLE vcs_connector DROP COLUMN vcs_id;
 ALTER TABLE vcs_connector ALTER COLUMN vcs SET NOT NULL;
-ALTER TABLE vcs_connector ADD constraint vcs_connector_vcs_fkey FOREIGN KEY (project) references project(resource_id);
+ALTER TABLE vcs_connector ADD constraint vcs_connector_vcs_fkey FOREIGN KEY (vcs) references vcs(resource_id);
 
 ALTER TABLE vcs_connector ADD COLUMN project TEXT;
 UPDATE vcs_connector SET project = project.resource_id FROM project WHERE project.id = vcs_connector.project_id;
