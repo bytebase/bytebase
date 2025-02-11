@@ -122,7 +122,7 @@ ALTER SEQUENCE project_webhook_id_seq RESTART WITH 101;
 CREATE TABLE instance (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
-    environment TEXT REFERENCES environment (resource_id),
+    environment TEXT REFERENCES environment(resource_id),
     name TEXT NOT NULL,
     engine TEXT NOT NULL,
     engine_version TEXT NOT NULL DEFAULT '',
@@ -142,13 +142,13 @@ ALTER SEQUENCE instance_id_seq RESTART WITH 101;
 -- data is synced periodically from the instance
 CREATE TABLE db (
     id SERIAL PRIMARY KEY,
-    instance_id INTEGER NOT NULL REFERENCES instance (id),
-    project_id INTEGER NOT NULL REFERENCES project (id),
+    project TEXT NOT NULL REFERENCES project(resource_id),
+    instance TEXT NOT NULL REFERENCES instance(resource_id),
+    name TEXT NOT NULL,
     environment TEXT REFERENCES environment (resource_id),
     sync_status TEXT NOT NULL CHECK (sync_status IN ('OK', 'NOT_FOUND')),
     sync_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     schema_version TEXT NOT NULL,
-    name TEXT NOT NULL,
     secrets JSONB NOT NULL DEFAULT '{}',
     datashare BOOLEAN NOT NULL DEFAULT FALSE,
     -- service_name is the Oracle specific field.
@@ -156,11 +156,9 @@ CREATE TABLE db (
     metadata JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE INDEX idx_db_instance_id ON db(instance_id);
+CREATE INDEX idx_db_project ON db(project);
 
-CREATE UNIQUE INDEX idx_db_unique_instance_id_name ON db(instance_id, name);
-
-CREATE INDEX idx_db_project_id ON db(project_id);
+CREATE UNIQUE INDEX idx_db_unique_instance_name ON db(instance, name);
 
 ALTER SEQUENCE db_id_seq RESTART WITH 101;
 

@@ -439,7 +439,7 @@ func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment stri
 // 4. are in an environment that has auto rollout enabled
 // 5. are in the stage that is the first among the selected stages in the pipeline
 // 6. are not data export tasks.
-func (s *Store) ListTasksToAutoRollout(ctx context.Context, environmentIDs []int) ([]int, error) {
+func (s *Store) ListTasksToAutoRollout(ctx context.Context, environments []string) ([]int, error) {
 	rows, err := s.db.db.QueryContext(ctx, `
 	SELECT
 		task.pipeline_id,
@@ -453,8 +453,8 @@ func (s *Store) ListTasksToAutoRollout(ctx context.Context, environmentIDs []int
 	AND task.type != 'bb.task.database.data.export'
 	AND COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE) IS FALSE
 	AND COALESCE(issue.status, 'OPEN') = 'OPEN'
-	AND stage.environment_id = ANY($1)
-	`, environmentIDs)
+	AND stage.environment = ANY($1)
+	`, environments)
 	if err != nil {
 		return nil, err
 	}

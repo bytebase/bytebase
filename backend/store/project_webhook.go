@@ -29,7 +29,7 @@ type ProjectWebhookMessage struct {
 	//
 	// ID is the unique identifier of the project webhook.
 	ID        int
-	ProjectID int
+	ProjectID string
 	Payload   *storepb.ProjectWebhookPayload
 }
 
@@ -193,7 +193,7 @@ func (s *Store) UpdateProjectWebhookV2(ctx context.Context, projectResourceID st
 	UPDATE project_webhook
 	SET `+strings.Join(set, ", ")+`
 	WHERE id = $%d
-	RETURNING id, project_id, type, name, url, activity_list, payload
+	RETURNING id, project, type, name, url, activity_list, payload
 `, len(args)),
 		args...,
 	).Scan(
@@ -251,7 +251,7 @@ func (*Store) findProjectWebhookImplV2(ctx context.Context, tx *Tx, find *FindPr
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("project = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.URL; v != nil {
 		where, args = append(where, fmt.Sprintf("url = $%d", len(args)+1)), append(args, *v)
