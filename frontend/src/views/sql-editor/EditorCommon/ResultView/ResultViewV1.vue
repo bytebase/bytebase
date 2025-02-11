@@ -29,13 +29,16 @@
           >
             <template #tab>
               <span>{{ tabName(result, i) }}</span>
-              <Info v-if="result.error" class="ml-2 text-yellow-600 w-4 h-auto" />
+              <Info
+                v-if="result.error"
+                class="ml-2 text-yellow-600 w-4 h-auto"
+              />
             </template>
             <SingleResultViewV1
-              v-if="props.resultSet"
+              v-if="resultSet"
               :params="executeParams"
-              :sql-result-set="props.resultSet"
-              :database="props.database"
+              :sql-result-set="resultSet"
+              :database="database"
               :result="result"
               :set-index="i"
             />
@@ -262,7 +265,7 @@ const filteredResults = computed(() => {
 
   // Skip SET commands when displaying results
   return props.resultSet.results.filter(result => {
-    return !result.statement.trim().toUpperCase().startsWith("SET");
+    return !(result.statement.trim().toUpperCase().startsWith("SET") && result.columnNames.length === 0);
   });
 });
 
