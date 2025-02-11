@@ -165,12 +165,12 @@ func lockPlanAndGetPipelineUID(ctx context.Context, tx *Tx, planUID int64) (*int
 func (*Store) createPipeline(ctx context.Context, tx *Tx, create *PipelineMessage, creatorUID int) (*PipelineMessage, error) {
 	query := `
 		INSERT INTO pipeline (
-			project_id,
+			project,
 			creator_id,
 			name
 		)
 		VALUES (
-			(SELECT project.id FROM project WHERE project.resource_id = $1),
+			$1,
 			$2,
 			$3
 		)
@@ -231,11 +231,10 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 			pipeline.id,
 			pipeline.creator_id,
 			pipeline.created_at,
-			project.resource_id,
+			pipeline.project,
 			pipeline.name,
 			issue.id
 		FROM pipeline
-		LEFT JOIN project ON pipeline.project_id = project.id
 		LEFT JOIN issue ON pipeline.id = issue.pipeline_id
 		WHERE %s
 		ORDER BY pipeline.id DESC`, strings.Join(where, " AND "))
