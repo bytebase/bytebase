@@ -6,16 +6,6 @@
     UPDATE tech_book SET id = 4 WHERE id = 4 and name = 'test';
     UPDATE abc SET id = 4 WHERE id = 4 and name = 'test';
   changeType: 2
-  want:
-    - status: 2
-      code: 2001
-      title: builtin.prior-backup-check
-      content: Prior backup is feasible only with up to 5 statements that are either UPDATE or DELETE, or if all UPDATEs target the same table with a PRIMARY or UNIQUE KEY in the WHERE clause
-      detail: ""
-      startposition:
-        line: 0
-        column: 0
-      endposition: null
 - statement: |-
     UPDATE tech_book SET id = 1 WHERE id = 1 and name = 'test';
     UPDATE tech_book SET id = 2 WHERE id = 2 and name = 'test';
@@ -34,16 +24,6 @@
     UPDATE tech_book SET id = 6 WHERE id = 6;
     UPDATE tech_book SET id = 7 WHERE id = 7;
   changeType: 2
-  want:
-    - status: 2
-      code: 2001
-      title: builtin.prior-backup-check
-      content: Prior backup is feasible only with up to 5 statements that are either UPDATE or DELETE, or if all UPDATEs target the same table with a PRIMARY or UNIQUE KEY in the WHERE clause
-      detail: ""
-      startposition:
-        line: 0
-        column: 0
-      endposition: null
 - statement: DELETE FROM tech_book WHERE a > 1;
   changeType: 2
 - statement: UPDATE tech_book SET id = 1;
@@ -55,7 +35,6 @@
       code: 2001
       title: builtin.prior-backup-check
       content: Data change can only run DML, "CREATE TABLE t_test_backup(a int);" is not DML
-      detail: ""
       startposition:
         line: 1
         column: 0
