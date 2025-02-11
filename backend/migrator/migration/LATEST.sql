@@ -104,7 +104,7 @@ CREATE UNIQUE INDEX idx_project_unique_resource_id ON project(resource_id);
 -- Project Hook
 CREATE TABLE project_webhook (
     id SERIAL PRIMARY KEY,
-    project_id INTEGER NOT NULL REFERENCES project (id),
+    
     type TEXT NOT NULL CHECK (type LIKE 'bb.plugin.webhook.%'),
     name TEXT NOT NULL,
     url TEXT NOT NULL,

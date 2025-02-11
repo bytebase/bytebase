@@ -48,16 +48,16 @@ type UpdateProjectWebhookMessage struct {
 // if all fields are nil, it will list all project webhooks.
 type FindProjectWebhookMessage struct {
 	ID           *int
-	ProjectID    *int
+	ProjectID    *string
 	URL          *string
 	ActivityType *api.ActivityType
 }
 
 // CreateProjectWebhookV2 creates an instance of ProjectWebhook.
-func (s *Store) CreateProjectWebhookV2(ctx context.Context, projectUID int, projectResourceID string, create *ProjectWebhookMessage) (*ProjectWebhookMessage, error) {
+func (s *Store) CreateProjectWebhookV2(ctx context.Context, projectID string, create *ProjectWebhookMessage) (*ProjectWebhookMessage, error) {
 	query := `
 		INSERT INTO project_webhook (
-			project_id,
+			project,
 			type,
 			name,
 			url,
@@ -91,7 +91,7 @@ func (s *Store) CreateProjectWebhookV2(ctx context.Context, projectUID int, proj
 	}
 
 	if err := tx.QueryRowContext(ctx, query,
-		projectUID,
+		projectID,
 		create.Type,
 		create.Title,
 		create.URL,
@@ -109,7 +109,7 @@ func (s *Store) CreateProjectWebhookV2(ctx context.Context, projectUID int, proj
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	s.removeProjectCache(projectResourceID)
+	s.removeProjectCache(projectID)
 	return &projectWebhook, nil
 }
 
