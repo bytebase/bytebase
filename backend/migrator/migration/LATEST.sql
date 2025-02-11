@@ -247,14 +247,14 @@ CREATE TABLE task (
     id SERIAL PRIMARY KEY,
     pipeline_id INTEGER NOT NULL REFERENCES pipeline(id),
     stage_id INTEGER NOT NULL REFERENCES stage(id),
-    instance TEXT NOT NULL REFERENCES instance(resource_id),
-    -- Could be empty for creating database task when the task isn't yet completed successfully.
-    db_name TEXT,
+    instance TEXT NOT NULL,
+    db_name TEXT NOT NULL,
     name TEXT NOT NULL,
     status TEXT NOT NULL CHECK (status IN ('PENDING', 'PENDING_APPROVAL', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     type TEXT NOT NULL CHECK (type LIKE 'bb.task.%'),
     payload JSONB NOT NULL DEFAULT '{}',
-    earliest_allowed_at TIMESTAMPTZ NULL
+    earliest_allowed_at TIMESTAMPTZ NULL,
+    CONSTRAINT task_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
 
 CREATE INDEX idx_task_pipeline_id_stage_id ON task(pipeline_id, stage_id);
