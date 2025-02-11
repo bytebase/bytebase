@@ -672,7 +672,7 @@ CREATE TABLE sync_history (
 
 ALTER SEQUENCE sync_history_id_seq RESTART WITH 101;
 
-CREATE INDEX IF NOT EXISTS idx_sync_history_database_id_created_ts ON sync_history (database_id, created_ts);
+CREATE INDEX IF NOT EXISTS idx_sync_history_database_id_created_at ON sync_history (database_id, created_at);
 
 CREATE TABLE changelog (
     id BIGSERIAL PRIMARY KEY,
