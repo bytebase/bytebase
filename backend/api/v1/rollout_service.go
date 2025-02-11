@@ -1107,7 +1107,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 		if environment == nil {
 			return nil, errors.Errorf("environment %q not found", stageEnvironmentID)
 		}
-		stageCreate.EnvironmentID = environment.UID
+		stageCreate.Environment = stageEnvironmentID
 		stageCreate.Name = fmt.Sprintf("%s Stage", environment.Title)
 		if step.Title != "" {
 			stageCreate.Name = step.Title
@@ -1233,9 +1233,9 @@ func GetValidRolloutPolicyForStage(ctx context.Context, stores *store.Store, lic
 		}
 	}
 
-	policy, err := stores.GetRolloutPolicy(ctx, stage.EnvironmentID)
+	policy, err := stores.GetRolloutPolicy(ctx, stage.Environment)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get rollout policy for stageEnvironmentID %d", stage.EnvironmentID)
+		return nil, errors.Wrapf(err, "failed to get rollout policy for stageEnvironmentID %s", stage.Environment)
 	}
 	return policy, nil
 }

@@ -677,15 +677,6 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 
 	taskIDToName := map[int]string{}
 	for _, stage := range rollout.Stages {
-		environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-			UID: &stage.EnvironmentID,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get environment %d", stage.EnvironmentID)
-		}
-		if environment == nil {
-			return nil, errors.Errorf("environment %d not found", stage.EnvironmentID)
-		}
 		rolloutStage := &v1pb.Stage{
 			Name:  common.FormatStage(project.ResourceID, rollout.ID, stage.ID),
 			Id:    stage.DeploymentID,

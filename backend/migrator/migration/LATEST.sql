@@ -236,7 +236,7 @@ ALTER SEQUENCE pipeline_id_seq RESTART WITH 101;
 CREATE TABLE stage (
     id SERIAL PRIMARY KEY,
     pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
-    environment_id INTEGER NOT NULL REFERENCES environment (id),
+    environment TEXT NOT NULL,
     deployment_id TEXT NOT NULL DEFAULT '',
     name TEXT NOT NULL
 );

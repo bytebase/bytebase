@@ -119,7 +119,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTasks(ctx context.Context) error {
 	}
 
 	for _, environment := range environments {
-		policy, err := s.store.GetRolloutPolicy(ctx, environment.UID)
+		policy, err := s.store.GetRolloutPolicy(ctx, environment.ResourceID)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get rollout policy for environment %d", environment.UID)
 		}
@@ -809,7 +809,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					if nextStage == nil {
 						return nil
 					}
-					policy, err := s.store.GetRolloutPolicy(ctx, nextStage.EnvironmentID)
+					policy, err := s.store.GetRolloutPolicy(ctx, nextStage.Environment)
 					if err != nil {
 						return errors.Wrapf(err, "failed to get rollout policy")
 					}
