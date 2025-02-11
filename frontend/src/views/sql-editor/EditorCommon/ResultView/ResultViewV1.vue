@@ -265,7 +265,7 @@ const filteredResults = computed(() => {
 
   // Skip SET commands when displaying results
   return props.resultSet.results.filter(result => {
-    return !(result.statement.trim().toUpperCase().startsWith("SET") && result.columnNames.length === 0);
+    return !result.statement.trim().toUpperCase().startsWith("SET");
   });
 });
 
