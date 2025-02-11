@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -234,6 +235,10 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 		}
 		explainCalculator = md.CountAffectedRows
 
+		sqlTypes, err = tsql.GetStatementTypes(asts)
+		if err != nil {
+			slog.Error("failed to get statement types", log.BBError(err))
+		}
 		defaultSchema = "DBO"
 	default:
 		// Already checked in the Run().

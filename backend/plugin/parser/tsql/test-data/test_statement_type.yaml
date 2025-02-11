@@ -1,0 +1,44 @@
+- statement: |-
+    CREATE VIEW Articles AS
+    SELECT ArticleID, Title, AuthorID
+    FROM dbo.Articles
+    WHERE PublicationDate > '2020-01-01';
+  want:
+    - CREATE_VIEW
+- statement: |-
+    CREATE DATABASE TestDB;
+  want:
+    - CREATE_DATABASE
+- statement: |-
+    CREATE TABLE Comments (
+      CommentID INT PRIMARY KEY IDENTITY(1,1),
+      ArticleID INT,
+      UserID INT,
+      CommentText NVARCHAR(MAX) NOT NULL,
+      CreatedAt DATETIME DEFAULT GETDATE()
+    );
+  want:
+    - CREATE_TABLE
+- statement: |-
+    DROP TABLE dbo.Authors;
+  want:
+    - DROP_TABLE
+- statement: |-
+    DROP VIEW dbo.Articles;
+  want:
+    - DROP_VIEW
+- statement: |-
+    INSERT INTO dbo.Authors (FirstName, LastName, Age) VALUES ('John', 'Doe', 45);
+  want:
+    - INSERT
+- statement: |-
+    UPDATE dbo.Authors
+    SET Age = 46
+    WHERE FirstName = 'John' AND LastName = 'Doe';
+  want:
+    - UPDATE
+- statement: |-
+    DELETE FROM dbo.Authors
+    WHERE FirstName = 'John' AND LastName = 'Doe';
+  want:
+    - DELETE
