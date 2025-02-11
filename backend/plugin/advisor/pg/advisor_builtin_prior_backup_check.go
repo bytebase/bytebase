@@ -4,16 +4,23 @@ package pg
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
-	pgquery "github.com/pganalyze/pg_query_go/v5"
+	parser "github.com/bytebase/postgresql-parser"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+)
+
+const (
+	defaultSchema = "public"
 )
 
 var (
@@ -23,10 +30,6 @@ var (
 func init() {
 	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLBuiltinPriorBackupCheck, &BuiltinPriorBackupCheckAdvisor{})
 }
-
-const (
-	maxMixedDMLCount = 5
-)
 
 // BuiltinPriorBackupCheckAdvisor is the advisor checking for disallow mix DDL and DML.
 type BuiltinPriorBackupCheckAdvisor struct {
@@ -49,11 +52,8 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 	}
 	title := string(ctx.Rule.Type)
 
-	var needBackup []ast.Node
-
 	for _, stmt := range stmtList {
-		switch stmt.(type) {
-		case ast.DDLNode:
+		if _, ok := stmt.(ast.DDLNode); ok {
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:  level,
 				Title:   title,
@@ -63,8 +63,6 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 					Line: int32(stmt.LastLine()),
 				},
 			})
-		case *ast.UpdateStmt, *ast.DeleteStmt:
-			needBackup = append(needBackup, stmt)
 		}
 	}
 
@@ -81,168 +79,170 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 		})
 	}
 
-	if len(needBackup) > maxMixedDMLCount && !updateForOneTableWithUnique(ctx.DBSchema, needBackup) {
-		adviceList = append(adviceList, &storepb.Advice{
-			Status:  level,
-			Title:   title,
-			Content: fmt.Sprintf("Prior backup is feasible only with up to %d statements that are either UPDATE or DELETE, or if all UPDATEs target the same table with a PRIMARY or UNIQUE KEY in the WHERE clause", maxMixedDMLCount),
-			Code:    advisor.BuiltinPriorBackupCheck.Int32(),
-			StartPosition: &storepb.Position{
-				Line: 0,
-			},
-		})
+	statementInfoList, err := prepareTransformation(ctx.Statements)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to prepare transformation")
+	}
+
+	groupByTable := make(map[string][]statementInfo)
+	for _, item := range statementInfoList {
+		key := fmt.Sprintf("%s.%s", item.table.Schema, item.table.Table)
+		groupByTable[key] = append(groupByTable[key], item)
+	}
+
+	// Check if the statement type is the same for all statements on the same table.
+	for key, list := range groupByTable {
+		statementType := StatementTypeUnknown
+		for _, item := range list {
+			if statementType == StatementTypeUnknown {
+				statementType = item.table.StatementType
+			}
+			if statementType != item.table.StatementType {
+				adviceList = append(adviceList, &storepb.Advice{
+					Status:  level,
+					Title:   title,
+					Content: fmt.Sprintf("The statement type is not the same for all statements on the same table %q", key),
+					Code:    advisor.BuiltinPriorBackupCheck.Int32(),
+					StartPosition: &storepb.Position{
+						Line: 1,
+					},
+				})
+				break
+			}
+		}
 	}
 
 	return adviceList, nil
 }
 
-func updateForOneTableWithUnique(dbSchema *storepb.DatabaseSchemaMetadata, stmtList []ast.Node) bool {
-	var table *ast.TableDef
-	for _, stmt := range stmtList {
-		update, ok := stmt.(*ast.UpdateStmt)
-		if !ok {
-			return false
-		}
-		if table == nil {
-			table = update.Table
-		} else if !equalTable(table, update.Table) {
-			return false
-		}
-		node := update.GetOriginalNode()
-		if !hasUniqueInWhereClause(dbSchema, table, node) {
-			return false
-		}
-	}
+type StatementType int
 
-	return true
+const (
+	StatementTypeUnknown StatementType = iota
+	StatementTypeUpdate
+	StatementTypeInsert
+	StatementTypeDelete
+)
+
+type TableReference struct {
+	Database      string
+	Schema        string
+	Table         string
+	Alias         string
+	StatementType StatementType
 }
 
-func hasUniqueInWhereClause(dbSchema *storepb.DatabaseSchemaMetadata, table *ast.TableDef, node *pgquery.Node_UpdateStmt) bool {
-	list := extractColumnsInEqualCondition(table, node.UpdateStmt.WhereClause)
-	columnMap := make(map[string]bool)
-	for _, column := range list {
-		columnMap[column] = true
+type statementInfo struct {
+	offset    int
+	statement string
+	tree      antlr.ParserRuleContext
+	table     *TableReference
+}
+
+func prepareTransformation(statement string) ([]statementInfo, error) {
+	tree, err := pg.ParsePostgreSQL(statement)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse statement")
 	}
 
-	if dbSchema == nil {
+	extractor := &dmlExtractor{}
+	antlr.ParseTreeWalkerDefault.Walk(extractor, tree.Tree)
+	return extractor.dmls, nil
+}
+
+type dmlExtractor struct {
+	*parser.BasePostgreSQLParserListener
+
+	dmls   []statementInfo
+	offset int
+}
+
+func isTopLevel(ctx antlr.Tree) bool {
+	if ctx == nil {
+		return true
+	}
+
+	switch ctx := ctx.(type) {
+	case *parser.RootContext, *parser.StmtblockContext:
+		return true
+	case *parser.StmtmultiContext, *parser.StmtContext:
+		return isTopLevel(ctx.GetParent())
+	default:
 		return false
 	}
-
-	for _, schema := range dbSchema.Schemas {
-		if schema.Name == table.Schema || (schema.Name == "public" && table.Schema == "") {
-			for _, t := range schema.Tables {
-				if t.Name == table.Name {
-					for _, index := range t.Indexes {
-						if index.Unique || index.Primary {
-							exists := true
-							for _, column := range index.Expressions {
-								if !columnMap[column] {
-									exists = false
-									break
-								}
-							}
-							if exists {
-								return true
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return false
 }
 
-func extractColumnsInEqualCondition(table *ast.TableDef, node *pgquery.Node) []string {
-	if node == nil {
+func (e *dmlExtractor) ExitStmt(ctx *parser.StmtContext) {
+	if isTopLevel(ctx) {
+		e.offset++
+	}
+}
+
+func (e *dmlExtractor) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
+	if isTopLevel(ctx.GetParent()) {
+		table := extractTableReference(ctx.Relation_expr_opt_alias())
+		if table == nil {
+			return
+		}
+		table.StatementType = StatementTypeUpdate
+		e.dmls = append(e.dmls, statementInfo{
+			offset:    e.offset,
+			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
+			tree:      ctx,
+			table:     table,
+		})
+	}
+}
+
+func (e *dmlExtractor) EnterDeletestmt(ctx *parser.DeletestmtContext) {
+	if isTopLevel(ctx.GetParent()) {
+		table := extractTableReference(ctx.Relation_expr_opt_alias())
+		if table == nil {
+			return
+		}
+		table.StatementType = StatementTypeDelete
+		e.dmls = append(e.dmls, statementInfo{
+			offset:    e.offset,
+			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
+			tree:      ctx,
+			table:     table,
+		})
+	}
+}
+
+func extractTableReference(ctx parser.IRelation_expr_opt_aliasContext) *TableReference {
+	if ctx == nil {
 		return nil
 	}
 
-	switch n := node.Node.(type) {
-	case *pgquery.Node_BoolExpr:
-		if n.BoolExpr.Boolop != pgquery.BoolExprType_AND_EXPR {
-			return nil
-		}
-		var result []string
-		for _, arg := range n.BoolExpr.Args {
-			result = append(result, extractColumnsInEqualCondition(table, arg)...)
-		}
-		return result
-	case *pgquery.Node_AExpr:
-		if len(n.AExpr.Name) != 1 {
-			return nil
-		}
-		op, ok := n.AExpr.Name[0].Node.(*pgquery.Node_String_)
-		if !ok {
-			return nil
-		}
-		if op.String_.Sval != "=" {
-			return nil
-		}
-		if isConst(n.AExpr.Lexpr) {
-			column, err := extractColumn(table, n.AExpr.Rexpr)
-			if err == nil && column != "" {
-				return []string{column}
-			}
-		} else if isConst(n.AExpr.Rexpr) {
-			column, err := extractColumn(table, n.AExpr.Lexpr)
-			if err == nil && column != "" {
-				return []string{column}
-			}
-		}
-	}
-	return nil
-}
+	table := TableReference{}
 
-func isConst(node *pgquery.Node) bool {
-	switch node.Node.(type) {
-	case *pgquery.Node_AConst:
-		return true
+	relationExpr := ctx.Relation_expr()
+	if relationExpr == nil {
+		return nil
+	}
+
+	list := pg.NormalizePostgreSQLQualifiedName(relationExpr.Qualified_name())
+	switch len(list) {
+	case 3:
+		table.Database = list[0]
+		table.Schema = list[1]
+		table.Table = list[2]
+	case 2:
+		table.Schema = list[0]
+		table.Table = list[1]
+	case 1:
+		table.Schema = defaultSchema
+		table.Table = list[0]
 	default:
-		return false
-	}
-}
-
-func extractColumn(table *ast.TableDef, node *pgquery.Node) (string, error) {
-	switch n := node.Node.(type) {
-	case *pgquery.Node_ColumnRef:
-		columnNameDef, err := pgrawparser.ConvertNodeListToColumnNameDef(n.ColumnRef.Fields)
-		if err != nil {
-			return "", err
-		}
-		if columnNameDef.Table != nil {
-			if columnNameDef.Table.Schema != "" && columnNameDef.Table.Schema != table.Schema {
-				return "", nil
-			}
-			if columnNameDef.Table.Name != "" && columnNameDef.Table.Name != table.Name {
-				return "", nil
-			}
-		}
-		return columnNameDef.ColumnName, nil
-	default:
-		return "", nil
-	}
-}
-
-func equalTable(a, b *ast.TableDef) bool {
-	if a == nil || b == nil {
-		return false
+		slog.Debug("Invalid table name", log.BBError(errors.Errorf("Invalid table name: %v", list)))
+		return nil
 	}
 
-	if a.Schema == "" && b.Schema != "" && b.Schema != "public" {
-		return false
+	if ctx.Colid() != nil {
+		table.Alias = pg.NormalizePostgreSQLColid(ctx.Colid())
 	}
-
-	if a.Schema != "" && a.Schema != "public" && b.Schema == "" {
-		return false
-	}
-
-	if a.Schema != b.Schema {
-		return false
-	}
-
-	return a.Name == b.Name
+	return &table
 }
 
 func extractDatabaseName(databaseUID string) string {
