@@ -22,22 +22,20 @@
           style="--n-tab-padding: 4px 12px"
         >
           <NTabPane
-            v-for="(result, i) in resultSet.results"
+            v-for="(result, i) in filteredResults"
             :key="i"
             :name="tabName(result, i)"
             class="flex-1 flex flex-col overflow-hidden"
           >
             <template #tab>
               <span>{{ tabName(result, i) }}</span>
-              <Info
-                v-if="result.error"
-                class="ml-2 text-yellow-600 w-4 h-auto"
-              />
+              <Info v-if="result.error" class="ml-2 text-yellow-600 w-4 h-auto" />
             </template>
             <SingleResultViewV1
+              v-if="props.resultSet"
               :params="executeParams"
-              :sql-result-set="resultSet"
-              :database="database"
+              :sql-result-set="props.resultSet"
+              :database="props.database"
               :result="result"
               :set-index="i"
             />
@@ -255,6 +253,17 @@ const disallowCopyingData = computed(() => {
     return true;
   }
   return false;
+});
+
+const filteredResults = computed(() => {
+  if (!props.resultSet) {
+    return []; // If resultSet is undefined, return an empty array
+  }
+
+  // Skip SET commands when displaying results
+  return props.resultSet.results.filter(result => {
+    return !result.statement.trim().toUpperCase().startsWith("SET");
+  });
 });
 
 provideSQLResultViewContext({
