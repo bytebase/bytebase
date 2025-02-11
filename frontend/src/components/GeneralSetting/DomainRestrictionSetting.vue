@@ -22,19 +22,21 @@
         "
         type="text"
       />
+
       <div class="w-full flex flex-row justify-between items-center">
         <NCheckbox
           v-model:checked="state.enableRestriction"
-          :disabled="!state.domain"
+          :disabled="!state.domain || !hasFeature"
           :readonly="!allowEdit"
         >
-          <p class="font-medium">
+          <div class="font-medium flex items-center gap-x-2">
             {{
               $t(
                 "settings.general.workspace.domain-restriction.members-restriction.self"
               )
             }}
-          </p>
+            <FeatureBadge feature="bb.feature.domain-restriction" />
+          </div>
           <p class="text-sm text-gray-400 leading-tight">
             {{
               $t(
@@ -62,8 +64,9 @@ import { head, isEqual } from "lodash-es";
 import { NButton, NCheckbox, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { pushNotification, featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { FeatureBadge } from "../FeatureGuard";
 
 const getInitialState = (): LocalState => {
   const defaultState: LocalState = {
@@ -98,6 +101,8 @@ const state = reactive<LocalState>(getInitialState());
 const allowSaveUpdates = computed(() => {
   return !isEqual(state, getInitialState());
 });
+
+const hasFeature = featureToRef("bb.feature.domain-restriction");
 
 const saveDomainRestrictionSettings = async () => {
   if (state.domain.length === 0) {

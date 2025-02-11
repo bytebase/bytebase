@@ -177,7 +177,7 @@ const columnList = computed(() => {
                 ? t(
                     `settings.sensitive-data.algorithms.${getMaskingType(item.item.algorithm)?.toLowerCase()}.self`
                   )
-                : t("settings.sensitive-data.algorithms.default")}
+                : "N/A"}
             </h3>
           )}
           {isBuiltinSemanticType(item.item) && (
