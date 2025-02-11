@@ -6,11 +6,18 @@
   >
     <template v-if="executeParams && resultSet && !showPlaceholder">
       <template v-if="viewMode === 'SINGLE-RESULT'">
+        <ErrorView
+          v-if="resultSet.results[0]?.error"
+          :error="resultSet.results[0]?.error"
+          :execute-params="executeParams"
+          :result-set="resultSet"
+        />
         <SingleResultViewV1
+          v-else
           :params="executeParams"
           :database="database"
-          :sql-result-set="resultSet"
           :result="resultSet.results[0]"
+          :allow-export="resultSet.allowExport"
           :set-index="0"
         />
       </template>
@@ -34,11 +41,18 @@
                 class="ml-2 text-yellow-600 w-4 h-auto"
               />
             </template>
+            <ErrorView
+              v-if="result.error"
+              :error="result.error"
+              :execute-params="executeParams"
+              :result-set="resultSet"
+            />
             <SingleResultViewV1
+              v-else
               :params="executeParams"
-              :sql-result-set="resultSet"
               :database="database"
               :result="result"
+              :allow-export="resultSet.allowExport"
               :set-index="i"
             />
           </NTabPane>
