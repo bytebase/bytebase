@@ -469,13 +469,13 @@ ALTER SEQUENCE vcs_id_seq RESTART WITH 101;
 -- vcs_connector table stores vcs connectors for a project
 CREATE TABLE vcs_connector (
     id SERIAL PRIMARY KEY,
-    vcs INTEGER NOT NULL REFERENCES vcs(resource_id),
+    vcs TEXT NOT NULL REFERENCES vcs(resource_id),
     project TEXT NOT NULL REFERENCES project(resource_id),
     resource_id TEXT NOT NULL,
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_vcs_connector_unique_project_id_resource_id ON vcs_connector(project_id, resource_id);
+CREATE UNIQUE INDEX idx_vcs_connector_unique_project_resource_id ON vcs_connector(project, resource_id);
 
 ALTER SEQUENCE vcs_connector_id_seq RESTART WITH 101;
 
@@ -572,9 +572,9 @@ ALTER SEQUENCE risk_id_seq RESTART WITH 101;
 -- slow_query stores slow query statistics for each database.
 CREATE TABLE slow_query (
     id SERIAL PRIMARY KEY,
-    -- In MySQL, users can query without specifying a database. In this case, instance_id is used to identify the instance.
+    -- In MySQL, users can query without specifying a database. In this case, instance is used to identify the instance.
     instance TEXT NOT NULL REFERENCES instance(resource_id),
-    -- In MySQL, users can query without specifying a database. In this case, database_id is NULL.
+    -- In MySQL, users can query without specifying a database. In this case, db_name is NULL.
     db_name TEXT,
     -- It's hard to store all slow query logs, so the slow query is aggregated by day and database.
     log_date_ts INTEGER NOT NULL,
@@ -583,9 +583,9 @@ CREATE TABLE slow_query (
 );
 
 -- The slow query log is aggregated by day and database and we usually query the slow query log by day and database.
-CREATE UNIQUE INDEX uk_slow_query_database_id_log_date_ts ON slow_query (database_id, log_date_ts);
+CREATE UNIQUE INDEX idx_slow_query_unique_instance_db_name_log_date_ts ON slow_query(instance, db_name, log_date_ts);
 
-CREATE INDEX idx_slow_query_instance_id_log_date_ts ON slow_query (instance_id, log_date_ts);
+CREATE INDEX idx_slow_query_instance_id_log_date_ts ON slow_query(instance, log_date_ts);
 
 ALTER SEQUENCE slow_query_id_seq RESTART WITH 101;
 

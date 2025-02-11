@@ -85,6 +85,7 @@ ALTER TABLE issue ALTER COLUMN project SET NOT NULL;
 ALTER TABLE issue ADD constraint issue_project_fkey FOREIGN KEY (project) references project(resource_id);
 CREATE INDEX idx_issue_project ON issue(project);
 
+DROP INDEX IF EXISTS idx_vcs_connector_unique_project_id_resource_id;
 ALTER TABLE vcs_connector ADD COLUMN vcs TEXT;
 UPDATE vcs_connector SET vcs = vcs.resource_id FROM vcs WHERE vcs.id = vcs_connector.vcs_id;
 ALTER TABLE vcs_connector DROP COLUMN vcs_id;
@@ -96,6 +97,7 @@ UPDATE vcs_connector SET project = project.resource_id FROM project WHERE projec
 ALTER TABLE vcs_connector DROP COLUMN project_id;
 ALTER TABLE vcs_connector ALTER COLUMN project SET NOT NULL;
 ALTER TABLE vcs_connector ADD constraint vcs_connector_project_fkey FOREIGN KEY (project) references project(resource_id);
+CREATE UNIQUE INDEX idx_vcs_connector_unique_project_resource_id ON vcs_connector(project, resource_id);
 
 DELETE FROM anomaly WHERE database_id IS NULL;
 DROP INDEX IF EXISTS idx_anomaly_unique_project_database_id_type;
@@ -129,12 +131,16 @@ ALTER TABLE worksheet ADD COLUMN db_name TEXT;
 UPDATE worksheet SET instance = db.instance, db_name = db.name FROM db WHERE worksheet.database_id IS NOT NULL AND db.id = worksheet.database_id;
 ALTER TABLE worksheet DROP COLUMN database_id;
 
+DROP INDEX IF EXISTS uk_slow_query_database_id_log_date_ts;
+DROP INDEX IF EXISTS idx_slow_query_instance_id_log_date_ts;
 ALTER TABLE slow_query ADD COLUMN instance TEXT;
 ALTER TABLE slow_query ADD COLUMN db_name TEXT;
 UPDATE slow_query SET db_name = db.name FROM db WHERE slow_query.database_id IS NOT NULL AND db.id = slow_query.database_id;
 UPDATE slow_query SET instance = instance.resource_id FROM instance WHERE instance.id = slow_query.instance_id;
 ALTER TABLE slow_query ALTER COLUMN instance SET NOT NULL;
 ALTER TABLE slow_query ADD constraint slow_query_instance_fkey FOREIGN KEY (instance) references instance(resource_id);
+CREATE UNIQUE INDEX idx_slow_query_unique_instance_db_name_log_date_ts ON slow_query(instance, db_name, log_date_ts);
+CREATE INDEX idx_slow_query_instance_id_log_date_ts ON slow_query(instance, log_date_ts);
 
 DROP INDEX IF EXISTS idx_db_group_unique_project_id_resource_id;
 DROP INDEX IF EXISTS idx_db_group_unique_project_id_placeholder;
