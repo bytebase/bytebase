@@ -57,6 +57,7 @@ ALTER TABLE issue DROP COLUMN updated_ts;
 ALTER TABLE audit_log ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT now();
 UPDATE audit_log SET created_at = to_timestamp(created_ts);
 ALTER TABLE audit_log DROP COLUMN created_ts;
+CREATE INDEX idx_audit_log_created_at ON audit_log(created_at);
 
 ALTER TABLE issue_comment ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT now();
 UPDATE issue_comment SET created_at = to_timestamp(created_ts);
@@ -69,6 +70,7 @@ ALTER TABLE issue_comment DROP COLUMN updated_ts;
 ALTER TABLE query_history ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT now();
 UPDATE query_history SET created_at = to_timestamp(created_ts);
 ALTER TABLE query_history DROP COLUMN created_ts;
+CREATE INDEX idx_query_history_creator_id_created_at_project_id ON query_history(creator_id, created_at, project_id DESC);
 
 ALTER TABLE anomaly ADD COLUMN updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
 UPDATE anomaly SET updated_at = to_timestamp(updated_ts);

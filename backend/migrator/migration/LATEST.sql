@@ -264,8 +264,6 @@ CREATE INDEX idx_task_pipeline_id_stage_id ON task(pipeline_id, stage_id);
 
 CREATE INDEX idx_task_status ON task(status);
 
-CREATE INDEX idx_task_earliest_allowed_ts ON task(earliest_allowed_ts);
-
 ALTER SEQUENCE task_id_seq RESTART WITH 101;
 
 -- task_dag describes task dependency relationship
@@ -386,15 +384,11 @@ CREATE INDEX idx_issue_creator_id ON issue(creator_id);
 
 CREATE INDEX idx_issue_assignee_id ON issue(assignee_id);
 
-CREATE INDEX idx_issue_created_ts ON issue(created_ts);
-
 CREATE INDEX idx_issue_ts_vector ON issue USING GIN(ts_vector);
 
 ALTER SEQUENCE issue_id_seq RESTART WITH 101;
 
--- stores the issue subscribers. Unlike other tables, it doesn't have row_status/creator_id/created_ts/updater_id/updated_ts.
--- We use a separate table mainly because we can't leverage indexed query if the subscriber id is stored
--- as a comma separated id list in the issue table.
+-- stores the issue subscribers.
 CREATE TABLE issue_subscriber (
     issue_id INTEGER NOT NULL REFERENCES issue (id),
     subscriber_id INTEGER NOT NULL REFERENCES principal (id),
@@ -421,7 +415,7 @@ CREATE TABLE audit_log (
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE INDEX idx_audit_log_created_ts ON audit_log(created_ts);
+CREATE INDEX idx_audit_log_created_at ON audit_log(created_at);
 
 CREATE INDEX idx_audit_log_payload_parent ON audit_log((payload->>'parent'));
 
@@ -457,7 +451,7 @@ CREATE TABLE query_history (
     payload JSONB NOT NULL DEFAULT '{}' -- saved for details, like error, duration, etc.
 );
 
-CREATE INDEX idx_query_history_creator_id_created_ts_project_id ON query_history(creator_id, created_ts, project_id DESC);
+CREATE INDEX idx_query_history_creator_id_created_at_project_id ON query_history(creator_id, created_at, project_id DESC);
 
 ALTER SEQUENCE query_history_id_seq RESTART WITH 101;
 
