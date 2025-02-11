@@ -500,7 +500,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 				(
 					SELECT revision.version
 					FROM revision
-					WHERE revision.database_id = db.id AND deleted_ts IS NOT NULL
+					WHERE revision.database_id = db.id AND deleted_at IS NOT NULL
 					ORDER BY revision.version DESC
 					LIMIT 1
 				),
