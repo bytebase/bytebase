@@ -33,7 +33,7 @@ type TaskMessage struct {
 	Name              string
 	Type              api.TaskType
 	Payload           string
-	EarliestAllowedTs *time.Time
+	EarliestAllowedAt *time.Time
 	DependsOn         []int
 
 	DatabaseName string
@@ -135,7 +135,7 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 			create.Name,
 			create.Type,
 			create.Payload,
-			create.EarliestAllowedTs,
+			create.EarliestAllowedAt,
 		)
 		const count = 8
 		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, 'PENDING_APPROVAL', $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, i*count+7, i*count+8))
@@ -171,7 +171,7 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 			task.DatabaseID = &val
 		}
 		if earliestAllowedAt.Valid {
-			task.EarliestAllowedTs = &earliestAllowedAt.Time
+			task.EarliestAllowedAt = &earliestAllowedAt.Time
 		}
 		tasks = append(tasks, task)
 	}
@@ -306,7 +306,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			return nil, err
 		}
 		if earliestAllowedAt.Valid {
-			task.EarliestAllowedTs = &earliestAllowedAt.Time
+			task.EarliestAllowedAt = &earliestAllowedAt.Time
 		}
 		tasks = append(tasks, task)
 	}
@@ -404,7 +404,7 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 	}
 
 	if earliestAllowedAt.Valid {
-		task.EarliestAllowedTs = &earliestAllowedAt.Time
+		task.EarliestAllowedAt = &earliestAllowedAt.Time
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, err

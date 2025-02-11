@@ -26,8 +26,8 @@ const (
 // QueryHistoryMessage is the API message for query history.
 type QueryHistoryMessage struct {
 	// Output only fields
-	UID         int
-	CreatedTime time.Time
+	UID       int
+	CreatedAt time.Time
 
 	// Related fields
 	CreatorUID int
@@ -91,7 +91,7 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 		payload,
 	).Scan(
 		&create.UID,
-		&create.CreatedTime,
+		&create.CreatedAt,
 	); err != nil {
 		return nil, err
 	}
@@ -161,7 +161,7 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 		if err := rows.Scan(
 			&queryHistory.UID,
 			&queryHistory.CreatorUID,
-			&queryHistory.CreatedTime,
+			&queryHistory.CreatedAt,
 			&queryHistory.ProjectID,
 			&queryHistory.Database,
 			&queryHistory.Statement,

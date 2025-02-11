@@ -46,10 +46,10 @@ type IssueMessage struct {
 	TaskStatusCount map[string]int32
 
 	// The following fields are output only and not used for create().
-	UID         int
-	Creator     *UserMessage
-	CreatedTime time.Time
-	UpdatedTime time.Time
+	UID       int
+	Creator   *UserMessage
+	CreatedAt time.Time
+	UpdatedAt time.Time
 
 	// Internal fields.
 	projectUID     int
@@ -81,8 +81,8 @@ type FindIssueMessage struct {
 	// Only principleID or one of the following three fields can be set.
 	CreatorID       *int
 	SubscriberID    *int
-	CreatedTsBefore *time.Time
-	CreatedTsAfter  *time.Time
+	CreatedAtBefore *time.Time
+	CreatedAtAfter  *time.Time
 	Types           *[]api.IssueType
 
 	StatusList []api.IssueStatus
@@ -184,8 +184,8 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		tsVector,
 	).Scan(
 		&create.UID,
-		&create.CreatedTime,
-		&create.UpdatedTime,
+		&create.CreatedAt,
+		&create.UpdatedAt,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -385,10 +385,10 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	if v := find.CreatorID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.creator_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.CreatedTsBefore; v != nil {
+	if v := find.CreatedAtBefore; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.created_at < $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.CreatedTsAfter; v != nil {
+	if v := find.CreatedAtAfter; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.created_at > $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.SubscriberID; v != nil {
@@ -501,8 +501,8 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		if err := rows.Scan(
 			&issue.UID,
 			&issue.creatorUID,
-			&issue.CreatedTime,
-			&issue.UpdatedTime,
+			&issue.CreatedAt,
+			&issue.UpdatedAt,
 			&issue.projectUID,
 			&issue.PipelineUID,
 			&issue.PlanUID,

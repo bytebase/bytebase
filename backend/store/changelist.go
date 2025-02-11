@@ -22,9 +22,9 @@ type ChangelistMessage struct {
 	Payload *storepb.Changelist
 
 	// Output only fields
-	UID         int
-	CreatorID   int
-	UpdatedTime time.Time
+	UID       int
+	CreatorID int
+	UpdatedAt time.Time
 }
 
 // FindChangelistMessage is the API message for finding changelists.
@@ -98,7 +98,7 @@ func (s *Store) ListChangelists(ctx context.Context, find *FindChangelistMessage
 		if err := rows.Scan(
 			&changelist.UID,
 			&changelist.CreatorID,
-			&changelist.UpdatedTime,
+			&changelist.UpdatedAt,
 			&changelist.ProjectID,
 			&changelist.ResourceID,
 			&payload,
@@ -160,7 +160,7 @@ func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage)
 		payload,
 	).Scan(
 		&create.UID,
-		&create.UpdatedTime,
+		&create.UpdatedAt,
 	); err != nil {
 		return nil, err
 	}

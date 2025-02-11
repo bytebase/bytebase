@@ -41,11 +41,11 @@ type WorkSheetMessage struct {
 	Visibility WorkSheetVisibility
 
 	// Output only fields
-	UID         int
-	Size        int64
-	CreatedTime time.Time
-	UpdatedTime time.Time
-	Starred     bool
+	UID       int
+	Size      int64
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Starred   bool
 }
 
 // FindWorkSheetMessage is the API message for finding sheets.
@@ -167,8 +167,8 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 		if err := rows.Scan(
 			&sheet.UID,
 			&sheet.CreatorID,
-			&sheet.CreatedTime,
-			&sheet.UpdatedTime,
+			&sheet.CreatedAt,
+			&sheet.UpdatedAt,
 			&sheet.ProjectUID,
 			&sheet.DatabaseUID,
 			&sheet.Title,
@@ -228,8 +228,8 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 		payload,
 	).Scan(
 		&create.UID,
-		&create.CreatedTime,
-		&create.UpdatedTime,
+		&create.CreatedAt,
+		&create.UpdatedAt,
 		&create.Size,
 	); err != nil {
 		if err == sql.ErrNoRows {

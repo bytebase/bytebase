@@ -25,8 +25,8 @@ type AnomalyMessage struct {
 	//
 	// UID is the unique identifier of the anomaly.
 	UID int
-	// UpdatedTs is the timestamp when the anomaly is updated.
-	UpdatedTs time.Time
+	// UpdatedAt is the timestamp when the anomaly is updated.
+	UpdatedAt time.Time
 }
 
 // ListAnomalyMessage is the message to list anomalies.
@@ -52,7 +52,7 @@ func (s *Store) UpsertActiveAnomalyV2(ctx context.Context, upsert *AnomalyMessag
 	}
 	defer tx.Rollback()
 
-	upsert.UpdatedTs = time.Now()
+	upsert.UpdatedAt = time.Now()
 	query := `
 	INSERT INTO anomaly (
 		updated_at,
@@ -66,7 +66,7 @@ func (s *Store) UpsertActiveAnomalyV2(ctx context.Context, upsert *AnomalyMessag
 		updated_at = EXCLUDED.updated_at
 `
 	if _, err := tx.ExecContext(ctx, query,
-		upsert.UpdatedTs,
+		upsert.UpdatedAt,
 		upsert.ProjectID,
 		upsert.InstanceUID,
 		upsert.DatabaseUID,
@@ -169,7 +169,7 @@ func (*Store) listAnomalyImplV2(ctx context.Context, tx *Tx, list *ListAnomalyMe
 		var databaseID sql.NullInt32
 		if err := rows.Scan(
 			&anomaly.UID,
-			&anomaly.UpdatedTs,
+			&anomaly.UpdatedAt,
 			&anomaly.InstanceUID,
 			&databaseID,
 			&anomaly.Type,

@@ -289,7 +289,7 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 		Name:        common.FormatSheet(project.ResourceID, sheet.UID),
 		Title:       sheet.Title,
 		Creator:     fmt.Sprintf("users/%s", creator.Email),
-		CreateTime:  timestamppb.New(sheet.CreatedTime),
+		CreateTime:  timestamppb.New(sheet.CreatedAt),
 		Content:     []byte(sheet.Statement),
 		ContentSize: sheet.Size,
 		Payload:     v1SheetPayload,

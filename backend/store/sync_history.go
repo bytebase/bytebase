@@ -18,7 +18,7 @@ type SyncHistory struct {
 	Schema      string
 	Metadata    *storepb.DatabaseSchemaMetadata
 
-	CreateTime time.Time
+	CreatedAt time.Time
 }
 
 func (s *Store) GetSyncHistoryByUID(ctx context.Context, uid int64) (*SyncHistory, error) {
@@ -39,7 +39,7 @@ func (s *Store) GetSyncHistoryByUID(ctx context.Context, uid int64) (*SyncHistor
 	var m []byte
 	if err := s.db.db.QueryRowContext(ctx, query, uid).Scan(
 		&h.UID,
-		&h.CreateTime,
+		&h.CreatedAt,
 		&h.DatabaseUID,
 		&m,
 		&h.Schema,

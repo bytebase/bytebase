@@ -320,7 +320,7 @@ func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *
 					InstanceID:        task.InstanceID,
 					DatabaseID:        &createdDatabase.UID,
 					Type:              task.Type,
-					EarliestAllowedTs: task.EarliestAllowedTs,
+					EarliestAllowedAt: task.EarliestAllowedAt,
 					Payload:           task.Payload,
 				}
 				creates = append(creates, taskCreate)

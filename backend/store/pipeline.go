@@ -20,7 +20,7 @@ type PipelineMessage struct {
 	// Output only.
 	ID         int
 	CreatorUID int
-	CreatedTs  time.Time
+	CreatedAt  time.Time
 	IssueID    *int
 }
 
@@ -187,7 +187,7 @@ func (*Store) createPipeline(ctx context.Context, tx *Tx, create *PipelineMessag
 		create.Name,
 	).Scan(
 		&pipeline.ID,
-		&pipeline.CreatedTs,
+		&pipeline.CreatedAt,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -264,7 +264,7 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 		if err := rows.Scan(
 			&pipeline.ID,
 			&pipeline.CreatorUID,
-			&pipeline.CreatedTs,
+			&pipeline.CreatedAt,
 			&pipeline.ProjectID,
 			&pipeline.Name,
 			&pipeline.IssueID,

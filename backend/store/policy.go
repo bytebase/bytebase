@@ -123,7 +123,7 @@ func (s *Store) getIamPolicy(ctx context.Context, find *FindPolicyMessage) (*Iam
 
 	return &IamPolicyMessage{
 		Policy: p,
-		Etag:   generateEtag(policy.UpdatedTime),
+		Etag:   generateEtag(policy.UpdatedAt),
 	}, nil
 }
 
@@ -334,8 +334,8 @@ type PolicyMessage struct {
 	Enforce           bool
 
 	// Output only.
-	UID         int
-	UpdatedTime time.Time
+	UID       int
+	UpdatedAt time.Time
 }
 
 // FindPolicyMessage is the message for finding policies.
@@ -489,7 +489,7 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 		&policy.Payload,
 		&policy.InheritFromParent,
 		&rowStatus,
-		&policy.UpdatedTime,
+		&policy.UpdatedAt,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -567,7 +567,7 @@ func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage) (*Po
 		rowStatus,
 	).Scan(
 		&uid,
-		&create.UpdatedTime,
+		&create.UpdatedAt,
 	); err != nil {
 		return nil, err
 	}
@@ -616,7 +616,7 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 
 		if err := rows.Scan(
 			&policyMessage.UID,
-			&policyMessage.UpdatedTime,
+			&policyMessage.UpdatedAt,
 			&policyMessage.ResourceType,
 			&policyMessage.ResourceUID,
 			&policyMessage.InheritFromParent,

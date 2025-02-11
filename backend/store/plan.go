@@ -25,8 +25,8 @@ type PlanMessage struct {
 	// output only
 	UID        int64
 	CreatorUID int
-	CreatedTs  time.Time
-	UpdatedTs  time.Time
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 
 	PlanCheckRunStatusCount map[string]int32
 }
@@ -38,8 +38,8 @@ type FindPlanMessage struct {
 	ProjectIDs      *[]string
 	CreatorID       *int
 	PipelineID      *int
-	CreatedTsBefore *time.Time
-	CreatedTsAfter  *time.Time
+	CreatedAtBefore *time.Time
+	CreatedAtAfter  *time.Time
 
 	Limit  *int
 	Offset *int
@@ -95,7 +95,7 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creatorUID in
 		plan.Name,
 		plan.Description,
 		config,
-	).Scan(&id, &plan.CreatedTs, &plan.UpdatedTs); err != nil {
+	).Scan(&id, &plan.CreatedAt, &plan.UpdatedAt); err != nil {
 		return nil, errors.Wrap(err, "failed to insert plan")
 	}
 
@@ -141,10 +141,10 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 	if v := find.CreatorID; v != nil {
 		where, args = append(where, fmt.Sprintf("plan.creator_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.CreatedTsBefore; v != nil {
+	if v := find.CreatedAtBefore; v != nil {
 		where, args = append(where, fmt.Sprintf("plan.created_at < $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.CreatedTsAfter; v != nil {
+	if v := find.CreatedAtAfter; v != nil {
 		where, args = append(where, fmt.Sprintf("plan.created_at > $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.NoIssue; v {
@@ -217,8 +217,8 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		if err := rows.Scan(
 			&plan.UID,
 			&plan.CreatorUID,
-			&plan.CreatedTs,
-			&plan.UpdatedTs,
+			&plan.CreatedAt,
+			&plan.UpdatedAt,
 			&plan.ProjectID,
 			&plan.PipelineUID,
 			&plan.Name,

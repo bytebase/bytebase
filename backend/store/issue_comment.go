@@ -15,8 +15,8 @@ import (
 
 type IssueCommentMessage struct {
 	UID       int
-	CreatedTs time.Time
-	UpdatedTs time.Time
+	CreatedAt time.Time
+	UpdatedAt time.Time
 	IssueUID  int
 	Payload   *storepb.IssueCommentPayload
 	Creator   *UserMessage
@@ -100,8 +100,8 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 		if err := rows.Scan(
 			&ic.UID,
 			&ic.creatorUID,
-			&ic.CreatedTs,
-			&ic.UpdatedTs,
+			&ic.CreatedAt,
+			&ic.UpdatedAt,
 			&ic.IssueUID,
 			&p,
 		); err != nil {
@@ -140,14 +140,13 @@ func (s *Store) CreateIssueCommentTaskUpdateStatus(ctx context.Context, issueUID
 				},
 			},
 		},
-		creatorUID: creatorUID,
 	}
 
-	_, err := s.CreateIssueComment(ctx, create)
+	_, err := s.CreateIssueComment(ctx, create, creatorUID)
 	return err
 }
 
-func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMessage) (*IssueCommentMessage, error) {
+func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMessage, creatorUID int) (*IssueCommentMessage, error) {
 	query := `
 		INSERT INTO issue_comment (
 			creator_id,
@@ -165,7 +164,7 @@ func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMess
 		return nil, errors.Wrapf(err, "failed to marshal payload")
 	}
 
-	if err := s.db.db.QueryRowContext(ctx, query, create.creatorUID, create.IssueUID, payload).Scan(&create.UID, &create.CreatedTs, &create.UpdatedTs); err != nil {
+	if err := s.db.db.QueryRowContext(ctx, query, creatorUID, create.IssueUID, payload).Scan(&create.UID, &create.CreatedAt, &create.UpdatedAt); err != nil {
 		return nil, errors.Wrapf(err, "failed to insert")
 	}
 

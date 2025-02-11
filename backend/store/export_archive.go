@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -15,10 +14,9 @@ import (
 )
 
 type ExportArchiveMessage struct {
-	UID         int
-	CreatedTime time.Time
-	Bytes       []byte
-	Payload     *storepb.ExportArchivePayload
+	UID     int
+	Bytes   []byte
+	Payload *storepb.ExportArchivePayload
 }
 
 // FindExportArchiveMessage is the API message for finding export archives.
@@ -58,7 +56,6 @@ func (s *Store) ListExportArchives(ctx context.Context, find *FindExportArchiveM
 	query := fmt.Sprintf(`
 		SELECT
 			id,
-			created_at,
 			bytes,
 			payload
 		FROM export_archive
@@ -77,7 +74,6 @@ func (s *Store) ListExportArchives(ctx context.Context, find *FindExportArchiveM
 		var bytes, payload []byte
 		if err := rows.Scan(
 			&exportArchive.UID,
-			&exportArchive.CreatedTime,
 			&bytes,
 			&payload,
 		); err != nil {
@@ -114,7 +110,7 @@ func (s *Store) CreateExportArchive(ctx context.Context, create *ExportArchiveMe
 			payload
 		)
 		VALUES ($1, $2)
-		RETURNING id, created_at;
+		RETURNING id;
 	`
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -127,7 +123,6 @@ func (s *Store) CreateExportArchive(ctx context.Context, create *ExportArchiveMe
 		payload,
 	).Scan(
 		&create.UID,
-		&create.CreatedTime,
 	); err != nil {
 		return nil, err
 	}

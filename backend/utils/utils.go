@@ -343,7 +343,7 @@ func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, relayCl
 		Title:       issue.Title,
 		Description: issue.Description,
 		Project:     issue.Project.ResourceID,
-		CreateTime:  issue.CreatedTime,
+		CreateTime:  issue.CreatedAt,
 		Creator:     issue.Creator.Email,
 	})
 	if err != nil {

@@ -31,10 +31,10 @@ type TaskRunMessage struct {
 	ID        int
 	CreatorID int
 	Creator   *UserMessage
-	CreatedTs time.Time
-	UpdatedTs time.Time
+	CreatedAt time.Time
+	UpdatedAt time.Time
 	ProjectID string
-	StartedTs *time.Time
+	StartedAt *time.Time
 }
 
 // FindTaskRunMessage is the message for finding task runs.
@@ -134,8 +134,8 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 		if err := rows.Scan(
 			&taskRun.ID,
 			&taskRun.CreatorID,
-			&taskRun.CreatedTs,
-			&taskRun.UpdatedTs,
+			&taskRun.CreatedAt,
+			&taskRun.UpdatedAt,
 			&taskRun.TaskUID,
 			&taskRun.Name,
 			&taskRun.Status,
@@ -151,7 +151,7 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 		}
 
 		if startedAt.Valid {
-			taskRun.StartedTs = &startedAt.Time
+			taskRun.StartedAt = &startedAt.Time
 		}
 		var resultProto storepb.TaskRunResult
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(taskRun.Result), &resultProto); err != nil {
@@ -374,8 +374,8 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, tx *Tx, patch *TaskRun
 	).Scan(
 		&taskRun.ID,
 		&taskRun.CreatorID,
-		&taskRun.CreatedTs,
-		&taskRun.UpdatedTs,
+		&taskRun.CreatedAt,
+		&taskRun.UpdatedAt,
 		&taskRun.TaskUID,
 		&taskRun.Name,
 		&taskRun.Status,
@@ -461,8 +461,8 @@ func (*Store) findTaskRunImpl(ctx context.Context, tx *Tx, find *TaskRunFind) ([
 		if err := rows.Scan(
 			&taskRun.ID,
 			&taskRun.CreatorID,
-			&taskRun.CreatedTs,
-			&taskRun.UpdatedTs,
+			&taskRun.CreatedAt,
+			&taskRun.UpdatedAt,
 			&taskRun.TaskUID,
 			&taskRun.Name,
 			&taskRun.Status,

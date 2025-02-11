@@ -30,9 +30,9 @@ type SheetMessage struct {
 	Sha256 []byte
 
 	// Output only fields
-	UID         int
-	Size        int64
-	CreatedTime time.Time
+	UID       int
+	Size      int64
+	CreatedAt time.Time
 }
 
 func (s *SheetMessage) GetSha256Hex() string {
@@ -166,7 +166,7 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 		if err := rows.Scan(
 			&sheet.UID,
 			&sheet.CreatorID,
-			&sheet.CreatedTime,
+			&sheet.CreatedAt,
 			&sheet.ProjectUID,
 			&sheet.Title,
 			&sheet.Statement,
@@ -238,7 +238,7 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 		payload,
 	).Scan(
 		&create.UID,
-		&create.CreatedTime,
+		&create.CreatedAt,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -316,7 +316,7 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectUID int, creates []
 
 		if err := rows.Scan(
 			&creates[i].UID,
-			&creates[i].CreatedTime,
+			&creates[i].CreatedAt,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")
 		}

@@ -40,15 +40,15 @@ type UpdateDatabaseMessage struct {
 	InstanceID   string
 	DatabaseName string
 
-	ProjectID            *string
-	SyncState            *api.SyncStatus
-	SuccessfulSyncTimeTs *time.Time
-	SourceBackupID       *int
-	Secrets              *storepb.Secrets
-	DataShare            *bool
-	ServiceName          *string
-	UpdateEnvironmentID  bool
-	EnvironmentID        string
+	ProjectID           *string
+	SyncState           *api.SyncStatus
+	SyncAt              *time.Time
+	SourceBackupID      *int
+	Secrets             *storepb.Secrets
+	DataShare           *bool
+	ServiceName         *string
+	UpdateEnvironmentID bool
+	EnvironmentID       string
 
 	// MetadataUpsert upserts the top-level messages.
 	MetadataUpsert *storepb.DatabaseMetadata
@@ -262,7 +262,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 			environment,
 			name,
 			sync_status,
-			last_successful_sync_at,
+			sync_at,
 			schema_version,
 			secrets,
 			datashare,
@@ -329,7 +329,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	if v := patch.SyncState; v != nil {
 		set, args = append(set, fmt.Sprintf("sync_status = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.SuccessfulSyncTimeTs; v != nil {
+	if v := patch.SyncAt; v != nil {
 		set, args = append(set, fmt.Sprintf("sync_at = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Secrets; v != nil {
@@ -494,7 +494,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			instance.resource_id AS instance_id,
 			db.name,
 			db.sync_status,
-			db.last_successful_sync_at,
+			db.sync_at,
 			COALESCE(
 				(
 					SELECT revision.version

@@ -58,7 +58,7 @@ type UserMessage struct {
 	// Phone conforms E.164 format.
 	Phone string
 	// output only
-	CreatedTime time.Time
+	CreatedAt time.Time
 }
 
 // GetSystemBotUser gets the system bot.
@@ -199,7 +199,6 @@ func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMe
 		var rowStatus string
 		var mfaConfigBytes []byte
 		var profileBytes []byte
-		var createdTs int64
 		if err := rows.Scan(
 			&userMessage.ID,
 			&rowStatus,
@@ -210,7 +209,7 @@ func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMe
 			&mfaConfigBytes,
 			&userMessage.Phone,
 			&profileBytes,
-			&userMessage.CreatedTime,
+			&userMessage.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -226,7 +225,6 @@ func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMe
 			return nil, err
 		}
 		userMessage.Profile = &profile
-		userMessage.CreatedTime = time.Unix(createdTs, 0)
 
 		userMessages = append(userMessages, &userMessage)
 	}
@@ -275,7 +273,7 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage) (*UserMessa
 			RETURNING id, created_at
 		`, strings.Join(set, ","), strings.Join(placeholder, ",")),
 		args...,
-	).Scan(&userID, &create.CreatedTime); err != nil {
+	).Scan(&userID, &create.CreatedAt); err != nil {
 		return nil, err
 	}
 
@@ -290,7 +288,7 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage) (*UserMessa
 		Type:         create.Type,
 		PasswordHash: create.PasswordHash,
 		Phone:        create.Phone,
-		CreatedTime:  create.CreatedTime,
+		CreatedAt:    create.CreatedAt,
 		Profile:      create.Profile,
 		MFAConfig:    &storepb.MFAConfig{},
 	}

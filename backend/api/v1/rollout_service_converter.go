@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
-	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
@@ -47,8 +46,8 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 		ReleaseSource: &v1pb.Plan_ReleaseSource{
 			Release: plan.Config.GetReleaseSource().GetRelease(),
 		},
-		CreateTime:               timestamppb.New(time.Unix(plan.CreatedTs, 0)),
-		UpdateTime:               timestamppb.New(time.Unix(plan.UpdatedTs, 0)),
+		CreateTime:               timestamppb.New(plan.CreatedAt),
+		UpdateTime:               timestamppb.New(plan.UpdatedAt),
 		PlanCheckRunStatusCount:  plan.PlanCheckRunStatusCount,
 		DeploymentConfigSnapshot: convertToDeploymentConfigSnapshot(plan.Config.GetDeploymentSnapshot().GetDeploymentConfigSnapshot()),
 	}
@@ -355,7 +354,7 @@ func convertToPlanCheckRuns(ctx context.Context, s *store.Store, projectID strin
 func convertToPlanCheckRun(ctx context.Context, s *store.Store, projectID string, planUID int64, run *store.PlanCheckRunMessage) (*v1pb.PlanCheckRun, error) {
 	converted := &v1pb.PlanCheckRun{
 		Name:       common.FormatPlanCheckRun(projectID, planUID, int64(run.UID)),
-		CreateTime: timestamppb.New(time.Unix(run.CreatedTs, 0)),
+		CreateTime: timestamppb.New(run.CreatedAt),
 		Type:       convertToPlanCheckRunType(run.Type),
 		Status:     convertToPlanCheckRunStatus(run.Status),
 		Target:     "",
@@ -484,15 +483,17 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 	t := &v1pb.TaskRun{
 		Name:          common.FormatTaskRun(taskRun.ProjectID, taskRun.PipelineUID, taskRun.StageUID, taskRun.TaskUID, taskRun.ID),
 		Creator:       common.FormatUserEmail(taskRun.Creator.Email),
-		CreateTime:    timestamppb.New(time.Unix(taskRun.CreatedTs, 0)),
-		UpdateTime:    timestamppb.New(time.Unix(taskRun.UpdatedTs, 0)),
-		StartTime:     timestamppb.New(time.Unix(taskRun.StartedTs, 0)),
+		CreateTime:    timestamppb.New(taskRun.CreatedAt),
+		UpdateTime:    timestamppb.New(taskRun.UpdatedAt),
 		Title:         taskRun.Name,
 		Status:        convertToTaskRunStatus(taskRun.Status),
 		Detail:        taskRun.ResultProto.Detail,
 		Changelog:     taskRun.ResultProto.Changelog,
 		SchemaVersion: taskRun.ResultProto.Version,
 		Sheet:         "",
+	}
+	if taskRun.StartedAt != nil {
+		t.StartTime = timestamppb.New(*taskRun.StartedAt)
 	}
 
 	if taskRun.SheetUID != nil && *taskRun.SheetUID != 0 {
@@ -650,7 +651,7 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 		Plan:       "",
 		Title:      rollout.Name,
 		Stages:     nil,
-		CreateTime: timestamppb.New(time.Unix(rollout.CreatedTs, 0)),
+		CreateTime: timestamppb.New(rollout.CreatedAt),
 	}
 
 	creator, err := s.GetUserByID(ctx, rollout.CreatorUID)

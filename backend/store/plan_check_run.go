@@ -48,8 +48,8 @@ const (
 // PlanCheckRunMessage is the message for a plan check run.
 type PlanCheckRunMessage struct {
 	UID       int
-	CreatedTs time.Time
-	UpdatedTs time.Time
+	CreatedAt time.Time
+	UpdatedAt time.Time
 
 	PlanUID int64
 
@@ -172,8 +172,8 @@ WHERE %s
 		var config, result string
 		if err := rows.Scan(
 			&planCheckRun.UID,
-			&planCheckRun.CreatedTs,
-			&planCheckRun.UpdatedTs,
+			&planCheckRun.CreatedAt,
+			&planCheckRun.UpdatedAt,
 			&planCheckRun.PlanUID,
 			&planCheckRun.Status,
 			&planCheckRun.Type,
