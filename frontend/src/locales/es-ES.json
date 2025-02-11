@@ -668,7 +668,6 @@
       "algorithms": {
         "add": "Agregar algoritmo",
         "edit": "Editar algoritmo",
-        "default": "Por defecto",
         "table": {
           "masking-type": "Tipo De Enmascaramiento"
         },

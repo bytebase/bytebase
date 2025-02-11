@@ -284,8 +284,9 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	defer tx.Rollback()
 
 	instance := &InstanceMessage{}
-	var engine string
-	query := fmt.Sprintf(`
+	if len(set) > 0 {
+		var engine string
+		query := fmt.Sprintf(`
 			UPDATE instance
 			SET `+strings.Join(set, ", ")+`
 			WHERE %s
@@ -302,32 +303,54 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 				options,
 				metadata
 		`, strings.Join(where, " AND "))
-	var rowStatus string
-	var environment sql.NullString
-	var options, metadata []byte
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(
-		&instance.UID,
-		&instance.ResourceID,
-		&environment,
-		&instance.Title,
-		&engine,
-		&instance.EngineVersion,
-		&instance.ExternalLink,
-		&instance.Activation,
-		&rowStatus,
-		&options,
-		&metadata,
-	); err != nil {
-		return nil, err
+		var rowStatus string
+		var environment sql.NullString
+		var options, metadata []byte
+		if err := tx.QueryRowContext(ctx, query, args...).Scan(
+			&instance.UID,
+			&instance.ResourceID,
+			&environment,
+			&instance.Title,
+			&engine,
+			&instance.EngineVersion,
+			&instance.ExternalLink,
+			&instance.Activation,
+			&rowStatus,
+			&options,
+			&metadata,
+		); err != nil {
+			return nil, err
+		}
+		if environment.Valid {
+			instance.EnvironmentID = environment.String
+		}
+		engineTypeValue, ok := storepb.Engine_value[engine]
+		if !ok {
+			return nil, errors.Errorf("invalid engine %s", engine)
+		}
+		instance.Engine = storepb.Engine(engineTypeValue)
+		instance.Deleted = convertRowStatusToDeleted(rowStatus)
+
+		var instanceOptions storepb.InstanceOptions
+		if err := common.ProtojsonUnmarshaler.Unmarshal(options, &instanceOptions); err != nil {
+			return nil, err
+		}
+		instance.Options = &instanceOptions
+
+		var instanceMetadata storepb.InstanceMetadata
+		if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, &instanceMetadata); err != nil {
+			return nil, err
+		}
+		instance.Metadata = &instanceMetadata
+	} else {
+		existedInstance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{
+			ResourceID: &patch.ResourceID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		instance = existedInstance
 	}
-	if environment.Valid {
-		instance.EnvironmentID = environment.String
-	}
-	engineTypeValue, ok := storepb.Engine_value[engine]
-	if !ok {
-		return nil, errors.Errorf("invalid engine %s", engine)
-	}
-	instance.Engine = storepb.Engine(engineTypeValue)
 
 	if patch.DataSources != nil {
 		if err := s.clearDataSourceImpl(ctx, tx, instance.UID); err != nil {
@@ -340,7 +363,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 			}
 		}
 	}
-	instance.Deleted = convertRowStatusToDeleted(rowStatus)
+
 	instanceDataSourcesMap, err := s.listInstanceDataSourceMap(ctx, tx, &FindDataSourceMessage{
 		InstanceID: &patch.ResourceID,
 	})
@@ -348,17 +371,6 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		return nil, err
 	}
 	instance.DataSources = instanceDataSourcesMap[patch.ResourceID]
-	var instanceOptions storepb.InstanceOptions
-	if err := common.ProtojsonUnmarshaler.Unmarshal(options, &instanceOptions); err != nil {
-		return nil, err
-	}
-	instance.Options = &instanceOptions
-
-	var instanceMetadata storepb.InstanceMetadata
-	if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, &instanceMetadata); err != nil {
-		return nil, err
-	}
-	instance.Metadata = &instanceMetadata
 
 	if err := tx.Commit(); err != nil {
 		return nil, err

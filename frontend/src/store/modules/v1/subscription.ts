@@ -204,6 +204,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       type: FeatureType,
       instance: Instance | InstanceResource | undefined = undefined
     ) {
+      // TODO(ed) refresh instance before check license:
       if (!instanceLimitFeature.has(type)) {
         return false;
       }
