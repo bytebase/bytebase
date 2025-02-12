@@ -334,8 +334,8 @@ func (s *SlowQueryWeeklyMailSender) generateWeeklyEmailForProject(ctx context.Co
 		for _, database := range databases {
 			instance := instanceMap[database.InstanceID]
 			listSlowQuery := &store.ListSlowQueryMessage{
-				InstanceUID:  &instance.UID,
-				DatabaseUID:  &database.UID,
+				InstanceID:   &instance.ResourceID,
+				DatabaseName: &database.DatabaseName,
 				StartLogDate: &beginDate,
 				EndLogDate:   &endDate,
 			}
@@ -617,8 +617,8 @@ func (s *SlowQueryWeeklyMailSender) generateEnvironmentContent(
 		hasSlowQueryInInstance := false
 		for _, database := range databases {
 			listSlowQuery := &store.ListSlowQueryMessage{
-				InstanceUID:  &instance.UID,
-				DatabaseUID:  &database.UID,
+				InstanceID:   &instance.ResourceID,
+				DatabaseName: &database.DatabaseName,
 				StartLogDate: &beginDate,
 				EndLogDate:   &endDate,
 			}

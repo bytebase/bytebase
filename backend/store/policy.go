@@ -127,12 +127,16 @@ func (s *Store) getIamPolicy(ctx context.Context, find *FindPolicyMessage) (*Iam
 	}, nil
 }
 
-func (s *Store) GetRolloutPolicy(ctx context.Context, environmentID int) (*storepb.RolloutPolicy, error) {
+func (s *Store) GetRolloutPolicy(ctx context.Context, environment string) (*storepb.RolloutPolicy, error) {
+	e, err := s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{ResourceID: &environment})
+	if err != nil {
+		return nil, err
+	}
 	resourceType := api.PolicyResourceTypeEnvironment
 	pType := api.PolicyTypeRollout
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
-		ResourceUID:  &environmentID,
+		ResourceUID:  &e.UID,
 		Type:         &pType,
 	})
 	if err != nil {

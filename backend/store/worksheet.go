@@ -28,11 +28,12 @@ const (
 
 // WorkSheetMessage is the message for a sheet.
 type WorkSheetMessage struct {
-	ProjectUID int
+	ProjectID string
 	// The DatabaseUID is optional.
 	// If not NULL, the sheet ProjectID should always be equal to the id of the database related project.
 	// A project must remove all linked sheets for a particular database before that database can be transferred to a different project.
-	DatabaseUID *int
+	InstanceID   *string
+	DatabaseName *string
 
 	CreatorID int
 
@@ -73,11 +74,12 @@ type FindWorkSheetMessage struct {
 
 // PatchWorkSheetMessage is the message to patch a sheet.
 type PatchWorkSheetMessage struct {
-	UID         int
-	Title       *string
-	Statement   *string
-	Visibility  *string
-	DatabaseUID *int
+	UID          int
+	Title        *string
+	Statement    *string
+	Visibility   *string
+	InstanceID   *string
+	DatabaseName *string
 }
 
 // GetWorkSheet gets a sheet.
@@ -144,8 +146,9 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 			worksheet.creator_id,
 			worksheet.created_at,
 			worksheet.updated_at,
-			worksheet.project_id,
-			worksheet.database_id,
+			worksheet.project,
+			worksheet.instance,
+			worksheet.db_name,
 			worksheet.name,
 			%s,
 			worksheet.visibility,
@@ -169,8 +172,9 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 			&sheet.CreatorID,
 			&sheet.CreatedAt,
 			&sheet.UpdatedAt,
-			&sheet.ProjectUID,
-			&sheet.DatabaseUID,
+			&sheet.ProjectID,
+			&sheet.InstanceID,
+			&sheet.DatabaseName,
 			&sheet.Title,
 			&sheet.Statement,
 			&sheet.Visibility,
@@ -202,14 +206,15 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 	query := `
 		INSERT INTO worksheet (
 			creator_id,
-			project_id,
-			database_id,
+			project,
+			instance,
+			db_name,
 			name,
 			statement,
 			visibility,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, created_at, updated_at, OCTET_LENGTH(statement)
 	`
 
@@ -220,8 +225,9 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 	defer tx.Rollback()
 	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
-		create.ProjectUID,
-		create.DatabaseUID,
+		create.ProjectID,
+		create.InstanceID,
+		create.DatabaseName,
 		create.Title,
 		create.Statement,
 		create.Visibility,
@@ -279,7 +285,7 @@ func (s *Store) DeleteWorkSheet(ctx context.Context, sheetUID int) error {
 	return tx.Commit()
 }
 
-// patchWorkSheetImpl updates a sheet's name/statement/visibility/database_id/project_id.
+// patchWorkSheetImpl updates a sheet's name/statement/visibility/instance/db_name/project.
 func patchWorkSheetImpl(ctx context.Context, tx *Tx, patch *PatchWorkSheetMessage) error {
 	set, args := []string{"updated_at = $1"}, []any{time.Now()}
 	if v := patch.Title; v != nil {
@@ -291,8 +297,11 @@ func patchWorkSheetImpl(ctx context.Context, tx *Tx, patch *PatchWorkSheetMessag
 	if v := patch.Visibility; v != nil {
 		set, args = append(set, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.DatabaseUID; v != nil {
-		set, args = append(set, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
+	if v := patch.InstanceID; v != nil {
+		set, args = append(set, fmt.Sprintf("instance = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.DatabaseName; v != nil {
+		set, args = append(set, fmt.Sprintf("db_name = $%d", len(args)+1)), append(args, *v)
 	}
 	args = append(args, patch.UID)
 

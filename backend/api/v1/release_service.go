@@ -80,7 +80,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 	}
 
 	releaseMessage := &store.ReleaseMessage{
-		ProjectUID: project.UID,
+		ProjectID: project.ResourceID,
 		Payload: &storepb.ReleasePayload{
 			Title:     request.Release.Title,
 			Files:     files,
@@ -148,7 +148,7 @@ func (s *ReleaseService) ListReleases(ctx context.Context, request *v1pb.ListRel
 	limitPlusOne := offset.limit + 1
 
 	releaseFind := &store.FindReleaseMessage{
-		ProjectUID:  &project.UID,
+		ProjectID:   &project.ResourceID,
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
 		ShowDeleted: request.ShowDeleted,
@@ -299,7 +299,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 				return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectResourceID)
 			}
 			existedDatabaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
-				ProjectUID: &project.UID,
+				ProjectID:  &project.ResourceID,
 				ResourceID: &databaseGroupResourceID,
 			})
 			if err != nil {
@@ -347,7 +347,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 			return nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
 		}
 
-		catalog, err := catalog.NewCatalog(ctx, s.store, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil)
+		catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create catalog: %v", err)
 		}
@@ -357,9 +357,10 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 			}
 			// Check if file has been applied to database.
 			revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{
-				DatabaseUID: &database.UID,
-				Version:     &file.Version,
-				ShowDeleted: false,
+				InstanceID:   &database.InstanceID,
+				DatabaseName: &database.DatabaseName,
+				Version:      &file.Version,
+				ShowDeleted:  false,
 			})
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to list revisions: %v", err)
@@ -414,7 +415,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		return storepb.Advice_SUCCESS, nil, nil
 	}
 
-	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %v", database.UID)
 	}
@@ -422,7 +423,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to sync database schema for database %v", database.UID)
 		}
-		dbSchema, err = s.store.GetDBSchema(ctx, database.UID)
+		dbSchema, err = s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
 			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %v", database.UID)
 		}
@@ -527,12 +528,12 @@ func convertToRelease(ctx context.Context, s *store.Store, release *store.Releas
 	}
 	r.Files = files
 
-	project, err := s.GetProjectV2(ctx, &store.FindProjectMessage{UID: &release.ProjectUID})
+	project, err := s.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &release.ProjectID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find project")
 	}
 	if project == nil {
-		return nil, errors.Wrapf(err, "project %v not found", release.ProjectUID)
+		return nil, errors.Wrapf(err, "project %s not found", release.ProjectID)
 	}
 	r.Name = common.FormatReleaseName(project.ResourceID, release.UID)
 

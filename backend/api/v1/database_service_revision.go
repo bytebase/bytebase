@@ -54,10 +54,11 @@ func (s *DatabaseService) ListRevisions(ctx context.Context, request *v1pb.ListR
 	limitPlusOne := offset.limit + 1
 
 	find := &store.FindRevisionMessage{
-		DatabaseUID: &database.UID,
-		Limit:       &limitPlusOne,
-		Offset:      &offset.offset,
-		ShowDeleted: request.ShowDeleted,
+		InstanceID:   &database.InstanceID,
+		DatabaseName: &database.DatabaseName,
+		Limit:        &limitPlusOne,
+		Offset:       &offset.offset,
+		ShowDeleted:  request.ShowDeleted,
 	}
 
 	revisions, err := s.store.ListRevisions(ctx, find)
@@ -292,8 +293,9 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 
 func convertRevision(revision *v1pb.Revision, database *store.DatabaseMessage, sheet *store.SheetMessage) *store.RevisionMessage {
 	r := &store.RevisionMessage{
-		DatabaseUID: database.UID,
-		Version:     revision.Version,
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+		Version:      revision.Version,
 		Payload: &storepb.RevisionPayload{
 			Release:     revision.Release,
 			File:        revision.File,

@@ -29,7 +29,7 @@ type ProjectWebhookMessage struct {
 	//
 	// ID is the unique identifier of the project webhook.
 	ID        int
-	ProjectID int
+	ProjectID string
 	Payload   *storepb.ProjectWebhookPayload
 }
 
@@ -48,16 +48,16 @@ type UpdateProjectWebhookMessage struct {
 // if all fields are nil, it will list all project webhooks.
 type FindProjectWebhookMessage struct {
 	ID           *int
-	ProjectID    *int
+	ProjectID    *string
 	URL          *string
 	ActivityType *api.ActivityType
 }
 
 // CreateProjectWebhookV2 creates an instance of ProjectWebhook.
-func (s *Store) CreateProjectWebhookV2(ctx context.Context, projectUID int, projectResourceID string, create *ProjectWebhookMessage) (*ProjectWebhookMessage, error) {
+func (s *Store) CreateProjectWebhookV2(ctx context.Context, projectID string, create *ProjectWebhookMessage) (*ProjectWebhookMessage, error) {
 	query := `
 		INSERT INTO project_webhook (
-			project_id,
+			project,
 			type,
 			name,
 			url,
@@ -91,7 +91,7 @@ func (s *Store) CreateProjectWebhookV2(ctx context.Context, projectUID int, proj
 	}
 
 	if err := tx.QueryRowContext(ctx, query,
-		projectUID,
+		projectID,
 		create.Type,
 		create.Title,
 		create.URL,
@@ -109,7 +109,7 @@ func (s *Store) CreateProjectWebhookV2(ctx context.Context, projectUID int, proj
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	s.removeProjectCache(projectResourceID)
+	s.removeProjectCache(projectID)
 	return &projectWebhook, nil
 }
 
@@ -193,7 +193,7 @@ func (s *Store) UpdateProjectWebhookV2(ctx context.Context, projectResourceID st
 	UPDATE project_webhook
 	SET `+strings.Join(set, ", ")+`
 	WHERE id = $%d
-	RETURNING id, project_id, type, name, url, activity_list, payload
+	RETURNING id, project, type, name, url, activity_list, payload
 `, len(args)),
 		args...,
 	).Scan(
@@ -251,7 +251,7 @@ func (*Store) findProjectWebhookImplV2(ctx context.Context, tx *Tx, find *FindPr
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("project = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.URL; v != nil {
 		where, args = append(where, fmt.Sprintf("url = $%d", len(args)+1)), append(args, *v)

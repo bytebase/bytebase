@@ -63,14 +63,14 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 		return true, nil, err
 	}
 
-	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
 		return true, nil, errors.Wrap(err, "failed to get instance")
 	}
 	if instance == nil {
 		return true, nil, errors.Errorf("instance not found for task %v", task.ID)
 	}
-	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName})
 	if err != nil {
 		return true, nil, errors.Wrap(err, "failed to get database")
 	}
@@ -358,7 +358,7 @@ func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) base.GetDatabaseMe
 		if database == nil {
 			return "", nil, nil
 		}
-		databaseMetadata, err := storeInstance.GetDBSchema(ctx, database.UID)
+		databaseMetadata, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
 			return "", nil, err
 		}

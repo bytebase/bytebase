@@ -116,7 +116,7 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 }
 
 func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, statement string) ([]*storepb.PlanCheckRunResult_Result, error) {
-	databaseSchema, err := e.store.GetDBSchema(ctx, database.UID)
+	databaseSchema, err := e.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 	if err != nil {
 		return nil, err
 	}

@@ -116,10 +116,9 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 		return nil, status.Errorf(codes.Internal, "failed to generate random secret token for vcs with error: %v", err.Error())
 	}
 	vcsConnectorCreate := &store.VCSConnectorMessage{
-		ProjectID:     project.ResourceID,
-		ResourceID:    request.VcsConnectorId,
-		VCSUID:        vcsProvider.ID,
-		VCSResourceID: vcsProvider.ResourceID,
+		ProjectID:  project.ResourceID,
+		ResourceID: request.VcsConnectorId,
+		VCSID:      vcsProvider.ResourceID,
 		Payload: &storepb.VCSConnector{
 			Title:              request.GetVcsConnector().Title,
 			FullPath:           request.GetVcsConnector().FullPath,
@@ -255,12 +254,12 @@ func (s *VCSConnectorService) UpdateVCSConnector(ctx context.Context, request *v
 		return nil, status.Errorf(codes.NotFound, "vcs connector %q not found", vcsConnectorID)
 	}
 
-	vcsProvider, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsConnector.VCSResourceID})
+	vcsProvider, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsConnector.VCSID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 	}
 	if vcsProvider == nil {
-		return nil, status.Errorf(codes.NotFound, "vcs provider %s not found", vcsConnector.VCSResourceID)
+		return nil, status.Errorf(codes.NotFound, "vcs provider %s not found", vcsConnector.VCSID)
 	}
 
 	update := &store.UpdateVCSConnectorMessage{
@@ -334,7 +333,7 @@ func (s *VCSConnectorService) DeleteVCSConnector(ctx context.Context, request *v
 		return nil, status.Errorf(codes.NotFound, "vcs connector %q not found", vcsConnectorID)
 	}
 
-	vcsProvider, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsConnector.VCSResourceID})
+	vcsProvider, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsConnector.VCSID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 	}
@@ -369,7 +368,7 @@ func convertStoreVCSConnector(vcsConnector *store.VCSConnectorMessage) (*v1pb.VC
 	v1VCSConnector := &v1pb.VCSConnector{
 		Name:          fmt.Sprintf("%s/%s%s", common.FormatProject(vcsConnector.ProjectID), common.VCSConnectorPrefix, vcsConnector.ResourceID),
 		Title:         vcsConnector.Payload.Title,
-		VcsProvider:   fmt.Sprintf("%s%s", common.VCSProviderPrefix, vcsConnector.VCSResourceID),
+		VcsProvider:   fmt.Sprintf("%s%s", common.VCSProviderPrefix, vcsConnector.VCSID),
 		ExternalId:    vcsConnector.Payload.ExternalId,
 		BaseDirectory: vcsConnector.Payload.BaseDirectory,
 		Branch:        vcsConnector.Payload.Branch,

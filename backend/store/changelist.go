@@ -75,14 +75,13 @@ func (s *Store) ListChangelists(ctx context.Context, find *FindChangelistMessage
 
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
-			changelist.id,
-			changelist.creator_id,
-			changelist.updated_at,
-			project.resource_id AS project_id,
-			changelist.name,
-			changelist.payload
+			id,
+			creator_id,
+			updated_at,
+			project,
+			name,
+			payload
 		FROM changelist
-		LEFT JOIN project ON changelist.project_id = project.id
 		WHERE %s`, strings.Join(where, " AND ")),
 		args...,
 	)
@@ -125,10 +124,6 @@ func (s *Store) ListChangelists(ctx context.Context, find *FindChangelistMessage
 
 // CreateChangelist creates a changelist.
 func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage) (*ChangelistMessage, error) {
-	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &create.ProjectID})
-	if err != nil {
-		return nil, err
-	}
 	if create.Payload == nil {
 		create.Payload = &storepb.Changelist{}
 	}
@@ -140,7 +135,7 @@ func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage)
 	query := `
 		INSERT INTO changelist (
 			creator_id,
-			project_id,
+			project,
 			name,
 			payload
 		)
@@ -155,7 +150,7 @@ func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage)
 	defer tx.Rollback()
 	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
-		project.UID,
+		create.ProjectID,
 		create.ResourceID,
 		payload,
 	).Scan(

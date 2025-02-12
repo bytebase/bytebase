@@ -312,7 +312,7 @@ func replaceBackupTableWithSource(ctx context.Context, stores *store.Store, inst
 			return nil
 		}
 	}
-	dbSchema, err := stores.GetDBSchema(ctx, database.UID)
+	dbSchema, err := stores.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 	if err != nil {
 		return err
 	}
@@ -957,7 +957,7 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine store
 		}
 		var linkedMeta *model.LinkedDatabaseMetadata
 		for _, database := range databases {
-			meta, err := storeInstance.GetDBSchema(ctx, database.UID)
+			meta, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 			if err != nil {
 				return "", "", nil, err
 			}
@@ -1002,7 +1002,7 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine store
 			return "", "", nil, nil
 		}
 		// Get the linked database metadata.
-		linkedDatabaseMetadata, err := storeInstance.GetDBSchema(ctx, linkedDatabase.UID)
+		linkedDatabaseMetadata, err := storeInstance.GetDBSchema(ctx, linkedDatabase.InstanceID, linkedDatabase.DatabaseName)
 		if err != nil {
 			return "", "", nil, err
 		}
@@ -1025,7 +1025,7 @@ func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) base.GetDatabaseMe
 		if database == nil {
 			return "", nil, nil
 		}
-		databaseMetadata, err := storeInstance.GetDBSchema(ctx, database.UID)
+		databaseMetadata, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
 			return "", nil, err
 		}
@@ -1378,7 +1378,7 @@ func (s *SQLService) SQLReviewCheck(
 
 	dbMetadata := overrideMetadata
 	if dbMetadata == nil {
-		dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+		dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
 			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %v", database.UID)
 		}
@@ -1386,7 +1386,7 @@ func (s *SQLService) SQLReviewCheck(
 			if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to sync database schema for database %v", database.UID)
 			}
-			dbSchema, err = s.store.GetDBSchema(ctx, database.UID)
+			dbSchema, err = s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 			if err != nil {
 				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %v", database.UID)
 			}
@@ -1397,7 +1397,7 @@ func (s *SQLService) SQLReviewCheck(
 		dbMetadata = dbSchema.GetMetadata()
 	}
 
-	catalog, err := catalog.NewCatalog(ctx, s.store, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), overrideMetadata)
+	catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), overrideMetadata)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to create a catalog: %v", err)
 	}

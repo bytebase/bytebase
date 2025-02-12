@@ -106,9 +106,10 @@ type TaskFind struct {
 	IDs *[]int
 
 	// Related fields
-	PipelineID *int
-	StageID    *int
-	DatabaseID *int
+	PipelineID   *int
+	StageID      *int
+	InstanceID   *string
+	DatabaseName *string
 
 	// Domain specific fields
 	TypeList *[]TaskType
@@ -138,7 +139,7 @@ type TaskPatch struct {
 	UpdaterID int
 
 	// Domain specific fields
-	DatabaseID              *int
+	DatabaseName            *string
 	EarliestAllowedTs       *time.Time
 	UpdateEarliestAllowedTs bool
 
