@@ -2315,7 +2315,7 @@
   },
   "plugin": {
     "ai": {
-      "text-to-sql-placeholder": "在此输入自然语言后，Bytebase 会马上转换成 SQL 语句",
+      "text-to-sql-placeholder": "在此输入自然语言后，Bytebase 会将其转换成 SQL 语句",
       "conversation": {
         "untitled": "未命名会话",
         "delete": "删除会话",
