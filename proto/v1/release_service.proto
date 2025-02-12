@@ -173,9 +173,24 @@ message CheckReleaseResponse {
 
     // The list of advice for the file and the target.
     repeated Advice advices = 3;
+
+    // The count of affected rows of the statement on the target.
+    int32 affected_rows = 4;
   }
 
   repeated CheckResult results = 1;
+
+  // The affected rows of the check.
+  int32 affected_rows = 2;
+
+  enum RiskLevel {
+    RISK_LEVEL_UNSPECIFIED = 0;
+    LOW = 1;
+    MODERATE = 2;
+    HIGH = 3;
+  }
+  // The aggregated risk level of the check.
+  RiskLevel risk_level = 3;
 }
 
 message Release {
