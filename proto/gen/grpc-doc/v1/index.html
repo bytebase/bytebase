@@ -2416,6 +2416,10 @@
               
               
                 <li>
+                  <a href="#bytebase.v1.CheckReleaseResponse.RiskLevel"><span class="badge">E</span>CheckReleaseResponse.RiskLevel</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Release.File.ChangeType"><span class="badge">E</span>Release.File.ChangeType</a>
                 </li>
               
@@ -25964,6 +25968,20 @@ instances/{instance}/databases/{database} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>affected_rows</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The affected rows of the check. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>risk_level</td>
+                  <td><a href="#bytebase.v1.CheckReleaseResponse.RiskLevel">CheckReleaseResponse.RiskLevel</a></td>
+                  <td></td>
+                  <td><p>The aggregated risk level of the check. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -26001,6 +26019,13 @@ Should be a database. Format: instances/{instance}/databases/{database} </p></td
                   <td><a href="#bytebase.v1.Advice">Advice</a></td>
                   <td>repeated</td>
                   <td><p>The list of advice for the file and the target. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>affected_rows</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The count of affected rows of the statement on the target. </p></td>
                 </tr>
               
             </tbody>
@@ -26409,6 +26434,41 @@ Format: projects/{project}/releases/{release} </p></td>
         
       
 
+      
+        <h3 id="bytebase.v1.CheckReleaseResponse.RiskLevel">CheckReleaseResponse.RiskLevel</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>RISK_LEVEL_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>LOW</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MODERATE</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>HIGH</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.v1.Release.File.ChangeType">Release.File.ChangeType</h3>
         <p></p>
