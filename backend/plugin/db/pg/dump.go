@@ -501,6 +501,89 @@ func getSchemaNameFromID(id string) string {
 	return parts[0]
 }
 
+func writeColumnIdentityGeneration(out io.Writer, schema string, generationTypes storepb.ColumnMetadata_IdentityGeneration, sequence *storepb.SequenceMetadata) error {
+	if _, err := io.WriteString(out, `ALTER TABLE "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, sequence.OwnerTable); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" ALTER COLUMN "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, sequence.OwnerColumn); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `" ADD GENERATED `); err != nil {
+		return err
+	}
+	if generationTypes == storepb.ColumnMetadata_ALWAYS {
+		if _, err := io.WriteString(out, "ALWAYS "); err != nil {
+			return err
+		}
+	} else {
+		if _, err := io.WriteString(out, "BY DEFAULT "); err != nil {
+			return err
+		}
+	}
+	if _, err := io.WriteString(out, "AS IDENTITY (\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "    SEQUENCE NAME \""); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, sequence.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "\"\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "    START WITH "); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, sequence.Start); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "\n    INCREMENT BY "); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, sequence.Increment); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "\n    MINVALUE "); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, sequence.MinValue); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "\n    MAXVALUE "); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, sequence.MaxValue); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "\n    CACHE "); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, sequence.CacheSize); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, "\n);\n\n")
+	return err
+}
+
 func writeCreateSequence(out io.Writer, schema string, sequence *storepb.SequenceMetadata) error {
 	if _, err := io.WriteString(out, `CREATE SEQUENCE "`); err != nil {
 		return err
@@ -715,8 +798,30 @@ func writeCreateTable(out io.Writer, schema string, tableName string, columns []
 	return err
 }
 
-func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) error {
+func splitSequencesByIdentityOrNot(table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) ([]storepb.ColumnMetadata_IdentityGeneration, []*storepb.SequenceMetadata, []*storepb.SequenceMetadata) {
+	columnMap := make(map[string]*storepb.ColumnMetadata)
+	for _, column := range table.Columns {
+		columnMap[column.Name] = column
+	}
+	var generationType []storepb.ColumnMetadata_IdentityGeneration
+	var identitySequences []*storepb.SequenceMetadata
+	var nonIdentitySequences []*storepb.SequenceMetadata
 	for _, sequence := range sequences {
+		if column, ok := columnMap[sequence.OwnerColumn]; ok {
+			if column.IdentityGeneration == storepb.ColumnMetadata_ALWAYS || column.IdentityGeneration == storepb.ColumnMetadata_BY_DEFAULT {
+				generationType = append(generationType, column.IdentityGeneration)
+				identitySequences = append(identitySequences, sequence)
+				continue
+			}
+		}
+		nonIdentitySequences = append(nonIdentitySequences, sequence)
+	}
+	return generationType, identitySequences, nonIdentitySequences
+}
+
+func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) error {
+	generationTypes, identitySequences, nonIdentitySequences := splitSequencesByIdentityOrNot(table, sequences)
+	for _, sequence := range nonIdentitySequences {
 		if err := writeCreateSequence(out, schema, sequence); err != nil {
 			return err
 		}
@@ -736,7 +841,7 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequ
 		return err
 	}
 
-	for _, sequence := range sequences {
+	for _, sequence := range nonIdentitySequences {
 		if err := writeAlterSequenceOwnedBy(out, schema, sequence); err != nil {
 			return err
 		}
@@ -754,6 +859,12 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequ
 			if err := writeColumnComment(out, schema, table.Name, column); err != nil {
 				return err
 			}
+		}
+	}
+
+	for i, sequence := range identitySequences {
+		if err := writeColumnIdentityGeneration(out, schema, generationTypes[i], sequence); err != nil {
+			return err
 		}
 	}
 
