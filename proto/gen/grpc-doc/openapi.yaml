@@ -9174,6 +9174,14 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/GenerationMetadata'
                     description: The generation is the generation of a column.
+                identityGeneration:
+                    enum:
+                        - IDENTITY_GENERATION_UNSPECIFIED
+                        - ALWAYS
+                        - BY_DEFAULT
+                    type: string
+                    description: The identity_generation is for identity columns, PG only.
+                    format: enum
             description: ColumnMetadata is the metadata for columns.
         CreateSheetRequest:
             required:
