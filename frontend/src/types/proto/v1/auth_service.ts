@@ -1803,6 +1803,7 @@ export const AuthServiceDefinition = {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
           800016: [new Uint8Array([2])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               20,
@@ -1841,6 +1842,7 @@ export const AuthServiceDefinition = {
       options: {
         _unknownFields: {
           800016: [new Uint8Array([2])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               32,
