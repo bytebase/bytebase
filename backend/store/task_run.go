@@ -113,11 +113,10 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			task_run.sheet_id,
 			task.pipeline_id,
 			task.stage_id,
-			project.resource_id
+			task.project
 		FROM task_run
 		LEFT JOIN task ON task.id = task_run.task_id
 		LEFT JOIN pipeline ON pipeline.id = task.pipeline_id
-		LEFT JOIN project ON project.id = pipeline.project_id
 		WHERE %s
 		ORDER BY task_run.id ASC`, strings.Join(where, " AND ")),
 		args...,
