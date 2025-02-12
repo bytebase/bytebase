@@ -77,7 +77,7 @@ func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context
 		return true, nil, err
 	}
 	if instance == nil {
-		return true, nil, errors.Errorf("instance %d not found", task.InstanceID)
+		return true, nil, errors.Errorf("instance %s not found", task.InstanceID)
 	}
 	adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
 	if adminDataSource == nil {

@@ -136,7 +136,7 @@ func (s *Store) UpdateDBSchema(ctx context.Context, instanceID, databaseName str
 		set, args = append(set, fmt.Sprintf("config = $%d", len(args)+1)), append(args, bytes)
 	}
 
-	where, args := []string{"TRUE"}, []any{}
+	where := []string{"TRUE"}
 	where, args = append(where, fmt.Sprintf("instance = $%d", len(args)+1)), append(args, instanceID)
 	where, args = append(where, fmt.Sprintf("db_name = $%d", len(args)+1)), append(args, databaseName)
 

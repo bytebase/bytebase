@@ -295,7 +295,6 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			&task.PipelineID,
 			&task.StageID,
 			&task.InstanceID,
-			// TODO(d): look look.
 			&task.DatabaseName,
 			&task.Name,
 			&task.LatestTaskRunStatus,
@@ -399,7 +398,6 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 		&task.PipelineID,
 		&task.StageID,
 		&task.InstanceID,
-		// TODO(d): look look.
 		&task.DatabaseName,
 		&task.Name,
 		&task.Type,

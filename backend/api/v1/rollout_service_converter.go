@@ -751,7 +751,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 		ResourceID: &task.InstanceID,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %d", task.InstanceID)
+		return nil, errors.Wrapf(err, "failed to get instance %s", task.InstanceID)
 	}
 	labels, err := convertToDatabaseLabels(payload.Labels)
 	if err != nil {
