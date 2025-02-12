@@ -371,10 +371,10 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		where, args = append(where, fmt.Sprintf("issue.plan_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("issue.project = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectIDs; v != nil {
-		where, args = append(where, fmt.Sprintf("project.resource_id = ANY($%d)", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("issue.project = ANY($%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.InstanceResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task LEFT JOIN instance ON instance.id = task.instance_id WHERE task.pipeline_id = issue.pipeline_id AND instance.resource_id = $%d)", len(args)+1)), append(args, *v)

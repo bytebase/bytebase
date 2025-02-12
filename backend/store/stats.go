@@ -49,13 +49,12 @@ func (s *Store) CountUsers(ctx context.Context, userType api.PrincipalType) (int
 func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (int, error) {
 	where, args := []string{"instance.row_status = $1"}, []any{api.Normal}
 	if v := find.EnvironmentID; v != nil {
-		where, args = append(where, fmt.Sprintf("environment.resource_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("instance.environment = $%d", len(args)+1)), append(args, *v)
 	}
 	query := `
 		SELECT
 			count(1)
 		FROM instance
-		LEFT JOIN environment ON environment.resource_id = instance.environment
 		WHERE ` + strings.Join(where, " AND ")
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -113,7 +112,7 @@ func (s *Store) CountProjectGroupByWorkflow(ctx context.Context) ([]*metric.Proj
 		WITH project_workflow AS (
 			SELECT
 				project.row_status as row_status,
-				(SELECT COUNT(1) FROM vcs_connector WHERE project.id = vcs_connector.project_id) > 0 AS has_connector
+				(SELECT COUNT(1) FROM vcs_connector WHERE project.resource_id = vcs_connector.project) > 0 AS has_connector
 			FROM project
 			WHERE resource_id != 'default'
 		)

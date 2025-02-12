@@ -785,7 +785,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 
 func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	if task.DatabaseName == nil {
-		return nil, errors.Errorf("database is nil")
+		return nil, errors.Errorf("baseline task database is nil")
 	}
 	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
@@ -818,7 +818,7 @@ func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, projec
 
 func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	if task.DatabaseName == nil {
-		return nil, errors.Errorf("database is nil")
+		return nil, errors.Errorf("schema update task database is nil")
 	}
 	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
@@ -853,7 +853,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 
 func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	if task.DatabaseName == nil {
-		return nil, errors.Errorf("database is nil")
+		return nil, errors.Errorf("ghost cutover task database is nil")
 	}
 	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
@@ -882,7 +882,7 @@ func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Sto
 
 func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	if task.DatabaseName == nil {
-		return nil, errors.Errorf("database is nil")
+		return nil, errors.Errorf("data update task database is nil")
 	}
 	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
@@ -920,7 +920,7 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 
 func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	if task.DatabaseName == nil {
-		return nil, errors.Errorf("database is nil")
+		return nil, errors.Errorf("data export task database is nil")
 	}
 	payload := &storepb.TaskDatabaseDataExportPayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
