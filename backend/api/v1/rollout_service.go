@@ -538,7 +538,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, status.Errorf(codes.Internal, "failed to find the stage to run")
 	}
 
-	stageToRunTasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &rolloutID, StageID: &stageToRun.ID})
+	stageToRunTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &rolloutID, StageID: &stageToRun.ID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list tasks, error: %v", err)
 	}
@@ -655,7 +655,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		return nil, status.Errorf(codes.Internal, "failed to find issue, error: %v", err)
 	}
 
-	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &rolloutID})
+	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &rolloutID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list tasks, error: %v", err)
 	}

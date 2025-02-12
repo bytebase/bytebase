@@ -98,7 +98,7 @@ ALTER TABLE vcs_connector ALTER COLUMN project SET NOT NULL;
 ALTER TABLE vcs_connector ADD constraint vcs_connector_project_fkey FOREIGN KEY (project) references project(resource_id);
 CREATE UNIQUE INDEX idx_vcs_connector_unique_project_resource_id ON vcs_connector(project, resource_id);
 
-DELETE FROM anomaly WHERE database_id IS NULL;
+DELETE FROM anomaly;
 DROP INDEX IF EXISTS idx_anomaly_unique_project_database_id_type;
 ALTER TABLE anomaly ADD COLUMN instance TEXT;
 ALTER TABLE anomaly ADD COLUMN db_name TEXT;
