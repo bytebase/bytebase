@@ -124,9 +124,7 @@ func (driver *Driver) Close(_ context.Context) error {
 		}
 	}
 	if driver.db != nil {
-		if err := driver.db.Close(); err != nil {
-			slog.Warn("failed to close mssql driver db", log.BBError(err))
-		}
+		return driver.db.Close()
 	}
 	return nil
 }
