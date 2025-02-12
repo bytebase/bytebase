@@ -114,6 +114,7 @@
     - [TriggerMetadata](#bytebase-store-TriggerMetadata)
     - [ViewMetadata](#bytebase-store-ViewMetadata)
   
+    - [ColumnMetadata.IdentityGeneration](#bytebase-store-ColumnMetadata-IdentityGeneration)
     - [GenerationMetadata.Type](#bytebase-store-GenerationMetadata-Type)
     - [ObjectSchema.Type](#bytebase-store-ObjectSchema-Type)
     - [StreamMetadata.Mode](#bytebase-store-StreamMetadata-Mode)
@@ -1401,6 +1402,7 @@ ColumnMetadata is the metadata for columns.
 | comment | [string](#string) |  | The comment is the comment of a column. classification and user_comment is parsed from the comment. |
 | user_comment | [string](#string) |  | The user_comment is the user comment of a table parsed from the comment. |
 | generation | [GenerationMetadata](#bytebase-store-GenerationMetadata) |  | The generation is for generated columns. |
+| identity_generation | [ColumnMetadata.IdentityGeneration](#bytebase-store-ColumnMetadata-IdentityGeneration) |  | The identity_generation is for identity columns, PG only. |
 
 
 
@@ -2091,6 +2093,19 @@ ViewMetadata is the metadata for views.
 
 
  
+
+
+<a name="bytebase-store-ColumnMetadata-IdentityGeneration"></a>
+
+### ColumnMetadata.IdentityGeneration
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| IDENTITY_GENERATION_UNSPECIFIED | 0 |  |
+| ALWAYS | 1 |  |
+| BY_DEFAULT | 2 |  |
+
 
 
 <a name="bytebase-store-GenerationMetadata-Type"></a>

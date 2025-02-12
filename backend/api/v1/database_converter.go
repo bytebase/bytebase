@@ -454,6 +454,14 @@ func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMeta
 			metadata.Default = &v1pb.ColumnMetadata_DefaultExpression{DefaultExpression: value.DefaultExpression}
 		}
 	}
+	switch column.IdentityGeneration {
+	case storepb.ColumnMetadata_ALWAYS:
+		metadata.IdentityGeneration = v1pb.ColumnMetadata_ALWAYS
+	case storepb.ColumnMetadata_BY_DEFAULT:
+		metadata.IdentityGeneration = v1pb.ColumnMetadata_BY_DEFAULT
+	default:
+		metadata.IdentityGeneration = v1pb.ColumnMetadata_IDENTITY_GENERATION_UNSPECIFIED
+	}
 	return metadata
 }
 
@@ -874,6 +882,15 @@ func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadat
 		case *v1pb.ColumnMetadata_DefaultExpression:
 			metadata.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: value.DefaultExpression}
 		}
+	}
+
+	switch column.IdentityGeneration {
+	case v1pb.ColumnMetadata_ALWAYS:
+		metadata.IdentityGeneration = storepb.ColumnMetadata_ALWAYS
+	case v1pb.ColumnMetadata_BY_DEFAULT:
+		metadata.IdentityGeneration = storepb.ColumnMetadata_BY_DEFAULT
+	default:
+		metadata.IdentityGeneration = storepb.ColumnMetadata_IDENTITY_GENERATION_UNSPECIFIED
 	}
 	return metadata
 }
