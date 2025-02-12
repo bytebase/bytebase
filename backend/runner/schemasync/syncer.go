@@ -452,7 +452,7 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 		return 0, errors.Wrapf(err, "failed to upsert database schema for database %q", database.DatabaseName)
 	}
 
-	id, err := s.store.CreateSyncHistory(ctx, database.UID, databaseMetadata, string(rawDump))
+	id, err := s.store.CreateSyncHistory(ctx, database.InstanceID, database.DatabaseName, databaseMetadata, string(rawDump))
 	if err != nil {
 		if strings.Contains(err.Error(), "escape sequence") {
 			if metadataBytes, err := protojson.Marshal(databaseMetadata); err == nil {

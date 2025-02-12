@@ -160,7 +160,8 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage) (
 		) VALUES (
 		 	$1,
 			$2,
-			$3
+			$3,
+			$4
 		)
 		RETURNING id, created_at
 	`
