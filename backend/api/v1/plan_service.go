@@ -1097,7 +1097,7 @@ func (s *PlanService) PreviewPlan(ctx context.Context, request *v1pb.PreviewPlan
 			return nil, status.Errorf(codes.InvalidArgument, "databaseGroup target projectID %q doesn't match the projectID of request.project %q", projectID, request.Project)
 		}
 
-		databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectUID: &project.UID, ResourceID: &databaseGroupID})
+		databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectID: &project.ResourceID, ResourceID: &databaseGroupID})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database group %q", databaseGroupID)
 		}
@@ -1408,7 +1408,7 @@ func getPlanSnapshot(ctx context.Context, s *store.Store, steps []*storepb.PlanC
 		}
 		databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 			ResourceID: &id,
-			ProjectUID: &project.UID,
+			ProjectID:  &project.ResourceID,
 		})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database group")

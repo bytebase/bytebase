@@ -299,7 +299,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 				return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectResourceID)
 			}
 			existedDatabaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
-				ProjectUID: &project.UID,
+				ProjectID:  &project.ResourceID,
 				ResourceID: &databaseGroupResourceID,
 			})
 			if err != nil {

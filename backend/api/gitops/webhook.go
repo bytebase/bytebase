@@ -581,7 +581,7 @@ func (s *Service) getDatabaseSample(
 			if projectID != project.ResourceID {
 				return nil, errors.Errorf("project id %q in databaseGroup %q does not match project id %q in plan config", projectID, dbg, project.ResourceID)
 			}
-			databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectUID: &project.UID, ResourceID: &databaseGroupID})
+			databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectID: &project.ResourceID, ResourceID: &databaseGroupID})
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get database group %q", databaseGroupID)
 			}

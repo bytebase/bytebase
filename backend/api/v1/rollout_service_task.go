@@ -76,7 +76,7 @@ func transformDatabaseGroupTargetToSpecs(ctx context.Context, s *store.Store, sp
 		return nil, errors.Errorf("project id %q in target %q does not match project id %q in plan config", projectID, c.Target, project.ResourceID)
 	}
 
-	databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectUID: &project.UID, ResourceID: &databaseGroupID})
+	databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectID: &project.ResourceID, ResourceID: &databaseGroupID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database group %q", databaseGroupID)
 	}

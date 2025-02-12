@@ -134,7 +134,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Con
 	if project == nil {
 		return nil, errors.Errorf("project %q not found", projectID)
 	}
-	databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectUID: &project.UID, ResourceID: &databaseGroupID})
+	databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectID: &project.ResourceID, ResourceID: &databaseGroupID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database group %q", databaseGroupID)
 	}

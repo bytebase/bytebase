@@ -523,7 +523,7 @@ func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.
 }
 
 func (exec *DatabaseCreateExecutor) getPeerTenantDatabasesFromDatabaseGroup(ctx context.Context, instance *store.InstanceMessage, project *store.ProjectMessage, database *store.DatabaseMessage) ([]*store.DatabaseMessage, error) {
-	dbGroups, err := exec.store.ListDatabaseGroups(ctx, &store.FindDatabaseGroupMessage{ProjectUID: &project.UID})
+	dbGroups, err := exec.store.ListDatabaseGroups(ctx, &store.FindDatabaseGroupMessage{ProjectID: &project.ResourceID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to fetch database groups in project ID: %v", project.UID)
 	}
