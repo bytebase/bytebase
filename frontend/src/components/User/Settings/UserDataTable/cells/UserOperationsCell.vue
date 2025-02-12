@@ -28,27 +28,33 @@
         </template>
       </NButton>
 
-      <BBButtonConfirm
+      <NPopconfirm
         v-if="allowReactiveUser"
-        :type="'RESTORE'"
-        :require-confirm="true"
-        :ok-text="$t('settings.members.action.reactivate')"
-        :confirm-title="`${$t(
-          'settings.members.action.reactivate-confirm-title'
-        )} '${user.title}'?`"
-        :confirm-description="''"
-        @confirm="changeRowStatus(State.ACTIVE)"
-      />
+        @positive-click="() => changeRowStatus(State.ACTIVE)"
+      >
+        <template #trigger>
+          <NButton quaternary circle @click.stop>
+            <template #icon>
+              <Undo2Icon class="w-4 h-auto" />
+            </template>
+          </NButton>
+        </template>
+
+        <template #default>
+          <div>
+            {{ $t("settings.members.action.reactivate-confirm-title") }}
+          </div>
+        </template>
+      </NPopconfirm>
     </template>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { PencilIcon, Trash2Icon } from "lucide-vue-next";
+import { PencilIcon, Trash2Icon, Undo2Icon } from "lucide-vue-next";
 import { NButton, NPopconfirm } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBButtonConfirm } from "@/bbkit";
 import { useUserStore, pushNotification, useCurrentUserV1 } from "@/store";
 import { type User, UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
