@@ -1622,6 +1622,9 @@ func getOpenAIResponse(ctx context.Context, messages []openai.ChatCompletionMess
 	var result v1pb.AdviseIndexResponse
 	successful := false
 	var retErr error
+	if model == "" {
+		model = openai.GPT3Dot5Turbo
+	}
 	// Retry 5 times if failed.
 	for i := 0; i < 5; i++ {
 		cfg := openai.DefaultConfig(key)
