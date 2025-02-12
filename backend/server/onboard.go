@@ -193,12 +193,13 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	// This is different from another sample SQL sheet created below, which is created as part of
 	// creating a schema change issue.
 	if _, err = s.store.CreateWorkSheet(ctx, &store.WorkSheetMessage{
-		CreatorID:   userID,
-		ProjectUID:  project.UID,
-		DatabaseUID: &prodDatabase.UID,
-		Title:       "Sample Sheet",
-		Statement:   "SELECT * FROM salary;",
-		Visibility:  store.ProjectReadWorkSheet,
+		CreatorID:    userID,
+		ProjectID:    project.ResourceID,
+		InstanceID:   &prodDatabase.InstanceID,
+		DatabaseName: &prodDatabase.DatabaseName,
+		Title:        "Sample Sheet",
+		Statement:    "SELECT * FROM salary;",
+		Visibility:   store.ProjectReadWorkSheet,
 	}); err != nil {
 		return errors.Wrapf(err, "failed to create sample work sheet")
 	}
