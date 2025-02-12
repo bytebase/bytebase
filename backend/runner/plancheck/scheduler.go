@@ -113,7 +113,7 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.Pla
 	}
 
 	maximumConnections := int(instance.Options.GetMaximumConnections())
-	if s.stateCfg.InstanceOutstandingConnections.Increment(instanceUID, maximumConnections) {
+	if s.stateCfg.InstanceOutstandingConnections.Increment(instance.ResourceID, maximumConnections) {
 		return
 	}
 
@@ -122,7 +122,7 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.Pla
 		defer func() {
 			s.stateCfg.RunningPlanChecks.Delete(planCheckRun.UID)
 			s.stateCfg.RunningPlanCheckRunsCancelFunc.Delete(planCheckRun.UID)
-			s.stateCfg.InstanceOutstandingConnections.Decrement(instanceUID)
+			s.stateCfg.InstanceOutstandingConnections.Decrement(instance.ResourceID)
 		}()
 
 		ctxWithCancel, cancel := context.WithCancel(ctx)

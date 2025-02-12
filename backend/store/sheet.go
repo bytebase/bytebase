@@ -18,7 +18,7 @@ import (
 
 // SheetMessage is the message for a sheet.
 type SheetMessage struct {
-	ProjectUID int
+	ProjectID string
 
 	CreatorID int
 
@@ -52,7 +52,7 @@ type FindSheetMessage struct {
 	LoadFull bool
 
 	// Related fields
-	ProjectUID *int
+	ProjectID *string
 }
 
 // PatchSheetMessage is the message to patch a sheet.
@@ -113,20 +113,15 @@ func (s *Store) GetSheet(ctx context.Context, find *FindSheetMessage) (*SheetMes
 func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*SheetMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 
-	// Standard fields
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("sheet.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.CreatorID; v != nil {
 		where, args = append(where, fmt.Sprintf("sheet.creator_id = $%d", len(args)+1)), append(args, *v)
 	}
-
-	// Related fields
-	if v := find.ProjectUID; v != nil {
-		where, args = append(where, fmt.Sprintf("sheet.project_id = $%d", len(args)+1)), append(args, *v)
+	if v := find.ProjectID; v != nil {
+		where, args = append(where, fmt.Sprintf("sheet.project = $%d", len(args)+1)), append(args, *v)
 	}
-
-	// Domain fields
 	statementField := fmt.Sprintf("LEFT(sheet_blob.content, %d)", common.MaxSheetSize)
 	if find.LoadFull {
 		statementField = "sheet_blob.content"
@@ -143,7 +138,7 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 			sheet.id,
 			sheet.creator_id,
 			sheet.created_at,
-			sheet.project_id,
+			sheet.project,
 			sheet.name,
 			%s,
 			sheet.sha256,
@@ -167,7 +162,7 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 			&sheet.UID,
 			&sheet.CreatorID,
 			&sheet.CreatedAt,
-			&sheet.ProjectUID,
+			&sheet.ProjectID,
 			&sheet.Title,
 			&sheet.Statement,
 			&sheet.Sha256,
@@ -216,7 +211,7 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 	query := `
 		INSERT INTO sheet (
 			creator_id,
-			project_id,
+			project,
 			name,
 			sha256,
 			payload
@@ -232,7 +227,7 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 	defer tx.Rollback()
 	if err := tx.QueryRowContext(ctx, query,
 		create.CreatorID,
-		create.ProjectUID,
+		create.ProjectID,
 		create.Title,
 		create.Sha256,
 		payload,

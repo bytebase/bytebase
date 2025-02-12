@@ -76,7 +76,7 @@ func transformDatabaseGroupTargetToSpecs(ctx context.Context, s *store.Store, sp
 		return nil, errors.Errorf("project id %q in target %q does not match project id %q in plan config", projectID, c.Target, project.ResourceID)
 	}
 
-	databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectUID: &project.UID, ResourceID: &databaseGroupID})
+	databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectID: &project.ResourceID, ResourceID: &databaseGroupID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database group %q", databaseGroupID)
 	}
@@ -225,10 +225,10 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			return nil, err
 		}
 		sheet, err := sheetManager.CreateSheet(ctx, &store.SheetMessage{
-			CreatorID:  api.SystemBotID,
-			ProjectUID: project.UID,
-			Title:      fmt.Sprintf("Sheet for creating database %v", databaseName),
-			Statement:  statement,
+			CreatorID: api.SystemBotID,
+			ProjectID: project.ResourceID,
+			Title:     fmt.Sprintf("Sheet for creating database %v", databaseName),
+			Statement: statement,
 			Payload: &storepb.SheetPayload{
 				Engine: instance.Engine,
 			},
@@ -254,11 +254,10 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		}
 
 		v := &store.TaskMessage{
-			InstanceID:   instance.UID,
-			DatabaseID:   nil,
+			InstanceID:   instance.ResourceID,
+			DatabaseName: nil,
 			Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
 			Type:         api.TaskDatabaseCreate,
-			DatabaseName: payload.DatabaseName,
 			Payload:      string(bytes),
 		}
 		if spec.EarliestAllowedTime.GetSeconds() > 0 {
@@ -339,11 +338,11 @@ func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spe
 	}
 	payloadString := string(bytes)
 	taskCreate := &store.TaskMessage{
-		Name:       fmt.Sprintf("Export data from database %q", database.DatabaseName),
-		InstanceID: instance.UID,
-		DatabaseID: &database.UID,
-		Type:       api.TaskDatabaseDataExport,
-		Payload:    payloadString,
+		Name:         fmt.Sprintf("Export data from database %q", database.DatabaseName),
+		InstanceID:   database.InstanceID,
+		DatabaseName: &database.DatabaseName,
+		Type:         api.TaskDatabaseDataExport,
+		Payload:      payloadString,
 	}
 	if spec.EarliestAllowedTime.GetSeconds() > 0 {
 		t := spec.EarliestAllowedTime.AsTime()
@@ -398,11 +397,11 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		}
 		payloadString := string(bytes)
 		taskCreate := &store.TaskMessage{
-			Name:       fmt.Sprintf("Establish baseline for database %q", database.DatabaseName),
-			InstanceID: instance.UID,
-			DatabaseID: &database.UID,
-			Type:       api.TaskDatabaseSchemaBaseline,
-			Payload:    payloadString,
+			Name:         fmt.Sprintf("Establish baseline for database %q", database.DatabaseName),
+			InstanceID:   database.InstanceID,
+			DatabaseName: &database.DatabaseName,
+			Type:         api.TaskDatabaseSchemaBaseline,
+			Payload:      payloadString,
 		}
 		if spec.EarliestAllowedTime.GetSeconds() > 0 {
 			t := spec.EarliestAllowedTime.AsTime()
@@ -429,11 +428,11 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		}
 		payloadString := string(bytes)
 		taskCreate := &store.TaskMessage{
-			Name:       fmt.Sprintf("DDL(schema) for database %q", database.DatabaseName),
-			InstanceID: instance.UID,
-			DatabaseID: &database.UID,
-			Type:       api.TaskDatabaseSchemaUpdate,
-			Payload:    payloadString,
+			Name:         fmt.Sprintf("DDL(schema) for database %q", database.DatabaseName),
+			InstanceID:   database.InstanceID,
+			DatabaseName: &database.DatabaseName,
+			Type:         api.TaskDatabaseSchemaUpdate,
+			Payload:      payloadString,
 		}
 		if spec.EarliestAllowedTime.GetSeconds() > 0 {
 			t := spec.EarliestAllowedTime.AsTime()
@@ -460,11 +459,11 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		}
 		payloadString := string(bytes)
 		taskCreate := &store.TaskMessage{
-			Name:       fmt.Sprintf("SDL for database %q", database.DatabaseName),
-			InstanceID: instance.UID,
-			DatabaseID: &database.UID,
-			Type:       api.TaskDatabaseSchemaUpdateSDL,
-			Payload:    payloadString,
+			Name:         fmt.Sprintf("SDL for database %q", database.DatabaseName),
+			InstanceID:   database.InstanceID,
+			DatabaseName: &database.DatabaseName,
+			Type:         api.TaskDatabaseSchemaUpdateSDL,
+			Payload:      payloadString,
 		}
 		if spec.EarliestAllowedTime.GetSeconds() > 0 {
 			t := spec.EarliestAllowedTime.AsTime()
@@ -496,11 +495,11 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			return nil, nil, errors.Wrapf(err, "failed to marshal database schema update gh-ost sync payload")
 		}
 		v := &store.TaskMessage{
-			Name:       fmt.Sprintf("Update schema gh-ost sync for database %q", database.DatabaseName),
-			InstanceID: instance.UID,
-			DatabaseID: &database.UID,
-			Type:       api.TaskDatabaseSchemaUpdateGhostSync,
-			Payload:    string(bytesSync),
+			Name:         fmt.Sprintf("Update schema gh-ost sync for database %q", database.DatabaseName),
+			InstanceID:   database.InstanceID,
+			DatabaseName: &database.DatabaseName,
+			Type:         api.TaskDatabaseSchemaUpdateGhostSync,
+			Payload:      string(bytesSync),
 		}
 		if spec.EarliestAllowedTime.GetSeconds() > 0 {
 			t := spec.EarliestAllowedTime.AsTime()
@@ -517,11 +516,11 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			return nil, nil, errors.Wrapf(err, "failed to marshal database schema update ghost cutover payload")
 		}
 		cutoverV := &store.TaskMessage{
-			Name:       fmt.Sprintf("Update schema gh-ost cutover for database %q", database.DatabaseName),
-			InstanceID: instance.UID,
-			DatabaseID: &database.UID,
-			Type:       api.TaskDatabaseSchemaUpdateGhostCutover,
-			Payload:    string(bytesCutover),
+			Name:         fmt.Sprintf("Update schema gh-ost cutover for database %q", database.DatabaseName),
+			InstanceID:   database.InstanceID,
+			DatabaseName: &database.DatabaseName,
+			Type:         api.TaskDatabaseSchemaUpdateGhostCutover,
+			Payload:      string(bytesCutover),
 		}
 		if spec.EarliestAllowedTime.GetSeconds() > 0 {
 			t := spec.EarliestAllowedTime.AsTime()
@@ -560,11 +559,11 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		}
 		payloadString := string(bytes)
 		taskCreate := &store.TaskMessage{
-			Name:       fmt.Sprintf("DML(data) for database %q", database.DatabaseName),
-			InstanceID: instance.UID,
-			DatabaseID: &database.UID,
-			Type:       api.TaskDatabaseDataUpdate,
-			Payload:    payloadString,
+			Name:         fmt.Sprintf("DML(data) for database %q", database.DatabaseName),
+			InstanceID:   database.InstanceID,
+			DatabaseName: &database.DatabaseName,
+			Type:         api.TaskDatabaseDataUpdate,
+			Payload:      payloadString,
 		}
 		if spec.EarliestAllowedTime.GetSeconds() > 0 {
 			t := spec.EarliestAllowedTime.AsTime()

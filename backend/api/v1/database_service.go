@@ -469,7 +469,7 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -477,7 +477,7 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to sync database schema for database %q, error %v", databaseName, err)
 		}
-		newDBSchema, err := s.store.GetDBSchema(ctx, database.UID)
+		newDBSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -528,7 +528,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -536,7 +536,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to sync database schema for database %q, error %v", databaseName, err)
 		}
-		newDBSchema, err := s.store.GetDBSchema(ctx, database.UID)
+		newDBSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -1051,8 +1051,8 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 			return nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
 		}
 		listSlowQuery := &store.ListSlowQueryMessage{
-			InstanceUID:  &instance.UID,
-			DatabaseUID:  &database.UID,
+			InstanceID:   &database.InstanceID,
+			DatabaseName: &database.DatabaseName,
 			StartLogDate: startLogDate,
 			EndLogDate:   endLogDate,
 		}
@@ -1387,7 +1387,7 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 		if database == nil {
 			return nil, status.Errorf(codes.NotFound, "database %q not found", db)
 		}
-		schema, err := s.store.GetDBSchema(ctx, database.UID)
+		schema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Failed to get database schema: %v", err)
 		}
@@ -1520,7 +1520,7 @@ func (s *DatabaseService) pgAdviseIndex(ctx context.Context, request *v1pb.Advis
 	if err != nil {
 		return nil, err
 	}
-	schema, err := s.store.GetDBSchema(ctx, database.UID)
+	schema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to get database schema: %v", err)
 	}

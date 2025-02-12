@@ -305,7 +305,7 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 			return list, nil
 		}
 
-		databaseMessage, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:          &instance.ResourceID,
 			DatabaseName:        &databaseName,
 			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -317,11 +317,11 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 			}
 			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
 		}
-		if databaseMessage == nil {
+		if database == nil {
 			return nil, nil
 		}
 
-		dbSchema, err := storeInstance.GetDBSchema(ctx, databaseMessage.UID)
+		dbSchema, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
 		}
@@ -341,7 +341,7 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 				if resourceDB == nil {
 					continue
 				}
-				resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.UID)
+				resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.InstanceID, resourceDB.DatabaseName)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
 				}
@@ -367,7 +367,7 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
 
-		databaseMessage, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:          &instance.ResourceID,
 			DatabaseName:        &databaseName,
 			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -375,11 +375,11 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
 		}
-		if databaseMessage == nil {
+		if database == nil {
 			return nil, nil
 		}
 
-		dbSchema, err := storeInstance.GetDBSchema(ctx, databaseMessage.UID)
+		dbSchema, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
 		}
@@ -407,7 +407,7 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
 
-		databaseMessage, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:          &instance.ResourceID,
 			DatabaseName:        &databaseName,
 			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -415,11 +415,11 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
 		}
-		if databaseMessage == nil {
+		if database == nil {
 			return nil, nil
 		}
 
-		dbSchema, err := storeInstance.GetDBSchema(ctx, databaseMessage.UID)
+		dbSchema, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
 		}
@@ -438,7 +438,7 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 				if resourceDB == nil {
 					continue
 				}
-				resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.UID)
+				resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.InstanceID, resourceDB.DatabaseName)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
 				}
@@ -475,7 +475,7 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
-		databaseMessage, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:          &instance.ResourceID,
 			DatabaseName:        &databaseName,
 			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -487,11 +487,11 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 			}
 			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
 		}
-		if databaseMessage == nil {
+		if database == nil {
 			return nil, nil
 		}
 
-		dbSchema, err := storeInstance.GetDBSchema(ctx, databaseMessage.UID)
+		dbSchema, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
 		}
@@ -511,7 +511,7 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 				if resourceDB == nil {
 					continue
 				}
-				resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.UID)
+				resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.InstanceID, resourceDB.DatabaseName)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
 				}
@@ -545,7 +545,7 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
-		databaseMessage, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:          &instance.ResourceID,
 			DatabaseName:        &databaseName,
 			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -557,11 +557,11 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 			}
 			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
 		}
-		if databaseMessage == nil {
+		if database == nil {
 			return nil, nil
 		}
 
-		dbSchema, err := storeInstance.GetDBSchema(ctx, databaseMessage.UID)
+		dbSchema, err := storeInstance.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
 		}
@@ -584,7 +584,7 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 				if resourceDB == nil {
 					continue
 				}
-				resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.UID)
+				resourceDBSchema, err := storeInstance.GetDBSchema(ctx, resourceDB.InstanceID, resourceDB.DatabaseName)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
 				}

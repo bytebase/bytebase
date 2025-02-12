@@ -62,14 +62,14 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creatorUID in
 	query := `
 		INSERT INTO plan (
 			creator_id,
-			project_id,
+			project,
 			pipeline_id,
 			name,
 			description,
 			config
 		) VALUES (
 			$1,
-			(SELECT project.id FROM project WHERE project.resource_id = $2),
+			$2,
 			$3,
 			$4,
 			$5,
@@ -160,14 +160,13 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			plan.creator_id,
 			plan.created_at,
 			plan.updated_at,
-			project.resource_id,
+			plan.project,
 			plan.pipeline_id,
 			plan.name,
 			plan.description,
 			plan.config,
 			COALESCE(plan_check_run_status_count.status_count, '{}'::jsonb)
 		FROM plan
-		LEFT JOIN project on plan.project_id = project.id
 		LEFT JOIN issue on plan.id = issue.plan_id
 		LEFT JOIN LATERAL (
 			SELECT

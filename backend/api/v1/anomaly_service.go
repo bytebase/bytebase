@@ -89,7 +89,7 @@ func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.Sear
 				return nil, status.Errorf(codes.NotFound, "cannot found the database %s", resources[0])
 			}
 			find.InstanceID = &insID
-			find.DatabaseUID = &database.UID
+			find.DatabaseName = &database.DatabaseName
 		}
 	}
 
@@ -115,14 +115,15 @@ func (s *AnomalyService) convertToAnomaly(ctx context.Context, anomaly *store.An
 	}
 
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		UID:         &anomaly.DatabaseUID,
-		ShowDeleted: true,
+		InstanceID:   &anomaly.InstanceID,
+		DatabaseName: &anomaly.DatabaseName,
+		ShowDeleted:  true,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find database with id %d", anomaly.DatabaseUID)
+		return nil, errors.Wrapf(err, "failed to find database %s", anomaly.DatabaseName)
 	}
 	if database == nil {
-		return nil, errors.Errorf("cannot found database with id %d", anomaly.DatabaseUID)
+		return nil, errors.Errorf("cannot found database %s", anomaly.DatabaseName)
 	}
 	pbAnomaly.Resource = common.FormatDatabase(database.InstanceID, database.DatabaseName)
 	pbAnomaly.Type = convertAnomalyType(anomaly.Type)

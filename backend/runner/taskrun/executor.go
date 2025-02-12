@@ -91,11 +91,11 @@ type migrateContext struct {
 }
 
 func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int, taskRunUID int, dbFactory *dbfactory.DBFactory) (*db.MigrationInfo, *migrateContext, error) {
-	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
 		return nil, nil, err
 	}
-	database, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	database, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -108,7 +108,6 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 	}
 
 	mi := &db.MigrationInfo{
-		InstanceID:     &instance.UID,
 		DatabaseID:     &database.UID,
 		ReleaseVersion: profile.Version,
 		Type:           migrationType,
@@ -190,7 +189,15 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 			if foundChangedResources {
 				break
 			}
-			if run.Config.InstanceUid != int32(task.InstanceID) {
+			taskInstance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
+			if err != nil {
+				return nil, nil, err
+			}
+			if taskInstance == nil {
+				return nil, nil, errors.Errorf("task %d instance not found", task.ID)
+			}
+
+			if run.Config.InstanceUid != int32(taskInstance.UID) {
 				continue
 			}
 			if run.Config.DatabaseName != database.DatabaseName {
@@ -342,8 +349,9 @@ func postMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInf
 
 	// Remove schema drift anomalies.
 	if err := stores.DeleteAnomalyV2(ctx, &store.DeleteAnomalyMessage{
-		DatabaseUID: *(mc.task.DatabaseID),
-		Type:        api.AnomalyDatabaseSchemaDrift,
+		InstanceID:   mc.task.InstanceID,
+		DatabaseName: *mc.task.DatabaseName,
+		Type:         api.AnomalyDatabaseSchemaDrift,
 	}); err != nil && common.ErrorCode(err) != common.NotFound {
 		slog.Error("Failed to archive anomaly",
 			slog.String("instance", instance.ResourceID),
@@ -456,8 +464,9 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 	// what they are doing
 	if mc.version != "" {
 		list, err := stores.ListRevisions(ctx, &store.FindRevisionMessage{
-			DatabaseUID: &mc.database.UID,
-			Version:     &mc.version,
+			InstanceID:   &mc.database.InstanceID,
+			DatabaseName: &mc.database.DatabaseName,
+			Version:      &mc.version,
 		})
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to list revisions")
@@ -484,7 +493,8 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 
 	// create pending changelog
 	changelogUID, err := stores.CreateChangelog(ctx, &store.ChangelogMessage{
-		DatabaseUID:        mc.database.UID,
+		InstanceID:         mc.database.InstanceID,
+		DatabaseName:       mc.database.DatabaseName,
 		Status:             store.ChangelogStatusPending,
 		PrevSyncHistoryUID: syncHistoryPrevUID,
 		SyncHistoryUID:     nil,
@@ -523,8 +533,9 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mi *db.Migrat
 		// if isDone, record in revision
 		if mc.version != "" {
 			r := &store.RevisionMessage{
-				DatabaseUID: mc.database.UID,
-				Version:     mc.version,
+				InstanceID:   mc.database.InstanceID,
+				DatabaseName: mc.database.DatabaseName,
+				Version:      mc.version,
 				Payload: &storepb.RevisionPayload{
 					Release:     mc.release.release,
 					File:        mc.release.file,

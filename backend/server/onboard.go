@@ -193,12 +193,13 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	// This is different from another sample SQL sheet created below, which is created as part of
 	// creating a schema change issue.
 	if _, err = s.store.CreateWorkSheet(ctx, &store.WorkSheetMessage{
-		CreatorID:   userID,
-		ProjectUID:  project.UID,
-		DatabaseUID: &prodDatabase.UID,
-		Title:       "Sample Sheet",
-		Statement:   "SELECT * FROM salary;",
-		Visibility:  store.ProjectReadWorkSheet,
+		CreatorID:    userID,
+		ProjectID:    project.ResourceID,
+		InstanceID:   &prodDatabase.InstanceID,
+		DatabaseName: &prodDatabase.DatabaseName,
+		Title:        "Sample Sheet",
+		Statement:    "SELECT * FROM salary;",
+		Visibility:   store.ProjectReadWorkSheet,
 	}); err != nil {
 		return errors.Wrapf(err, "failed to create sample work sheet")
 	}
@@ -206,9 +207,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	// Create a schema update issue and start with creating the sheet for the schema update.
 	testSheet, err := s.sheetManager.CreateSheet(ctx, &store.SheetMessage{
 		CreatorID: api.SystemBotID,
-
-		ProjectUID: project.UID,
-
+		ProjectID: project.ResourceID,
 		Title:     "Alter table to test sample instance for sample issue",
 		Statement: "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
 
@@ -222,12 +221,9 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	prodSheet, err := s.sheetManager.CreateSheet(ctx, &store.SheetMessage{
 		CreatorID: api.SystemBotID,
-
-		ProjectUID: project.UID,
-
+		ProjectID: project.ResourceID,
 		Title:     "Alter table to prod sample instance for sample issue",
 		Statement: "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
-
 		Payload: &storepb.SheetPayload{
 			Engine: prodInstance.Engine,
 		},
@@ -306,7 +302,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	// Add a sensitive data policy to pair it with the sample query below. So that user can
 	// experience the sensitive data masking feature from SQL Editor.
-	dbSchema, err := s.store.GetDBSchema(ctx, prodDatabase.UID)
+	dbSchema, err := s.store.GetDBSchema(ctx, prodDatabase.InstanceID, prodDatabase.DatabaseName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get db schema for database %v", prodDatabase.UID)
 	}
@@ -319,7 +315,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	columnConfig := tableConfig.CreateOrGetColumnConfig("amount")
 	columnConfig.SemanticType = "default"
 
-	if err := s.store.UpdateDBSchema(ctx, prodDatabase.UID, &store.UpdateDBSchemaMessage{Config: dbModelConfig.BuildDatabaseConfig()}); err != nil {
+	if err := s.store.UpdateDBSchema(ctx, prodDatabase.InstanceID, prodDatabase.DatabaseName, &store.UpdateDBSchemaMessage{Config: dbModelConfig.BuildDatabaseConfig()}); err != nil {
 		return errors.Wrapf(err, "failed to update db config for database %v", prodDatabase.UID)
 	}
 

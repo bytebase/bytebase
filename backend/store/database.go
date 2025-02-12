@@ -139,28 +139,13 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 
 // CreateDatabaseDefault creates a new database in the default project.
 func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessage) (*DatabaseMessage, error) {
-	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &create.ProjectID})
-	if err != nil {
-		return nil, err
-	}
-	if project == nil {
-		return nil, errors.Errorf("project %q not found", create.ProjectID)
-	}
-	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &create.InstanceID})
-	if err != nil {
-		return nil, err
-	}
-	if instance == nil {
-		return nil, errors.Errorf("instance %q not found", create.InstanceID)
-	}
-
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	databaseUID, err := s.createDatabaseDefaultImpl(ctx, tx, project.UID, instance.UID, create)
+	databaseUID, err := s.createDatabaseDefaultImpl(ctx, tx, create.ProjectID, create.InstanceID, create)
 	if err != nil {
 		return nil, err
 	}
@@ -170,13 +155,13 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 	}
 
 	// Invalidate an update the cache.
-	s.databaseCache.Remove(getDatabaseCacheKey(instance.ResourceID, create.DatabaseName))
+	s.databaseCache.Remove(getDatabaseCacheKey(create.InstanceID, create.DatabaseName))
 	s.databaseIDCache.Remove(databaseUID)
 	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
 }
 
 // createDatabaseDefault only creates a default database with charset, collation only in the default project.
-func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectUID, instanceUID int, create *DatabaseMessage) (int, error) {
+func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectID, instanceID string, create *DatabaseMessage) (int, error) {
 	secretsString, err := protojson.Marshal(&storepb.Secrets{})
 	if err != nil {
 		return 0, err
@@ -184,8 +169,8 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectUID,
 
 	query := `
 		INSERT INTO db (
-			instance_id,
-			project_id,
+			instance,
+			project,
 			name,
 			sync_status,
 			schema_version,
@@ -194,16 +179,16 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectUID,
 			service_name
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		ON CONFLICT (instance_id, name) DO UPDATE SET
-			project_id = EXCLUDED.project_id,
+		ON CONFLICT (instance, name) DO UPDATE SET
+			project = EXCLUDED.project,
 			sync_status = EXCLUDED.sync_status,
 			datashare = EXCLUDED.datashare,
 			service_name = EXCLUDED.service_name
 		RETURNING id`
 	var databaseUID int
 	if err := tx.QueryRowContext(ctx, query,
-		instanceUID,
-		projectUID,
+		instanceID,
+		projectID,
 		create.DatabaseName,
 		api.OK,
 		"",            /* schema_version */
@@ -220,21 +205,6 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectUID,
 
 // UpsertDatabase upserts a database.
 func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*DatabaseMessage, error) {
-	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &create.ProjectID})
-	if err != nil {
-		return nil, err
-	}
-	if project == nil {
-		return nil, errors.Errorf("project %q not found", create.ProjectID)
-	}
-	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &create.InstanceID})
-	if err != nil {
-		return nil, err
-	}
-	if instance == nil {
-		return nil, errors.Errorf("instance %q not found", create.InstanceID)
-	}
-
 	secretsString, err := protojson.Marshal(create.Secrets)
 	if err != nil {
 		return nil, err
@@ -256,8 +226,8 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	}
 	query := `
 		INSERT INTO db (
-			instance_id,
-			project_id,
+			instance,
+			project,
 			environment,
 			name,
 			sync_status,
@@ -269,8 +239,8 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 			metadata
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, '', $7, $8, $9, $10)
-		ON CONFLICT (instance_id, name) DO UPDATE SET
-			project_id = EXCLUDED.project_id,
+		ON CONFLICT (instance, name) DO UPDATE SET
+			project = EXCLUDED.project,
 			environment = EXCLUDED.environment,
 			name = EXCLUDED.name,
 			schema_version = EXCLUDED.schema_version,
@@ -278,8 +248,8 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		RETURNING id`
 	var databaseUID int
 	if err := tx.QueryRowContext(ctx, query,
-		instance.UID,
-		project.UID,
+		create.InstanceID,
+		create.ProjectID,
 		environment,
 		create.DatabaseName,
 		create.SyncState,
@@ -298,25 +268,16 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 	}
 
 	// Invalidate and update the cache.
-	s.databaseCache.Remove(getDatabaseCacheKey(instance.ResourceID, create.DatabaseName))
+	s.databaseCache.Remove(getDatabaseCacheKey(create.InstanceID, create.DatabaseName))
 	s.databaseIDCache.Remove(databaseUID)
 	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID, ShowDeleted: true})
 }
 
 // UpdateDatabase updates a database.
 func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage) (*DatabaseMessage, error) {
-	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &patch.InstanceID})
-	if err != nil {
-		return nil, err
-	}
-
 	set, args := []string{}, []any{}
 	if v := patch.ProjectID; v != nil {
-		project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: patch.ProjectID})
-		if err != nil {
-			return nil, err
-		}
-		set, args = append(set, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, project.UID)
+		set, args = append(set, fmt.Sprintf("project = $%d", len(args)+1)), append(args, *v)
 	}
 	if patch.UpdateEnvironmentID {
 		var environment *string
@@ -355,7 +316,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 			set, args = append(set, fmt.Sprintf("metadata = metadata || $%d", len(args)+1)), append(args, metadataBytes)
 		}
 	}
-	args = append(args, instance.UID, patch.DatabaseName)
+	args = append(args, patch.InstanceID, patch.DatabaseName)
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -366,7 +327,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE db
 		SET `+strings.Join(set, ", ")+`
-		WHERE instance_id = $%d AND name = $%d
+		WHERE instance = $%d AND name = $%d
 		RETURNING id
 	`, len(args)-1, len(args)),
 		args...,
@@ -390,10 +351,6 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 	if len(databases) == 0 {
 		return nil, errors.Errorf("there is no database in the project")
 	}
-	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &projectID})
-	if err != nil {
-		return nil, err
-	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -402,20 +359,15 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 	defer tx.Rollback()
 
 	var wheres []string
-	args := []any{project.UID}
+	args := []any{projectID}
 	for i, database := range databases {
-		wheres = append(wheres, fmt.Sprintf("(instance.resource_id = $%d AND db.name = $%d)", 2*i+2, 2*i+3))
+		wheres = append(wheres, fmt.Sprintf("(db.instance = $%d AND db.name = $%d)", 2*i+2, 2*i+3))
 		args = append(args, database.InstanceID, database.DatabaseName)
-	}
-	databaseClause := ""
-	if len(wheres) > 0 {
-		databaseClause = fmt.Sprintf(" AND (%s)", strings.Join(wheres, " OR "))
 	}
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
 			UPDATE db
-			SET project_id = $1
-			FROM instance
-			WHERE db.instance_id = instance.id %s;`, databaseClause),
+			SET project = $1
+			WHERE %s;`, strings.Join(wheres, " OR ")),
 		args...,
 	); err != nil {
 		return nil, err
@@ -428,7 +380,7 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 	var updatedDatabases []*DatabaseMessage
 	for _, database := range databases {
 		updatedDatabase := *database
-		updatedDatabase.ProjectID = project.ResourceID
+		updatedDatabase.ProjectID = projectID
 		s.databaseCache.Add(getDatabaseCacheKey(database.InstanceID, database.DatabaseName), &updatedDatabase)
 		s.databaseIDCache.Add(database.UID, &updatedDatabase)
 		updatedDatabases = append(updatedDatabases, &updatedDatabase)
@@ -439,17 +391,17 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("db.project = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.EffectiveEnvironmentID; v != nil {
 		where, args = append(where, fmt.Sprintf(`
 		COALESCE(
 			(SELECT environment.resource_id FROM environment where environment.resource_id = db.environment),
-			(SELECT environment.resource_id FROM environment JOIN instance ON environment.resource_id = instance.environment WHERE instance.id = db.instance_id)
+			(SELECT environment.resource_id FROM environment JOIN instance ON environment.resource_id = instance.environment WHERE instance.resource_id = db.instance)
 		) = $%d`, len(args)+1)), append(args, *v)
 	}
 	if v := find.InstanceID; v != nil {
-		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("db.instance = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.DatabaseName; v != nil {
 		if find.IgnoreCaseSensitive {
@@ -467,7 +419,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	if !find.ShowDeleted {
 		where, args = append(where, fmt.Sprintf(`
 			COALESCE(
-				(SELECT environment.row_status AS instance_environment_status FROM environment JOIN instance ON environment.resource_id = instance.environment WHERE instance.id = db.instance_id),
+				(SELECT environment.row_status AS instance_environment_status FROM environment JOIN instance ON environment.resource_id = instance.environment WHERE instance.resource_id = db.instance),
 				$%d
 			) = $%d`, len(args)+1, len(args)+2)), append(args, api.Normal, api.Normal)
 		where, args = append(where, fmt.Sprintf(`
@@ -484,13 +436,13 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	query := fmt.Sprintf(`
 		SELECT
 			db.id,
-			project.resource_id AS project_id,
+			db.project,
 			COALESCE(
 				(SELECT environment.resource_id FROM environment WHERE environment.resource_id = db.environment),
-				(SELECT environment.resource_id FROM environment JOIN instance ON environment.resource_id = instance.environment WHERE instance.id = db.instance_id)
+				(SELECT environment.resource_id FROM environment JOIN instance ON environment.resource_id = instance.environment WHERE instance.resource_id = db.instance)
 			),
 			(SELECT environment.resource_id FROM environment WHERE environment.resource_id = db.environment),
-			instance.resource_id AS instance_id,
+			db.instance,
 			db.name,
 			db.sync_status,
 			db.sync_at,
@@ -498,7 +450,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 				(
 					SELECT revision.version
 					FROM revision
-					WHERE revision.database_id = db.id AND deleted_at IS NOT NULL
+					WHERE revision.instance = db.instance AND revision.db_name = db.name AND deleted_at IS NOT NULL
 					ORDER BY revision.version DESC
 					LIMIT 1
 				),
@@ -509,11 +461,9 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			db.service_name,
 			db.metadata
 		FROM db
-		LEFT JOIN project ON db.project_id = project.id
-		LEFT JOIN instance ON db.instance_id = instance.id
+		LEFT JOIN instance ON db.instance = instance.resource_id
 		WHERE %s
-		GROUP BY db.id, project.resource_id, instance.resource_id
-		ORDER BY project.resource_id, instance.resource_id, db.name`, strings.Join(where, " AND "))
+		ORDER BY db.project, db.instance, db.name`, strings.Join(where, " AND "))
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
