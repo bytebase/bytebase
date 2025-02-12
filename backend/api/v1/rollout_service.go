@@ -356,7 +356,7 @@ func (s *RolloutService) GetTaskRunSession(ctx context.Context, request *v1pb.Ge
 		return nil, status.Errorf(codes.Internal, "failed to get task, error: %v", err)
 	}
 
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
 	}
@@ -910,7 +910,7 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, request *v1
 		return nil, status.Errorf(codes.Internal, "failed to get task, error: %v", err)
 	}
 
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
 	}
@@ -1115,14 +1115,14 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 
 		if serializeTasks {
 			hasDAG := map[store.TaskIndexDAG]bool{}
-			databaseTaskIndexes := map[int][]int{}
+			databaseTaskIndexes := map[string][]int{}
 
 			for i, task := range stageCreate.TaskList {
-				if task.DatabaseID == nil {
+				if task.DatabaseName == nil {
 					continue
 				}
-				db := *task.DatabaseID
-				databaseTaskIndexes[db] = append(databaseTaskIndexes[db], i)
+				dbKey := fmt.Sprintf("%s/%s", task.InstanceID, *task.DatabaseName)
+				databaseTaskIndexes[dbKey] = append(databaseTaskIndexes[dbKey], i)
 			}
 
 			for _, dag := range stageCreate.TaskIndexDAGList {
@@ -1218,7 +1218,7 @@ func GetValidRolloutPolicyForStage(ctx context.Context, stores *store.Store, lic
 	}
 
 	for _, task := range stage.TaskList {
-		instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+		instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 		if err != nil {
 			return nil, err
 		}

@@ -148,7 +148,7 @@ func (s *SchedulerV2) canTaskAutoRollout(ctx context.Context, rolloutPolicy *sto
 		return true, nil
 	}
 
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
 		return false, err
 	}
@@ -181,7 +181,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, rolloutPolicy
 		return nil
 	}
 
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
 		return err
 	}
@@ -331,7 +331,7 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 	}
 
 	doSchedule, err := func() (bool, error) {
-		if task.DatabaseID == nil {
+		if task.DatabaseName == nil {
 			return true, nil
 		}
 
@@ -345,7 +345,7 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 			return true, nil
 		}
 
-		taskIDs, err := s.store.FindBlockingTasksByVersion(ctx, *task.DatabaseID, version.Version)
+		taskIDs, err := s.store.FindBlockingTasksByVersion(ctx, task.InstanceID, *task.DatabaseName, version.Version)
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to find blocking versioned tasks")
 		}
@@ -397,22 +397,23 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 	// TODO(p0ny): remove these because we will follow the version order
 	// Find the minimum task ID for each database.
 	// We only run the first (i.e. which has the minimum task ID) task for each database.
-	minTaskIDForDatabase := map[int]int{}
+	minTaskIDForDatabase := map[string]int{}
 	for _, taskRun := range taskRuns {
 		task, err := s.store.GetTaskV2ByID(ctx, taskRun.TaskUID)
 		if err != nil {
 			slog.Error("failed to get task", slog.Int("task id", taskRun.TaskUID), log.BBError(err))
 			continue
 		}
-		if task.DatabaseID == nil {
+		if task.DatabaseName == nil {
 			continue
 		}
 
+		databaseKey := getDatabaseKey(task.InstanceID, *task.DatabaseName)
 		if task.Type.Sequential() {
-			if _, ok := minTaskIDForDatabase[*task.DatabaseID]; !ok {
-				minTaskIDForDatabase[*task.DatabaseID] = task.ID
-			} else if minTaskIDForDatabase[*task.DatabaseID] > task.ID {
-				minTaskIDForDatabase[*task.DatabaseID] = task.ID
+			if _, ok := minTaskIDForDatabase[databaseKey]; !ok {
+				minTaskIDForDatabase[databaseKey] = task.ID
+			} else if minTaskIDForDatabase[databaseKey] > task.ID {
+				minTaskIDForDatabase[databaseKey] = task.ID
 			}
 		}
 	}
@@ -427,9 +428,9 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 			slog.Error("failed to get task", slog.Int("task id", taskRun.TaskUID), log.BBError(err))
 			continue
 		}
-		if task.DatabaseID != nil && task.Type.Sequential() {
+		if task.DatabaseName != nil && task.Type.Sequential() {
 			// Skip the task run if there is an ongoing migration on the database.
-			if taskUIDAny, ok := s.stateCfg.RunningDatabaseMigration.Load(*task.DatabaseID); ok {
+			if taskUIDAny, ok := s.stateCfg.RunningDatabaseMigration.Load(getDatabaseKey(task.InstanceID, *task.DatabaseName)); ok {
 				if taskUID, ok := taskUIDAny.(int); ok {
 					s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
 						ReportTime: timestamppb.Now(),
@@ -442,7 +443,7 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 				}
 				continue
 			}
-			if taskUID := minTaskIDForDatabase[*task.DatabaseID]; taskUID != task.ID {
+			if taskUID := minTaskIDForDatabase[getDatabaseKey(task.InstanceID, *task.DatabaseName)]; taskUID != task.ID {
 				s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
 					ReportTime: timestamppb.Now(),
 					WaitingCause: &storepb.SchedulerInfo_WaitingCause{
@@ -455,7 +456,7 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 			}
 		}
 
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 		if err != nil {
 			continue
 		}
@@ -487,8 +488,8 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 		s.stateCfg.TaskRunSchedulerInfo.Delete(taskRun.ID)
 
 		s.stateCfg.RunningTaskRuns.Store(taskRun.ID, true)
-		if task.DatabaseID != nil {
-			s.stateCfg.RunningDatabaseMigration.Store(*task.DatabaseID, task.ID)
+		if task.DatabaseName != nil {
+			s.stateCfg.RunningDatabaseMigration.Store(getDatabaseKey(task.InstanceID, *task.DatabaseName), task.ID)
 		}
 
 		s.store.CreateTaskRunLogS(ctx, taskRun.ID, time.Now(), s.profile.DeployID, &storepb.TaskRunLog{
@@ -516,8 +517,8 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 	defer func() {
 		// We don't need to do s.stateCfg.RunningTaskRuns.Delete(taskRun.ID) to avoid race condition.
 		s.stateCfg.RunningTaskRunsCancelFunc.Delete(taskRun.ID)
-		if task.DatabaseID != nil {
-			s.stateCfg.RunningDatabaseMigration.Delete(*task.DatabaseID)
+		if task.DatabaseName != nil {
+			s.stateCfg.RunningDatabaseMigration.Delete(getDatabaseKey(task.InstanceID, *task.DatabaseName))
 		}
 		s.stateCfg.InstanceOutstandingConnections.Decrement(task.InstanceID)
 	}()
@@ -695,6 +696,10 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
 		return
 	}
+}
+
+func getDatabaseKey(instanceID, databaseName string) string {
+	return fmt.Sprintf("%s/%s", instanceID, databaseName)
 }
 
 func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {

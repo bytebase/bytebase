@@ -434,7 +434,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 	for _, stage := range pipelineCreate.Stages {
 		for _, task := range stage.TaskList {
 			instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-				UID: &task.InstanceID,
+				ResourceID: &task.InstanceID,
 			})
 			if err != nil {
 				return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get instance %v", task.InstanceID)
@@ -460,7 +460,8 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 				}
 			} else {
 				database, err := r.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-					UID: task.DatabaseID,
+					InstanceID:   &task.InstanceID,
+					DatabaseName: task.DatabaseName,
 				})
 				if err != nil {
 					return 0, store.RiskSourceUnknown, false, err
@@ -601,7 +602,7 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 				continue
 			}
 			instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-				UID: &task.InstanceID,
+				ResourceID: &task.InstanceID,
 			})
 			if err != nil {
 				return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to get instance %v", task.InstanceID)
@@ -620,7 +621,8 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 			}
 
 			database, err := r.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-				UID: task.DatabaseID,
+				InstanceID:   &task.InstanceID,
+				DatabaseName: task.DatabaseName,
 			})
 			if err != nil {
 				return 0, store.RiskSourceUnknown, false, err

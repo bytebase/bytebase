@@ -748,7 +748,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
 	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		UID: &task.InstanceID,
+		ResourceID: &task.InstanceID,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance %d", task.InstanceID)
@@ -784,14 +784,14 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 }
 
 func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	if task.DatabaseID == nil {
-		return nil, errors.Errorf("database id is nil")
+	if task.DatabaseName == nil {
+		return nil, errors.Errorf("database is nil")
 	}
 	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}
@@ -817,14 +817,14 @@ func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, projec
 }
 
 func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	if task.DatabaseID == nil {
-		return nil, errors.Errorf("database id is nil")
+	if task.DatabaseName == nil {
+		return nil, errors.Errorf("database is nil")
 	}
 	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}
@@ -852,14 +852,14 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 }
 
 func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	if task.DatabaseID == nil {
-		return nil, errors.Errorf("database id is nil")
+	if task.DatabaseName == nil {
+		return nil, errors.Errorf("database is nil")
 	}
 	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}
@@ -881,14 +881,14 @@ func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Sto
 }
 
 func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	if task.DatabaseID == nil {
-		return nil, errors.Errorf("database id is nil")
+	if task.DatabaseName == nil {
+		return nil, errors.Errorf("database is nil")
 	}
 	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}
@@ -919,14 +919,14 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 }
 
 func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	if task.DatabaseID == nil {
-		return nil, errors.Errorf("database id is nil")
+	if task.DatabaseName == nil {
+		return nil, errors.Errorf("database is nil")
 	}
 	payload := &storepb.TaskDatabaseDataExportPayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}

@@ -75,7 +75,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		return true, nil, errors.Errorf("empty create database statement")
 	}
 
-	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
 	}
@@ -179,9 +179,9 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 	// so we should sync its value right here when the related database entry created.
 	// The new statement should include the schema from peer tenant database.
 	taskDatabaseIDPatch := &api.TaskPatch{
-		ID:         task.ID,
-		UpdaterID:  api.SystemBotID,
-		DatabaseID: &database.UID,
+		ID:           task.ID,
+		UpdaterID:    api.SystemBotID,
+		DatabaseName: &database.DatabaseName,
 	}
 	sheetPatch := &store.PatchSheetMessage{
 		UID:       sheet.UID,
@@ -285,8 +285,9 @@ func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *
 
 			// We somehow reconciled the plan before, so we just return.
 			tasks, err := exec.store.ListTasks(ctx, &api.TaskFind{
-				PipelineID: issue.PipelineUID,
-				DatabaseID: &createdDatabase.UID,
+				PipelineID:   issue.PipelineUID,
+				InstanceID:   &createdDatabase.InstanceID,
+				DatabaseName: &createdDatabase.DatabaseName,
 			})
 			if err != nil {
 				return errors.Wrapf(err, "failed to list tasks for created database %q", createdDatabase.DatabaseName)
@@ -296,8 +297,9 @@ func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *
 			}
 
 			tasks, err = exec.store.ListTasks(ctx, &api.TaskFind{
-				PipelineID: issue.PipelineUID,
-				DatabaseID: &peerDatabase.UID,
+				PipelineID:   issue.PipelineUID,
+				InstanceID:   &peerDatabase.InstanceID,
+				DatabaseName: &peerDatabase.DatabaseName,
 			})
 			if err != nil {
 				return errors.Wrapf(err, "failed to list tasks for peer database %q", peerDatabase.DatabaseName)
@@ -318,7 +320,7 @@ func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *
 					StageID:           task.StageID,
 					Name:              fmt.Sprintf("Copied task for database %q from %q", createdDatabase.DatabaseName, peerDatabase.DatabaseName),
 					InstanceID:        task.InstanceID,
-					DatabaseID:        &createdDatabase.UID,
+					DatabaseName:      &createdDatabase.DatabaseName,
 					Type:              task.Type,
 					EarliestAllowedAt: task.EarliestAllowedAt,
 					Payload:           task.Payload,
@@ -359,7 +361,6 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 
 	// TODO(d): support semantic versioning.
 	mi := &db.MigrationInfo{
-		InstanceID:     &task.InstanceID,
 		ReleaseVersion: exec.profile.Version,
 		Namespace:      database.DatabaseName,
 		Database:       database.DatabaseName,
