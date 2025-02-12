@@ -496,7 +496,7 @@ func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.
 		return nil, "", "", err
 	}
 	defer driver.Close(ctx)
-	schemaVersion, err := getLatestDoneSchemaVersion(ctx, exec.store, similarDB.UID, similarDB.DatabaseName)
+	schemaVersion, err := getLatestDoneSchemaVersion(ctx, exec.store, similarDB)
 	if err != nil {
 		return nil, "", "", errors.Wrapf(err, "failed to get migration history for database %q", similarDB.DatabaseName)
 	}
@@ -563,16 +563,17 @@ func (exec *DatabaseCreateExecutor) getPeerTenantDatabasesFromDatabaseGroup(ctx 
 }
 
 // GetLatestDoneSchemaVersion gets the latest schema version for a database.
-func getLatestDoneSchemaVersion(ctx context.Context, stores *store.Store, databaseID int, databaseName string) (string, error) {
+func getLatestDoneSchemaVersion(ctx context.Context, stores *store.Store, similarDB *store.DatabaseMessage) (string, error) {
 	limit := 1
 	done := store.ChangelogStatusDone
 	changelogs, err := stores.ListChangelogs(ctx, &store.FindChangelogMessage{
-		DatabaseUID: &databaseID,
-		Status:      &done,
-		Limit:       &limit,
+		InstanceID:   &similarDB.InstanceID,
+		DatabaseName: &similarDB.DatabaseName,
+		Status:       &done,
+		Limit:        &limit,
 	})
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to get migration history for database %q", databaseName)
+		return "", errors.Wrapf(err, "failed to get migration history for database %q", similarDB.DatabaseName)
 	}
 	if len(changelogs) == 0 {
 		return "", nil

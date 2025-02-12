@@ -579,7 +579,8 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 			}
 			limit := 1
 			list, err := s.store.ListChangelogs(ctx, &store.FindChangelogMessage{
-				DatabaseUID:    &database.UID,
+				InstanceID:     &database.InstanceID,
+				DatabaseName:   &database.DatabaseName,
 				TypeList:       []string{string(db.Migrate), string(db.Baseline)},
 				HasSyncHistory: true,
 				Limit:          &limit,

@@ -485,7 +485,8 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 
 	// create pending changelog
 	changelogUID, err := stores.CreateChangelog(ctx, &store.ChangelogMessage{
-		DatabaseUID:        mc.database.UID,
+		InstanceID:         mc.database.InstanceID,
+		DatabaseName:       mc.database.DatabaseName,
 		Status:             store.ChangelogStatusPending,
 		PrevSyncHistoryUID: syncHistoryPrevUID,
 		SyncHistoryUID:     nil,
