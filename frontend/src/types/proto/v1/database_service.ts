@@ -734,7 +734,64 @@ export interface ColumnMetadata {
   /** The user_comment is the user comment of a column parsed from the comment. */
   userComment: string;
   /** The generation is the generation of a column. */
-  generation: GenerationMetadata | undefined;
+  generation:
+    | GenerationMetadata
+    | undefined;
+  /** The identity_generation is for identity columns, PG only. */
+  identityGeneration: ColumnMetadata_IdentityGeneration;
+}
+
+export enum ColumnMetadata_IdentityGeneration {
+  IDENTITY_GENERATION_UNSPECIFIED = "IDENTITY_GENERATION_UNSPECIFIED",
+  ALWAYS = "ALWAYS",
+  BY_DEFAULT = "BY_DEFAULT",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function columnMetadata_IdentityGenerationFromJSON(object: any): ColumnMetadata_IdentityGeneration {
+  switch (object) {
+    case 0:
+    case "IDENTITY_GENERATION_UNSPECIFIED":
+      return ColumnMetadata_IdentityGeneration.IDENTITY_GENERATION_UNSPECIFIED;
+    case 1:
+    case "ALWAYS":
+      return ColumnMetadata_IdentityGeneration.ALWAYS;
+    case 2:
+    case "BY_DEFAULT":
+      return ColumnMetadata_IdentityGeneration.BY_DEFAULT;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ColumnMetadata_IdentityGeneration.UNRECOGNIZED;
+  }
+}
+
+export function columnMetadata_IdentityGenerationToJSON(object: ColumnMetadata_IdentityGeneration): string {
+  switch (object) {
+    case ColumnMetadata_IdentityGeneration.IDENTITY_GENERATION_UNSPECIFIED:
+      return "IDENTITY_GENERATION_UNSPECIFIED";
+    case ColumnMetadata_IdentityGeneration.ALWAYS:
+      return "ALWAYS";
+    case ColumnMetadata_IdentityGeneration.BY_DEFAULT:
+      return "BY_DEFAULT";
+    case ColumnMetadata_IdentityGeneration.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function columnMetadata_IdentityGenerationToNumber(object: ColumnMetadata_IdentityGeneration): number {
+  switch (object) {
+    case ColumnMetadata_IdentityGeneration.IDENTITY_GENERATION_UNSPECIFIED:
+      return 0;
+    case ColumnMetadata_IdentityGeneration.ALWAYS:
+      return 1;
+    case ColumnMetadata_IdentityGeneration.BY_DEFAULT:
+      return 2;
+    case ColumnMetadata_IdentityGeneration.UNRECOGNIZED:
+    default:
+      return -1;
+  }
 }
 
 export interface GenerationMetadata {
@@ -5046,6 +5103,7 @@ function createBaseColumnMetadata(): ColumnMetadata {
     comment: "",
     userComment: "",
     generation: undefined,
+    identityGeneration: ColumnMetadata_IdentityGeneration.IDENTITY_GENERATION_UNSPECIFIED,
   };
 }
 
@@ -5092,6 +5150,9 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     }
     if (message.generation !== undefined) {
       GenerationMetadata.encode(message.generation, writer.uint32(130).fork()).join();
+    }
+    if (message.identityGeneration !== ColumnMetadata_IdentityGeneration.IDENTITY_GENERATION_UNSPECIFIED) {
+      writer.uint32(136).int32(columnMetadata_IdentityGenerationToNumber(message.identityGeneration));
     }
     return writer;
   },
@@ -5215,6 +5276,14 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
           message.generation = GenerationMetadata.decode(reader, reader.uint32());
           continue;
         }
+        case 17: {
+          if (tag !== 136) {
+            break;
+          }
+
+          message.identityGeneration = columnMetadata_IdentityGenerationFromJSON(reader.int32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5240,6 +5309,9 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
       userComment: isSet(object.userComment) ? globalThis.String(object.userComment) : "",
       generation: isSet(object.generation) ? GenerationMetadata.fromJSON(object.generation) : undefined,
+      identityGeneration: isSet(object.identityGeneration)
+        ? columnMetadata_IdentityGenerationFromJSON(object.identityGeneration)
+        : ColumnMetadata_IdentityGeneration.IDENTITY_GENERATION_UNSPECIFIED,
     };
   },
 
@@ -5287,6 +5359,9 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     if (message.generation !== undefined) {
       obj.generation = GenerationMetadata.toJSON(message.generation);
     }
+    if (message.identityGeneration !== ColumnMetadata_IdentityGeneration.IDENTITY_GENERATION_UNSPECIFIED) {
+      obj.identityGeneration = columnMetadata_IdentityGenerationToJSON(message.identityGeneration);
+    }
     return obj;
   },
 
@@ -5311,6 +5386,8 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     message.generation = (object.generation !== undefined && object.generation !== null)
       ? GenerationMetadata.fromPartial(object.generation)
       : undefined;
+    message.identityGeneration = object.identityGeneration ??
+      ColumnMetadata_IdentityGeneration.IDENTITY_GENERATION_UNSPECIFIED;
     return message;
   },
 };
