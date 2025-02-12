@@ -15,6 +15,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // TaskMessage is the message for tasks.
@@ -38,9 +39,57 @@ type TaskMessage struct {
 	LatestTaskRunStatus api.TaskRunStatus
 }
 
+// TaskFind is the API message for finding tasks.
+type TaskFind struct {
+	ID  *int
+	IDs *[]int
+
+	// Related fields
+	PipelineID   *int
+	StageID      *int
+	InstanceID   *string
+	DatabaseName *string
+
+	// Domain specific fields
+	TypeList *[]api.TaskType
+	// Payload contains JSONB expressions
+	// Ref: https://www.postgresql.org/docs/current/functions-json.html
+	Payload         string
+	NoBlockingStage bool
+	NonRollbackTask bool
+
+	LatestTaskRunStatusList *[]api.TaskRunStatus
+}
+
+// TaskPatch is the API message for patching a task.
+type TaskPatch struct {
+	ID int
+
+	// Standard fields
+	// Value is assigned from the jwt subject field passed by the client.
+	UpdaterID int
+
+	// Domain specific fields
+	DatabaseName            *string
+	EarliestAllowedTs       *time.Time
+	UpdateEarliestAllowedTs bool
+
+	// Payload and others cannot be set at the same time.
+	Payload *string
+
+	SheetID               *int
+	SchemaVersion         *string
+	ExportFormat          *storepb.ExportFormat
+	ExportPassword        *string
+	PreUpdateBackupDetail *storepb.PreUpdateBackupDetail
+
+	// Flags for gh-ost.
+	Flags *map[string]string
+}
+
 // GetTaskV2ByID gets a task by ID.
 func (s *Store) GetTaskV2ByID(ctx context.Context, id int) (*TaskMessage, error) {
-	tasks, err := s.ListTasks(ctx, &api.TaskFind{ID: &id})
+	tasks, err := s.ListTasks(ctx, &TaskFind{ID: &id})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get Task with ID %d", id)
 	}
@@ -194,7 +243,7 @@ func (s *Store) CreateTasksV2(ctx context.Context, creates ...*TaskMessage) ([]*
 }
 
 // ListTasks retrieves a list of tasks based on find.
-func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessage, error) {
+func (s *Store) ListTasks(ctx context.Context, find *TaskFind) ([]*TaskMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("task.id = $%d", len(args)+1)), append(args, *v)
@@ -316,7 +365,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 
 // UpdateTaskV2 updates an existing task.
 // Returns ENOTFOUND if task does not exist.
-func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMessage, error) {
+func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessage, error) {
 	set, args := []string{}, []any{}
 	if v := patch.DatabaseName; v != nil {
 		set, args = append(set, fmt.Sprintf("db_name = $%d", len(args)+1)), append(args, *v)

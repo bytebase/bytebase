@@ -16,7 +16,7 @@ import (
 func getPlanCheckRunsFromPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage) ([]*store.PlanCheckRunMessage, error) {
 	var skippedSpecIDs map[string]struct{}
 	if plan.PipelineUID != nil {
-		tasks, err := s.ListTasks(ctx, &api.TaskFind{PipelineID: plan.PipelineUID})
+		tasks, err := s.ListTasks(ctx, &store.TaskFind{PipelineID: plan.PipelineUID})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get tasks for pipeline %d", *plan.PipelineUID)
 		}

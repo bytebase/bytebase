@@ -393,7 +393,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 			}
 
 			tasksMap := map[int]*store.TaskMessage{}
-			var taskPatchList []*api.TaskPatch
+			var taskPatchList []*store.TaskPatch
 			var issueCommentCreates []*store.IssueCommentMessage
 			var taskDAGRebuildList []struct {
 				fromTaskIDs []int
@@ -401,7 +401,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 			}
 
 			if oldPlan.PipelineUID != nil {
-				tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: oldPlan.PipelineUID})
+				tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: oldPlan.PipelineUID})
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to list tasks: %v", err)
 				}
@@ -417,7 +417,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				}
 				for _, task := range tasks {
 					doUpdate := false
-					taskPatch := &api.TaskPatch{
+					taskPatch := &store.TaskPatch{
 						ID:        task.ID,
 						UpdaterID: user.ID,
 					}
