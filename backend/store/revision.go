@@ -15,9 +15,10 @@ import (
 )
 
 type RevisionMessage struct {
-	DatabaseUID int
-	Version     string
-	Payload     *storepb.RevisionPayload
+	InstanceID   string
+	DatabaseName string
+	Version      string
+	Payload      *storepb.RevisionPayload
 
 	// output only
 	UID        int64
@@ -27,8 +28,9 @@ type RevisionMessage struct {
 }
 
 type FindRevisionMessage struct {
-	UID         *int64
-	DatabaseUID *int
+	UID          *int64
+	InstanceID   *string
+	DatabaseName *string
 
 	Version *string
 
@@ -45,8 +47,12 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 		where = append(where, fmt.Sprintf("id = $%d", len(args)+1))
 		args = append(args, *v)
 	}
-	if v := find.DatabaseUID; v != nil {
-		where = append(where, fmt.Sprintf("database_id = $%d", len(args)+1))
+	if v := find.InstanceID; v != nil {
+		where = append(where, fmt.Sprintf("instance = $%d", len(args)+1))
+		args = append(args, *v)
+	}
+	if v := find.DatabaseName; v != nil {
+		where = append(where, fmt.Sprintf("db_name = $%d", len(args)+1))
 		args = append(args, *v)
 	}
 	if v := find.Version; v != nil {
@@ -68,7 +74,8 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 	query := fmt.Sprintf(`
 		SELECT
 			id,
-			database_id,
+			instance,
+			db_name,
 			created_at,
 			deleter_id,
 			deleted_at,
@@ -100,7 +107,8 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 		var p []byte
 		if err := rows.Scan(
 			&r.UID,
-			&r.DatabaseUID,
+			&r.InstanceID,
+			&r.DatabaseName,
 			&r.CreatedAt,
 			&r.DeleterUID,
 			&r.DeletedAt,
@@ -145,7 +153,8 @@ func (s *Store) GetRevision(ctx context.Context, uid int64) (*RevisionMessage, e
 func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage) (*RevisionMessage, error) {
 	query := `
 		INSERT INTO revision (
-			database_id,
+			instance,
+			db_name,
 			version,
 			payload
 		) VALUES (
@@ -169,7 +178,8 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage) (
 
 	var id int64
 	if err := tx.QueryRowContext(ctx, query,
-		revision.DatabaseUID,
+		revision.InstanceID,
+		revision.DatabaseName,
 		revision.Version,
 		p,
 	).Scan(&id, &revision.CreatedAt); err != nil {

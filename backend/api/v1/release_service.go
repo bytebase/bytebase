@@ -357,9 +357,10 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 			}
 			// Check if file has been applied to database.
 			revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{
-				DatabaseUID: &database.UID,
-				Version:     &file.Version,
-				ShowDeleted: false,
+				InstanceID:   &database.InstanceID,
+				DatabaseName: &database.DatabaseName,
+				Version:      &file.Version,
+				ShowDeleted:  false,
 			})
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to list revisions: %v", err)

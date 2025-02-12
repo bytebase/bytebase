@@ -1152,7 +1152,7 @@ func (s *PlanService) PreviewPlan(ctx context.Context, request *v1pb.PreviewPlan
 }
 
 func (s *PlanService) getSpecsForDatabase(ctx context.Context, database *store.DatabaseMessage, release *store.ReleaseMessage, releaseName string, allowOoo bool) ([]*v1pb.Plan_Spec, *v1pb.PreviewPlanResponse_DatabaseFiles, *v1pb.PreviewPlanResponse_DatabaseFiles, error) {
-	revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{DatabaseUID: &database.UID})
+	revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{InstanceID: &database.InstanceID, DatabaseName: &database.DatabaseName})
 	if err != nil {
 		return nil, nil, nil, errors.Wrapf(err, "failed to list revisions")
 	}

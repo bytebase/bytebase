@@ -456,8 +456,9 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 	// what they are doing
 	if mc.version != "" {
 		list, err := stores.ListRevisions(ctx, &store.FindRevisionMessage{
-			DatabaseUID: &mc.database.UID,
-			Version:     &mc.version,
+			InstanceID:   &mc.database.InstanceID,
+			DatabaseName: &mc.database.DatabaseName,
+			Version:      &mc.version,
 		})
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to list revisions")
@@ -523,8 +524,9 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mi *db.Migrat
 		// if isDone, record in revision
 		if mc.version != "" {
 			r := &store.RevisionMessage{
-				DatabaseUID: mc.database.UID,
-				Version:     mc.version,
+				InstanceID:   mc.database.InstanceID,
+				DatabaseName: mc.database.DatabaseName,
+				Version:      mc.version,
 				Payload: &storepb.RevisionPayload{
 					Release:     mc.release.release,
 					File:        mc.release.file,
