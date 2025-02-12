@@ -642,7 +642,7 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, issueName string) (*
 	if rollout == nil {
 		return nil, status.Errorf(codes.NotFound, "rollout %d not found", *issue.PipelineUID)
 	}
-	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &rollout.ID})
+	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &rollout.ID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get tasks: %v", err)
 	}
