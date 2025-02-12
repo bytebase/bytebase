@@ -51,6 +51,9 @@ const (
 	orderByKeyMaximumRowsSent     = "maximum_rows_sent"
 	orderByKeyAverageRowsExamined = "average_rows_examined"
 	orderByKeyMaximumRowsExamined = "maximum_rows_examined"
+
+	// TODO: the frontend not support pagination yet.
+	maximumListDatabasePageSize = 1000000
 )
 
 // DatabaseService implements the database service.
@@ -116,10 +119,9 @@ func (s *DatabaseService) ListInstanceDatabases(ctx context.Context, request *v1
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
-		token: request.PageToken,
-		limit: int(request.PageSize),
-		// TODO: the frontend not support pagination yet.
-		maximum: 1000000,
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: maximumListDatabasePageSize,
 	})
 	if err != nil {
 		return nil, err
@@ -191,10 +193,9 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
-		token: request.PageToken,
-		limit: int(request.PageSize),
-		// TODO: the frontend not support pagination yet.
-		maximum: 1000,
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: maximumListDatabasePageSize,
 	})
 	if err != nil {
 		return nil, err
