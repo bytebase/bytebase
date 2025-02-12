@@ -93,7 +93,9 @@ const columnList = computed((): ProjectDataTableColumn[] => {
       {
         key: "id",
         title: t("common.id"),
+        width: 128,
         resizable: true,
+        ellipsis: true,
         render: (project) => {
           return (
             <span
