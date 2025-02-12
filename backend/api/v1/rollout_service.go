@@ -982,7 +982,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 	if filterByDeploymentConfig {
 		deploymentConfig := snapshot.GetDeploymentConfigSnapshot().GetDeploymentConfig()
 		if deploymentConfig == nil {
-			deploymentConfigMessage, err := s.GetDeploymentConfigV2(ctx, project.UID)
+			deploymentConfigMessage, err := s.GetDeploymentConfigV2(ctx, project.ResourceID)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get deployment config")
 			}
@@ -1174,7 +1174,7 @@ func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, snapsho
 		return pipelineCreate, nil
 	}
 	if snapshot == nil {
-		deploymentConfigMessage, err := s.GetDeploymentConfigV2(ctx, project.UID)
+		deploymentConfigMessage, err := s.GetDeploymentConfigV2(ctx, project.ResourceID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get deployment config")
 		}

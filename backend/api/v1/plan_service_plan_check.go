@@ -45,7 +45,7 @@ func getPlanCheckRunsFromPlanSpecs(ctx context.Context, s *store.Store, plan *st
 		return nil, errors.Errorf("project %v not found", plan.ProjectID)
 	}
 
-	deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.UID)
+	deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.ResourceID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get deployment config")
 	}

@@ -472,7 +472,7 @@ func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.
 	}
 
 	// Then we will try to find a peer tenant database from deployment schedule with the matched databases.
-	deploymentConfig, err := exec.store.GetDeploymentConfigV2(ctx, project.UID)
+	deploymentConfig, err := exec.store.GetDeploymentConfigV2(ctx, project.ResourceID)
 	if err != nil {
 		return nil, "", "", errors.Wrapf(err, "Failed to fetch deployment config for project ID: %v", project.UID)
 	}

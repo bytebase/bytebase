@@ -1378,7 +1378,7 @@ func getPlanSpecDatabaseGroups(steps []*storepb.PlanConfig_Step) []string {
 func getPlanSnapshot(ctx context.Context, s *store.Store, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*storepb.PlanConfig_DeploymentSnapshot, error) {
 	snapshot := &storepb.PlanConfig_DeploymentSnapshot{}
 
-	deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.UID)
+	deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.ResourceID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get deployment config")
 	}

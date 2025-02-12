@@ -28,7 +28,7 @@ type Store struct {
 	databaseIDCache        *lru.Cache[int, *DatabaseMessage]
 	projectCache           *lru.Cache[string, *ProjectMessage]
 	projectIDCache         *lru.Cache[int, *ProjectMessage]
-	projectDeploymentCache *lru.Cache[int, *DeploymentConfigMessage]
+	projectDeploymentCache *lru.Cache[string, *DeploymentConfigMessage]
 	policyCache            *lru.Cache[string, *PolicyMessage]
 	issueCache             *lru.Cache[int, *IssueMessage]
 	issueByPipelineCache   *lru.Cache[int, *IssueMessage]
@@ -90,7 +90,7 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	projectDeploymentCache, err := lru.New[int, *DeploymentConfigMessage](128)
+	projectDeploymentCache, err := lru.New[string, *DeploymentConfigMessage](128)
 	if err != nil {
 		return nil, err
 	}
