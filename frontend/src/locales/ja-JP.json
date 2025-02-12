@@ -409,7 +409,6 @@
       "action": {
         "deactivate": "無効にする",
         "deactivate-confirm-title": "無効にしてもOK",
-        "reactivate": "有効にする",
         "reactivate-confirm-title": "[OK] を有効にします"
       },
       "tooltip": {
