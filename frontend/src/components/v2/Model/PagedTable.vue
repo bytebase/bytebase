@@ -32,10 +32,10 @@
 </template>
 
 <script lang="ts" setup generic="T extends object">
-import { useSessionStorage } from "@vueuse/core";
 import { NSelect, NButton } from "naive-ui";
 import { computed, reactive, watch, ref, type Ref } from "vue";
-import { useIsLoggedIn } from "@/store";
+import { useIsLoggedIn, useCurrentUserV1 } from "@/store";
+import { useDynamicLocalStorage } from "@/utils";
 
 type LocalState = {
   loading: boolean;
@@ -82,15 +82,19 @@ const state = reactive<LocalState>({
   loading: false,
   paginationToken: "",
 });
+const currentUser = useCurrentUserV1();
 
 // https://stackoverflow.com/questions/69813587/vue-unwraprefsimplet-generics-type-cant-assignable-to-t-at-reactive
 const dataList = ref([]) as Ref<T[]>;
 
-const sessionState = useSessionStorage<SessionState>(props.sessionKey, {
-  page: 1,
-  updatedTs: 0,
-  pageSize: options.value[0].value,
-});
+const sessionState = useDynamicLocalStorage<SessionState>(
+  computed(() => `${props.sessionKey}.${currentUser.value.name}`),
+  {
+    page: 1,
+    updatedTs: 0,
+    pageSize: options.value[0].value,
+  }
+);
 
 const isLoggedIn = useIsLoggedIn();
 
