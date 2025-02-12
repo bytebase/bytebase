@@ -89,7 +89,6 @@ type TaskCountMetric struct {
 
 // SheetCountMetric is the API message for sheet count metric.
 type SheetCountMetric struct {
-	RowStatus  api.RowStatus
 	Visibility string
 	Count      int
 }
