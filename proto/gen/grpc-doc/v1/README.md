@@ -158,6 +158,7 @@
     - [Changelog.Status](#bytebase-v1-Changelog-Status)
     - [Changelog.Type](#bytebase-v1-Changelog-Type)
     - [ChangelogView](#bytebase-v1-ChangelogView)
+    - [ColumnMetadata.IdentityGeneration](#bytebase-v1-ColumnMetadata-IdentityGeneration)
     - [DatabaseMetadataView](#bytebase-v1-DatabaseMetadataView)
     - [GenerationMetadata.Type](#bytebase-v1-GenerationMetadata-Type)
     - [StreamMetadata.Mode](#bytebase-v1-StreamMetadata-Mode)
@@ -2101,6 +2102,7 @@ ColumnMetadata is the metadata for columns.
 | comment | [string](#string) |  | The comment is the comment of a column. classification and user_comment is parsed from the comment. |
 | user_comment | [string](#string) |  | The user_comment is the user comment of a column parsed from the comment. |
 | generation | [GenerationMetadata](#bytebase-v1-GenerationMetadata) |  | The generation is the generation of a column. |
+| identity_generation | [ColumnMetadata.IdentityGeneration](#bytebase-v1-ColumnMetadata-IdentityGeneration) |  | The identity_generation is for identity columns, PG only. |
 
 
 
@@ -3221,6 +3223,19 @@ ViewMetadata is the metadata for views.
 | CHANGELOG_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
 | CHANGELOG_VIEW_BASIC | 1 |  |
 | CHANGELOG_VIEW_FULL | 2 |  |
+
+
+
+<a name="bytebase-v1-ColumnMetadata-IdentityGeneration"></a>
+
+### ColumnMetadata.IdentityGeneration
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| IDENTITY_GENERATION_UNSPECIFIED | 0 |  |
+| ALWAYS | 1 |  |
+| BY_DEFAULT | 2 |  |
 
 
 
