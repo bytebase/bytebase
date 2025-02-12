@@ -1097,7 +1097,7 @@ func (s *PlanService) PreviewPlan(ctx context.Context, request *v1pb.PreviewPlan
 			return nil, status.Errorf(codes.InvalidArgument, "databaseGroup target projectID %q doesn't match the projectID of request.project %q", projectID, request.Project)
 		}
 
-		databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectUID: &project.UID, ResourceID: &databaseGroupID})
+		databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectID: &project.ResourceID, ResourceID: &databaseGroupID})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database group %q", databaseGroupID)
 		}
@@ -1152,7 +1152,7 @@ func (s *PlanService) PreviewPlan(ctx context.Context, request *v1pb.PreviewPlan
 }
 
 func (s *PlanService) getSpecsForDatabase(ctx context.Context, database *store.DatabaseMessage, release *store.ReleaseMessage, releaseName string, allowOoo bool) ([]*v1pb.Plan_Spec, *v1pb.PreviewPlanResponse_DatabaseFiles, *v1pb.PreviewPlanResponse_DatabaseFiles, error) {
-	revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{DatabaseUID: &database.UID})
+	revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{InstanceID: &database.InstanceID, DatabaseName: &database.DatabaseName})
 	if err != nil {
 		return nil, nil, nil, errors.Wrapf(err, "failed to list revisions")
 	}
@@ -1378,7 +1378,7 @@ func getPlanSpecDatabaseGroups(steps []*storepb.PlanConfig_Step) []string {
 func getPlanSnapshot(ctx context.Context, s *store.Store, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*storepb.PlanConfig_DeploymentSnapshot, error) {
 	snapshot := &storepb.PlanConfig_DeploymentSnapshot{}
 
-	deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.UID)
+	deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.ResourceID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get deployment config")
 	}
@@ -1408,7 +1408,7 @@ func getPlanSnapshot(ctx context.Context, s *store.Store, steps []*storepb.PlanC
 		}
 		databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 			ResourceID: &id,
-			ProjectUID: &project.UID,
+			ProjectID:  &project.ResourceID,
 		})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database group")

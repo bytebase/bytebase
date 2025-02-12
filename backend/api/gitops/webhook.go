@@ -76,12 +76,12 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		if vcsConnector == nil {
 			return c.String(http.StatusOK, fmt.Sprintf("project %q VCS connector %q does not exist or has been deleted", projectID, vcsConnectorID))
 		}
-		vcsProvider, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsConnector.VCSResourceID})
+		vcsProvider, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsConnector.VCSID})
 		if err != nil {
-			return c.String(http.StatusOK, fmt.Sprintf("failed to get VCS provider %q, error %v", vcsConnector.VCSResourceID, err))
+			return c.String(http.StatusOK, fmt.Sprintf("failed to get VCS provider %q, error %v", vcsConnector.VCSID, err))
 		}
 		if vcsProvider == nil {
-			return c.String(http.StatusOK, fmt.Sprintf("VCS provider %q does not exist or has been deleted", vcsConnector.VCSResourceID))
+			return c.String(http.StatusOK, fmt.Sprintf("VCS provider %q does not exist or has been deleted", vcsConnector.VCSID))
 		}
 
 		body, err := io.ReadAll(c.Request().Body)
@@ -374,10 +374,10 @@ func (s *Service) createReleaseFromPRInfo(ctx context.Context, project *store.Pr
 	var sheetNames []string
 	for _, f := range allFiles {
 		sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
-			ProjectUID: project.UID,
-			CreatorID:  user.ID,
-			Title:      "",
-			Statement:  f.content,
+			ProjectID: project.ResourceID,
+			CreatorID: user.ID,
+			Title:     "",
+			Statement: f.content,
 		})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create sheet")
@@ -435,10 +435,10 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 	var sheets []int
 	for _, change := range prInfo.changes {
 		sheet, err := s.sheetManager.CreateSheet(ctx, &store.SheetMessage{
-			CreatorID:  creatorID,
-			ProjectUID: project.UID,
-			Title:      change.path,
-			Statement:  change.content,
+			CreatorID: creatorID,
+			ProjectID: project.ResourceID,
+			Title:     change.path,
+			Statement: change.content,
 
 			Payload: &storepb.SheetPayload{
 				Engine: instance.Engine,
@@ -581,7 +581,7 @@ func (s *Service) getDatabaseSample(
 			if projectID != project.ResourceID {
 				return nil, errors.Errorf("project id %q in databaseGroup %q does not match project id %q in plan config", projectID, dbg, project.ResourceID)
 			}
-			databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectUID: &project.UID, ResourceID: &databaseGroupID})
+			databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectID: &project.ResourceID, ResourceID: &databaseGroupID})
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get database group %q", databaseGroupID)
 			}

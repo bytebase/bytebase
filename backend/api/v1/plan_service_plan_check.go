@@ -45,7 +45,7 @@ func getPlanCheckRunsFromPlanSpecs(ctx context.Context, s *store.Store, plan *st
 		return nil, errors.Errorf("project %v not found", plan.ProjectID)
 	}
 
-	deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.UID)
+	deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.ResourceID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get deployment config")
 	}
@@ -134,7 +134,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Con
 	if project == nil {
 		return nil, errors.Errorf("project %q not found", projectID)
 	}
-	databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectUID: &project.UID, ResourceID: &databaseGroupID})
+	databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectID: &project.ResourceID, ResourceID: &databaseGroupID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database group %q", databaseGroupID)
 	}

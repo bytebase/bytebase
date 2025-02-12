@@ -16,10 +16,9 @@ import (
 // VCSConnectorMessage is the message for a VCS connector.
 type VCSConnectorMessage struct {
 	// Related fields
-	VCSUID        int
-	VCSResourceID string
-	ProjectID     string
-	ResourceID    string
+	VCSID      string
+	ProjectID  string
+	ResourceID string
 
 	Payload *storepb.VCSConnector
 
@@ -29,7 +28,7 @@ type VCSConnectorMessage struct {
 
 // FindVCSConnectorMessage is the API message for finding VCS connectors.
 type FindVCSConnectorMessage struct {
-	VCSUID     *int
+	VCSID      *string
 	ProjectID  *string
 	ResourceID *string
 }
@@ -64,14 +63,14 @@ func (s *Store) GetVCSConnector(ctx context.Context, find *FindVCSConnectorMessa
 func (s *Store) ListVCSConnectors(ctx context.Context, find *FindVCSConnectorMessage) ([]*VCSConnectorMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 
-	if v := find.VCSUID; v != nil {
-		where, args = append(where, fmt.Sprintf("vcs_connector.vcs_id = $%d", len(args)+1)), append(args, *v)
+	if v := find.VCSID; v != nil {
+		where, args = append(where, fmt.Sprintf("vcs = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ResourceID; v != nil {
-		where, args = append(where, fmt.Sprintf("vcs_connector.resource_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("project = $%d", len(args)+1)), append(args, *v)
 	}
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -82,15 +81,12 @@ func (s *Store) ListVCSConnectors(ctx context.Context, find *FindVCSConnectorMes
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			vcs_connector.id AS id,
-			vcs_id,
-			vcs.resource_id,
-			project.resource_id AS project_resource_id,
-			vcs_connector.resource_id,
-			vcs_connector.payload
+			id,
+			vcs,
+			project,
+			resource_id,
+			payload
 		FROM vcs_connector
-		LEFT JOIN project ON project.id = vcs_connector.project_id
-		LEFT JOIN vcs ON vcs.id = vcs_connector.vcs_id
 		WHERE `+strings.Join(where, " AND "),
 		args...,
 	)
@@ -105,8 +101,7 @@ func (s *Store) ListVCSConnectors(ctx context.Context, find *FindVCSConnectorMes
 		var payloadStr string
 		if err := rows.Scan(
 			&vcsConnector.UID,
-			&vcsConnector.VCSUID,
-			&vcsConnector.VCSResourceID,
+			&vcsConnector.VCSID,
 			&vcsConnector.ProjectID,
 			&vcsConnector.ResourceID,
 			&payloadStr,
@@ -150,8 +145,8 @@ func (s *Store) CreateVCSConnector(ctx context.Context, create *VCSConnectorMess
 
 	query := `
 		INSERT INTO vcs_connector (
-			vcs_id,
-			project_id,
+			vcs,
+			project,
 			resource_id,
 			payload
 		)
@@ -159,8 +154,8 @@ func (s *Store) CreateVCSConnector(ctx context.Context, create *VCSConnectorMess
 		RETURNING id
 	`
 	if err := tx.QueryRowContext(ctx, query,
-		create.VCSUID,
-		project.UID,
+		create.VCSID,
+		project.ResourceID,
 		create.ResourceID,
 		payload,
 	).Scan(
@@ -196,7 +191,7 @@ func (s *Store) UpdateVCSConnector(ctx context.Context, update *UpdateVCSConnect
 	}
 
 	where := []string{}
-	where, args = append(where, fmt.Sprintf("vcs_connector.id = $%d", len(args)+1)), append(args, update.UID)
+	where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, update.UID)
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -206,8 +201,7 @@ func (s *Store) UpdateVCSConnector(ctx context.Context, update *UpdateVCSConnect
 	query := `
 		UPDATE vcs_connector
 		SET ` + strings.Join(set, ", ") + `
-		FROM project, vcs
-		WHERE project.id = vcs_connector.project_id AND vcs.id = vcs_connector.vcs_id AND ` + strings.Join(where, " AND ")
+		WHERE ` + strings.Join(where, " AND ")
 
 	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return err
@@ -226,8 +220,7 @@ func (s *Store) DeleteVCSConnector(ctx context.Context, projectID, resourceID st
 
 	if _, err := tx.ExecContext(ctx, `
 		DELETE FROM vcs_connector
-		USING project
-		WHERE vcs_connector.project_id = project.id AND project.resource_id = $1 AND vcs_connector.resource_id = $2;`,
+		WHERE project = $1 AND resource_id = $2;`,
 		projectID, resourceID); err != nil {
 		return err
 	}

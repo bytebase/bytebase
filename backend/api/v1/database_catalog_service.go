@@ -53,7 +53,7 @@ func (s *DatabaseCatalogService) GetDatabaseCatalog(ctx context.Context, request
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -92,7 +92,7 @@ func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, requ
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 
-	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -101,7 +101,7 @@ func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, requ
 	}
 
 	databaseConfig := convertDatabaseCatalog(request.GetCatalog())
-	if err := s.store.UpdateDBSchema(ctx, database.UID, &store.UpdateDBSchemaMessage{Config: databaseConfig}); err != nil {
+	if err := s.store.UpdateDBSchema(ctx, database.InstanceID, database.DatabaseName, &store.UpdateDBSchemaMessage{Config: databaseConfig}); err != nil {
 		return nil, err
 	}
 

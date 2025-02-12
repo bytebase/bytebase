@@ -52,7 +52,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		return true, nil, errors.Wrapf(err, "failed to get issue")
 	}
 
-	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
+	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to get database")
 	}

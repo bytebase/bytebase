@@ -677,15 +677,6 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 
 	taskIDToName := map[int]string{}
 	for _, stage := range rollout.Stages {
-		environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-			UID: &stage.EnvironmentID,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get environment %d", stage.EnvironmentID)
-		}
-		if environment == nil {
-			return nil, errors.Errorf("environment %d not found", stage.EnvironmentID)
-		}
 		rolloutStage := &v1pb.Stage{
 			Name:  common.FormatStage(project.ResourceID, rollout.ID, stage.ID),
 			Id:    stage.DeploymentID,
@@ -757,10 +748,10 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
 	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		UID: &task.InstanceID,
+		ResourceID: &task.InstanceID,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %d", task.InstanceID)
+		return nil, errors.Wrapf(err, "failed to get instance %s", task.InstanceID)
 	}
 	labels, err := convertToDatabaseLabels(payload.Labels)
 	if err != nil {
@@ -793,14 +784,14 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 }
 
 func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	if task.DatabaseID == nil {
-		return nil, errors.Errorf("database id is nil")
+	if task.DatabaseName == nil {
+		return nil, errors.Errorf("baseline task database is nil")
 	}
 	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}
@@ -826,14 +817,14 @@ func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, projec
 }
 
 func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	if task.DatabaseID == nil {
-		return nil, errors.Errorf("database id is nil")
+	if task.DatabaseName == nil {
+		return nil, errors.Errorf("schema update task database is nil")
 	}
 	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}
@@ -861,14 +852,14 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 }
 
 func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	if task.DatabaseID == nil {
-		return nil, errors.Errorf("database id is nil")
+	if task.DatabaseName == nil {
+		return nil, errors.Errorf("ghost cutover task database is nil")
 	}
 	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}
@@ -890,14 +881,14 @@ func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Sto
 }
 
 func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	if task.DatabaseID == nil {
-		return nil, errors.Errorf("database id is nil")
+	if task.DatabaseName == nil {
+		return nil, errors.Errorf("data update task database is nil")
 	}
 	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}
@@ -928,14 +919,14 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 }
 
 func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	if task.DatabaseID == nil {
-		return nil, errors.Errorf("database id is nil")
+	if task.DatabaseName == nil {
+		return nil, errors.Errorf("data export task database is nil")
 	}
 	payload := &storepb.TaskDatabaseDataExportPayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
+	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}

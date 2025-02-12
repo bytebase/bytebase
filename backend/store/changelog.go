@@ -28,8 +28,9 @@ const (
 )
 
 type ChangelogMessage struct {
-	DatabaseUID int
-	Payload     *storepb.ChangelogPayload
+	InstanceID   string
+	DatabaseName string
+	Payload      *storepb.ChangelogPayload
 
 	PrevSyncHistoryUID *int64
 	SyncHistoryUID     *int64
@@ -46,8 +47,9 @@ type ChangelogMessage struct {
 }
 
 type FindChangelogMessage struct {
-	UID         *int64
-	DatabaseUID *int
+	UID          *int64
+	InstanceID   *string
+	DatabaseName *string
 
 	TypeList        []string
 	Status          *ChangelogStatus
@@ -72,7 +74,8 @@ type UpdateChangelogMessage struct {
 func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (int64, error) {
 	query := `
 		INSERT INTO changelog (
-			database_id,
+			instance,
+			db_name,
 			status,
 			prev_sync_history_id,
 			sync_history_id,
@@ -82,7 +85,8 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (
 			$2,
 			$3,
 			$4,
-			$5
+			$5,
+			$6
 		)
 		RETURNING id
 	`
@@ -99,7 +103,7 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (
 	}
 
 	var id int64
-	if err := tx.QueryRowContext(ctx, query, create.DatabaseUID, create.Status, create.PrevSyncHistoryUID, create.SyncHistoryUID, p).Scan(&id); err != nil {
+	if err := tx.QueryRowContext(ctx, query, create.InstanceID, create.DatabaseName, create.Status, create.PrevSyncHistoryUID, create.SyncHistoryUID, p).Scan(&id); err != nil {
 		return 0, errors.Wrapf(err, "failed to insert")
 	}
 
@@ -158,8 +162,11 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("changelog.id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.DatabaseUID; v != nil {
-		where, args = append(where, fmt.Sprintf("changelog.database_id = $%d", len(args)+1)), append(args, *v)
+	if v := find.InstanceID; v != nil {
+		where, args = append(where, fmt.Sprintf("changelog.instance = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.DatabaseName; v != nil {
+		where, args = append(where, fmt.Sprintf("changelog.db_name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ResourcesFilter; v != nil {
 		text, err := generateResourceFilter(*v, "changelog.payload")
@@ -202,7 +209,8 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 		SELECT
 			changelog.id,
 			changelog.created_at,
-			changelog.database_id,
+			changelog.instance,
+			changelog.db_name,
 			changelog.status,
 			changelog.prev_sync_history_id,
 			changelog.sync_history_id,
@@ -246,7 +254,8 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 		if err := rows.Scan(
 			&c.UID,
 			&c.CreatedAt,
-			&c.DatabaseUID,
+			&c.InstanceID,
+			&c.DatabaseName,
 			&c.Status,
 			&c.PrevSyncHistoryUID,
 			&c.SyncHistoryUID,

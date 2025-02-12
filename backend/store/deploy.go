@@ -25,12 +25,12 @@ type DeploymentConfigMessage struct {
 }
 
 // GetDeploymentConfigV2 returns the deployment config.
-func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectUID int) (*DeploymentConfigMessage, error) {
-	if v, ok := s.projectDeploymentCache.Get(projectUID); ok {
+func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectID string) (*DeploymentConfigMessage, error) {
+	if v, ok := s.projectDeploymentCache.Get(projectID); ok {
 		return v, nil
 	}
 	where, args := []string{"TRUE"}, []any{}
-	where, args = append(where, fmt.Sprintf("project_id = $%d", len(args)+1)), append(args, projectUID)
+	where, args = append(where, fmt.Sprintf("project = $%d", len(args)+1)), append(args, projectID)
 
 	deploymentConfig := DeploymentConfigMessage{
 		Config: &storepb.DeploymentConfig{},
@@ -67,12 +67,12 @@ func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectUID int) (*Dep
 		return nil, errors.Wrapf(err, "failed to unmarshal")
 	}
 
-	s.projectDeploymentCache.Add(projectUID, &deploymentConfig)
+	s.projectDeploymentCache.Add(projectID, &deploymentConfig)
 	return &deploymentConfig, nil
 }
 
 // UpsertDeploymentConfigV2 upserts the deployment config.
-func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, projectUID int, upsert *DeploymentConfigMessage) (*DeploymentConfigMessage, error) {
+func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, projectID string, upsert *DeploymentConfigMessage) (*DeploymentConfigMessage, error) {
 	configB, err := protojson.Marshal(upsert.Config)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal deployment config")
@@ -80,12 +80,12 @@ func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, projectUID int, up
 
 	query := `
 		INSERT INTO deployment_config (
-			project_id,
+			project,
 			name,
 			config
 		)
 		VALUES ($1, $2, $3)
-		ON CONFLICT(project_id) DO UPDATE SET
+		ON CONFLICT(project) DO UPDATE SET
 			name = excluded.name,
 			config = excluded.config
 		RETURNING id, name, config
@@ -102,7 +102,7 @@ func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, projectUID int, up
 	defer tx.Rollback()
 
 	if err := tx.QueryRowContext(ctx, query,
-		projectUID,
+		projectID,
 		upsert.Name,
 		configB,
 	).Scan(&deploymentConfig.UID, &deploymentConfig.Name, &newConfigB); err != nil {
@@ -119,7 +119,7 @@ func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, projectUID int, up
 		return nil, errors.Wrapf(err, "failed to unmarshal")
 	}
 
-	s.projectDeploymentCache.Add(projectUID, &deploymentConfig)
+	s.projectDeploymentCache.Add(projectID, &deploymentConfig)
 	return &deploymentConfig, nil
 }
 

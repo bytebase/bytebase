@@ -68,7 +68,7 @@ func (m *Manager) CreateEvent(ctx context.Context, e *Event) {
 		return
 	}
 	webhookList, err := m.store.FindProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
-		ProjectID:    &e.Project.UID,
+		ProjectID:    &e.Project.ResourceID,
 		ActivityType: &activityType,
 	})
 	if err != nil {

@@ -57,11 +57,11 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, taskCont
 	syncTaskID := task.DependsOn[0]
 	defer e.stateCfg.GhostTaskState.Delete(syncTaskID)
 
-	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
 	}
-	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName})
 	if err != nil {
 		return true, nil, err
 	}

@@ -28,7 +28,7 @@ type Store struct {
 	databaseIDCache        *lru.Cache[int, *DatabaseMessage]
 	projectCache           *lru.Cache[string, *ProjectMessage]
 	projectIDCache         *lru.Cache[int, *ProjectMessage]
-	projectDeploymentCache *lru.Cache[int, *DeploymentConfigMessage]
+	projectDeploymentCache *lru.Cache[string, *DeploymentConfigMessage]
 	policyCache            *lru.Cache[string, *PolicyMessage]
 	issueCache             *lru.Cache[int, *IssueMessage]
 	issueByPipelineCache   *lru.Cache[int, *IssueMessage]
@@ -45,7 +45,7 @@ type Store struct {
 
 	// Large objects.
 	sheetStatementCache *lru.Cache[int, string]
-	dbSchemaCache       *lru.Cache[int, *model.DBSchema]
+	dbSchemaCache       *lru.Cache[string, *model.DBSchema]
 }
 
 // New creates a new instance of Store.
@@ -90,7 +90,7 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	projectDeploymentCache, err := lru.New[int, *DeploymentConfigMessage](128)
+	projectDeploymentCache, err := lru.New[string, *DeploymentConfigMessage](128)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	dbSchemaCache, err := lru.New[int, *model.DBSchema](128)
+	dbSchemaCache, err := lru.New[string, *model.DBSchema](128)
 	if err != nil {
 		return nil, err
 	}
@@ -206,8 +206,8 @@ func getDatabaseCacheKey(instanceID, databaseName string) string {
 	return fmt.Sprintf("%s/%s", instanceID, databaseName)
 }
 
-func getDatabaseGroupCacheKey(projectUID int, databaseGroupResourceID string) string {
-	return fmt.Sprintf("%d/%s", projectUID, databaseGroupResourceID)
+func getDatabaseGroupCacheKey(projectID, resourceID string) string {
+	return fmt.Sprintf("%s/%s", projectID, resourceID)
 }
 
 func getPlaceholders(start int, count int) string {

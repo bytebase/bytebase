@@ -54,9 +54,10 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, request *v1pb.List
 	limitPlusOne := offset.limit + 1
 
 	find := &store.FindChangelogMessage{
-		DatabaseUID: &database.UID,
-		Limit:       &limitPlusOne,
-		Offset:      &offset.offset,
+		InstanceID:   &database.InstanceID,
+		DatabaseName: &database.DatabaseName,
+		Limit:        &limitPlusOne,
+		Offset:       &offset.offset,
 	}
 	if request.View == v1pb.ChangelogView_CHANGELOG_VIEW_FULL {
 		find.ShowFull = true

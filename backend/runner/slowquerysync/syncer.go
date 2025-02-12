@@ -131,7 +131,7 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 
 	earliestDate := today.AddDate(0, 0, -retentionCycle)
 
-	if err := s.store.DeleteOutdatedSlowLog(ctx, instance.UID, earliestDate); err != nil {
+	if err := s.store.DeleteOutdatedSlowLog(ctx, instance.ResourceID, earliestDate); err != nil {
 		return err
 	}
 
@@ -201,8 +201,8 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 		}
 
 		logs, err := s.store.ListSlowQuery(ctx, &store.ListSlowQueryMessage{
-			InstanceUID:  &instance.UID,
-			DatabaseUID:  &database.UID,
+			InstanceID:   &database.InstanceID,
+			DatabaseName: &database.DatabaseName,
 			StartLogDate: &latestLogDate,
 			EndLogDate:   &nextLogDate,
 		})
@@ -219,12 +219,10 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 			statistics = pgMergeSlowQueryLog(statistics, logs)
 		}
 		if err := s.store.UpsertSlowLog(ctx, &store.UpsertSlowLogMessage{
-			EnvironmentID: &instance.EnvironmentID,
-			InstanceID:    &instance.ResourceID,
-			DatabaseName:  database.DatabaseName,
-			InstanceUID:   instance.UID,
-			LogDate:       latestLogDate,
-			SlowLog:       statistics,
+			InstanceID:   instance.ResourceID,
+			DatabaseName: database.DatabaseName,
+			LogDate:      latestLogDate,
+			SlowLog:      statistics,
 		}); err != nil {
 			slog.Warn("Failed to upsert slow query log",
 				slog.String("instance", instance.ResourceID),
@@ -287,11 +285,11 @@ func (s *Syncer) syncMySQLSlowQuery(ctx context.Context, instance *store.Instanc
 
 	earliestDate := today.AddDate(0, 0, -retentionCycle)
 
-	if err := s.store.DeleteOutdatedSlowLog(ctx, instance.UID, earliestDate); err != nil {
+	if err := s.store.DeleteOutdatedSlowLog(ctx, instance.ResourceID, earliestDate); err != nil {
 		return err
 	}
 
-	latestSlowLogDate, err := s.store.GetLatestSlowLogDate(ctx, instance.UID)
+	latestSlowLogDate, err := s.store.GetLatestSlowLogDate(ctx, instance.ResourceID)
 	if err != nil {
 		return err
 	}
@@ -317,12 +315,10 @@ func (s *Syncer) syncMySQLSlowQuery(ctx context.Context, instance *store.Instanc
 
 		for dbName, slowLog := range logs {
 			if err := s.store.UpsertSlowLog(ctx, &store.UpsertSlowLogMessage{
-				EnvironmentID: &instance.EnvironmentID,
-				InstanceID:    &instance.ResourceID,
-				DatabaseName:  dbName,
-				InstanceUID:   instance.UID,
-				LogDate:       date,
-				SlowLog:       slowLog,
+				InstanceID:   instance.ResourceID,
+				DatabaseName: dbName,
+				LogDate:      date,
+				SlowLog:      slowLog,
 			}); err != nil {
 				return err
 			}

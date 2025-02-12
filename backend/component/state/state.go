@@ -35,7 +35,7 @@ type State struct {
 	// RunningTaskRunsCancelFunc is the cancelFunc of running taskruns.
 	RunningTaskRunsCancelFunc sync.Map // map[taskRunID]context.CancelFunc
 	// RunningDatabaseMigration is the taskUID of the running migration on the database.
-	RunningDatabaseMigration sync.Map // map[databaseID]taskUID
+	RunningDatabaseMigration sync.Map // map[databaseKey]taskUID
 
 	// RunningPlanChecks is the set of running plan checks.
 	RunningPlanChecks sync.Map
@@ -65,7 +65,7 @@ func New() (*State, error) {
 	}
 	return &State{
 		InstanceSlowQuerySyncChan:            make(chan *InstanceSlowQuerySyncMessage, 100),
-		InstanceOutstandingConnections:       &connectionLimiter{connections: map[int]int{}},
+		InstanceOutstandingConnections:       &connectionLimiter{connections: map[string]int{}},
 		IssueExternalApprovalRelayCancelChan: make(chan int, 1),
 		TaskSkippedOrDoneChan:                make(chan int, 1000),
 		PlanCheckTickleChan:                  make(chan int, 1000),
@@ -86,10 +86,10 @@ type InstanceSlowQuerySyncMessage struct {
 
 type connectionLimiter struct {
 	sync.Mutex
-	connections map[int]int
+	connections map[string]int
 }
 
-func (c *connectionLimiter) Increment(instanceID, maxConnections int) bool {
+func (c *connectionLimiter) Increment(instanceID string, maxConnections int) bool {
 	c.Lock()
 	defer c.Unlock()
 	if maxConnections == 0 {
@@ -103,7 +103,7 @@ func (c *connectionLimiter) Increment(instanceID, maxConnections int) bool {
 	return false
 }
 
-func (c *connectionLimiter) Decrement(instanceID int) {
+func (c *connectionLimiter) Decrement(instanceID string) {
 	c.Lock()
 	defer c.Unlock()
 	c.connections[instanceID]--

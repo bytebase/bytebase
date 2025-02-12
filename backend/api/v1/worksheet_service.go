@@ -61,7 +61,7 @@ func (s *WorksheetService) CreateWorksheet(ctx context.Context, request *v1pb.Cr
 		return nil, status.Errorf(codes.NotFound, "project with resource id %q had deleted", projectResourceID)
 	}
 
-	var databaseUID *int
+	var database *store.DatabaseMessage
 	if request.Worksheet.Database != "" {
 		instanceResourceID, databaseName, err := common.GetInstanceDatabaseID(request.Worksheet.Database)
 		if err != nil {
@@ -83,16 +83,16 @@ func (s *WorksheetService) CreateWorksheet(ctx context.Context, request *v1pb.Cr
 			DatabaseName:        &databaseName,
 			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		}
-		database, err := s.store.GetDatabaseV2(ctx, find)
+		db, err := s.store.GetDatabaseV2(ctx, find)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get database with name %q, err: %v", databaseName, err)
 		}
-		if database == nil {
+		if db == nil {
 			return nil, status.Errorf(codes.NotFound, "database with name %q not found in project %q instance %q", databaseName, projectResourceID, instanceResourceID)
 		}
-		databaseUID = &database.UID
+		database = db
 	}
-	storeWorksheetCreate, err := convertToStoreWorksheetMessage(project.UID, databaseUID, principalID, request.Worksheet)
+	storeWorksheetCreate, err := convertToStoreWorksheetMessage(project, database, principalID, request.Worksheet)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to convert worksheet: %v", err)
 	}
@@ -230,7 +230,7 @@ func (s *WorksheetService) SearchWorksheets(ctx context.Context, request *v1pb.S
 		if err != nil {
 			st := status.Convert(err)
 			if st.Code() == codes.NotFound {
-				slog.Debug("failed to found resource for worksheet", log.BBError(err), slog.Int("id", worksheet.UID), slog.Int("project", worksheet.ProjectUID))
+				slog.Debug("failed to found resource for worksheet", log.BBError(err), slog.Int("id", worksheet.UID), slog.String("project", worksheet.ProjectID))
 				continue
 			}
 			return nil, err
@@ -315,7 +315,7 @@ func (s *WorksheetService) UpdateWorksheet(ctx context.Context, request *v1pb.Up
 			if database == nil {
 				return nil, status.Errorf(codes.InvalidArgument, `database "%q" not found`, request.Worksheet.Database)
 			}
-			worksheetPatch.DatabaseUID = &database.UID
+			worksheetPatch.InstanceID, worksheetPatch.DatabaseName = &database.InstanceID, &database.DatabaseName
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path %q", path)
 		}
@@ -469,7 +469,7 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 		return false, nil
 	case store.ProjectWriteWorkSheet:
 		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			UID: &worksheet.ProjectUID,
+			ResourceID: &worksheet.ProjectID,
 		})
 		if err != nil {
 			return false, err
@@ -514,7 +514,7 @@ func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *stor
 		return false, nil
 	case store.ProjectReadWorkSheet, store.ProjectWriteWorkSheet:
 		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			UID: &worksheet.ProjectUID,
+			ResourceID: &worksheet.ProjectID,
 		})
 		if err != nil {
 			return false, err
@@ -533,15 +533,16 @@ func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *stor
 
 func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, worksheet *store.WorkSheetMessage) (*v1pb.Worksheet, error) {
 	databaseParent := ""
-	if worksheet.DatabaseUID != nil {
+	if worksheet.InstanceID != nil && worksheet.DatabaseName != nil {
 		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			UID: worksheet.DatabaseUID,
+			InstanceID:   worksheet.InstanceID,
+			DatabaseName: worksheet.DatabaseName,
 		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get database: %v", err)
 		}
 		if database == nil {
-			return nil, status.Errorf(codes.NotFound, "database with id %d not found", *worksheet.DatabaseUID)
+			return nil, status.Errorf(codes.NotFound, "database %s not found", *worksheet.DatabaseName)
 		}
 		databaseParent = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
 	}
@@ -562,13 +563,13 @@ func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, wor
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		UID: &worksheet.ProjectUID,
+		ResourceID: &worksheet.ProjectID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get project: %v", err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project with id %d not found", worksheet.ProjectUID)
+		return nil, status.Errorf(codes.NotFound, "project with id %s not found", worksheet.ProjectID)
 	}
 	return &v1pb.Worksheet{
 		Name:        fmt.Sprintf("%s%d", common.WorksheetIDPrefix, worksheet.UID),
@@ -585,19 +586,20 @@ func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, wor
 	}, nil
 }
 
-func convertToStoreWorksheetMessage(projectUID int, databaseUID *int, creatorID int, worksheet *v1pb.Worksheet) (*store.WorkSheetMessage, error) {
+func convertToStoreWorksheetMessage(project *store.ProjectMessage, database *store.DatabaseMessage, creatorID int, worksheet *v1pb.Worksheet) (*store.WorkSheetMessage, error) {
 	visibility, err := convertToStoreWorksheetVisibility(worksheet.Visibility)
 	if err != nil {
 		return nil, err
 	}
 
 	worksheetMessage := &store.WorkSheetMessage{
-		ProjectUID:  projectUID,
-		DatabaseUID: databaseUID,
-		CreatorID:   creatorID,
-		Title:       worksheet.Title,
-		Statement:   string(worksheet.Content),
-		Visibility:  visibility,
+		ProjectID:    project.ResourceID,
+		InstanceID:   &database.InstanceID,
+		DatabaseName: &database.DatabaseName,
+		CreatorID:    creatorID,
+		Title:        worksheet.Title,
+		Statement:    string(worksheet.Content),
+		Visibility:   visibility,
 	}
 
 	return worksheetMessage, nil
