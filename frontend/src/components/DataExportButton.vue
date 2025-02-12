@@ -306,7 +306,7 @@ const getExportFileType = (format: ExportFormat) => {
   }
 };
 
-const doDownload = (
+const doDownload = async (
   content: BinaryLike | Blob,
   options: ExportOption,
   filename: string
@@ -315,9 +315,17 @@ const doDownload = (
   const fileType = isZip
     ? "application/zip"
     : getExportFileType(options.format);
-  const blob = new Blob([content], {
+
+  let blob = new Blob([content], {
     type: fileType,
   });
+  if (options.format === ExportFormat.JSON) {
+    const text = await blob.text();
+    const formatted = JSON.stringify(JSON.parse(text), null, 2);
+    blob = new Blob([formatted], {
+      type: fileType,
+    });
+  }
   const url = window.URL.createObjectURL(blob);
 
   const fileFormat = exportFormatToJSON(options.format).toLowerCase();
