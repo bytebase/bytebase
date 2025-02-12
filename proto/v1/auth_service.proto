@@ -62,6 +62,7 @@ service AuthService {
     option (google.api.http) = {delete: "/v1/{name=users/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
   }
 
   // Only the user with bb.users.undelete permission on the workspace can undelete the user.
@@ -71,6 +72,7 @@ service AuthService {
       body: "*"
     };
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc Login(LoginRequest) returns (LoginResponse) {

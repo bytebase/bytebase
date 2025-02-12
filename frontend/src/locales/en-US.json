@@ -409,7 +409,6 @@
       "action": {
         "deactivate": "Deactivate",
         "deactivate-confirm-title": "Are you sure to deactivate?",
-        "reactivate": "Reactivate",
         "reactivate-confirm-title": "Are you sure to reactivate"
       },
       "tooltip": {

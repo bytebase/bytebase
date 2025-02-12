@@ -409,7 +409,6 @@
       "action": {
         "deactivate": "禁用",
         "deactivate-confirm-title": "确定禁用",
-        "reactivate": "启用",
         "reactivate-confirm-title": "确定启用"
       },
       "tooltip": {
