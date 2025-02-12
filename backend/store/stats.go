@@ -164,7 +164,7 @@ func (s *Store) CountIssueGroupByTypeAndStatus(ctx context.Context) ([]*metric.I
 	rows, err := tx.QueryContext(ctx, `
 		SELECT type, status, COUNT(*)
 		FROM issue
-		WHERE (id <= 101 AND updater_id != 1) OR id > 101
+		WHERE id > 101
 		GROUP BY type, status`,
 	)
 	if err != nil {
@@ -202,7 +202,7 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT engine, environment, row_status, COUNT(*)
 		FROM instance
-		WHERE (id <= 101 AND updater_id != 1) OR id > 101
+		WHERE id > 101
 		GROUP BY engine, environment, row_status`,
 	)
 	if err != nil {
@@ -245,7 +245,7 @@ func (s *Store) CountTaskGroupByTypeAndStatus(ctx context.Context) ([]*metric.Ta
 	rows, err := tx.QueryContext(ctx, `
 		SELECT type, status, COUNT(*)
 		FROM task
-		WHERE (id <= 102 AND updater_id != 1) OR id > 102
+		WHERE id > 102
 		GROUP BY type, status`,
 	)
 	if err != nil {
@@ -280,9 +280,9 @@ func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Co
 	defer tx.Rollback()
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT row_status, visibility, COUNT(*) AS count
+		SELECT visibility, COUNT(*) AS count
 		FROM worksheet
-		GROUP BY row_status, visibility`)
+		GROUP BY visibility`)
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +292,6 @@ func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Co
 	for rows.Next() {
 		var sheetCount metric.SheetCountMetric
 		if err := rows.Scan(
-			&sheetCount.RowStatus,
 			&sheetCount.Visibility,
 			&sheetCount.Count,
 		); err != nil {
