@@ -409,7 +409,6 @@
       "action": {
         "deactivate": "Vô hiệu hóa",
         "deactivate-confirm-title": "Bạn có chắc muốn vô hiệu hóa?",
-        "reactivate": "Kích hoạt lại",
         "reactivate-confirm-title": "Bạn có chắc muốn kích hoạt lại?"
       },
       "tooltip": {
