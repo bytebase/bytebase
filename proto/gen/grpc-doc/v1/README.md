@@ -587,6 +587,7 @@
     - [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest)
     - [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest)
   
+    - [CheckReleaseResponse.RiskLevel](#bytebase-v1-CheckReleaseResponse-RiskLevel)
     - [Release.File.ChangeType](#bytebase-v1-Release-File-ChangeType)
     - [ReleaseFileType](#bytebase-v1-ReleaseFileType)
   
@@ -9364,6 +9365,8 @@ for field description.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | results | [CheckReleaseResponse.CheckResult](#bytebase-v1-CheckReleaseResponse-CheckResult) | repeated |  |
+| affected_rows | [int32](#int32) |  | The affected rows of the check. |
+| risk_level | [CheckReleaseResponse.RiskLevel](#bytebase-v1-CheckReleaseResponse-RiskLevel) |  | The aggregated risk level of the check. |
 
 
 
@@ -9381,6 +9384,7 @@ for field description.
 | file | [string](#string) |  | The file path that is being checked. |
 | target | [string](#string) |  | The target that the check is performed on. Should be a database. Format: instances/{instance}/databases/{database} |
 | advices | [Advice](#bytebase-v1-Advice) | repeated | The list of advice for the file and the target. |
+| affected_rows | [int32](#int32) |  | The count of affected rows of the statement on the target. |
 
 
 
@@ -9560,6 +9564,20 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 
 
  
+
+
+<a name="bytebase-v1-CheckReleaseResponse-RiskLevel"></a>
+
+### CheckReleaseResponse.RiskLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RISK_LEVEL_UNSPECIFIED | 0 |  |
+| LOW | 1 |  |
+| MODERATE | 2 |  |
+| HIGH | 3 |  |
+
 
 
 <a name="bytebase-v1-Release-File-ChangeType"></a>
