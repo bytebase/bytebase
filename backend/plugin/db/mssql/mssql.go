@@ -120,8 +120,11 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 func (driver *Driver) Close(_ context.Context) error {
 	if driver.certFilePath != "" {
 		if err := os.Remove(driver.certFilePath); err != nil {
-			slog.Warn("failed to delete temporary file", slog.String("path", driver.certFilePath), slog.Any("error", err))
+			slog.Warn("failed to delete temporary file", slog.String("path", driver.certFilePath), log.BBError(err))
 		}
+	}
+	if driver.db != nil {
+		return driver.db.Close()
 	}
 	return nil
 }
