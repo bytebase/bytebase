@@ -372,4 +372,4 @@ replace github.com/youmark/pkcs8 => github.com/bytebase/pkcs8 v0.0.0-20240612095
 
 replace github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos => github.com/bytebase/azure-sdk-for-go/sdk/data/azcosmos v0.0.0-20250109032656-87cf24d45689
 
-replace github.com/jackc/pgx/v5 => github.com/bytebase/pgx/v5 v5.0.0-20250125144644-a7c1db04baf8
+replace github.com/jackc/pgx/v5 => github.com/bytebase/pgx/v5 v5.0.0-20250212161523-96ff8aed8767
