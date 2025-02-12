@@ -518,7 +518,6 @@ CREATE TABLE worksheet (
     project TEXT NOT NULL REFERENCES project(resource_id),
     instance TEXT,
     db_name TEXT,
-    database_id INTEGER NULL REFERENCES db (id),
     name TEXT NOT NULL,
     statement TEXT NOT NULL,
     visibility TEXT NOT NULL,
