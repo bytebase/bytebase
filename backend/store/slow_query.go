@@ -194,7 +194,7 @@ type UpsertSlowLogMessage struct {
 
 // UpsertSlowLog upserts slow query logs.
 func (s *Store) UpsertSlowLog(ctx context.Context, upsert *UpsertSlowLogMessage) error {
-	var databaseName sql.NullString
+	var databaseName *string
 	if upsert.DatabaseName != "" {
 		instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &upsert.InstanceID})
 		if err != nil {
@@ -209,8 +209,7 @@ func (s *Store) UpsertSlowLog(ctx context.Context, upsert *UpsertSlowLogMessage)
 			return err
 		}
 		if database != nil {
-			databaseName.String = upsert.DatabaseName
-			databaseName.Valid = true
+			databaseName = &upsert.DatabaseName
 		}
 	}
 

@@ -124,15 +124,11 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 		if create.Payload == "" {
 			create.Payload = "{}"
 		}
-		var databaseName sql.NullString
-		if create.DatabaseName != nil {
-			databaseName.String = *create.DatabaseName
-		}
 		values = append(values,
 			create.PipelineID,
 			create.StageID,
 			create.InstanceID,
-			databaseName,
+			create.DatabaseName,
 			create.Name,
 			create.Type,
 			create.Payload,
@@ -152,23 +148,19 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 	defer rows.Close()
 	for rows.Next() {
 		task := &TaskMessage{}
-		var databaseName sql.NullString
 		var earliestAllowedAt sql.NullTime
 		if err := rows.Scan(
 			&task.ID,
 			&task.PipelineID,
 			&task.StageID,
 			&task.InstanceID,
-			&databaseName,
+			&task.DatabaseName,
 			&task.Name,
 			&task.Type,
 			&task.Payload,
 			&earliestAllowedAt,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan rows")
-		}
-		if databaseName.Valid {
-			task.DatabaseName = &databaseName.String
 		}
 		if earliestAllowedAt.Valid {
 			task.EarliestAllowedAt = &earliestAllowedAt.Time
