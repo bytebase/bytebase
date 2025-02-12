@@ -22,8 +22,8 @@ import (
 
 // ListSlowQueryMessage is the message to list slow query logs.
 type ListSlowQueryMessage struct {
-	InstanceUID *int
-	DatabaseUID *int
+	InstanceID   *string
+	DatabaseName *string
 	// List slow query logs in [StartLogDate, EndLogDate).
 	StartLogDate *time.Time
 	EndLogDate   *time.Time
@@ -58,11 +58,11 @@ type slowQueryLogValue struct {
 
 func (*Store) listSlowQueryImpl(ctx context.Context, tx *Tx, list *ListSlowQueryMessage) ([]*v1pb.SlowQueryLog, error) {
 	where, args := []string{"TRUE"}, []any{}
-	if v := list.InstanceUID; v != nil {
-		where, args = append(where, fmt.Sprintf("instance_id = $%d", len(args)+1)), append(args, *v)
+	if v := list.InstanceID; v != nil {
+		where, args = append(where, fmt.Sprintf("instance = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := list.DatabaseUID; v != nil {
-		where, args = append(where, fmt.Sprintf("database_id = $%d", len(args)+1)), append(args, *v)
+	if v := list.DatabaseName; v != nil {
+		where, args = append(where, fmt.Sprintf("db_name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := list.StartLogDate; v != nil {
 		where, args = append(where, fmt.Sprintf("log_date_ts >= $%d", len(args)+1)), append(args, v.Format("20060102"))
@@ -73,8 +73,6 @@ func (*Store) listSlowQueryImpl(ctx context.Context, tx *Tx, list *ListSlowQuery
 
 	query := fmt.Sprintf(`
 		SELECT
-			instance_id,
-			database_id,
 			log_date_ts,
 			slow_query_statistics
 		FROM slow_query
@@ -89,13 +87,9 @@ func (*Store) listSlowQueryImpl(ctx context.Context, tx *Tx, list *ListSlowQuery
 
 	logMap := make(map[string]*slowQueryLogValue)
 	for rows.Next() {
-		var instanceUID int
-		var databaseUID sql.NullInt32
 		var logDate int
 		var logBytes []byte
 		if err := rows.Scan(
-			&instanceUID,
-			&databaseUID,
 			&logDate,
 			&logBytes,
 		); err != nil {
@@ -190,26 +184,24 @@ func calculateStatistics(value *slowQueryLogValue) *v1pb.SlowQueryLog {
 
 // UpsertSlowLogMessage is the message to upsert slow query logs.
 type UpsertSlowLogMessage struct {
-	// We need EnvironmentID, InstanceID, and DatabaseName to find the database UID.
-	EnvironmentID *string
-	InstanceID    *string
-	DatabaseName  string
+	InstanceID string
+	// DatabaseName can be empty.
+	DatabaseName string
 
-	InstanceUID int
-	LogDate     time.Time
-	SlowLog     *storepb.SlowQueryStatistics
+	LogDate time.Time
+	SlowLog *storepb.SlowQueryStatistics
 }
 
 // UpsertSlowLog upserts slow query logs.
 func (s *Store) UpsertSlowLog(ctx context.Context, upsert *UpsertSlowLogMessage) error {
-	var databaseUID sql.NullInt32
+	var databaseName sql.NullString
 	if upsert.DatabaseName != "" {
-		instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: upsert.InstanceID})
+		instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &upsert.InstanceID})
 		if err != nil {
 			return err
 		}
 		database, err := s.GetDatabaseV2(ctx, &FindDatabaseMessage{
-			InstanceID:          upsert.InstanceID,
+			InstanceID:          &upsert.InstanceID,
 			DatabaseName:        &upsert.DatabaseName,
 			IgnoreCaseSensitive: IgnoreDatabaseAndTableCaseSensitive(instance),
 		})
@@ -217,8 +209,8 @@ func (s *Store) UpsertSlowLog(ctx context.Context, upsert *UpsertSlowLogMessage)
 			return err
 		}
 		if database != nil {
-			databaseUID.Int32 = int32(database.UID)
-			databaseUID.Valid = true
+			databaseName.String = upsert.DatabaseName
+			databaseName.Valid = true
 		}
 	}
 
@@ -234,12 +226,12 @@ func (s *Store) UpsertSlowLog(ctx context.Context, upsert *UpsertSlowLogMessage)
 
 	query := `
 		INSERT INTO slow_query (
-			instance_id,
-			database_id,
+			instance,
+			db_name,
 			log_date_ts,
 			slow_query_statistics
 		) VALUES ($1, $2, $3, $4)
-		ON CONFLICT (database_id, log_date_ts) DO UPDATE SET
+		ON CONFLICT (instance, db_name, log_date_ts) DO UPDATE SET
 			slow_query_statistics = EXCLUDED.slow_query_statistics
 	`
 
@@ -250,8 +242,8 @@ func (s *Store) UpsertSlowLog(ctx context.Context, upsert *UpsertSlowLogMessage)
 	defer tx.Rollback()
 
 	if _, err := tx.ExecContext(ctx, query,
-		upsert.InstanceUID,
-		databaseUID,
+		upsert.InstanceID,
+		databaseName,
 		logDate,
 		logBytes,
 	); err != nil {
@@ -262,28 +254,28 @@ func (s *Store) UpsertSlowLog(ctx context.Context, upsert *UpsertSlowLogMessage)
 }
 
 // DeleteOutdatedSlowLog deletes outdated slow query logs.
-func (s *Store) DeleteOutdatedSlowLog(ctx context.Context, instanceUID int, earliestDate time.Time) error {
+func (s *Store) DeleteOutdatedSlowLog(ctx context.Context, instanceID string, earliestDate time.Time) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	if err := s.deleteSlowLogImpl(ctx, tx, instanceUID, earliestDate); err != nil {
+	if err := s.deleteSlowLogImpl(ctx, tx, instanceID, earliestDate); err != nil {
 		return err
 	}
 
 	return tx.Commit()
 }
 
-func (*Store) deleteSlowLogImpl(ctx context.Context, tx *Tx, instanceUID int, earliestDate time.Time) error {
+func (*Store) deleteSlowLogImpl(ctx context.Context, tx *Tx, instanceID string, earliestDate time.Time) error {
 	if _, err := tx.ExecContext(ctx, `
 		DELETE FROM
 			slow_query
 		WHERE
-			instance_id = $1
+			instance = $1
 			AND log_date_ts < $2`,
-		instanceUID,
+		instanceID,
 		earliestDate.Format("20060102"),
 	); err != nil {
 		return err
@@ -292,14 +284,14 @@ func (*Store) deleteSlowLogImpl(ctx context.Context, tx *Tx, instanceUID int, ea
 }
 
 // GetLatestSlowLogDate returns the latest slow query log date.
-func (s *Store) GetLatestSlowLogDate(ctx context.Context, instanceUID int) (*time.Time, error) {
+func (s *Store) GetLatestSlowLogDate(ctx context.Context, instanceID string) (*time.Time, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	result, err := s.getLatestSlowLogDateImpl(ctx, tx, instanceUID)
+	result, err := s.getLatestSlowLogDateImpl(ctx, tx, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -310,15 +302,15 @@ func (s *Store) GetLatestSlowLogDate(ctx context.Context, instanceUID int) (*tim
 	return result, nil
 }
 
-func (*Store) getLatestSlowLogDateImpl(ctx context.Context, tx *Tx, instanceUID int) (*time.Time, error) {
+func (*Store) getLatestSlowLogDateImpl(ctx context.Context, tx *Tx, instanceID string) (*time.Time, error) {
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			MAX(log_date_ts)
 		FROM
 			slow_query
 		WHERE
-			instance_id = $1`,
-		instanceUID,
+			instance = $1`,
+		instanceID,
 	)
 	if err != nil {
 		return nil, err
