@@ -178,7 +178,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 	// The task database_id represents its related database entry both for creating and patching,
 	// so we should sync its value right here when the related database entry created.
 	// The new statement should include the schema from peer tenant database.
-	taskDatabaseIDPatch := &api.TaskPatch{
+	taskDatabaseIDPatch := &store.TaskPatch{
 		ID:           task.ID,
 		UpdaterID:    api.SystemBotID,
 		DatabaseName: &database.DatabaseName,
@@ -284,7 +284,7 @@ func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *
 			}
 
 			// We somehow reconciled the plan before, so we just return.
-			tasks, err := exec.store.ListTasks(ctx, &api.TaskFind{
+			tasks, err := exec.store.ListTasks(ctx, &store.TaskFind{
 				PipelineID:   issue.PipelineUID,
 				InstanceID:   &createdDatabase.InstanceID,
 				DatabaseName: &createdDatabase.DatabaseName,
@@ -296,7 +296,7 @@ func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *
 				return nil
 			}
 
-			tasks, err = exec.store.ListTasks(ctx, &api.TaskFind{
+			tasks, err = exec.store.ListTasks(ctx, &store.TaskFind{
 				PipelineID:   issue.PipelineUID,
 				InstanceID:   &peerDatabase.InstanceID,
 				DatabaseName: &peerDatabase.DatabaseName,
