@@ -16,8 +16,8 @@ import (
 )
 
 type ReleaseMessage struct {
-	ProjectUID int
-	Payload    *storepb.ReleasePayload
+	ProjectID string
+	Payload   *storepb.ReleasePayload
 
 	// output only
 	UID        int64
@@ -27,7 +27,7 @@ type ReleaseMessage struct {
 }
 
 type FindReleaseMessage struct {
-	ProjectUID  *int
+	ProjectID   *string
 	UID         *int64
 	Limit       *int
 	Offset      *int
@@ -45,7 +45,7 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 	query := `
 		INSERT INTO release (
 			creator_id,
-			project_id,
+			project,
 			payload
 		) VALUES (
 			$1,
@@ -69,7 +69,7 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 	var createdTime time.Time
 	if err := tx.QueryRowContext(ctx, query,
 		creatorUID,
-		release.ProjectUID,
+		release.ProjectID,
 		p,
 	).Scan(&id, &createdTime); err != nil {
 		return nil, errors.Wrapf(err, "failed to insert release")
@@ -102,23 +102,23 @@ func (s *Store) GetRelease(ctx context.Context, uid int64) (*ReleaseMessage, err
 
 func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*ReleaseMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
-	if v := find.ProjectUID; v != nil {
-		where = append(where, fmt.Sprintf("release.project_id = $%d", len(args)+1))
+	if v := find.ProjectID; v != nil {
+		where = append(where, fmt.Sprintf("project = $%d", len(args)+1))
 		args = append(args, *v)
 	}
 	if v := find.UID; v != nil {
-		where = append(where, fmt.Sprintf("release.id= $%d", len(args)+1))
+		where = append(where, fmt.Sprintf("id= $%d", len(args)+1))
 		args = append(args, *v)
 	}
 	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("release.row_status = $%d", len(args)+1)), append(args, api.Normal)
+		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
 	}
 
 	query := fmt.Sprintf(`
 		SELECT
 			id,
 			row_status,
-			project_id,
+			project,
 			creator_id,
 			created_at,
 			payload
@@ -157,7 +157,7 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 		if err := rows.Scan(
 			&r.UID,
 			&rowStatus,
-			&r.ProjectUID,
+			&r.ProjectID,
 			&r.CreatorUID,
 			&r.At,
 			&payload,

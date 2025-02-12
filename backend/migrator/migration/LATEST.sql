@@ -232,8 +232,8 @@ ALTER SEQUENCE pipeline_id_seq RESTART WITH 101;
 -- stage table stores the stage for the pipeline
 CREATE TABLE stage (
     id SERIAL PRIMARY KEY,
-    pipeline_id INTEGER NOT NULL REFERENCES pipeline (id),
-    environment TEXT NOT NULL REFERENCES environment (resource_id),
+    pipeline_id INTEGER NOT NULL REFERENCES pipeline(id),
+    environment TEXT NOT NULL REFERENCES environment(resource_id),
     deployment_id TEXT NOT NULL DEFAULT '',
     name TEXT NOT NULL
 );
@@ -247,14 +247,13 @@ CREATE TABLE task (
     id SERIAL PRIMARY KEY,
     pipeline_id INTEGER NOT NULL REFERENCES pipeline(id),
     stage_id INTEGER NOT NULL REFERENCES stage(id),
-    instance TEXT NOT NULL,
-    db_name TEXT NOT NULL,
+    instance TEXT NOT NULL REFERENCES instance(resource_id),
+    db_name TEXT,
     name TEXT NOT NULL,
     status TEXT NOT NULL CHECK (status IN ('PENDING', 'PENDING_APPROVAL', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     type TEXT NOT NULL CHECK (type LIKE 'bb.task.%'),
     payload JSONB NOT NULL DEFAULT '{}',
-    earliest_allowed_at TIMESTAMPTZ NULL,
-    CONSTRAINT task_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
+    earliest_allowed_at TIMESTAMPTZ NULL
 );
 
 CREATE INDEX idx_task_pipeline_id_stage_id ON task(pipeline_id, stage_id);

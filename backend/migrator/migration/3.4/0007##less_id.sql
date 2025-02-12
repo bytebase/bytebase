@@ -66,8 +66,7 @@ ALTER TABLE task ADD COLUMN db_name TEXT;
 UPDATE task SET instance = db.instance, db_name = db.name FROM db WHERE task.database_id IS NOT NULL AND db.id = task.database_id;
 UPDATE task SET instance = instance.resource_id FROM instance WHERE task.database_id IS NULL AND instance.id = task.instance_id;
 ALTER TABLE task ALTER COLUMN instance SET NOT NULL;
-ALTER TABLE task ALTER COLUMN db_name SET NOT NULL;
-ALTER TABLE task ADD constraint task_instance_db_name_fkey FOREIGN KEY (instance, db_name) references db(instance, name);
+ALTER TABLE task ADD constraint task_instance_fkey FOREIGN KEY (instance) references instance(resource_id);
 ALTER TABLE task DROP COLUMN instance_id;
 ALTER TABLE task DROP COLUMN database_id;
 

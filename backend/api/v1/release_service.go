@@ -80,7 +80,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 	}
 
 	releaseMessage := &store.ReleaseMessage{
-		ProjectUID: project.UID,
+		ProjectID: project.ResourceID,
 		Payload: &storepb.ReleasePayload{
 			Title:     request.Release.Title,
 			Files:     files,
@@ -148,7 +148,7 @@ func (s *ReleaseService) ListReleases(ctx context.Context, request *v1pb.ListRel
 	limitPlusOne := offset.limit + 1
 
 	releaseFind := &store.FindReleaseMessage{
-		ProjectUID:  &project.UID,
+		ProjectID:   &project.ResourceID,
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
 		ShowDeleted: request.ShowDeleted,
@@ -528,12 +528,12 @@ func convertToRelease(ctx context.Context, s *store.Store, release *store.Releas
 	}
 	r.Files = files
 
-	project, err := s.GetProjectV2(ctx, &store.FindProjectMessage{UID: &release.ProjectUID})
+	project, err := s.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &release.ProjectID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find project")
 	}
 	if project == nil {
-		return nil, errors.Wrapf(err, "project %v not found", release.ProjectUID)
+		return nil, errors.Wrapf(err, "project %s not found", release.ProjectID)
 	}
 	r.Name = common.FormatReleaseName(project.ResourceID, release.UID)
 
