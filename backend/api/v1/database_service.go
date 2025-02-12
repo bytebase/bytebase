@@ -1050,8 +1050,8 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 			return nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
 		}
 		listSlowQuery := &store.ListSlowQueryMessage{
-			InstanceUID:  &instance.UID,
-			DatabaseUID:  &database.UID,
+			InstanceID:   &database.InstanceID,
+			DatabaseName: &database.DatabaseName,
 			StartLogDate: startLogDate,
 			EndLogDate:   endLogDate,
 		}

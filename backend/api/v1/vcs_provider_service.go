@@ -161,7 +161,7 @@ func (s *VCSProviderService) ListVCSConnectorsInProvider(ctx context.Context, re
 		return nil, err
 	}
 	vcsConnectors, err := s.store.ListVCSConnectors(ctx, &store.FindVCSConnectorMessage{
-		VCSUID: &vcs.ID,
+		VCSID: &vcs.ResourceID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to fetch external repository list: %v", err)
