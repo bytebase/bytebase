@@ -1339,7 +1339,7 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 	}, nil
 }
 
-func GetClassificationByProject(ctx context.Context, stores *store.Store, projectID string) *storepb.DataClassificationSetting_DataClassificationConfig {
+func getClassificationByProject(ctx context.Context, stores *store.Store, projectID string) *storepb.DataClassificationSetting_DataClassificationConfig {
 	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
@@ -1413,7 +1413,7 @@ func (s *SQLService) SQLReviewCheck(
 	defer driver.Close(ctx)
 	connection := driver.GetDB()
 
-	classificationConfig := GetClassificationByProject(ctx, s.store, database.ProjectID)
+	classificationConfig := getClassificationByProject(ctx, s.store, database.ProjectID)
 	context := advisor.SQLReviewCheckContext{
 		Charset:                  dbMetadata.CharacterSet,
 		Collation:                dbMetadata.Collation,

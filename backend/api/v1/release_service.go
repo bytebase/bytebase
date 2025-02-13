@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -355,6 +356,21 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 			if stopChecking {
 				break
 			}
+
+			checkResult := &v1pb.CheckReleaseResponse_CheckResult{
+				File:   file.Path,
+				Target: fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName),
+			}
+			// Get SQL summary report for the statement and target database.
+			// Including affected rows.
+			summaryReport, err := plancheck.GetSQLSummaryReport(ctx, s.store, s.sheetManager, s.dbFactory, database, file.Statement)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get SQL summary report, error: %v", err)
+			}
+			if summaryReport != nil {
+				checkResult.AffectedRows = summaryReport.AffectedRows
+				response.AffectedRows += summaryReport.AffectedRows
+			}
 			// Check if file has been applied to database.
 			revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{
 				InstanceID:   &database.InstanceID,
@@ -370,19 +386,18 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 				continue
 			}
 
-			adviceStatus, advices, err := s.runSQLReviewCheckForFile(ctx, catalog, instance, database, file)
+			adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, catalog, instance, database, file)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to check SQL review: %v", err)
 			}
 			// If the advice status is not SUCCESS, we will add the file and advices to the response.
 			if adviceStatus != storepb.Advice_SUCCESS {
-				response.Results = append(response.Results, &v1pb.CheckReleaseResponse_CheckResult{
-					File:    file.Path,
-					Target:  fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName),
-					Advices: advices,
-				})
+				checkResult.Advices = sqlReviewAdvices
 			}
-			for _, advice := range advices {
+			response.Results = append(response.Results, checkResult)
+
+			// Check if we need to stop checking for the rest of files.
+			for _, advice := range sqlReviewAdvices {
 				switch advice.Status {
 				case v1pb.Advice_ERROR:
 					if errorAdviceCount < common.MaximumAdvicePerStatus {
@@ -452,7 +467,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	defer driver.Close(ctx)
 	connection := driver.GetDB()
 
-	classificationConfig := GetClassificationByProject(ctx, s.store, database.ProjectID)
+	classificationConfig := getClassificationByProject(ctx, s.store, database.ProjectID)
 	context := advisor.SQLReviewCheckContext{
 		Charset:                  dbMetadata.CharacterSet,
 		Collation:                dbMetadata.Collation,

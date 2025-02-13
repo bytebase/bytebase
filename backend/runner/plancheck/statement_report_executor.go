@@ -96,45 +96,10 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 		return nil, errors.Errorf("database not found %q", config.DatabaseName)
 	}
 
-	results, err := e.runReport(ctx, instance, database, statement)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(results) == 0 {
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-				Title:   "OK",
-				Content: "",
-				Code:    common.Ok.Int32(),
-				Report:  nil,
-			},
-		}, nil
-	}
-	return results, nil
-}
-
-func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, statement string) ([]*storepb.PlanCheckRunResult_Result, error) {
-	databaseSchema, err := e.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
-	if err != nil {
-		return nil, err
-	}
-	if databaseSchema == nil {
-		return nil, errors.Errorf("database schema not found: %d", database.UID)
-	}
-	if databaseSchema.GetMetadata() == nil {
-		return nil, errors.Errorf("database schema metadata not found: %d", database.UID)
-	}
-
-	materials := utils.GetSecretMapFromDatabaseMessage(database)
-	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
-	renderedStatement := utils.RenderStatement(statement, materials)
-
-	asts, advices := e.sheetManager.GetASTsForChecks(instance.Engine, statement)
-	if len(advices) > 0 {
-		advice := advices[0]
-		// nolint:nilerr
+	// Check statement syntax error.
+	_, syntaxAdvices := e.sheetManager.GetASTsForChecks(instance.Engine, statement)
+	if len(syntaxAdvices) > 0 {
+		advice := syntaxAdvices[0]
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_ERROR,
@@ -153,14 +118,57 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 		}, nil
 	}
 
-	var explainCalculator getAffectedRowsFromExplain
-	var sqlTypes []string
-	var defaultSchema string
-	useDatabaseOwner, err := getUseDatabaseOwner(ctx, e.store, instance, database)
+	planCheckRunResult := &storepb.PlanCheckRunResult_Result{
+		Status: storepb.PlanCheckRunResult_Result_SUCCESS,
+		Code:   common.Ok.Int32(),
+		Title:  "OK",
+	}
+	summaryReport, err := GetSQLSummaryReport(ctx, e.store, e.sheetManager, e.dbFactory, database, statement)
 	if err != nil {
 		return nil, err
 	}
-	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
+	if summaryReport != nil {
+		planCheckRunResult.Report = &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
+			SqlSummaryReport: summaryReport,
+		}
+	}
+	return []*storepb.PlanCheckRunResult_Result{planCheckRunResult}, nil
+}
+
+// GetSQLSummaryReport gets the SQL summary report for the given statement and database.
+func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, database *store.DatabaseMessage, statement string) (*storepb.PlanCheckRunResult_Result_SqlSummaryReport, error) {
+	databaseSchema, err := stores.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+	if err != nil {
+		return nil, err
+	}
+	if databaseSchema == nil {
+		return nil, errors.Errorf("database schema not found: %d", database.UID)
+	}
+	if databaseSchema.GetMetadata() == nil {
+		return nil, errors.Errorf("database schema metadata not found: %d", database.UID)
+	}
+	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+	if err != nil {
+		return nil, err
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance not found: %s", database.InstanceID)
+	}
+
+	asts, syntaxAdvices := sheetManager.GetASTsForChecks(instance.Engine, statement)
+	if len(syntaxAdvices) > 0 {
+		// Return nil as it should already be checked before running this function.
+		return nil, nil
+	}
+
+	var explainCalculator getAffectedRowsFromExplain
+	var sqlTypes []string
+	var defaultSchema string
+	useDatabaseOwner, err := getUseDatabaseOwner(ctx, stores, instance, database)
+	if err != nil {
+		return nil, err
+	}
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
 		UseDatabaseOwner: useDatabaseOwner,
 	})
 	if err != nil {
@@ -252,25 +260,19 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 		return nil, nil
 	}
 
+	materials := utils.GetSecretMapFromDatabaseMessage(database)
+	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
+	renderedStatement := utils.RenderStatement(statement, materials)
 	changeSummary, err := base.ExtractChangedResources(instance.Engine, database.DatabaseName, defaultSchema, databaseSchema, asts, renderedStatement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract changed resources")
 	}
 	totalAffectedRows := calculateAffectedRows(ctx, changeSummary, explainCalculator)
 
-	return []*storepb.PlanCheckRunResult_Result{
-		{
-			Status: storepb.PlanCheckRunResult_Result_SUCCESS,
-			Code:   common.Ok.Int32(),
-			Title:  "OK",
-			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
-				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-					StatementTypes:   sqlTypes,
-					AffectedRows:     int32(totalAffectedRows),
-					ChangedResources: changeSummary.ChangedResources.Build(),
-				},
-			},
-		},
+	return &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
+		StatementTypes:   sqlTypes,
+		AffectedRows:     int32(totalAffectedRows),
+		ChangedResources: changeSummary.ChangedResources.Build(),
 	}, nil
 }
 
