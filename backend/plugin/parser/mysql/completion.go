@@ -1490,7 +1490,7 @@ func (c *Completer) quotedIdentifierIfNeeded(s string) string {
 	if c.caretTokenIsQuoted {
 		return s
 	}
-	if c.lexer.IsReservedKeyword(s) {
+	if c.lexer.IsReservedKeyword(strings.ToUpper(s)) {
 		return fmt.Sprintf("`%s`", s)
 	}
 	for _, r := range s {
