@@ -326,7 +326,9 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 			if err != nil {
 				return nil, nil, nil, errors.Wrapf(err, "failed to create instance %q database %q in sync runner", instance.ResourceID, databaseMetadata.Name)
 			}
-			newDatabases = append(newDatabases, newDatabase)
+			if newDatabase != nil {
+				newDatabases = append(newDatabases, newDatabase)
+			}
 		}
 	}
 

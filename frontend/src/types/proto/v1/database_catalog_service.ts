@@ -7,7 +7,6 @@
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import Long from "long";
-import { FieldMask } from "../google/protobuf/field_mask";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -26,11 +25,7 @@ export interface UpdateDatabaseCatalogRequest {
    * The catalog's `name` field is used to identify the database catalog to update.
    * Format: instances/{instance}/databases/{database}/catalog
    */
-  catalog:
-    | DatabaseCatalog
-    | undefined;
-  /** The list of fields to update. */
-  updateMask: string[] | undefined;
+  catalog: DatabaseCatalog | undefined;
 }
 
 export interface DatabaseCatalog {
@@ -228,16 +223,13 @@ export const GetDatabaseCatalogRequest: MessageFns<GetDatabaseCatalogRequest> = 
 };
 
 function createBaseUpdateDatabaseCatalogRequest(): UpdateDatabaseCatalogRequest {
-  return { catalog: undefined, updateMask: undefined };
+  return { catalog: undefined };
 }
 
 export const UpdateDatabaseCatalogRequest: MessageFns<UpdateDatabaseCatalogRequest> = {
   encode(message: UpdateDatabaseCatalogRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.catalog !== undefined) {
       DatabaseCatalog.encode(message.catalog, writer.uint32(10).fork()).join();
-    }
-    if (message.updateMask !== undefined) {
-      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).join();
     }
     return writer;
   },
@@ -257,14 +249,6 @@ export const UpdateDatabaseCatalogRequest: MessageFns<UpdateDatabaseCatalogReque
           message.catalog = DatabaseCatalog.decode(reader, reader.uint32());
           continue;
         }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -275,19 +259,13 @@ export const UpdateDatabaseCatalogRequest: MessageFns<UpdateDatabaseCatalogReque
   },
 
   fromJSON(object: any): UpdateDatabaseCatalogRequest {
-    return {
-      catalog: isSet(object.catalog) ? DatabaseCatalog.fromJSON(object.catalog) : undefined,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-    };
+    return { catalog: isSet(object.catalog) ? DatabaseCatalog.fromJSON(object.catalog) : undefined };
   },
 
   toJSON(message: UpdateDatabaseCatalogRequest): unknown {
     const obj: any = {};
     if (message.catalog !== undefined) {
       obj.catalog = DatabaseCatalog.toJSON(message.catalog);
-    }
-    if (message.updateMask !== undefined) {
-      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
     }
     return obj;
   },
@@ -300,7 +278,6 @@ export const UpdateDatabaseCatalogRequest: MessageFns<UpdateDatabaseCatalogReque
     message.catalog = (object.catalog !== undefined && object.catalog !== null)
       ? DatabaseCatalog.fromPartial(object.catalog)
       : undefined;
-    message.updateMask = object.updateMask ?? undefined;
     return message;
   },
 };
