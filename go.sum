@@ -839,8 +839,8 @@ github.com/bytebase/partiql-parser v0.0.0-20240531101102-1962ff456f2c h1:TMANvCC
 github.com/bytebase/partiql-parser v0.0.0-20240531101102-1962ff456f2c/go.mod h1:hNMKtZBMCbNyhUFR47Ct9mqmpzZVtHgC0OsOIQhR27k=
 github.com/bytebase/pg_query_go2/v5 v5.0.0-20241024030058-bbe7104c5b4b h1:KCrmHI0DqsiibfZMvmcz+zjOXSjq1U+FiUDMqopPA3Q=
 github.com/bytebase/pg_query_go2/v5 v5.0.0-20241024030058-bbe7104c5b4b/go.mod h1:FsglvxidZsVN+Ltw3Ai6nTgPVcK2BPukH3jCDEqc1Ug=
-github.com/bytebase/pgx/v5 v5.0.0-20250125144644-a7c1db04baf8 h1:0oP4qXAUrO9zLLL5WznlxlOHrxVWi6pgNTyStLhhgJs=
-github.com/bytebase/pgx/v5 v5.0.0-20250125144644-a7c1db04baf8/go.mod h1:ncY89UGWxg82EykZUwSpUKEfccBGGYq1xjrOpsbsfGQ=
+github.com/bytebase/pgx/v5 v5.0.0-20250212161523-96ff8aed8767 h1:YuR5G3LcxpO5ScSTA+Kdirxg9RW4TRc/v1t7N2Hfmbw=
+github.com/bytebase/pgx/v5 v5.0.0-20250212161523-96ff8aed8767/go.mod h1:ncY89UGWxg82EykZUwSpUKEfccBGGYq1xjrOpsbsfGQ=
 github.com/bytebase/pkcs8 v0.0.0-20240612095628-fcd0a7484c94 h1:6PNsuNmSqCuR8Z616uQLzDIvujWCFsKzeVc3ECmVubk=
 github.com/bytebase/pkcs8 v0.0.0-20240612095628-fcd0a7484c94/go.mod h1:SQliXeA7Dhkt//vS29v3zpbEwoa+zb2Cn5xj5uO4K5U=
 github.com/bytebase/plsql-parser v0.0.0-20241217100236-775726d725f9 h1:8G2E1ab2Zd6xIcWneXV6FLvuTr50Qzu5A/3KTvKrx8U=
