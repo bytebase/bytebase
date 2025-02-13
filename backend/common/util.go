@@ -9,14 +9,12 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 	"unicode/utf8"
 
 	"github.com/nyaruka/phonenumbers"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -110,12 +108,6 @@ func GetPostgresSocketDir() string {
 // GetResourceDir returns the resource directory of Bytebase.
 func GetResourceDir(dataDir string) string {
 	return path.Join(dataDir, "resources")
-}
-
-// DefaultMigrationVersion returns the default migration version string.
-// Use the current time in second to guarantee uniqueness in a monotonic increasing way.
-func DefaultMigrationVersion() model.Version {
-	return model.Version{Version: time.Now().Format("20060102150405")}
 }
 
 // TruncateString truncates the string to have a maximum length of `limit` characters.
