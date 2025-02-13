@@ -130,7 +130,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		where, args = append(where, fmt.Sprintf("plan.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("plan.project= $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("plan.project = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectIDs; v != nil {
 		where, args = append(where, fmt.Sprintf("plan.project = ANY($%d)", len(args)+1)), append(args, *v)
