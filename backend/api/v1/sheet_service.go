@@ -121,7 +121,7 @@ func (s *SheetService) BatchCreateSheet(ctx context.Context, request *v1pb.Batch
 		sheetCreates = append(sheetCreates, storeSheetCreate)
 	}
 
-	sheets, err := s.sheetManager.BatchCreateSheet(ctx, sheetCreates, project.UID, user.ID)
+	sheets, err := s.sheetManager.BatchCreateSheet(ctx, sheetCreates, project.ResourceID, user.ID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create sheet: %v", err)
 	}

@@ -252,7 +252,7 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 // BatchCreateSheet creates a new sheet.
 // You should not use this function directly to create sheets.
 // Use BatchCreateSheet in component/sheet instead.
-func (s *Store) BatchCreateSheet(ctx context.Context, projectUID int, creates []*SheetMessage, creatorUID int) ([]*SheetMessage, error) {
+func (s *Store) BatchCreateSheet(ctx context.Context, projectID string, creates []*SheetMessage, creatorUID int) ([]*SheetMessage, error) {
 	var names []string
 	var statements []string
 	var sha256s [][]byte
@@ -281,7 +281,7 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectUID int, creates []
 	query := `
 		INSERT INTO sheet (
 			creator_id,
-			project_id,
+			project,
 			name,
 			sha256,
 			payload
@@ -300,7 +300,7 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectUID int, creates []
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, query, creatorUID, projectUID, names, sha256s, payloads)
+	rows, err := tx.QueryContext(ctx, query, creatorUID, projectID, names, sha256s, payloads)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query")
 	}
