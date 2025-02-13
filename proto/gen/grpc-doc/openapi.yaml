@@ -9036,6 +9036,19 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/CheckReleaseResponse_CheckResult'
+                affectedRows:
+                    type: integer
+                    description: The affected rows of the check.
+                    format: int32
+                riskLevel:
+                    enum:
+                        - RISK_LEVEL_UNSPECIFIED
+                        - LOW
+                        - MODERATE
+                        - HIGH
+                    type: string
+                    description: The aggregated risk level of the check.
+                    format: enum
         CheckReleaseResponse_CheckResult:
             type: object
             properties:
@@ -9052,6 +9065,10 @@ components:
                     items:
                         $ref: '#/components/schemas/Advice'
                     description: The list of advice for the file and the target.
+                affectedRows:
+                    type: integer
+                    description: The count of affected rows of the statement on the target.
+                    format: int32
         CheckRequest:
             required:
                 - name
@@ -9151,6 +9168,14 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/GenerationMetadata'
                     description: The generation is the generation of a column.
+                identityGeneration:
+                    enum:
+                        - IDENTITY_GENERATION_UNSPECIFIED
+                        - ALWAYS
+                        - BY_DEFAULT
+                    type: string
+                    description: The identity_generation is for identity columns, PG only.
+                    format: enum
             description: ColumnMetadata is the metadata for columns.
         CreateSheetRequest:
             required:

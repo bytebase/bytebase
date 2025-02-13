@@ -756,6 +756,15 @@ message ColumnMetadata {
 
   // The generation is the generation of a column.
   GenerationMetadata generation = 16;
+
+  enum IdentityGeneration {
+    IDENTITY_GENERATION_UNSPECIFIED = 0;
+    ALWAYS = 1;
+    BY_DEFAULT = 2;
+  }
+
+  // The identity_generation is for identity columns, PG only.
+  IdentityGeneration identity_generation = 17;
 }
 
 message GenerationMetadata {

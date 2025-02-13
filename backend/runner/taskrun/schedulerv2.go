@@ -727,7 +727,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 					return nil
 				}
 
-				stageTasks, err := s.store.ListTasks(ctx, &api.TaskFind{StageID: &task.StageID})
+				stageTasks, err := s.store.ListTasks(ctx, &store.TaskFind{StageID: &task.StageID})
 				if err != nil {
 					return errors.Wrapf(err, "failed to list tasks")
 				}

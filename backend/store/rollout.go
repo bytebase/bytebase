@@ -4,13 +4,11 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 )
 
 // GetRollout gets the rollout by rollout ID.
 func (s *Store) GetRollout(ctx context.Context, rolloutID int) (*PipelineMessage, error) {
-	tasks, err := s.ListTasks(ctx, &api.TaskFind{PipelineID: &rolloutID})
+	tasks, err := s.ListTasks(ctx, &TaskFind{PipelineID: &rolloutID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find tasks for pipeline %d", rolloutID)
 	}

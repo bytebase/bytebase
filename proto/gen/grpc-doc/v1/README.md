@@ -158,6 +158,7 @@
     - [Changelog.Status](#bytebase-v1-Changelog-Status)
     - [Changelog.Type](#bytebase-v1-Changelog-Type)
     - [ChangelogView](#bytebase-v1-ChangelogView)
+    - [ColumnMetadata.IdentityGeneration](#bytebase-v1-ColumnMetadata-IdentityGeneration)
     - [DatabaseMetadataView](#bytebase-v1-DatabaseMetadataView)
     - [GenerationMetadata.Type](#bytebase-v1-GenerationMetadata-Type)
     - [StreamMetadata.Mode](#bytebase-v1-StreamMetadata-Mode)
@@ -587,6 +588,7 @@
     - [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest)
     - [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest)
   
+    - [CheckReleaseResponse.RiskLevel](#bytebase-v1-CheckReleaseResponse-RiskLevel)
     - [Release.File.ChangeType](#bytebase-v1-Release-File-ChangeType)
     - [ReleaseFileType](#bytebase-v1-ReleaseFileType)
   
@@ -2100,6 +2102,7 @@ ColumnMetadata is the metadata for columns.
 | comment | [string](#string) |  | The comment is the comment of a column. classification and user_comment is parsed from the comment. |
 | user_comment | [string](#string) |  | The user_comment is the user comment of a column parsed from the comment. |
 | generation | [GenerationMetadata](#bytebase-v1-GenerationMetadata) |  | The generation is the generation of a column. |
+| identity_generation | [ColumnMetadata.IdentityGeneration](#bytebase-v1-ColumnMetadata-IdentityGeneration) |  | The identity_generation is for identity columns, PG only. |
 
 
 
@@ -3219,6 +3222,19 @@ ViewMetadata is the metadata for views.
 | CHANGELOG_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
 | CHANGELOG_VIEW_BASIC | 1 |  |
 | CHANGELOG_VIEW_FULL | 2 |  |
+
+
+
+<a name="bytebase-v1-ColumnMetadata-IdentityGeneration"></a>
+
+### ColumnMetadata.IdentityGeneration
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| IDENTITY_GENERATION_UNSPECIFIED | 0 |  |
+| ALWAYS | 1 |  |
+| BY_DEFAULT | 2 |  |
 
 
 
@@ -9363,6 +9379,8 @@ for field description.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | results | [CheckReleaseResponse.CheckResult](#bytebase-v1-CheckReleaseResponse-CheckResult) | repeated |  |
+| affected_rows | [int32](#int32) |  | The affected rows of the check. |
+| risk_level | [CheckReleaseResponse.RiskLevel](#bytebase-v1-CheckReleaseResponse-RiskLevel) |  | The aggregated risk level of the check. |
 
 
 
@@ -9380,6 +9398,7 @@ for field description.
 | file | [string](#string) |  | The file path that is being checked. |
 | target | [string](#string) |  | The target that the check is performed on. Should be a database. Format: instances/{instance}/databases/{database} |
 | advices | [Advice](#bytebase-v1-Advice) | repeated | The list of advice for the file and the target. |
+| affected_rows | [int32](#int32) |  | The count of affected rows of the statement on the target. |
 
 
 
@@ -9559,6 +9578,20 @@ When paginating, all other parameters provided to `ListReleases` must match the 
 
 
  
+
+
+<a name="bytebase-v1-CheckReleaseResponse-RiskLevel"></a>
+
+### CheckReleaseResponse.RiskLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RISK_LEVEL_UNSPECIFIED | 0 |  |
+| LOW | 1 |  |
+| MODERATE | 2 |  |
+| HIGH | 3 |  |
+
 
 
 <a name="bytebase-v1-Release-File-ChangeType"></a>

@@ -156,6 +156,71 @@ export interface CheckReleaseRequest {
 
 export interface CheckReleaseResponse {
   results: CheckReleaseResponse_CheckResult[];
+  /** The affected rows of the check. */
+  affectedRows: number;
+  /** The aggregated risk level of the check. */
+  riskLevel: CheckReleaseResponse_RiskLevel;
+}
+
+export enum CheckReleaseResponse_RiskLevel {
+  RISK_LEVEL_UNSPECIFIED = "RISK_LEVEL_UNSPECIFIED",
+  LOW = "LOW",
+  MODERATE = "MODERATE",
+  HIGH = "HIGH",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function checkReleaseResponse_RiskLevelFromJSON(object: any): CheckReleaseResponse_RiskLevel {
+  switch (object) {
+    case 0:
+    case "RISK_LEVEL_UNSPECIFIED":
+      return CheckReleaseResponse_RiskLevel.RISK_LEVEL_UNSPECIFIED;
+    case 1:
+    case "LOW":
+      return CheckReleaseResponse_RiskLevel.LOW;
+    case 2:
+    case "MODERATE":
+      return CheckReleaseResponse_RiskLevel.MODERATE;
+    case 3:
+    case "HIGH":
+      return CheckReleaseResponse_RiskLevel.HIGH;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return CheckReleaseResponse_RiskLevel.UNRECOGNIZED;
+  }
+}
+
+export function checkReleaseResponse_RiskLevelToJSON(object: CheckReleaseResponse_RiskLevel): string {
+  switch (object) {
+    case CheckReleaseResponse_RiskLevel.RISK_LEVEL_UNSPECIFIED:
+      return "RISK_LEVEL_UNSPECIFIED";
+    case CheckReleaseResponse_RiskLevel.LOW:
+      return "LOW";
+    case CheckReleaseResponse_RiskLevel.MODERATE:
+      return "MODERATE";
+    case CheckReleaseResponse_RiskLevel.HIGH:
+      return "HIGH";
+    case CheckReleaseResponse_RiskLevel.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function checkReleaseResponse_RiskLevelToNumber(object: CheckReleaseResponse_RiskLevel): number {
+  switch (object) {
+    case CheckReleaseResponse_RiskLevel.RISK_LEVEL_UNSPECIFIED:
+      return 0;
+    case CheckReleaseResponse_RiskLevel.LOW:
+      return 1;
+    case CheckReleaseResponse_RiskLevel.MODERATE:
+      return 2;
+    case CheckReleaseResponse_RiskLevel.HIGH:
+      return 3;
+    case CheckReleaseResponse_RiskLevel.UNRECOGNIZED:
+    default:
+      return -1;
+  }
 }
 
 export interface CheckReleaseResponse_CheckResult {
@@ -168,6 +233,8 @@ export interface CheckReleaseResponse_CheckResult {
   target: string;
   /** The list of advice for the file and the target. */
   advices: Advice[];
+  /** The count of affected rows of the statement on the target. */
+  affectedRows: number;
 }
 
 export interface Release {
@@ -880,13 +947,19 @@ export const CheckReleaseRequest: MessageFns<CheckReleaseRequest> = {
 };
 
 function createBaseCheckReleaseResponse(): CheckReleaseResponse {
-  return { results: [] };
+  return { results: [], affectedRows: 0, riskLevel: CheckReleaseResponse_RiskLevel.RISK_LEVEL_UNSPECIFIED };
 }
 
 export const CheckReleaseResponse: MessageFns<CheckReleaseResponse> = {
   encode(message: CheckReleaseResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     for (const v of message.results) {
       CheckReleaseResponse_CheckResult.encode(v!, writer.uint32(10).fork()).join();
+    }
+    if (message.affectedRows !== 0) {
+      writer.uint32(16).int32(message.affectedRows);
+    }
+    if (message.riskLevel !== CheckReleaseResponse_RiskLevel.RISK_LEVEL_UNSPECIFIED) {
+      writer.uint32(24).int32(checkReleaseResponse_RiskLevelToNumber(message.riskLevel));
     }
     return writer;
   },
@@ -906,6 +979,22 @@ export const CheckReleaseResponse: MessageFns<CheckReleaseResponse> = {
           message.results.push(CheckReleaseResponse_CheckResult.decode(reader, reader.uint32()));
           continue;
         }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.affectedRows = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.riskLevel = checkReleaseResponse_RiskLevelFromJSON(reader.int32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -920,6 +1009,10 @@ export const CheckReleaseResponse: MessageFns<CheckReleaseResponse> = {
       results: globalThis.Array.isArray(object?.results)
         ? object.results.map((e: any) => CheckReleaseResponse_CheckResult.fromJSON(e))
         : [],
+      affectedRows: isSet(object.affectedRows) ? globalThis.Number(object.affectedRows) : 0,
+      riskLevel: isSet(object.riskLevel)
+        ? checkReleaseResponse_RiskLevelFromJSON(object.riskLevel)
+        : CheckReleaseResponse_RiskLevel.RISK_LEVEL_UNSPECIFIED,
     };
   },
 
@@ -927,6 +1020,12 @@ export const CheckReleaseResponse: MessageFns<CheckReleaseResponse> = {
     const obj: any = {};
     if (message.results?.length) {
       obj.results = message.results.map((e) => CheckReleaseResponse_CheckResult.toJSON(e));
+    }
+    if (message.affectedRows !== 0) {
+      obj.affectedRows = Math.round(message.affectedRows);
+    }
+    if (message.riskLevel !== CheckReleaseResponse_RiskLevel.RISK_LEVEL_UNSPECIFIED) {
+      obj.riskLevel = checkReleaseResponse_RiskLevelToJSON(message.riskLevel);
     }
     return obj;
   },
@@ -937,12 +1036,14 @@ export const CheckReleaseResponse: MessageFns<CheckReleaseResponse> = {
   fromPartial(object: DeepPartial<CheckReleaseResponse>): CheckReleaseResponse {
     const message = createBaseCheckReleaseResponse();
     message.results = object.results?.map((e) => CheckReleaseResponse_CheckResult.fromPartial(e)) || [];
+    message.affectedRows = object.affectedRows ?? 0;
+    message.riskLevel = object.riskLevel ?? CheckReleaseResponse_RiskLevel.RISK_LEVEL_UNSPECIFIED;
     return message;
   },
 };
 
 function createBaseCheckReleaseResponse_CheckResult(): CheckReleaseResponse_CheckResult {
-  return { file: "", target: "", advices: [] };
+  return { file: "", target: "", advices: [], affectedRows: 0 };
 }
 
 export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_CheckResult> = {
@@ -955,6 +1056,9 @@ export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_C
     }
     for (const v of message.advices) {
       Advice.encode(v!, writer.uint32(26).fork()).join();
+    }
+    if (message.affectedRows !== 0) {
+      writer.uint32(32).int32(message.affectedRows);
     }
     return writer;
   },
@@ -990,6 +1094,14 @@ export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_C
           message.advices.push(Advice.decode(reader, reader.uint32()));
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.affectedRows = reader.int32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1004,6 +1116,7 @@ export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_C
       file: isSet(object.file) ? globalThis.String(object.file) : "",
       target: isSet(object.target) ? globalThis.String(object.target) : "",
       advices: globalThis.Array.isArray(object?.advices) ? object.advices.map((e: any) => Advice.fromJSON(e)) : [],
+      affectedRows: isSet(object.affectedRows) ? globalThis.Number(object.affectedRows) : 0,
     };
   },
 
@@ -1018,6 +1131,9 @@ export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_C
     if (message.advices?.length) {
       obj.advices = message.advices.map((e) => Advice.toJSON(e));
     }
+    if (message.affectedRows !== 0) {
+      obj.affectedRows = Math.round(message.affectedRows);
+    }
     return obj;
   },
 
@@ -1029,6 +1145,7 @@ export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_C
     message.file = object.file ?? "";
     message.target = object.target ?? "";
     message.advices = object.advices?.map((e) => Advice.fromPartial(e)) || [];
+    message.affectedRows = object.affectedRows ?? 0;
     return message;
   },
 };

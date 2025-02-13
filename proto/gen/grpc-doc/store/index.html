@@ -616,6 +616,10 @@
               
               
                 <li>
+                  <a href="#bytebase.store.ColumnMetadata.IdentityGeneration"><span class="badge">E</span>ColumnMetadata.IdentityGeneration</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.GenerationMetadata.Type"><span class="badge">E</span>GenerationMetadata.Type</a>
                 </li>
               
@@ -4149,6 +4153,13 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td><p>The generation is for generated columns. </p></td>
                 </tr>
               
+                <tr>
+                  <td>identity_generation</td>
+                  <td><a href="#bytebase.store.ColumnMetadata.IdentityGeneration">ColumnMetadata.IdentityGeneration</a></td>
+                  <td></td>
+                  <td><p>The identity_generation is for identity columns, PG only. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -6141,6 +6152,35 @@ TRUNCATE. </p></td>
         
       
 
+      
+        <h3 id="bytebase.store.ColumnMetadata.IdentityGeneration">ColumnMetadata.IdentityGeneration</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>IDENTITY_GENERATION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ALWAYS</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>BY_DEFAULT</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.store.GenerationMetadata.Type">GenerationMetadata.Type</h3>
         <p></p>

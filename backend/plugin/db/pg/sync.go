@@ -666,6 +666,7 @@ SELECT
 	cols.collation_name,
 	cols.udt_schema,
 	cols.udt_name,
+	cols.identity_generation,
 	pg_catalog.col_description(format('%s.%s', quote_ident(table_schema), quote_ident(table_name))::regclass, cols.ordinal_position::int) as column_comment
 FROM INFORMATION_SCHEMA.COLUMNS AS cols` + fmt.Sprintf(`
 WHERE cols.table_schema NOT IN (%s)
@@ -682,8 +683,8 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 	for rows.Next() {
 		column := &storepb.ColumnMetadata{}
 		var schemaName, tableName, nullable string
-		var characterMaxLength, defaultStr, collation, udtSchema, udtName, comment sql.NullString
-		if err := rows.Scan(&schemaName, &tableName, &column.Name, &column.Type, &characterMaxLength, &column.Position, &defaultStr, &nullable, &collation, &udtSchema, &udtName, &comment); err != nil {
+		var characterMaxLength, defaultStr, collation, udtSchema, udtName, identityGeneration, comment sql.NullString
+		if err := rows.Scan(&schemaName, &tableName, &column.Name, &column.Type, &characterMaxLength, &column.Position, &defaultStr, &nullable, &collation, &udtSchema, &udtName, &identityGeneration, &comment); err != nil {
 			return nil, err
 		}
 		if defaultStr.Valid {
@@ -712,6 +713,14 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 		}
 		column.Collation = collation.String
 		column.Comment = comment.String
+		if identityGeneration.Valid {
+			switch strings.ToUpper(identityGeneration.String) {
+			case "ALWAYS":
+				column.IdentityGeneration = storepb.ColumnMetadata_ALWAYS
+			case "BY DEFAULT":
+				column.IdentityGeneration = storepb.ColumnMetadata_BY_DEFAULT
+			}
+		}
 
 		key := db.TableKey{Schema: schemaName, Table: tableName}
 		columnsMap[key] = append(columnsMap[key], column)
