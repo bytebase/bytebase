@@ -3,6 +3,7 @@ package collector
 import (
 	"context"
 
+	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
@@ -40,7 +41,11 @@ func (c *policyCountCollector) Collect(ctx context.Context) ([]*metric.Metric, e
 		if policy.ResourceType != api.PolicyResourceTypeEnvironment {
 			continue
 		}
-		environment, err := c.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{UID: &policy.ResourceUID})
+		environmentID, err := common.GetEnvironmentID(policy.Resource)
+		if err != nil {
+			return nil, err
+		}
+		environment, err := c.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
 		if err != nil {
 			continue
 		}

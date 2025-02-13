@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -14,7 +13,6 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
@@ -39,12 +37,12 @@ func NewOrgPolicyService(store *store.Store, licenseService enterprise.LicenseSe
 
 // GetPolicy gets a policy in a specific resource.
 func (s *OrgPolicyService) GetPolicy(ctx context.Context, request *v1pb.GetPolicyRequest) (*v1pb.Policy, error) {
-	policy, parent, err := s.findPolicyMessage(ctx, request.Name)
+	policy, _, err := s.findPolicyMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	response, err := s.convertToPolicy(ctx, parent, policy)
+	response, err := s.convertToPolicy(ctx, policy)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -54,14 +52,14 @@ func (s *OrgPolicyService) GetPolicy(ctx context.Context, request *v1pb.GetPolic
 
 // ListPolicies lists policies in a specific resource.
 func (s *OrgPolicyService) ListPolicies(ctx context.Context, request *v1pb.ListPoliciesRequest) (*v1pb.ListPoliciesResponse, error) {
-	resourceType, resourceID, err := s.getPolicyResourceTypeAndID(ctx, request.Parent)
+	resourceType, resource, err := s.getPolicyResourceTypeAndResource(ctx, request.Parent)
 	if err != nil {
 		return nil, err
 	}
 
 	find := &store.FindPolicyMessage{
 		ResourceType: &resourceType,
-		ResourceUID:  resourceID,
+		Resource:     &resource,
 		ShowDeleted:  request.ShowDeleted,
 	}
 
@@ -80,16 +78,7 @@ func (s *OrgPolicyService) ListPolicies(ctx context.Context, request *v1pb.ListP
 
 	response := &v1pb.ListPoliciesResponse{}
 	for _, policy := range policies {
-		parentPath, err := s.getPolicyParentPath(ctx, policy)
-		if err != nil {
-			st := status.Convert(err)
-			if st.Code() == codes.NotFound {
-				slog.Debug("failed to found resource for policy", log.BBError(err), slog.String("resource_type", string(policy.ResourceType)), slog.Int("resource_id", policy.ResourceUID))
-				continue
-			}
-			return nil, err
-		}
-		p, err := s.convertToPolicy(ctx, parentPath, policy)
+		p, err := s.convertToPolicy(ctx, policy)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -134,7 +123,7 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 	patch := &store.UpdatePolicyMessage{
 		ResourceType: policy.ResourceType,
 		Type:         policy.Type,
-		ResourceUID:  policy.ResourceUID,
+		Resource:     policy.Resource,
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
@@ -159,7 +148,7 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, request *v1pb.Updat
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	response, err := s.convertToPolicy(ctx, parent, p)
+	response, err := s.convertToPolicy(ctx, p)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -192,12 +181,12 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 	if strings.HasSuffix(policyParent, "/") {
 		policyParent = policyParent[:(len(policyParent) - 1)]
 	}
-	resourceType, resourceID, err := s.getPolicyResourceTypeAndID(ctx, policyParent)
+	resourceType, resource, err := s.getPolicyResourceTypeAndResource(ctx, policyParent)
 	if err != nil {
 		return nil, policyParent, err
 	}
-	if resourceID == nil && resourceType != api.PolicyResourceTypeWorkspace {
-		return nil, policyParent, status.Errorf(codes.InvalidArgument, "resource id for %s must be specific", resourceType)
+	if resource == "" && resourceType != api.PolicyResourceTypeWorkspace {
+		return nil, policyParent, status.Errorf(codes.InvalidArgument, "resource for %s must be specific", resourceType)
 	}
 
 	policyType, err := convertPolicyType(tokens[1])
@@ -208,7 +197,7 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 	policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
 		ResourceType: &resourceType,
 		Type:         &policyType,
-		ResourceUID:  resourceID,
+		Resource:     &resource,
 	})
 	if err != nil {
 		return nil, policyParent, status.Error(codes.Internal, err.Error())
@@ -220,103 +209,21 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 	return policy, policyParent, nil
 }
 
-func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, requestName string) (api.PolicyResourceType, *int, error) {
-	if requestName == "" {
-		return api.PolicyResourceTypeWorkspace, nil, nil
+func (s *OrgPolicyService) getPolicyResourceTypeAndResource(ctx context.Context, requestName string) (api.PolicyResourceType, string, error) {
+	switch {
+	case requestName == "":
+		return api.PolicyResourceTypeWorkspace, requestName, nil
+	case strings.HasPrefix(requestName, common.ProjectNamePrefix):
+		return api.PolicyResourceTypeProject, requestName, nil
+	case strings.HasPrefix(requestName, common.EnvironmentNamePrefix):
+		return api.PolicyResourceTypeEnvironment, requestName, nil
+	case strings.HasPrefix(requestName, common.InstanceNamePrefix):
+		return api.PolicyResourceTypeInstance, requestName, nil
+	case strings.HasPrefix(requestName, common.InstanceNamePrefix):
+		return api.PolicyResourceTypeDatabase, requestName, nil
+	default:
+		return api.PolicyResourceTypeUnknown, "", status.Errorf(codes.InvalidArgument, "unknown request name %s", requestName)
 	}
-
-	if strings.HasPrefix(requestName, common.ProjectNamePrefix) {
-		projectID, err := common.GetProjectID(requestName)
-		if err != nil {
-			return api.PolicyResourceTypeUnknown, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		if projectID == "-" {
-			return api.PolicyResourceTypeProject, nil, nil
-		}
-		project, err := s.findActiveProject(ctx, &store.FindProjectMessage{
-			ResourceID: &projectID,
-		})
-		if err != nil {
-			return api.PolicyResourceTypeUnknown, nil, status.Error(codes.Internal, err.Error())
-		}
-
-		return api.PolicyResourceTypeProject, &project.UID, nil
-	}
-
-	sections := strings.Split(requestName, "/")
-
-	if strings.HasPrefix(requestName, common.EnvironmentNamePrefix) && len(sections) == 2 {
-		// environment policy request name should be environments/{environment id}
-		environmentID, err := common.GetEnvironmentID(requestName)
-		if err != nil {
-			return api.PolicyResourceTypeUnknown, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		if environmentID == "-" {
-			return api.PolicyResourceTypeEnvironment, nil, nil
-		}
-		environment, err := s.findActiveEnvironment(ctx, &store.FindEnvironmentMessage{
-			ResourceID: &environmentID,
-		})
-		if err != nil {
-			return api.PolicyResourceTypeUnknown, nil, err
-		}
-
-		return api.PolicyResourceTypeEnvironment, &environment.UID, nil
-	}
-
-	if strings.HasPrefix(requestName, common.InstanceNamePrefix) && len(sections) == 2 {
-		// instance policy request name should be instances/{instance id}
-		instanceID, err := common.GetInstanceID(requestName)
-		if err != nil {
-			return api.PolicyResourceTypeUnknown, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		if instanceID == "-" {
-			return api.PolicyResourceTypeInstance, nil, nil
-		}
-
-		instance, err := s.findActiveInstance(ctx, &store.FindInstanceMessage{
-			ResourceID: &instanceID,
-		})
-		if err != nil {
-			return api.PolicyResourceTypeUnknown, nil, err
-		}
-
-		return api.PolicyResourceTypeInstance, &instance.UID, nil
-	}
-
-	if strings.HasPrefix(requestName, common.InstanceNamePrefix) && len(sections) == 4 {
-		// database policy request name should be instances/{instance id}/databases/{db name}
-
-		instanceID, databaseName, err := common.GetInstanceDatabaseID(requestName)
-		if err != nil {
-			return api.PolicyResourceTypeUnknown, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		if databaseName == "-" {
-			return api.PolicyResourceTypeDatabase, nil, nil
-		}
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
-		if err != nil {
-			return api.PolicyResourceTypeUnknown, nil, status.Error(codes.Internal, err.Error())
-		}
-		if instance == nil {
-			return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
-		}
-		database, err := s.findActiveDatabase(ctx, &store.FindDatabaseMessage{
-			InstanceID:          &instanceID,
-			DatabaseName:        &databaseName,
-			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
-		})
-		if err != nil {
-			return api.PolicyResourceTypeUnknown, nil, status.Error(codes.Internal, err.Error())
-		}
-		if database == nil {
-			return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
-		}
-
-		return api.PolicyResourceTypeDatabase, &database.UID, nil
-	}
-
-	return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.InvalidArgument, "unknown request name %s", requestName)
 }
 
 func (s *OrgPolicyService) findActiveProject(ctx context.Context, find *store.FindProjectMessage) (*store.ProjectMessage, error) {
@@ -368,11 +275,11 @@ func (s *OrgPolicyService) findActiveDatabase(ctx context.Context, find *store.F
 }
 
 func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, parent string, policy *v1pb.Policy) (*v1pb.Policy, error) {
-	resourceType, resourceID, err := s.getPolicyResourceTypeAndID(ctx, parent)
+	resourceType, resource, err := s.getPolicyResourceTypeAndResource(ctx, parent)
 	if err != nil {
 		return nil, err
 	}
-	if resourceID == nil && resourceType != api.PolicyResourceTypeWorkspace {
+	if resource == "" && resourceType != api.PolicyResourceTypeWorkspace {
 		return nil, status.Errorf(codes.InvalidArgument, "resource id for %s must be specific", resourceType)
 	}
 
@@ -396,14 +303,12 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, parent strin
 
 	create := &store.PolicyMessage{
 		ResourceType:      resourceType,
+		Resource:          resource,
 		Payload:           payloadStr,
 		Type:              policyType,
 		InheritFromParent: policy.InheritFromParent,
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
-	}
-	if resourceID != nil {
-		create.ResourceUID = *resourceID
 	}
 
 	p, err := s.store.CreatePolicyV2(ctx, create)
@@ -411,51 +316,12 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, parent strin
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	response, err := s.convertToPolicy(ctx, parent, p)
+	response, err := s.convertToPolicy(ctx, p)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return response, nil
-}
-
-func (s *OrgPolicyService) getPolicyParentPath(ctx context.Context, policyMessage *store.PolicyMessage) (string, error) {
-	switch policyMessage.ResourceType {
-	case api.PolicyResourceTypeEnvironment:
-		env, err := s.findActiveEnvironment(ctx, &store.FindEnvironmentMessage{
-			UID: &policyMessage.ResourceUID,
-		})
-		if err != nil {
-			return "", err
-		}
-		return common.FormatEnvironment(env.ResourceID), nil
-	case api.PolicyResourceTypeProject:
-		proj, err := s.findActiveProject(ctx, &store.FindProjectMessage{
-			UID: &policyMessage.ResourceUID,
-		})
-		if err != nil {
-			return "", err
-		}
-		return common.FormatProject(proj.ResourceID), nil
-	case api.PolicyResourceTypeInstance:
-		ins, err := s.findActiveInstance(ctx, &store.FindInstanceMessage{
-			UID: &policyMessage.ResourceUID,
-		})
-		if err != nil {
-			return "", err
-		}
-		return common.FormatInstance(ins.ResourceID), nil
-	case api.PolicyResourceTypeDatabase:
-		db, err := s.findActiveDatabase(ctx, &store.FindDatabaseMessage{
-			UID: &policyMessage.ResourceUID,
-		})
-		if err != nil {
-			return "", err
-		}
-		return common.FormatDatabase(db.InstanceID, db.DatabaseName), nil
-	default:
-		return "", nil
-	}
 }
 
 func validatePolicyType(policyType api.PolicyType, policyResourceType api.PolicyResourceType) error {
@@ -622,7 +488,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 	return "", status.Errorf(codes.InvalidArgument, "invalid policy %v", policy.Type)
 }
 
-func (s *OrgPolicyService) convertToPolicy(ctx context.Context, parentPath string, policyMessage *store.PolicyMessage) (*v1pb.Policy, error) {
+func (s *OrgPolicyService) convertToPolicy(ctx context.Context, policyMessage *store.PolicyMessage) (*v1pb.Policy, error) {
 	resourceType := v1pb.PolicyResourceType_RESOURCE_TYPE_UNSPECIFIED
 	switch policyMessage.ResourceType {
 	case api.PolicyResourceTypeWorkspace:
@@ -725,8 +591,8 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, parentPath strin
 
 	policy.Type = pType
 	policy.Name = fmt.Sprintf("%s%s", common.PolicyNamePrefix, strings.ToLower(pType.String()))
-	if parentPath != "" {
-		policy.Name = fmt.Sprintf("%s/%s", parentPath, policy.Name)
+	if policyMessage.Resource != "" {
+		policy.Name = fmt.Sprintf("%s/%s", policyMessage.Resource, policy.Name)
 	}
 
 	return policy, nil

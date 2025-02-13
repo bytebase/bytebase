@@ -151,7 +151,7 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 	}
 	if _, err := upsertPolicyV2Impl(ctx, tx, &PolicyMessage{
 		ResourceType:      api.PolicyResourceTypeEnvironment,
-		ResourceUID:       uid,
+		Resource:          common.FormatEnvironment(create.ResourceID),
 		Type:              api.PolicyTypeEnvironmentTier,
 		InheritFromParent: true,
 		Payload:           string(payload),
@@ -220,11 +220,12 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, patch *UpdateEnvironmen
 	// TODO(d): consider moving tier to environment table to simplify things.
 	if patch.Protected != nil || patch.Color != nil {
 		resourceType := api.PolicyResourceTypeEnvironment
+		resource := common.FormatEnvironment(patch.ResourceID)
 		policyType := api.PolicyTypeEnvironmentTier
 		policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 			ResourceType: &resourceType,
 			Type:         &policyType,
-			ResourceUID:  &patch.UID,
+			Resource:     &resource,
 		})
 		if err != nil {
 			return nil, err
@@ -253,7 +254,7 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, patch *UpdateEnvironmen
 		}
 		if _, err := upsertPolicyV2Impl(ctx, tx, &PolicyMessage{
 			ResourceType:      resourceType,
-			ResourceUID:       patch.UID,
+			Resource:          resource,
 			Type:              policyType,
 			InheritFromParent: true,
 			Payload:           string(payload),

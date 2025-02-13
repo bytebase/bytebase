@@ -349,7 +349,7 @@ func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamP
 		return nil, status.Errorf(codes.NotFound, "cannot found project %s", projectID)
 	}
 
-	policy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
+	policy, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -375,7 +375,7 @@ func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, request *v1pb.Ba
 		if project == nil {
 			continue
 		}
-		policy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
+		policy, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -422,7 +422,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	policyMessage, err := s.store.GetProjectIamPolicy(ctx, project.UID)
+	policyMessage, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find project iam policy with error: %v", err.Error())
 	}
@@ -436,7 +436,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if _, err := s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
-		ResourceUID:       project.UID,
+		Resource:          common.FormatProject(project.ResourceID),
 		ResourceType:      api.PolicyResourceTypeProject,
 		Payload:           string(policyPayload),
 		Type:              api.PolicyTypeIAM,
@@ -447,7 +447,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	iamPolicyMessage, err := s.store.GetProjectIamPolicy(ctx, project.UID)
+	iamPolicyMessage, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
