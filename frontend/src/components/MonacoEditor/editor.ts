@@ -90,7 +90,7 @@ export const defaultEditorOptions =
       theme: "bb",
       tabSize: 2,
       insertSpaces: true,
-      autoClosingQuotes: "always",
+      autoClosingQuotes: "never",
       detectIndentation: false,
       folding: false,
       automaticLayout: true,
@@ -127,7 +127,7 @@ export const defaultDiffEditorOptions =
       accessibilitySupport: "off",
       renderValidationDecorations: "on",
       theme: "bb",
-      autoClosingQuotes: "always",
+      autoClosingQuotes: "never",
       folding: false,
       automaticLayout: true,
       minimap: {
