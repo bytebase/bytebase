@@ -1329,7 +1329,8 @@ func (c *Completer) quotedIdentifierIfNeeded(s string) string {
 	if strings.ToLower(s) != s {
 		return fmt.Sprintf(`"%s"`, s)
 	}
-
-	// TODO(rebelice): check reserved keywords here.
+	if c.lexer.IsReservedKeyword(strings.ToUpper(s)) {
+		return fmt.Sprintf(`"%s"`, s)
+	}
 	return s
 }
