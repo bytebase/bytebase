@@ -2,6 +2,7 @@ package pg
 
 import (
 	"database/sql"
+	"fmt"
 	"strings"
 	"time"
 
@@ -34,12 +35,14 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	}
 }
 
+var timeTzOID = fmt.Sprintf("%d", pgtype.TimetzOID)
+
 func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
 			// TODO: Fix DatabaseTypeName for 1266, Object ID for TIME WITHOUT TIME ZONE
-			if columnType.DatabaseTypeName() == "TIME" || columnType.DatabaseTypeName() == "1266" || columnType.DatabaseTypeName() == "INTERVAL" {
+			if columnType.DatabaseTypeName() == "TIME" || columnType.DatabaseTypeName() == timeTzOID || columnType.DatabaseTypeName() == "INTERVAL" {
 				return &v1pb.RowValue{
 					Kind: &v1pb.RowValue_StringValue{
 						StringValue: padZeroes(raw.String, 6),
@@ -105,6 +108,9 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 				}
 			}
 			_, scale, _ := columnType.DecimalSize()
+			if scale == -1 {
+				scale = 6
+			}
 			if typeName == "TIMESTAMP" {
 				return &v1pb.RowValue{
 					Kind: &v1pb.RowValue_TimestampValue{
