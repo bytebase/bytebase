@@ -71,27 +71,14 @@ func local_request_DatabaseCatalogService_GetDatabaseCatalog_0(ctx context.Conte
 	return msg, metadata, err
 }
 
-var filter_DatabaseCatalogService_UpdateDatabaseCatalog_0 = &utilities.DoubleArray{Encoding: map[string]int{"catalog": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
-
 func request_DatabaseCatalogService_UpdateDatabaseCatalog_0(ctx context.Context, marshaler runtime.Marshaler, client DatabaseCatalogServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq UpdateDatabaseCatalogRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Catalog); err != nil && !errors.Is(err, io.EOF) {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Catalog); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
-		if fieldMask, err := runtime.FieldMaskFromRequestBody(newReader(), protoReq.Catalog); err != nil {
-			return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-		} else {
-			protoReq.UpdateMask = fieldMask
-		}
 	}
 	val, ok := pathParams["catalog.name"]
 	if !ok {
@@ -100,12 +87,6 @@ func request_DatabaseCatalogService_UpdateDatabaseCatalog_0(ctx context.Context,
 	err = runtime.PopulateFieldFromPath(&protoReq, "catalog.name", val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "catalog.name", err)
-	}
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_DatabaseCatalogService_UpdateDatabaseCatalog_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := client.UpdateDatabaseCatalog(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
@@ -117,19 +98,8 @@ func local_request_DatabaseCatalogService_UpdateDatabaseCatalog_0(ctx context.Co
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Catalog); err != nil && !errors.Is(err, io.EOF) {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Catalog); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if protoReq.UpdateMask == nil || len(protoReq.UpdateMask.GetPaths()) == 0 {
-		if fieldMask, err := runtime.FieldMaskFromRequestBody(newReader(), protoReq.Catalog); err != nil {
-			return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-		} else {
-			protoReq.UpdateMask = fieldMask
-		}
 	}
 	val, ok := pathParams["catalog.name"]
 	if !ok {
@@ -138,12 +108,6 @@ func local_request_DatabaseCatalogService_UpdateDatabaseCatalog_0(ctx context.Co
 	err = runtime.PopulateFieldFromPath(&protoReq, "catalog.name", val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "catalog.name", err)
-	}
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_DatabaseCatalogService_UpdateDatabaseCatalog_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.UpdateDatabaseCatalog(ctx, &protoReq)
 	return msg, metadata, err
