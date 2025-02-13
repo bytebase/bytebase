@@ -55,8 +55,8 @@ func createAuditLog(ctx context.Context, request, response any, method string, s
 	if u, ok := ctx.Value(common.UserContextKey).(*store.UserMessage); ok {
 		user = common.FormatUserUID(u.ID)
 	} else {
-		if loginResponse, ok := response.(*v1pb.LoginResponse); ok && loginResponse.User != nil {
-			user = loginResponse.User.Name
+		if loginResponse, ok := response.(*v1pb.LoginResponse); ok {
+			user = loginResponse.GetUser().GetName()
 		}
 	}
 
