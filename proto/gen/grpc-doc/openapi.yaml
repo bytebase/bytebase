@@ -1423,12 +1423,6 @@ paths:
                   required: true
                   schema:
                     type: string
-                - name: updateMask
-                  in: query
-                  description: The list of fields to update.
-                  schema:
-                    type: string
-                    format: field-mask
             requestBody:
                 content:
                     application/json:

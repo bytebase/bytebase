@@ -46,9 +46,6 @@ message UpdateDatabaseCatalogRequest {
   // The catalog's `name` field is used to identify the database catalog to update.
   // Format: instances/{instance}/databases/{database}/catalog
   DatabaseCatalog catalog = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The list of fields to update.
-  google.protobuf.FieldMask update_mask = 2;
 }
 
 message DatabaseCatalog {
