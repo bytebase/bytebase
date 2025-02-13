@@ -61,7 +61,7 @@ func (s *Store) ListChangelists(ctx context.Context, find *FindChangelistMessage
 	where, args := []string{"TRUE"}, []any{}
 
 	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("changelist.project = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("changelist.name = $%d", len(args)+1)), append(args, *v)
@@ -208,8 +208,7 @@ func (s *Store) DeleteChangelist(ctx context.Context, projectID, resourceID stri
 
 	if _, err := tx.ExecContext(ctx, `
 		DELETE FROM changelist
-		USING project
-		WHERE changelist.project_id = project.id AND project.resource_id = $1 AND changelist.name = $2;`,
+		WHERE changelist.project = $1 AND changelist.name = $2;`,
 		projectID, resourceID); err != nil {
 		return err
 	}
