@@ -1139,7 +1139,7 @@ func (s *SQLService) accessCheck(
 					return status.Errorf(codes.Internal, "failed to get workspace iam policy, error: %v", err)
 				}
 				// Allow query databases across different projects.
-				projectPolicy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
+				projectPolicy, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
 				if err != nil {
 					return status.Error(codes.Internal, err.Error())
 				}
@@ -1945,10 +1945,10 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 	}
 	dataSourceQueryPolicyType := api.PolicyTypeDataSourceQuery
 	environmentResourceType := api.PolicyResourceTypeEnvironment
-	projectResourceType := api.PolicyResourceTypeProject
+	environmentResource := common.FormatEnvironment(environment.ResourceID)
 	environmentPolicy, err := storeInstance.GetPolicyV2(ctx, &store.FindPolicyMessage{
 		ResourceType: &environmentResourceType,
-		ResourceUID:  &environment.UID,
+		Resource:     &environmentResource,
 		Type:         &dataSourceQueryPolicyType,
 	})
 	if err != nil {
@@ -1962,16 +1962,11 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 		envAdminDataSourceRestriction = envPayload.DataSourceQueryPolicy.GetAdminDataSourceRestriction()
 	}
 
-	project, err := storeInstance.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get project")
-	}
-	if project == nil {
-		return nil, errors.Errorf("project %q not found", database.ProjectID)
-	}
+	projectResourceType := api.PolicyResourceTypeProject
+	projectResource := common.FormatProject(database.ProjectID)
 	projectPolicy, err := storeInstance.GetPolicyV2(ctx, &store.FindPolicyMessage{
 		ResourceType: &projectResourceType,
-		ResourceUID:  &project.UID,
+		Resource:     &projectResource,
 		Type:         &dataSourceQueryPolicyType,
 	})
 	if err != nil {
@@ -2017,10 +2012,11 @@ func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store,
 		return status.Errorf(codes.NotFound, "environment %q not found", database.EffectiveEnvironmentID)
 	}
 	resourceType := api.PolicyResourceTypeEnvironment
+	environmentResource := common.FormatEnvironment(environment.ResourceID)
 	policyType := api.PolicyTypeDataSourceQuery
 	dataSourceQueryPolicy, err := storeInstance.GetPolicyV2(ctx, &store.FindPolicyMessage{
-		ResourceUID:  &environment.UID,
 		ResourceType: &resourceType,
+		Resource:     &environmentResource,
 		Type:         &policyType,
 	})
 	if err != nil {

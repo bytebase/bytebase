@@ -727,7 +727,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		return nil, status.Errorf(codes.Internal, "failed to find user by id %v", principalID)
 	}
 
-	policy, err := s.store.GetProjectIamPolicy(ctx, issue.Project.UID)
+	policy, err := s.store.GetProjectIamPolicy(ctx, issue.Project.ResourceID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get project policy, error: %v", err)
 	}
@@ -948,7 +948,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 		return nil, status.Errorf(codes.Internal, "failed to find user by id %v", principalID)
 	}
 
-	policy, err := s.store.GetProjectIamPolicy(ctx, issue.Project.UID)
+	policy, err := s.store.GetProjectIamPolicy(ctx, issue.Project.ResourceID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get project policy, error: %v", err)
 	}

@@ -177,7 +177,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	}
 
 	_, err = s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
-		ResourceUID:       api.DefaultProdEnvironmentUID,
+		Resource:          common.FormatEnvironment(api.DefaultProdEnvironmentID),
 		ResourceType:      api.PolicyResourceTypeEnvironment,
 		Payload:           string(policyPayload),
 		Type:              api.PolicyTypeTag,

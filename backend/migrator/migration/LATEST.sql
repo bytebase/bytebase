@@ -70,8 +70,7 @@ CREATE UNIQUE INDEX idx_environment_unique_resource_id ON environment(resource_i
 ALTER SEQUENCE environment_id_seq RESTART WITH 101;
 
 -- Policy
--- policy stores the policies for each environment.
--- Policies are associated with environments. Since we may have policies not associated with environment later, we name the table policy.
+-- policy stores the policies for each resources.
 CREATE TYPE resource_type AS ENUM ('WORKSPACE', 'ENVIRONMENT', 'PROJECT', 'INSTANCE', 'DATABASE');
 
 CREATE TABLE policy (
@@ -81,11 +80,11 @@ CREATE TABLE policy (
     type text NOT NULL CHECK (type LIKE 'bb.policy.%'),
     payload jsonb NOT NULL DEFAULT '{}',
     resource_type resource_type NOT NULL,
-    resource_id integer NOT NULL,
+    resource TEXT NOT NULL,
     inherit_from_parent boolean NOT NULL DEFAULT TRUE
 );
 
-CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_id_type ON policy(resource_type, resource_id, type);
+CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_type ON policy(resource_type, resource, type);
 
 ALTER SEQUENCE policy_id_seq RESTART WITH 101;
 

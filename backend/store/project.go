@@ -181,8 +181,8 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 		return nil, err
 	}
 	if _, err := s.CreatePolicyV2(ctx, &PolicyMessage{
-		ResourceUID:       project.UID,
 		ResourceType:      api.PolicyResourceTypeProject,
+		Resource:          common.FormatProject(project.ResourceID),
 		Payload:           string(policyPayload),
 		Type:              api.PolicyTypeIAM,
 		InheritFromParent: false,

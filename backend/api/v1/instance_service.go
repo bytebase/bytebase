@@ -361,7 +361,7 @@ func (s *InstanceService) syncSlowQueriesForInstance(ctx context.Context, instan
 		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", instanceName)
 	}
 
-	slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, api.PolicyResourceTypeInstance, instance.UID)
+	slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, instance.ResourceID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -475,7 +475,7 @@ func (s *InstanceService) syncSlowQueriesForProject(ctx context.Context, project
 				continue
 			}
 
-			slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, api.PolicyResourceTypeInstance, instance.UID)
+			slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, instance.ResourceID)
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
