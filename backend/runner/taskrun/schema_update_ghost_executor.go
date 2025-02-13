@@ -17,7 +17,7 @@ type SchemaUpdateGhostExecutor struct {
 }
 
 // TODO(p0ny): implement.
-func (*SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, taskContext context.Context, task *store.TaskMessage, _ int) (terminated bool, result *storepb.TaskRunResult, err error) {
+func (*SchemaUpdateGhostExecutor) RunOnce(_ context.Context, _ context.Context, _ *store.TaskMessage, _ int) (terminated bool, result *storepb.TaskRunResult, err error) {
 	return true, &storepb.TaskRunResult{
 		Detail: "TBD",
 	}, nil
