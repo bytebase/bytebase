@@ -386,7 +386,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 	case storepb.PlanConfig_ChangeDatabaseConfig_BASELINE:
 		payload := &storepb.TaskDatabaseUpdatePayload{
 			SpecId:        spec.Id,
-			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
+			SchemaVersion: c.SchemaVersion,
 			TaskReleaseSource: &storepb.TaskReleaseSource{
 				File: spec.SpecReleaseSource.GetFile(),
 			},
@@ -417,7 +417,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		payload := &storepb.TaskDatabaseUpdatePayload{
 			SpecId:        spec.Id,
 			SheetId:       int32(sheetUID),
-			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
+			SchemaVersion: c.SchemaVersion,
 			TaskReleaseSource: &storepb.TaskReleaseSource{
 				File: spec.SpecReleaseSource.GetFile(),
 			},
@@ -448,7 +448,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		payload := &storepb.TaskDatabaseUpdatePayload{
 			SpecId:        spec.Id,
 			SheetId:       int32(sheetUID),
-			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
+			SchemaVersion: c.SchemaVersion,
 			TaskReleaseSource: &storepb.TaskReleaseSource{
 				File: spec.SpecReleaseSource.GetFile(),
 			},
@@ -484,7 +484,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		payloadSync := &storepb.TaskDatabaseUpdatePayload{
 			SpecId:        spec.Id,
 			SheetId:       int32(sheetUID),
-			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
+			SchemaVersion: c.SchemaVersion,
 			Flags:         c.GhostFlags,
 			TaskReleaseSource: &storepb.TaskReleaseSource{
 				File: spec.SpecReleaseSource.GetFile(),
@@ -547,7 +547,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		payload := &storepb.TaskDatabaseUpdatePayload{
 			SpecId:                spec.Id,
 			SheetId:               int32(sheetUID),
-			SchemaVersion:         getOrDefaultSchemaVersion(c.SchemaVersion),
+			SchemaVersion:         c.SchemaVersion,
 			PreUpdateBackupDetail: preUpdateBackupDetail,
 			TaskReleaseSource: &storepb.TaskReleaseSource{
 				File: spec.SpecReleaseSource.GetFile(),
@@ -721,11 +721,4 @@ func getCreateDatabaseStatement(dbType storepb.Engine, c *storepb.PlanConfig_Cre
 		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
 	}
 	return "", errors.Errorf("unsupported database type %s", dbType)
-}
-
-func getOrDefaultSchemaVersion(v string) string {
-	if v != "" {
-		return v
-	}
-	return ""
 }
