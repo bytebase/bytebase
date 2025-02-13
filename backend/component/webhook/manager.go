@@ -202,7 +202,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 			}
 			for _, projectRole := range u.RolloutPolicy.GetProjectRoles() {
 				role := api.Role(strings.TrimPrefix(projectRole, "roles/"))
-				usersGetters = append(usersGetters, getUsersFromProjectRole(m.store, role, e.Project.UID))
+				usersGetters = append(usersGetters, getUsersFromProjectRole(m.store, role, e.Project.ResourceID))
 			}
 			for _, issueRole := range u.RolloutPolicy.GetIssueRoles() {
 				switch issueRole {
@@ -269,15 +269,15 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 			case storepb.ApprovalNode_WORKSPACE_DBA:
 				usersGetter = m.getUsersFromWorkspaceRole(api.WorkspaceDBA)
 			case storepb.ApprovalNode_PROJECT_OWNER:
-				usersGetter = getUsersFromProjectRole(m.store, api.ProjectOwner, e.Project.UID)
+				usersGetter = getUsersFromProjectRole(m.store, api.ProjectOwner, e.Project.ResourceID)
 			case storepb.ApprovalNode_PROJECT_MEMBER:
-				usersGetter = getUsersFromProjectRole(m.store, api.ProjectDeveloper, e.Project.UID)
+				usersGetter = getUsersFromProjectRole(m.store, api.ProjectDeveloper, e.Project.ResourceID)
 			default:
 				return nil, errors.Errorf("invalid group value")
 			}
 		case *storepb.ApprovalNode_Role:
 			role := api.Role(strings.TrimPrefix(val.Role, "roles/"))
-			usersGetter = getUsersFromProjectRole(m.store, role, e.Project.UID)
+			usersGetter = getUsersFromProjectRole(m.store, role, e.Project.ResourceID)
 		case *storepb.ApprovalNode_ExternalNodeId:
 			usersGetter = func(_ context.Context) ([]*store.UserMessage, error) {
 				return nil, nil
@@ -400,9 +400,9 @@ func (m *Manager) getUsersFromWorkspaceRole(role api.Role) func(context.Context)
 	}
 }
 
-func getUsersFromProjectRole(s *store.Store, role api.Role, projectUID int) func(context.Context) ([]*store.UserMessage, error) {
+func getUsersFromProjectRole(s *store.Store, role api.Role, projectID string) func(context.Context) ([]*store.UserMessage, error) {
 	return func(ctx context.Context) ([]*store.UserMessage, error) {
-		policyMessage, err := s.GetProjectIamPolicy(ctx, projectUID)
+		policyMessage, err := s.GetProjectIamPolicy(ctx, projectID)
 		if err != nil {
 			return nil, err
 		}

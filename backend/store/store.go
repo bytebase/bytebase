@@ -198,8 +198,8 @@ func getInstanceCacheKey(instanceID string) string {
 	return instanceID
 }
 
-func getPolicyCacheKey(resourceType api.PolicyResourceType, resourceUID int, policyType api.PolicyType) string {
-	return fmt.Sprintf("policies/%s/%d/%s", resourceType, resourceUID, policyType)
+func getPolicyCacheKey(resourceType api.PolicyResourceType, resource string, policyType api.PolicyType) string {
+	return fmt.Sprintf("policies/%s/%s/%s", resourceType, resource, policyType)
 }
 
 func getDatabaseCacheKey(instanceID, databaseName string) string {

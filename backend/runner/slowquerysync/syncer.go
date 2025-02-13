@@ -108,7 +108,7 @@ func (s *Syncer) syncSlowQuery(ctx context.Context, message *state.InstanceSlowQ
 }
 
 func (s *Syncer) syncInstanceSlowQuery(ctx context.Context, instance *store.InstanceMessage) error {
-	slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, api.PolicyResourceTypeInstance, instance.UID)
+	slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, instance.ResourceID)
 	if err != nil {
 		return err
 	}
