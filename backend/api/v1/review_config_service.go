@@ -217,7 +217,7 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 				ShowDeleted: false,
 			})
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get environment %d with error: %v", environmentID, err)
+				return nil, status.Errorf(codes.Internal, "failed to get environment %s with error: %v", environmentID, err)
 			}
 			if environment == nil {
 				continue
@@ -233,7 +233,7 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 				ShowDeleted: false,
 			})
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get project %d with error: %v", projectID, err)
+				return nil, status.Errorf(codes.Internal, "failed to get project %s with error: %v", projectID, err)
 			}
 			if project == nil {
 				continue
@@ -250,7 +250,7 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 				ShowDeleted:  false,
 			})
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get database %d with error: %v", policy.Resource, err)
+				return nil, status.Errorf(codes.Internal, "failed to get database %s with error: %v", policy.Resource, err)
 			}
 			if database == nil {
 				continue

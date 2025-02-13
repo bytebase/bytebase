@@ -52,14 +52,14 @@ func (s *OrgPolicyService) GetPolicy(ctx context.Context, request *v1pb.GetPolic
 
 // ListPolicies lists policies in a specific resource.
 func (s *OrgPolicyService) ListPolicies(ctx context.Context, request *v1pb.ListPoliciesRequest) (*v1pb.ListPoliciesResponse, error) {
-	resourceType, resource, err := s.getPolicyResourceTypeAndResource(ctx, request.Parent)
+	resourceType, resource, err := getPolicyResourceTypeAndResource(request.Parent)
 	if err != nil {
 		return nil, err
 	}
 
 	find := &store.FindPolicyMessage{
 		ResourceType: &resourceType,
-		Resource:     &resource,
+		Resource:     resource,
 		ShowDeleted:  request.ShowDeleted,
 	}
 
@@ -181,11 +181,11 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 	if strings.HasSuffix(policyParent, "/") {
 		policyParent = policyParent[:(len(policyParent) - 1)]
 	}
-	resourceType, resource, err := s.getPolicyResourceTypeAndResource(ctx, policyParent)
+	resourceType, resource, err := getPolicyResourceTypeAndResource(policyParent)
 	if err != nil {
 		return nil, policyParent, err
 	}
-	if resource == "" && resourceType != api.PolicyResourceTypeWorkspace {
+	if resource == nil && resourceType != api.PolicyResourceTypeWorkspace {
 		return nil, policyParent, status.Errorf(codes.InvalidArgument, "resource for %s must be specific", resourceType)
 	}
 
@@ -197,7 +197,7 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 	policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
 		ResourceType: &resourceType,
 		Type:         &policyType,
-		Resource:     &resource,
+		Resource:     resource,
 	})
 	if err != nil {
 		return nil, policyParent, status.Error(codes.Internal, err.Error())
@@ -209,78 +209,66 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 	return policy, policyParent, nil
 }
 
-func (s *OrgPolicyService) getPolicyResourceTypeAndResource(ctx context.Context, requestName string) (api.PolicyResourceType, string, error) {
-	switch {
-	case requestName == "":
-		return api.PolicyResourceTypeWorkspace, requestName, nil
-	case strings.HasPrefix(requestName, common.ProjectNamePrefix):
-		return api.PolicyResourceTypeProject, requestName, nil
-	case strings.HasPrefix(requestName, common.EnvironmentNamePrefix):
-		return api.PolicyResourceTypeEnvironment, requestName, nil
-	case strings.HasPrefix(requestName, common.InstanceNamePrefix):
-		return api.PolicyResourceTypeInstance, requestName, nil
-	case strings.HasPrefix(requestName, common.InstanceNamePrefix):
-		return api.PolicyResourceTypeDatabase, requestName, nil
-	default:
-		return api.PolicyResourceTypeUnknown, "", status.Errorf(codes.InvalidArgument, "unknown request name %s", requestName)
+func getPolicyResourceTypeAndResource(requestName string) (api.PolicyResourceType, *string, error) {
+	if requestName == "" {
+		return api.PolicyResourceTypeWorkspace, nil, nil
 	}
-}
 
-func (s *OrgPolicyService) findActiveProject(ctx context.Context, find *store.FindProjectMessage) (*store.ProjectMessage, error) {
-	find.ShowDeleted = false
-	project, err := s.store.GetProjectV2(ctx, find)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+	if strings.HasPrefix(requestName, common.ProjectNamePrefix) {
+		projectID, err := common.GetProjectID(requestName)
+		if err != nil {
+			return api.PolicyResourceTypeUnknown, nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		if projectID == "-" {
+			return api.PolicyResourceTypeProject, nil, nil
+		}
+		return api.PolicyResourceTypeProject, &requestName, nil
 	}
-	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project not found")
-	}
-	return project, nil
-}
 
-func (s *OrgPolicyService) findActiveEnvironment(ctx context.Context, find *store.FindEnvironmentMessage) (*store.EnvironmentMessage, error) {
-	find.ShowDeleted = false
-	environment, err := s.store.GetEnvironmentV2(ctx, find)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+	if strings.HasPrefix(requestName, common.EnvironmentNamePrefix) {
+		// environment policy request name should be environments/{environment id}
+		environmentID, err := common.GetEnvironmentID(requestName)
+		if err != nil {
+			return api.PolicyResourceTypeUnknown, nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		if environmentID == "-" {
+			return api.PolicyResourceTypeEnvironment, nil, nil
+		}
+		return api.PolicyResourceTypeEnvironment, &requestName, nil
 	}
-	if environment == nil {
-		return nil, status.Errorf(codes.NotFound, "environment %v not found", find)
-	}
-	return environment, nil
-}
 
-func (s *OrgPolicyService) findActiveInstance(ctx context.Context, find *store.FindInstanceMessage) (*store.InstanceMessage, error) {
-	find.ShowDeleted = false
-	instance, err := s.store.GetInstanceV2(ctx, find)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+	sections := strings.Split(requestName, "/")
+	if strings.HasPrefix(requestName, common.InstanceNamePrefix) && len(sections) == 2 {
+		// instance policy request name should be instances/{instance id}
+		instanceID, err := common.GetInstanceID(requestName)
+		if err != nil {
+			return api.PolicyResourceTypeUnknown, nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		if instanceID == "-" {
+			return api.PolicyResourceTypeInstance, nil, nil
+		}
+		return api.PolicyResourceTypeInstance, &requestName, nil
 	}
-	if instance == nil {
-		return nil, status.Errorf(codes.NotFound, "instance %v not found", find)
-	}
-	return instance, nil
-}
 
-func (s *OrgPolicyService) findActiveDatabase(ctx context.Context, find *store.FindDatabaseMessage) (*store.DatabaseMessage, error) {
-	find.ShowDeleted = false
-	database, err := s.store.GetDatabaseV2(ctx, find)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+	if strings.HasPrefix(requestName, common.InstanceNamePrefix) && len(sections) == 4 {
+		// database policy request name should be instances/{instance id}/databases/{db name}
+		_, databaseName, err := common.GetInstanceDatabaseID(requestName)
+		if err != nil {
+			return api.PolicyResourceTypeUnknown, nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		if databaseName == "-" {
+			return api.PolicyResourceTypeDatabase, nil, nil
+		}
+		return api.PolicyResourceTypeDatabase, &requestName, nil
 	}
-	if database == nil {
-		return nil, status.Errorf(codes.NotFound, "database %v not found", find)
-	}
-	return database, nil
+
+	return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.InvalidArgument, "unknown request name %s", requestName)
 }
 
 func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, parent string, policy *v1pb.Policy) (*v1pb.Policy, error) {
-	resourceType, resource, err := s.getPolicyResourceTypeAndResource(ctx, parent)
+	resourceType, _, err := getPolicyResourceTypeAndResource(parent)
 	if err != nil {
 		return nil, err
-	}
-	if resource == "" && resourceType != api.PolicyResourceTypeWorkspace {
-		return nil, status.Errorf(codes.InvalidArgument, "resource id for %s must be specific", resourceType)
 	}
 
 	policyType, err := convertPolicyType(policy.Type.String())
@@ -303,7 +291,7 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, parent strin
 
 	create := &store.PolicyMessage{
 		ResourceType:      resourceType,
-		Resource:          resource,
+		Resource:          parent,
 		Payload:           payloadStr,
 		Type:              policyType,
 		InheritFromParent: policy.InheritFromParent,
