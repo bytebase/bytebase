@@ -180,7 +180,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 			continue
 		}
 
-		policyMessage, err := s.store.GetProjectIamPolicy(ctx, project.UID)
+		policyMessage, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
 		if err != nil {
 			slog.Error("Failed to get project policy", log.BBError(err))
 			continue
@@ -281,7 +281,11 @@ func (s *SlowQueryWeeklyMailSender) generateWeeklyEmailForProject(ctx context.Co
 
 	instanceMap := make(map[string]*store.InstanceMessage)
 	for _, policy := range policies {
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &policy.ResourceUID})
+		instanceID, err := common.GetInstanceID(policy.Resource)
+		if err != nil {
+			return "", err
+		}
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 		if err != nil {
 			slog.Warn("Failed to get instance", log.BBError(err))
 			continue
@@ -515,7 +519,11 @@ func (s *SlowQueryWeeklyMailSender) generateWeeklyEmailForDBA(ctx context.Contex
 	instanceMap := make(map[string][]*store.InstanceMessage)
 
 	for _, policy := range policies {
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &policy.ResourceUID})
+		instanceID, err := common.GetInstanceID(policy.Resource)
+		if err != nil {
+			return "", err
+		}
+		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 		if err != nil {
 			slog.Warn("Failed to get instance", log.BBError(err))
 			continue

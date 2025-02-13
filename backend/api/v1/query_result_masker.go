@@ -182,7 +182,7 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 	// If we cannot find the maskingExceptionPolicy before, we need to find it from the database and record it in cache.
 
 	if _, ok := maskingExceptionPolicyMap[database.ProjectID]; !ok {
-		policy, err := s.store.GetMaskingExceptionPolicyByProjectUID(ctx, project.UID)
+		policy, err := s.store.GetMaskingExceptionPolicyByProjectUID(ctx, project.ResourceID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to find masking exception policy for project %q", project.ResourceID)
 		}

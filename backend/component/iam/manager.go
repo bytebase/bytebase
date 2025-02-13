@@ -79,7 +79,7 @@ func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store
 			if project == nil {
 				return false, errors.Errorf("project %q not found", projectID)
 			}
-			policyMessage, err := m.store.GetProjectIamPolicy(ctx, project.UID)
+			policyMessage, err := m.store.GetProjectIamPolicy(ctx, project.ResourceID)
 			if err != nil {
 				return false, err
 			}
