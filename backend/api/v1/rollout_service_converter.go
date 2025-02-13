@@ -704,7 +704,7 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 		return convertToTaskFromDatabaseCreate(ctx, s, project, task)
 	case api.TaskDatabaseSchemaBaseline:
 		return convertToTaskFromSchemaBaseline(ctx, s, project, task)
-	case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync:
+	case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhost, api.TaskDatabaseSchemaUpdateGhostSync:
 		return convertToTaskFromSchemaUpdate(ctx, s, project, task)
 	case api.TaskDatabaseSchemaUpdateGhostCutover:
 		return convertToTaskFromSchemaUpdateGhostCutover(ctx, s, project, task)
