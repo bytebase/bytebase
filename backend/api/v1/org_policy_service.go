@@ -237,8 +237,7 @@ func getPolicyResourceTypeAndResource(requestName string) (api.PolicyResourceTyp
 		return api.PolicyResourceTypeEnvironment, &requestName, nil
 	}
 
-	sections := strings.Split(requestName, "/")
-	if strings.HasPrefix(requestName, common.InstanceNamePrefix) && len(sections) == 2 {
+	if strings.HasPrefix(requestName, common.InstanceNamePrefix) {
 		// instance policy request name should be instances/{instance id}
 		instanceID, err := common.GetInstanceID(requestName)
 		if err != nil {
