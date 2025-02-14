@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import type { InjectionKey, Ref, ComputedRef } from "vue";
 import { inject, provide } from "vue";
 import type { ComposedIssue, ReviewFlow } from "@/types";
-import { type User } from "@/types/proto/v1/auth_service";
+import { type User } from "@/types/proto/v1/user_service";
 import type { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
 import type { Stage, Task } from "@/types/proto/v1/rollout_service";

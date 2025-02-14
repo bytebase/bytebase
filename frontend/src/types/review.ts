@@ -1,4 +1,4 @@
-import { type User } from "@/types/proto/v1/auth_service";
+import { type User } from "@/types/proto/v1/user_service";
 import type { ApprovalStep, Issue_Approver } from "./proto/v1/issue_service";
 import { ApprovalTemplate } from "./proto/v1/issue_service";
 

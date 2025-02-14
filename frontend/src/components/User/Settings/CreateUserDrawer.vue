@@ -171,7 +171,7 @@ import {
   UpdateUserRequest,
   UserType,
   User,
-} from "@/types/proto/v1/auth_service";
+} from "@/types/proto/v1/user_service";
 import { State } from "@/types/proto/v1/common";
 import UserPassword from "./UserPassword.vue";
 
