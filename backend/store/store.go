@@ -21,13 +21,11 @@ type Store struct {
 	userIDCache            *lru.Cache[int, *UserMessage]
 	userEmailCache         *lru.Cache[string, *UserMessage]
 	environmentCache       *lru.Cache[string, *EnvironmentMessage]
-	environmentIDCache     *lru.Cache[int, *EnvironmentMessage]
 	instanceCache          *lru.Cache[string, *InstanceMessage]
 	instanceIDCache        *lru.Cache[int, *InstanceMessage]
 	databaseCache          *lru.Cache[string, *DatabaseMessage]
 	databaseIDCache        *lru.Cache[int, *DatabaseMessage]
 	projectCache           *lru.Cache[string, *ProjectMessage]
-	projectIDCache         *lru.Cache[int, *ProjectMessage]
 	projectDeploymentCache *lru.Cache[string, *DeploymentConfigMessage]
 	policyCache            *lru.Cache[string, *PolicyMessage]
 	issueCache             *lru.Cache[int, *IssueMessage]
@@ -38,7 +36,7 @@ type Store struct {
 	risksCache             *lru.Cache[int, []*RiskMessage] // Use 0 as the key.
 	databaseGroupCache     *lru.Cache[string, *DatabaseGroupMessage]
 	databaseGroupIDCache   *lru.Cache[int64, *DatabaseGroupMessage]
-	vcsIDCache             *lru.Cache[int, *VCSProviderMessage]
+	vcsIDCache             *lru.Cache[string, *VCSProviderMessage]
 	rolesCache             *lru.Cache[string, *RoleMessage]
 	groupCache             *lru.Cache[string, *GroupMessage]
 	sheetCache             *lru.Cache[int, *SheetMessage]
@@ -62,10 +60,6 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	environmentIDCache, err := lru.New[int, *EnvironmentMessage](32)
-	if err != nil {
-		return nil, err
-	}
 	instanceCache, err := lru.New[string, *InstanceMessage](32768)
 	if err != nil {
 		return nil, err
@@ -83,10 +77,6 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 		return nil, err
 	}
 	projectCache, err := lru.New[string, *ProjectMessage](32768)
-	if err != nil {
-		return nil, err
-	}
-	projectIDCache, err := lru.New[int, *ProjectMessage](32768)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +120,7 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	vcsIDCache, err := lru.New[int, *VCSProviderMessage](1024)
+	vcsIDCache, err := lru.New[string, *VCSProviderMessage](1024)
 	if err != nil {
 		return nil, err
 	}
@@ -163,13 +153,11 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 		userIDCache:            userIDCache,
 		userEmailCache:         userEmailCache,
 		environmentCache:       environmentCache,
-		environmentIDCache:     environmentIDCache,
 		instanceCache:          instanceCache,
 		instanceIDCache:        instanceIDCache,
 		databaseCache:          databaseCache,
 		databaseIDCache:        databaseIDCache,
 		projectCache:           projectCache,
-		projectIDCache:         projectIDCache,
 		projectDeploymentCache: projectDeploymentCache,
 		policyCache:            policyCache,
 		issueCache:             issueCache,

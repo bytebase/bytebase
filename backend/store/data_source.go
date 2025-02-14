@@ -42,8 +42,6 @@ type DataSourceMessage struct {
 	SASLConfig *storepb.SASLConfig
 	// Authentication
 	AuthenticationPrivateKeyObfuscated string
-	// (deprecated) Output only.
-	UID int
 	// external secret
 	ExternalSecret           *storepb.DataSourceExternalSecret
 	AuthenticationType       storepb.DataSourceOptions_AuthenticationType
@@ -90,7 +88,6 @@ func (m *DataSourceMessage) Copy() *DataSourceMessage {
 		SSHUser:                            m.SSHUser,
 		SSHObfuscatedPassword:              m.SSHObfuscatedPassword,
 		SSHObfuscatedPrivateKey:            m.SSHObfuscatedPrivateKey,
-		UID:                                m.UID,
 		AuthenticationPrivateKeyObfuscated: m.AuthenticationPrivateKeyObfuscated,
 		ExternalSecret:                     m.ExternalSecret,
 		AuthenticationType:                 m.AuthenticationType,
@@ -172,7 +169,6 @@ func (*Store) listInstanceDataSourceMap(ctx context.Context, tx *Tx, find *FindD
 	instanceDataSourcesMap := make(map[string][]*DataSourceMessage)
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			id,
 			instance,
 			name,
 			type,
@@ -198,7 +194,6 @@ func (*Store) listInstanceDataSourceMap(ctx context.Context, tx *Tx, find *FindD
 		var instanceID string
 		var dataSourceMessage DataSourceMessage
 		if err := rows.Scan(
-			&dataSourceMessage.UID,
 			&instanceID,
 			&dataSourceMessage.ID,
 			&dataSourceMessage.Type,
