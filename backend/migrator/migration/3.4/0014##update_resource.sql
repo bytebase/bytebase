@@ -1,0 +1,1 @@
+UPDATE policy SET resource = REPLACE(resource, 'projectss/', 'projects/');

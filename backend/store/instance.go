@@ -19,14 +19,13 @@ import (
 
 // InstanceMessage is the message for instance.
 type InstanceMessage struct {
-	ResourceID   string
-	Title        string
-	Engine       storepb.Engine
-	ExternalLink string
-	DataSources  []*DataSourceMessage
-	Activation   bool
-	Options      *storepb.InstanceOptions
-	// Output only.
+	ResourceID    string
+	Title         string
+	Engine        storepb.Engine
+	ExternalLink  string
+	DataSources   []*DataSourceMessage
+	Activation    bool
+	Options       *storepb.InstanceOptions
 	EnvironmentID string
 	UID           int
 	Deleted       bool
@@ -36,6 +35,8 @@ type InstanceMessage struct {
 
 // UpdateInstanceMessage is the message for updating an instance.
 type UpdateInstanceMessage struct {
+	ResourceID string
+
 	Title         *string
 	ExternalLink  *string
 	Deleted       *bool
@@ -47,9 +48,6 @@ type UpdateInstanceMessage struct {
 	Metadata            *storepb.InstanceMetadata
 	UpdateEnvironmentID bool
 	EnvironmentID       string
-
-	// Output only.
-	ResourceID string
 }
 
 // FindInstanceMessage is the message for finding instances.
