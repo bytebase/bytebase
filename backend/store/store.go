@@ -26,7 +26,6 @@ type Store struct {
 	databaseCache          *lru.Cache[string, *DatabaseMessage]
 	databaseIDCache        *lru.Cache[int, *DatabaseMessage]
 	projectCache           *lru.Cache[string, *ProjectMessage]
-	projectIDCache         *lru.Cache[int, *ProjectMessage]
 	projectDeploymentCache *lru.Cache[string, *DeploymentConfigMessage]
 	policyCache            *lru.Cache[string, *PolicyMessage]
 	issueCache             *lru.Cache[int, *IssueMessage]
@@ -78,10 +77,6 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 		return nil, err
 	}
 	projectCache, err := lru.New[string, *ProjectMessage](32768)
-	if err != nil {
-		return nil, err
-	}
-	projectIDCache, err := lru.New[int, *ProjectMessage](32768)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +158,6 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 		databaseCache:          databaseCache,
 		databaseIDCache:        databaseIDCache,
 		projectCache:           projectCache,
-		projectIDCache:         projectIDCache,
 		projectDeploymentCache: projectDeploymentCache,
 		policyCache:            policyCache,
 		issueCache:             issueCache,

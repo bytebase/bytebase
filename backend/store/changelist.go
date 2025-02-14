@@ -168,11 +168,6 @@ func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage)
 
 // UpdateChangelist updates a changelist.
 func (s *Store) UpdateChangelist(ctx context.Context, update *UpdateChangelistMessage) error {
-	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &update.ProjectID})
-	if err != nil {
-		return err
-	}
-
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin transaction")
@@ -186,12 +181,12 @@ func (s *Store) UpdateChangelist(ctx context.Context, update *UpdateChangelistMe
 		}
 		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, payload)
 	}
-	args = append(args, project.UID, update.ResourceID)
+	args = append(args, update.ProjectID, update.ResourceID)
 
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
 		UPDATE changelist
 		SET `+strings.Join(set, ", ")+`
-		WHERE changelist.project_id = $%d AND changelist.name = $%d`, len(set)+1, len(set)+2), args...); err != nil {
+		WHERE project = $%d AND name = $%d`, len(set)+1, len(set)+2), args...); err != nil {
 		return err
 	}
 

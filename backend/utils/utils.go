@@ -372,7 +372,7 @@ func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, relayCl
 func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage, grantRequest *storepb.GrantRequest) error {
 	policyMessage, err := stores.GetProjectIamPolicy(ctx, issue.Project.ResourceID)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get project policy for project %q", issue.Project.UID)
+		return errors.Wrapf(err, "failed to get project policy for project %s", issue.Project.ResourceID)
 	}
 
 	var newConditionExpr string
