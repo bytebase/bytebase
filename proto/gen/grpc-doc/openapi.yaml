@@ -7338,11 +7338,11 @@ paths:
     /v1/users:
         get:
             tags:
-                - AuthService
+                - UserService
             description: |-
                 List all users.
                  Any authenticated user can list users.
-            operationId: AuthService_ListUsers
+            operationId: UserService_ListUsers
             parameters:
                 - name: pageSize
                   in: query
@@ -7386,12 +7386,12 @@ paths:
                                 $ref: '#/components/schemas/Status'
         post:
             tags:
-                - AuthService
+                - UserService
             description: |-
                 Create a user.
                  When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
                  Otherwise, any unauthenticated user can create a user.
-            operationId: AuthService_CreateUser
+            operationId: UserService_CreateUser
             requestBody:
                 content:
                     application/json:
@@ -7414,11 +7414,11 @@ paths:
     /v1/users/{user}:
         get:
             tags:
-                - AuthService
+                - UserService
             description: |-
                 Get the user.
                  Any authenticated user can get the user.
-            operationId: AuthService_GetUser
+            operationId: UserService_GetUser
             parameters:
                 - name: user
                   in: path
@@ -7441,11 +7441,11 @@ paths:
                                 $ref: '#/components/schemas/Status'
         delete:
             tags:
-                - AuthService
+                - UserService
             description: |-
                 Only the user with bb.users.delete permission on the workspace can delete the user.
                  The last remaining workspace admin cannot be deleted.
-            operationId: AuthService_DeleteUser
+            operationId: UserService_DeleteUser
             parameters:
                 - name: user
                   in: path
@@ -7465,9 +7465,9 @@ paths:
                                 $ref: '#/components/schemas/Status'
         patch:
             tags:
-                - AuthService
+                - UserService
             description: Only the user itself and the user with bb.users.update permission on the workspace can update the user.
-            operationId: AuthService_UpdateUser
+            operationId: UserService_UpdateUser
             parameters:
                 - name: user
                   in: path
@@ -7520,9 +7520,9 @@ paths:
     /v1/users/{user}:undelete:
         post:
             tags:
-                - AuthService
+                - UserService
             description: Only the user with bb.users.undelete permission on the workspace can undelete the user.
-            operationId: AuthService_UndeleteUser
+            operationId: UserService_UndeleteUser
             parameters:
                 - name: user
                   in: path

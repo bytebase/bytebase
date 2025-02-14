@@ -46,7 +46,7 @@ import {
   useAuthStore,
   useCurrentUserV1,
 } from "@/store";
-import { UpdateUserRequest, User } from "@/types/proto/v1/auth_service";
+import { UpdateUserRequest, User } from "@/types/proto/v1/user_service";
 
 interface LocalState {
   password: string;

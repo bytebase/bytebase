@@ -1,4 +1,4 @@
-import { type User } from "@/types/proto/v1/auth_service";
+import { type User } from "@/types/proto/v1/user_service";
 import type { Group } from "@/types/proto/v1/group_service";
 import type { Binding } from "@/types/proto/v1/iam_policy";
 

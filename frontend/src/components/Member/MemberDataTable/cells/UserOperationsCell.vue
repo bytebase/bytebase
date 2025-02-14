@@ -34,7 +34,7 @@ import { PencilIcon, Trash2Icon } from "lucide-vue-next";
 import { NButton, NPopconfirm } from "naive-ui";
 import { computed } from "vue";
 import { unknownUser } from "@/types";
-import { UserType } from "@/types/proto/v1/auth_service";
+import { UserType } from "@/types/proto/v1/user_service";
 import { State } from "@/types/proto/v1/common";
 import type { MemberBinding } from "../../types";
 
