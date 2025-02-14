@@ -10,7 +10,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -68,7 +67,7 @@ func (s *Store) ListReviewConfigs(ctx context.Context, find *FindReviewConfigMes
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			id,
-			row_status,
+			enabled,
 			name,
 			payload
 		FROM review_config
@@ -84,11 +83,10 @@ func (s *Store) ListReviewConfigs(ctx context.Context, find *FindReviewConfigMes
 	for rows.Next() {
 		var sqlReview ReviewConfigMessage
 		var payload []byte
-		var rowStatus string
 
 		if err := rows.Scan(
 			&sqlReview.ID,
-			&rowStatus,
+			&sqlReview.Enforce,
 			&sqlReview.Name,
 			&payload,
 		); err != nil {
@@ -100,7 +98,6 @@ func (s *Store) ListReviewConfigs(ctx context.Context, find *FindReviewConfigMes
 			return nil, err
 		}
 
-		sqlReview.Enforce = rowStatus == string(api.Normal)
 		sqlReview.Payload = reviewConfigPyload
 		sqlReviewList = append(sqlReviewList, &sqlReview)
 	}
@@ -177,11 +174,7 @@ func (s *Store) DeleteReviewConfig(ctx context.Context, id string) error {
 func (s *Store) UpdateReviewConfig(ctx context.Context, patch *PatchReviewConfigMessage) (*ReviewConfigMessage, error) {
 	set, args := []string{}, []any{}
 	if v := patch.Enforce; v != nil {
-		rowStatus := api.Normal
-		if !*patch.Enforce {
-			rowStatus = api.Archived
-		}
-		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
+		set, args = append(set, fmt.Sprintf("enabled = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
@@ -207,18 +200,17 @@ func (s *Store) UpdateReviewConfig(ctx context.Context, patch *PatchReviewConfig
 		WHERE id = $%d
 		RETURNING
 			id,
-			row_status,
+			enabled,
 			name,
 			payload
 		`, len(args))
 
 	var sqlReview ReviewConfigMessage
 	var payload []byte
-	var rowStatus string
 
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&sqlReview.ID,
-		&rowStatus,
+		&sqlReview.Enforce,
 		&sqlReview.Name,
 		&payload,
 	); err != nil {
@@ -233,7 +225,6 @@ func (s *Store) UpdateReviewConfig(ctx context.Context, patch *PatchReviewConfig
 		return nil, err
 	}
 
-	sqlReview.Enforce = rowStatus == string(api.Normal)
 	sqlReview.Payload = reviewConfigPyload
 
 	if err := tx.Commit(); err != nil {

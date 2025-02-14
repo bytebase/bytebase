@@ -60,7 +60,7 @@ func (s *OrgPolicyService) ListPolicies(ctx context.Context, request *v1pb.ListP
 	find := &store.FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     resource,
-		ShowDeleted:  request.ShowDeleted,
+		ShowAll:      request.ShowDeleted,
 	}
 
 	if v := request.PolicyType; v != nil {

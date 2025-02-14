@@ -1,10 +1,7 @@
--- Type
-CREATE TYPE row_status AS ENUM ('NORMAL', 'ARCHIVED');
-
 -- idp stores generic identity provider.
 CREATE TABLE idp (
   id serial PRIMARY KEY,
-  row_status row_status NOT NULL DEFAULT 'NORMAL',
+  deleted boolean NOT NULL DEFAULT FALSE,
   resource_id text NOT NULL,
   name text NOT NULL,
   domain text NOT NULL,
@@ -20,7 +17,7 @@ ALTER SEQUENCE idp_id_seq RESTART WITH 101;
 -- principal
 CREATE TABLE principal (
     id serial PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
+    deleted boolean NOT NULL DEFAULT FALSE,
     created_at timestamptz NOT NULL DEFAULT now(),
     type text NOT NULL CHECK (type IN ('END_USER', 'SYSTEM_BOT', 'SERVICE_ACCOUNT')),
     name text NOT NULL,
@@ -59,7 +56,7 @@ ALTER SEQUENCE role_id_seq RESTART WITH 101;
 -- Environment
 CREATE TABLE environment (
     id serial PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
+    deleted boolean NOT NULL DEFAULT FALSE,
     name text NOT NULL,
     "order" integer NOT NULL CHECK ("order" >= 0),
     resource_id text NOT NULL
@@ -73,7 +70,7 @@ ALTER SEQUENCE environment_id_seq RESTART WITH 101;
 -- policy stores the policies for each resources.
 CREATE TABLE policy (
     id serial PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
+    enforce boolean NOT NULL DEFAULT TRUE,
     updated_at timestamptz NOT NULL DEFAULT now(),
     resource_type text NOT NULL CHECK (resource_type IN ('WORKSPACE', 'ENVIRONMENT', 'PROJECT', 'INSTANCE')),
     resource TEXT NOT NULL,
@@ -89,7 +86,7 @@ ALTER SEQUENCE policy_id_seq RESTART WITH 101;
 -- Project
 CREATE TABLE project (
     id serial PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
+    deleted boolean NOT NULL DEFAULT FALSE,
     name text NOT NULL,
     resource_id text NOT NULL,
     data_classification_config_id text NOT NULL DEFAULT '',
@@ -116,7 +113,7 @@ ALTER SEQUENCE project_webhook_id_seq RESTART WITH 101;
 -- Instance
 CREATE TABLE instance (
     id serial PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
+    deleted boolean NOT NULL DEFAULT FALSE,
     environment text REFERENCES environment(resource_id),
     name text NOT NULL,
     engine text NOT NULL,
@@ -312,7 +309,6 @@ ALTER SEQUENCE task_run_log_id_seq RESTART WITH 101;
 -- Plan related BEGIN
 CREATE TABLE plan (
     id bigserial PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id integer NOT NULL REFERENCES principal(id),
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
@@ -350,7 +346,6 @@ ALTER SEQUENCE plan_check_run_id_seq RESTART WITH 101;
 -- issue
 CREATE TABLE issue (
     id serial PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
     creator_id integer NOT NULL REFERENCES principal(id),
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
@@ -630,7 +625,7 @@ CREATE TABLE user_group (
 -- review config table.
 CREATE TABLE review_config (
     id text NOT NULL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
+    enabled boolean NOT NULL DEFAULT TRUE,
     name text NOT NULL,
     payload jsonb NOT NULL DEFAULT '{}'
 );
@@ -685,7 +680,7 @@ CREATE INDEX IF NOT EXISTS idx_changelog_instance_db_name ON changelog (instance
 
 CREATE TABLE IF NOT EXISTS release (
     id bigserial PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
+    deleted boolean NOT NULL DEFAULT FALSE,
     project text NOT NULL REFERENCES project(resource_id),
     creator_id integer NOT NULL REFERENCES principal (id),
     created_at timestamptz NOT NULL DEFAULT now(),
