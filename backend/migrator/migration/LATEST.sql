@@ -71,16 +71,14 @@ ALTER SEQUENCE environment_id_seq RESTART WITH 101;
 
 -- Policy
 -- policy stores the policies for each resources.
-CREATE TYPE resource_type AS ENUM ('WORKSPACE', 'ENVIRONMENT', 'PROJECT', 'INSTANCE', 'DATABASE');
-
 CREATE TABLE policy (
     id serial PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
     updated_at timestamptz NOT NULL DEFAULT now(),
+    resource_type text NOT NULL CHECK (resource_type IN ('WORKSPACE', 'ENVIRONMENT', 'PROJECT', 'INSTANCE')),
+    resource TEXT NOT NULL,
     type text NOT NULL CHECK (type LIKE 'bb.policy.%'),
     payload jsonb NOT NULL DEFAULT '{}',
-    resource_type resource_type NOT NULL,
-    resource TEXT NOT NULL,
     inherit_from_parent boolean NOT NULL DEFAULT TRUE
 );
 
