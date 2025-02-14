@@ -194,10 +194,6 @@ func (s *Store) GetReviewConfigForDatabase(ctx context.Context, database *Databa
 			resourceType: api.PolicyResourceTypeProject,
 			resource:     common.FormatProject(database.ProjectID),
 		},
-		{
-			resourceType: api.PolicyResourceTypeDatabase,
-			resource:     common.FormatDatabase(database.InstanceID, database.DatabaseName),
-		},
 	} {
 		reviewConfig, err := s.getReviewConfigByResource(ctx, v.resourceType, v.resource)
 		if err != nil {
