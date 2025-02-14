@@ -84,7 +84,6 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 			config
 		)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id
 		`,
 		create.ResourceID,
 		create.Title,
