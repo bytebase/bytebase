@@ -239,10 +239,11 @@ func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *
 	}
 
 	issues, err := exec.store.ListIssueV2(ctx, &store.FindIssueMessage{
-		ProjectID:   &project.ResourceID,
-		DatabaseUID: &peerDatabase.UID,
-		StatusList:  []api.IssueStatus{api.IssueOpen},
-		TaskTypes:   &[]api.TaskType{api.TaskDatabaseSchemaUpdate},
+		ProjectID:    &project.ResourceID,
+		InstanceID:   &peerDatabase.InstanceID,
+		DatabaseName: &peerDatabase.DatabaseName,
+		StatusList:   []api.IssueStatus{api.IssueOpen},
+		TaskTypes:    &[]api.TaskType{api.TaskDatabaseSchemaUpdate},
 	})
 	if err != nil {
 		slog.Debug("failed to list issues", log.BBError(err))
