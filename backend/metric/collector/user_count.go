@@ -22,7 +22,7 @@ func NewUserCountCollector(store *store.Store) metric.Collector {
 	}
 }
 
-// Collect will collect the metric for issue.
+// Collect will collect the metric for user.
 func (c *userCountCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 	count, err := c.store.CountActiveUsers(ctx)
 	if err != nil {
