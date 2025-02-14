@@ -1,1 +1,1 @@
-UPDATE policy SET resource = REPLACE(resource, "projectss", "projects") WHERE resource_type = 'WORKSPACE';
+UPDATE policy SET resource = REPLACE(resource, 'projectss/', 'projects/');
