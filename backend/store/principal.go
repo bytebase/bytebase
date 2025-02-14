@@ -166,13 +166,13 @@ func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMe
 		where, args = append(where, fmt.Sprintf("principal.type = $%d", len(args)+1)), append(args, *v)
 	}
 	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("principal.row_status = $%d", len(args)+1)), append(args, api.Normal)
+		where, args = append(where, fmt.Sprintf("principal.deleted = $%d", len(args)+1)), append(args, false)
 	}
 
 	query := `
 	SELECT
 		principal.id AS user_id,
-		principal.row_status AS row_status,
+		principal.deleted,
 		principal.email,
 		principal.name,
 		principal.type,
@@ -196,12 +196,11 @@ func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMe
 	defer rows.Close()
 	for rows.Next() {
 		var userMessage UserMessage
-		var rowStatus string
 		var mfaConfigBytes []byte
 		var profileBytes []byte
 		if err := rows.Scan(
 			&userMessage.ID,
-			&rowStatus,
+			&userMessage.MemberDeleted,
 			&userMessage.Email,
 			&userMessage.Name,
 			&userMessage.Type,
@@ -214,7 +213,6 @@ func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMe
 			return nil, err
 		}
 
-		userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus)
 		mfaConfig := storepb.MFAConfig{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(mfaConfigBytes, &mfaConfig); err != nil {
 			return nil, err
@@ -305,11 +303,7 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 
 	principalSet, principalArgs := []string{}, []any{}
 	if v := patch.Delete; v != nil {
-		rowStatus := api.Normal
-		if *patch.Delete {
-			rowStatus = api.Archived
-		}
-		principalSet, principalArgs = append(principalSet, fmt.Sprintf("row_status = $%d", len(principalArgs)+1)), append(principalArgs, rowStatus)
+		principalSet, principalArgs = append(principalSet, fmt.Sprintf("deleted = $%d", len(principalArgs)+1)), append(principalArgs, *v)
 	}
 	if v := patch.Email; v != nil {
 		principalSet, principalArgs = append(principalSet, fmt.Sprintf("email = $%d", len(principalArgs)+1)), append(principalArgs, strings.ToLower(*v))

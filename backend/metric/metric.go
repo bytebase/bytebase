@@ -5,7 +5,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 const (
@@ -13,12 +12,8 @@ const (
 	InstanceCountMetricName metric.Name = "bb.instance.count"
 	// IssueCountMetricName is the metric name for issue count.
 	IssueCountMetricName metric.Name = "bb.issue.count"
-	// PolicyCountMetricName is the metric name for policy count.
-	PolicyCountMetricName metric.Name = "bb.policy.count"
 	// ProjectCountMetricName is the metric name for project count.
 	ProjectCountMetricName metric.Name = "bb.project.count"
-	// TaskCountMetricName is the metric name for task count.
-	TaskCountMetricName metric.Name = "bb.task.count"
 	// DatabaseCountMetricName is the metric name for database count.
 	DatabaseCountMetricName metric.Name = "bb.database.count"
 	// SheetCountMetricName is the metric name for sheet count.
@@ -53,7 +48,6 @@ const (
 type InstanceCountMetric struct {
 	Engine        storepb.Engine
 	EnvironmentID string
-	RowStatus     api.RowStatus
 	Count         int
 }
 
@@ -66,9 +60,7 @@ type IssueCountMetric struct {
 
 // ProjectCountMetric is the API message for project count metric.
 type ProjectCountMetric struct {
-	WorkflowType v1pb.Workflow
-	RowStatus    api.RowStatus
-	Count        int
+	Count int
 }
 
 // PolicyCountMetric is the API message for policy count metric.
@@ -77,7 +69,6 @@ type PolicyCountMetric struct {
 	Value           string
 	EnvironmentName string
 	Count           int
-	RowStatus       api.RowStatus
 }
 
 // TaskCountMetric is the API message for task count metric.

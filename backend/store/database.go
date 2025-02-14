@@ -419,16 +419,16 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 	if !find.ShowDeleted {
 		where, args = append(where, fmt.Sprintf(`
 			COALESCE(
-				(SELECT environment.row_status AS instance_environment_status FROM environment JOIN instance ON environment.resource_id = instance.environment WHERE instance.resource_id = db.instance),
+				(SELECT environment.deleted AS instance_environment_status FROM environment JOIN instance ON environment.resource_id = instance.environment WHERE instance.resource_id = db.instance),
 				$%d
-			) = $%d`, len(args)+1, len(args)+2)), append(args, api.Normal, api.Normal)
+			) = $%d`, len(args)+1, len(args)+2)), append(args, false, false)
 		where, args = append(where, fmt.Sprintf(`
 			COALESCE(
-				(SELECT environment.row_status AS db_environment_status FROM environment WHERE environment.resource_id = db.environment),
+				(SELECT environment.deleted AS db_environment_status FROM environment WHERE environment.resource_id = db.environment),
 				$%d
-			) = $%d`, len(args)+1, len(args)+2)), append(args, api.Normal, api.Normal)
+			) = $%d`, len(args)+1, len(args)+2)), append(args, false, false)
 
-		where, args = append(where, fmt.Sprintf("instance.row_status = $%d", len(args)+1)), append(args, api.Normal)
+		where, args = append(where, fmt.Sprintf("instance.deleted = $%d", len(args)+1)), append(args, false)
 		// We don't show databases that are deleted by users already.
 		where, args = append(where, fmt.Sprintf("db.sync_status = $%d", len(args)+1)), append(args, api.OK)
 	}

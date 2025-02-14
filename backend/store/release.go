@@ -11,7 +11,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -111,13 +110,13 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 		args = append(args, *v)
 	}
 	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
+		where, args = append(where, fmt.Sprintf("deleted = $%d", len(args)+1)), append(args, false)
 	}
 
 	query := fmt.Sprintf(`
 		SELECT
 			id,
-			row_status,
+			deleted,
 			project,
 			creator_id,
 			created_at,
@@ -151,12 +150,11 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 		r := ReleaseMessage{
 			Payload: &storepb.ReleasePayload{},
 		}
-		var rowStatus string
 		var payload []byte
 
 		if err := rows.Scan(
 			&r.UID,
-			&rowStatus,
+			&r.Deleted,
 			&r.ProjectID,
 			&r.CreatorUID,
 			&r.At,
@@ -165,7 +163,6 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 			return nil, errors.Wrapf(err, "failed to scan rows")
 		}
 
-		r.Deleted = convertRowStatusToDeleted(rowStatus)
 		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, r.Payload); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal payload")
 		}
@@ -188,11 +185,7 @@ func (s *Store) UpdateRelease(ctx context.Context, update *UpdateReleaseMessage)
 	set, args := []string{}, []any{}
 
 	if v := update.Deleted; v != nil {
-		rowStatus := api.Normal
-		if *v {
-			rowStatus = api.Archived
-		}
-		set, args = append(set, fmt.Sprintf(`row_status = $%d`, len(args)+1)), append(args, rowStatus)
+		set, args = append(set, fmt.Sprintf(`deleted = $%d`, len(args)+1)), append(args, *v)
 	}
 	if v := update.Payload; v != nil {
 		payload, err := protojson.Marshal(update.Payload)
