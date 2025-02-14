@@ -18,7 +18,7 @@ import {
   SQL_EDITOR_SETTING_USERS_MODULE,
 } from "@/router/sqlEditor";
 import { useAppFeature } from "@/store";
-import type { User } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/user_service";
 import type { Database } from "@/types/proto/v1/database_service";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type {

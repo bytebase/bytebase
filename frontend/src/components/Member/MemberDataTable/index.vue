@@ -22,7 +22,7 @@ import GroupMemberNameCell from "@/components/User/Settings/UserDataTableByGroup
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { useUserStore } from "@/store";
 import { unknownUser } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/user_service";
 import type { MemberBinding } from "../types";
 import UserNameCell from "./cells/UserNameCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";

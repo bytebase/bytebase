@@ -9,6 +9,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -18,15 +19,17 @@ import (
 // GroupService implements the group service.
 type GroupService struct {
 	v1pb.UnimplementedGroupServiceServer
-	store      *store.Store
-	iamManager *iam.Manager
+	store          *store.Store
+	iamManager     *iam.Manager
+	licenseService enterprise.LicenseService
 }
 
 // NewGroupService creates a new GroupService.
-func NewGroupService(store *store.Store, iamManager *iam.Manager) *GroupService {
+func NewGroupService(store *store.Store, iamManager *iam.Manager, licenseService enterprise.LicenseService) *GroupService {
 	return &GroupService{
-		store:      store,
-		iamManager: iamManager,
+		store:          store,
+		iamManager:     iamManager,
+		licenseService: licenseService,
 	}
 }
 
@@ -70,14 +73,7 @@ func (s *GroupService) CreateGroup(ctx context.Context, request *v1pb.CreateGrou
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
-	}
-	if len(setting.Domains) == 0 {
-		return nil, status.Errorf(codes.FailedPrecondition, "workspace domain is required for creating groups")
-	}
-	if err := validateEmailWithDomains(groupMessage.Email, setting.Domains, false /* isServiceAccount */); err != nil {
+	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, groupMessage.Email, false /* isServiceAccount */, true); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", groupMessage.Email, err)
 	}
 

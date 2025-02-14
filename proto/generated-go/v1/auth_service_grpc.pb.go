@@ -20,37 +20,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthService_GetUser_FullMethodName      = "/bytebase.v1.AuthService/GetUser"
-	AuthService_ListUsers_FullMethodName    = "/bytebase.v1.AuthService/ListUsers"
-	AuthService_CreateUser_FullMethodName   = "/bytebase.v1.AuthService/CreateUser"
-	AuthService_UpdateUser_FullMethodName   = "/bytebase.v1.AuthService/UpdateUser"
-	AuthService_DeleteUser_FullMethodName   = "/bytebase.v1.AuthService/DeleteUser"
-	AuthService_UndeleteUser_FullMethodName = "/bytebase.v1.AuthService/UndeleteUser"
-	AuthService_Login_FullMethodName        = "/bytebase.v1.AuthService/Login"
-	AuthService_Logout_FullMethodName       = "/bytebase.v1.AuthService/Logout"
+	AuthService_Login_FullMethodName  = "/bytebase.v1.AuthService/Login"
+	AuthService_Logout_FullMethodName = "/bytebase.v1.AuthService/Logout"
 )
 
 // AuthServiceClient is the client API for AuthService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthServiceClient interface {
-	// Get the user.
-	// Any authenticated user can get the user.
-	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*User, error)
-	// List all users.
-	// Any authenticated user can list users.
-	ListUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error)
-	// Create a user.
-	// When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
-	// Otherwise, any unauthenticated user can create a user.
-	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*User, error)
-	// Only the user itself and the user with bb.users.update permission on the workspace can update the user.
-	UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*User, error)
-	// Only the user with bb.users.delete permission on the workspace can delete the user.
-	// The last remaining workspace admin cannot be deleted.
-	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	// Only the user with bb.users.undelete permission on the workspace can undelete the user.
-	UndeleteUser(ctx context.Context, in *UndeleteUserRequest, opts ...grpc.CallOption) (*User, error)
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
@@ -61,66 +38,6 @@ type authServiceClient struct {
 
 func NewAuthServiceClient(cc grpc.ClientConnInterface) AuthServiceClient {
 	return &authServiceClient{cc}
-}
-
-func (c *authServiceClient) GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*User, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(User)
-	err := c.cc.Invoke(ctx, AuthService_GetUser_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *authServiceClient) ListUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListUsersResponse)
-	err := c.cc.Invoke(ctx, AuthService_ListUsers_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *authServiceClient) CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*User, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(User)
-	err := c.cc.Invoke(ctx, AuthService_CreateUser_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *authServiceClient) UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*User, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(User)
-	err := c.cc.Invoke(ctx, AuthService_UpdateUser_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *authServiceClient) DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, AuthService_DeleteUser_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *authServiceClient) UndeleteUser(ctx context.Context, in *UndeleteUserRequest, opts ...grpc.CallOption) (*User, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(User)
-	err := c.cc.Invoke(ctx, AuthService_UndeleteUser_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *authServiceClient) Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error) {
@@ -147,23 +64,6 @@ func (c *authServiceClient) Logout(ctx context.Context, in *LogoutRequest, opts 
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
 type AuthServiceServer interface {
-	// Get the user.
-	// Any authenticated user can get the user.
-	GetUser(context.Context, *GetUserRequest) (*User, error)
-	// List all users.
-	// Any authenticated user can list users.
-	ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error)
-	// Create a user.
-	// When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
-	// Otherwise, any unauthenticated user can create a user.
-	CreateUser(context.Context, *CreateUserRequest) (*User, error)
-	// Only the user itself and the user with bb.users.update permission on the workspace can update the user.
-	UpdateUser(context.Context, *UpdateUserRequest) (*User, error)
-	// Only the user with bb.users.delete permission on the workspace can delete the user.
-	// The last remaining workspace admin cannot be deleted.
-	DeleteUser(context.Context, *DeleteUserRequest) (*emptypb.Empty, error)
-	// Only the user with bb.users.undelete permission on the workspace can undelete the user.
-	UndeleteUser(context.Context, *UndeleteUserRequest) (*User, error)
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	Logout(context.Context, *LogoutRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedAuthServiceServer()
@@ -176,24 +76,6 @@ type AuthServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAuthServiceServer struct{}
 
-func (UnimplementedAuthServiceServer) GetUser(context.Context, *GetUserRequest) (*User, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
-}
-func (UnimplementedAuthServiceServer) ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListUsers not implemented")
-}
-func (UnimplementedAuthServiceServer) CreateUser(context.Context, *CreateUserRequest) (*User, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateUser not implemented")
-}
-func (UnimplementedAuthServiceServer) UpdateUser(context.Context, *UpdateUserRequest) (*User, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateUser not implemented")
-}
-func (UnimplementedAuthServiceServer) DeleteUser(context.Context, *DeleteUserRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteUser not implemented")
-}
-func (UnimplementedAuthServiceServer) UndeleteUser(context.Context, *UndeleteUserRequest) (*User, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UndeleteUser not implemented")
-}
 func (UnimplementedAuthServiceServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
 }
@@ -219,114 +101,6 @@ func RegisterAuthServiceServer(s grpc.ServiceRegistrar, srv AuthServiceServer) {
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&AuthService_ServiceDesc, srv)
-}
-
-func _AuthService_GetUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetUserRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuthServiceServer).GetUser(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AuthService_GetUser_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServiceServer).GetUser(ctx, req.(*GetUserRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AuthService_ListUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListUsersRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuthServiceServer).ListUsers(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AuthService_ListUsers_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServiceServer).ListUsers(ctx, req.(*ListUsersRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AuthService_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateUserRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuthServiceServer).CreateUser(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AuthService_CreateUser_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServiceServer).CreateUser(ctx, req.(*CreateUserRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AuthService_UpdateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateUserRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuthServiceServer).UpdateUser(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AuthService_UpdateUser_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServiceServer).UpdateUser(ctx, req.(*UpdateUserRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AuthService_DeleteUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteUserRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuthServiceServer).DeleteUser(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AuthService_DeleteUser_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServiceServer).DeleteUser(ctx, req.(*DeleteUserRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AuthService_UndeleteUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UndeleteUserRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuthServiceServer).UndeleteUser(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AuthService_UndeleteUser_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServiceServer).UndeleteUser(ctx, req.(*UndeleteUserRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _AuthService_Login_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -372,30 +146,6 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "bytebase.v1.AuthService",
 	HandlerType: (*AuthServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "GetUser",
-			Handler:    _AuthService_GetUser_Handler,
-		},
-		{
-			MethodName: "ListUsers",
-			Handler:    _AuthService_ListUsers_Handler,
-		},
-		{
-			MethodName: "CreateUser",
-			Handler:    _AuthService_CreateUser_Handler,
-		},
-		{
-			MethodName: "UpdateUser",
-			Handler:    _AuthService_UpdateUser_Handler,
-		},
-		{
-			MethodName: "DeleteUser",
-			Handler:    _AuthService_DeleteUser_Handler,
-		},
-		{
-			MethodName: "UndeleteUser",
-			Handler:    _AuthService_UndeleteUser_Handler,
-		},
 		{
 			MethodName: "Login",
 			Handler:    _AuthService_Login_Handler,
