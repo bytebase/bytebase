@@ -237,8 +237,7 @@ func getPolicyResourceTypeAndResource(requestName string) (api.PolicyResourceTyp
 		return api.PolicyResourceTypeEnvironment, &requestName, nil
 	}
 
-	sections := strings.Split(requestName, "/")
-	if strings.HasPrefix(requestName, common.InstanceNamePrefix) && len(sections) == 2 {
+	if strings.HasPrefix(requestName, common.InstanceNamePrefix) {
 		// instance policy request name should be instances/{instance id}
 		instanceID, err := common.GetInstanceID(requestName)
 		if err != nil {
@@ -248,18 +247,6 @@ func getPolicyResourceTypeAndResource(requestName string) (api.PolicyResourceTyp
 			return api.PolicyResourceTypeInstance, nil, nil
 		}
 		return api.PolicyResourceTypeInstance, &requestName, nil
-	}
-
-	if strings.HasPrefix(requestName, common.InstanceNamePrefix) && len(sections) == 4 {
-		// database policy request name should be instances/{instance id}/databases/{db name}
-		_, databaseName, err := common.GetInstanceDatabaseID(requestName)
-		if err != nil {
-			return api.PolicyResourceTypeUnknown, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		if databaseName == "-" {
-			return api.PolicyResourceTypeDatabase, nil, nil
-		}
-		return api.PolicyResourceTypeDatabase, &requestName, nil
 	}
 
 	return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.InvalidArgument, "unknown request name %s", requestName)
@@ -485,8 +472,6 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, policyMessage *s
 		resourceType = v1pb.PolicyResourceType_ENVIRONMENT
 	case api.PolicyResourceTypeProject:
 		resourceType = v1pb.PolicyResourceType_PROJECT
-	case api.PolicyResourceTypeDatabase:
-		resourceType = v1pb.PolicyResourceType_DATABASE
 	case api.PolicyResourceTypeInstance:
 		resourceType = v1pb.PolicyResourceType_INSTANCE
 	}
