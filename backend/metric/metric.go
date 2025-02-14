@@ -12,12 +12,8 @@ const (
 	InstanceCountMetricName metric.Name = "bb.instance.count"
 	// IssueCountMetricName is the metric name for issue count.
 	IssueCountMetricName metric.Name = "bb.issue.count"
-	// PolicyCountMetricName is the metric name for policy count.
-	PolicyCountMetricName metric.Name = "bb.policy.count"
 	// ProjectCountMetricName is the metric name for project count.
 	ProjectCountMetricName metric.Name = "bb.project.count"
-	// TaskCountMetricName is the metric name for task count.
-	TaskCountMetricName metric.Name = "bb.task.count"
 	// DatabaseCountMetricName is the metric name for database count.
 	DatabaseCountMetricName metric.Name = "bb.database.count"
 	// SheetCountMetricName is the metric name for sheet count.
