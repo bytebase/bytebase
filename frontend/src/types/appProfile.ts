@@ -6,7 +6,6 @@ export type AppFeatures = {
   "bb.feature.database-change-mode":
     | DatabaseChangeMode.PIPELINE
     | DatabaseChangeMode.EDITOR;
-  "bb.feature.disable-kbar": boolean;
   "bb.feature.disallow-navigate-to-console": boolean;
   "bb.feature.hide-banner": boolean;
   "bb.feature.hide-help": boolean;
@@ -61,7 +60,6 @@ export const defaultAppProfile = (): AppProfile => ({
   features: {
     "bb.feature.default-workspace-view": "CONSOLE",
     "bb.feature.database-change-mode": DatabaseChangeMode.PIPELINE,
-    "bb.feature.disable-kbar": false,
     "bb.feature.disallow-navigate-to-console": false,
     "bb.feature.hide-banner": false,
     "bb.feature.hide-help": false,
