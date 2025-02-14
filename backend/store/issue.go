@@ -89,8 +89,9 @@ type FindIssueMessage struct {
 	TaskTypes  *[]api.TaskType
 	// Any of the task in the issue changes the instance with InstanceResourceID.
 	InstanceResourceID *string
-	// Any of the task in the issue changes the database with DatabaseUID.
-	DatabaseUID *int
+	// Any of the task in the issue changes the database with InstanceID and DatabaseName.
+	InstanceID   *string
+	DatabaseName *string
 	// If specified, then it will only fetch "Limit" most recently updated issues
 	Limit  *int
 	Offset *int
@@ -377,10 +378,10 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		where, args = append(where, fmt.Sprintf("issue.project = ANY($%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.InstanceResourceID; v != nil {
-		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task LEFT JOIN instance ON instance.id = task.instance_id WHERE task.pipeline_id = issue.pipeline_id AND instance.resource_id = $%d)", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.instance = $%d)", len(args)+1)), append(args, *v)
 	}
-	if v := find.DatabaseUID; v != nil {
-		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.database_id = $%d)", len(args)+1)), append(args, *v)
+	if find.InstanceID != nil && find.DatabaseName != nil {
+		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = issue.pipeline_id AND task.instance = $%d AND task.db_name = $%d)", len(args)+1, len(args)+2)), append(args, *find.InstanceID, *find.DatabaseName)
 	}
 	if v := find.CreatorID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.creator_id = $%d", len(args)+1)), append(args, *v)
