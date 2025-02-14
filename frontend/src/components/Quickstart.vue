@@ -107,7 +107,6 @@
 </template>
 
 <script setup lang="ts">
-import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
 import { XIcon, CheckCircleIcon } from "lucide-vue-next";
 import type { Ref } from "vue";
 import { computed, unref, watchEffect } from "vue";
@@ -152,7 +151,6 @@ type IntroItem = {
 const { t } = useI18n();
 const projectStore = useProjectV1Store();
 const uiStateStore = useUIStateStore();
-const kbarHandler = useKBarHandler();
 
 const show = computed(() => {
   return !uiStateStore.getIntroStateByKey("hidden");
@@ -170,17 +168,6 @@ const sampleProject = computed(() => {
 
 const introList = computed(() => {
   const introList: IntroItem[] = [
-    {
-      name: computed(() =>
-        t("quick-start.use-kbar", {
-          shortcut: `${navigator.platform.match(/mac/i) ? "cmd" : "ctrl"}-k`,
-        })
-      ),
-      click: () => {
-        kbarHandler.value.show();
-      },
-      done: computed(() => uiStateStore.getIntroStateByKey("kbar.open")),
-    },
     {
       name: computed(() => t("quick-start.view-an-issue")),
       link: {
@@ -337,14 +324,6 @@ const hideQuickstart = (silent = false) => {
       }
     });
 };
-
-useKBarEventOnce("open", () => {
-  // once kbar is open, mark the quickstart as done
-  uiStateStore.saveIntroStateByKey({
-    key: "kbar.open",
-    newState: true,
-  });
-});
 
 watchEffect(async () => {
   if (!showQuickstart.value) {

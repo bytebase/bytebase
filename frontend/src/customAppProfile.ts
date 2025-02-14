@@ -42,7 +42,6 @@ const overrideAppFeatures = (
     // mode=STANDALONE is not easy to read, but for legacy support we keep it as
     // some customers are using it.
     actuatorStore.overrideAppFeatures({
-      "bb.feature.disable-kbar": true,
       "bb.feature.databases.operations": new Set([
         "CHANGE-DATA",
         "EDIT-SCHEMA",
