@@ -10,7 +10,7 @@ import (
 
 var _ metric.Collector = (*userCountCollector)(nil)
 
-// userCountCollector is the metric data collector for member.
+// userCountCollector is the metric data collector for user.
 type userCountCollector struct {
 	store *store.Store
 }
