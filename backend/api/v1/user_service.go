@@ -3,11 +3,9 @@ package v1
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/mail"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -18,7 +16,6 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/state"
@@ -589,47 +586,6 @@ func convertToPrincipalType(userType v1pb.UserType) (api.PrincipalType, error) {
 		return t, status.Errorf(codes.InvalidArgument, "invalid user type %s", userType)
 	}
 	return t, nil
-}
-
-func (s *UserService) needResetPassword(ctx context.Context, user *store.UserMessage) bool {
-	// Reset password restriction only works for end user with email & password login.
-	if user.Type != api.EndUser {
-		return false
-	}
-	if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
-		return false
-	}
-
-	passwordRestriction, err := s.store.GetPasswordRestrictionSetting(ctx)
-	if err != nil {
-		slog.Error("failed to get password restriction", log.BBError(err))
-		return false
-	}
-
-	if user.Profile.LastLoginTime == nil {
-		if !passwordRestriction.RequireResetPasswordForFirstLogin {
-			return false
-		}
-		count, err := s.store.CountUsers(ctx, api.EndUser)
-		if err != nil {
-			slog.Error("failed to count end users", log.BBError(err))
-			return false
-		}
-		// The 1st workspace admin login don't need to reset the password
-		return count > 1
-	}
-
-	if passwordRestriction.PasswordRotation != nil && passwordRestriction.PasswordRotation.GetNanos() > 0 {
-		lastChangePasswordTime := user.CreatedAt
-		if user.Profile.LastChangePasswordTime != nil {
-			lastChangePasswordTime = user.Profile.LastChangePasswordTime.AsTime()
-		}
-		if lastChangePasswordTime.Add(time.Duration(passwordRestriction.PasswordRotation.GetNanos())).Before(time.Now()) {
-			return true
-		}
-	}
-
-	return false
 }
 
 func validateEmailWithDomains(ctx context.Context, licenseService enterprise.LicenseService, stores *store.Store, email string, isServiceAccount bool, checkDomainSetting bool) error {
