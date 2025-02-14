@@ -14,7 +14,10 @@ import { userNamePrefix, getUserEmailFromIdentifier } from "./v1/common";
 import { usePermissionStore } from "./v1/permission";
 
 export const useUserStore = defineStore("user", () => {
-  const userMapByName = ref<Map<string, User>>(new Map());
+  const allUser = allUsersUser();
+  const userMapByName = ref<Map<string, User>>(
+    new Map([[allUser.name, allUser]])
+  );
 
   const setUser = (user: User) => {
     userMapByName.value.set(user.name, user);
@@ -107,9 +110,6 @@ export const useUserStore = defineStore("user", () => {
     return getUserByEmail(getUserEmailFromIdentifier(identifier));
   };
   const getUserByEmail = (email: string) => {
-    if (email === ALL_USERS_USER_EMAIL) {
-      return allUsersUser();
-    }
     return [...userMapByName.value.values()].find(
       (user) => user.email === email
     );
