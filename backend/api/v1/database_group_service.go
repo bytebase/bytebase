@@ -151,7 +151,7 @@ func (s *DatabaseGroupService) UpdateDatabaseGroup(ctx context.Context, request 
 			return nil, status.Errorf(codes.InvalidArgument, "unsupported path: %q", path)
 		}
 	}
-	databaseGroup, err := s.store.UpdateDatabaseGroup(ctx, existedDatabaseGroup.UID, &updateDatabaseGroup)
+	databaseGroup, err := s.store.UpdateDatabaseGroup(ctx, existedDatabaseGroup.ProjectID, existedDatabaseGroup.ResourceID, &updateDatabaseGroup)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -187,7 +187,7 @@ func (s *DatabaseGroupService) DeleteDatabaseGroup(ctx context.Context, request 
 		return nil, status.Errorf(codes.NotFound, "database group %q not found", databaseGroupResourceID)
 	}
 
-	err = s.store.DeleteDatabaseGroup(ctx, existedDatabaseGroup.UID)
+	err = s.store.DeleteDatabaseGroup(ctx, existedDatabaseGroup.ProjectID, existedDatabaseGroup.ResourceID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
