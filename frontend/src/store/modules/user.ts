@@ -2,19 +2,16 @@ import { isEqual, isUndefined, orderBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { authServiceClient } from "@/grpcweb";
-import {
-  ALL_USERS_USER_EMAIL,
-  allUsersUser,
-  SYSTEM_BOT_USER_NAME,
-} from "@/types";
+import { allUsersUser, SYSTEM_BOT_USER_NAME } from "@/types";
 import type { UpdateUserRequest, User } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { userNamePrefix, getUserEmailFromIdentifier } from "./v1/common";
 import { usePermissionStore } from "./v1/permission";
 
+const allUser = allUsersUser();
+
 export const useUserStore = defineStore("user", () => {
-  const allUser = allUsersUser();
   const userMapByName = ref<Map<string, User>>(
     new Map([[allUser.name, allUser]])
   );
@@ -42,8 +39,7 @@ export const useUserStore = defineStore("user", () => {
   // The active user list and exclude allUsers.
   const activeUserList = computed(() => {
     return userList.value.filter(
-      (user) =>
-        user.state === State.ACTIVE && user.email !== ALL_USERS_USER_EMAIL
+      (user) => user.state === State.ACTIVE && user.name !== allUser.name
     );
   });
 
@@ -182,6 +178,7 @@ export const useActiveUsers = () => {
   const userStore = useUserStore();
   return userStore.userList.filter(
     (user) =>
+      user.name !== allUser.name &&
       user.state === State.ACTIVE &&
       [UserType.USER, UserType.SERVICE_ACCOUNT].includes(user.userType)
   );
