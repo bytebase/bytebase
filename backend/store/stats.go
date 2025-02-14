@@ -122,42 +122,27 @@ func (s *Store) CountProjects(ctx context.Context) (int, error) {
 	return count, nil
 }
 
-// CountIssueGroupByTypeAndStatus counts the number of issue and group by type and status.
+// CountIssues counts the number of issues.
 // Used by the metric collector.
-func (s *Store) CountIssueGroupByTypeAndStatus(ctx context.Context) ([]*metric.IssueCountMetric, error) {
+func (s *Store) CountIssues(ctx context.Context) (int, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, `
-		SELECT type, status, COUNT(*)
+	var count int
+	if err := tx.QueryRowContext(ctx, `
+		SELECT COUNT(1)
 		FROM issue
 		WHERE id > 101
-		GROUP BY type, status`,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var res []*metric.IssueCountMetric
-
-	for rows.Next() {
-		var metric metric.IssueCountMetric
-		if err := rows.Scan(&metric.Type, &metric.Status, &metric.Count); err != nil {
-			return nil, err
-		}
-		res = append(res, &metric)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
+	`).Scan(&count); err != nil {
+		return 0, err
 	}
 	if err := tx.Commit(); err != nil {
-		return nil, err
+		return 0, err
 	}
-	return res, nil
+	return count, nil
 }
 
 // CountInstanceGroupByEngineAndEnvironmentID counts the number of instances and group by engine and environment.
