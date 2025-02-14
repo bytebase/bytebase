@@ -189,10 +189,10 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, projectID, resourceID s
 	args = append(args, projectID, resourceID)
 	query := fmt.Sprintf(`
 		UPDATE db_group SET 
-			%s 
+			%s
 		WHERE project = $%d AND resource_id = $%d
 		RETURNING project, resource_id, placeholder, expression, payload;
-	`, strings.Join(set, ", "), len(args), len(args)+1)
+	`, strings.Join(set, ", "), len(args)-1, len(args))
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
