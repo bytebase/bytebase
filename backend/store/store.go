@@ -22,7 +22,6 @@ type Store struct {
 	userEmailCache         *lru.Cache[string, *UserMessage]
 	environmentCache       *lru.Cache[string, *EnvironmentMessage]
 	instanceCache          *lru.Cache[string, *InstanceMessage]
-	instanceIDCache        *lru.Cache[int, *InstanceMessage]
 	databaseCache          *lru.Cache[string, *DatabaseMessage]
 	databaseIDCache        *lru.Cache[int, *DatabaseMessage]
 	projectCache           *lru.Cache[string, *ProjectMessage]
@@ -60,10 +59,6 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 		return nil, err
 	}
 	instanceCache, err := lru.New[string, *InstanceMessage](32768)
-	if err != nil {
-		return nil, err
-	}
-	instanceIDCache, err := lru.New[int, *InstanceMessage](32768)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +144,6 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 		userEmailCache:         userEmailCache,
 		environmentCache:       environmentCache,
 		instanceCache:          instanceCache,
-		instanceIDCache:        instanceIDCache,
 		databaseCache:          databaseCache,
 		databaseIDCache:        databaseIDCache,
 		projectCache:           projectCache,
