@@ -237,19 +237,6 @@
   "error-page": {
     "go-back-home": "回到主页"
   },
-  "kbar": {
-    "recently-visited": "最近访问",
-    "navigation": "导航",
-    "help": {
-      "navigate": "选择",
-      "perform": "执行",
-      "close": "关闭",
-      "back": "返回"
-    },
-    "options": {
-      "placeholder": "输入命令或搜索…"
-    }
-  },
   "task": {
     "checking": "检查中…",
     "check-result": {
@@ -1287,7 +1274,6 @@
     "visit-database": "@:common.visit@:common.databases",
     "visit-environment": "@:common.visit@:common.environments",
     "visit-member": "@:common.visit@:common.members",
-    "use-kbar": "使用 kbar ({shortcut})",
     "query-data": "查询数据",
     "notice": {
       "title": "新手任务已关闭",

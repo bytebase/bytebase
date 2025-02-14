@@ -13,19 +13,17 @@
     >
       <NDialogProvider>
         <OverlayStackManager>
-          <KBarWrapper>
-            <NotificationContext>
-              <AuthContext>
-                <router-view v-if="actuatorStore.initialized" />
-                <div
-                  v-else
-                  class="fixed inset-0 bg-white flex flex-col items-center justify-center"
-                >
-                  <NSpin />
-                </div>
-              </AuthContext>
-            </NotificationContext>
-          </KBarWrapper>
+          <NotificationContext>
+            <AuthContext>
+              <router-view v-if="actuatorStore.initialized" />
+              <div
+                v-else
+                class="fixed inset-0 bg-white flex flex-col items-center justify-center"
+              >
+                <NSpin />
+              </div>
+            </AuthContext>
+          </NotificationContext>
         </OverlayStackManager>
       </NDialogProvider>
     </NNotificationProvider>
@@ -51,7 +49,6 @@ import { themeOverrides, dateLang, generalLang } from "../naive-ui.config";
 import { provideAppRootContext } from "./AppRootContext";
 import AuthContext from "./AuthContext.vue";
 import NotificationContext from "./NotificationContext.vue";
-import KBarWrapper from "./components/KBar/KBarWrapper.vue";
 import OverlayStackManager from "./components/misc/OverlayStackManager.vue";
 import { overrideAppProfile } from "./customAppProfile";
 import { t } from "./plugins/i18n";
