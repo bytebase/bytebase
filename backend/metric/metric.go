@@ -5,7 +5,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 const (
@@ -53,7 +52,6 @@ const (
 type InstanceCountMetric struct {
 	Engine        storepb.Engine
 	EnvironmentID string
-	RowStatus     api.RowStatus
 	Count         int
 }
 
@@ -66,9 +64,7 @@ type IssueCountMetric struct {
 
 // ProjectCountMetric is the API message for project count metric.
 type ProjectCountMetric struct {
-	WorkflowType v1pb.Workflow
-	RowStatus    api.RowStatus
-	Count        int
+	Count int
 }
 
 // PolicyCountMetric is the API message for policy count metric.
@@ -77,7 +73,6 @@ type PolicyCountMetric struct {
 	Value           string
 	EnvironmentName string
 	Count           int
-	RowStatus       api.RowStatus
 }
 
 // TaskCountMetric is the API message for task count metric.
