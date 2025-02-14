@@ -69,13 +69,12 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 		return nil, err
 	}
 
-	instanceUID := int(config.InstanceUid)
-	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
+	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &config.InstanceId})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance UID %v", instanceUID)
+		return nil, errors.Wrapf(err, "failed to get instance %v", config.InstanceId)
 	}
 	if instance == nil {
-		return nil, errors.Errorf("instance not found UID %v", instanceUID)
+		return nil, errors.Errorf("instance %s not found", config.InstanceId)
 	}
 	if !common.StatementReportEngines[instance.Engine] {
 		return []*storepb.PlanCheckRunResult_Result{

@@ -472,7 +472,7 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 		return errors.Wrapf(err, "failed to get rows affected")
 	}
 	if rowsAffected != 1 {
-		return errors.Errorf("update %v data source records from instance %v, but expected one", rowsAffected, patch.InstanceUID)
+		return errors.Errorf("update %v data source records from instance %s, but expected one", rowsAffected, patch.InstanceID)
 	}
 
 	if err := tx.Commit(); err != nil {

@@ -196,7 +196,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 				return nil, nil, errors.Errorf("task %d instance not found", task.ID)
 			}
 
-			if run.Config.InstanceUid != int32(taskInstance.UID) {
+			if run.Config.InstanceId != taskInstance.ResourceID {
 				continue
 			}
 			if run.Config.DatabaseName != database.DatabaseName {

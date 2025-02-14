@@ -223,7 +223,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		Config: &storepb.PlanCheckRunConfig{
 			SheetUid:           int32(sheetUID),
 			ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
-			InstanceUid:        int32(instance.UID),
+			InstanceId:         instance.ResourceID,
 			DatabaseName:       database.DatabaseName,
 		},
 	})
@@ -245,7 +245,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		Config: &storepb.PlanCheckRunConfig{
 			SheetUid:              int32(sheetUID),
 			ChangeDatabaseType:    convertToChangeDatabaseType(config.Type),
-			InstanceUid:           int32(instance.UID),
+			InstanceId:            instance.ResourceID,
 			DatabaseName:          database.DatabaseName,
 			PreUpdateBackupDetail: preUpdateBackupDetail,
 		},
@@ -257,7 +257,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		Config: &storepb.PlanCheckRunConfig{
 			SheetUid:           int32(sheetUID),
 			ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
-			InstanceUid:        int32(instance.UID),
+			InstanceId:         instance.ResourceID,
 			DatabaseName:       database.DatabaseName,
 		},
 	})
@@ -269,7 +269,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 			Config: &storepb.PlanCheckRunConfig{
 				SheetUid:           int32(sheetUID),
 				ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
-				InstanceUid:        int32(instance.UID),
+				InstanceId:         instance.ResourceID,
 				DatabaseName:       database.DatabaseName,
 				GhostFlags:         config.GhostFlags,
 			},
@@ -337,7 +337,7 @@ func getPlanCheckRunsFromExportDataConfigForDatabase(ctx context.Context, s *sto
 			Config: &storepb.PlanCheckRunConfig{
 				SheetUid:           int32(sheetUID),
 				ChangeDatabaseType: storepb.PlanCheckRunConfig_DML,
-				InstanceUid:        int32(instance.UID),
+				InstanceId:         instance.ResourceID,
 				DatabaseName:       database.DatabaseName,
 			},
 		})
