@@ -270,12 +270,16 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRe
 		return nil, status.Errorf(codes.Internal, "failed to create plan, error: %v", err)
 	}
 
-	planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, plan)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
-	}
-	if err := s.store.CreatePlanCheckRuns(ctx, planCheckRuns...); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create plan check runs, error: %v", err)
+	// Don't create plan checks if the plan comes from releases.
+	// Plan check results don't match release checks.
+	if !planHasRelease(request.Plan) {
+		planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, plan)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
+		}
+		if err := s.store.CreatePlanCheckRuns(ctx, planCheckRuns...); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create plan check runs, error: %v", err)
+		}
 	}
 
 	// Tickle plan check scheduler.
@@ -1431,4 +1435,8 @@ func getPlanSnapshot(ctx context.Context, s *store.Store, steps []*storepb.PlanC
 	}
 
 	return snapshot, nil
+}
+
+func planHasRelease(plan *v1pb.Plan) bool {
+	return plan.GetReleaseSource().GetRelease() != ""
 }
