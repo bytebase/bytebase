@@ -39,9 +39,6 @@ func getConfigBytes(config *storepb.IdentityProviderConfig) ([]byte, error) {
 
 // FindIdentityProviderMessage is the message for finding identity providers.
 type FindIdentityProviderMessage struct {
-	// We should only set either UID or ResourceID.
-	// Deprecate UID later once we fully migrate to ResourceID.
-	UID         *int
 	ResourceID  *string
 	ShowDeleted bool
 }
@@ -240,9 +237,6 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, tx *Tx, find *FindI
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.UID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if !find.ShowDeleted {
 		where, args = append(where, fmt.Sprintf("deleted = $%d", len(args)+1)), append(args, false)
