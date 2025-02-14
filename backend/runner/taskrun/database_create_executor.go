@@ -449,7 +449,7 @@ func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.
 	// Try to find a peer tenant database from database groups.
 	matchedDatabases, err := exec.getPeerTenantDatabasesFromDatabaseGroup(ctx, instance, project, database)
 	if err != nil {
-		return nil, "", "", errors.Wrapf(err, "Failed to fetch database groups in project ID: %v", project.UID)
+		return nil, "", "", errors.Wrapf(err, "Failed to fetch database groups in project ID: %s", project.ResourceID)
 	}
 
 	// Filter out the database itself.
@@ -467,7 +467,7 @@ func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.
 	// Then we will try to find a peer tenant database from deployment schedule with the matched databases.
 	deploymentConfig, err := exec.store.GetDeploymentConfigV2(ctx, project.ResourceID)
 	if err != nil {
-		return nil, "", "", errors.Wrapf(err, "Failed to fetch deployment config for project ID: %v", project.UID)
+		return nil, "", "", errors.Wrapf(err, "Failed to fetch deployment config for project %s", project.ResourceID)
 	}
 	if err := utils.ValidateDeploymentSchedule(deploymentConfig.Config.GetSchedule()); err != nil {
 		return nil, "", "", errors.Errorf("Failed to get deployment schedule")
@@ -519,14 +519,14 @@ func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.
 func (exec *DatabaseCreateExecutor) getPeerTenantDatabasesFromDatabaseGroup(ctx context.Context, instance *store.InstanceMessage, project *store.ProjectMessage, database *store.DatabaseMessage) ([]*store.DatabaseMessage, error) {
 	dbGroups, err := exec.store.ListDatabaseGroups(ctx, &store.FindDatabaseGroupMessage{ProjectID: &project.ResourceID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to fetch database groups in project ID: %v", project.UID)
+		return nil, errors.Wrapf(err, "Failed to fetch database groups in project %s", project.ResourceID)
 	}
 	allDatabases, err := exec.store.ListDatabases(ctx, &store.FindDatabaseMessage{
 		ProjectID: &project.ResourceID,
 		Engine:    &instance.Engine,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to fetch databases in project ID: %v", project.UID)
+		return nil, errors.Wrapf(err, "Failed to fetch databases in project %s", project.ResourceID)
 	}
 
 	var matchedDatabases []*store.DatabaseMessage
