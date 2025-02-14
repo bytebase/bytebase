@@ -14861,6 +14861,7 @@ tags:
     - name: SettingService
     - name: SheetService
     - name: SubscriptionService
+    - name: UserService
     - name: VCSConnectorService
     - name: VCSProviderService
     - name: WorksheetService

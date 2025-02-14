@@ -4,13 +4,9 @@ package bytebase.v1;
 
 import "google/api/annotations.proto";
 import "google/api/client.proto";
-import "google/api/field_behavior.proto";
-import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
-import "google/protobuf/field_mask.proto";
-import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
-import "v1/common.proto";
+import "v1/user_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -94,88 +90,6 @@ service AuthService {
   }
 }
 
-message GetUserRequest {
-  // The name of the user to retrieve.
-  // Format: users/{user uid or user email}
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/User"}
-  ];
-}
-
-message ListUsersRequest {
-  // Not used.
-  // The maximum number of users to return. The service may return fewer than
-  // this value.
-  // If unspecified, at most 50 users will be returned.
-  // The maximum value is 1000; values above 1000 will be coerced to 1000.
-  int32 page_size = 1;
-
-  // Not used.
-  // A page token, received from a previous `ListUsers` call.
-  // Provide this to retrieve the subsequent page.
-  //
-  // When paginating, all other parameters provided to `ListUsers` must match
-  // the call that provided the page token.
-  string page_token = 2;
-
-  // Show deleted users if specified.
-  bool show_deleted = 3;
-}
-
-message ListUsersResponse {
-  // The users from the specified request.
-  repeated User users = 1;
-
-  // A token, which can be sent as `page_token` to retrieve the next page.
-  // If this field is omitted, there are no subsequent pages.
-  string next_page_token = 2;
-}
-
-message CreateUserRequest {
-  // The user to create.
-  User user = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-message UpdateUserRequest {
-  // The user to update.
-  //
-  // The user's `name` field is used to identify the user to update.
-  // Format: users/{user}
-  User user = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The list of fields to update.
-  google.protobuf.FieldMask update_mask = 2;
-
-  // The otp_code is used to verify the user's identity by MFA.
-  optional string otp_code = 3;
-
-  // The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user.
-  // This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response.
-  bool regenerate_temp_mfa_secret = 4;
-
-  // The regenerate_recovery_codes flag means to regenerate recovery codes for user.
-  bool regenerate_recovery_codes = 5;
-}
-
-message DeleteUserRequest {
-  // The name of the user to delete.
-  // Format: users/{user}
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/User"}
-  ];
-}
-
-message UndeleteUserRequest {
-  // The name of the deleted user.
-  // Format: users/{user}
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/User"}
-  ];
-}
-
 message LoginRequest {
   string email = 1;
 
@@ -226,55 +140,3 @@ message LoginResponse {
 }
 
 message LogoutRequest {}
-
-message User {
-  option (google.api.resource) = {
-    type: "bytebase.com/User"
-    pattern: "users/{user}"
-  };
-
-  // The name of the user.
-  // Format: users/{user}. {user} is a system-generated unique ID.
-  string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  State state = 2;
-
-  string email = 3;
-
-  string title = 4;
-
-  UserType user_type = 5;
-
-  string password = 7 [(google.api.field_behavior) = INPUT_ONLY];
-
-  string service_key = 8 [(google.api.field_behavior) = INPUT_ONLY];
-
-  // The mfa_enabled flag means if the user has enabled MFA.
-  bool mfa_enabled = 9;
-
-  // The mfa_secret is the temporary secret using in two phase verification.
-  string mfa_secret = 10;
-
-  // The recovery_codes is the temporary recovery codes using in two phase verification.
-  repeated string recovery_codes = 11;
-
-  // Should be a valid E.164 compliant phone number.
-  // Could be empty.
-  string phone = 12;
-
-  message Profile {
-    google.protobuf.Timestamp last_login_time = 1;
-    google.protobuf.Timestamp last_change_password_time = 2;
-    // source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
-    string source = 3;
-  }
-
-  Profile profile = 13;
-}
-
-enum UserType {
-  USER_TYPE_UNSPECIFIED = 0;
-  USER = 1;
-  SYSTEM_BOT = 2;
-  SERVICE_ACCOUNT = 3;
-}

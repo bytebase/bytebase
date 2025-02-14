@@ -321,24 +321,28 @@
   
     - [AuditLogService](#bytebase-v1-AuditLogService)
   
-- [v1/auth_service.proto](#v1_auth_service-proto)
+- [v1/user_service.proto](#v1_user_service-proto)
     - [CreateUserRequest](#bytebase-v1-CreateUserRequest)
     - [DeleteUserRequest](#bytebase-v1-DeleteUserRequest)
     - [GetUserRequest](#bytebase-v1-GetUserRequest)
-    - [IdentityProviderContext](#bytebase-v1-IdentityProviderContext)
     - [ListUsersRequest](#bytebase-v1-ListUsersRequest)
     - [ListUsersResponse](#bytebase-v1-ListUsersResponse)
-    - [LoginRequest](#bytebase-v1-LoginRequest)
-    - [LoginResponse](#bytebase-v1-LoginResponse)
-    - [LogoutRequest](#bytebase-v1-LogoutRequest)
-    - [OAuth2IdentityProviderContext](#bytebase-v1-OAuth2IdentityProviderContext)
-    - [OIDCIdentityProviderContext](#bytebase-v1-OIDCIdentityProviderContext)
     - [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest)
     - [UpdateUserRequest](#bytebase-v1-UpdateUserRequest)
     - [User](#bytebase-v1-User)
     - [User.Profile](#bytebase-v1-User-Profile)
   
     - [UserType](#bytebase-v1-UserType)
+  
+    - [UserService](#bytebase-v1-UserService)
+  
+- [v1/auth_service.proto](#v1_auth_service-proto)
+    - [IdentityProviderContext](#bytebase-v1-IdentityProviderContext)
+    - [LoginRequest](#bytebase-v1-LoginRequest)
+    - [LoginResponse](#bytebase-v1-LoginResponse)
+    - [LogoutRequest](#bytebase-v1-LogoutRequest)
+    - [OAuth2IdentityProviderContext](#bytebase-v1-OAuth2IdentityProviderContext)
+    - [OIDCIdentityProviderContext](#bytebase-v1-OIDCIdentityProviderContext)
   
     - [AuthService](#bytebase-v1-AuthService)
   
@@ -5606,10 +5610,10 @@ Metadata about the request.
 
 
 
-<a name="v1_auth_service-proto"></a>
+<a name="v1_user_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/auth_service.proto
+## v1/user_service.proto
 
 
 
@@ -5658,22 +5662,6 @@ Metadata about the request.
 
 
 
-<a name="bytebase-v1-IdentityProviderContext"></a>
-
-### IdentityProviderContext
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| oauth2_context | [OAuth2IdentityProviderContext](#bytebase-v1-OAuth2IdentityProviderContext) |  |  |
-| oidc_context | [OIDCIdentityProviderContext](#bytebase-v1-OIDCIdentityProviderContext) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-ListUsersRequest"></a>
 
 ### ListUsersRequest
@@ -5703,81 +5691,6 @@ When paginating, all other parameters provided to `ListUsers` must match the cal
 | ----- | ---- | ----- | ----------- |
 | users | [User](#bytebase-v1-User) | repeated | The users from the specified request. |
 | next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-LoginRequest"></a>
-
-### LoginRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| email | [string](#string) |  |  |
-| password | [string](#string) |  |  |
-| web | [bool](#bool) |  | If web is set, we will set access token, refresh token, and user to the cookie. |
-| idp_name | [string](#string) |  | The name of the identity provider. Format: idps/{idp} |
-| idp_context | [IdentityProviderContext](#bytebase-v1-IdentityProviderContext) |  | The idp_context is using to get the user information from identity provider. |
-| otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
-| recovery_code | [string](#string) | optional | The recovery_code is used to recovery the user&#39;s identity with MFA. |
-| mfa_temp_token | [string](#string) | optional | The mfa_temp_token is used to verify the user&#39;s identity by MFA. |
-
-
-
-
-
-
-<a name="bytebase-v1-LoginResponse"></a>
-
-### LoginResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| token | [string](#string) |  |  |
-| mfa_temp_token | [string](#string) | optional |  |
-| require_reset_password | [bool](#bool) |  |  |
-| user | [User](#bytebase-v1-User) |  | The user of successful login. |
-
-
-
-
-
-
-<a name="bytebase-v1-LogoutRequest"></a>
-
-### LogoutRequest
-
-
-
-
-
-
-
-<a name="bytebase-v1-OAuth2IdentityProviderContext"></a>
-
-### OAuth2IdentityProviderContext
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| code | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-OIDCIdentityProviderContext"></a>
-
-### OIDCIdentityProviderContext
-
 
 
 
@@ -5877,6 +5790,128 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | SYSTEM_BOT | 2 |  |
 | SERVICE_ACCOUNT | 3 |  |
 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-UserService"></a>
+
+### UserService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetUser | [GetUserRequest](#bytebase-v1-GetUserRequest) | [User](#bytebase-v1-User) | Get the user. Any authenticated user can get the user. |
+| ListUsers | [ListUsersRequest](#bytebase-v1-ListUsersRequest) | [ListUsersResponse](#bytebase-v1-ListUsersResponse) | List all users. Any authenticated user can list users. |
+| CreateUser | [CreateUserRequest](#bytebase-v1-CreateUserRequest) | [User](#bytebase-v1-User) | Create a user. When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user. Otherwise, any unauthenticated user can create a user. |
+| UpdateUser | [UpdateUserRequest](#bytebase-v1-UpdateUserRequest) | [User](#bytebase-v1-User) | Only the user itself and the user with bb.users.update permission on the workspace can update the user. |
+| DeleteUser | [DeleteUserRequest](#bytebase-v1-DeleteUserRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Only the user with bb.users.delete permission on the workspace can delete the user. The last remaining workspace admin cannot be deleted. |
+| UndeleteUser | [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest) | [User](#bytebase-v1-User) | Only the user with bb.users.undelete permission on the workspace can undelete the user. |
+
+ 
+
+
+
+<a name="v1_auth_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/auth_service.proto
+
+
+
+<a name="bytebase-v1-IdentityProviderContext"></a>
+
+### IdentityProviderContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| oauth2_context | [OAuth2IdentityProviderContext](#bytebase-v1-OAuth2IdentityProviderContext) |  |  |
+| oidc_context | [OIDCIdentityProviderContext](#bytebase-v1-OIDCIdentityProviderContext) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-LoginRequest"></a>
+
+### LoginRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| email | [string](#string) |  |  |
+| password | [string](#string) |  |  |
+| web | [bool](#bool) |  | If web is set, we will set access token, refresh token, and user to the cookie. |
+| idp_name | [string](#string) |  | The name of the identity provider. Format: idps/{idp} |
+| idp_context | [IdentityProviderContext](#bytebase-v1-IdentityProviderContext) |  | The idp_context is using to get the user information from identity provider. |
+| otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
+| recovery_code | [string](#string) | optional | The recovery_code is used to recovery the user&#39;s identity with MFA. |
+| mfa_temp_token | [string](#string) | optional | The mfa_temp_token is used to verify the user&#39;s identity by MFA. |
+
+
+
+
+
+
+<a name="bytebase-v1-LoginResponse"></a>
+
+### LoginResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| token | [string](#string) |  |  |
+| mfa_temp_token | [string](#string) | optional |  |
+| require_reset_password | [bool](#bool) |  |  |
+| user | [User](#bytebase-v1-User) |  | The user of successful login. |
+
+
+
+
+
+
+<a name="bytebase-v1-LogoutRequest"></a>
+
+### LogoutRequest
+
+
+
+
+
+
+
+<a name="bytebase-v1-OAuth2IdentityProviderContext"></a>
+
+### OAuth2IdentityProviderContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| code | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-OIDCIdentityProviderContext"></a>
+
+### OIDCIdentityProviderContext
+
+
+
+
+
+
+ 
 
  
 

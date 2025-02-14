@@ -50,30 +50,31 @@ func (m *GatewayResponseModifier) processMetadata(ctx context.Context, md runtim
 			Expires: time.Unix(0, 0),
 			Path:    "/",
 		})
-	} else {
-		// Set cookie.
-		sameSite := http.SameSiteStrictMode
-		if isHTTPS {
-			sameSite = http.SameSiteNoneMode
-		}
-		tokenDuration := GetTokenDuration(ctx, m.Store)
-		http.SetCookie(response, &http.Cookie{
-			Name:  cookieName,
-			Value: value,
-			// CookieExpDuration expires slightly earlier than the jwt expiration. Client would be logged out if the user
-			// cookie expires, thus the client would always logout first before attempting to make a request with the expired jwt.
-			// Suppose we have a valid refresh token, we will refresh the token in 2 cases:
-			// 1. The access token is about to expire in <<refreshThresholdDuration>>
-			// 2. The access token has already expired, we refresh the token so that the ongoing request can pass through.
-			Expires: time.Now().Add(tokenDuration - 1*time.Second),
-			Path:    "/",
-			// Http-only helps mitigate the risk of client side script accessing the protected cookie.
-			HttpOnly: httpOnly,
-			// See https://github.com/bytebase/bytebase/issues/31.
-			Secure:   isHTTPS,
-			SameSite: sameSite,
-		})
+		return
 	}
+
+	// Set cookie.
+	sameSite := http.SameSiteStrictMode
+	if isHTTPS {
+		sameSite = http.SameSiteNoneMode
+	}
+	tokenDuration := GetTokenDuration(ctx, m.Store)
+	http.SetCookie(response, &http.Cookie{
+		Name:  cookieName,
+		Value: value,
+		// CookieExpDuration expires slightly earlier than the jwt expiration. Client would be logged out if the user
+		// cookie expires, thus the client would always logout first before attempting to make a request with the expired jwt.
+		// Suppose we have a valid refresh token, we will refresh the token in 2 cases:
+		// 1. The access token is about to expire in <<refreshThresholdDuration>>
+		// 2. The access token has already expired, we refresh the token so that the ongoing request can pass through.
+		Expires: time.Now().Add(tokenDuration - 1*time.Second),
+		Path:    "/",
+		// Http-only helps mitigate the risk of client side script accessing the protected cookie.
+		HttpOnly: httpOnly,
+		// See https://github.com/bytebase/bytebase/issues/31.
+		Secure:   isHTTPS,
+		SameSite: sameSite,
+	})
 }
 
 func GetTokenDuration(ctx context.Context, store *store.Store) time.Duration {
