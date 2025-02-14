@@ -147,6 +147,13 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 				File:   file.Path,
 				Target: fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName),
 			}
+			changeType := storepb.PlanCheckRunConfig_DDL
+			switch file.ChangeType {
+			case v1pb.Release_File_DDL_GHOST:
+				changeType = storepb.PlanCheckRunConfig_DDL_GHOST
+			case v1pb.Release_File_DML:
+				changeType = storepb.PlanCheckRunConfig_DML
+			}
 			// Get SQL summary report for the statement and target database.
 			// Including affected rows.
 			summaryReport, err := plancheck.GetSQLSummaryReport(ctx, s.store, s.sheetManager, s.dbFactory, database, file.Statement)
@@ -156,29 +163,20 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 			if summaryReport != nil {
 				checkResult.AffectedRows = summaryReport.AffectedRows
 				response.AffectedRows += summaryReport.AffectedRows
-			}
 
-			changeType := storepb.PlanCheckRunConfig_DDL
-			switch file.ChangeType {
-			case v1pb.Release_File_DDL_GHOST:
-				changeType = storepb.PlanCheckRunConfig_DDL_GHOST
-			case v1pb.Release_File_DML:
-				changeType = storepb.PlanCheckRunConfig_DML
+				riskLevel, err := s.calculateRiskLevel(ctx, instance, database, changeType, summaryReport)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to calculate risk level, error: %v", err)
+				}
+				if riskLevel > maxRiskLevel {
+					maxRiskLevel = riskLevel
+				}
+				riskLevelEnum, err := convertRiskLevel(riskLevel)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to convert risk level, error: %v", err)
+				}
+				checkResult.RiskLevel = riskLevelEnum
 			}
-
-			riskLevel, err := s.calculateRiskLevel(ctx, instance, database, changeType, summaryReport)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to calculate risk level, error: %v", err)
-			}
-			if riskLevel > maxRiskLevel {
-				maxRiskLevel = riskLevel
-			}
-			riskLevelEnum, err := convertRiskLevel(riskLevel)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to convert risk level, error: %v", err)
-			}
-			checkResult.RiskLevel = riskLevelEnum
-
 			adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, catalog, instance, database, changeType, file.Statement)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to check SQL review: %v", err)
