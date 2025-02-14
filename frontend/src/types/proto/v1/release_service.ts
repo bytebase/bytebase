@@ -235,6 +235,8 @@ export interface CheckReleaseResponse_CheckResult {
   advices: Advice[];
   /** The count of affected rows of the statement on the target. */
   affectedRows: number;
+  /** The risk level of the statement on the target. */
+  riskLevel: CheckReleaseResponse_RiskLevel;
 }
 
 export interface Release {
@@ -1043,7 +1045,13 @@ export const CheckReleaseResponse: MessageFns<CheckReleaseResponse> = {
 };
 
 function createBaseCheckReleaseResponse_CheckResult(): CheckReleaseResponse_CheckResult {
-  return { file: "", target: "", advices: [], affectedRows: 0 };
+  return {
+    file: "",
+    target: "",
+    advices: [],
+    affectedRows: 0,
+    riskLevel: CheckReleaseResponse_RiskLevel.RISK_LEVEL_UNSPECIFIED,
+  };
 }
 
 export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_CheckResult> = {
@@ -1059,6 +1067,9 @@ export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_C
     }
     if (message.affectedRows !== 0) {
       writer.uint32(32).int32(message.affectedRows);
+    }
+    if (message.riskLevel !== CheckReleaseResponse_RiskLevel.RISK_LEVEL_UNSPECIFIED) {
+      writer.uint32(40).int32(checkReleaseResponse_RiskLevelToNumber(message.riskLevel));
     }
     return writer;
   },
@@ -1102,6 +1113,14 @@ export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_C
           message.affectedRows = reader.int32();
           continue;
         }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.riskLevel = checkReleaseResponse_RiskLevelFromJSON(reader.int32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1117,6 +1136,9 @@ export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_C
       target: isSet(object.target) ? globalThis.String(object.target) : "",
       advices: globalThis.Array.isArray(object?.advices) ? object.advices.map((e: any) => Advice.fromJSON(e)) : [],
       affectedRows: isSet(object.affectedRows) ? globalThis.Number(object.affectedRows) : 0,
+      riskLevel: isSet(object.riskLevel)
+        ? checkReleaseResponse_RiskLevelFromJSON(object.riskLevel)
+        : CheckReleaseResponse_RiskLevel.RISK_LEVEL_UNSPECIFIED,
     };
   },
 
@@ -1134,6 +1156,9 @@ export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_C
     if (message.affectedRows !== 0) {
       obj.affectedRows = Math.round(message.affectedRows);
     }
+    if (message.riskLevel !== CheckReleaseResponse_RiskLevel.RISK_LEVEL_UNSPECIFIED) {
+      obj.riskLevel = checkReleaseResponse_RiskLevelToJSON(message.riskLevel);
+    }
     return obj;
   },
 
@@ -1146,6 +1171,7 @@ export const CheckReleaseResponse_CheckResult: MessageFns<CheckReleaseResponse_C
     message.target = object.target ?? "";
     message.advices = object.advices?.map((e) => Advice.fromPartial(e)) || [];
     message.affectedRows = object.affectedRows ?? 0;
+    message.riskLevel = object.riskLevel ?? CheckReleaseResponse_RiskLevel.RISK_LEVEL_UNSPECIFIED;
     return message;
   },
 };

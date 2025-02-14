@@ -9069,6 +9069,15 @@ components:
                     type: integer
                     description: The count of affected rows of the statement on the target.
                     format: int32
+                riskLevel:
+                    enum:
+                        - RISK_LEVEL_UNSPECIFIED
+                        - LOW
+                        - MODERATE
+                        - HIGH
+                    type: string
+                    description: The risk level of the statement on the target.
+                    format: enum
         CheckRequest:
             required:
                 - name

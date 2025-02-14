@@ -9399,6 +9399,7 @@ for field description.
 | target | [string](#string) |  | The target that the check is performed on. Should be a database. Format: instances/{instance}/databases/{database} |
 | advices | [Advice](#bytebase-v1-Advice) | repeated | The list of advice for the file and the target. |
 | affected_rows | [int32](#int32) |  | The count of affected rows of the statement on the target. |
+| risk_level | [CheckReleaseResponse.RiskLevel](#bytebase-v1-CheckReleaseResponse-RiskLevel) |  | The risk level of the statement on the target. |
 
 
 

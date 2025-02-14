@@ -176,6 +176,9 @@ message CheckReleaseResponse {
 
     // The count of affected rows of the statement on the target.
     int32 affected_rows = 4;
+
+    // The risk level of the statement on the target.
+    RiskLevel risk_level = 5;
   }
 
   repeated CheckResult results = 1;
