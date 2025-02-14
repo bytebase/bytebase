@@ -149,8 +149,6 @@ const (
 // MigrationInfo is the API message for migration info.
 type MigrationInfo struct {
 	DatabaseID *int
-	ProjectUID *int
-	IssueUID   *int
 
 	ReleaseVersion string
 	Namespace      string
