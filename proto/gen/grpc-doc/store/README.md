@@ -4918,7 +4918,6 @@ TaskDatabaseCreatePayload is the task payload for creating databases.
 | skipped | [bool](#bool) |  | common fields |
 | skipped_reason | [string](#string) |  |  |
 | spec_id | [string](#string) |  |  |
-| project_id | [int32](#int32) |  |  |
 | database_name | [string](#string) |  |  |
 | table_name | [string](#string) |  |  |
 | sheet_id | [int32](#int32) |  |  |
