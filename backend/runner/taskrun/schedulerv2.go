@@ -121,7 +121,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTasks(ctx context.Context) error {
 	for _, environment := range environments {
 		policy, err := s.store.GetRolloutPolicy(ctx, environment.ResourceID)
 		if err != nil {
-			return errors.Wrapf(err, "failed to get rollout policy for environment %d", environment.UID)
+			return errors.Wrapf(err, "failed to get rollout policy for environment %s", environment.ResourceID)
 		}
 
 		taskIDs, err := s.store.ListTasksToAutoRollout(ctx, []string{environment.ResourceID})
