@@ -839,7 +839,7 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 			Title:        fmt.Sprintf("Test webhook %q", webhook.Title),
 			TitleZh:      fmt.Sprintf("测试 webhook %q", webhook.Title),
 			Description:  "This is a test",
-			Link:         fmt.Sprintf("%s/project/%s/webhook/%s", setting.ExternalUrl, fmt.Sprintf("%s-%d", slug.Make(project.Title), project.UID), fmt.Sprintf("%s-%d", slug.Make(webhook.Title), webhook.ID)),
+			Link:         fmt.Sprintf("%s/projects/%s/webhooks/%s", setting.ExternalUrl, project.ResourceID, fmt.Sprintf("%s-%d", slug.Make(webhook.Title), webhook.ID)),
 			ActorID:      api.SystemBotID,
 			ActorName:    "Bytebase",
 			ActorEmail:   s.store.GetSystemBotUser(ctx).Email,
