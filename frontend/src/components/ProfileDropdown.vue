@@ -77,7 +77,6 @@ const resetQuickstart = () => {
     "instance.visit",
     "database.visit",
     "member.visit",
-    "kbar.open",
     "data.query",
     "help.issue.detail",
     "help.project",

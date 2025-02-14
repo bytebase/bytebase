@@ -52,7 +52,6 @@ export function useRecentVisit() {
     // ensure the queue's length
     // should be no more than (MAX_HISTORY + 1)
     // because current page will always be the first one in the list
-    // but it will be not shown in kbar
     while (recentVisit.value.length > MAX_HISTORY + 1) {
       recentVisit.value.pop();
     }
