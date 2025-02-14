@@ -337,6 +337,10 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 	}
 	principalArgs = append(principalArgs, currentUser.ID)
 
+	if len(principalSet) == 0 {
+		return currentUser, nil
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
