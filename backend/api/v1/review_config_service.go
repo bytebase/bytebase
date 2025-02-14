@@ -183,8 +183,8 @@ func convertToReviewConfigMessage(reviewConfig *v1pb.ReviewConfig) (*store.Revie
 func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, reviewConfigMessage *store.ReviewConfigMessage) (*v1pb.ReviewConfig, error) {
 	policyType := api.PolicyTypeTag
 	tagPolicies, err := s.store.ListPoliciesV2(ctx, &store.FindPolicyMessage{
-		Type:        &policyType,
-		ShowDeleted: false,
+		Type:    &policyType,
+		ShowAll: false,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list tag policy, error %v", err)

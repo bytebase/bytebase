@@ -227,11 +227,7 @@ func updateProjectImplV2(ctx context.Context, tx *Tx, patch *UpdateProjectMessag
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Delete; v != nil {
-		rowStatus := api.Normal
-		if *patch.Delete {
-			rowStatus = api.Archived
-		}
-		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
+		set, args = append(set, fmt.Sprintf("deleted = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.DataClassificationConfigID; v != nil {
 		set, args = append(set, fmt.Sprintf("data_classification_config_id = $%d", len(args)+1)), append(args, *v)
@@ -265,7 +261,7 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
 	}
 	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
+		where, args = append(where, fmt.Sprintf("deleted = $%d", len(args)+1)), append(args, false)
 	}
 
 	var projectMessages []*ProjectMessage
@@ -277,7 +273,7 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			data_classification_config_id,
 			(SELECT COUNT(1) FROM vcs_connector WHERE project.resource_id = vcs_connector.project) AS connectors,
 			setting,
-			row_status
+			deleted
 		FROM project
 		WHERE %s
 		ORDER BY project.resource_id`, strings.Join(where, " AND ")),
@@ -291,7 +287,6 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 	for rows.Next() {
 		var projectMessage ProjectMessage
 		var payload []byte
-		var rowStatus string
 		if err := rows.Scan(
 			&projectMessage.UID,
 			&projectMessage.ResourceID,
@@ -299,7 +294,7 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			&projectMessage.DataClassificationConfigID,
 			&projectMessage.VCSConnectorsCount,
 			&payload,
-			&rowStatus,
+			&projectMessage.Deleted,
 		); err != nil {
 			return nil, err
 		}
@@ -308,7 +303,6 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			return nil, err
 		}
 		projectMessage.Setting = setting
-		projectMessage.Deleted = convertRowStatusToDeleted(rowStatus)
 		projectMessages = append(projectMessages, &projectMessage)
 	}
 	if err := rows.Err(); err != nil {

@@ -188,11 +188,7 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, patch *UpdateEnvironmen
 		set, args = append(set, fmt.Sprintf(`"order" = $%d`, len(args)+1)), append(args, *v)
 	}
 	if v := patch.Delete; v != nil {
-		rowStatus := api.Normal
-		if *patch.Delete {
-			rowStatus = api.Archived
-		}
-		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
+		set, args = append(set, fmt.Sprintf("deleted = $%d", len(args)+1)), append(args, *v)
 	}
 	args = append(args, patch.UID)
 
@@ -299,7 +295,7 @@ func listEnvironmentImplV2(ctx context.Context, tx *Tx, find *FindEnvironmentMes
 		where, args = append(where, fmt.Sprintf("environment.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("environment.row_status = $%d", len(args)+1)), append(args, api.Normal)
+		where, args = append(where, fmt.Sprintf("environment.deleted = $%d", len(args)+1)), append(args, false)
 	}
 
 	var environments []*EnvironmentMessage
@@ -309,7 +305,7 @@ func listEnvironmentImplV2(ctx context.Context, tx *Tx, find *FindEnvironmentMes
 			environment.resource_id,
 			environment.name,
 			environment.order,
-			environment.row_status,
+			environment.deleted,
 			policy.payload
 		FROM environment
 		LEFT JOIN policy ON environment.resource_id = policy.resource AND policy.resource_type = 'ENVIRONMENT' AND policy.type = 'bb.policy.environment-tier'
@@ -324,18 +320,16 @@ func listEnvironmentImplV2(ctx context.Context, tx *Tx, find *FindEnvironmentMes
 	for rows.Next() {
 		var environment EnvironmentMessage
 		var tierPayload sql.NullString
-		var rowStatus string
 		if err := rows.Scan(
 			&environment.UID,
 			&environment.ResourceID,
 			&environment.Title,
 			&environment.Order,
-			&rowStatus,
+			&environment.Deleted,
 			&tierPayload,
 		); err != nil {
 			return nil, err
 		}
-		environment.Deleted = convertRowStatusToDeleted(rowStatus)
 		if tierPayload.Valid {
 			policy := &storepb.EnvironmentTierPolicy{}
 			if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(tierPayload.String), policy); err != nil {
@@ -352,8 +346,4 @@ func listEnvironmentImplV2(ctx context.Context, tx *Tx, find *FindEnvironmentMes
 	}
 
 	return environments, nil
-}
-
-func convertRowStatusToDeleted(rowStatus string) bool {
-	return rowStatus == string(api.Archived)
 }
