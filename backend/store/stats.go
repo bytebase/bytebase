@@ -3,6 +3,8 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -44,11 +46,15 @@ func (s *Store) CountUsers(ctx context.Context, userType api.PrincipalType) (int
 
 // CountInstance counts the number of instances.
 func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (int, error) {
+	where, args := []string{"instance.deleted = $1"}, []any{false}
+	if v := find.EnvironmentID; v != nil {
+		where, args = append(where, fmt.Sprintf("instance.environment = $%d", len(args)+1)), append(args, *v)
+	}
 	query := `
 		SELECT
 			count(1)
 		FROM instance
-		WHERE deleted = FALSE`
+		WHERE ` + strings.Join(where, " AND ")
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -57,7 +63,7 @@ func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (
 	defer tx.Rollback()
 
 	var count int
-	if err := tx.QueryRowContext(ctx, query).Scan(&count); err != nil {
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
 		return 0, err
 	}
 	if err := tx.Commit(); err != nil {
