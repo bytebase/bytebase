@@ -18,10 +18,6 @@ import (
 type DeploymentConfigMessage struct {
 	Name   string
 	Config *storepb.DeploymentConfig
-
-	// Output only fields.
-	// ID is the ID of the deployment config.
-	UID int
 }
 
 // GetDeploymentConfigV2 returns the deployment config.
@@ -45,13 +41,12 @@ func (s *Store) GetDeploymentConfigV2(ctx context.Context, projectID string) (*D
 
 	if err := tx.QueryRowContext(ctx, `
 		SELECT
-			id,
 			name,
 			config
 		FROM deployment_config
 		WHERE `+strings.Join(where, " AND "),
 		args...,
-	).Scan(&deploymentConfig.UID, &deploymentConfig.Name, &configB); err != nil {
+	).Scan(&deploymentConfig.Name, &configB); err != nil {
 		if err == sql.ErrNoRows {
 			// Return default deployment config.
 			return s.getDefaultDeploymentConfigV2(ctx)
@@ -88,7 +83,7 @@ func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, projectID string, 
 		ON CONFLICT(project) DO UPDATE SET
 			name = excluded.name,
 			config = excluded.config
-		RETURNING id, name, config
+		RETURNING name, config
 	`
 	deploymentConfig := DeploymentConfigMessage{
 		Config: &storepb.DeploymentConfig{},
@@ -105,7 +100,7 @@ func (s *Store) UpsertDeploymentConfigV2(ctx context.Context, projectID string, 
 		projectID,
 		upsert.Name,
 		configB,
-	).Scan(&deploymentConfig.UID, &deploymentConfig.Name, &newConfigB); err != nil {
+	).Scan(&deploymentConfig.Name, &newConfigB); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
@@ -144,7 +139,6 @@ func (s *Store) getDefaultDeploymentConfigV2(ctx context.Context) (*DeploymentCo
 		})
 	}
 	return &DeploymentConfigMessage{
-		UID: 0,
 		Config: &storepb.DeploymentConfig{
 			Schedule: &storepb.Schedule{
 				Deployments: deployments,

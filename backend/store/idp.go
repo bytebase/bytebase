@@ -20,9 +20,7 @@ type IdentityProviderMessage struct {
 	Domain     string
 	Type       storepb.IdentityProviderType
 	Config     *storepb.IdentityProviderConfig
-	// The following fields are output only and not used for creating.
-	UID     int
-	Deleted bool
+	Deleted    bool
 }
 
 func getConfigBytes(config *storepb.IdentityProviderConfig) ([]byte, error) {
@@ -77,28 +75,22 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal identity provider config")
 	}
-	if err := tx.QueryRowContext(ctx, `
-			INSERT INTO idp (
-				resource_id,
-				name,
-				domain,
-				type,
-				config
-			)
-			VALUES ($1, $2, $3, $4, $5)
-			RETURNING id
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO idp (
+			resource_id,
+			name,
+			domain,
+			type,
+			config
+		)
+		VALUES ($1, $2, $3, $4, $5)
 		`,
 		create.ResourceID,
 		create.Title,
 		create.Domain,
 		create.Type.String(),
 		configBytes,
-	).Scan(
-		&identityProvider.UID,
 	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery("failed to create identity provider")
-		}
 		return nil, err
 	}
 
@@ -216,7 +208,6 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *Upd
 		SET `+strings.Join(set, ", ")+`
 		WHERE resource_id = $%d
 		RETURNING
-			id,
 			resource_id,
 			name,
 			domain,
@@ -226,7 +217,6 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *Upd
 	`, len(args)),
 		args...,
 	).Scan(
-		&identityProvider.UID,
 		&identityProvider.ResourceID,
 		&identityProvider.Title,
 		&identityProvider.Domain,
@@ -260,7 +250,6 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, tx *Tx, find *FindI
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			id,
 			resource_id,
 			name,
 			domain,
@@ -282,7 +271,6 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, tx *Tx, find *FindI
 		var identityProviderType string
 		var identityProviderConfig string
 		if err := rows.Scan(
-			&identityProviderMessage.UID,
 			&identityProviderMessage.ResourceID,
 			&identityProviderMessage.Title,
 			&identityProviderMessage.Domain,
