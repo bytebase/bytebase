@@ -14,12 +14,8 @@ const (
 	IssueCountMetricName metric.Name = "bb.issue.count"
 	// ProjectCountMetricName is the metric name for project count.
 	ProjectCountMetricName metric.Name = "bb.project.count"
-	// DatabaseCountMetricName is the metric name for database count.
-	DatabaseCountMetricName metric.Name = "bb.database.count"
-	// SheetCountMetricName is the metric name for sheet count.
-	SheetCountMetricName metric.Name = "bb.sheet.count"
-	// MemberCountMetricName is the metric name for member count.
-	MemberCountMetricName metric.Name = "bb.member.count"
+	// UserCountMetricName is the metric name for user count.
+	UserCountMetricName metric.Name = "bb.user.count"
 	// OpenAPIMetricName is the metric name for OpenAPI.
 	OpenAPIMetricName metric.Name = "bb.api.call"
 	// SQLAdviseAPIMetricName is the metric name for SQL check API.
@@ -53,9 +49,7 @@ type InstanceCountMetric struct {
 
 // IssueCountMetric is the API message for bb.issue.count.
 type IssueCountMetric struct {
-	Type   api.IssueType
-	Status api.IssueStatus
-	Count  int
+	Count int
 }
 
 // ProjectCountMetric is the API message for project count metric.
