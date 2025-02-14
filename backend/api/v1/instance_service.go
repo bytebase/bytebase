@@ -690,7 +690,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	}
 
 	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		UID: &instance.UID,
+		ResourceID: &instance.ResourceID,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -889,7 +889,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	}
 
 	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		UID: &instance.UID,
+		ResourceID: &instance.ResourceID,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -943,7 +943,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 	}
 
 	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
-		UID: &instance.UID,
+		ResourceID: &instance.ResourceID,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

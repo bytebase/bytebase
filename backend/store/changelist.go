@@ -21,8 +21,6 @@ type ChangelistMessage struct {
 
 	Payload *storepb.Changelist
 
-	// Output only fields
-	UID       int
 	CreatorID int
 	UpdatedAt time.Time
 }
@@ -75,7 +73,6 @@ func (s *Store) ListChangelists(ctx context.Context, find *FindChangelistMessage
 
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
-			id,
 			creator_id,
 			updated_at,
 			project,
@@ -95,7 +92,6 @@ func (s *Store) ListChangelists(ctx context.Context, find *FindChangelistMessage
 		var changelist ChangelistMessage
 		var payload []byte
 		if err := rows.Scan(
-			&changelist.UID,
 			&changelist.CreatorID,
 			&changelist.UpdatedAt,
 			&changelist.ProjectID,
@@ -140,7 +136,7 @@ func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage)
 			payload
 		)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, updated_at;
+		RETURNING updated_at;
 	`
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -154,7 +150,6 @@ func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage)
 		create.ResourceID,
 		payload,
 	).Scan(
-		&create.UID,
 		&create.UpdatedAt,
 	); err != nil {
 		return nil, err
