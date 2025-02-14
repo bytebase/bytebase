@@ -23,8 +23,6 @@ const (
 	PolicyTypeRollout PolicyType = "bb.policy.rollout"
 	// PolicyTypeEnvironmentTier is the tier of an environment.
 	PolicyTypeEnvironmentTier PolicyType = "bb.policy.environment-tier"
-	// PolicyTypeMasking is the masking policy type.
-	PolicyTypeMasking PolicyType = "bb.policy.masking"
 	// PolicyTypeMaskingException is the masking exception policy type.
 	PolicyTypeMaskingException PolicyType = "bb.policy.masking-exception"
 	// PolicyTypeSlowQuery is the slow query policy type.
@@ -64,8 +62,6 @@ const (
 	PolicyResourceTypeProject PolicyResourceType = "PROJECT"
 	// PolicyResourceTypeInstance is the resource type for instances.
 	PolicyResourceTypeInstance PolicyResourceType = "INSTANCE"
-	// PolicyResourceTypeDatabase is the resource type for databases.
-	PolicyResourceTypeDatabase PolicyResourceType = "DATABASE"
 
 	// ReservedTagReviewConfig is the tag for review config.
 	ReservedTagReviewConfig ReservedTag = "bb.tag.review_config"
@@ -76,8 +72,7 @@ var (
 	AllowedResourceTypes = map[PolicyType][]PolicyResourceType{
 		PolicyTypeRollout:                           {PolicyResourceTypeEnvironment},
 		PolicyTypeEnvironmentTier:                   {PolicyResourceTypeEnvironment},
-		PolicyTypeTag:                               {PolicyResourceTypeEnvironment, PolicyResourceTypeProject, PolicyResourceTypeDatabase},
-		PolicyTypeMasking:                           {PolicyResourceTypeDatabase},
+		PolicyTypeTag:                               {PolicyResourceTypeEnvironment, PolicyResourceTypeProject},
 		PolicyTypeSlowQuery:                         {PolicyResourceTypeInstance},
 		PolicyTypeDisableCopyData:                   {PolicyResourceTypeEnvironment, PolicyResourceTypeProject},
 		PolicyTypeExportData:                        {PolicyResourceTypeWorkspace},
