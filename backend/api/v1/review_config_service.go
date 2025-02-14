@@ -239,23 +239,6 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 				continue
 			}
 			config.Resources = append(config.Resources, common.FormatProject(project.ResourceID))
-		case api.PolicyResourceTypeDatabase:
-			instanceID, databaseName, err := common.GetInstanceDatabaseID(policy.Resource)
-			if err != nil {
-				return nil, err
-			}
-			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-				InstanceID:   &instanceID,
-				DatabaseName: &databaseName,
-				ShowDeleted:  false,
-			})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to get database %s with error: %v", policy.Resource, err)
-			}
-			if database == nil {
-				continue
-			}
-			config.Resources = append(config.Resources, common.FormatDatabase(database.InstanceID, database.DatabaseName))
 		}
 	}
 
