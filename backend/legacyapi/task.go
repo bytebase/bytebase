@@ -41,7 +41,7 @@ const (
 	// TaskDatabaseSchemaUpdateSDL is the task type for updating database schemas via state-based migration.
 	TaskDatabaseSchemaUpdateSDL TaskType = "bb.task.database.schema.update-sdl"
 	// TaskDatabaseSchemaUpdateGhost is the task type for updating database schemas using gh-ost.
-	TaskDatabaseSchemaUpdateGhost TaskType = "bb.task.database.schema.update.ghost"
+	TaskDatabaseSchemaUpdateGhost TaskType = "bb.task.database.schema.update-ghost"
 	// TaskDatabaseSchemaUpdateGhostSync is the task type for gh-ost syncing ghost table.
 	// TODO(p0ny): deprecated by TaskDatabaseSchemaUpdateGhost.
 	TaskDatabaseSchemaUpdateGhostSync TaskType = "bb.task.database.schema.update.ghost.sync"
