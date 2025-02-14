@@ -1592,7 +1592,7 @@ func writeSchema(out io.Writer, schema *storepb.SchemaMetadata) error {
 		return nil
 	}
 
-	if _, err := io.WriteString(out, `CREATE SCHEMA "`); err != nil {
+	if _, err := io.WriteString(out, `CREATE SCHEMA IF NOT EXISTS "`); err != nil {
 		return err
 	}
 
