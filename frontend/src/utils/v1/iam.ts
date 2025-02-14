@@ -12,7 +12,7 @@ import {
   groupBindingPrefix,
   PRESET_WORKSPACE_ROLES,
 } from "@/types";
-import type { User } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/user_service";
 import type { IamPolicy, Binding } from "@/types/proto/v1/iam_policy";
 import { convertFromExpr } from "@/utils/issue/cel";
 
