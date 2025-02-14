@@ -3,8 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -46,15 +44,11 @@ func (s *Store) CountUsers(ctx context.Context, userType api.PrincipalType) (int
 
 // CountInstance counts the number of instances.
 func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (int, error) {
-	where, args := []string{"instance.row_status = $1"}, []any{api.Normal}
-	if v := find.EnvironmentID; v != nil {
-		where, args = append(where, fmt.Sprintf("instance.environment = $%d", len(args)+1)), append(args, *v)
-	}
 	query := `
 		SELECT
 			count(1)
 		FROM instance
-		WHERE ` + strings.Join(where, " AND ")
+		WHERE deleted = FALSE`
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -63,7 +57,7 @@ func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (
 	defer tx.Rollback()
 
 	var count int
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
+	if err := tx.QueryRowContext(ctx, query).Scan(&count); err != nil {
 		return 0, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -240,7 +234,7 @@ func (s *Store) CountTaskGroupByTypeAndStatus(ctx context.Context) ([]*metric.Ta
 	return res, nil
 }
 
-// CountSheetGroupByRowstatusVisibilitySourceAndType counts the number of sheets group by row_status, visibility, source and type.
+// CountSheetGroupByRowstatusVisibilitySourceAndType counts the number of sheets group by visibility, source and type.
 // Used by the metric collector.
 func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Context) ([]*metric.SheetCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
