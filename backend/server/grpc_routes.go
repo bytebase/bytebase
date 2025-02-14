@@ -46,8 +46,13 @@ func configureGrpcRouters(
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
+	userService, err := apiv1.NewUserService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager, postCreateUser)
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
+	}
 	v1pb.RegisterAuditLogServiceServer(grpcServer, apiv1.NewAuditLogService(stores, iamManager, licenseService))
 	v1pb.RegisterAuthServiceServer(grpcServer, authService)
+	v1pb.RegisterUserServiceServer(grpcServer, userService)
 	v1pb.RegisterActuatorServiceServer(grpcServer, apiv1.NewActuatorService(stores, profile, licenseService))
 	v1pb.RegisterSubscriptionServiceServer(grpcServer, apiv1.NewSubscriptionService(
 		stores,
@@ -110,6 +115,9 @@ func configureGrpcRouters(
 
 	// Sort by service name, align with api.bytebase.com.
 	if err := v1pb.RegisterActuatorServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterUserServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
 	if err := v1pb.RegisterAnomalyServiceHandler(ctx, mux, grpcConn); err != nil {
