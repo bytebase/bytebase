@@ -239,7 +239,6 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 
 		payload := &storepb.TaskDatabaseCreatePayload{
 			SpecId:        spec.Id,
-			ProjectId:     int32(project.UID),
 			CharacterSet:  c.CharacterSet,
 			TableName:     c.Table,
 			Collation:     c.Collation,

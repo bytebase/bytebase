@@ -14,7 +14,6 @@ message TaskDatabaseCreatePayload {
   string skipped_reason = 2;
   string spec_id = 3;
 
-  int32 project_id = 4;
   string database_name = 5;
   string table_name = 6;
   int32 sheet_id = 7;

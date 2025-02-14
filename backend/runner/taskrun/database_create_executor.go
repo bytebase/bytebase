@@ -84,13 +84,19 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		return true, nil, errors.Errorf("Creating database is not supported")
 	}
 
-	projectID := int(payload.ProjectId)
-	project, err := exec.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
+	pipeline, err := exec.store.GetPipelineV2ByID(ctx, task.PipelineID)
 	if err != nil {
-		return true, nil, errors.Errorf("failed to find project with ID %d", projectID)
+		return true, nil, errors.Wrapf(err, "failed to get pipeline")
+	}
+	if pipeline == nil {
+		return true, nil, errors.Errorf("pipeline %v not found", task.PipelineID)
+	}
+	project, err := exec.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &pipeline.ProjectID})
+	if err != nil {
+		return true, nil, errors.Errorf("failed to find project %s", pipeline.ProjectID)
 	}
 	if project == nil {
-		return true, nil, errors.Errorf("project not found with ID %d", projectID)
+		return true, nil, errors.Errorf("project %s not found", pipeline.ProjectID)
 	}
 
 	// Create database.
@@ -113,7 +119,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		}
 	}
 	database, err := exec.store.UpsertDatabase(ctx, &store.DatabaseMessage{
-		ProjectID:     project.ResourceID,
+		ProjectID:     pipeline.ProjectID,
 		InstanceID:    instance.ResourceID,
 		DatabaseName:  payload.DatabaseName,
 		EnvironmentID: payload.EnvironmentId,
@@ -380,17 +386,6 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 			log.BBError(err),
 		)
 	}
-	mi.ProjectUID = &project.UID
-	// TODO(d): how could issue be nil?
-	if issue == nil {
-		err := errors.Errorf("failed to fetch containing issue for composing the migration info, issue not found with pipeline ID %v", task.PipelineID)
-		slog.Error(err.Error(),
-			slog.Int("task_id", task.ID),
-			log.BBError(err),
-		)
-	} else {
-		mi.IssueUID = &issue.UID
-	}
 
 	// TODO(p0ny): check here
 	mc := &migrateContext{
@@ -409,8 +404,6 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 
 	if issue != nil {
 		mi.Description = fmt.Sprintf("%s - %s", issue.Title, task.Name)
-		mi.ProjectUID = &issue.Project.UID
-		mi.IssueUID = &issue.UID
 
 		mc.issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
 	}

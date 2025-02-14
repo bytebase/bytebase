@@ -1,0 +1,1 @@
+UPDATE task SET payload = payload - 'projectId' WHERE type = 'bb.task.database.create';

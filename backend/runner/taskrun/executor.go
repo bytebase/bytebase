@@ -229,8 +229,6 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		// Concat issue title and task name as the migration description so that user can see
 		// more context of the migration.
 		mi.Description = fmt.Sprintf("%s - %s", issue.Title, task.Name)
-		mi.ProjectUID = &issue.Project.UID
-		mi.IssueUID = &issue.UID
 
 		mc.issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
 	}
