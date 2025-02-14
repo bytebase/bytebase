@@ -24,23 +24,14 @@ func NewIssueCountCollector(store *store.Store) metric.Collector {
 
 // Collect will collect the metric for issue.
 func (c *issueCountCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
-	var res []*metric.Metric
-
-	issueCountMetricList, err := c.store.CountIssueGroupByTypeAndStatus(ctx)
+	count, err := c.store.CountIssues(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	for _, issueCountMetric := range issueCountMetricList {
-		res = append(res, &metric.Metric{
+	return []*metric.Metric{
+		{
 			Name:  metricapi.IssueCountMetricName,
-			Value: issueCountMetric.Count,
-			Labels: map[string]any{
-				"type":   string(issueCountMetric.Type),
-				"status": string(issueCountMetric.Status),
-			},
-		})
-	}
-
-	return res, nil
+			Value: count,
+		},
+	}, nil
 }
