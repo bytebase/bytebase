@@ -15,7 +15,7 @@ type userCountCollector struct {
 	store *store.Store
 }
 
-// NewUserCountCollector creates a new instance of memberCountCollector.
+// NewUserCountCollector creates a new instance of userCountCollector.
 func NewUserCountCollector(store *store.Store) metric.Collector {
 	return &userCountCollector{
 		store: store,
