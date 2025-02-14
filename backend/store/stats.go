@@ -12,7 +12,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/metric"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // CountInstanceMessage is the message for counting instances.
@@ -47,7 +46,7 @@ func (s *Store) CountUsers(ctx context.Context, userType api.PrincipalType) (int
 
 // CountInstance counts the number of instances.
 func (s *Store) CountInstance(ctx context.Context, find *CountInstanceMessage) (int, error) {
-	where, args := []string{"instance.row_status = $1"}, []any{api.Normal}
+	where, args := []string{"instance.deleted = $1"}, []any{false}
 	if v := find.EnvironmentID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.environment = $%d", len(args)+1)), append(args, *v)
 	}
@@ -85,9 +84,9 @@ func (s *Store) CountActiveUsers(ctx context.Context) (int, error) {
 		SELECT
 			count(DISTINCT principal.id)
 		FROM principal
-		WHERE principal.row_status = $1 AND (principal.type = $2 OR principal.type = $3)`
+		WHERE principal.deleted = $1 AND (principal.type = $2 OR principal.type = $3)`
 	var count int
-	if err := tx.QueryRowContext(ctx, query, api.Normal, api.EndUser, api.ServiceAccount).Scan(&count); err != nil {
+	if err := tx.QueryRowContext(ctx, query, false, api.EndUser, api.ServiceAccount).Scan(&count); err != nil {
 		if err == sql.ErrNoRows {
 			return 0, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
@@ -99,56 +98,28 @@ func (s *Store) CountActiveUsers(ctx context.Context) (int, error) {
 	return count, nil
 }
 
-// CountProjectGroupByWorkflow counts the number of projects and group by workflow type.
+// CountProjects counts the number of projects and group by workflow type.
 // Used by the metric collector.
-func (s *Store) CountProjectGroupByWorkflow(ctx context.Context) ([]*metric.ProjectCountMetric, error) {
+func (s *Store) CountProjects(ctx context.Context) (int, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, `
-		WITH project_workflow AS (
-			SELECT
-				project.row_status as row_status,
-				(SELECT COUNT(1) FROM vcs_connector WHERE project.resource_id = vcs_connector.project) > 0 AS has_connector
-			FROM project
-			WHERE resource_id != 'default'
-		)
+	var count int
+	if err := tx.QueryRowContext(ctx, `
 		SELECT
-			has_connector,
-			row_status,
-			COUNT(*)
-		FROM project_workflow
-		GROUP BY has_connector, row_status`,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var res []*metric.ProjectCountMetric
-	for rows.Next() {
-		var metric metric.ProjectCountMetric
-		var hasConnector bool
-		if err := rows.Scan(&hasConnector, &metric.RowStatus, &metric.Count); err != nil {
-			return nil, err
-		}
-		workflow := v1pb.Workflow_UI
-		if hasConnector {
-			workflow = v1pb.Workflow_VCS
-		}
-		metric.WorkflowType = workflow
-		res = append(res, &metric)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
+			COUNT(1)
+		FROM project
+		WHERE deleted = FALSE`,
+	).Scan(&count); err != nil {
+		return 0, err
 	}
 	if err := tx.Commit(); err != nil {
-		return nil, err
+		return 0, err
 	}
-	return res, nil
+	return count, nil
 }
 
 // CountIssueGroupByTypeAndStatus counts the number of issue and group by type and status.
@@ -199,10 +170,10 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) 
 	defer tx.Rollback()
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT engine, environment, row_status, COUNT(*)
+		SELECT engine, environment, COUNT(1)
 		FROM instance
-		WHERE id > 101
-		GROUP BY engine, environment, row_status`,
+		WHERE id > 101 AND deleted = FALSE
+		GROUP BY engine, environment`,
 	)
 	if err != nil {
 		return nil, err
@@ -213,7 +184,7 @@ func (s *Store) CountInstanceGroupByEngineAndEnvironmentID(ctx context.Context) 
 	for rows.Next() {
 		var metric metric.InstanceCountMetric
 		var engine string
-		if err := rows.Scan(&engine, &metric.EnvironmentID, &metric.RowStatus, &metric.Count); err != nil {
+		if err := rows.Scan(&engine, &metric.EnvironmentID, &metric.Count); err != nil {
 			return nil, err
 		}
 		engineTypeValue, ok := storepb.Engine_value[engine]
@@ -269,7 +240,7 @@ func (s *Store) CountTaskGroupByTypeAndStatus(ctx context.Context) ([]*metric.Ta
 	return res, nil
 }
 
-// CountSheetGroupByRowstatusVisibilitySourceAndType counts the number of sheets group by row_status, visibility, source and type.
+// CountSheetGroupByRowstatusVisibilitySourceAndType counts the number of sheets group by visibility, source and type.
 // Used by the metric collector.
 func (s *Store) CountSheetGroupByRowstatusVisibilitySourceAndType(ctx context.Context) ([]*metric.SheetCountMetric, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})

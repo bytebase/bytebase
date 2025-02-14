@@ -349,7 +349,8 @@ type FindPolicyMessage struct {
 	ResourceType *api.PolicyResourceType
 	Resource     *string
 	Type         *api.PolicyType
-	ShowDeleted  bool
+	// ShowAll will show all policies regardless of the enforce status.
+	ShowAll bool
 }
 
 // UpdatePolicyMessage is the message for updating a policy.
@@ -377,7 +378,7 @@ func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*Poli
 	defer tx.Rollback()
 
 	// We will always return the resource regardless of its deleted state.
-	find.ShowDeleted = true
+	find.ShowAll = true
 	policies, err := s.listPolicyImplV2(ctx, tx, find)
 	if err != nil {
 		return nil, err
@@ -459,11 +460,7 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Enforce; v != nil {
-		rowStatus := api.Normal
-		if !*patch.Enforce {
-			rowStatus = api.Archived
-		}
-		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
+		set, args = append(set, fmt.Sprintf(`enforce = $%d`, len(args)+1)), append(args, *v)
 	}
 	args = append(args, patch.ResourceType, patch.Resource, patch.Type)
 
@@ -478,7 +475,6 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 		ResourceType: patch.ResourceType,
 		Type:         patch.Type,
 	}
-	var rowStatus string
 
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			UPDATE policy
@@ -487,23 +483,20 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 			RETURNING
 				payload,
 				inherit_from_parent,
-				row_status,
+				enforce,
 				updated_at
 		`, len(args)-2, len(args)-1, len(args)),
 		args...,
 	).Scan(
 		&policy.Payload,
 		&policy.InheritFromParent,
-		&rowStatus,
+		&policy.Enforce,
 		&policy.UpdatedAt,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, err
-	}
-	if rowStatus == string(api.Normal) {
-		policy.Enforce = true
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -543,10 +536,6 @@ func (s *Store) DeletePolicyV2(ctx context.Context, policy *PolicyMessage) error
 func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage) (*PolicyMessage, error) {
 	var uid int
 
-	rowStatus := api.Normal
-	if !create.Enforce {
-		rowStatus = api.Archived
-	}
 	if err := tx.QueryRowContext(ctx, `
 			INSERT INTO policy (
 				resource_type,
@@ -554,13 +543,13 @@ func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage) (*Po
 				inherit_from_parent,
 				type,
 				payload,
-				row_status
+				enforce
 			)
 			VALUES ($1, $2, $3, $4, $5, $6)
 			ON CONFLICT(resource_type, resource, type) DO UPDATE SET
 				inherit_from_parent = EXCLUDED.inherit_from_parent,
 				payload = EXCLUDED.payload,
-				row_status = EXCLUDED.row_status
+				enforce = EXCLUDED.enforce
 			RETURNING
 				id,
 				updated_at
@@ -570,7 +559,7 @@ func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage) (*Po
 		create.InheritFromParent,
 		create.Type,
 		create.Payload,
-		rowStatus,
+		create.Enforce,
 	).Scan(
 		&uid,
 		&create.UpdatedAt,
@@ -592,8 +581,8 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 	if v := find.Type; v != nil {
 		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
 	}
-	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
+	if !find.ShowAll {
+		where, args = append(where, fmt.Sprintf("enforce = $%d", len(args)+1)), append(args, true)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
@@ -605,7 +594,7 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 			inherit_from_parent,
 			type,
 			payload,
-			row_status
+			enforce
 		FROM policy
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -618,8 +607,6 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 	var policyList []*PolicyMessage
 	for rows.Next() {
 		var policyMessage PolicyMessage
-		var rowStatus api.RowStatus
-
 		if err := rows.Scan(
 			&policyMessage.UID,
 			&policyMessage.UpdatedAt,
@@ -628,12 +615,9 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 			&policyMessage.InheritFromParent,
 			&policyMessage.Type,
 			&policyMessage.Payload,
-			&rowStatus,
+			&policyMessage.Enforce,
 		); err != nil {
 			return nil, err
-		}
-		if rowStatus == api.Normal {
-			policyMessage.Enforce = true
 		}
 		policyList = append(policyList, &policyMessage)
 	}

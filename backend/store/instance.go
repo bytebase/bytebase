@@ -251,14 +251,12 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	}
 	if v := patch.Deleted; v != nil {
 		if patch.Activation != nil {
-			return nil, errors.Errorf(`cannot set "activation" and "row_status" at the same time`)
+			return nil, errors.Errorf(`cannot set "activation" and "deleted" at the same time`)
 		}
-		rowStatus := api.Normal
 		if *patch.Deleted {
-			rowStatus = api.Archived
 			set, args = append(set, fmt.Sprintf("activation = $%d", len(args)+1)), append(args, false)
 		}
-		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
+		set, args = append(set, fmt.Sprintf(`deleted = $%d`, len(args)+1)), append(args, *v)
 	}
 	if v := patch.OptionsUpsert; v != nil {
 		options, err := protojson.Marshal(v)
@@ -299,11 +297,10 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 				engine_version,
 				external_link,
 				activation,
-				row_status,
+				deleted,
 				options,
 				metadata
 		`, strings.Join(where, " AND "))
-		var rowStatus string
 		var environment sql.NullString
 		var options, metadata []byte
 		if err := tx.QueryRowContext(ctx, query, args...).Scan(
@@ -315,7 +312,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 			&instance.EngineVersion,
 			&instance.ExternalLink,
 			&instance.Activation,
-			&rowStatus,
+			&instance.Deleted,
 			&options,
 			&metadata,
 		); err != nil {
@@ -329,7 +326,6 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 			return nil, errors.Errorf("invalid engine %s", engine)
 		}
 		instance.Engine = storepb.Engine(engineTypeValue)
-		instance.Deleted = convertRowStatusToDeleted(rowStatus)
 
 		var instanceOptions storepb.InstanceOptions
 		if err := common.ProtojsonUnmarshaler.Unmarshal(options, &instanceOptions); err != nil {
@@ -393,7 +389,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 		where, args = append(where, fmt.Sprintf("instance.id = $%d", len(args)+1)), append(args, *v)
 	}
 	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("instance.row_status = $%d", len(args)+1)), append(args, api.Normal)
+		where, args = append(where, fmt.Sprintf("instance.deleted = $%d", len(args)+1)), append(args, false)
 	}
 
 	var instanceMessages []*InstanceMessage
@@ -407,7 +403,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 			engine_version,
 			external_link,
 			activation,
-			row_status,
+			deleted,
 			options,
 			metadata
 		FROM instance
@@ -422,7 +418,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	for rows.Next() {
 		var instanceMessage InstanceMessage
 		var environment sql.NullString
-		var engine, rowStatus string
+		var engine string
 		var options, metadata []byte
 		if err := rows.Scan(
 			&instanceMessage.UID,
@@ -433,7 +429,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 			&instanceMessage.EngineVersion,
 			&instanceMessage.ExternalLink,
 			&instanceMessage.Activation,
-			&rowStatus,
+			&instanceMessage.Deleted,
 			&options,
 			&metadata,
 		); err != nil {
@@ -448,7 +444,6 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 		}
 		instanceMessage.Engine = storepb.Engine(engineTypeValue)
 
-		instanceMessage.Deleted = convertRowStatusToDeleted(rowStatus)
 		var instanceOptions storepb.InstanceOptions
 		if err := common.ProtojsonUnmarshaler.Unmarshal(options, &instanceOptions); err != nil {
 			return nil, err
@@ -481,7 +476,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	return instanceMessages, nil
 }
 
-var countActivateInstanceQuery = "SELECT COUNT(*) FROM instance WHERE activation = TRUE AND row_status = 'NORMAL'"
+var countActivateInstanceQuery = "SELECT COUNT(*) FROM instance WHERE activation = TRUE AND deleted = FALSE"
 
 // CheckActivationLimit checks if activation instance count reaches the limit.
 func (s *Store) CheckActivationLimit(ctx context.Context, maximumActivation int) error {
