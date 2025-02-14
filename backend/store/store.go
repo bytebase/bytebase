@@ -37,7 +37,7 @@ type Store struct {
 	risksCache             *lru.Cache[int, []*RiskMessage] // Use 0 as the key.
 	databaseGroupCache     *lru.Cache[string, *DatabaseGroupMessage]
 	databaseGroupIDCache   *lru.Cache[int64, *DatabaseGroupMessage]
-	vcsIDCache             *lru.Cache[int, *VCSProviderMessage]
+	vcsIDCache             *lru.Cache[string, *VCSProviderMessage]
 	rolesCache             *lru.Cache[string, *RoleMessage]
 	groupCache             *lru.Cache[string, *GroupMessage]
 	sheetCache             *lru.Cache[int, *SheetMessage]
@@ -125,7 +125,7 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	vcsIDCache, err := lru.New[int, *VCSProviderMessage](1024)
+	vcsIDCache, err := lru.New[string, *VCSProviderMessage](1024)
 	if err != nil {
 		return nil, err
 	}

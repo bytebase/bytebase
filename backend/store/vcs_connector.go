@@ -21,9 +21,6 @@ type VCSConnectorMessage struct {
 	ResourceID string
 
 	Payload *storepb.VCSConnector
-
-	// Output only fields
-	UID int
 }
 
 // FindVCSConnectorMessage is the API message for finding VCS connectors.
@@ -35,8 +32,8 @@ type FindVCSConnectorMessage struct {
 
 // UpdateVCSConnectorMessage is the message to update a VCS connector.
 type UpdateVCSConnectorMessage struct {
-	ProjectID string
-	UID       int
+	ProjectID  string
+	ResourceID string
 
 	// Domain specific fields
 	Branch        *string
@@ -81,7 +78,6 @@ func (s *Store) ListVCSConnectors(ctx context.Context, find *FindVCSConnectorMes
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			id,
 			vcs,
 			project,
 			resource_id,
@@ -100,7 +96,6 @@ func (s *Store) ListVCSConnectors(ctx context.Context, find *FindVCSConnectorMes
 		var vcsConnector VCSConnectorMessage
 		var payloadStr string
 		if err := rows.Scan(
-			&vcsConnector.UID,
 			&vcsConnector.VCSID,
 			&vcsConnector.ProjectID,
 			&vcsConnector.ResourceID,
@@ -151,15 +146,12 @@ func (s *Store) CreateVCSConnector(ctx context.Context, create *VCSConnectorMess
 			payload
 		)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id
 	`
-	if err := tx.QueryRowContext(ctx, query,
+	if _, err := tx.ExecContext(ctx, query,
 		create.VCSID,
 		project.ResourceID,
 		create.ResourceID,
 		payload,
-	).Scan(
-		&create.UID,
 	); err != nil {
 		return nil, err
 	}
@@ -191,7 +183,7 @@ func (s *Store) UpdateVCSConnector(ctx context.Context, update *UpdateVCSConnect
 	}
 
 	where := []string{}
-	where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, update.UID)
+	where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, update.ResourceID)
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {

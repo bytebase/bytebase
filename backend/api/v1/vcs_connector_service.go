@@ -263,8 +263,8 @@ func (s *VCSConnectorService) UpdateVCSConnector(ctx context.Context, request *v
 	}
 
 	update := &store.UpdateVCSConnectorMessage{
-		ProjectID: project.ResourceID,
-		UID:       vcsConnector.UID,
+		ProjectID:  project.ResourceID,
+		ResourceID: vcsConnector.ResourceID,
 	}
 
 	for _, path := range request.UpdateMask.Paths {
@@ -338,7 +338,7 @@ func (s *VCSConnectorService) DeleteVCSConnector(ctx context.Context, request *v
 		return nil, status.Errorf(codes.Internal, "failed to find vcs: %s", err.Error())
 	}
 	if vcsProvider == nil {
-		return nil, status.Errorf(codes.NotFound, "vcs provider %d not found", vcsConnector.UID)
+		return nil, status.Errorf(codes.NotFound, "vcs provider %s not found", vcsConnector.VCSID)
 	}
 
 	if err := s.store.DeleteVCSConnector(ctx, project.ResourceID, vcsConnectorID); err != nil {
