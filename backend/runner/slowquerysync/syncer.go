@@ -206,9 +206,7 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 		})
 		if err != nil {
 			slog.Warn("Failed to list slow query logs",
-				slog.String("instance", instance.ResourceID),
-				slog.String("database", database.DatabaseName),
-				slog.Int("databaseID", database.UID),
+				slog.String("database", database.String()),
 				log.BBError(err))
 			logs = nil
 		}
@@ -223,9 +221,7 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 			SlowLog:      statistics,
 		}); err != nil {
 			slog.Warn("Failed to upsert slow query log",
-				slog.String("instance", instance.ResourceID),
-				slog.String("database", database.DatabaseName),
-				slog.Int("databaseID", database.UID),
+				slog.String("database", database.String()),
 				log.BBError(err))
 		}
 	}

@@ -390,11 +390,9 @@ func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 
 	// Phase 2 - Executing migration.
 	if mc.migrateType != db.Baseline {
-		renderedStatement := statement
 		materials := utils.GetSecretMapFromDatabaseMessage(mc.database)
 		// To avoid leak the rendered statement, the error message should use the original statement and not the rendered statement.
-		renderedStatement = utils.RenderStatement(statement, materials)
-
+		renderedStatement := utils.RenderStatement(statement, materials)
 		if err := execFunc(driverCtx, renderedStatement); err != nil {
 			return false, err
 		}

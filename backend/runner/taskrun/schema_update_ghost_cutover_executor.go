@@ -21,7 +21,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -78,16 +77,8 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, taskCont
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to get sheet statement by id: %d", sheetID)
 	}
-	materials := utils.GetSecretMapFromDatabaseMessage(database)
-	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
-	renderedStatement := utils.RenderStatement(statement, materials)
 
-	tableName, err := ghost.GetTableNameFromStatement(renderedStatement)
-	if err != nil {
-		return true, nil, common.Wrapf(err, common.Internal, "failed to parse table name from statement, statement: %v", statement)
-	}
-
-	postponeFilename := ghost.GetPostponeFlagFilename(syncTaskID, database.UID, database.DatabaseName, tableName)
+	postponeFilename := ghost.GetPostponeFlagFilename(syncTaskID)
 
 	value, ok := e.stateCfg.GhostTaskState.Load(syncTaskID)
 	if !ok {

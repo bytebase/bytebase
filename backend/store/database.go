@@ -17,17 +17,17 @@ import (
 
 // DatabaseMessage is the message for database.
 type DatabaseMessage struct {
-	UID                    int
-	ProjectID              string
-	InstanceID             string
+	ProjectID    string
+	InstanceID   string
+	DatabaseName string
+
 	EnvironmentID          string
 	EffectiveEnvironmentID string
 
-	DatabaseName string
-	SyncState    api.SyncStatus
-	SyncAt       time.Time
-	Secrets      *storepb.Secrets
-	DataShare    bool
+	SyncState api.SyncStatus
+	SyncAt    time.Time
+	Secrets   *storepb.Secrets
+	DataShare bool
 	// ServiceName is the Oracle specific field.
 	ServiceName string
 	Metadata    *storepb.DatabaseMetadata
@@ -423,7 +423,6 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 
 	query := fmt.Sprintf(`
 		SELECT
-			db.id,
 			db.project,
 			COALESCE(
 				(SELECT environment.resource_id FROM environment WHERE environment.resource_id = db.environment),
@@ -472,7 +471,6 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		var secretsString, metadataString string
 		var effectiveEnvironment, environment sql.NullString
 		if err := rows.Scan(
-			&databaseMessage.UID,
 			&databaseMessage.ProjectID,
 			&effectiveEnvironment,
 			&environment,
