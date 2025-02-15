@@ -151,10 +151,10 @@ func (e *StatementAdviseExecutor) runReview(
 		return nil, err
 	}
 	if dbSchema == nil {
-		return nil, errors.Errorf("database schema not found: %d", database.UID)
+		return nil, errors.Errorf("database schema %s not found", database.String())
 	}
 	if dbSchema.GetMetadata() == nil {
-		return nil, errors.Errorf("database schema metadata not found: %d", database.UID)
+		return nil, errors.Errorf("database schema metadata %s not found", database.String())
 	}
 
 	reviewConfig, err := e.store.GetReviewConfigForDatabase(ctx, database)

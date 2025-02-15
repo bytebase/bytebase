@@ -35,6 +35,10 @@ type DatabaseMessage struct {
 	SchemaVersion string
 }
 
+func (d *DatabaseMessage) String() string {
+	return common.FormatDatabase(d.InstanceID, d.DatabaseName)
+}
+
 // UpdateDatabaseMessage is the mssage for updating a database.
 type UpdateDatabaseMessage struct {
 	InstanceID   string

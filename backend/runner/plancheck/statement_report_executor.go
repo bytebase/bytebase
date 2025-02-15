@@ -141,10 +141,10 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 		return nil, err
 	}
 	if databaseSchema == nil {
-		return nil, errors.Errorf("database schema not found: %d", database.UID)
+		return nil, errors.Errorf("database schema %s not found", database.String())
 	}
 	if databaseSchema.GetMetadata() == nil {
-		return nil, errors.Errorf("database schema metadata not found: %d", database.UID)
+		return nil, errors.Errorf("database schema metadata %s not found", database.String())
 	}
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {

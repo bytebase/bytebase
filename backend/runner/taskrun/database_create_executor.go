@@ -435,7 +435,7 @@ func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.
 	// Filter out the database itself.
 	var databases []*store.DatabaseMessage
 	for _, d := range matchedDatabases {
-		if d.UID != database.UID {
+		if d.String() != database.String() {
 			databases = append(databases, d)
 		}
 	}

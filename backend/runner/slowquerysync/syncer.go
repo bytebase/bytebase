@@ -160,9 +160,7 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 			return driver.CheckSlowQueryLogEnabled(ctx)
 		}(); err != nil {
 			slog.Warn("pg_stat_statements is not enabled",
-				slog.String("instance", instance.ResourceID),
-				slog.String("database", database.DatabaseName),
-				slog.Int("databaseID", database.UID),
+				slog.String("database", database.String()),
 				log.BBError(err))
 			continue
 		}
