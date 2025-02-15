@@ -149,20 +149,10 @@ const (
 // MigrationInfo is the API message for migration info.
 type MigrationInfo struct {
 	DatabaseID *int
-
-	ReleaseVersion string
-	Namespace      string
-	Database       string
-	Environment    string
-	Source         MigrationSource
-	Type           MigrationType
-	Status         MigrationStatus
-	Description    string
-	// Payload contains JSON-encoded string of VCS push event if the migration is triggered by a VCS push event.
-	Payload *storepb.InstanceChangeHistoryPayload
-
-	SheetUID *int
-	Sheet    *string
+	Type       MigrationType
+	Payload    *storepb.InstanceChangeHistoryPayload
+	SheetUID   *int
+	Sheet      *string
 }
 
 // ConnectionConfig is the configuration for connections.

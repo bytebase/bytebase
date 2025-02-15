@@ -366,16 +366,9 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 	}
 	defer driver.Close(ctx)
 
-	// TODO(d): support semantic versioning.
 	mi := &db.MigrationInfo{
-		ReleaseVersion: exec.profile.Version,
-		Namespace:      database.DatabaseName,
-		Database:       database.DatabaseName,
-		DatabaseID:     &database.UID,
-		Environment:    environment.ResourceID,
-		Source:         db.UI,
-		Type:           db.Migrate,
-		Description:    "Create database",
+		DatabaseID: &database.UID,
+		Type:       db.Migrate,
 	}
 
 	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
@@ -404,8 +397,6 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 	}
 
 	if issue != nil {
-		mi.Description = fmt.Sprintf("%s - %s", issue.Title, task.Name)
-
 		mc.issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
 	}
 

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -101,20 +100,11 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 	if database == nil {
 		return nil, nil, errors.Errorf("database not found")
 	}
-	environment, err := stores.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
-	if err != nil {
-		return nil, nil, err
-	}
 
 	mi := &db.MigrationInfo{
-		DatabaseID:     &database.UID,
-		ReleaseVersion: profile.Version,
-		Type:           migrationType,
-		Description:    task.Name,
-		Environment:    environment.ResourceID,
-		Database:       database.DatabaseName,
-		Namespace:      database.DatabaseName,
-		Payload:        &storepb.InstanceChangeHistoryPayload{},
+		DatabaseID: &database.UID,
+		Type:       migrationType,
+		Payload:    &storepb.InstanceChangeHistoryPayload{},
 	}
 
 	pipeline, err := stores.GetPipelineV2ByID(ctx, task.PipelineID)
@@ -226,19 +216,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		slog.Error("failed to find containing issue", log.BBError(err))
 	}
 	if issue != nil {
-		// Concat issue title and task name as the migration description so that user can see
-		// more context of the migration.
-		mi.Description = fmt.Sprintf("%s - %s", issue.Title, task.Name)
-
 		mc.issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
-	}
-
-	mi.Source = db.UI
-
-	statement = strings.TrimSpace(statement)
-	// Only baseline and SDL migration can have empty sql statement, which indicates empty database.
-	if mi.Type != db.Baseline && mi.Type != db.MigrateSDL && statement == "" {
-		return nil, nil, errors.Errorf("empty statement")
 	}
 	return mi, mc, nil
 }
@@ -296,7 +274,6 @@ func doMigration(
 	slog.Debug("Start migration...",
 		slog.String("instance", instance.ResourceID),
 		slog.String("database", database.DatabaseName),
-		slog.String("source", string(mi.Source)),
 		slog.String("type", string(mi.Type)),
 		slog.String("statement", statementRecord),
 	)
