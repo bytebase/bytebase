@@ -146,15 +146,6 @@ const (
 	Failed MigrationStatus = "FAILED"
 )
 
-// MigrationInfo is the API message for migration info.
-type MigrationInfo struct {
-	DatabaseID *int
-	Type       MigrationType
-	Payload    *storepb.InstanceChangeHistoryPayload
-	SheetUID   *int
-	Sheet      *string
-}
-
 // ConnectionConfig is the configuration for connections.
 type ConnectionConfig struct {
 	Host string

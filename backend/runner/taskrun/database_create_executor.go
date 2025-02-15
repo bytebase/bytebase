@@ -358,11 +358,6 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 	}
 	defer driver.Close(ctx)
 
-	mi := &db.MigrationInfo{
-		DatabaseID: &database.UID,
-		Type:       db.Migrate,
-	}
-
 	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		// If somehow we unable to find the issue, we just emit the error since it's not
@@ -386,13 +381,14 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		taskRunUID:  taskRunUID,
 		taskRunName: common.FormatTaskRun(project.ResourceID, task.PipelineID, task.StageID, task.ID, taskRunUID),
 		version:     schemaVersion,
+		migrateType: db.Migrate,
 	}
 
 	if issue != nil {
 		mc.issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
 	}
 
-	if _, err := executeMigrationDefault(ctx, driverCtx, exec.store, exec.stateCfg, driver, mi, mc, schema, db.ExecuteOptions{}); err != nil {
+	if _, err := executeMigrationDefault(ctx, driverCtx, exec.store, exec.stateCfg, driver, mc, schema, db.ExecuteOptions{}); err != nil {
 		return nil, "", "", err
 	}
 	return peerDatabase, schemaVersion, schema, nil

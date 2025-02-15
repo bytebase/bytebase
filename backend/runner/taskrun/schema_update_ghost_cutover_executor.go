@@ -121,7 +121,7 @@ func cutover(ctx context.Context, taskContext context.Context, stores *store.Sto
 		return true, nil, err
 	}
 
-	mi, mc, err := getMigrationInfo(ctx, stores, profile, syncer, task, db.Migrate, schemaVersion, &sheetID, taskRunUID, dbFactory)
+	mc, err := getMigrationInfo(ctx, stores, profile, syncer, task, db.Migrate, schemaVersion, &sheetID, taskRunUID, dbFactory)
 	if err != nil {
 		return true, nil, err
 	}
@@ -138,12 +138,12 @@ func cutover(ctx context.Context, taskContext context.Context, stores *store.Sto
 	// TODO(p0ny): we may need to defer execFunc to do the cleanup always.
 	// And we might want to move the check that determines if the task should be skipped
 	// to the sync executor.
-	skipped, err := executeMigrationWithFunc(ctx, ctx, stores, mi, mc, statement, execFunc, db.ExecuteOptions{})
+	skipped, err := executeMigrationWithFunc(ctx, ctx, stores, mc, statement, execFunc, db.ExecuteOptions{})
 	if err != nil {
 		return true, nil, err
 	}
 
-	return postMigration(ctx, stores, mi, mc, skipped)
+	return postMigration(ctx, stores, mc, skipped)
 }
 
 func waitForCutover(ctx context.Context, taskContext context.Context, migrationContext *base.MigrationContext) bool {
