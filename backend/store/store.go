@@ -22,9 +22,7 @@ type Store struct {
 	userEmailCache         *lru.Cache[string, *UserMessage]
 	environmentCache       *lru.Cache[string, *EnvironmentMessage]
 	instanceCache          *lru.Cache[string, *InstanceMessage]
-	instanceIDCache        *lru.Cache[int, *InstanceMessage]
 	databaseCache          *lru.Cache[string, *DatabaseMessage]
-	databaseIDCache        *lru.Cache[int, *DatabaseMessage]
 	projectCache           *lru.Cache[string, *ProjectMessage]
 	projectDeploymentCache *lru.Cache[string, *DeploymentConfigMessage]
 	policyCache            *lru.Cache[string, *PolicyMessage]
@@ -35,7 +33,7 @@ type Store struct {
 	idpCache               *lru.Cache[string, *IdentityProviderMessage]
 	risksCache             *lru.Cache[int, []*RiskMessage] // Use 0 as the key.
 	databaseGroupCache     *lru.Cache[string, *DatabaseGroupMessage]
-	vcsIDCache             *lru.Cache[string, *VCSProviderMessage]
+	vcsCache               *lru.Cache[string, *VCSProviderMessage]
 	rolesCache             *lru.Cache[string, *RoleMessage]
 	groupCache             *lru.Cache[string, *GroupMessage]
 	sheetCache             *lru.Cache[int, *SheetMessage]
@@ -63,15 +61,7 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	instanceIDCache, err := lru.New[int, *InstanceMessage](32768)
-	if err != nil {
-		return nil, err
-	}
 	databaseCache, err := lru.New[string, *DatabaseMessage](32768)
-	if err != nil {
-		return nil, err
-	}
-	databaseIDCache, err := lru.New[int, *DatabaseMessage](32768)
 	if err != nil {
 		return nil, err
 	}
@@ -149,9 +139,7 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 		userEmailCache:         userEmailCache,
 		environmentCache:       environmentCache,
 		instanceCache:          instanceCache,
-		instanceIDCache:        instanceIDCache,
 		databaseCache:          databaseCache,
-		databaseIDCache:        databaseIDCache,
 		projectCache:           projectCache,
 		projectDeploymentCache: projectDeploymentCache,
 		policyCache:            policyCache,
@@ -162,7 +150,7 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 		idpCache:               idpCache,
 		risksCache:             risksCache,
 		databaseGroupCache:     databaseGroupCache,
-		vcsIDCache:             vcsIDCache,
+		vcsCache:               vcsIDCache,
 		rolesCache:             rolesCache,
 		sheetCache:             sheetCache,
 		sheetStatementCache:    sheetStatementCache,

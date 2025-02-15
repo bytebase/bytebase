@@ -11,22 +11,22 @@ import (
 func TestGetPeerTenantDatabase(t *testing.T) {
 	dbs := []*store.DatabaseMessage{
 		{
-			UID:                    0,
+			InstanceID:             "hello1",
 			DatabaseName:           "hello",
 			EffectiveEnvironmentID: "dev",
 		},
 		{
-			UID:                    1,
+			InstanceID:             "hello2",
 			DatabaseName:           "hello2",
 			EffectiveEnvironmentID: "dev",
 		},
 		{
-			UID:                    2,
+			InstanceID:             "hello3",
 			DatabaseName:           "hello",
 			EffectiveEnvironmentID: "staging",
 		},
 		{
-			UID:                    3,
+			InstanceID:             "hello4",
 			DatabaseName:           "world",
 			EffectiveEnvironmentID: "prod",
 		},

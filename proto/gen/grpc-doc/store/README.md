@@ -3032,7 +3032,7 @@ InstanceRole is the API message for instance role.
 | ----- | ---- | ----- | ----------- |
 | sheet_uid | [int32](#int32) |  |  |
 | change_database_type | [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType) |  |  |
-| instance_uid | [int32](#int32) |  |  |
+| instance_id | [string](#string) |  |  |
 | database_name | [string](#string) |  |  |
 | database_group_uid | [int64](#int64) | optional | **Deprecated.**  |
 | ghost_flags | [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry) | repeated |  |

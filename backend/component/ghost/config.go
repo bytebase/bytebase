@@ -176,13 +176,13 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 	return f, nil
 }
 
-func getSocketFilename(taskID int, databaseID int, databaseName, tableName string) string {
-	return fmt.Sprintf("/tmp/gh-ost.%v.%v.%v.%v.sock", taskID, databaseID, databaseName, tableName)
+func getSocketFilename(taskID int) string {
+	return fmt.Sprintf("/tmp/gh-ost.%d.sock", taskID)
 }
 
 // GetPostponeFlagFilename gets the postpone flag filename for gh-ost.
-func GetPostponeFlagFilename(taskID int, databaseID int, databaseName, tableName string) string {
-	return fmt.Sprintf("/tmp/gh-ost.%v.%v.%v.%v.postponeFlag", taskID, databaseID, databaseName, tableName)
+func GetPostponeFlagFilename(taskID int) string {
+	return fmt.Sprintf("/tmp/gh-ost.%d.postponeFlag", taskID)
 }
 
 // NewMigrationContext is the context for gh-ost migration.
@@ -273,8 +273,8 @@ func NewMigrationContext(ctx context.Context, taskID int, database *store.Databa
 		}
 		migrationContext.OriginalTableName = parser.GetExplicitTable()
 	}
-	migrationContext.ServeSocketFile = getSocketFilename(taskID, database.UID, database.DatabaseName, tableName)
-	migrationContext.PostponeCutOverFlagFile = GetPostponeFlagFilename(taskID, database.UID, database.DatabaseName, tableName)
+	migrationContext.ServeSocketFile = getSocketFilename(taskID)
+	migrationContext.PostponeCutOverFlagFile = GetPostponeFlagFilename(taskID)
 	migrationContext.TimestampOldTable = defaultConfig.timestampOldTable
 	migrationContext.SetHeartbeatIntervalMilliseconds(defaultConfig.heartbeatIntervalMilliseconds)
 	migrationContext.SetNiceRatio(defaultConfig.niceRatio)

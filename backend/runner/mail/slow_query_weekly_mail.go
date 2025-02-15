@@ -644,7 +644,7 @@ func (s *SlowQueryWeeklyMailSender) generateEnvironmentContent(
 				hasSlowQueryInInstance = true
 				beginUnix := beginDate.Truncate(24 * time.Hour).UTC().Unix()
 				endUnix := endDate.Truncate(24 * time.Hour).Add(-1 * time.Second).UTC().Unix()
-				instanceURL := fmt.Sprintf("%s/slow-query?instance=%d&fromTime=%d&toTime=%d", strings.TrimSuffix(visitURL, "/"), instance.UID, beginUnix, endUnix)
+				instanceURL := fmt.Sprintf("%s/slow-query?instance=%s&fromTime=%d&toTime=%d", strings.TrimSuffix(visitURL, "/"), instance.ResourceID, beginUnix, endUnix)
 				instanceHeaderString := strings.ReplaceAll(string(instanceHeader), "{{INSTANCE_LINK}}", instanceURL)
 				instanceHeaderString = strings.ReplaceAll(instanceHeaderString, "{{INSTANCE_NAME}}", instance.Title)
 				if _, err := buf.WriteString(instanceHeaderString); err != nil {

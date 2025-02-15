@@ -685,7 +685,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 
-	if err := s.store.AddDataSourceToInstanceV2(ctx, instance.UID, instance.ResourceID, dataSource); err != nil {
+	if err := s.store.AddDataSourceToInstanceV2(ctx, instance.ResourceID, dataSource); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -736,7 +736,6 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	}
 
 	patch := &store.UpdateDataSourceMessage{
-		InstanceUID:  instance.UID,
 		InstanceID:   instance.ResourceID,
 		DataSourceID: request.DataSource.Id,
 	}
@@ -931,7 +930,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 		return nil, status.Errorf(codes.InvalidArgument, "only support remove read-only data source")
 	}
 
-	if err := s.store.RemoveDataSourceV2(ctx, instance.UID, instance.ResourceID, dataSource.ID); err != nil {
+	if err := s.store.RemoveDataSourceV2(ctx, instance.ResourceID, dataSource.ID); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 

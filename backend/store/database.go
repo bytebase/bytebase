@@ -17,22 +17,26 @@ import (
 
 // DatabaseMessage is the message for database.
 type DatabaseMessage struct {
-	UID                    int
-	ProjectID              string
-	InstanceID             string
+	ProjectID    string
+	InstanceID   string
+	DatabaseName string
+
 	EnvironmentID          string
 	EffectiveEnvironmentID string
 
-	DatabaseName string
-	SyncState    api.SyncStatus
-	SyncAt       time.Time
-	Secrets      *storepb.Secrets
-	DataShare    bool
+	SyncState api.SyncStatus
+	SyncAt    time.Time
+	Secrets   *storepb.Secrets
+	DataShare bool
 	// ServiceName is the Oracle specific field.
 	ServiceName string
 	Metadata    *storepb.DatabaseMetadata
 	// Output only
 	SchemaVersion string
+}
+
+func (d *DatabaseMessage) String() string {
+	return common.FormatDatabase(d.InstanceID, d.DatabaseName)
 }
 
 // UpdateDatabaseMessage is the mssage for updating a database.
@@ -60,7 +64,6 @@ type FindDatabaseMessage struct {
 	EffectiveEnvironmentID *string
 	InstanceID             *string
 	DatabaseName           *string
-	UID                    *int
 	Engine                 *storepb.Engine
 	// When this is used, we will return databases from archived instances or environments.
 	// This is used for existing tasks with archived databases.
@@ -77,11 +80,6 @@ type FindDatabaseMessage struct {
 func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*DatabaseMessage, error) {
 	if find.InstanceID != nil && find.DatabaseName != nil {
 		if v, ok := s.databaseCache.Get(getDatabaseCacheKey(*find.InstanceID, *find.DatabaseName)); ok {
-			return v, nil
-		}
-	}
-	if find.UID != nil {
-		if v, ok := s.databaseIDCache.Get(*find.UID); ok {
 			return v, nil
 		}
 	}
@@ -109,7 +107,6 @@ func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*
 	}
 
 	s.databaseCache.Add(getDatabaseCacheKey(database.InstanceID, database.DatabaseName), database)
-	s.databaseIDCache.Add(database.UID, database)
 	return database, nil
 }
 
@@ -132,7 +129,6 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 
 	for _, database := range databases {
 		s.databaseCache.Add(getDatabaseCacheKey(database.InstanceID, database.DatabaseName), database)
-		s.databaseIDCache.Add(database.UID, database)
 	}
 	return databases, nil
 }
@@ -145,8 +141,7 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 	}
 	defer tx.Rollback()
 
-	databaseUID, err := s.createDatabaseDefaultImpl(ctx, tx, create.ProjectID, create.InstanceID, create)
-	if err != nil {
+	if _, err := s.createDatabaseDefaultImpl(ctx, tx, create.ProjectID, create.InstanceID, create); err != nil {
 		return nil, err
 	}
 
@@ -156,8 +151,7 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 
 	// Invalidate an update the cache.
 	s.databaseCache.Remove(getDatabaseCacheKey(create.InstanceID, create.DatabaseName))
-	s.databaseIDCache.Remove(databaseUID)
-	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
+	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{InstanceID: &create.InstanceID, DatabaseName: &create.DatabaseName, ShowDeleted: true})
 }
 
 // createDatabaseDefault only creates a default database with charset, collation only in the default project.
@@ -269,8 +263,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 
 	// Invalidate and update the cache.
 	s.databaseCache.Remove(getDatabaseCacheKey(create.InstanceID, create.DatabaseName))
-	s.databaseIDCache.Remove(databaseUID)
-	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID, ShowDeleted: true})
+	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{InstanceID: &create.InstanceID, DatabaseName: &create.DatabaseName, ShowDeleted: true})
 }
 
 // UpdateDatabase updates a database.
@@ -342,8 +335,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 
 	// Invalidate and update database cache.
 	s.databaseCache.Remove(getDatabaseCacheKey(patch.InstanceID, patch.DatabaseName))
-	s.databaseIDCache.Remove(databaseUID)
-	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID, ShowDeleted: true})
+	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{InstanceID: &patch.InstanceID, DatabaseName: &patch.DatabaseName, ShowDeleted: true})
 }
 
 // BatchUpdateDatabaseProject updates the project for databases in batch.
@@ -382,7 +374,6 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 		updatedDatabase := *database
 		updatedDatabase.ProjectID = projectID
 		s.databaseCache.Add(getDatabaseCacheKey(database.InstanceID, database.DatabaseName), &updatedDatabase)
-		s.databaseIDCache.Add(database.UID, &updatedDatabase)
 		updatedDatabases = append(updatedDatabases, &updatedDatabase)
 	}
 	return updatedDatabases, nil
@@ -410,9 +401,6 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			where, args = append(where, fmt.Sprintf("db.name = $%d", len(args)+1)), append(args, *v)
 		}
 	}
-	if v := find.UID; v != nil {
-		where, args = append(where, fmt.Sprintf("db.id = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := find.Engine; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.engine = $%d", len(args)+1)), append(args, *v)
 	}
@@ -435,7 +423,6 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 
 	query := fmt.Sprintf(`
 		SELECT
-			db.id,
 			db.project,
 			COALESCE(
 				(SELECT environment.resource_id FROM environment WHERE environment.resource_id = db.environment),
@@ -484,7 +471,6 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		var secretsString, metadataString string
 		var effectiveEnvironment, environment sql.NullString
 		if err := rows.Scan(
-			&databaseMessage.UID,
 			&databaseMessage.ProjectID,
 			&effectiveEnvironment,
 			&environment,

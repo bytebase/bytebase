@@ -23,7 +23,7 @@ export interface PreUpdateBackupDetail {
 export interface PlanCheckRunConfig {
   sheetUid: number;
   changeDatabaseType: PlanCheckRunConfig_ChangeDatabaseType;
-  instanceUid: number;
+  instanceId: string;
   databaseName: string;
   /** @deprecated */
   databaseGroupUid?: Long | undefined;
@@ -269,7 +269,7 @@ function createBasePlanCheckRunConfig(): PlanCheckRunConfig {
   return {
     sheetUid: 0,
     changeDatabaseType: PlanCheckRunConfig_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED,
-    instanceUid: 0,
+    instanceId: "",
     databaseName: "",
     databaseGroupUid: undefined,
     ghostFlags: {},
@@ -285,8 +285,8 @@ export const PlanCheckRunConfig: MessageFns<PlanCheckRunConfig> = {
     if (message.changeDatabaseType !== PlanCheckRunConfig_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED) {
       writer.uint32(16).int32(planCheckRunConfig_ChangeDatabaseTypeToNumber(message.changeDatabaseType));
     }
-    if (message.instanceUid !== 0) {
-      writer.uint32(24).int32(message.instanceUid);
+    if (message.instanceId !== "") {
+      writer.uint32(26).string(message.instanceId);
     }
     if (message.databaseName !== "") {
       writer.uint32(34).string(message.databaseName);
@@ -327,11 +327,11 @@ export const PlanCheckRunConfig: MessageFns<PlanCheckRunConfig> = {
           continue;
         }
         case 3: {
-          if (tag !== 24) {
+          if (tag !== 26) {
             break;
           }
 
-          message.instanceUid = reader.int32();
+          message.instanceId = reader.string();
           continue;
         }
         case 4: {
@@ -384,7 +384,7 @@ export const PlanCheckRunConfig: MessageFns<PlanCheckRunConfig> = {
       changeDatabaseType: isSet(object.changeDatabaseType)
         ? planCheckRunConfig_ChangeDatabaseTypeFromJSON(object.changeDatabaseType)
         : PlanCheckRunConfig_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED,
-      instanceUid: isSet(object.instanceUid) ? globalThis.Number(object.instanceUid) : 0,
+      instanceId: isSet(object.instanceId) ? globalThis.String(object.instanceId) : "",
       databaseName: isSet(object.databaseName) ? globalThis.String(object.databaseName) : "",
       databaseGroupUid: isSet(object.databaseGroupUid) ? Long.fromValue(object.databaseGroupUid) : undefined,
       ghostFlags: isObject(object.ghostFlags)
@@ -407,8 +407,8 @@ export const PlanCheckRunConfig: MessageFns<PlanCheckRunConfig> = {
     if (message.changeDatabaseType !== PlanCheckRunConfig_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED) {
       obj.changeDatabaseType = planCheckRunConfig_ChangeDatabaseTypeToJSON(message.changeDatabaseType);
     }
-    if (message.instanceUid !== 0) {
-      obj.instanceUid = Math.round(message.instanceUid);
+    if (message.instanceId !== "") {
+      obj.instanceId = message.instanceId;
     }
     if (message.databaseName !== "") {
       obj.databaseName = message.databaseName;
@@ -439,7 +439,7 @@ export const PlanCheckRunConfig: MessageFns<PlanCheckRunConfig> = {
     message.sheetUid = object.sheetUid ?? 0;
     message.changeDatabaseType = object.changeDatabaseType ??
       PlanCheckRunConfig_ChangeDatabaseType.CHANGE_DATABASE_TYPE_UNSPECIFIED;
-    message.instanceUid = object.instanceUid ?? 0;
+    message.instanceId = object.instanceId ?? "";
     message.databaseName = object.databaseName ?? "";
     message.databaseGroupUid = (object.databaseGroupUid !== undefined && object.databaseGroupUid !== null)
       ? Long.fromValue(object.databaseGroupUid)

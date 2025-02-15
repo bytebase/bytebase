@@ -14,7 +14,7 @@ import (
 func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 	dbs := []*store.DatabaseMessage{
 		{
-			UID:          0,
+			InstanceID:   "instance1",
 			DatabaseName: "hello",
 			Metadata: &storepb.DatabaseMetadata{
 				Labels: map[string]string{
@@ -25,7 +25,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			},
 		},
 		{
-			UID:          1,
+			InstanceID:   "instance2",
 			DatabaseName: "hello",
 			Metadata: &storepb.DatabaseMetadata{
 				Labels: map[string]string{
@@ -36,7 +36,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			},
 		},
 		{
-			UID:          2,
+			InstanceID:   "instance3",
 			DatabaseName: "hello",
 			Metadata: &storepb.DatabaseMetadata{
 				Labels: map[string]string{
@@ -47,7 +47,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			},
 		},
 		{
-			UID:          3,
+			InstanceID:   "instance4",
 			DatabaseName: "hello",
 			Metadata: &storepb.DatabaseMetadata{
 				Labels: map[string]string{
@@ -57,7 +57,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			},
 		},
 		{
-			UID:          4,
+			InstanceID:   "instance5",
 			DatabaseName: "world",
 			Metadata: &storepb.DatabaseMetadata{
 				Labels: map[string]string{
@@ -67,7 +67,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			},
 		},
 		{
-			UID:          5,
+			InstanceID:   "instance6",
 			DatabaseName: "db1_us",
 			Metadata: &storepb.DatabaseMetadata{
 				Labels: map[string]string{
@@ -77,7 +77,7 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 			},
 		},
 		{
-			UID:          6,
+			InstanceID:   "instance7",
 			DatabaseName: "db1_eu",
 			Metadata: &storepb.DatabaseMetadata{
 				Labels: map[string]string{

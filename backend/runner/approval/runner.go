@@ -365,13 +365,13 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 		return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to list plan check runs for plan %v", plan.UID)
 	}
 	type Key struct {
-		InstanceUID  int
+		InstanceID   string
 		DatabaseName string
 	}
 	latestPlanCheckRun := map[Key]*store.PlanCheckRunMessage{}
 	for _, run := range planCheckRuns {
 		key := Key{
-			InstanceUID:  int(run.Config.InstanceUid),
+			InstanceID:   run.Config.InstanceId,
 			DatabaseName: run.Config.DatabaseName,
 		}
 		latestPlanCheckRun[key] = run
@@ -510,7 +510,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 					}
 
 					if run, ok := latestPlanCheckRun[Key{
-						InstanceUID:  instance.UID,
+						InstanceID:   instance.ResourceID,
 						DatabaseName: databaseName,
 					}]; ok {
 						for _, result := range run.Result.Results {

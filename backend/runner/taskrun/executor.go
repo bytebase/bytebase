@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -87,42 +86,29 @@ type migrateContext struct {
 	// mutable
 	// changelog uid
 	changelog int64
+
+	migrateType          db.MigrationType
+	changeHistoryPayload *storepb.InstanceChangeHistoryPayload
 }
 
-func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, migrationType db.MigrationType, statement string, schemaVersion string, sheetID *int, taskRunUID int, dbFactory *dbfactory.DBFactory) (*db.MigrationInfo, *migrateContext, error) {
+func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, migrationType db.MigrationType, schemaVersion string, sheetID *int, taskRunUID int, dbFactory *dbfactory.DBFactory) (*migrateContext, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	database, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if database == nil {
-		return nil, nil, errors.Errorf("database not found")
+		return nil, errors.Errorf("database not found")
 	}
-	environment, err := stores.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
-	if err != nil {
-		return nil, nil, err
-	}
-
-	mi := &db.MigrationInfo{
-		DatabaseID:     &database.UID,
-		ReleaseVersion: profile.Version,
-		Type:           migrationType,
-		Description:    task.Name,
-		Environment:    environment.ResourceID,
-		Database:       database.DatabaseName,
-		Namespace:      database.DatabaseName,
-		Payload:        &storepb.InstanceChangeHistoryPayload{},
-	}
-
 	pipeline, err := stores.GetPipelineV2ByID(ctx, task.PipelineID)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get pipeline")
+		return nil, errors.Wrapf(err, "failed to get pipeline")
 	}
 	if pipeline == nil {
-		return nil, nil, errors.Errorf("pipeline %v not found", task.PipelineID)
+		return nil, errors.Errorf("pipeline %v not found", task.PipelineID)
 	}
 
 	mc := &migrateContext{
@@ -135,15 +121,16 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		version:     schemaVersion,
 		taskRunName: common.FormatTaskRun(pipeline.ProjectID, task.PipelineID, task.StageID, task.ID, taskRunUID),
 		taskRunUID:  taskRunUID,
+		migrateType: migrationType,
 	}
 
 	if sheetID != nil {
 		sheet, err := stores.GetSheet(ctx, &store.FindSheetMessage{UID: sheetID})
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to get sheet")
+			return nil, errors.Wrapf(err, "failed to get sheet")
 		}
 		if sheet == nil {
-			return nil, nil, errors.Errorf("sheet not found")
+			return nil, errors.Errorf("sheet not found")
 		}
 		mc.sheet = sheet
 		mc.sheetName = common.FormatSheet(pipeline.ProjectID, sheet.UID)
@@ -152,13 +139,13 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 	if task.Type.ChangeDatabasePayload() {
 		var p storepb.TaskDatabaseUpdatePayload
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), &p); err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to unmarshal task payload")
+			return nil, errors.Wrapf(err, "failed to unmarshal task payload")
 		}
 
 		if f := p.TaskReleaseSource.GetFile(); f != "" {
 			project, release, _, err := common.GetProjectReleaseUIDFile(f)
 			if err != nil {
-				return nil, nil, errors.Wrapf(err, "failed to parse file %s", f)
+				return nil, errors.Wrapf(err, "failed to parse file %s", f)
 			}
 			mc.release.release = common.FormatReleaseName(project, release)
 			mc.release.file = f
@@ -167,7 +154,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 
 	plans, err := stores.ListPlans(ctx, &store.FindPlanMessage{PipelineID: &task.PipelineID})
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to list plans")
+		return nil, errors.Wrapf(err, "failed to list plans")
 	}
 	if len(plans) == 1 {
 		planTypes := []store.PlanCheckRunType{store.PlanCheckDatabaseStatementSummaryReport}
@@ -178,7 +165,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 			Status:  &status,
 		})
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "failed to list plan check runs")
+			return nil, errors.Wrap(err, "failed to list plan check runs")
 		}
 		sort.Slice(runs, func(i, j int) bool {
 			return runs[i].UID > runs[j].UID
@@ -190,13 +177,13 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 			}
 			taskInstance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 			if taskInstance == nil {
-				return nil, nil, errors.Errorf("task %d instance not found", task.ID)
+				return nil, errors.Errorf("task %d instance not found", task.ID)
 			}
 
-			if run.Config.InstanceUid != int32(taskInstance.UID) {
+			if run.Config.InstanceId != taskInstance.ResourceID {
 				continue
 			}
 			if run.Config.DatabaseName != database.DatabaseName {
@@ -213,7 +200,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 					continue
 				}
 				if report := result.GetSqlSummaryReport(); report != nil {
-					mi.Payload.ChangedResources = report.ChangedResources
+					mc.changeHistoryPayload = &storepb.InstanceChangeHistoryPayload{ChangedResources: report.ChangedResources}
 					foundChangedResources = true
 					break
 				}
@@ -226,21 +213,9 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		slog.Error("failed to find containing issue", log.BBError(err))
 	}
 	if issue != nil {
-		// Concat issue title and task name as the migration description so that user can see
-		// more context of the migration.
-		mi.Description = fmt.Sprintf("%s - %s", issue.Title, task.Name)
-
 		mc.issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
 	}
-
-	mi.Source = db.UI
-
-	statement = strings.TrimSpace(statement)
-	// Only baseline and SDL migration can have empty sql statement, which indicates empty database.
-	if mi.Type != db.Baseline && mi.Type != db.MigrateSDL && statement == "" {
-		return nil, nil, errors.Errorf("empty statement")
-	}
-	return mi, mc, nil
+	return mc, nil
 }
 
 func getCreateTaskRunLog(ctx context.Context, taskRunUID int, s *store.Store, profile *config.Profile) func(t time.Time, e *storepb.TaskRunLog) error {
@@ -274,7 +249,6 @@ func doMigration(
 	stateCfg *state.State,
 	profile *config.Profile,
 	statement string,
-	mi *db.MigrationInfo,
 	mc *migrateContext,
 ) (bool, error) {
 	instance := mc.instance
@@ -296,8 +270,7 @@ func doMigration(
 	slog.Debug("Start migration...",
 		slog.String("instance", instance.ResourceID),
 		slog.String("database", database.DatabaseName),
-		slog.String("source", string(mi.Source)),
-		slog.String("type", string(mi.Type)),
+		slog.String("type", string(mc.migrateType)),
 		slog.String("statement", statementRecord),
 	)
 
@@ -326,10 +299,10 @@ func doMigration(
 		}
 	}
 
-	return executeMigrationDefault(ctx, driverCtx, stores, stateCfg, driver, mi, mc, statement, opts)
+	return executeMigrationDefault(ctx, driverCtx, stores, stateCfg, driver, mc, statement, opts)
 }
 
-func postMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInfo, mc *migrateContext, skipped bool) (bool, *storepb.TaskRunResult, error) {
+func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext, skipped bool) (bool, *storepb.TaskRunResult, error) {
 	if skipped {
 		return true, &storepb.TaskRunResult{
 			Detail: fmt.Sprintf("Task skipped because version %s has been applied", mc.version),
@@ -358,7 +331,7 @@ func postMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInf
 	}
 
 	detail := fmt.Sprintf("Applied migration version %s to database %q.", mc.version, database.DatabaseName)
-	if mi.Type == db.Baseline {
+	if mc.migrateType == db.Baseline {
 		detail = fmt.Sprintf("Established baseline version %s for database %q.", mc.version, database.DatabaseName)
 	}
 
@@ -370,34 +343,34 @@ func postMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInf
 }
 
 func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, migrationType db.MigrationType, statement string, schemaVersion string, sheetID *int) (terminated bool, result *storepb.TaskRunResult, err error) {
-	mi, mc, err := getMigrationInfo(ctx, store, profile, syncer, task, migrationType, statement, schemaVersion, sheetID, taskRunUID, dbFactory)
+	mc, err := getMigrationInfo(ctx, store, profile, syncer, task, migrationType, schemaVersion, sheetID, taskRunUID, dbFactory)
 	if err != nil {
 		return true, nil, err
 	}
 
-	skipped, err := doMigration(ctx, driverCtx, store, stateCfg, profile, statement, mi, mc)
+	skipped, err := doMigration(ctx, driverCtx, store, stateCfg, profile, statement, mc)
 	if err != nil {
 		return true, nil, err
 	}
-	return postMigration(ctx, store, mi, mc, skipped)
+	return postMigration(ctx, store, mc, skipped)
 }
 
 // executeMigrationDefault executes migration.
-func executeMigrationDefault(ctx context.Context, driverCtx context.Context, store *store.Store, _ *state.State, driver db.Driver, mi *db.MigrationInfo, mc *migrateContext, statement string, opts db.ExecuteOptions) (skipped bool, resErr error) {
+func executeMigrationDefault(ctx context.Context, driverCtx context.Context, store *store.Store, _ *state.State, driver db.Driver, mc *migrateContext, statement string, opts db.ExecuteOptions) (skipped bool, resErr error) {
 	execFunc := func(ctx context.Context, execStatement string) error {
 		if _, err := driver.Execute(ctx, execStatement, opts); err != nil {
 			return err
 		}
 		return nil
 	}
-	return executeMigrationWithFunc(ctx, driverCtx, store, mi, mc, statement, execFunc, opts)
+	return executeMigrationWithFunc(ctx, driverCtx, store, mc, statement, execFunc, opts)
 }
 
 // executeMigrationWithFunc executes the migration with custom migration function.
-func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, mi *db.MigrationInfo, mc *migrateContext, statement string, execFunc func(ctx context.Context, execStatement string) error, opts db.ExecuteOptions) (skipped bool, resErr error) {
+func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, mc *migrateContext, statement string, execFunc func(ctx context.Context, execStatement string) error, opts db.ExecuteOptions) (skipped bool, resErr error) {
 	// Phase 1 - Dump before migration.
 	// Check if versioned is already applied.
-	skipExecution, err := beginMigration(ctx, s, mi, mc, opts)
+	skipExecution, err := beginMigration(ctx, s, mc, opts)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to begin migration")
 	}
@@ -408,7 +381,7 @@ func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 	defer func() {
 		// Phase 3 - Dump after migration.
 		// Insert revision for versioned.
-		if err := endMigration(ctx, s, mi, mc, resErr == nil /* isDone */); err != nil {
+		if err := endMigration(ctx, s, mc, resErr == nil /* isDone */); err != nil {
 			slog.Error("failed to end migration",
 				log.BBError(err),
 			)
@@ -416,31 +389,10 @@ func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 	}()
 
 	// Phase 2 - Executing migration.
-	// Branch migration type always has empty sql.
-	// Baseline migration type could has non-empty sql but will not execute.
-	// https://github.com/bytebase/bytebase/issues/394
-	doMigrate := true
-	if statement == "" || mi.Type == db.Baseline {
-		doMigrate = false
-	}
-	if doMigrate {
-		renderedStatement := statement
-		// The m.DatabaseID is nil means the migration is a instance level migration
-		if mi.DatabaseID != nil {
-			database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-				UID: mi.DatabaseID,
-			})
-			if err != nil {
-				return false, err
-			}
-			if database == nil {
-				return false, errors.Errorf("database %d not found", *mi.DatabaseID)
-			}
-			materials := utils.GetSecretMapFromDatabaseMessage(database)
-			// To avoid leak the rendered statement, the error message should use the original statement and not the rendered statement.
-			renderedStatement = utils.RenderStatement(statement, materials)
-		}
-
+	if mc.migrateType != db.Baseline {
+		materials := utils.GetSecretMapFromDatabaseMessage(mc.database)
+		// To avoid leak the rendered statement, the error message should use the original statement and not the rendered statement.
+		renderedStatement := utils.RenderStatement(statement, materials)
 		if err := execFunc(driverCtx, renderedStatement); err != nil {
 			return false, err
 		}
@@ -450,7 +402,7 @@ func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 }
 
 // beginMigration checks before executing migration and inserts a migration history record with pending status.
-func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInfo, mc *migrateContext, opts db.ExecuteOptions) (bool, error) {
+func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext, opts db.ExecuteOptions) (bool, error) {
 	// list revisions and see if it has been applied
 	// we can do this because
 	// versioned migrations are executed one by one
@@ -477,7 +429,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 
 	// sync history
 	var syncHistoryPrevUID *int64
-	if mi.Type.NeedDump() {
+	if mc.migrateType.NeedDump() {
 		opts.LogDatabaseSyncStart()
 		syncHistoryPrev, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database, false)
 		if err != nil {
@@ -499,7 +451,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 			TaskRun:          mc.taskRunName,
 			Issue:            mc.issueName,
 			Revision:         0,
-			ChangedResources: mi.Payload.GetChangedResources(),
+			ChangedResources: mc.changeHistoryPayload.GetChangedResources(),
 			Sheet:            mc.sheetName,
 			Version:          mc.version,
 			Type:             convertTaskType(mc.task.Type),
@@ -513,12 +465,12 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 }
 
 // endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func endMigration(ctx context.Context, storeInstance *store.Store, mi *db.MigrationInfo, mc *migrateContext, isDone bool) error {
+func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateContext, isDone bool) error {
 	update := &store.UpdateChangelogMessage{
 		UID: mc.changelog,
 	}
 
-	if mi.Type.NeedDump() {
+	if mc.migrateType.NeedDump() {
 		syncHistory, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database, false)
 		if err != nil {
 			return errors.Wrapf(err, "failed to sync database metadata and schema")

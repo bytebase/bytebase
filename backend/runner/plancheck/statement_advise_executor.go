@@ -93,13 +93,12 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 	changeType := config.ChangeDatabaseType
 	preUpdateBackupDetail := config.PreUpdateBackupDetail
 
-	instanceUID := int(config.InstanceUid)
-	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
+	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &config.InstanceId})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance UID %v", instanceUID)
+		return nil, errors.Wrapf(err, "failed to get instance %s", config.InstanceId)
 	}
 	if instance == nil {
-		return nil, errors.Errorf("instance not found UID %v", instanceUID)
+		return nil, errors.Errorf("instance %s not found", config.InstanceId)
 	}
 	if !common.StatementAdviseEngines[instance.Engine] {
 		return []*storepb.PlanCheckRunResult_Result{
@@ -152,10 +151,10 @@ func (e *StatementAdviseExecutor) runReview(
 		return nil, err
 	}
 	if dbSchema == nil {
-		return nil, errors.Errorf("database schema not found: %d", database.UID)
+		return nil, errors.Errorf("database schema %s not found", database.String())
 	}
 	if dbSchema.GetMetadata() == nil {
-		return nil, errors.Errorf("database schema metadata not found: %d", database.UID)
+		return nil, errors.Errorf("database schema metadata %s not found", database.String())
 	}
 
 	reviewConfig, err := e.store.GetReviewConfigForDatabase(ctx, database)
