@@ -78,88 +78,92 @@ const StringFactorList = [
   "table_name",
 ] as const;
 
-const FactorList = {
-  DDL: uniq(
-    without(
-      [...NumberFactorList, ...StringFactorList],
-      "level",
-      "source",
-      "expiration_days",
-      "export_rows"
-    )
-  ),
-  DML: uniq(
-    without(
-      [...NumberFactorList, ...StringFactorList],
-      "level",
-      "source",
-      "expiration_days",
-      "export_rows"
-    )
-  ),
-  CreateDatabase: without(
-    [...StringFactorList],
-    "sql_type",
-    "table_name",
-    "expiration_days",
-    "export_rows"
-  ),
-  DataExport: uniq(
-    without(
-      [...StringFactorList, ...NumberFactorList],
-      "level",
-      "affected_rows",
-      "table_rows",
-      "source",
-      "sql_type",
-      "table_name",
-      "expiration_days",
-      "export_rows"
-    )
-  ),
-  RequestQuery: uniq(
-    without(
-      [...StringFactorList, ...NumberFactorList],
-      "level",
-      "source",
-      "affected_rows",
-      "table_rows",
-      "sql_type",
-      "table_name",
-      "export_rows"
-    )
-  ),
-  RequestExport: uniq(
-    without(
-      [...StringFactorList, ...NumberFactorList],
-      "level",
-      "source",
-      "affected_rows",
-      "table_rows",
-      "sql_type",
-      "table_name"
-    )
-  ),
-};
+export const RiskSourceFactorMap: Map<Risk_Source, string[]> = new Map([
+  [
+    Risk_Source.DDL,
+    uniq(
+      without(
+        [...NumberFactorList, ...StringFactorList],
+        "level",
+        "source",
+        "expiration_days",
+        "export_rows"
+      )
+    ),
+  ],
+  [
+    Risk_Source.DML,
+    uniq(
+      without(
+        [...NumberFactorList, ...StringFactorList],
+        "level",
+        "source",
+        "expiration_days",
+        "export_rows"
+      )
+    ),
+  ],
+  [
+    Risk_Source.CREATE_DATABASE,
+    uniq(
+      without(
+        [...StringFactorList],
+        "sql_type",
+        "table_name",
+        "expiration_days",
+        "export_rows"
+      )
+    ),
+  ],
+  [
+    Risk_Source.DATA_EXPORT,
+    uniq(
+      without(
+        [...StringFactorList, ...NumberFactorList],
+        "level",
+        "affected_rows",
+        "table_rows",
+        "source",
+        "sql_type",
+        "table_name",
+        "expiration_days",
+        "export_rows"
+      )
+    ),
+  ],
+  [
+    Risk_Source.REQUEST_QUERY,
+    uniq(
+      without(
+        [...StringFactorList, ...NumberFactorList],
+        "level",
+        "source",
+        "affected_rows",
+        "table_rows",
+        "sql_type",
+        "table_name",
+        "export_rows"
+      )
+    ),
+  ],
+  [
+    Risk_Source.REQUEST_EXPORT,
+    uniq(
+      without(
+        [...StringFactorList, ...NumberFactorList],
+        "level",
+        "source",
+        "affected_rows",
+        "table_rows",
+        "sql_type",
+        "table_name"
+      )
+    ),
+  ],
+]);
 
 export const getFactorList = (source: Risk_Source) => {
-  switch (source) {
-    case Risk_Source.DDL:
-      return [...FactorList.DDL];
-    case Risk_Source.DML:
-      return [...FactorList.DML];
-    case Risk_Source.CREATE_DATABASE:
-      return [...FactorList.CreateDatabase];
-    case Risk_Source.DATA_EXPORT:
-      return [...FactorList.DataExport];
-    case Risk_Source.REQUEST_QUERY:
-      return [...FactorList.RequestQuery];
-    case Risk_Source.REQUEST_EXPORT:
-      return [...FactorList.RequestExport];
-    default:
-      // unsupported namespace
-      return [];
-  }
+  return RiskSourceFactorMap.get(source) ?? [];
 };
 
 const getEnvironmentIdOptions = () => {
