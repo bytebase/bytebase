@@ -20,7 +20,7 @@ export const useRiskStore = defineStore("risk", () => {
       // update
       const updated = await riskServiceClient.updateRisk({
         risk,
-        updateMask: ["title", "level", "active", "condition"],
+        updateMask: ["title", "level", "active", "condition", "source"],
       });
       Object.assign(existedRisk, updated);
     } else {

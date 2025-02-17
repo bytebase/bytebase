@@ -51,6 +51,7 @@ type UpdateRiskMessage struct {
 	Active     *bool
 	Level      *int32
 	Expression *expr.Expr
+	Source     *RiskSource
 }
 
 // GetRisk gets a risk.
@@ -221,6 +222,9 @@ func (s *Store) UpdateRisk(ctx context.Context, patch *UpdateRiskMessage, id int
 	}
 	if v := patch.Level; v != nil {
 		set, args = append(set, fmt.Sprintf("level = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Source; v != nil {
+		set, args = append(set, fmt.Sprintf("source = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Expression; v != nil {
 		expressionBytes, err := protojson.Marshal(patch.Expression)

@@ -33,7 +33,7 @@ func NewRiskService(store *store.Store, licenseService enterprise.LicenseService
 func convertToRisk(risk *store.RiskMessage) (*v1pb.Risk, error) {
 	return &v1pb.Risk{
 		Name:      fmt.Sprintf("%s%v", common.RiskPrefix, risk.ID),
-		Source:    convertToSource(risk.Source),
+		Source:    convertToV1Source(risk.Source),
 		Title:     risk.Name,
 		Level:     risk.Level,
 		Condition: risk.Expression,
@@ -69,7 +69,7 @@ func (s *RiskService) CreateRisk(ctx context.Context, request *v1pb.CreateRiskRe
 	}
 
 	risk, err := s.store.CreateRisk(ctx, &store.RiskMessage{
-		Source:     convertSource(request.Risk.Source),
+		Source:     convertToSource(request.Risk.Source),
 		Level:      request.Risk.Level,
 		Name:       request.Risk.Title,
 		Active:     request.Risk.Active,
@@ -115,6 +115,11 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 				return nil, status.Errorf(codes.InvalidArgument, "failed to validate risk expression, error: %v", err)
 			}
 			patch.Expression = request.Risk.Condition
+		case "source":
+			source := convertToSource(request.Risk.Source)
+			if risk.Source != source {
+				patch.Source = &source
+			}
 		}
 	}
 
@@ -147,7 +152,7 @@ func (s *RiskService) DeleteRisk(ctx context.Context, request *v1pb.DeleteRiskRe
 	return &emptypb.Empty{}, nil
 }
 
-func convertToSource(source store.RiskSource) v1pb.Risk_Source {
+func convertToV1Source(source store.RiskSource) v1pb.Risk_Source {
 	switch source {
 	case store.RiskSourceDatabaseCreate:
 		return v1pb.Risk_CREATE_DATABASE
@@ -165,7 +170,7 @@ func convertToSource(source store.RiskSource) v1pb.Risk_Source {
 	return v1pb.Risk_SOURCE_UNSPECIFIED
 }
 
-func convertSource(source v1pb.Risk_Source) store.RiskSource {
+func convertToSource(source v1pb.Risk_Source) store.RiskSource {
 	switch source {
 	case v1pb.Risk_CREATE_DATABASE:
 		return store.RiskSourceDatabaseCreate
