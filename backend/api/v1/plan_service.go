@@ -438,9 +438,13 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 
 					// Flags for gh-ost.
 					if err := func() error {
-						if task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
+						switch task.Type {
+						case api.TaskDatabaseSchemaUpdateGhost:
+						case api.TaskDatabaseSchemaUpdateGhostSync:
+						default:
 							return nil
 						}
+
 						payload := &storepb.TaskDatabaseUpdatePayload{}
 						if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 							return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
