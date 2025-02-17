@@ -6,6 +6,24 @@
     container-class="!pt-0 -mt-px"
     @close="onClose"
   >
+    <div class="w-full flex flex-row gap-2">
+      <NTag round v-if="riskLevelText">
+        <span class="text-gray-400 text-sm mr-1">{{
+          $t("issue.risk-level.self")
+        }}</span>
+        <span class="text-sm font-medium">
+          {{ riskLevelText }}
+        </span>
+      </NTag>
+      <NTag round v-if="riskLevelText || (affectedRows && affectedRows > 0)">
+        <span class="text-gray-400 text-sm mr-1">{{
+          $t("task.check-type.affected-rows.self")
+        }}</span>
+        <span class="text-sm font-medium">
+          {{ affectedRows }}
+        </span>
+      </NTag>
+    </div>
     <PlanCheckRunDetail
       :plan-check-run="planCheckRun"
       :database="database"
@@ -35,8 +53,9 @@
 </template>
 
 <script setup lang="ts">
-import { NButton } from "naive-ui";
+import { NButton, NTag } from "naive-ui";
 import { computed, watchEffect, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { BBModal } from "@/bbkit";
 import PlanCheckRunDetail from "@/components/PlanCheckRun/PlanCheckRunDetail.vue";
 import { usePolicyV1Store } from "@/store";
@@ -49,6 +68,7 @@ import {
   PlanCheckRun_Result_SqlReviewReport,
   PlanCheckRun_Status,
 } from "@/types/proto/v1/plan_service";
+import { CheckReleaseResponse_RiskLevel } from "@/types/proto/v1/release_service";
 import type { Advice } from "@/types/proto/v1/sql_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer } from "@/utils";
@@ -57,6 +77,8 @@ const props = withDefaults(
   defineProps<{
     database: ComposedDatabase;
     advices: Advice[];
+    affectedRows?: number;
+    riskLevel?: CheckReleaseResponse_RiskLevel;
     overrideTitle?: string;
     confirm?: Defer<boolean>;
     showCodeLocation?: boolean;
@@ -74,6 +96,7 @@ const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
+const { t } = useI18n();
 const restrictIssueCreationForSqlReviewPolicy = ref(false);
 const policyV1Store = usePolicyV1Store();
 
@@ -83,6 +106,18 @@ const restrictIssueCreationForSQLReview = computed((): boolean => {
     restrictIssueCreationForSqlReviewPolicy.value &&
     props.advices.some((advice) => advice.status === Advice_Status.ERROR)
   );
+});
+
+const riskLevelText = computed(() => {
+  const { riskLevel } = props;
+  if (riskLevel === CheckReleaseResponse_RiskLevel.LOW) {
+    return t("issue.risk-level.low");
+  } else if (riskLevel === CheckReleaseResponse_RiskLevel.MODERATE) {
+    return t("issue.risk-level.moderate");
+  } else if (riskLevel === CheckReleaseResponse_RiskLevel.HIGH) {
+    return t("issue.risk-level.high");
+  }
+  return "";
 });
 
 watchEffect(async () => {

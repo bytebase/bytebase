@@ -58,6 +58,8 @@
       v-if="filteredAdvices && showDetailPanel"
       :database="database"
       :advices="filteredAdvices"
+      :affected-rows="checkResult.affectedRows"
+      :risk-level="checkResult.riskLevel"
       :confirm="confirmDialog"
       :override-title="$t('issue.sql-check.sql-review-violations')"
       :show-code-location="showCodeLocation"
@@ -86,6 +88,7 @@ import { useReviewPolicyForDatabase } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import {
+  CheckReleaseResponse,
   Release_File_ChangeType,
   ReleaseFileType,
 } from "@/types/proto/v1/release_service";
@@ -134,16 +137,19 @@ const SKIP_CHECK_THRESHOLD = 2 * 1024 * 1024;
 const isRunning = ref(false);
 const showDetailPanel = ref(false);
 const allowForceContinue = ref(true);
-const rawAdvices = ref<Advice[]>();
 const context = useSQLCheckContext();
 const confirmDialog = ref<Defer<boolean>>();
+const checkResult = ref<CheckReleaseResponse>(
+  CheckReleaseResponse.fromPartial({})
+);
 
 const filteredAdvices = computed(() => {
   const { adviceFilter } = props;
+  const advices = checkResult.value.results.flatMap((r) => r.advices);
   if (!adviceFilter) {
-    return rawAdvices.value;
+    return advices;
   }
-  return rawAdvices.value?.filter(adviceFilter);
+  return advices?.filter(adviceFilter);
 });
 
 const reviewPolicy = useReviewPolicyForDatabase(
@@ -216,21 +222,24 @@ const runChecks = async () => {
   }
 
   const handleErrors = (errors: string[]) => {
-    // Mock the pre-check errors to advices
-    rawAdvices.value = errors.map((err) =>
-      Advice.fromPartial({
-        title: "Pre check",
-        status: Advice_Status.WARNING,
-        content: err,
-      })
-    );
+    // Mock the pre-check errors to advices.
+    checkResult.value = CheckReleaseResponse.fromPartial({
+      results: [
+        {
+          advices: errors.map((err) =>
+            Advice.fromPartial({
+              title: "Pre check",
+              status: Advice_Status.WARNING,
+              content: err,
+            })
+          ),
+        },
+      ],
+    });
     isRunning.value = false;
   };
 
   isRunning.value = true;
-  if (!rawAdvices.value) {
-    rawAdvices.value = [];
-  }
   const { statement, errors } = await props.getStatement();
   allowForceContinue.value = errors.length === 0;
   if (new Blob([statement]).size > SKIP_CHECK_THRESHOLD) {
@@ -240,8 +249,7 @@ const runChecks = async () => {
     return handleErrors(errors);
   }
   try {
-    const checkResult = await runCheckInternal(statement);
-    rawAdvices.value = checkResult.results.flatMap((r) => r.advices);
+    checkResult.value = await runCheckInternal(statement);
   } finally {
     isRunning.value = false;
   }
