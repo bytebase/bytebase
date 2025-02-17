@@ -19,8 +19,11 @@ import (
 )
 
 // NewSchemaUpdateGhostExecutor creates a schema update (gh-ost) task executor.
-func NewSchemaUpdateGhostExecutor() Executor {
-	return &SchemaUpdateGhostExecutor{}
+func NewSchemaUpdateGhostExecutor(s *store.Store, secret string) Executor {
+	return &SchemaUpdateGhostExecutor{
+		s:      s,
+		secret: secret,
+	}
 }
 
 // SchemaUpdateGhostExecutor is the schema update (gh-ost) task executor.
@@ -62,7 +65,7 @@ func (exec *SchemaUpdateGhostExecutor) runGhostMigration(ctx context.Context, ta
 	}
 	adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
 	if adminDataSource == nil {
-		return true, nil, common.Errorf(common.Internal, "admin data source not found for instance %d", instance.UID)
+		return true, nil, common.Errorf(common.Internal, "admin data source not found for instance %s", instance.ResourceID)
 	}
 
 	database, err := exec.s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName})
@@ -103,7 +106,10 @@ func (exec *SchemaUpdateGhostExecutor) runGhostMigration(ctx context.Context, ta
 
 	select {
 	case err := <-migrationError:
-		return true, nil, err
+		if err != nil {
+			return true, &storepb.TaskRunResult{Detail: err.Error()}, err
+		}
+		return true, nil, nil
 	case <-ctx.Done():
 		migrationContext.PanicAbort <- errors.New("task canceled")
 		return true, nil, errors.New("task canceled")
