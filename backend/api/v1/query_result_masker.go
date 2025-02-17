@@ -5,10 +5,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/masker"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
@@ -28,7 +25,7 @@ func NewQueryResultMasker(store *store.Store) *QueryResultMasker {
 }
 
 // MaskResults masks the result in-place based on the dynamic masking policy, query-span, instance and action.
-func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*base.QuerySpan, results []*v1pb.QueryResult, instance *store.InstanceMessage, action storepb.MaskingExceptionPolicy_MaskingException_Action) error {
+func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*base.QuerySpan, results []*v1pb.QueryResult, instance *store.InstanceMessage, user *store.UserMessage, action storepb.MaskingExceptionPolicy_MaskingException_Action) error {
 	classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "failed to find classification setting")
@@ -62,7 +59,7 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*base.Query
 		if results[i].Error != "" && len(results[i].Rows) == 0 {
 			continue
 		}
-		maskers, err := s.getMaskersForQuerySpan(ctx, m, instance, spans[i], action)
+		maskers, err := s.getMaskersForQuerySpan(ctx, m, instance, user, spans[i], action)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get maskers for query span")
 		}
@@ -73,23 +70,11 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*base.Query
 }
 
 // getMaskersForQuerySpan returns the maskers for the query span.
-func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maskingLevelEvaluator, instance *store.InstanceMessage, span *base.QuerySpan, action storepb.MaskingExceptionPolicy_MaskingException_Action) ([]masker.Masker, error) {
+func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maskingLevelEvaluator, instance *store.InstanceMessage, user *store.UserMessage, span *base.QuerySpan, action storepb.MaskingExceptionPolicy_MaskingException_Action) ([]masker.Masker, error) {
 	if span == nil {
 		return nil, nil
 	}
 	maskers := make([]masker.Masker, 0, len(span.Results))
-
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	currentPrincipal, err := s.store.GetUserByID(ctx, principalID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find current principal")
-	}
-	if currentPrincipal == nil {
-		return nil, status.Errorf(codes.Internal, "current principal not found")
-	}
 
 	// Multiple databases may belong to the same project, to reduce the protojson unmarshal cost,
 	// we store the projectResourceID - maskingExceptionPolicy in a map.
@@ -104,7 +89,7 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 
 		var effectiveMaskers []masker.Masker
 		for column := range spanResult.SourceColumns {
-			newMasker, err := s.getMaskerForColumnResource(ctx, m, instance, column, maskingExceptionPolicyMap, action, currentPrincipal)
+			newMasker, err := s.getMaskerForColumnResource(ctx, m, instance, column, maskingExceptionPolicyMap, action, user)
 			if err != nil {
 				return nil, err
 			}
