@@ -99,13 +99,13 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		}
 	}()
 
-	schemas, schemaOwners, err := getSchemas(txn)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
-	}
 	extensionDepend, err := getExtensionDepend(txn)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get extension dependencies from database %q", driver.databaseName)
+	}
+	schemas, schemaOwners, err := getSchemas(txn, extensionDepend)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
 	}
 	columnMap, err := getTableColumns(txn)
 	if err != nil {
@@ -377,13 +377,13 @@ func formatTableNameFromRegclass(name string) string {
 }
 
 var listSchemaQuery = fmt.Sprintf(`
-SELECT nspname, pg_catalog.pg_get_userbyid(nspowner) as schema_owner
+SELECT oid, nspname, pg_catalog.pg_get_userbyid(nspowner) as schema_owner
 FROM pg_catalog.pg_namespace
 WHERE nspname NOT IN (%s)
 ORDER BY nspname;
 `, pgparser.SystemSchemaWhereClause)
 
-func getSchemas(txn *sql.Tx) ([]string, []string, error) {
+func getSchemas(txn *sql.Tx, extensionDepend map[int]bool) ([]string, []string, error) {
 	rows, err := txn.Query(listSchemaQuery)
 	if err != nil {
 		return nil, nil, err
@@ -392,11 +392,16 @@ func getSchemas(txn *sql.Tx) ([]string, []string, error) {
 
 	var schemaNames, schemaOwners []string
 	for rows.Next() {
+		var oid int
 		var schemaName, schemaOwner string
-		if err := rows.Scan(&schemaName, &schemaOwner); err != nil {
+		if err := rows.Scan(&oid, &schemaName, &schemaOwner); err != nil {
 			return nil, nil, err
 		}
 		if pgparser.IsSystemSchema(schemaName) {
+			continue
+		}
+		if extensionDepend[oid] {
+			// Skip extension schema.
 			continue
 		}
 		schemaNames = append(schemaNames, schemaName)
