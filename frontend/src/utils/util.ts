@@ -167,19 +167,6 @@ export function getIntCookie(name: string): number | undefined {
   return undefined;
 }
 
-export function getStringCookie(name: string): string {
-  const list = document.cookie.split(";");
-  for (let i = 0; i < list.length; i++) {
-    const parts = list[i].split("=");
-    if (parts[0].trim() == name) {
-      // For now, just assumes strings are enclosed by quotes
-      return parts.length > 1 ? parts[1].slice(1, -1) : "";
-    }
-  }
-
-  return "";
-}
-
 export function getHighlightHTMLByKeyWords(s: string, k: string) {
   if (!k) return s;
   return s.replaceAll(k, `<b class="text-accent">${k}</b>`);
