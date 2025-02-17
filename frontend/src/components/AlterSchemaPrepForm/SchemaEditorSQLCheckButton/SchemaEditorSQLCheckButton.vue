@@ -5,8 +5,8 @@
     :get-statement="getStatement"
     :change-type="
       useOnlineSchemaMigration
-        ? CheckRequest_ChangeType.DDL_GHOST
-        : CheckRequest_ChangeType.DDL
+        ? Release_File_ChangeType.DDL_GHOST
+        : Release_File_ChangeType.DDL
     "
     :button-props="{
       size: 'small',
@@ -28,7 +28,7 @@
 import { toRef } from "vue";
 import { SQLCheckButton } from "@/components/SQLCheck";
 import type { ComposedDatabase } from "@/types";
-import { CheckRequest_ChangeType } from "@/types/proto/v1/sql_service";
+import { Release_File_ChangeType } from "@/types/proto/v1/release_service";
 import type { Defer } from "@/utils";
 import OnlineMigrationAdviceExtra from "./OnlineMigrationAdviceExtra.vue";
 import { useSchemaEditorSQLCheck } from "./useSchemaEditorSQLCheck";

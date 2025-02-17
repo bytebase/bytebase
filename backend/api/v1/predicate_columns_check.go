@@ -4,17 +4,14 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func (s *QueryResultMasker) ExtractSensitivePredicateColumns(ctx context.Context, spans []*base.QuerySpan, instance *store.InstanceMessage, action storepb.MaskingExceptionPolicy_MaskingException_Action) ([][]base.ColumnResource, error) {
+func (s *QueryResultMasker) ExtractSensitivePredicateColumns(ctx context.Context, spans []*base.QuerySpan, instance *store.InstanceMessage, user *store.UserMessage, action storepb.MaskingExceptionPolicy_MaskingException_Action) ([][]base.ColumnResource, error) {
 	var result [][]base.ColumnResource
 
 	classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
@@ -39,18 +36,6 @@ func (s *QueryResultMasker) ExtractSensitivePredicateColumns(ctx context.Context
 
 	maskingExceptionPolicyMap := make(map[string]*storepb.MaskingExceptionPolicy)
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	currentPrincipal, err := s.store.GetUserByID(ctx, principalID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find current principal")
-	}
-	if currentPrincipal == nil {
-		return nil, status.Errorf(codes.Internal, "current principal not found")
-	}
-
 	for _, span := range spans {
 		sensitiveColumns, err := s.getSensitiveColumnsForPredicate(
 			ctx,
@@ -59,7 +44,7 @@ func (s *QueryResultMasker) ExtractSensitivePredicateColumns(ctx context.Context
 			span.PredicateColumns,
 			maskingExceptionPolicyMap,
 			action,
-			currentPrincipal,
+			user,
 		)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sensitive columns for predicate")
