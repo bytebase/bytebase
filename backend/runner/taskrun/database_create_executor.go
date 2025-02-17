@@ -155,16 +155,8 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		return true, nil, err
 	}
 
-	environmentID := instance.EnvironmentID
-	if payload.EnvironmentId != "" {
-		environmentID = payload.EnvironmentId
-	}
-	environment, err := exec.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
-	if err != nil {
-		return true, nil, err
-	}
 	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
-	peerDatabase, peerSchemaVersion, peerSchema, err := exec.createInitialSchema(ctx, driverCtx, environment, instance, project, task, taskRunUID, database)
+	peerDatabase, peerSchemaVersion, peerSchema, err := exec.createInitialSchema(ctx, driverCtx, instance, project, task, taskRunUID, database)
 	if err != nil {
 		return true, nil, err
 	}
@@ -345,7 +337,7 @@ func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *
 	}
 }
 
-func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, driverCtx context.Context, environment *store.EnvironmentMessage, instance *store.InstanceMessage, project *store.ProjectMessage, task *store.TaskMessage, taskRunUID int, database *store.DatabaseMessage) (*store.DatabaseMessage, string, string, error) {
+func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, driverCtx context.Context, instance *store.InstanceMessage, project *store.ProjectMessage, task *store.TaskMessage, taskRunUID int, database *store.DatabaseMessage) (*store.DatabaseMessage, string, string, error) {
 	peerDatabase, schemaVersion, schema, err := exec.getSchemaFromPeerTenantDatabase(ctx, instance, project, database)
 	if err != nil {
 		return nil, "", "", err
@@ -365,18 +357,6 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		return nil, "", "", err
 	}
 	defer driver.Close(ctx)
-
-	// TODO(d): support semantic versioning.
-	mi := &db.MigrationInfo{
-		ReleaseVersion: exec.profile.Version,
-		Namespace:      database.DatabaseName,
-		Database:       database.DatabaseName,
-		DatabaseID:     &database.UID,
-		Environment:    environment.ResourceID,
-		Source:         db.UI,
-		Type:           db.Migrate,
-		Description:    "Create database",
-	}
 
 	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
@@ -401,15 +381,14 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		taskRunUID:  taskRunUID,
 		taskRunName: common.FormatTaskRun(project.ResourceID, task.PipelineID, task.StageID, task.ID, taskRunUID),
 		version:     schemaVersion,
+		migrateType: db.Migrate,
 	}
 
 	if issue != nil {
-		mi.Description = fmt.Sprintf("%s - %s", issue.Title, task.Name)
-
 		mc.issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
 	}
 
-	if _, err := executeMigrationDefault(ctx, driverCtx, exec.store, exec.stateCfg, driver, mi, mc, schema, db.ExecuteOptions{}); err != nil {
+	if _, err := executeMigrationDefault(ctx, driverCtx, exec.store, exec.stateCfg, driver, mc, schema, db.ExecuteOptions{}); err != nil {
 		return nil, "", "", err
 	}
 	return peerDatabase, schemaVersion, schema, nil
@@ -456,7 +435,7 @@ func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.
 	// Filter out the database itself.
 	var databases []*store.DatabaseMessage
 	for _, d := range matchedDatabases {
-		if d.UID != database.UID {
+		if d.String() != database.String() {
 			databases = append(databases, d)
 		}
 	}

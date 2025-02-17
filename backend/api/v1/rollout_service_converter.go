@@ -357,7 +357,7 @@ func convertToPlanCheckRun(ctx context.Context, s *store.Store, projectID string
 		CreateTime: timestamppb.New(run.CreatedAt),
 		Type:       convertToPlanCheckRunType(run.Type),
 		Status:     convertToPlanCheckRunStatus(run.Status),
-		Target:     "",
+		Target:     common.FormatDatabase(run.Config.InstanceId, run.Config.DatabaseName),
 		Sheet:      "",
 		Results:    convertToPlanCheckRunResults(run.Result.Results),
 		Error:      run.Result.Error,
@@ -373,14 +373,6 @@ func convertToPlanCheckRun(ctx context.Context, s *store.Store, projectID string
 		}
 		converted.Sheet = common.FormatSheet(projectID, sheet.UID)
 	}
-
-	instanceUID := int(run.Config.InstanceUid)
-	databaseName := run.Config.DatabaseName
-	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance")
-	}
-	converted.Target = common.FormatDatabase(instance.ResourceID, databaseName)
 
 	return converted, nil
 }
