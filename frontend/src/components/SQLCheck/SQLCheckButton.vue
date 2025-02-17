@@ -75,16 +75,20 @@
 <script lang="ts" setup>
 import type { ButtonProps } from "naive-ui";
 import { NButton, NPopover } from "naive-ui";
+import { v4 as uuidv4 } from "uuid";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
-import { sqlServiceClient } from "@/grpcweb";
+import { releaseServiceClient } from "@/grpcweb";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import { useReviewPolicyForDatabase } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import type { CheckRequest_ChangeType } from "@/types/proto/v1/sql_service";
+import {
+  Release_File_ChangeType,
+  ReleaseFileType,
+} from "@/types/proto/v1/release_service";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer, VueStyle } from "@/utils";
 import { defer, hasWorkspacePermissionV2 } from "@/utils";
@@ -104,7 +108,7 @@ const props = withDefaults(
     databaseMetadata?: DatabaseMetadata;
     buttonProps?: ButtonProps;
     buttonStyle?: VueStyle;
-    changeType?: CheckRequest_ChangeType;
+    changeType?: Release_File_ChangeType;
     showCodeLocation?: boolean;
     ignoreIssueCreationRestriction?: boolean;
     adviceFilter?: (advices: Advice, index: number) => boolean;
@@ -174,16 +178,23 @@ const policyErrors = computed(() => {
 
 providePlanCheckRunContext({});
 
-const runCheckInternal = async (
-  statement: string,
-  databaseMetadata: DatabaseMetadata | undefined
-) => {
+const runCheckInternal = async (statement: string) => {
   const { database, changeType } = props;
-  const result = await sqlServiceClient.check({
-    statement,
-    name: database.name,
-    metadata: databaseMetadata,
-    changeType,
+  const result = await releaseServiceClient.checkRelease({
+    parent: database.project,
+    release: {
+      files: [
+        {
+          // Use a random uuid to avoid duplication.
+          version: uuidv4(),
+          type: ReleaseFileType.VERSIONED,
+          statement: statement,
+          // Default to DDL change type.
+          changeType: changeType || Release_File_ChangeType.DDL,
+        },
+      ],
+    },
+    targets: [database.name],
   });
   return result;
 };
@@ -229,8 +240,8 @@ const runChecks = async () => {
     return handleErrors(errors);
   }
   try {
-    const result = await runCheckInternal(statement, props.databaseMetadata);
-    rawAdvices.value = result.advices;
+    const checkResult = await runCheckInternal(statement);
+    rawAdvices.value = checkResult.results.flatMap((r) => r.advices);
   } finally {
     isRunning.value = false;
   }
