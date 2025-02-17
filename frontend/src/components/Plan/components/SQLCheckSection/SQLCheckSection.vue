@@ -34,7 +34,8 @@ import { computed } from "vue";
 import { databaseForSpec } from "@/components/Plan/logic";
 import { SQLCheckButton } from "@/components/SQLCheck";
 import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
-import { Advice, CheckRequest_ChangeType } from "@/types/proto/v1/sql_service";
+import { Release_File_ChangeType } from "@/types/proto/v1/release_service";
+import { Advice } from "@/types/proto/v1/sql_service";
 import { usePlanContext } from "../../logic";
 import { useSpecSheet } from "../StatementSection/useSpecSheet";
 import SQLCheckBadge from "./SQLCheckBadge.vue";
@@ -57,14 +58,14 @@ const getStatement = async () => {
   };
 };
 
-const changeType = computed((): CheckRequest_ChangeType | undefined => {
+const changeType = computed((): Release_File_ChangeType | undefined => {
   switch (selectedSpec.value?.changeDatabaseConfig?.type) {
     case Plan_ChangeDatabaseConfig_Type.MIGRATE:
-      return CheckRequest_ChangeType.DDL;
+      return Release_File_ChangeType.DDL;
     case Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST:
-      return CheckRequest_ChangeType.DDL_GHOST;
+      return Release_File_ChangeType.DDL_GHOST;
     case Plan_ChangeDatabaseConfig_Type.DATA:
-      return CheckRequest_ChangeType.DML;
+      return Release_File_ChangeType.DML;
   }
   return undefined;
 });
