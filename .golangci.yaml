@@ -30,7 +30,7 @@ issues:
     - fmt.Printf
     - Enter(.*)_(.*)
     - Exit(.*)_(.*)
-  skip-dirs:
+  exclude-dirs:
     - proto/generated-go
     - frontend
 
