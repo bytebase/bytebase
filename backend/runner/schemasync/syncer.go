@@ -61,7 +61,7 @@ type Syncer struct {
 	stateCfg        *state.State
 	profile         *config.Profile
 	licenseService  enterprise.LicenseService
-	databaseSyncMap sync.Map // map[int]*store.DatabaseMessage
+	databaseSyncMap sync.Map // map[string]*store.DatabaseMessage
 }
 
 // Run will run the schema syncer once.
@@ -218,7 +218,7 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 			continue
 		}
 
-		s.databaseSyncMap.Store(database.UID, database)
+		s.databaseSyncMap.Store(database.String(), database)
 	}
 }
 
@@ -239,7 +239,7 @@ func (s *Syncer) SyncAllDatabases(ctx context.Context, instance *store.InstanceM
 		if database.SyncState != api.OK {
 			continue
 		}
-		s.databaseSyncMap.Store(database.UID, database)
+		s.databaseSyncMap.Store(database.String(), database)
 	}
 }
 
@@ -249,7 +249,7 @@ func (s *Syncer) SyncDatabasesAsync(databases []*store.DatabaseMessage) {
 		if database.SyncState != api.OK {
 			continue
 		}
-		s.databaseSyncMap.Store(database.UID, database)
+		s.databaseSyncMap.Store(database.String(), database)
 	}
 }
 
