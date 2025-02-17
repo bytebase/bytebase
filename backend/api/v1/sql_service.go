@@ -514,7 +514,7 @@ func queryRetry(
 
 	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil && !queryContext.Explain {
 		masker := NewQueryResultMasker(stores)
-		if err := masker.MaskResults(ctx, spans, results, instance, action); err != nil {
+		if err := masker.MaskResults(ctx, spans, results, instance, user, action); err != nil {
 			return nil, nil, duration, status.Error(codes.Internal, err.Error())
 		}
 
@@ -728,7 +728,7 @@ func DoExport(
 
 	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
 		masker := NewQueryResultMasker(storeInstance)
-		if err := masker.MaskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_EXPORT); err != nil {
+		if err := masker.MaskResults(ctx, spans, results, instance, user, storepb.MaskingExceptionPolicy_MaskingException_EXPORT); err != nil {
 			return nil, duration, err
 		}
 	}
