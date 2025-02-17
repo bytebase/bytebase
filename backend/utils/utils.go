@@ -125,31 +125,31 @@ func ValidateDeploymentSchedule(schedule *storepb.Schedule) error {
 func GetDatabaseMatrixFromDeploymentSchedule(schedule *storepb.Schedule, databaseList []*store.DatabaseMessage) ([][]*store.DatabaseMessage, error) {
 	var matrix [][]*store.DatabaseMessage
 
-	// idToLabels maps databaseID -> label key -> label value
-	idToLabels := make(map[int]map[string]string)
-	databaseMap := make(map[int]*store.DatabaseMessage)
+	// idToLabels maps database -> label key -> label value
+	idToLabels := make(map[string]map[string]string)
+	databaseMap := make(map[string]*store.DatabaseMessage)
 	for _, database := range databaseList {
-		databaseMap[database.UID] = database
+		databaseMap[database.String()] = database
 		newMap := make(map[string]string)
 		for k, v := range database.Metadata.Labels {
 			newMap[k] = v
 		}
 		newMap[api.EnvironmentLabelKey] = database.EffectiveEnvironmentID
 
-		idToLabels[database.UID] = newMap
+		idToLabels[database.String()] = newMap
 	}
 
-	// idsSeen records database id which is already in a stage.
-	idsSeen := make(map[int]bool)
+	// idsSeen records database which is already in a stage.
+	idsSeen := make(map[string]bool)
 
 	// For each stage, we loop over all databases to see if it is a match.
 	for _, deployment := range schedule.Deployments {
 		// For each stage, we will get a list of matched databases.
-		var matchedDatabaseList []int
+		var matchedDatabaseList []string
 		// Loop over databaseList instead of idToLabels to get determinant results.
 		for _, database := range databaseList {
 			// Skip if the database is already in a stage.
-			if _, ok := idsSeen[database.UID]; ok {
+			if _, ok := idsSeen[database.String()]; ok {
 				continue
 			}
 			// Skip if the database is not found.
@@ -157,9 +157,9 @@ func GetDatabaseMatrixFromDeploymentSchedule(schedule *storepb.Schedule, databas
 				continue
 			}
 
-			if isMatchExpressions(idToLabels[database.UID], deployment.Spec.Selector.MatchExpressions) {
-				matchedDatabaseList = append(matchedDatabaseList, database.UID)
-				idsSeen[database.UID] = true
+			if isMatchExpressions(idToLabels[database.String()], deployment.Spec.Selector.MatchExpressions) {
+				matchedDatabaseList = append(matchedDatabaseList, database.String())
+				idsSeen[database.String()] = true
 			}
 		}
 
@@ -167,10 +167,10 @@ func GetDatabaseMatrixFromDeploymentSchedule(schedule *storepb.Schedule, databas
 		for _, id := range matchedDatabaseList {
 			databaseList = append(databaseList, databaseMap[id])
 		}
-		// sort databases in stage based on IDs.
+		// sort databases in stage based on database name.
 		if len(databaseList) > 0 {
 			sort.Slice(databaseList, func(i, j int) bool {
-				return databaseList[i].UID < databaseList[j].UID
+				return databaseList[i].String() < databaseList[j].String()
 			})
 		}
 

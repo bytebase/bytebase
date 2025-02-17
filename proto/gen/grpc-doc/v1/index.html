@@ -1402,7 +1402,7 @@
         
           
           <li>
-            <a href="#v1%2fauth_service.proto">v1/auth_service.proto</a>
+            <a href="#v1%2fuser_service.proto">v1/user_service.proto</a>
             <ul>
               
                 <li>
@@ -1418,35 +1418,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.IdentityProviderContext"><span class="badge">M</span>IdentityProviderContext</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.ListUsersRequest"><span class="badge">M</span>ListUsersRequest</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.v1.ListUsersResponse"><span class="badge">M</span>ListUsersResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.LoginRequest"><span class="badge">M</span>LoginRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.LoginResponse"><span class="badge">M</span>LoginResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.LogoutRequest"><span class="badge">M</span>LogoutRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.OAuth2IdentityProviderContext"><span class="badge">M</span>OAuth2IdentityProviderContext</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.OIDCIdentityProviderContext"><span class="badge">M</span>OIDCIdentityProviderContext</a>
                 </li>
               
                 <li>
@@ -1469,6 +1445,45 @@
                 <li>
                   <a href="#bytebase.v1.UserType"><span class="badge">E</span>UserType</a>
                 </li>
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.UserService"><span class="badge">S</span>UserService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#v1%2fauth_service.proto">v1/auth_service.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.IdentityProviderContext"><span class="badge">M</span>IdentityProviderContext</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.LoginRequest"><span class="badge">M</span>LoginRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.LoginResponse"><span class="badge">M</span>LoginResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.LogoutRequest"><span class="badge">M</span>LogoutRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.OAuth2IdentityProviderContext"><span class="badge">M</span>OAuth2IdentityProviderContext</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.OIDCIdentityProviderContext"><span class="badge">M</span>OIDCIdentityProviderContext</a>
+                </li>
+              
               
               
               
@@ -16026,7 +16041,7 @@ to retrieve the next page of log entities. </p></td>
     
       
       <div class="file-heading">
-        <h2 id="v1/auth_service.proto">v1/auth_service.proto</h2><a href="#title">Top</a>
+        <h2 id="v1/user_service.proto">v1/user_service.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
 
@@ -16096,37 +16111,6 @@ Format: users/{user} </p></td>
                   <td></td>
                   <td><p>The name of the user to retrieve.
 Format: users/{user uid or user email} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.IdentityProviderContext">IdentityProviderContext</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>oauth2_context</td>
-                  <td><a href="#bytebase.v1.OAuth2IdentityProviderContext">OAuth2IdentityProviderContext</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>oidc_context</td>
-                  <td><a href="#bytebase.v1.OIDCIdentityProviderContext">OIDCIdentityProviderContext</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -16212,163 +16196,6 @@ If this field is omitted, there are no subsequent pages. </p></td>
           </table>
 
           
-
-        
-      
-        <h3 id="bytebase.v1.LoginRequest">LoginRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>email</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>password</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>web</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If web is set, we will set access token, refresh token, and user to the cookie. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>idp_name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the identity provider.
-Format: idps/{idp} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>idp_context</td>
-                  <td><a href="#bytebase.v1.IdentityProviderContext">IdentityProviderContext</a></td>
-                  <td></td>
-                  <td><p>The idp_context is using to get the user information from identity provider. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>otp_code</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>The otp_code is used to verify the user&#39;s identity by MFA. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>recovery_code</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>The recovery_code is used to recovery the user&#39;s identity with MFA. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>mfa_temp_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>The mfa_temp_token is used to verify the user&#39;s identity by MFA. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.LoginResponse">LoginResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>mfa_temp_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>require_reset_password</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>user</td>
-                  <td><a href="#bytebase.v1.User">User</a></td>
-                  <td></td>
-                  <td><p>The user of successful login. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.LogoutRequest">LogoutRequest</h3>
-        <p></p>
-
-        
-
-        
-      
-        <h3 id="bytebase.v1.OAuth2IdentityProviderContext">OAuth2IdentityProviderContext</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>code</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.OIDCIdentityProviderContext">OIDCIdentityProviderContext</h3>
-        <p></p>
-
-        
 
         
       
@@ -16635,7 +16462,7 @@ Could be empty. </p></td>
       
 
       
-        <h3 id="bytebase.v1.AuthService">AuthService</h3>
+        <h3 id="bytebase.v1.UserService">UserService</h3>
         <p></p>
         <table class="enum-table">
           <thead>
@@ -16688,20 +16515,6 @@ The last remaining workspace admin cannot be deleted.</p></td>
                 <td><a href="#bytebase.v1.UndeleteUserRequest">UndeleteUserRequest</a></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
                 <td><p>Only the user with bb.users.undelete permission on the workspace can undelete the user.</p></td>
-              </tr>
-            
-              <tr>
-                <td>Login</td>
-                <td><a href="#bytebase.v1.LoginRequest">LoginRequest</a></td>
-                <td><a href="#bytebase.v1.LoginResponse">LoginResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>Logout</td>
-                <td><a href="#bytebase.v1.LogoutRequest">LogoutRequest</a></td>
-                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
               </tr>
             
           </tbody>
@@ -16781,6 +16594,252 @@ The last remaining workspace admin cannot be deleted.</p></td>
                 <td>*</td>
               </tr>
               
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
+        <h2 id="v1/auth_service.proto">v1/auth_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.IdentityProviderContext">IdentityProviderContext</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>oauth2_context</td>
+                  <td><a href="#bytebase.v1.OAuth2IdentityProviderContext">OAuth2IdentityProviderContext</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>oidc_context</td>
+                  <td><a href="#bytebase.v1.OIDCIdentityProviderContext">OIDCIdentityProviderContext</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.LoginRequest">LoginRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>email</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>web</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If web is set, we will set access token, refresh token, and user to the cookie. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>idp_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the identity provider.
+Format: idps/{idp} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>idp_context</td>
+                  <td><a href="#bytebase.v1.IdentityProviderContext">IdentityProviderContext</a></td>
+                  <td></td>
+                  <td><p>The idp_context is using to get the user information from identity provider. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>otp_code</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The otp_code is used to verify the user&#39;s identity by MFA. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>recovery_code</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The recovery_code is used to recovery the user&#39;s identity with MFA. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>mfa_temp_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The mfa_temp_token is used to verify the user&#39;s identity by MFA. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.LoginResponse">LoginResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>mfa_temp_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>require_reset_password</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>user</td>
+                  <td><a href="#bytebase.v1.User">User</a></td>
+                  <td></td>
+                  <td><p>The user of successful login. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.LogoutRequest">LogoutRequest</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="bytebase.v1.OAuth2IdentityProviderContext">OAuth2IdentityProviderContext</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>code</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.OIDCIdentityProviderContext">OIDCIdentityProviderContext</h3>
+        <p></p>
+
+        
+
+        
+      
+
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.AuthService">AuthService</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>Login</td>
+                <td><a href="#bytebase.v1.LoginRequest">LoginRequest</a></td>
+                <td><a href="#bytebase.v1.LoginResponse">LoginResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>Logout</td>
+                <td><a href="#bytebase.v1.LogoutRequest">LogoutRequest</a></td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
             
               
               

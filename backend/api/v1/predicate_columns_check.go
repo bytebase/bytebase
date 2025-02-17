@@ -117,7 +117,7 @@ func (s *QueryResultMasker) getSensitiveColumnsForPredicate(
 		}
 
 		if _, ok := maskingExceptionPolicyMap[database.ProjectID]; !ok {
-			policy, err := s.store.GetMaskingExceptionPolicyByProjectUID(ctx, project.ResourceID)
+			policy, err := s.store.GetMaskingExceptionPolicyByProject(ctx, project.ResourceID)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to find masking exception policy for project %q", project.ResourceID)
 			}

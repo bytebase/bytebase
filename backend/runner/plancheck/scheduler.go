@@ -105,10 +105,9 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.Pla
 		return
 	}
 
-	instanceUID := int(planCheckRun.Config.InstanceUid)
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &planCheckRun.Config.InstanceId})
 	if err != nil {
-		slog.Error("failed to find instance", slog.Int("uid", planCheckRun.UID), slog.Int64("plan_uid", planCheckRun.PlanUID), slog.Int("instance", instanceUID))
+		slog.Error("failed to find instance", slog.Int("uid", planCheckRun.UID), slog.Int64("plan_uid", planCheckRun.PlanUID), slog.String("instance", planCheckRun.Config.InstanceId))
 		return
 	}
 

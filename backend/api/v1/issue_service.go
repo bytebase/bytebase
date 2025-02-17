@@ -232,7 +232,8 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 			if database == nil {
 				return nil, status.Errorf(codes.InvalidArgument, `database "%q" not found`, spec.Value)
 			}
-			issueFind.DatabaseUID = &database.UID
+			issueFind.InstanceID = &database.InstanceID
+			issueFind.DatabaseName = &database.DatabaseName
 		case "labels":
 			if spec.Operator != ComparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "%s" filter`, spec.Key)

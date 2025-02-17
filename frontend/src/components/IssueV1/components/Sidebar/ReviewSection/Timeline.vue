@@ -95,7 +95,7 @@ import {
 } from "naive-ui";
 import { useIssueContext } from "@/components/IssueV1/logic";
 import type { WrappedReviewStep } from "@/types";
-import { type User } from "@/types/proto/v1/auth_service";
+import { type User } from "@/types/proto/v1/user_service";
 import type { ApprovalStep } from "@/types/proto/v1/issue_service";
 import { approvalNodeText } from "@/utils";
 import Approver from "./Approver.vue";

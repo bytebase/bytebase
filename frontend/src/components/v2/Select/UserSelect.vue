@@ -38,7 +38,7 @@ import {
   isValidProjectName,
   PRESET_WORKSPACE_ROLES,
 } from "@/types";
-import { UserType, type User } from "@/types/proto/v1/auth_service";
+import { UserType, type User } from "@/types/proto/v1/user_service";
 import { State } from "@/types/proto/v1/common";
 import { extractUserUID } from "@/utils";
 

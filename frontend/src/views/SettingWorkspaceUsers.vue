@@ -187,7 +187,7 @@ import {
 } from "@/store";
 import { groupNamePrefix } from "@/store/modules/v1/common";
 import { ALL_USERS_USER_EMAIL, filterUserListByKeyword } from "@/types";
-import { UserType, type User } from "@/types/proto/v1/auth_service";
+import { UserType, type User } from "@/types/proto/v1/user_service";
 import { State } from "@/types/proto/v1/common";
 import type { Group } from "@/types/proto/v1/group_service";
 import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";

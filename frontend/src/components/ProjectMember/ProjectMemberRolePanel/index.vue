@@ -230,7 +230,7 @@ import {
 import { groupNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject, DatabaseResource } from "@/types";
 import { PresetRoleType, PRESET_ROLES } from "@/types";
-import { type User } from "@/types/proto/v1/auth_service";
+import { type User } from "@/types/proto/v1/user_service";
 import { State } from "@/types/proto/v1/common";
 import { Binding } from "@/types/proto/v1/iam_policy";
 import { displayRoleTitle, hasProjectPermissionV2 } from "@/utils";

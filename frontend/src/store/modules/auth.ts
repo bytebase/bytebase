@@ -2,7 +2,7 @@ import { useLocalStorage } from "@vueuse/core";
 import axios from "axios";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { authServiceClient } from "@/grpcweb";
+import { userServiceClient } from "@/grpcweb";
 import { router } from "@/router";
 import {
   AUTH_SIGNIN_MODULE,
@@ -12,9 +12,9 @@ import {
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import { useAppFeature, useUserStore, useSettingV1Store } from "@/store";
 import { unknownUser } from "@/types";
-import type { LoginRequest, User } from "@/types/proto/v1/auth_service";
+import type { LoginRequest } from "@/types/proto/v1/auth_service";
 import { LoginResponse } from "@/types/proto/v1/auth_service";
-import { UserType } from "@/types/proto/v1/auth_service";
+import { User, UserType } from "@/types/proto/v1/user_service";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import { getIntCookie } from "@/utils";
 
@@ -114,7 +114,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
   };
 
   const signup = async (request: Partial<User>) => {
-    await authServiceClient.createUser({
+    await userServiceClient.createUser({
       user: {
         email: request.email,
         title: request.name,

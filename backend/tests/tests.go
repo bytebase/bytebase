@@ -130,6 +130,7 @@ type controller struct {
 	databaseGroupServiceClient   v1pb.DatabaseGroupServiceClient
 	vcsConnectorServiceClient    v1pb.VCSConnectorServiceClient
 	authServiceClient            v1pb.AuthServiceClient
+	userServiceClient            v1pb.UserServiceClient
 	settingServiceClient         v1pb.SettingServiceClient
 	environmentServiceClient     v1pb.EnvironmentServiceClient
 	instanceServiceClient        v1pb.InstanceServiceClient
@@ -397,6 +398,7 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.databaseGroupServiceClient = v1pb.NewDatabaseGroupServiceClient(ctl.grpcConn)
 	ctl.vcsConnectorServiceClient = v1pb.NewVCSConnectorServiceClient(ctl.grpcConn)
 	ctl.authServiceClient = v1pb.NewAuthServiceClient(ctl.grpcConn)
+	ctl.userServiceClient = v1pb.NewUserServiceClient(ctl.grpcConn)
 	ctl.settingServiceClient = v1pb.NewSettingServiceClient(ctl.grpcConn)
 	ctl.environmentServiceClient = v1pb.NewEnvironmentServiceClient(ctl.grpcConn)
 	ctl.instanceServiceClient = v1pb.NewInstanceServiceClient(ctl.grpcConn)
@@ -498,7 +500,7 @@ func (*controller) provisionSQLiteInstance(rootDir, name string) (string, error)
 
 // signupAndLogin will signup and login as user demo@example.com.
 func (ctl *controller) signupAndLogin(ctx context.Context) (string, error) {
-	if _, err := ctl.authServiceClient.CreateUser(ctx, &v1pb.CreateUserRequest{
+	if _, err := ctl.userServiceClient.CreateUser(ctx, &v1pb.CreateUserRequest{
 		User: &v1pb.User{
 			Email:    "demo@example.com",
 			Password: "1024bytebase",
