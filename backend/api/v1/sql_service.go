@@ -436,7 +436,7 @@ func queryRetry(
 		}
 		if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
 			masker := NewQueryResultMasker(stores)
-			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, action)
+			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user, action)
 			if err != nil {
 				return nil, nil, time.Duration(0), status.Error(codes.Internal, err.Error())
 			}
@@ -499,7 +499,7 @@ func queryRetry(
 		}
 		if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
 			masker := NewQueryResultMasker(stores)
-			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, action)
+			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user, action)
 			if err != nil {
 				return nil, nil, time.Duration(0), status.Error(codes.Internal, err.Error())
 			}
