@@ -121,9 +121,10 @@ const commentLink = computed((): CommentLink => {
       const [, , stageUid, taskUid] = getProjectIdRolloutUidStageUidTaskUid(
         task.task
       );
+      const link = task.issue !== '' ? `/${task.issue}?stage=${stageUid}&task=${taskUid}` : `/${task.task}`
       return {
         title: t("common.blocking-task"),
-        link: `/${task.issue}?stage=${stageUid}&task=${taskUid}`,
+        link: link,
       };
     }
   } else if (taskRun.status === TaskRun_Status.DONE) {
