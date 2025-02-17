@@ -48,8 +48,9 @@ import {
 import { SQLCheckButton } from "@/components/SQLCheck";
 import { TaskTypeListWithStatement } from "@/types";
 import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
+import { Release_File_ChangeType } from "@/types/proto/v1/release_service";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
-import { Advice, CheckRequest_ChangeType } from "@/types/proto/v1/sql_service";
+import { Advice } from "@/types/proto/v1/sql_service";
 import type { Defer } from "@/utils/util";
 import { useTaskSheet } from "../StatementSection/useTaskSheet";
 import OnlineMigrationAdviceExtra from "./OnlineMigrationAdviceExtra.vue";
@@ -94,15 +95,15 @@ const handleToggleOnlineMigration = (
   confirm?.resolve(false);
 };
 
-const changeType = computed((): CheckRequest_ChangeType | undefined => {
+const changeType = computed((): Release_File_ChangeType | undefined => {
   const spec = specForTask(issue.value.planEntity, selectedTask.value);
   switch (spec?.changeDatabaseConfig?.type) {
     case Plan_ChangeDatabaseConfig_Type.MIGRATE:
-      return CheckRequest_ChangeType.DDL;
+      return Release_File_ChangeType.DDL;
     case Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST:
-      return CheckRequest_ChangeType.DDL_GHOST;
+      return Release_File_ChangeType.DDL_GHOST;
     case Plan_ChangeDatabaseConfig_Type.DATA:
-      return CheckRequest_ChangeType.DML;
+      return Release_File_ChangeType.DML;
   }
   return undefined;
 });
