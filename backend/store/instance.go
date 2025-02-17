@@ -27,7 +27,6 @@ type InstanceMessage struct {
 	Activation    bool
 	Options       *storepb.InstanceOptions
 	EnvironmentID string
-	UID           int
 	Deleted       bool
 	EngineVersion string
 	Metadata      *storepb.InstanceMetadata
@@ -52,7 +51,6 @@ type UpdateInstanceMessage struct {
 
 // FindInstanceMessage is the message for finding instances.
 type FindInstanceMessage struct {
-	UID         *int
 	ResourceID  *string
 	ResourceIDs *[]string
 	ShowDeleted bool
@@ -62,11 +60,6 @@ type FindInstanceMessage struct {
 func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*InstanceMessage, error) {
 	if find.ResourceID != nil {
 		if v, ok := s.instanceCache.Get(getInstanceCacheKey(*find.ResourceID)); ok {
-			return v, nil
-		}
-	}
-	if find.UID != nil {
-		if v, ok := s.instanceIDCache.Get(*find.UID); ok {
 			return v, nil
 		}
 	}
@@ -95,7 +88,6 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 
 	instance := instances[0]
 	s.instanceCache.Add(getInstanceCacheKey(instance.ResourceID), instance)
-	s.instanceIDCache.Add(instance.UID, instance)
 	return instance, nil
 }
 
@@ -118,7 +110,6 @@ func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) 
 
 	for _, instance := range instances {
 		s.instanceCache.Add(getInstanceCacheKey(instance.ResourceID), instance)
-		s.instanceIDCache.Add(instance.UID, instance)
 	}
 	return instances, nil
 }
@@ -202,7 +193,6 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 	instance := &InstanceMessage{
 		EnvironmentID: instanceCreate.EnvironmentID,
 		ResourceID:    instanceCreate.ResourceID,
-		UID:           instanceID,
 		Title:         instanceCreate.Title,
 		Engine:        instanceCreate.Engine,
 		ExternalLink:  instanceCreate.ExternalLink,
@@ -212,7 +202,6 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		Metadata:      instanceCreate.Metadata,
 	}
 	s.instanceCache.Add(getInstanceCacheKey(instance.ResourceID), instance)
-	s.instanceIDCache.Add(instance.UID, instance)
 	return instance, nil
 }
 
@@ -287,7 +276,6 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 			SET `+strings.Join(set, ", ")+`
 			WHERE %s
 			RETURNING
-				id,
 				resource_id,
 				environment,
 				name,
@@ -302,7 +290,6 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		var environment sql.NullString
 		var options, metadata []byte
 		if err := tx.QueryRowContext(ctx, query, args...).Scan(
-			&instance.UID,
 			&instance.ResourceID,
 			&environment,
 			&instance.Title,
@@ -371,7 +358,6 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	}
 
 	s.instanceCache.Add(getInstanceCacheKey(instance.ResourceID), instance)
-	s.instanceIDCache.Add(instance.UID, instance)
 	return instance, nil
 }
 
@@ -383,9 +369,6 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	if v := find.ResourceIDs; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = ANY($%d)", len(args)+1)), append(args, *v)
 	}
-	if v := find.UID; v != nil {
-		where, args = append(where, fmt.Sprintf("instance.id = $%d", len(args)+1)), append(args, *v)
-	}
 	if !find.ShowDeleted {
 		where, args = append(where, fmt.Sprintf("instance.deleted = $%d", len(args)+1)), append(args, false)
 	}
@@ -393,7 +376,6 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	var instanceMessages []*InstanceMessage
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
-			id,
 			resource_id,
 			name,
 			environment,
@@ -419,7 +401,6 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 		var engine string
 		var options, metadata []byte
 		if err := rows.Scan(
-			&instanceMessage.UID,
 			&instanceMessage.ResourceID,
 			&instanceMessage.Title,
 			&environment,
