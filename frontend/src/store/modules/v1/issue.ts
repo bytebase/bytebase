@@ -6,7 +6,7 @@ import { ref, watch } from "vue";
 import { issueServiceClient } from "@/grpcweb";
 import type { ComposedIssue, IssueFilter } from "@/types";
 import { isValidProjectName, PresetRoleType } from "@/types";
-import { UserType } from "@/types/proto/v1/auth_service";
+import { UserType } from "@/types/proto/v1/user_service";
 import { State } from "@/types/proto/v1/common";
 import type { ApprovalStep } from "@/types/proto/v1/issue_service";
 import {

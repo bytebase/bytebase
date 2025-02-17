@@ -10,8 +10,16 @@
   />
 
   <MaskingAlgorithmsCreateDrawer
-    :show="state.showAlgorithmDrawer"
-    :algorithm="state.pendingEditAlgorithm"
+    :show="!!state.pendingEditSemanticIndex"
+    :algorithm="
+      state.pendingEditSemanticIndex
+        ? getMaskingType(
+            semanticItemList[state.pendingEditSemanticIndex].item.algorithm
+          )
+          ? semanticItemList[state.pendingEditSemanticIndex].item.algorithm
+          : undefined
+        : undefined
+    "
     :readonly="readonly"
     @apply="onAlgorithmUpsert"
     @dismiss="onDrawerDismiss"
@@ -47,8 +55,6 @@ export interface SemanticItem {
 }
 
 interface LocalState {
-  showAlgorithmDrawer: boolean;
-  pendingEditAlgorithm?: Algorithm;
   pendingEditSemanticIndex?: number;
   processing: boolean;
 }
@@ -71,7 +77,6 @@ const emit = defineEmits<{
 }>();
 
 const state = reactive<LocalState>({
-  showAlgorithmDrawer: false,
   processing: false,
 });
 
@@ -79,7 +84,6 @@ const { t } = useI18n();
 
 const onDrawerDismiss = () => {
   state.pendingEditSemanticIndex = undefined;
-  state.showAlgorithmDrawer = false;
 };
 
 const isBuiltinSemanticType = (item: SemanticTypeSetting_SemanticType) => {
@@ -109,9 +113,19 @@ const onAlgorithmUpsert = async (maskingAlgorithm: Algorithm) => {
 const columnList = computed(() => {
   const columns: DataTableColumn<SemanticItem>[] = [
     {
+      key: "id",
+      title: "ID",
+      width: 350,
+      resizable: true,
+      render: (item) => {
+        return <h3 class="break-normal">{item.item.id}</h3>;
+      },
+    },
+    {
       key: "title",
       title: t("settings.sensitive-data.semantic-types.table.semantic-type"),
       width: "minmax(min-content, auto)",
+      resizable: true,
       render: (item, row) => {
         if (item.mode === "NORMAL") {
           return <h3 class="break-normal">{item.item.title}</h3>;
@@ -197,11 +211,7 @@ const columnList = computed(() => {
           {!isReadonly(item.item) && (
             <MiniActionButton
               onClick={() => {
-                state.pendingEditAlgorithm = getMaskingType(item.item.algorithm)
-                  ? item.item.algorithm
-                  : undefined;
                 state.pendingEditSemanticIndex = row;
-                state.showAlgorithmDrawer = true;
               }}
             >
               <PencilIcon class="w-4 h-4" />

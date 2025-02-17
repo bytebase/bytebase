@@ -239,7 +239,7 @@ func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType api.
 	}
 	reviewConfigID, err := common.GetReviewConfigID(reviewConfigName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to extract review config uid from %s", reviewConfigName)
+		return nil, errors.Wrapf(err, "failed to extract review config %s", reviewConfigName)
 	}
 
 	reviewConfig, err := s.GetReviewConfig(ctx, reviewConfigID)
@@ -304,8 +304,8 @@ func (s *Store) GetMaskingRulePolicy(ctx context.Context) (*storepb.MaskingRuleP
 	return p, nil
 }
 
-// GetMaskingExceptionPolicyByProjectUID gets the masking exception policy for a project.
-func (s *Store) GetMaskingExceptionPolicyByProjectUID(ctx context.Context, projectID string) (*storepb.MaskingExceptionPolicy, error) {
+// GetMaskingExceptionPolicyByProject gets the masking exception policy for a project.
+func (s *Store) GetMaskingExceptionPolicyByProject(ctx context.Context, projectID string) (*storepb.MaskingExceptionPolicy, error) {
 	resourceType := api.PolicyResourceTypeProject
 	resource := common.FormatProject(projectID)
 	pType := api.PolicyTypeMaskingException
@@ -339,8 +339,6 @@ type PolicyMessage struct {
 	Type              api.PolicyType
 	Enforce           bool
 
-	// Output only.
-	UID       int
 	UpdatedAt time.Time
 }
 
@@ -534,25 +532,23 @@ func (s *Store) DeletePolicyV2(ctx context.Context, policy *PolicyMessage) error
 }
 
 func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage) (*PolicyMessage, error) {
-	var uid int
-
-	if err := tx.QueryRowContext(ctx, `
-			INSERT INTO policy (
-				resource_type,
-				resource,
-				inherit_from_parent,
-				type,
-				payload,
-				enforce
-			)
-			VALUES ($1, $2, $3, $4, $5, $6)
-			ON CONFLICT(resource_type, resource, type) DO UPDATE SET
-				inherit_from_parent = EXCLUDED.inherit_from_parent,
-				payload = EXCLUDED.payload,
-				enforce = EXCLUDED.enforce
-			RETURNING
-				id,
-				updated_at
+	create.UpdatedAt = time.Now()
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO policy (
+			resource_type,
+			resource,
+			inherit_from_parent,
+			type,
+			payload,
+			enforce,
+			updated_at
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		ON CONFLICT(resource_type, resource, type) DO UPDATE SET
+			inherit_from_parent = EXCLUDED.inherit_from_parent,
+			payload = EXCLUDED.payload,
+			enforce = EXCLUDED.enforce,
+			updated_at = EXCLUDED.updated_at
 		`,
 		create.ResourceType,
 		create.Resource,
@@ -560,13 +556,10 @@ func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage) (*Po
 		create.Type,
 		create.Payload,
 		create.Enforce,
-	).Scan(
-		&uid,
-		&create.UpdatedAt,
+		create.UpdatedAt,
 	); err != nil {
 		return nil, err
 	}
-	create.UID = uid
 	return create, nil
 }
 
@@ -587,7 +580,6 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			id,
 			updated_at,
 			resource_type,
 			resource,
@@ -608,7 +600,6 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 	for rows.Next() {
 		var policyMessage PolicyMessage
 		if err := rows.Scan(
-			&policyMessage.UID,
 			&policyMessage.UpdatedAt,
 			&policyMessage.ResourceType,
 			&policyMessage.Resource,

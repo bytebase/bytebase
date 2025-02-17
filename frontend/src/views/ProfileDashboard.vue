@@ -263,7 +263,7 @@ import {
   UpdateUserRequest,
   UserType,
   type User,
-} from "@/types/proto/v1/auth_service";
+} from "@/types/proto/v1/user_service";
 import { State } from "@/types/proto/v1/common";
 import { displayRoleTitle, hasWorkspacePermissionV2, sortRoles } from "@/utils";
 
