@@ -40,7 +40,7 @@ type FindVCSProviderMessage struct {
 // GetVCSProvider gets an VCS provider by ID.
 func (s *Store) GetVCSProvider(ctx context.Context, find *FindVCSProviderMessage) (*VCSProviderMessage, error) {
 	if find.ResourceID != nil {
-		if v, ok := s.vcsIDCache.Get(*find.ResourceID); ok {
+		if v, ok := s.vcsCache.Get(*find.ResourceID); ok {
 			return v, nil
 		}
 	}
@@ -65,7 +65,7 @@ func (s *Store) GetVCSProvider(ctx context.Context, find *FindVCSProviderMessage
 	}
 
 	vcs := vcsProviders[0]
-	s.vcsIDCache.Add(vcs.ResourceID, vcs)
+	s.vcsCache.Add(vcs.ResourceID, vcs)
 	return vcs, nil
 }
 
@@ -86,7 +86,7 @@ func (s *Store) ListVCSProviders(ctx context.Context) ([]*VCSProviderMessage, er
 	}
 
 	for _, vcs := range vcsProviders {
-		s.vcsIDCache.Add(vcs.ResourceID, vcs)
+		s.vcsCache.Add(vcs.ResourceID, vcs)
 	}
 	return vcsProviders, nil
 }
@@ -124,7 +124,7 @@ func (s *Store) CreateVCSProvider(ctx context.Context, create *VCSProviderMessag
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	s.vcsIDCache.Add(create.ResourceID, create)
+	s.vcsCache.Add(create.ResourceID, create)
 	return create, nil
 }
 
@@ -172,7 +172,7 @@ func (s *Store) UpdateVCSProvider(ctx context.Context, vcsProviderID string, upd
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
-	s.vcsIDCache.Add(vcsProvider.ResourceID, &vcsProvider)
+	s.vcsCache.Add(vcsProvider.ResourceID, &vcsProvider)
 	return &vcsProvider, nil
 }
 
@@ -192,7 +192,7 @@ func (s *Store) DeleteVCSProvider(ctx context.Context, vcsProviderID string) err
 		return errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	s.vcsIDCache.Remove(vcsProviderID)
+	s.vcsCache.Remove(vcsProviderID)
 	return nil
 }
 

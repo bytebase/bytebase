@@ -1380,18 +1380,18 @@ func (s *SQLService) SQLReviewCheck(
 	if dbMetadata == nil {
 		dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
-			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %v", database.UID)
+			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %s", database.String())
 		}
 		if dbSchema == nil {
 			if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
-				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to sync database schema for database %v", database.UID)
+				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to sync database schema for database %s", database.String())
 			}
 			dbSchema, err = s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 			if err != nil {
-				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %v", database.UID)
+				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %s", database.String())
 			}
 			if dbSchema == nil {
-				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "cannot found schema for database %v", database.UID)
+				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "cannot found schema for database %s", database.String())
 			}
 		}
 		dbMetadata = dbSchema.GetMetadata()
