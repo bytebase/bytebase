@@ -36,6 +36,8 @@ type Executor interface {
 	RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error)
 }
 
+type execFuncType func(context.Context, string) error
+
 // RunExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
 func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Executor, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error) {
 	defer func() {
@@ -242,7 +244,7 @@ func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *sto
 	return project.Setting.PostgresDatabaseTenantMode, nil
 }
 
-func doMigration(
+func doMigrationWithFunc(
 	ctx context.Context,
 	driverCtx context.Context,
 	stores *store.Store,
@@ -250,6 +252,7 @@ func doMigration(
 	profile *config.Profile,
 	statement string,
 	mc *migrateContext,
+	execFunc execFuncType,
 ) (bool, error) {
 	instance := mc.instance
 	database := mc.database
@@ -299,7 +302,15 @@ func doMigration(
 		}
 	}
 
-	return executeMigrationDefault(ctx, driverCtx, stores, stateCfg, driver, mc, statement, opts)
+	if execFunc == nil {
+		execFunc = func(ctx context.Context, execStatement string) error {
+			if _, err := driver.Execute(ctx, execStatement, opts); err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+	return executeMigrationWithFunc(ctx, driverCtx, stores, mc, statement, execFunc, opts)
 }
 
 func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext, skipped bool) (bool, *storepb.TaskRunResult, error) {
@@ -342,28 +353,21 @@ func postMigration(ctx context.Context, stores *store.Store, mc *migrateContext,
 	}, nil
 }
 
-func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, migrationType db.MigrationType, statement string, schemaVersion string, sheetID *int) (terminated bool, result *storepb.TaskRunResult, err error) {
+func runMigrationWithFunc(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, migrationType db.MigrationType, statement string, schemaVersion string, sheetID *int, execFunc execFuncType) (terminated bool, result *storepb.TaskRunResult, err error) {
 	mc, err := getMigrationInfo(ctx, store, profile, syncer, task, migrationType, schemaVersion, sheetID, taskRunUID, dbFactory)
 	if err != nil {
 		return true, nil, err
 	}
 
-	skipped, err := doMigration(ctx, driverCtx, store, stateCfg, profile, statement, mc)
+	skipped, err := doMigrationWithFunc(ctx, driverCtx, store, stateCfg, profile, statement, mc, execFunc)
 	if err != nil {
 		return true, nil, err
 	}
 	return postMigration(ctx, store, mc, skipped)
 }
 
-// executeMigrationDefault executes migration.
-func executeMigrationDefault(ctx context.Context, driverCtx context.Context, store *store.Store, _ *state.State, driver db.Driver, mc *migrateContext, statement string, opts db.ExecuteOptions) (skipped bool, resErr error) {
-	execFunc := func(ctx context.Context, execStatement string) error {
-		if _, err := driver.Execute(ctx, execStatement, opts); err != nil {
-			return err
-		}
-		return nil
-	}
-	return executeMigrationWithFunc(ctx, driverCtx, store, mc, statement, execFunc, opts)
+func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, migrationType db.MigrationType, statement string, schemaVersion string, sheetID *int) (terminated bool, result *storepb.TaskRunResult, err error) {
+	return runMigrationWithFunc(ctx, driverCtx, store, dbFactory, stateCfg, syncer, profile, task, taskRunUID, migrationType, statement, schemaVersion, sheetID, nil /* default */)
 }
 
 // executeMigrationWithFunc executes the migration with custom migration function.

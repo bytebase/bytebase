@@ -388,7 +388,14 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		mc.issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
 	}
 
-	if _, err := executeMigrationDefault(ctx, driverCtx, exec.store, exec.stateCfg, driver, mc, schema, db.ExecuteOptions{}); err != nil {
+	opts := db.ExecuteOptions{}
+	execFunc := func(ctx context.Context, execStatement string) error {
+		if _, err := driver.Execute(ctx, execStatement, opts); err != nil {
+			return err
+		}
+		return nil
+	}
+	if _, err := executeMigrationWithFunc(ctx, driverCtx, exec.store, mc, schema, execFunc, opts); err != nil {
 		return nil, "", "", err
 	}
 	return peerDatabase, schemaVersion, schema, nil
