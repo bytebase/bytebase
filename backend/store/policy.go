@@ -532,21 +532,23 @@ func (s *Store) DeletePolicyV2(ctx context.Context, policy *PolicyMessage) error
 }
 
 func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage) (*PolicyMessage, error) {
-	if err := tx.QueryRowContext(ctx, `
-			INSERT INTO policy (
-				resource_type,
-				resource,
-				inherit_from_parent,
-				type,
-				payload,
-				enforce
-			)
-			VALUES ($1, $2, $3, $4, $5, $6)
-			ON CONFLICT(resource_type, resource, type) DO UPDATE SET
-				inherit_from_parent = EXCLUDED.inherit_from_parent,
-				payload = EXCLUDED.payload,
-				enforce = EXCLUDED.enforce
-			RETURNING updated_at
+	create.UpdatedAt = time.Now()
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO policy (
+			resource_type,
+			resource,
+			inherit_from_parent,
+			type,
+			payload,
+			enforce,
+			updated_at
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		ON CONFLICT(resource_type, resource, type) DO UPDATE SET
+			inherit_from_parent = EXCLUDED.inherit_from_parent,
+			payload = EXCLUDED.payload,
+			enforce = EXCLUDED.enforce,
+			updated_at = EXCLUDED.updated_at
 		`,
 		create.ResourceType,
 		create.Resource,
@@ -554,8 +556,7 @@ func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage) (*Po
 		create.Type,
 		create.Payload,
 		create.Enforce,
-	).Scan(
-		&create.UpdatedAt,
+		create.UpdatedAt,
 	); err != nil {
 		return nil, err
 	}
