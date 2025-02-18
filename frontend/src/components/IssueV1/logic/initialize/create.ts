@@ -62,7 +62,6 @@ type CreateIssueParams = {
   project: ComposedProject;
   query: Record<string, string>;
   initialSQL: InitialSQL;
-  branch?: string;
 };
 
 export const createIssueSkeleton = async (
@@ -77,7 +76,6 @@ export const createIssueSkeleton = async (
     project,
     query,
     initialSQL: await extractInitialSQLFromQuery(query),
-    branch: query.branch || undefined,
   };
 
   const issue = await buildIssue(params);
