@@ -981,6 +981,8 @@ func convertToTaskType(taskType api.TaskType) v1pb.Task_Type {
 		return v1pb.Task_DATABASE_SCHEMA_UPDATE
 	case api.TaskDatabaseSchemaUpdateSDL:
 		return v1pb.Task_DATABASE_SCHEMA_UPDATE_SDL
+	case api.TaskDatabaseSchemaUpdateGhost:
+		return v1pb.Task_DATABASE_SCHEMA_UPDATE_GHOST
 	case api.TaskDatabaseSchemaUpdateGhostSync:
 		return v1pb.Task_DATABASE_SCHEMA_UPDATE_GHOST_SYNC
 	case api.TaskDatabaseSchemaUpdateGhostCutover:
