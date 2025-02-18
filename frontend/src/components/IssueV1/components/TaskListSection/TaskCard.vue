@@ -64,7 +64,7 @@ import { useI18n } from "vue-i18n";
 import { InstanceV1Name } from "@/components/v2";
 import { isValidDatabaseName } from "@/types";
 import { Workflow } from "@/types/proto/v1/project_service";
-import type { Task } from "@/types/proto/v1/rollout_service";
+import { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Type, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
 import { databaseV1Url, extractSchemaVersionFromTask, isDev } from "@/utils";
 import { databaseForTask, useIssueContext } from "../../logic";
@@ -86,6 +86,7 @@ const secondaryViewMode = computed((): SecondaryViewMode => {
   if (
     [
       Task_Type.DATABASE_CREATE,
+      Task_Type.DATABASE_SCHEMA_UPDATE_GHOST,
       Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC,
       Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER,
     ].includes(props.task.type)

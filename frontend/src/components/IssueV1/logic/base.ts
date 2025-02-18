@@ -148,6 +148,7 @@ export const useBaseIssueContext = (
   const isGhostMode = computed(() => {
     return flattenTaskV1List(rollout.value).some((task) => {
       return [
+        Task_Type.DATABASE_SCHEMA_UPDATE_GHOST,
         Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC,
         Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER,
       ].includes(task.type);
