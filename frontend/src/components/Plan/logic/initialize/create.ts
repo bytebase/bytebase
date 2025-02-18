@@ -43,7 +43,6 @@ type CreatePlanParams = {
   project: ComposedProject;
   query: Record<string, string>;
   initialSQL: InitialSQL;
-  branch?: string;
 };
 
 const state = {

@@ -19,7 +19,6 @@ export const vcsConnectorPrefix = "vcsConnectors/";
 export const logNamePrefix = "logs/";
 export const issueNamePrefix = "issues/";
 export const secretNamePrefix = "secrets/";
-export const branchNamePrefix = "branches/";
 export const ssoNamePrefix = "idps/";
 export const issueCommentNamePrefix = "issueComments/";
 export const groupNamePrefix = "groups/";
@@ -103,15 +102,6 @@ export const getProjectIdRolloutUidStageUidTaskUid = (
 export const getWorksheetId = (name: string): string => {
   const tokens = getNameParentTokens(name, [worksheetNamePrefix]);
   return tokens[0];
-};
-
-export const getProjectAndBranchId = (name: string): string[] => {
-  const branchRegex = /^projects\/([^/]+)\/branches\/(.+)$/;
-  const matches = name.match(branchRegex);
-  if (!matches || matches.length != 3) {
-    return ["", ""];
-  }
-  return [matches[1], matches[2]];
 };
 
 export const getInstanceId = (name: string): string[] => {
