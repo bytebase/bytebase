@@ -268,10 +268,6 @@
       "pending": "Pending",
       "not-started": "Not started"
     },
-    "type": {
-      "bb-task-database-schema-update-ghost-sync": "Sync data",
-      "bb-task-database-schema-update-ghost-cutover": "Switch tables"
-    },
     "skip": "Skip",
     "task-checks": "Task checks",
     "prior-backup": "Prior backup",
