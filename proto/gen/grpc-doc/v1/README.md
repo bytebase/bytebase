@@ -10957,6 +10957,7 @@ Read from `pg_stat_activity`
 | DATABASE_SCHEMA_BASELINE | 3 | use payload DatabaseSchemaBaseline |
 | DATABASE_SCHEMA_UPDATE | 4 | use payload DatabaseSchemaUpdate |
 | DATABASE_SCHEMA_UPDATE_SDL | 5 | use payload DatabaseSchemaUpdate |
+| DATABASE_SCHEMA_UPDATE_GHOST | 9 | use payload DatabaseSchemaUpdate |
 | DATABASE_SCHEMA_UPDATE_GHOST_SYNC | 6 | use payload DatabaseSchemaUpdate |
 | DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER | 7 | use payload nil |
 | DATABASE_DATA_UPDATE | 8 | use payload DatabaseDataUpdate |
