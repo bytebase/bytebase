@@ -19,7 +19,7 @@ export interface DatabaseTabContext {
 export interface TableTabContext {
   id: string;
   type: SchemaEditorTabType.TabForTable;
-  // Parent could be a database or a branch.
+  // Parent could be a database.
   parentName: string;
   schemaId: string;
   tableId: string;

@@ -79,11 +79,7 @@ const selectedRole = computed(() => {
 });
 
 const filterDisplayPermissions = computed(() => {
-  return (
-    selectedRole.value?.permissions.filter(
-      (p) => !p.startsWith("bb.branches") // Filter branch related permissions.
-    ) || []
-  );
+  return selectedRole.value?.permissions || [];
 });
 
 const allowConfirm = computed(() => {
