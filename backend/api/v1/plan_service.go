@@ -572,7 +572,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					// Sheet
 					if err := func() error {
 						switch task.Type {
-						case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseDataUpdate, api.TaskDatabaseDataExport:
+						case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhost, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseDataUpdate, api.TaskDatabaseDataExport:
 							var taskPayload struct {
 								SheetID int `json:"sheetId"`
 							}
@@ -664,7 +664,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					// version
 					if err := func() error {
 						switch task.Type {
-						case api.TaskDatabaseSchemaBaseline, api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseDataUpdate:
+						case api.TaskDatabaseSchemaBaseline, api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhost, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseDataUpdate:
 						default:
 							return nil
 						}
