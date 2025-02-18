@@ -157,7 +157,8 @@ const chooseUpdateSpecs = async () => {
     issue.value,
     task.value,
     (task) =>
-      task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC &&
+      (task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST ||
+        task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC) &&
       allowChangeTaskGhostFlags(issue.value, task),
     dialog,
     t("task.online-migration.ghost-parameters"),

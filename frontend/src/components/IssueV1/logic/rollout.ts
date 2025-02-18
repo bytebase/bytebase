@@ -118,6 +118,8 @@ export const semanticTaskType = (type: Task_Type) => {
     case Task_Type.DATABASE_SCHEMA_UPDATE:
     case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
       return "DDL";
+    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:
+      return "gh-ost";
     case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC:
       return `gh-ost ${t(
         "task.type.bb-task-database-schema-update-ghost-sync"
