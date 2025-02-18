@@ -42,8 +42,6 @@ export const isDatabaseChangeRelatedIssue = (issue: ComposedIssue): boolean => {
         Task_Type.DATABASE_SCHEMA_BASELINE,
         Task_Type.DATABASE_SCHEMA_UPDATE,
         Task_Type.DATABASE_SCHEMA_UPDATE_GHOST,
-        Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC,
-        Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER,
         Task_Type.DATABASE_SCHEMA_UPDATE_SDL,
         Task_Type.DATABASE_DATA_UPDATE,
       ];

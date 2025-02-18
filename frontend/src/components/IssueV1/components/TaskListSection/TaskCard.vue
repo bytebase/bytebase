@@ -60,7 +60,6 @@ import { ExternalLinkIcon } from "lucide-vue-next";
 import { NTag } from "naive-ui";
 import { twMerge } from "tailwind-merge";
 import { computed } from "vue";
-import { useI18n } from "vue-i18n";
 import { InstanceV1Name } from "@/components/v2";
 import { isValidDatabaseName } from "@/types";
 import { Workflow } from "@/types/proto/v1/project_service";
@@ -77,7 +76,6 @@ const props = defineProps<{
   task: Task;
 }>();
 
-const { t } = useI18n();
 const { isCreating, issue, selectedTask, events } = useIssueContext();
 const project = computed(() => issue.value.projectEntity);
 const selected = computed(() => props.task === selectedTask.value);
@@ -87,8 +85,6 @@ const secondaryViewMode = computed((): SecondaryViewMode => {
     [
       Task_Type.DATABASE_CREATE,
       Task_Type.DATABASE_SCHEMA_UPDATE_GHOST,
-      Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC,
-      Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER,
     ].includes(props.task.type)
   ) {
     return "TASK_TITLE";
@@ -124,13 +120,6 @@ const taskClass = computed(() => {
 });
 
 const taskTitle = computed(() => {
-  const type = props.task.type;
-  if (type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC) {
-    return t("task.type.bb-task-database-schema-update-ghost-sync");
-  }
-  if (type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER) {
-    return t("task.type.bb-task-database-schema-update-ghost-cutover");
-  }
   return props.task.title;
 });
 

@@ -268,10 +268,6 @@
       "pending": "Đang chờ",
       "not-started": "Chưa bắt đầu"
     },
-    "type": {
-      "bb-task-database-schema-update-ghost-sync": "Đồng bộ dữ liệu",
-      "bb-task-database-schema-update-ghost-cutover": "Chuyển bảng"
-    },
     "skip": "Bỏ qua",
     "task-checks": "Kiểm tra tác vụ",
     "prior-backup": "Sao lưu trước",
