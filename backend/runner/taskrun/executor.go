@@ -532,7 +532,7 @@ func convertTaskType(t api.TaskType) storepb.ChangelogPayload_Type {
 		return storepb.ChangelogPayload_MIGRATE
 	case api.TaskDatabaseSchemaUpdateSDL:
 		return storepb.ChangelogPayload_MIGRATE_SDL
-	case api.TaskDatabaseSchemaUpdateGhostCutover, api.TaskDatabaseSchemaUpdateGhostSync:
+	case api.TaskDatabaseSchemaUpdateGhost, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseSchemaUpdateGhostCutover:
 		return storepb.ChangelogPayload_MIGRATE_GHOST
 
 	case api.TaskGeneral:

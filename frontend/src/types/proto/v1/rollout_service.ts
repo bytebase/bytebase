@@ -363,6 +363,8 @@ export enum Task_Type {
   DATABASE_SCHEMA_UPDATE = "DATABASE_SCHEMA_UPDATE",
   /** DATABASE_SCHEMA_UPDATE_SDL - use payload DatabaseSchemaUpdate */
   DATABASE_SCHEMA_UPDATE_SDL = "DATABASE_SCHEMA_UPDATE_SDL",
+  /** DATABASE_SCHEMA_UPDATE_GHOST - use payload DatabaseSchemaUpdate */
+  DATABASE_SCHEMA_UPDATE_GHOST = "DATABASE_SCHEMA_UPDATE_GHOST",
   /** DATABASE_SCHEMA_UPDATE_GHOST_SYNC - use payload DatabaseSchemaUpdate */
   DATABASE_SCHEMA_UPDATE_GHOST_SYNC = "DATABASE_SCHEMA_UPDATE_GHOST_SYNC",
   /** DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER - use payload nil */
@@ -394,6 +396,9 @@ export function task_TypeFromJSON(object: any): Task_Type {
     case 5:
     case "DATABASE_SCHEMA_UPDATE_SDL":
       return Task_Type.DATABASE_SCHEMA_UPDATE_SDL;
+    case 9:
+    case "DATABASE_SCHEMA_UPDATE_GHOST":
+      return Task_Type.DATABASE_SCHEMA_UPDATE_GHOST;
     case 6:
     case "DATABASE_SCHEMA_UPDATE_GHOST_SYNC":
       return Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC;
@@ -427,6 +432,8 @@ export function task_TypeToJSON(object: Task_Type): string {
       return "DATABASE_SCHEMA_UPDATE";
     case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
       return "DATABASE_SCHEMA_UPDATE_SDL";
+    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:
+      return "DATABASE_SCHEMA_UPDATE_GHOST";
     case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC:
       return "DATABASE_SCHEMA_UPDATE_GHOST_SYNC";
     case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER:
@@ -455,6 +462,8 @@ export function task_TypeToNumber(object: Task_Type): number {
       return 4;
     case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
       return 5;
+    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:
+      return 9;
     case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC:
       return 6;
     case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER:
