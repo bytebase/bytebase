@@ -268,10 +268,6 @@
       "pending": "待执行",
       "not-started": "未开始"
     },
-    "type": {
-      "bb-task-database-schema-update-ghost-sync": "同步数据",
-      "bb-task-database-schema-update-ghost-cutover": "切换表"
-    },
     "skip": "跳过",
     "task-checks": "任务检查项",
     "prior-backup": "预备份受影响数据",

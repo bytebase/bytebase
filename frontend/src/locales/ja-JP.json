@@ -268,10 +268,6 @@
       "pending": "保留中",
       "not-started": "開始されていません"
     },
-    "type": {
-      "bb-task-database-schema-update-ghost-sync": "同期データ",
-      "bb-task-database-schema-update-ghost-cutover": "スイッチテーブル"
-    },
     "skip": "飛び越える",
     "task-checks": "タスクのチェック項目",
     "prior-backup": "影響を受けるデータの事前バックアップ",

@@ -268,10 +268,6 @@
       "pending": "Pendiente",
       "not-started": "No iniciado"
     },
-    "type": {
-      "bb-task-database-schema-update-ghost-sync": "Sincronizar datos",
-      "bb-task-database-schema-update-ghost-cutover": "Cambiar de tabla"
-    },
     "skip": "Saltar",
     "task-checks": "Comprobaciones de tarea",
     "prior-backup": "Respaldo previo",
