@@ -8477,8 +8477,6 @@ components:
                 role:
                     type: string
                     description: 'Format: roles/{role}'
-                externalNodeId:
-                    type: string
         ApprovalStep:
             type: object
             properties:
@@ -9890,28 +9888,6 @@ components:
                  The exact variables and functions that may be referenced within an expression
                  are determined by the service that evaluates it. See the service
                  documentation for additional information.
-        ExternalApprovalSetting:
-            type: object
-            properties:
-                nodes:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ExternalApprovalSetting_Node'
-        ExternalApprovalSetting_Node:
-            type: object
-            properties:
-                id:
-                    type: string
-                    description: |-
-                        A unique identifier for a node in UUID format.
-                         We will also include the id in the message sending to the external relay
-                         service to identify the node.
-                title:
-                    type: string
-                    description: The title of the node.
-                endpoint:
-                    type: string
-                    description: The external endpoint for the relay service, e.g. "http://hello:1234".
         Feature:
             type: object
             properties:
@@ -14562,8 +14538,6 @@ components:
                     $ref: '#/components/schemas/WorkspaceApprovalSetting'
                 workspaceTrialSettingValue:
                     $ref: '#/components/schemas/WorkspaceTrialSetting'
-                externalApprovalSettingValue:
-                    $ref: '#/components/schemas/ExternalApprovalSetting'
                 schemaTemplateSettingValue:
                     $ref: '#/components/schemas/SchemaTemplateSetting'
                 dataClassificationSettingValue:

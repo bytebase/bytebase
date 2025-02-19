@@ -18,7 +18,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
-	"github.com/bytebase/bytebase/backend/runner/relay"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -38,7 +37,6 @@ func configureGrpcRouters(
 	schemaSyncer *schemasync.Syncer,
 	webhookManager *webhook.Manager,
 	iamManager *iam.Manager,
-	relayRunner *relay.Runner,
 	postCreateUser apiv1.CreateUserFunc,
 	secret string) (*apiv1.ReleaseService, *apiv1.PlanService, *apiv1.RolloutService, *apiv1.IssueService, *apiv1.SQLService, error) {
 	// Register services.
@@ -86,7 +84,7 @@ func configureGrpcRouters(
 	v1pb.RegisterReleaseServiceServer(grpcServer, releaseService)
 	planService := apiv1.NewPlanService(stores, sheetManager, licenseService, dbFactory, stateCfg, profile, iamManager)
 	v1pb.RegisterPlanServiceServer(grpcServer, planService)
-	issueService := apiv1.NewIssueService(stores, webhookManager, relayRunner, stateCfg, licenseService, profile, iamManager, metricReporter)
+	issueService := apiv1.NewIssueService(stores, webhookManager, stateCfg, licenseService, profile, iamManager, metricReporter)
 	v1pb.RegisterIssueServiceServer(grpcServer, issueService)
 	rolloutService := apiv1.NewRolloutService(stores, sheetManager, licenseService, dbFactory, stateCfg, webhookManager, profile, iamManager)
 	v1pb.RegisterRolloutServiceServer(grpcServer, rolloutService)

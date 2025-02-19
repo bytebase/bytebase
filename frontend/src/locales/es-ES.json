@@ -2392,14 +2392,6 @@
       "skip": "Omitir aprobación manual",
       "risk-not-configured-tips": "Asegúrese de haber definido {link}.",
       "the-related-risk-rules": "las reglas de riesgo relacionadas",
-      "external-approval": {
-        "self": "Aprobación externa",
-        "delete": "¿Eliminar nodo de aprobación externo?",
-        "endpoint": "Endpoint",
-        "view-node": "Ver nodo de aprobación externo",
-        "create-node": "Crear nodo de aprobación externo",
-        "edit-node": "Editar nodo de aprobación externo"
-      },
       "issue-review": {
         "sent-back": "Devuelto",
         "review-sent-back-by": "Reseña enviada por {user}"

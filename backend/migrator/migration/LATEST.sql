@@ -532,20 +532,6 @@ CREATE UNIQUE INDEX idx_worksheet_organizer_unique_sheet_id_principal_id ON work
 
 CREATE INDEX idx_worksheet_organizer_principal_id ON worksheet_organizer(principal_id);
 
--- external_approval stores approval instances of third party applications.
-CREATE TABLE external_approval ( 
-    id serial PRIMARY KEY,
-    issue_id integer NOT NULL REFERENCES issue(id),
-    requester_id integer NOT NULL REFERENCES principal(id),
-    approver_id integer NOT NULL REFERENCES principal(id),
-    type text NOT NULL CHECK (type LIKE 'bb.plugin.app.%'),
-    payload jsonb NOT NULL
-);
-
-CREATE INDEX idx_external_approval_issue_id ON external_approval(issue_id);
-
-ALTER SEQUENCE external_approval_id_seq RESTART WITH 101;
-
 -- risk stores the definition of a risk.
 CREATE TABLE risk (
     id bigserial PRIMARY KEY,
