@@ -438,7 +438,7 @@ func queryRetry(
 		}
 		if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
 			masker := NewQueryResultMasker(stores)
-			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, action)
+			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user, action)
 			if err != nil {
 				return nil, nil, time.Duration(0), status.Error(codes.Internal, err.Error())
 			}
@@ -501,7 +501,7 @@ func queryRetry(
 		}
 		if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
 			masker := NewQueryResultMasker(stores)
-			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, action)
+			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user, action)
 			if err != nil {
 				return nil, nil, time.Duration(0), status.Error(codes.Internal, err.Error())
 			}
@@ -561,7 +561,7 @@ func queryRetry(
 			}
 		} else {
 			masker := NewQueryResultMasker(stores)
-			if err := masker.MaskResults(ctx, spans, results, instance, action); err != nil {
+			if err := masker.MaskResults(ctx, spans, results, instance, user, action); err != nil {
 				return nil, nil, duration, status.Error(codes.Internal, err.Error())
 			}
 
@@ -819,7 +819,7 @@ func DoExport(
 
 	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
 		masker := NewQueryResultMasker(storeInstance)
-		if err := masker.MaskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_EXPORT); err != nil {
+		if err := masker.MaskResults(ctx, spans, results, instance, user, storepb.MaskingExceptionPolicy_MaskingException_EXPORT); err != nil {
 			return nil, duration, err
 		}
 	}
@@ -1230,7 +1230,7 @@ func (s *SQLService) accessCheck(
 					return status.Errorf(codes.Internal, "failed to get workspace iam policy, error: %v", err)
 				}
 				// Allow query databases across different projects.
-				projectPolicy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
+				projectPolicy, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
 				if err != nil {
 					return status.Error(codes.Internal, err.Error())
 				}
@@ -1430,7 +1430,7 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 	}, nil
 }
 
-func GetClassificationByProject(ctx context.Context, stores *store.Store, projectID string) *storepb.DataClassificationSetting_DataClassificationConfig {
+func getClassificationByProject(ctx context.Context, stores *store.Store, projectID string) *storepb.DataClassificationSetting_DataClassificationConfig {
 	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
@@ -1471,18 +1471,18 @@ func (s *SQLService) SQLReviewCheck(
 	if dbMetadata == nil {
 		dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
-			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %v", database.UID)
+			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %s", database.String())
 		}
 		if dbSchema == nil {
 			if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
-				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to sync database schema for database %v", database.UID)
+				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to sync database schema for database %s", database.String())
 			}
 			dbSchema, err = s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 			if err != nil {
-				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %v", database.UID)
+				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %s", database.String())
 			}
 			if dbSchema == nil {
-				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "cannot found schema for database %v", database.UID)
+				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "cannot found schema for database %s", database.String())
 			}
 		}
 		dbMetadata = dbSchema.GetMetadata()
@@ -1504,7 +1504,7 @@ func (s *SQLService) SQLReviewCheck(
 	defer driver.Close(ctx)
 	connection := driver.GetDB()
 
-	classificationConfig := GetClassificationByProject(ctx, s.store, database.ProjectID)
+	classificationConfig := getClassificationByProject(ctx, s.store, database.ProjectID)
 	context := advisor.SQLReviewCheckContext{
 		Charset:                  dbMetadata.CharacterSet,
 		Collation:                dbMetadata.Collation,
@@ -2036,10 +2036,10 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 	}
 	dataSourceQueryPolicyType := api.PolicyTypeDataSourceQuery
 	environmentResourceType := api.PolicyResourceTypeEnvironment
-	projectResourceType := api.PolicyResourceTypeProject
+	environmentResource := common.FormatEnvironment(environment.ResourceID)
 	environmentPolicy, err := storeInstance.GetPolicyV2(ctx, &store.FindPolicyMessage{
 		ResourceType: &environmentResourceType,
-		ResourceUID:  &environment.UID,
+		Resource:     &environmentResource,
 		Type:         &dataSourceQueryPolicyType,
 	})
 	if err != nil {
@@ -2053,16 +2053,11 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 		envAdminDataSourceRestriction = envPayload.DataSourceQueryPolicy.GetAdminDataSourceRestriction()
 	}
 
-	project, err := storeInstance.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get project")
-	}
-	if project == nil {
-		return nil, errors.Errorf("project %q not found", database.ProjectID)
-	}
+	projectResourceType := api.PolicyResourceTypeProject
+	projectResource := common.FormatProject(database.ProjectID)
 	projectPolicy, err := storeInstance.GetPolicyV2(ctx, &store.FindPolicyMessage{
 		ResourceType: &projectResourceType,
-		ResourceUID:  &project.UID,
+		Resource:     &projectResource,
 		Type:         &dataSourceQueryPolicyType,
 	})
 	if err != nil {
@@ -2108,10 +2103,11 @@ func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store,
 		return status.Errorf(codes.NotFound, "environment %q not found", database.EffectiveEnvironmentID)
 	}
 	resourceType := api.PolicyResourceTypeEnvironment
+	environmentResource := common.FormatEnvironment(environment.ResourceID)
 	policyType := api.PolicyTypeDataSourceQuery
 	dataSourceQueryPolicy, err := storeInstance.GetPolicyV2(ctx, &store.FindPolicyMessage{
-		ResourceUID:  &environment.UID,
 		ResourceType: &resourceType,
+		Resource:     &environmentResource,
 		Type:         &policyType,
 	})
 	if err != nil {

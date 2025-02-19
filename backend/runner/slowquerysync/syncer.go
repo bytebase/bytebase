@@ -108,7 +108,7 @@ func (s *Syncer) syncSlowQuery(ctx context.Context, message *state.InstanceSlowQ
 }
 
 func (s *Syncer) syncInstanceSlowQuery(ctx context.Context, instance *store.InstanceMessage) error {
-	slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, api.PolicyResourceTypeInstance, instance.UID)
+	slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, instance.ResourceID)
 	if err != nil {
 		return err
 	}
@@ -160,9 +160,7 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 			return driver.CheckSlowQueryLogEnabled(ctx)
 		}(); err != nil {
 			slog.Warn("pg_stat_statements is not enabled",
-				slog.String("instance", instance.ResourceID),
-				slog.String("database", database.DatabaseName),
-				slog.Int("databaseID", database.UID),
+				slog.String("database", database.String()),
 				log.BBError(err))
 			continue
 		}
@@ -208,9 +206,7 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 		})
 		if err != nil {
 			slog.Warn("Failed to list slow query logs",
-				slog.String("instance", instance.ResourceID),
-				slog.String("database", database.DatabaseName),
-				slog.Int("databaseID", database.UID),
+				slog.String("database", database.String()),
 				log.BBError(err))
 			logs = nil
 		}
@@ -225,9 +221,7 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 			SlowLog:      statistics,
 		}); err != nil {
 			slog.Warn("Failed to upsert slow query log",
-				slog.String("instance", instance.ResourceID),
-				slog.String("database", database.DatabaseName),
-				slog.Int("databaseID", database.UID),
+				slog.String("database", database.String()),
 				log.BBError(err))
 		}
 	}

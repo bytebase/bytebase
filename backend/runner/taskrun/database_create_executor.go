@@ -84,13 +84,19 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		return true, nil, errors.Errorf("Creating database is not supported")
 	}
 
-	projectID := int(payload.ProjectId)
-	project, err := exec.store.GetProjectV2(ctx, &store.FindProjectMessage{UID: &projectID})
+	pipeline, err := exec.store.GetPipelineV2ByID(ctx, task.PipelineID)
 	if err != nil {
-		return true, nil, errors.Errorf("failed to find project with ID %d", projectID)
+		return true, nil, errors.Wrapf(err, "failed to get pipeline")
+	}
+	if pipeline == nil {
+		return true, nil, errors.Errorf("pipeline %v not found", task.PipelineID)
+	}
+	project, err := exec.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &pipeline.ProjectID})
+	if err != nil {
+		return true, nil, errors.Errorf("failed to find project %s", pipeline.ProjectID)
 	}
 	if project == nil {
-		return true, nil, errors.Errorf("project not found with ID %d", projectID)
+		return true, nil, errors.Errorf("project %s not found", pipeline.ProjectID)
 	}
 
 	// Create database.
@@ -113,7 +119,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		}
 	}
 	database, err := exec.store.UpsertDatabase(ctx, &store.DatabaseMessage{
-		ProjectID:     project.ResourceID,
+		ProjectID:     pipeline.ProjectID,
 		InstanceID:    instance.ResourceID,
 		DatabaseName:  payload.DatabaseName,
 		EnvironmentID: payload.EnvironmentId,
@@ -149,16 +155,8 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		return true, nil, err
 	}
 
-	environmentID := instance.EnvironmentID
-	if payload.EnvironmentId != "" {
-		environmentID = payload.EnvironmentId
-	}
-	environment, err := exec.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
-	if err != nil {
-		return true, nil, err
-	}
 	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
-	peerDatabase, peerSchemaVersion, peerSchema, err := exec.createInitialSchema(ctx, driverCtx, environment, instance, project, task, taskRunUID, database)
+	peerDatabase, peerSchemaVersion, peerSchema, err := exec.createInitialSchema(ctx, driverCtx, instance, project, task, taskRunUID, database)
 	if err != nil {
 		return true, nil, err
 	}
@@ -233,10 +231,11 @@ func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *
 	}
 
 	issues, err := exec.store.ListIssueV2(ctx, &store.FindIssueMessage{
-		ProjectID:   &project.ResourceID,
-		DatabaseUID: &peerDatabase.UID,
-		StatusList:  []api.IssueStatus{api.IssueOpen},
-		TaskTypes:   &[]api.TaskType{api.TaskDatabaseSchemaUpdate},
+		ProjectID:    &project.ResourceID,
+		InstanceID:   &peerDatabase.InstanceID,
+		DatabaseName: &peerDatabase.DatabaseName,
+		StatusList:   []api.IssueStatus{api.IssueOpen},
+		TaskTypes:    &[]api.TaskType{api.TaskDatabaseSchemaUpdate},
 	})
 	if err != nil {
 		slog.Debug("failed to list issues", log.BBError(err))
@@ -338,7 +337,7 @@ func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *
 	}
 }
 
-func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, driverCtx context.Context, environment *store.EnvironmentMessage, instance *store.InstanceMessage, project *store.ProjectMessage, task *store.TaskMessage, taskRunUID int, database *store.DatabaseMessage) (*store.DatabaseMessage, string, string, error) {
+func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, driverCtx context.Context, instance *store.InstanceMessage, project *store.ProjectMessage, task *store.TaskMessage, taskRunUID int, database *store.DatabaseMessage) (*store.DatabaseMessage, string, string, error) {
 	peerDatabase, schemaVersion, schema, err := exec.getSchemaFromPeerTenantDatabase(ctx, instance, project, database)
 	if err != nil {
 		return nil, "", "", err
@@ -359,18 +358,6 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 	}
 	defer driver.Close(ctx)
 
-	// TODO(d): support semantic versioning.
-	mi := &db.MigrationInfo{
-		ReleaseVersion: exec.profile.Version,
-		Namespace:      database.DatabaseName,
-		Database:       database.DatabaseName,
-		DatabaseID:     &database.UID,
-		Environment:    environment.ResourceID,
-		Source:         db.UI,
-		Type:           db.Migrate,
-		Description:    "Create database",
-	}
-
 	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		// If somehow we unable to find the issue, we just emit the error since it's not
@@ -379,17 +366,6 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 			slog.Int("task_id", task.ID),
 			log.BBError(err),
 		)
-	}
-	mi.ProjectUID = &project.UID
-	// TODO(d): how could issue be nil?
-	if issue == nil {
-		err := errors.Errorf("failed to fetch containing issue for composing the migration info, issue not found with pipeline ID %v", task.PipelineID)
-		slog.Error(err.Error(),
-			slog.Int("task_id", task.ID),
-			log.BBError(err),
-		)
-	} else {
-		mi.IssueUID = &issue.UID
 	}
 
 	// TODO(p0ny): check here
@@ -405,17 +381,21 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		taskRunUID:  taskRunUID,
 		taskRunName: common.FormatTaskRun(project.ResourceID, task.PipelineID, task.StageID, task.ID, taskRunUID),
 		version:     schemaVersion,
+		migrateType: db.Migrate,
 	}
 
 	if issue != nil {
-		mi.Description = fmt.Sprintf("%s - %s", issue.Title, task.Name)
-		mi.ProjectUID = &issue.Project.UID
-		mi.IssueUID = &issue.UID
-
 		mc.issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
 	}
 
-	if _, err := executeMigrationDefault(ctx, driverCtx, exec.store, exec.stateCfg, driver, mi, mc, schema, db.ExecuteOptions{}); err != nil {
+	opts := db.ExecuteOptions{}
+	execFunc := func(ctx context.Context, execStatement string) error {
+		if _, err := driver.Execute(ctx, execStatement, opts); err != nil {
+			return err
+		}
+		return nil
+	}
+	if _, err := executeMigrationWithFunc(ctx, driverCtx, exec.store, mc, schema, execFunc, opts); err != nil {
 		return nil, "", "", err
 	}
 	return peerDatabase, schemaVersion, schema, nil
@@ -456,13 +436,13 @@ func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.
 	// Try to find a peer tenant database from database groups.
 	matchedDatabases, err := exec.getPeerTenantDatabasesFromDatabaseGroup(ctx, instance, project, database)
 	if err != nil {
-		return nil, "", "", errors.Wrapf(err, "Failed to fetch database groups in project ID: %v", project.UID)
+		return nil, "", "", errors.Wrapf(err, "Failed to fetch database groups in project ID: %s", project.ResourceID)
 	}
 
 	// Filter out the database itself.
 	var databases []*store.DatabaseMessage
 	for _, d := range matchedDatabases {
-		if d.UID != database.UID {
+		if d.String() != database.String() {
 			databases = append(databases, d)
 		}
 	}
@@ -474,7 +454,7 @@ func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.
 	// Then we will try to find a peer tenant database from deployment schedule with the matched databases.
 	deploymentConfig, err := exec.store.GetDeploymentConfigV2(ctx, project.ResourceID)
 	if err != nil {
-		return nil, "", "", errors.Wrapf(err, "Failed to fetch deployment config for project ID: %v", project.UID)
+		return nil, "", "", errors.Wrapf(err, "Failed to fetch deployment config for project %s", project.ResourceID)
 	}
 	if err := utils.ValidateDeploymentSchedule(deploymentConfig.Config.GetSchedule()); err != nil {
 		return nil, "", "", errors.Errorf("Failed to get deployment schedule")
@@ -526,14 +506,14 @@ func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.
 func (exec *DatabaseCreateExecutor) getPeerTenantDatabasesFromDatabaseGroup(ctx context.Context, instance *store.InstanceMessage, project *store.ProjectMessage, database *store.DatabaseMessage) ([]*store.DatabaseMessage, error) {
 	dbGroups, err := exec.store.ListDatabaseGroups(ctx, &store.FindDatabaseGroupMessage{ProjectID: &project.ResourceID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to fetch database groups in project ID: %v", project.UID)
+		return nil, errors.Wrapf(err, "Failed to fetch database groups in project %s", project.ResourceID)
 	}
 	allDatabases, err := exec.store.ListDatabases(ctx, &store.FindDatabaseMessage{
 		ProjectID: &project.ResourceID,
 		Engine:    &instance.Engine,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to fetch databases in project ID: %v", project.UID)
+		return nil, errors.Wrapf(err, "Failed to fetch databases in project %s", project.ResourceID)
 	}
 
 	var matchedDatabases []*store.DatabaseMessage

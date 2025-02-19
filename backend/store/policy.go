@@ -95,11 +95,12 @@ func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPoli
 	return s.GetWorkspaceIamPolicy(ctx)
 }
 
-func (s *Store) GetProjectIamPolicy(ctx context.Context, projectUID int) (*IamPolicyMessage, error) {
+func (s *Store) GetProjectIamPolicy(ctx context.Context, projectID string) (*IamPolicyMessage, error) {
 	resourceType := api.PolicyResourceTypeProject
+	resource := common.FormatProject(projectID)
 	return s.getIamPolicy(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
-		ResourceUID:  &projectUID,
+		Resource:     &resource,
 	})
 }
 
@@ -128,15 +129,12 @@ func (s *Store) getIamPolicy(ctx context.Context, find *FindPolicyMessage) (*Iam
 }
 
 func (s *Store) GetRolloutPolicy(ctx context.Context, environment string) (*storepb.RolloutPolicy, error) {
-	e, err := s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{ResourceID: &environment})
-	if err != nil {
-		return nil, err
-	}
+	resource := common.FormatEnvironment(environment)
 	resourceType := api.PolicyResourceTypeEnvironment
 	pType := api.PolicyTypeRollout
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
-		ResourceUID:  &e.UID,
+		Resource:     &resource,
 		Type:         &pType,
 	})
 	if err != nil {
@@ -158,9 +156,11 @@ func (s *Store) GetRolloutPolicy(ctx context.Context, environment string) (*stor
 
 func (s *Store) GetDataExportPolicy(ctx context.Context) (*storepb.ExportDataPolicy, error) {
 	resourceType := api.PolicyResourceTypeWorkspace
+	resource := ""
 	pType := api.PolicyTypeExportData
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
+		Resource:     &resource,
 		Type:         &pType,
 	})
 	if err != nil {
@@ -182,27 +182,26 @@ func (s *Store) GetDataExportPolicy(ctx context.Context) (*storepb.ExportDataPol
 
 // GetReviewConfigForDatabase will get the review config for a database.
 func (s *Store) GetReviewConfigForDatabase(ctx context.Context, database *DatabaseMessage) (*storepb.ReviewConfigPayload, error) {
-	resources := []DatabaseReviewConfig{
-		&databaseReviewConfigResource{},
-		&databaseProjectReviewConfigResource{},
-		&databaseEnvironmentReviewConfigResource{},
-	}
-
-	for _, resource := range resources {
-		resourceType := resource.GetResourceType()
-		resourceUID, err := resource.GetResourceUID(ctx, s, database)
+	for _, v := range []struct {
+		resourceType api.PolicyResourceType
+		resource     string
+	}{
+		{
+			resourceType: api.PolicyResourceTypeEnvironment,
+			resource:     common.FormatEnvironment(database.EffectiveEnvironmentID),
+		},
+		{
+			resourceType: api.PolicyResourceTypeProject,
+			resource:     common.FormatProject(database.ProjectID),
+		},
+	} {
+		reviewConfig, err := s.getReviewConfigByResource(ctx, v.resourceType, v.resource)
 		if err != nil {
-			slog.Debug("failed to resource id", slog.String("resource_type", string(resourceType)), slog.String("database", database.DatabaseName), log.BBError(err))
-			continue
-		}
-
-		reviewConfig, err := s.getReviewConfigByResource(ctx, resourceType, resourceUID)
-		if err != nil {
-			slog.Debug("failed to get review config", slog.String("resource_type", string(resourceType)), slog.String("database", database.DatabaseName), log.BBError(err))
+			slog.Debug("failed to get review config", slog.String("resource_type", string(v.resourceType)), slog.String("database", database.DatabaseName), log.BBError(err))
 			continue
 		}
 		if reviewConfig == nil {
-			slog.Debug("review config is empty", slog.String("resource_type", string(resourceType)), slog.String("database", database.DatabaseName), log.BBError(err))
+			slog.Debug("review config is empty", slog.String("resource_type", string(v.resourceType)), slog.String("database", database.DatabaseName), log.BBError(err))
 			continue
 		}
 		return reviewConfig, nil
@@ -211,22 +210,22 @@ func (s *Store) GetReviewConfigForDatabase(ctx context.Context, database *Databa
 	return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("SQL review policy for database %s not found", database.DatabaseName)}
 }
 
-func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType api.PolicyResourceType, resourceUID int) (*storepb.ReviewConfigPayload, error) {
+func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType api.PolicyResourceType, resource string) (*storepb.ReviewConfigPayload, error) {
 	pType := api.PolicyTypeTag
 
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
-		ResourceUID:  &resourceUID,
+		Resource:     &resource,
 		Type:         &pType,
 	})
 	if err != nil {
 		return nil, err
 	}
 	if policy == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("tag policy for resource %v/%d not found", resourceType, resourceUID)}
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("tag policy for resource %v/%s not found", resourceType, resource)}
 	}
 	if !policy.Enforce {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("tag policy is not enforced for resource %v/%d", resourceType, resourceUID)}
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("tag policy is not enforced for resource %v/%s", resourceType, resource)}
 	}
 
 	payload := &storepb.TagPolicy{}
@@ -236,11 +235,11 @@ func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType api.
 
 	reviewConfigName, ok := payload.Tags[string(api.ReservedTagReviewConfig)]
 	if !ok {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("review config tag for resource %v/%d not found", resourceType, resourceUID)}
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("review config tag for resource %v/%s not found", resourceType, resource)}
 	}
 	reviewConfigID, err := common.GetReviewConfigID(reviewConfigName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to extract review config uid from %s", reviewConfigName)
+		return nil, errors.Wrapf(err, "failed to extract review config %s", reviewConfigName)
 	}
 
 	reviewConfig, err := s.GetReviewConfig(ctx, reviewConfigID)
@@ -248,21 +247,23 @@ func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType api.
 		return nil, err
 	}
 	if reviewConfig == nil {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("review config for resource %v/%d not found", resourceType, resourceUID)}
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("review config for resource %v/%s not found", resourceType, resource)}
 	}
 	if !reviewConfig.Enforce {
-		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("review config is not enforced for resource %v/%d", resourceType, resourceUID)}
+		return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("review config is not enforced for resource %v/%s", resourceType, resource)}
 	}
 
 	return reviewConfig.Payload, nil
 }
 
 // GetSlowQueryPolicy will get the slow query policy for instance ID.
-func (s *Store) GetSlowQueryPolicy(ctx context.Context, resourceType api.PolicyResourceType, resourceID int) (*storepb.SlowQueryPolicy, error) {
+func (s *Store) GetSlowQueryPolicy(ctx context.Context, instanceID string) (*storepb.SlowQueryPolicy, error) {
+	resourceType := api.PolicyResourceTypeInstance
+	resource := common.FormatInstance(instanceID)
 	pType := api.PolicyTypeSlowQuery
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
-		ResourceUID:  &resourceID,
+		Resource:     &resource,
 		Type:         &pType,
 	})
 	if err != nil {
@@ -303,13 +304,14 @@ func (s *Store) GetMaskingRulePolicy(ctx context.Context) (*storepb.MaskingRuleP
 	return p, nil
 }
 
-// GetMaskingExceptionPolicyByProjectUID gets the masking exception policy for a project.
-func (s *Store) GetMaskingExceptionPolicyByProjectUID(ctx context.Context, projectUID int) (*storepb.MaskingExceptionPolicy, error) {
+// GetMaskingExceptionPolicyByProject gets the masking exception policy for a project.
+func (s *Store) GetMaskingExceptionPolicyByProject(ctx context.Context, projectID string) (*storepb.MaskingExceptionPolicy, error) {
 	resourceType := api.PolicyResourceTypeProject
+	resource := common.FormatProject(projectID)
 	pType := api.PolicyTypeMaskingException
 	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
-		ResourceUID:  &projectUID,
+		Resource:     &resource,
 		Type:         &pType,
 	})
 	if err != nil {
@@ -330,30 +332,29 @@ func (s *Store) GetMaskingExceptionPolicyByProjectUID(ctx context.Context, proje
 
 // PolicyMessage is the mssage for policy.
 type PolicyMessage struct {
-	ResourceUID       int
+	Resource          string
 	ResourceType      api.PolicyResourceType
 	Payload           string
 	InheritFromParent bool
 	Type              api.PolicyType
 	Enforce           bool
 
-	// Output only.
-	UID       int
 	UpdatedAt time.Time
 }
 
 // FindPolicyMessage is the message for finding policies.
 type FindPolicyMessage struct {
 	ResourceType *api.PolicyResourceType
-	ResourceUID  *int
+	Resource     *string
 	Type         *api.PolicyType
-	ShowDeleted  bool
+	// ShowAll will show all policies regardless of the enforce status.
+	ShowAll bool
 }
 
 // UpdatePolicyMessage is the message for updating a policy.
 type UpdatePolicyMessage struct {
 	ResourceType      api.PolicyResourceType
-	ResourceUID       int
+	Resource          string
 	Type              api.PolicyType
 	InheritFromParent *bool
 	Payload           *string
@@ -362,8 +363,8 @@ type UpdatePolicyMessage struct {
 
 // GetPolicyV2 gets a policy.
 func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*PolicyMessage, error) {
-	if find.ResourceType != nil && find.ResourceUID != nil && find.Type != nil {
-		if v, ok := s.policyCache.Get(getPolicyCacheKey(*find.ResourceType, *find.ResourceUID, *find.Type)); ok {
+	if find.ResourceType != nil && find.Resource != nil && find.Type != nil {
+		if v, ok := s.policyCache.Get(getPolicyCacheKey(*find.ResourceType, *find.Resource, *find.Type)); ok {
 			return v, nil
 		}
 	}
@@ -375,15 +376,15 @@ func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*Poli
 	defer tx.Rollback()
 
 	// We will always return the resource regardless of its deleted state.
-	find.ShowDeleted = true
+	find.ShowAll = true
 	policies, err := s.listPolicyImplV2(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
 	if len(policies) == 0 {
 		// Cache the policy for not found as well to reduce the look up latency.
-		if find.ResourceType != nil && find.ResourceUID != nil && find.Type != nil {
-			s.policyCache.Add(getPolicyCacheKey(*find.ResourceType, *find.ResourceUID, *find.Type), nil)
+		if find.ResourceType != nil && find.Resource != nil && find.Type != nil {
+			s.policyCache.Add(getPolicyCacheKey(*find.ResourceType, *find.Resource, *find.Type), nil)
 		}
 		return nil, nil
 	}
@@ -396,7 +397,7 @@ func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*Poli
 		return nil, err
 	}
 
-	s.policyCache.Add(getPolicyCacheKey(policy.ResourceType, policy.ResourceUID, policy.Type), policy)
+	s.policyCache.Add(getPolicyCacheKey(policy.ResourceType, policy.Resource, policy.Type), policy)
 
 	return policy, nil
 }
@@ -419,7 +420,7 @@ func (s *Store) ListPoliciesV2(ctx context.Context, find *FindPolicyMessage) ([]
 	}
 
 	for _, policy := range policies {
-		s.policyCache.Add(getPolicyCacheKey(policy.ResourceType, policy.ResourceUID, policy.Type), policy)
+		s.policyCache.Add(getPolicyCacheKey(policy.ResourceType, policy.Resource, policy.Type), policy)
 	}
 
 	return policies, nil
@@ -442,7 +443,7 @@ func (s *Store) CreatePolicyV2(ctx context.Context, create *PolicyMessage) (*Pol
 		return nil, err
 	}
 
-	s.policyCache.Add(getPolicyCacheKey(policy.ResourceType, policy.ResourceUID, policy.Type), policy)
+	s.policyCache.Add(getPolicyCacheKey(policy.ResourceType, policy.Resource, policy.Type), policy)
 
 	return policy, nil
 }
@@ -457,13 +458,9 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.Enforce; v != nil {
-		rowStatus := api.Normal
-		if !*patch.Enforce {
-			rowStatus = api.Archived
-		}
-		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
+		set, args = append(set, fmt.Sprintf(`enforce = $%d`, len(args)+1)), append(args, *v)
 	}
-	args = append(args, patch.ResourceType, patch.ResourceUID, patch.Type)
+	args = append(args, patch.ResourceType, patch.Resource, patch.Type)
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -472,27 +469,26 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 	defer tx.Rollback()
 
 	policy := &PolicyMessage{
-		ResourceUID:  patch.ResourceUID,
+		Resource:     patch.Resource,
 		ResourceType: patch.ResourceType,
 		Type:         patch.Type,
 	}
-	var rowStatus string
 
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			UPDATE policy
 			SET `+strings.Join(set, ", ")+`
-			WHERE resource_type = $%d AND resource_id = $%d AND type =$%d
+			WHERE resource_type = $%d AND resource = $%d AND type =$%d
 			RETURNING
 				payload,
 				inherit_from_parent,
-				row_status,
+				enforce,
 				updated_at
 		`, len(args)-2, len(args)-1, len(args)),
 		args...,
 	).Scan(
 		&policy.Payload,
 		&policy.InheritFromParent,
-		&rowStatus,
+		&policy.Enforce,
 		&policy.UpdatedAt,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -500,15 +496,12 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 		}
 		return nil, err
 	}
-	if rowStatus == string(api.Normal) {
-		policy.Enforce = true
-	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
-	s.policyCache.Add(getPolicyCacheKey(policy.ResourceType, policy.ResourceUID, policy.Type), policy)
+	s.policyCache.Add(getPolicyCacheKey(policy.ResourceType, policy.Resource, policy.Type), policy)
 
 	return policy, nil
 }
@@ -522,9 +515,9 @@ func (s *Store) DeletePolicyV2(ctx context.Context, policy *PolicyMessage) error
 	defer tx.Rollback()
 
 	if _, err := tx.ExecContext(ctx,
-		`DELETE FROM policy WHERE resource_type = $1 AND resource_id = $2 AND type = $3`,
+		`DELETE FROM policy WHERE resource_type = $1 AND resource = $2 AND type = $3`,
 		policy.ResourceType,
-		policy.ResourceUID,
+		policy.Resource,
 		policy.Type,
 	); err != nil {
 		return err
@@ -534,48 +527,39 @@ func (s *Store) DeletePolicyV2(ctx context.Context, policy *PolicyMessage) error
 		return err
 	}
 
-	s.policyCache.Remove(getPolicyCacheKey(policy.ResourceType, policy.ResourceUID, policy.Type))
+	s.policyCache.Remove(getPolicyCacheKey(policy.ResourceType, policy.Resource, policy.Type))
 	return nil
 }
 
 func upsertPolicyV2Impl(ctx context.Context, tx *Tx, create *PolicyMessage) (*PolicyMessage, error) {
-	var uid int
-
-	rowStatus := api.Normal
-	if !create.Enforce {
-		rowStatus = api.Archived
-	}
-	if err := tx.QueryRowContext(ctx, `
-			INSERT INTO policy (
-				resource_type,
-				resource_id,
-				inherit_from_parent,
-				type,
-				payload,
-				row_status
-			)
-			VALUES ($1, $2, $3, $4, $5, $6)
-			ON CONFLICT(resource_type, resource_id, type) DO UPDATE SET
-				inherit_from_parent = EXCLUDED.inherit_from_parent,
-				payload = EXCLUDED.payload,
-				row_status = EXCLUDED.row_status
-			RETURNING
-				id,
-				updated_at
+	create.UpdatedAt = time.Now()
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO policy (
+			resource_type,
+			resource,
+			inherit_from_parent,
+			type,
+			payload,
+			enforce,
+			updated_at
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		ON CONFLICT(resource_type, resource, type) DO UPDATE SET
+			inherit_from_parent = EXCLUDED.inherit_from_parent,
+			payload = EXCLUDED.payload,
+			enforce = EXCLUDED.enforce,
+			updated_at = EXCLUDED.updated_at
 		`,
 		create.ResourceType,
-		create.ResourceUID,
+		create.Resource,
 		create.InheritFromParent,
 		create.Type,
 		create.Payload,
-		rowStatus,
-	).Scan(
-		&uid,
-		&create.UpdatedAt,
+		create.Enforce,
+		create.UpdatedAt,
 	); err != nil {
 		return nil, err
 	}
-	create.UID = uid
 	return create, nil
 }
 
@@ -584,26 +568,25 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 	if v := find.ResourceType; v != nil {
 		where, args = append(where, fmt.Sprintf("resource_type = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.ResourceUID; v != nil {
-		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
+	if v := find.Resource; v != nil {
+		where, args = append(where, fmt.Sprintf("resource = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Type; v != nil {
 		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
 	}
-	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, api.Normal)
+	if !find.ShowAll {
+		where, args = append(where, fmt.Sprintf("enforce = $%d", len(args)+1)), append(args, true)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			id,
 			updated_at,
 			resource_type,
-			resource_id,
+			resource,
 			inherit_from_parent,
 			type,
 			payload,
-			row_status
+			enforce
 		FROM policy
 		WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -616,22 +599,16 @@ func (*Store) listPolicyImplV2(ctx context.Context, tx *Tx, find *FindPolicyMess
 	var policyList []*PolicyMessage
 	for rows.Next() {
 		var policyMessage PolicyMessage
-		var rowStatus api.RowStatus
-
 		if err := rows.Scan(
-			&policyMessage.UID,
 			&policyMessage.UpdatedAt,
 			&policyMessage.ResourceType,
-			&policyMessage.ResourceUID,
+			&policyMessage.Resource,
 			&policyMessage.InheritFromParent,
 			&policyMessage.Type,
 			&policyMessage.Payload,
-			&rowStatus,
+			&policyMessage.Enforce,
 		); err != nil {
 			return nil, err
-		}
-		if rowStatus == api.Normal {
-			policyMessage.Enforce = true
 		}
 		policyList = append(policyList, &policyMessage)
 	}

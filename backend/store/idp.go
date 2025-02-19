@@ -20,9 +20,7 @@ type IdentityProviderMessage struct {
 	Domain     string
 	Type       storepb.IdentityProviderType
 	Config     *storepb.IdentityProviderConfig
-	// The following fields are output only and not used for creating.
-	UID     int
-	Deleted bool
+	Deleted    bool
 }
 
 func getConfigBytes(config *storepb.IdentityProviderConfig) ([]byte, error) {
@@ -41,9 +39,6 @@ func getConfigBytes(config *storepb.IdentityProviderConfig) ([]byte, error) {
 
 // FindIdentityProviderMessage is the message for finding identity providers.
 type FindIdentityProviderMessage struct {
-	// We should only set either UID or ResourceID.
-	// Deprecate UID later once we fully migrate to ResourceID.
-	UID         *int
 	ResourceID  *string
 	ShowDeleted bool
 }
@@ -77,28 +72,22 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal identity provider config")
 	}
-	if err := tx.QueryRowContext(ctx, `
-			INSERT INTO idp (
-				resource_id,
-				name,
-				domain,
-				type,
-				config
-			)
-			VALUES ($1, $2, $3, $4, $5)
-			RETURNING id
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO idp (
+			resource_id,
+			name,
+			domain,
+			type,
+			config
+		)
+		VALUES ($1, $2, $3, $4, $5)
 		`,
 		create.ResourceID,
 		create.Title,
 		create.Domain,
 		create.Type.String(),
 		configBytes,
-	).Scan(
-		&identityProvider.UID,
 	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery("failed to create identity provider")
-		}
 		return nil, err
 	}
 
@@ -203,40 +192,34 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *Upd
 		set, args = append(set, fmt.Sprintf("config = $%d", len(args)+1)), append(args, string(configBytes))
 	}
 	if v := patch.Delete; v != nil {
-		rowStatus := Normal
-		if *patch.Delete {
-			rowStatus = Archived
-		}
-		set, args = append(set, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, rowStatus)
+		set, args = append(set, fmt.Sprintf("deleted = $%d", len(args)+1)), append(args, *v)
 	}
 	args = append(args, patch.ResourceID)
 
 	identityProvider := &IdentityProviderMessage{}
 	var identityProviderType string
 	var identityProviderConfig string
-	var rowStatus string
+	var deleted bool
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE idp
 		SET `+strings.Join(set, ", ")+`
 		WHERE resource_id = $%d
 		RETURNING
-			id,
 			resource_id,
 			name,
 			domain,
 			type,
 			config,
-			row_status
+			deleted
 	`, len(args)),
 		args...,
 	).Scan(
-		&identityProvider.UID,
 		&identityProvider.ResourceID,
 		&identityProvider.Title,
 		&identityProvider.Domain,
 		&identityProviderType,
 		&identityProviderConfig,
-		&rowStatus,
+		&deleted,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("identity provider ID not found: %s", patch.ResourceID)}
@@ -246,7 +229,7 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, tx *Tx, patch *Upd
 
 	identityProvider.Type = convertIdentityProviderType(identityProviderType)
 	identityProvider.Config = convertIdentityProviderConfigString(identityProvider.Type, identityProviderConfig)
-	identityProvider.Deleted = convertRowStatusToDeleted(rowStatus)
+	identityProvider.Deleted = deleted
 	return identityProvider, nil
 }
 
@@ -255,22 +238,18 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, tx *Tx, find *FindI
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.UID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
-	}
 	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("row_status = $%d", len(args)+1)), append(args, Normal)
+		where, args = append(where, fmt.Sprintf("deleted = $%d", len(args)+1)), append(args, false)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			id,
 			resource_id,
 			name,
 			domain,
 			type,
 			config,
-			row_status
+			deleted
 		FROM idp
 		WHERE `+strings.Join(where, " AND ")+` ORDER BY id ASC`,
 		args...,
@@ -285,21 +264,18 @@ func (*Store) listIdentityProvidersImpl(ctx context.Context, tx *Tx, find *FindI
 		var identityProviderMessage IdentityProviderMessage
 		var identityProviderType string
 		var identityProviderConfig string
-		var rowStatus string
 		if err := rows.Scan(
-			&identityProviderMessage.UID,
 			&identityProviderMessage.ResourceID,
 			&identityProviderMessage.Title,
 			&identityProviderMessage.Domain,
 			&identityProviderType,
 			&identityProviderConfig,
-			&rowStatus,
+			&identityProviderMessage.Deleted,
 		); err != nil {
 			return nil, err
 		}
 		identityProviderMessage.Type = convertIdentityProviderType(identityProviderType)
 		identityProviderMessage.Config = convertIdentityProviderConfigString(identityProviderMessage.Type, identityProviderConfig)
-		identityProviderMessage.Deleted = convertRowStatusToDeleted(rowStatus)
 		identityProviderMessages = append(identityProviderMessages, &identityProviderMessage)
 	}
 	if err := rows.Err(); err != nil {

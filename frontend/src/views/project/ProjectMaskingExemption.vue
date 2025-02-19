@@ -5,9 +5,8 @@
     >
       <NInputGroup style="width: auto">
         <DatabaseSelect
-          style="width: 12rem"
+          style="max-width: max-content"
           :include-all="false"
-          :clearable="true"
           :project-name="project.name"
           v-model:database-name="state.selectedDatabaseName"
         />

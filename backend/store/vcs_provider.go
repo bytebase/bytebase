@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -24,11 +23,6 @@ type VCSProviderMessage struct {
 	Title string
 	// AccessToken is the access token for the VCS provider.
 	AccessToken string
-
-	// Output only fields.
-	//
-	// ID is the unique identifier of the message.
-	ID int
 }
 
 // UpdateVCSProviderMessage is a message for updating an VCS provider.
@@ -40,15 +34,13 @@ type UpdateVCSProviderMessage struct {
 }
 
 type FindVCSProviderMessage struct {
-	// If specified, only VCS providers with the given ID will be returned.
-	ID         *int
 	ResourceID *string
 }
 
 // GetVCSProvider gets an VCS provider by ID.
 func (s *Store) GetVCSProvider(ctx context.Context, find *FindVCSProviderMessage) (*VCSProviderMessage, error) {
-	if find.ID != nil {
-		if v, ok := s.vcsIDCache.Get(*find.ID); ok {
+	if find.ResourceID != nil {
+		if v, ok := s.vcsCache.Get(*find.ResourceID); ok {
 			return v, nil
 		}
 	}
@@ -73,7 +65,7 @@ func (s *Store) GetVCSProvider(ctx context.Context, find *FindVCSProviderMessage
 	}
 
 	vcs := vcsProviders[0]
-	s.vcsIDCache.Add(vcs.ID, vcs)
+	s.vcsCache.Add(vcs.ResourceID, vcs)
 	return vcs, nil
 }
 
@@ -94,7 +86,7 @@ func (s *Store) ListVCSProviders(ctx context.Context) ([]*VCSProviderMessage, er
 	}
 
 	for _, vcs := range vcsProviders {
-		s.vcsIDCache.Add(vcs.ID, vcs)
+		s.vcsCache.Add(vcs.ResourceID, vcs)
 	}
 	return vcsProviders, nil
 }
@@ -118,18 +110,13 @@ func (s *Store) CreateVCSProvider(ctx context.Context, create *VCSProviderMessag
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id
 	`
-	if err := tx.QueryRowContext(ctx, query,
+	if _, err := tx.ExecContext(ctx, query,
 		create.ResourceID,
 		create.Title,
 		create.Type.String(),
 		create.InstanceURL,
 		create.AccessToken,
-	).Scan(
-		&create.ID,
 	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
 		return nil, err
 	}
 
@@ -137,12 +124,12 @@ func (s *Store) CreateVCSProvider(ctx context.Context, create *VCSProviderMessag
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	s.vcsIDCache.Add(create.ID, create)
+	s.vcsCache.Add(create.ResourceID, create)
 	return create, nil
 }
 
 // UpdateVCSProvider updates an VCS provider.
-func (s *Store) UpdateVCSProvider(ctx context.Context, vcsProviderUID int, update *UpdateVCSProviderMessage) (*VCSProviderMessage, error) {
+func (s *Store) UpdateVCSProvider(ctx context.Context, vcsProviderID string, update *UpdateVCSProviderMessage) (*VCSProviderMessage, error) {
 	set, args := []string{}, []any{}
 	if v := update.Name; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
@@ -150,7 +137,7 @@ func (s *Store) UpdateVCSProvider(ctx context.Context, vcsProviderUID int, updat
 	if v := update.AccessToken; v != nil {
 		set, args = append(set, fmt.Sprintf("access_token = $%d", len(args)+1)), append(args, *v)
 	}
-	args = append(args, vcsProviderUID)
+	args = append(args, vcsProviderID)
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -163,12 +150,11 @@ func (s *Store) UpdateVCSProvider(ctx context.Context, vcsProviderUID int, updat
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE vcs
 		SET `+strings.Join(set, ", ")+`
-		WHERE id = $%d
-		RETURNING id, resource_id, name, type, instance_url, access_token
+		WHERE resource_id = $%d
+		RETURNING resource_id, name, type, instance_url, access_token
 	`, len(args)),
 		args...,
 	).Scan(
-		&vcsProvider.ID,
 		&vcsProvider.ResourceID,
 		&vcsProvider.Title,
 		&vcsType,
@@ -186,19 +172,19 @@ func (s *Store) UpdateVCSProvider(ctx context.Context, vcsProviderUID int, updat
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
-	s.vcsIDCache.Add(vcsProvider.ID, &vcsProvider)
+	s.vcsCache.Add(vcsProvider.ResourceID, &vcsProvider)
 	return &vcsProvider, nil
 }
 
 // DeleteVCSProvider deletes an VCS provider.
-func (s *Store) DeleteVCSProvider(ctx context.Context, vcsProviderUID int) error {
+func (s *Store) DeleteVCSProvider(ctx context.Context, vcsProviderID string) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, `DELETE FROM vcs WHERE id = $1`, vcsProviderUID); err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM vcs WHERE resource_id = $1`, vcsProviderID); err != nil {
 		return err
 	}
 
@@ -206,22 +192,18 @@ func (s *Store) DeleteVCSProvider(ctx context.Context, vcsProviderUID int) error
 		return errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	s.vcsIDCache.Remove(vcsProviderUID)
+	s.vcsCache.Remove(vcsProviderID)
 	return nil
 }
 
 func (*Store) findVCSProvidersImpl(ctx context.Context, tx *Tx, find *FindVCSProviderMessage) ([]*VCSProviderMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
-	if v := find.ID; v != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
 	}
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			id,
 			resource_id,
 			name,
 			type,
@@ -240,7 +222,6 @@ func (*Store) findVCSProvidersImpl(ctx context.Context, tx *Tx, find *FindVCSPro
 		var vcsProvider VCSProviderMessage
 		var vcsType string
 		if err := rows.Scan(
-			&vcsProvider.ID,
 			&vcsProvider.ResourceID,
 			&vcsProvider.Title,
 			&vcsType,

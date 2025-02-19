@@ -11,11 +11,7 @@ export const unknownChangelist = () => {
   });
 };
 
-export const Changelist_Change_Source_List = [
-  "CHANGELOG",
-  "BRANCH",
-  "RAW_SQL",
-] as const;
+export const Changelist_Change_Source_List = ["CHANGELOG", "RAW_SQL"] as const;
 
 export type Changelist_Change_Source =
   (typeof Changelist_Change_Source_List)[number];

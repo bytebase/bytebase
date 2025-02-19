@@ -114,7 +114,6 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 	}
 
 	patch := &store.UpdateEnvironmentMessage{
-		UID:        environment.UID,
 		ResourceID: environment.ResourceID,
 	}
 	for _, path := range request.UpdateMask.Paths {
@@ -164,7 +163,6 @@ func (s *EnvironmentService) DeleteEnvironment(ctx context.Context, request *v1p
 	}
 
 	if _, err := s.store.UpdateEnvironmentV2(ctx, &store.UpdateEnvironmentMessage{
-		UID:        environment.UID,
 		ResourceID: environment.ResourceID,
 		Delete:     &deletePatch,
 	}); err != nil {
@@ -184,7 +182,6 @@ func (s *EnvironmentService) UndeleteEnvironment(ctx context.Context, request *v
 	}
 
 	environment, err = s.store.UpdateEnvironmentV2(ctx, &store.UpdateEnvironmentMessage{
-		UID:        environment.UID,
 		ResourceID: environment.ResourceID,
 		Delete:     &undeletePatch,
 	})

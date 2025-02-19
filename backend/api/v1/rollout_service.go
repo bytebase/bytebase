@@ -1262,9 +1262,9 @@ func (s *RolloutService) canUserRunStageTasks(ctx context.Context, user *store.U
 		return false, err
 	}
 
-	policy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
+	policy, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
 	if err != nil {
-		return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", project.UID)
+		return false, common.Wrapf(err, common.Internal, "failed to get project %s policy", project.ResourceID)
 	}
 
 	roles := utils.GetUserFormattedRolesMap(ctx, s.store, user, policy.Policy)

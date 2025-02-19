@@ -270,12 +270,16 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRe
 		return nil, status.Errorf(codes.Internal, "failed to create plan, error: %v", err)
 	}
 
-	planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, plan)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
-	}
-	if err := s.store.CreatePlanCheckRuns(ctx, planCheckRuns...); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create plan check runs, error: %v", err)
+	// Don't create plan checks if the plan comes from releases.
+	// Plan check results don't match release checks.
+	if !planHasRelease(request.Plan) {
+		planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, plan)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
+		}
+		if err := s.store.CreatePlanCheckRuns(ctx, planCheckRuns...); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create plan check runs, error: %v", err)
+		}
 	}
 
 	// Tickle plan check scheduler.
@@ -434,9 +438,13 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 
 					// Flags for gh-ost.
 					if err := func() error {
-						if task.Type != api.TaskDatabaseSchemaUpdateGhostSync {
+						switch task.Type {
+						case api.TaskDatabaseSchemaUpdateGhost:
+						case api.TaskDatabaseSchemaUpdateGhostSync:
+						default:
 							return nil
 						}
+
 						payload := &storepb.TaskDatabaseUpdatePayload{}
 						if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 							return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
@@ -564,7 +572,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					// Sheet
 					if err := func() error {
 						switch task.Type {
-						case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseDataUpdate, api.TaskDatabaseDataExport:
+						case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhost, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseDataUpdate, api.TaskDatabaseDataExport:
 							var taskPayload struct {
 								SheetID int `json:"sheetId"`
 							}
@@ -656,7 +664,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					// version
 					if err := func() error {
 						switch task.Type {
-						case api.TaskDatabaseSchemaBaseline, api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseDataUpdate:
+						case api.TaskDatabaseSchemaBaseline, api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhost, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseDataUpdate:
 						default:
 							return nil
 						}
@@ -1431,4 +1439,8 @@ func getPlanSnapshot(ctx context.Context, s *store.Store, steps []*storepb.PlanC
 	}
 
 	return snapshot, nil
+}
+
+func planHasRelease(plan *v1pb.Plan) bool {
+	return plan.GetReleaseSource().GetRelease() != ""
 }

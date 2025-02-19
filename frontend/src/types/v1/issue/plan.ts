@@ -1,6 +1,6 @@
 import { emptyUser, unknownUser } from "@/types";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types/const";
-import { type User } from "@/types/proto/v1/auth_service";
+import { type User } from "@/types/proto/v1/user_service";
 import {
   Plan,
   PlanCheckRun,

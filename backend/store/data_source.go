@@ -42,8 +42,6 @@ type DataSourceMessage struct {
 	SASLConfig *storepb.SASLConfig
 	// Authentication
 	AuthenticationPrivateKeyObfuscated string
-	// (deprecated) Output only.
-	UID int
 	// external secret
 	ExternalSecret           *storepb.DataSourceExternalSecret
 	AuthenticationType       storepb.DataSourceOptions_AuthenticationType
@@ -90,7 +88,6 @@ func (m *DataSourceMessage) Copy() *DataSourceMessage {
 		SSHUser:                            m.SSHUser,
 		SSHObfuscatedPassword:              m.SSHObfuscatedPassword,
 		SSHObfuscatedPrivateKey:            m.SSHObfuscatedPrivateKey,
-		UID:                                m.UID,
 		AuthenticationPrivateKeyObfuscated: m.AuthenticationPrivateKeyObfuscated,
 		ExternalSecret:                     m.ExternalSecret,
 		AuthenticationType:                 m.AuthenticationType,
@@ -109,7 +106,6 @@ func (m *DataSourceMessage) Copy() *DataSourceMessage {
 
 // UpdateDataSourceMessage is the message for the data source.
 type UpdateDataSourceMessage struct {
-	InstanceUID  int
 	InstanceID   string
 	DataSourceID string
 
@@ -172,7 +168,6 @@ func (*Store) listInstanceDataSourceMap(ctx context.Context, tx *Tx, find *FindD
 	instanceDataSourcesMap := make(map[string][]*DataSourceMessage)
 	rows, err := tx.QueryContext(ctx, `
 		SELECT
-			id,
 			instance,
 			name,
 			type,
@@ -198,7 +193,6 @@ func (*Store) listInstanceDataSourceMap(ctx context.Context, tx *Tx, find *FindD
 		var instanceID string
 		var dataSourceMessage DataSourceMessage
 		if err := rows.Scan(
-			&dataSourceMessage.UID,
 			&instanceID,
 			&dataSourceMessage.ID,
 			&dataSourceMessage.Type,
@@ -283,7 +277,7 @@ func (s *Store) GetDataSource(ctx context.Context, find *FindDataSourceMessage) 
 }
 
 // AddDataSourceToInstanceV2 adds a RO data source to an instance and return the instance where the data source is added.
-func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID int, instanceID string, dataSource *DataSourceMessage) error {
+func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceID string, dataSource *DataSourceMessage) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.New("Failed to begin transaction")
@@ -299,12 +293,11 @@ func (s *Store) AddDataSourceToInstanceV2(ctx context.Context, instanceUID int, 
 	}
 
 	s.instanceCache.Remove(getInstanceCacheKey(instanceID))
-	s.instanceIDCache.Remove(instanceUID)
 	return nil
 }
 
 // RemoveDataSourceV2 removes a RO data source from an instance.
-func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, instanceID string, dataSourceID string) error {
+func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceID string, dataSourceID string) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.New("Failed to begin transaction")
@@ -323,7 +316,7 @@ func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, instanc
 		return errors.Wrapf(err, "failed to get rows affected")
 	}
 	if rowsAffected != 1 {
-		return errors.Errorf("remove %d type data_sources for instance uid %d, but expected 1", rowsAffected, instanceUID)
+		return errors.Errorf("remove %d type data_sources for instance %s, but expected 1", rowsAffected, instanceID)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -331,7 +324,6 @@ func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceUID int, instanc
 	}
 
 	s.instanceCache.Remove(getInstanceCacheKey(instanceID))
-	s.instanceIDCache.Remove(instanceUID)
 	return nil
 }
 
@@ -477,7 +469,7 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 		return errors.Wrapf(err, "failed to get rows affected")
 	}
 	if rowsAffected != 1 {
-		return errors.Errorf("update %v data source records from instance %v, but expected one", rowsAffected, patch.InstanceUID)
+		return errors.Errorf("update %v data source records from instance %s, but expected one", rowsAffected, patch.InstanceID)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -485,7 +477,6 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	}
 
 	s.instanceCache.Remove(getInstanceCacheKey(patch.InstanceID))
-	s.instanceIDCache.Remove(patch.InstanceUID)
 	return nil
 }
 

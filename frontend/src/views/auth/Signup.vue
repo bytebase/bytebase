@@ -158,7 +158,7 @@ import {
   useAuthStore,
   useOnboardingStateStore,
 } from "@/store";
-import type { User } from "@/types/proto/v1/auth_service";
+import type { User } from "@/types/proto/v1/user_service";
 import { isValidEmail } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
 

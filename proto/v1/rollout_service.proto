@@ -385,6 +385,8 @@ message Task {
     // use payload DatabaseSchemaUpdate
     DATABASE_SCHEMA_UPDATE_SDL = 5;
     // use payload DatabaseSchemaUpdate
+    DATABASE_SCHEMA_UPDATE_GHOST = 9;
+    // use payload DatabaseSchemaUpdate
     DATABASE_SCHEMA_UPDATE_GHOST_SYNC = 6;
     // use payload nil
     DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER = 7;

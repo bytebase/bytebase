@@ -1,20 +1,20 @@
 import { isEqual, isUndefined, orderBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { authServiceClient } from "@/grpcweb";
-import {
-  ALL_USERS_USER_EMAIL,
-  allUsersUser,
-  SYSTEM_BOT_USER_NAME,
-} from "@/types";
-import type { UpdateUserRequest, User } from "@/types/proto/v1/auth_service";
-import { UserType } from "@/types/proto/v1/auth_service";
+import { userServiceClient } from "@/grpcweb";
+import { allUsersUser, SYSTEM_BOT_USER_NAME } from "@/types";
+import type { UpdateUserRequest, User } from "@/types/proto/v1/user_service";
+import { UserType } from "@/types/proto/v1/user_service";
 import { State } from "@/types/proto/v1/common";
 import { userNamePrefix, getUserEmailFromIdentifier } from "./v1/common";
 import { usePermissionStore } from "./v1/permission";
 
+const allUser = allUsersUser();
+
 export const useUserStore = defineStore("user", () => {
-  const userMapByName = ref<Map<string, User>>(new Map());
+  const userMapByName = ref<Map<string, User>>(
+    new Map([[allUser.name, allUser]])
+  );
 
   const setUser = (user: User) => {
     userMapByName.value.set(user.name, user);
@@ -39,8 +39,7 @@ export const useUserStore = defineStore("user", () => {
   // The active user list and exclude allUsers.
   const activeUserList = computed(() => {
     return userList.value.filter(
-      (user) =>
-        user.state === State.ACTIVE && user.email !== ALL_USERS_USER_EMAIL
+      (user) => user.state === State.ACTIVE && user.name !== allUser.name
     );
   });
 
@@ -51,7 +50,7 @@ export const useUserStore = defineStore("user", () => {
   });
 
   const fetchUserList = async () => {
-    const { users } = await authServiceClient.listUsers({
+    const { users } = await userServiceClient.listUsers({
       showDeleted: true,
     });
     const response: User[] = [];
@@ -61,7 +60,7 @@ export const useUserStore = defineStore("user", () => {
     return response;
   };
   const fetchUser = async (name: string, silent = false) => {
-    const user = await authServiceClient.getUser(
+    const user = await userServiceClient.getUser(
       {
         name,
       },
@@ -72,7 +71,7 @@ export const useUserStore = defineStore("user", () => {
     return setUser(user);
   };
   const createUser = async (user: User) => {
-    const createdUser = await authServiceClient.createUser({
+    const createdUser = await userServiceClient.createUser({
       user,
     });
     return setUser(createdUser);
@@ -83,7 +82,7 @@ export const useUserStore = defineStore("user", () => {
     if (!originData) {
       throw new Error(`user with name ${name} not found`);
     }
-    const user = await authServiceClient.updateUser(updateUserRequest);
+    const user = await userServiceClient.updateUser(updateUserRequest);
     return setUser(user);
   };
   const getOrFetchUserByName = async (name: string, silent = false) => {
@@ -107,22 +106,19 @@ export const useUserStore = defineStore("user", () => {
     return getUserByEmail(getUserEmailFromIdentifier(identifier));
   };
   const getUserByEmail = (email: string) => {
-    if (email === ALL_USERS_USER_EMAIL) {
-      return allUsersUser();
-    }
     return [...userMapByName.value.values()].find(
       (user) => user.email === email
     );
   };
   const archiveUser = async (user: User) => {
-    await authServiceClient.deleteUser({
+    await userServiceClient.deleteUser({
       name: user.name,
     });
     user.state = State.DELETED;
     return user;
   };
   const restoreUser = async (user: User) => {
-    const restoredUser = await authServiceClient.undeleteUser({
+    const restoredUser = await userServiceClient.undeleteUser({
       name: user.name,
     });
     return setUser(restoredUser);
@@ -182,6 +178,7 @@ export const useActiveUsers = () => {
   const userStore = useUserStore();
   return userStore.userList.filter(
     (user) =>
+      user.name !== allUser.name &&
       user.state === State.ACTIVE &&
       [UserType.USER, UserType.SERVICE_ACCOUNT].includes(user.userType)
   );

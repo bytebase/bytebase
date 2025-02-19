@@ -20,7 +20,6 @@
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.1.0",
-    "@bytebase/vue-kbar": "0.1.8",
     "@joe-re/sql-parser": "^1.7.0",
     "@markdoc/markdoc": "0.4.0",
     "@soerenmartius/vue3-clipboard": "0.1.2",
@@ -34,7 +33,7 @@
     "crypto-js": "^4.2.0",
     "d3-shape": "^3.2.0",
     "dayjs": "1.11.13",
-    "dompurify": "3.1.7",
+    "dompurify": "3.2.4",
     "downloadjs": "1.4.7",
     "elkjs": "^0.9.1",
     "emittery": "^1.1.0",

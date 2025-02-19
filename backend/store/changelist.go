@@ -21,8 +21,6 @@ type ChangelistMessage struct {
 
 	Payload *storepb.Changelist
 
-	// Output only fields
-	UID       int
 	CreatorID int
 	UpdatedAt time.Time
 }
@@ -75,7 +73,6 @@ func (s *Store) ListChangelists(ctx context.Context, find *FindChangelistMessage
 
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
-			id,
 			creator_id,
 			updated_at,
 			project,
@@ -95,7 +92,6 @@ func (s *Store) ListChangelists(ctx context.Context, find *FindChangelistMessage
 		var changelist ChangelistMessage
 		var payload []byte
 		if err := rows.Scan(
-			&changelist.UID,
 			&changelist.CreatorID,
 			&changelist.UpdatedAt,
 			&changelist.ProjectID,
@@ -140,7 +136,7 @@ func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage)
 			payload
 		)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, updated_at;
+		RETURNING updated_at;
 	`
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -154,7 +150,6 @@ func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage)
 		create.ResourceID,
 		payload,
 	).Scan(
-		&create.UID,
 		&create.UpdatedAt,
 	); err != nil {
 		return nil, err
@@ -168,11 +163,6 @@ func (s *Store) CreateChangelist(ctx context.Context, create *ChangelistMessage)
 
 // UpdateChangelist updates a changelist.
 func (s *Store) UpdateChangelist(ctx context.Context, update *UpdateChangelistMessage) error {
-	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &update.ProjectID})
-	if err != nil {
-		return err
-	}
-
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin transaction")
@@ -186,12 +176,12 @@ func (s *Store) UpdateChangelist(ctx context.Context, update *UpdateChangelistMe
 		}
 		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, payload)
 	}
-	args = append(args, project.UID, update.ResourceID)
+	args = append(args, update.ProjectID, update.ResourceID)
 
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
 		UPDATE changelist
 		SET `+strings.Join(set, ", ")+`
-		WHERE changelist.project_id = $%d AND changelist.name = $%d`, len(set)+1, len(set)+2), args...); err != nil {
+		WHERE project = $%d AND name = $%d`, len(set)+1, len(set)+2), args...); err != nil {
 		return err
 	}
 

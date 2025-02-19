@@ -92,7 +92,7 @@ import { StepTab } from "@/components/v2";
 import { AUTH_2FA_SETUP_MODULE } from "@/router/auth";
 import { SETTING_ROUTE_PROFILE } from "@/router/dashboard/workspaceSetting";
 import { pushNotification, useAuthStore, useUserStore } from "@/store";
-import { UpdateUserRequest } from "@/types/proto/v1/auth_service";
+import { UpdateUserRequest } from "@/types/proto/v1/user_service";
 
 const issuerName = "Bytebase";
 

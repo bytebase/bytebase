@@ -46,6 +46,12 @@ type TableKey struct {
 	Table  string
 }
 
+type TableKeyWithColumns struct {
+	Schema  string
+	Table   string
+	Columns []*storepb.ColumnMetadata
+}
+
 // ColumnKey is the map key for table metadata.
 type ColumnKey struct {
 	Schema string
@@ -145,27 +151,6 @@ const (
 	// Failed is the migration status for FAILED.
 	Failed MigrationStatus = "FAILED"
 )
-
-// MigrationInfo is the API message for migration info.
-type MigrationInfo struct {
-	DatabaseID *int
-	ProjectUID *int
-	IssueUID   *int
-
-	ReleaseVersion string
-	Namespace      string
-	Database       string
-	Environment    string
-	Source         MigrationSource
-	Type           MigrationType
-	Status         MigrationStatus
-	Description    string
-	// Payload contains JSON-encoded string of VCS push event if the migration is triggered by a VCS push event.
-	Payload *storepb.InstanceChangeHistoryPayload
-
-	SheetUID *int
-	Sheet    *string
-}
 
 // ConnectionConfig is the configuration for connections.
 type ConnectionConfig struct {

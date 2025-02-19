@@ -121,9 +121,13 @@ const commentLink = computed((): CommentLink => {
       const [, , stageUid, taskUid] = getProjectIdRolloutUidStageUidTaskUid(
         task.task
       );
+      const link =
+        task.issue !== ""
+          ? `/${task.issue}?stage=${stageUid}&task=${taskUid}`
+          : `/${task.task}`;
       return {
         title: t("common.blocking-task"),
-        link: `/${task.issue}?stage=${stageUid}&task=${taskUid}`,
+        link: link,
       };
     }
   } else if (taskRun.status === TaskRun_Status.DONE) {
@@ -131,7 +135,6 @@ const commentLink = computed((): CommentLink => {
       case Task_Type.DATABASE_SCHEMA_BASELINE:
       case Task_Type.DATABASE_SCHEMA_UPDATE:
       case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
-      case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER:
       case Task_Type.DATABASE_DATA_UPDATE: {
         if (taskRun.changelog === "") {
           return {

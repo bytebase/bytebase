@@ -237,19 +237,6 @@
   "error-page": {
     "go-back-home": "ホームページに戻る"
   },
-  "kbar": {
-    "recently-visited": "最近の訪問",
-    "navigation": "ナビゲーション",
-    "help": {
-      "navigate": "選ぶ",
-      "perform": "埋め込む",
-      "close": "閉じる",
-      "back": "戻る"
-    },
-    "options": {
-      "placeholder": "コマンドを入力するか検索してください…"
-    }
-  },
   "task": {
     "checking": "検査中…",
     "check-result": {
@@ -280,10 +267,6 @@
       "done": "終わり",
       "pending": "保留中",
       "not-started": "開始されていません"
-    },
-    "type": {
-      "bb-task-database-schema-update-ghost-sync": "同期データ",
-      "bb-task-database-schema-update-ghost-cutover": "スイッチテーブル"
     },
     "skip": "飛び越える",
     "task-checks": "タスクのチェック項目",
@@ -1035,7 +1018,6 @@
     "encoding": "文字コード",
     "character-set": "キャラクターセット",
     "collation": "文字の並べ替え規則",
-    "select": "データベースの選択",
     "tables": "テーブル",
     "collections": "集める",
     "views": "ビュー",
@@ -1287,7 +1269,6 @@
     "visit-database": "@:{'common.databases'}に@:{'common.visit'}する",
     "visit-environment": "@:{'common.environments'}に@:{'common.visit'}する",
     "visit-member": "@:{'common.members'}に@:{'common.visit'}する",
-    "use-kbar": "kbar ({shortcut}) を使用する",
     "query-data": "クエリデータ",
     "notice": {
       "title": "クイックスタートガイドを終了しました",
@@ -2607,7 +2588,8 @@
     },
     "condition": {
       "self": "状態"
-    }
+    },
+    "select": "データベースグループを選択"
   },
   "export-center": {
     "self": "エクスポートセンター",

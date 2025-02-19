@@ -237,19 +237,6 @@
   "error-page": {
     "go-back-home": "Về trang chủ"
   },
-  "kbar": {
-    "recently-visited": "Đã xem gần đây",
-    "navigation": "Điều hướng",
-    "help": {
-      "navigate": "để điều hướng",
-      "perform": "để thực hiện",
-      "close": "để đóng",
-      "back": "để quay lại"
-    },
-    "options": {
-      "placeholder": "Nhập lệnh hoặc tìm kiếm…"
-    }
-  },
   "task": {
     "checking": "Đang kiểm tra...",
     "check-result": {
@@ -280,10 +267,6 @@
       "done": "Hoàn tất",
       "pending": "Đang chờ",
       "not-started": "Chưa bắt đầu"
-    },
-    "type": {
-      "bb-task-database-schema-update-ghost-sync": "Đồng bộ dữ liệu",
-      "bb-task-database-schema-update-ghost-cutover": "Chuyển bảng"
     },
     "skip": "Bỏ qua",
     "task-checks": "Kiểm tra tác vụ",
@@ -1035,7 +1018,6 @@
     "encoding": "Mã hóa",
     "character-set": "Bộ ký tự",
     "collation": "Đối chiếu",
-    "select": "Chọn cơ sở dữ liệu",
     "tables": "Bảng",
     "collections": "Bộ sưu tập",
     "views": "Khung nhìn",
@@ -1287,7 +1269,6 @@
     "visit-database": "@:common.visit @:common.databases",
     "visit-environment": "@:common.visit @:common.environments",
     "visit-member": "@:common.visit @:common.members",
-    "use-kbar": "Sử dụng kbar ({shortcut})",
     "query-data": "Truy vấn dữ liệu",
     "notice": {
       "title": "Đã bỏ qua hướng dẫn bắt đầu nhanh",
@@ -2607,7 +2588,8 @@
     },
     "condition": {
       "self": "Điều kiện"
-    }
+    },
+    "select": "Chọn nhóm cơ sở dữ liệu"
   },
   "export-center": {
     "self": "Trung tâm xuất",

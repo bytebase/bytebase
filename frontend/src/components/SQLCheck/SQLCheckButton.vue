@@ -58,6 +58,8 @@
       v-if="filteredAdvices && showDetailPanel"
       :database="database"
       :advices="filteredAdvices"
+      :affected-rows="checkResult.affectedRows"
+      :risk-level="checkResult.riskLevel"
       :confirm="confirmDialog"
       :override-title="$t('issue.sql-check.sql-review-violations')"
       :show-code-location="showCodeLocation"
@@ -75,16 +77,21 @@
 <script lang="ts" setup>
 import type { ButtonProps } from "naive-ui";
 import { NButton, NPopover } from "naive-ui";
+import { v4 as uuidv4 } from "uuid";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
-import { sqlServiceClient } from "@/grpcweb";
+import { releaseServiceClient } from "@/grpcweb";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import { useReviewPolicyForDatabase } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import type { CheckRequest_ChangeType } from "@/types/proto/v1/sql_service";
+import {
+  CheckReleaseResponse,
+  Release_File_ChangeType,
+  ReleaseFileType,
+} from "@/types/proto/v1/release_service";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer, VueStyle } from "@/utils";
 import { defer, hasWorkspacePermissionV2 } from "@/utils";
@@ -104,7 +111,7 @@ const props = withDefaults(
     databaseMetadata?: DatabaseMetadata;
     buttonProps?: ButtonProps;
     buttonStyle?: VueStyle;
-    changeType?: CheckRequest_ChangeType;
+    changeType?: Release_File_ChangeType;
     showCodeLocation?: boolean;
     ignoreIssueCreationRestriction?: boolean;
     adviceFilter?: (advices: Advice, index: number) => boolean;
@@ -130,16 +137,19 @@ const SKIP_CHECK_THRESHOLD = 2 * 1024 * 1024;
 const isRunning = ref(false);
 const showDetailPanel = ref(false);
 const allowForceContinue = ref(true);
-const rawAdvices = ref<Advice[]>();
 const context = useSQLCheckContext();
 const confirmDialog = ref<Defer<boolean>>();
+const checkResult = ref<CheckReleaseResponse>(
+  CheckReleaseResponse.fromPartial({})
+);
 
 const filteredAdvices = computed(() => {
   const { adviceFilter } = props;
+  const advices = checkResult.value.results.flatMap((r) => r.advices);
   if (!adviceFilter) {
-    return rawAdvices.value;
+    return advices;
   }
-  return rawAdvices.value?.filter(adviceFilter);
+  return advices?.filter(adviceFilter);
 });
 
 const reviewPolicy = useReviewPolicyForDatabase(
@@ -174,16 +184,23 @@ const policyErrors = computed(() => {
 
 providePlanCheckRunContext({});
 
-const runCheckInternal = async (
-  statement: string,
-  databaseMetadata: DatabaseMetadata | undefined
-) => {
+const runCheckInternal = async (statement: string) => {
   const { database, changeType } = props;
-  const result = await sqlServiceClient.check({
-    statement,
-    name: database.name,
-    metadata: databaseMetadata,
-    changeType,
+  const result = await releaseServiceClient.checkRelease({
+    parent: database.project,
+    release: {
+      files: [
+        {
+          // Use a random uuid to avoid duplication.
+          version: uuidv4(),
+          type: ReleaseFileType.VERSIONED,
+          statement: statement,
+          // Default to DDL change type.
+          changeType: changeType || Release_File_ChangeType.DDL,
+        },
+      ],
+    },
+    targets: [database.name],
   });
   return result;
 };
@@ -205,21 +222,24 @@ const runChecks = async () => {
   }
 
   const handleErrors = (errors: string[]) => {
-    // Mock the pre-check errors to advices
-    rawAdvices.value = errors.map((err) =>
-      Advice.fromPartial({
-        title: "Pre check",
-        status: Advice_Status.WARNING,
-        content: err,
-      })
-    );
+    // Mock the pre-check errors to advices.
+    checkResult.value = CheckReleaseResponse.fromPartial({
+      results: [
+        {
+          advices: errors.map((err) =>
+            Advice.fromPartial({
+              title: "Pre check",
+              status: Advice_Status.WARNING,
+              content: err,
+            })
+          ),
+        },
+      ],
+    });
     isRunning.value = false;
   };
 
   isRunning.value = true;
-  if (!rawAdvices.value) {
-    rawAdvices.value = [];
-  }
   const { statement, errors } = await props.getStatement();
   allowForceContinue.value = errors.length === 0;
   if (new Blob([statement]).size > SKIP_CHECK_THRESHOLD) {
@@ -229,8 +249,7 @@ const runChecks = async () => {
     return handleErrors(errors);
   }
   try {
-    const result = await runCheckInternal(statement, props.databaseMetadata);
-    rawAdvices.value = result.advices;
+    checkResult.value = await runCheckInternal(statement);
   } finally {
     isRunning.value = false;
   }

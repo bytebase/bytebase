@@ -18,7 +18,6 @@ export interface TaskDatabaseCreatePayload {
   skipped: boolean;
   skippedReason: string;
   specId: string;
-  projectId: number;
   databaseName: string;
   tableName: string;
   sheetId: number;
@@ -68,7 +67,6 @@ function createBaseTaskDatabaseCreatePayload(): TaskDatabaseCreatePayload {
     skipped: false,
     skippedReason: "",
     specId: "",
-    projectId: 0,
     databaseName: "",
     tableName: "",
     sheetId: 0,
@@ -89,9 +87,6 @@ export const TaskDatabaseCreatePayload: MessageFns<TaskDatabaseCreatePayload> = 
     }
     if (message.specId !== "") {
       writer.uint32(26).string(message.specId);
-    }
-    if (message.projectId !== 0) {
-      writer.uint32(32).int32(message.projectId);
     }
     if (message.databaseName !== "") {
       writer.uint32(42).string(message.databaseName);
@@ -146,14 +141,6 @@ export const TaskDatabaseCreatePayload: MessageFns<TaskDatabaseCreatePayload> = 
           }
 
           message.specId = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.projectId = reader.int32();
           continue;
         }
         case 5: {
@@ -226,7 +213,6 @@ export const TaskDatabaseCreatePayload: MessageFns<TaskDatabaseCreatePayload> = 
       skipped: isSet(object.skipped) ? globalThis.Boolean(object.skipped) : false,
       skippedReason: isSet(object.skippedReason) ? globalThis.String(object.skippedReason) : "",
       specId: isSet(object.specId) ? globalThis.String(object.specId) : "",
-      projectId: isSet(object.projectId) ? globalThis.Number(object.projectId) : 0,
       databaseName: isSet(object.databaseName) ? globalThis.String(object.databaseName) : "",
       tableName: isSet(object.tableName) ? globalThis.String(object.tableName) : "",
       sheetId: isSet(object.sheetId) ? globalThis.Number(object.sheetId) : 0,
@@ -247,9 +233,6 @@ export const TaskDatabaseCreatePayload: MessageFns<TaskDatabaseCreatePayload> = 
     }
     if (message.specId !== "") {
       obj.specId = message.specId;
-    }
-    if (message.projectId !== 0) {
-      obj.projectId = Math.round(message.projectId);
     }
     if (message.databaseName !== "") {
       obj.databaseName = message.databaseName;
@@ -283,7 +266,6 @@ export const TaskDatabaseCreatePayload: MessageFns<TaskDatabaseCreatePayload> = 
     message.skipped = object.skipped ?? false;
     message.skippedReason = object.skippedReason ?? "";
     message.specId = object.specId ?? "";
-    message.projectId = object.projectId ?? 0;
     message.databaseName = object.databaseName ?? "";
     message.tableName = object.tableName ?? "";
     message.sheetId = object.sheetId ?? 0;

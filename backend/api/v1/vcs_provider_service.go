@@ -104,7 +104,7 @@ func (s *VCSProviderService) UpdateVCSProvider(ctx context.Context, request *v1p
 		}
 	}
 
-	vcsProvider, err = s.store.UpdateVCSProvider(ctx, vcsProvider.ID, update)
+	vcsProvider, err = s.store.UpdateVCSProvider(ctx, vcsProvider.ResourceID, update)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -118,7 +118,7 @@ func (s *VCSProviderService) DeleteVCSProvider(ctx context.Context, request *v1p
 		return nil, err
 	}
 
-	if err := s.store.DeleteVCSProvider(ctx, vcsProvider.ID); err != nil {
+	if err := s.store.DeleteVCSProvider(ctx, vcsProvider.ResourceID); err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to delete vcs provider: %v", err)
 	}
 	return &emptypb.Empty{}, nil

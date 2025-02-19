@@ -237,19 +237,6 @@
   "error-page": {
     "go-back-home": "Volver al inicio"
   },
-  "kbar": {
-    "recently-visited": "Visitado Recientemente",
-    "navigation": "Navegación",
-    "help": {
-      "navigate": "navegar",
-      "perform": "realizar",
-      "close": "cerrar",
-      "back": "volver"
-    },
-    "options": {
-      "placeholder": "Escriba un comando o búsqueda…"
-    }
-  },
   "task": {
     "checking": "Comprobando...",
     "check-result": {
@@ -280,10 +267,6 @@
       "done": "Hecho",
       "pending": "Pendiente",
       "not-started": "No iniciado"
-    },
-    "type": {
-      "bb-task-database-schema-update-ghost-sync": "Sincronizar datos",
-      "bb-task-database-schema-update-ghost-cutover": "Cambiar de tabla"
     },
     "skip": "Saltar",
     "task-checks": "Comprobaciones de tarea",
@@ -1035,7 +1018,6 @@
     "encoding": "Codificación",
     "character-set": "Juego de caracteres",
     "collation": "Colación",
-    "select": "Seleccionar base de datos",
     "tables": "Tablas",
     "collections": "Colecciones",
     "views": "Vistas",
@@ -1287,7 +1269,6 @@
     "visit-database": "@:common.visit @:common.databases",
     "visit-environment": "@:common.visit @:common.environments",
     "visit-member": "@:common.visit @:common.members",
-    "use-kbar": "Usar kbar ({shortcut})",
     "query-data": "Consultar datos",
     "notice": {
       "title": "Guía de inicio rápido omitida",
@@ -2607,7 +2588,8 @@
     },
     "condition": {
       "self": "Condición"
-    }
+    },
+    "select": "Seleccionar grupo de bases de datos"
   },
   "export-center": {
     "self": "centro de exportacion",

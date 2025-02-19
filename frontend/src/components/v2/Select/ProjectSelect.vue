@@ -1,28 +1,25 @@
 <template>
-  <NSelect
+  <ResourceSelect
     v-bind="$attrs"
-    :value="combinedValue"
-    :options="options"
     :placeholder="$t('project.select')"
-    :filterable="true"
     :multiple="multiple"
-    :filter="filterByName"
     :disabled="disabled"
-    :render-label="renderLabel"
+    :value="projectName"
+    :values="projectNames"
+    :options="options"
+    :custom-label="renderLabel"
     class="bb-project-select"
-    style="width: 12rem"
-    @update:value="handleValueUpdated"
+    @update:value="(val) => $emit('update:project-name', val)"
+    @update:values="(val) => $emit('update:project-names', val)"
   >
     <template v-if="$slots.empty" #empty>
       <slot name="empty" />
     </template>
-  </NSelect>
+  </ResourceSelect>
 </template>
 
 <script lang="tsx" setup>
 import { intersection } from "lodash-es";
-import type { SelectOption } from "naive-ui";
-import { NSelect } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
@@ -38,11 +35,7 @@ import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
 import { Workflow } from "@/types/proto/v1/project_service";
 import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
-
-interface ProjectSelectOption extends SelectOption {
-  value: string;
-  project: Project;
-}
+import ResourceSelect from "./ResourceSelect.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -83,30 +76,6 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const permissionStore = usePermissionStore();
 const { projectList } = useProjectV1List(true /* showDeleted */);
-
-const combinedValue = computed(() => {
-  if (props.multiple) {
-    return props.projectNames || [];
-  } else {
-    return props.projectName;
-  }
-});
-
-const handleValueUpdated = (value: string | string[]) => {
-  if (props.multiple) {
-    if (!value) {
-      // normalize value
-      value = [];
-    }
-    emit("update:project-names", value as string[]);
-  } else {
-    if (value === null) {
-      // normalize value
-      value = "";
-    }
-    emit("update:project-name", value as string);
-  }
-};
 
 const hasWorkspaceManageProjectPermission = computed(() =>
   hasWorkspacePermissionV2("bb.projects.list")
@@ -188,9 +157,9 @@ const combinedProjectList = computed(() => {
 });
 
 const options = computed(() => {
-  return combinedProjectList.value.map<ProjectSelectOption>((project) => {
+  return combinedProjectList.value.map((project) => {
     return {
-      project,
+      resource: project,
       value: project.name,
       label:
         project.name === DEFAULT_PROJECT_NAME
@@ -213,16 +182,7 @@ watchEffect(() => {
   emit("update:project-name", options.value[0].value);
 });
 
-const filterByName = (pattern: string, option: SelectOption) => {
-  const { project } = option as ProjectSelectOption;
-  pattern = pattern.toLowerCase();
-  return extractProjectResourceName(project.name)
-    .toLowerCase()
-    .includes(pattern);
-};
-
-const renderLabel = (option: SelectOption) => {
-  const { project } = option as ProjectSelectOption;
+const renderLabel = (project: Project) => {
   if (!project) return null;
   return (
     <ProjectNameCell

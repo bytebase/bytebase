@@ -237,19 +237,6 @@
   "error-page": {
     "go-back-home": "Go back home"
   },
-  "kbar": {
-    "recently-visited": "Recently Visited",
-    "navigation": "Navigation",
-    "help": {
-      "navigate": "to navigate",
-      "perform": "to perform",
-      "close": "to close",
-      "back": "to back"
-    },
-    "options": {
-      "placeholder": "Type a command or search…"
-    }
-  },
   "task": {
     "checking": "Checking...",
     "check-result": {
@@ -280,10 +267,6 @@
       "done": "Done",
       "pending": "Pending",
       "not-started": "Not started"
-    },
-    "type": {
-      "bb-task-database-schema-update-ghost-sync": "Sync data",
-      "bb-task-database-schema-update-ghost-cutover": "Switch tables"
     },
     "skip": "Skip",
     "task-checks": "Task checks",
@@ -1035,7 +1018,6 @@
     "encoding": "Encoding",
     "character-set": "Character set",
     "collation": "Collation",
-    "select": "Select database",
     "tables": "Tables",
     "collections": "Collections",
     "views": "Views",
@@ -1287,7 +1269,6 @@
     "visit-database": "@:common.visit @:common.databases",
     "visit-environment": "@:common.visit @:common.environments",
     "visit-member": "@:common.visit @:common.members",
-    "use-kbar": "Use kbar ({shortcut})",
     "query-data": "Query data",
     "notice": {
       "title": "Quickstart guide dismissed",
@@ -2607,7 +2588,8 @@
     },
     "condition": {
       "self": "Condition"
-    }
+    },
+    "select": "Select database group"
   },
   "export-center": {
     "self": "Export Center",

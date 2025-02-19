@@ -24,23 +24,14 @@ func NewProjectCountCollector(store *store.Store) metric.Collector {
 
 // Collect will collect the metric for project.
 func (c *projectCountCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
-	var res []*metric.Metric
-
-	projectCountMetricList, err := c.store.CountProjectGroupByWorkflow(ctx)
+	count, err := c.store.CountProjects(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	for _, projectCountMetric := range projectCountMetricList {
-		res = append(res, &metric.Metric{
+	return []*metric.Metric{
+		{
 			Name:  metricapi.ProjectCountMetricName,
-			Value: projectCountMetric.Count,
-			Labels: map[string]any{
-				"workflow": projectCountMetric.WorkflowType.String(),
-				"status":   string(projectCountMetric.RowStatus),
-			},
-		})
-	}
-
-	return res, nil
+			Value: count,
+		},
+	}, nil
 }

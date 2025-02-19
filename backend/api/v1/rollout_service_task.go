@@ -239,7 +239,6 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 
 		payload := &storepb.TaskDatabaseCreatePayload{
 			SpecId:        spec.Id,
-			ProjectId:     int32(project.UID),
 			CharacterSet:  c.CharacterSet,
 			TableName:     c.Table,
 			Collation:     c.Collation,
@@ -472,6 +471,40 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		return []*store.TaskMessage{taskCreate}, nil, nil
 
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST:
+		if common.IsDev() {
+			_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
+			}
+			if _, err := ghost.GetUserFlags(c.GhostFlags); err != nil {
+				return nil, nil, errors.Wrapf(err, "invalid ghost flags %q", c.GhostFlags)
+			}
+			payload := &storepb.TaskDatabaseUpdatePayload{
+				SpecId:        spec.Id,
+				SheetId:       int32(sheetUID),
+				SchemaVersion: c.SchemaVersion,
+				Flags:         c.GhostFlags,
+				TaskReleaseSource: &storepb.TaskReleaseSource{
+					File: spec.SpecReleaseSource.GetFile(),
+				},
+			}
+			bytes, err := protojson.Marshal(payload)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "failed to marshal database schema update ghost payload")
+			}
+			taskCreate := &store.TaskMessage{
+				Name:         fmt.Sprintf("DDL(gh-ost) for database %q", database.DatabaseName),
+				InstanceID:   database.InstanceID,
+				DatabaseName: &database.DatabaseName,
+				Type:         api.TaskDatabaseSchemaUpdateGhost,
+				Payload:      string(bytes),
+			}
+			if spec.EarliestAllowedTime.GetSeconds() > 0 {
+				t := spec.EarliestAllowedTime.AsTime()
+				taskCreate.EarliestAllowedAt = &t
+			}
+			return []*store.TaskMessage{taskCreate}, nil, nil
+		}
 		_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)

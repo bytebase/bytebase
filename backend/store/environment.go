@@ -21,24 +21,17 @@ type EnvironmentMessage struct {
 	Order      int32
 	Protected  bool
 	Color      string
-
-	// The following fields are output only and not used for create().
-	UID     int
-	Deleted bool
+	Deleted    bool
 }
 
 // FindEnvironmentMessage is the message to find environments.
 type FindEnvironmentMessage struct {
-	// We should only set either UID or ResourceID.
-	// Deprecate UID later once we fully migrate to ResourceID.
-	UID         *int
 	ResourceID  *string
 	ShowDeleted bool
 }
 
 // UpdateEnvironmentMessage is the message for updating an environment.
 type UpdateEnvironmentMessage struct {
-	UID        int
 	ResourceID string
 
 	Name      *string
@@ -52,11 +45,6 @@ type UpdateEnvironmentMessage struct {
 func (s *Store) GetEnvironmentV2(ctx context.Context, find *FindEnvironmentMessage) (*EnvironmentMessage, error) {
 	if find.ResourceID != nil {
 		if v, ok := s.environmentCache.Get(*find.ResourceID); ok {
-			return v, nil
-		}
-	}
-	if find.UID != nil {
-		if v, ok := s.environmentIDCache.Get(*find.UID); ok {
 			return v, nil
 		}
 	}
@@ -83,7 +71,6 @@ func (s *Store) GetEnvironmentV2(ctx context.Context, find *FindEnvironmentMessa
 	}
 
 	s.environmentCache.Add(environment.ResourceID, environment)
-	s.environmentIDCache.Add(environment.UID, environment)
 	return environment, nil
 }
 
@@ -106,7 +93,6 @@ func (s *Store) ListEnvironmentV2(ctx context.Context, find *FindEnvironmentMess
 
 	for _, environment := range environments {
 		s.environmentCache.Add(environment.ResourceID, environment)
-		s.environmentIDCache.Add(environment.UID, environment)
 	}
 	return environments, nil
 }
@@ -119,21 +105,17 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 	}
 	defer tx.Rollback()
 
-	var uid int
-	if err := tx.QueryRowContext(ctx, `
+	if _, err := tx.ExecContext(ctx, `
 			INSERT INTO environment (
 				resource_id,
 				name,
 				"order"
 			)
 			VALUES ($1, $2, $3)
-			RETURNING id
 		`,
 		create.ResourceID,
 		create.Title,
 		create.Order,
-	).Scan(
-		&uid,
 	); err != nil {
 		return nil, err
 	}
@@ -151,7 +133,7 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 	}
 	if _, err := upsertPolicyV2Impl(ctx, tx, &PolicyMessage{
 		ResourceType:      api.PolicyResourceTypeEnvironment,
-		ResourceUID:       uid,
+		Resource:          common.FormatEnvironment(create.ResourceID),
 		Type:              api.PolicyTypeEnvironmentTier,
 		InheritFromParent: true,
 		Payload:           string(payload),
@@ -170,11 +152,9 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 		Order:      create.Order,
 		Protected:  create.Protected,
 		Color:      create.Color,
-		UID:        uid,
 		Deleted:    false,
 	}
 	s.environmentCache.Add(environment.ResourceID, environment)
-	s.environmentIDCache.Add(environment.UID, environment)
 	return environment, nil
 }
 
@@ -188,13 +168,9 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, patch *UpdateEnvironmen
 		set, args = append(set, fmt.Sprintf(`"order" = $%d`, len(args)+1)), append(args, *v)
 	}
 	if v := patch.Delete; v != nil {
-		rowStatus := api.Normal
-		if *patch.Delete {
-			rowStatus = api.Archived
-		}
-		set, args = append(set, fmt.Sprintf(`"row_status" = $%d`, len(args)+1)), append(args, rowStatus)
+		set, args = append(set, fmt.Sprintf("deleted = $%d", len(args)+1)), append(args, *v)
 	}
-	args = append(args, patch.UID)
+	args = append(args, patch.ResourceID)
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -206,7 +182,7 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, patch *UpdateEnvironmen
 		if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
 			UPDATE environment
 			SET `+strings.Join(set, ", ")+`
-			WHERE id = $%d
+			WHERE resource_id = $%d
 		`, len(args)),
 			args...,
 		); err != nil {
@@ -220,11 +196,12 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, patch *UpdateEnvironmen
 	// TODO(d): consider moving tier to environment table to simplify things.
 	if patch.Protected != nil || patch.Color != nil {
 		resourceType := api.PolicyResourceTypeEnvironment
+		resource := common.FormatEnvironment(patch.ResourceID)
 		policyType := api.PolicyTypeEnvironmentTier
 		policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
 			ResourceType: &resourceType,
 			Type:         &policyType,
-			ResourceUID:  &patch.UID,
+			Resource:     &resource,
 		})
 		if err != nil {
 			return nil, err
@@ -253,7 +230,7 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, patch *UpdateEnvironmen
 		}
 		if _, err := upsertPolicyV2Impl(ctx, tx, &PolicyMessage{
 			ResourceType:      resourceType,
-			ResourceUID:       patch.UID,
+			Resource:          resource,
 			Type:              policyType,
 			InheritFromParent: true,
 			Payload:           string(payload),
@@ -268,7 +245,6 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, patch *UpdateEnvironmen
 	}
 	// Invalid the cache and read the value again.
 	s.environmentCache.Remove(patch.ResourceID)
-	s.environmentIDCache.Remove(patch.UID)
 
 	return s.GetEnvironmentV2(ctx, &FindEnvironmentMessage{
 		ResourceID: &patch.ResourceID,
@@ -294,26 +270,23 @@ func listEnvironmentImplV2(ctx context.Context, tx *Tx, find *FindEnvironmentMes
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("environment.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.UID; v != nil {
-		where, args = append(where, fmt.Sprintf("environment.id = $%d", len(args)+1)), append(args, *v)
-	}
 	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("environment.row_status = $%d", len(args)+1)), append(args, api.Normal)
+		where, args = append(where, fmt.Sprintf("environment.deleted = $%d", len(args)+1)), append(args, false)
 	}
 
 	var environments []*EnvironmentMessage
+	environmentResource := `format('environments/%s', environment.resource_id)`
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
-			environment.id,
 			environment.resource_id,
 			environment.name,
 			environment.order,
-			environment.row_status,
+			environment.deleted,
 			policy.payload
 		FROM environment
-		LEFT JOIN policy ON environment.id = policy.resource_id AND policy.resource_type = 'ENVIRONMENT' AND policy.type = 'bb.policy.environment-tier'
+		LEFT JOIN policy ON %s = policy.resource AND policy.resource_type = 'ENVIRONMENT' AND policy.type = 'bb.policy.environment-tier'
 		WHERE %s
-		ORDER BY environment.order ASC`, strings.Join(where, " AND ")),
+		ORDER BY environment.order ASC`, environmentResource, strings.Join(where, " AND ")),
 		args...,
 	)
 	if err != nil {
@@ -323,18 +296,15 @@ func listEnvironmentImplV2(ctx context.Context, tx *Tx, find *FindEnvironmentMes
 	for rows.Next() {
 		var environment EnvironmentMessage
 		var tierPayload sql.NullString
-		var rowStatus string
 		if err := rows.Scan(
-			&environment.UID,
 			&environment.ResourceID,
 			&environment.Title,
 			&environment.Order,
-			&rowStatus,
+			&environment.Deleted,
 			&tierPayload,
 		); err != nil {
 			return nil, err
 		}
-		environment.Deleted = convertRowStatusToDeleted(rowStatus)
 		if tierPayload.Valid {
 			policy := &storepb.EnvironmentTierPolicy{}
 			if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(tierPayload.String), policy); err != nil {
@@ -351,8 +321,4 @@ func listEnvironmentImplV2(ctx context.Context, tx *Tx, find *FindEnvironmentMes
 	}
 
 	return environments, nil
-}
-
-func convertRowStatusToDeleted(rowStatus string) bool {
-	return rowStatus == string(api.Archived)
 }
