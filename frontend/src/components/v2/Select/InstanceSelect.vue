@@ -1,23 +1,19 @@
 <template>
-  <NSelect
+  <ResourceSelect
     v-bind="$attrs"
     :value="instanceName"
     :options="options"
     :placeholder="$t('instance.select')"
-    :render-label="renderLabel"
-    :filter="filterByTitle"
-    :filterable="true"
+    :custom-label="renderLabel"
     :virtual-scroll="true"
     :fallback-option="false"
     :consistent-menu-width="false"
     class="bb-instance-select"
-    @update:value="$emit('update:instance-name', $event)"
+    @update:value="(val) => $emit('update:instance-name', val)"
   />
 </template>
 
 <script lang="ts" setup>
-import type { SelectOption } from "naive-ui";
-import { NSelect } from "naive-ui";
 import { computed, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useInstanceResourceList } from "@/store";
@@ -30,11 +26,7 @@ import type { Engine } from "@/types/proto/v1/common";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { supportedEngineV1List } from "@/utils";
 import { InstanceV1EngineIcon } from "../Model/Instance";
-
-interface InstanceSelectOption extends SelectOption {
-  value: string;
-  instance: InstanceResource;
-}
+import ResourceSelect from "./ResourceSelect.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -94,8 +86,7 @@ const combinedInstanceList = computed(() => {
   return list;
 });
 
-const renderLabel = (option: SelectOption) => {
-  const { instance } = option as InstanceSelectOption;
+const renderLabel = (instance: InstanceResource) => {
   if (instance.name === UNKNOWN_INSTANCE_NAME) {
     return t("instance.all");
   }
@@ -114,19 +105,14 @@ const renderLabel = (option: SelectOption) => {
 };
 
 const options = computed(() => {
-  return combinedInstanceList.value.map<InstanceSelectOption>((instance) => {
+  return combinedInstanceList.value.map((instance) => {
     return {
-      instance,
+      resource: instance,
       value: instance.name,
       label: instance.title,
     };
   });
 });
-
-const filterByTitle = (pattern: string, option: SelectOption) => {
-  const { instance } = option as InstanceSelectOption;
-  return instance.title.toLowerCase().includes(pattern.toLowerCase());
-};
 
 // The instance list might change if environment changes, and the previous selected id
 // might not exist in the new list. In such case, we need to reset the selection

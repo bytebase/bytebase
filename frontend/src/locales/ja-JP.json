@@ -1018,7 +1018,6 @@
     "encoding": "文字コード",
     "character-set": "キャラクターセット",
     "collation": "文字の並べ替え規則",
-    "select": "データベースの選択",
     "tables": "テーブル",
     "collections": "集める",
     "views": "ビュー",
@@ -2589,7 +2588,8 @@
     },
     "condition": {
       "self": "状態"
-    }
+    },
+    "select": "データベースグループを選択"
   },
   "export-center": {
     "self": "エクスポートセンター",

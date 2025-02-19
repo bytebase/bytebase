@@ -3,7 +3,7 @@
     :is="performant ? NPerformantEllipsis : NEllipsis"
     :line-clamp="lineClamp"
     :tooltip="{
-      showArrow: false,
+      showArrow: true,
       raw: true,
       contentStyle: tooltipStyle,
     }"
@@ -15,16 +15,16 @@
 <script lang="ts" setup>
 import { NEllipsis, NPerformantEllipsis } from "naive-ui";
 
-defineProps({
-  performant: {
-    type: Boolean,
-    default: false,
-  },
-  lineClamp: {
-    type: Number,
-    default: 1,
-  },
-});
+withDefaults(
+  defineProps<{
+    performant?: boolean;
+    lineClamp?: number;
+  }>(),
+  {
+    performant: false,
+    lineClamp: undefined,
+  }
+);
 
 const tooltipStyle = `
   border-radius: 0.25rem;
