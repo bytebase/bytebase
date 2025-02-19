@@ -44,6 +44,7 @@
           v-model:value="rolloutPolicy.roles"
           :disabled="disabled"
           multiple
+          @update:value="updateRoles(rolloutPolicy.roles)"
         />
         <NCheckbox
           :checked="isIssueCreatorChecked"
@@ -146,6 +147,15 @@ const toggleIssueRoles = (checked: boolean, role: string) => {
       automatic: false,
       roles: rolloutPolicy.value.roles,
       issueRoles: uniq(roles),
+    })
+  );
+};
+const updateRoles = (roles: string[]) => {
+  update(
+    RolloutPolicy.fromPartial({
+      automatic: false,
+      roles,
+      issueRoles: rolloutPolicy.value.issueRoles,
     })
   );
 };
