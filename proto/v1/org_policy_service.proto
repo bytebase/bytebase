@@ -279,11 +279,10 @@ enum PolicyResourceType {
 
 message RolloutPolicy {
   bool automatic = 1;
-  repeated string workspace_roles = 2;
-  repeated string project_roles = 3;
+  repeated string roles = 2;
   // roles/LAST_APPROVER
   // roles/CREATOR
-  repeated string issue_roles = 4;
+  repeated string issue_roles = 3;
 }
 
 message SlowQueryPolicy {
