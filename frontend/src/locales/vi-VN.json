@@ -1018,7 +1018,6 @@
     "encoding": "Mã hóa",
     "character-set": "Bộ ký tự",
     "collation": "Đối chiếu",
-    "select": "Chọn cơ sở dữ liệu",
     "tables": "Bảng",
     "collections": "Bộ sưu tập",
     "views": "Khung nhìn",
@@ -2589,7 +2588,8 @@
     },
     "condition": {
       "self": "Điều kiện"
-    }
+    },
+    "select": "Chọn nhóm cơ sở dữ liệu"
   },
   "export-center": {
     "self": "Trung tâm xuất",

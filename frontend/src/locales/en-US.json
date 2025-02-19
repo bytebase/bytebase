@@ -1018,7 +1018,6 @@
     "encoding": "Encoding",
     "character-set": "Character set",
     "collation": "Collation",
-    "select": "Select database",
     "tables": "Tables",
     "collections": "Collections",
     "views": "Views",
@@ -2589,7 +2588,8 @@
     },
     "condition": {
       "self": "Condition"
-    }
+    },
+    "select": "Select database group"
   },
   "export-center": {
     "self": "Export Center",

@@ -19,7 +19,6 @@
         :project-name="project.name"
         :database-name="state.databaseName"
         :environment-name="state.environmentName"
-        :placeholder="$t('db.select')"
         :allowed-engine-type-list="ALLOWED_ENGINES"
         :fallback-option="false"
         @update:database-name="handleDatabaseSelect"

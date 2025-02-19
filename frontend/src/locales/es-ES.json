@@ -1018,7 +1018,6 @@
     "encoding": "Codificación",
     "character-set": "Juego de caracteres",
     "collation": "Colación",
-    "select": "Seleccionar base de datos",
     "tables": "Tablas",
     "collections": "Colecciones",
     "views": "Vistas",
@@ -2589,7 +2588,8 @@
     },
     "condition": {
       "self": "Condición"
-    }
+    },
+    "select": "Seleccionar grupo de bases de datos"
   },
   "export-center": {
     "self": "centro de exportacion",
