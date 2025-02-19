@@ -86,6 +86,9 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, "bbdataarchive", "", nil)
+	a.NoError(err)
+
 	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "", nil)
 	a.NoError(err)
 
@@ -124,5 +127,5 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	dbMetadata, err = ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
 	a.NoError(err)
 
-	a.Equal(wantDBSchema2, deletedRegex.ReplaceAllString(dbMetadata.Schema, "xxx"))
+	a.Equal(wantDBSchema2, dbMetadata.Schema)
 }
