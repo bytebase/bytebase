@@ -125,7 +125,7 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 							s.stateCfg.InstanceOutstandingConnections.Decrement(instance.ResourceID)
 						}()
 						slog.Debug("Sync database schema", slog.String("instance", database.InstanceID), slog.String("database", database.DatabaseName))
-						if err := s.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
+						if err := s.SyncDatabaseSchema(ctx, database); err != nil {
 							slog.Debug("Failed to sync database schema",
 								slog.String("instance", database.InstanceID),
 								slog.String("databaseName", database.DatabaseName),
@@ -350,7 +350,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 }
 
 // SyncDatabaseSchema will sync the schema for a database.
-func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *store.DatabaseMessage, force bool) (int64, error) {
+func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *store.DatabaseMessage) (int64, error) {
 	if s.profile.Readonly {
 		return 0, nil
 	}
@@ -424,23 +424,11 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 	}); err != nil {
 		return 0, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
-
-	var oldDatabaseMetadata *storepb.DatabaseSchemaMetadata
-	var rawDump []byte
-	if dbSchema != nil {
-		oldDatabaseMetadata = dbSchema.GetMetadata()
-		rawDump = dbSchema.GetSchema()
+	var schemaBuf bytes.Buffer
+	if err := driver.Dump(ctx, &schemaBuf, databaseMetadata); err != nil {
+		return 0, errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
 	}
-
-	// Avoid updating dump everytime by dumping the schema only when the database metadata is changed.
-	// if oldDatabaseMetadata is nil and databaseMetadata is not, they are not equal resulting a sync.
-	if force || !common.EqualDatabaseSchemaMetadataFast(oldDatabaseMetadata, databaseMetadata) {
-		var schemaBuf bytes.Buffer
-		if err := driver.Dump(ctx, &schemaBuf, databaseMetadata); err != nil {
-			return 0, errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
-		}
-		rawDump = schemaBuf.Bytes()
-	}
+	rawDump := schemaBuf.Bytes()
 
 	if err := s.store.UpsertDBSchema(ctx,
 		database.InstanceID, database.DatabaseName,
@@ -468,7 +456,7 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 }
 
 // SyncDatabaseSchema will sync the schema for a database.
-func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage, force bool) (retErr error) {
+func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage) (retErr error) {
 	if s.profile.Readonly {
 		return nil
 	}
@@ -543,22 +531,11 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		return errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
 
-	var oldDatabaseMetadata *storepb.DatabaseSchemaMetadata
-	var rawDump []byte
-	if dbSchema != nil {
-		oldDatabaseMetadata = dbSchema.GetMetadata()
-		rawDump = dbSchema.GetSchema()
+	var schemaBuf bytes.Buffer
+	if err := driver.Dump(ctx, &schemaBuf, databaseMetadata); err != nil {
+		return errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
 	}
-
-	// Avoid updating dump everytime by dumping the schema only when the database metadata is changed.
-	// if oldDatabaseMetadata is nil and databaseMetadata is not, they are not equal resulting a sync.
-	if force || !common.EqualDatabaseSchemaMetadataFast(oldDatabaseMetadata, databaseMetadata) {
-		var schemaBuf bytes.Buffer
-		if err := driver.Dump(ctx, &schemaBuf, databaseMetadata); err != nil {
-			return errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
-		}
-		rawDump = schemaBuf.Bytes()
-	}
+	rawDump := schemaBuf.Bytes()
 
 	if err := s.store.UpsertDBSchema(ctx,
 		database.InstanceID, database.DatabaseName,

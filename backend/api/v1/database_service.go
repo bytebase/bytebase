@@ -363,7 +363,7 @@ func (s *DatabaseService) SyncDatabase(ctx context.Context, request *v1pb.SyncDa
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+	if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
 		return nil, err
 	}
 	return &v1pb.SyncDatabaseResponse{}, nil
@@ -474,7 +474,7 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if dbSchema == nil {
-		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to sync database schema for database %q, error %v", databaseName, err)
 		}
 		newDBSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
@@ -533,7 +533,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if dbSchema == nil {
-		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to sync database schema for database %q, error %v", databaseName, err)
 		}
 		newDBSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
