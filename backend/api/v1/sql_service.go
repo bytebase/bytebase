@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"regexp"
@@ -25,6 +26,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/masker"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -513,24 +515,113 @@ func queryRetry(
 	}
 
 	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil && !queryContext.Explain {
-		masker := NewQueryResultMasker(stores)
-		if err := masker.MaskResults(ctx, spans, results, instance, user, action); err != nil {
-			return nil, nil, duration, status.Error(codes.Internal, err.Error())
-		}
+		// TODO(zp): Refactor Document Database and RDBMS to use the same masking logic.
+		if instance.Engine == storepb.Engine_COSMOSDB {
+			objectSchema, err := getCosmosDBContainerObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, queryContext.Container)
+			if err != nil {
+				return nil, nil, duration, status.Error(codes.Internal, err.Error())
+			}
+			if objectSchema != nil {
+				// We store one query result document in one row.
+				for _, result := range results {
+					for _, row := range result.Rows {
+						if len(row.Values) != 1 {
+							continue
+						}
+						value := row.Values[0].GetStringValue()
+						if value == "" {
+							continue
+						}
+						semanticTypeToMaskerMap, err := buildSemanticTypeToMaskerMap(ctx, stores)
+						if err != nil {
+							return nil, nil, duration, status.Error(codes.Internal, err.Error())
+						}
+						// Unmarshal the document.
+						doc := make(map[string]any)
+						if err := json.Unmarshal([]byte(value), &doc); err != nil {
+							return nil, nil, duration, status.Errorf(codes.Internal, "failed to unmarshal document: %v", err)
+						}
+						// Mask the document.
+						maskedDoc, err := walkAndMaskJSON(doc, objectSchema, semanticTypeToMaskerMap)
+						if err != nil {
+							return nil, nil, duration, status.Errorf(codes.Internal, "failed to mask document: %v", err)
+						}
+						// Marshal the masked document.
+						maskedValue, err := json.Marshal(maskedDoc)
+						if err != nil {
+							return nil, nil, duration, status.Errorf(codes.Internal, "failed to marshal masked document: %v", err)
+						}
+						row.Values[0] = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_StringValue{
+								StringValue: string(maskedValue),
+							},
+						}
+					}
+				}
+			}
+		} else {
+			masker := NewQueryResultMasker(stores)
+			if err := masker.MaskResults(ctx, spans, results, instance, user, action); err != nil {
+				return nil, nil, duration, status.Error(codes.Internal, err.Error())
+			}
 
-		for i, result := range results {
-			if i >= len(sensitivePredicateColumns) {
-				continue
+			for i, result := range results {
+				if i >= len(sensitivePredicateColumns) {
+					continue
+				}
+				if len(sensitivePredicateColumns[i]) == 0 {
+					continue
+				}
+				result.Error = getSensitivePredicateColumnErrorMessages(sensitivePredicateColumns[i])
+				result.Rows = nil
+				result.RowsCount = 0
 			}
-			if len(sensitivePredicateColumns[i]) == 0 {
-				continue
-			}
-			result.Error = getSensitivePredicateColumnErrorMessages(sensitivePredicateColumns[i])
-			result.Rows = nil
-			result.RowsCount = 0
 		}
 	}
 	return results, spans, duration, nil
+}
+
+func buildSemanticTypeToMaskerMap(ctx context.Context, stores *store.Store) (map[string]masker.Masker, error) {
+	semanticTypeToMasker := map[string]masker.Masker{
+		"bb.default":         masker.NewDefaultFullMasker(),
+		"bb.default-partial": masker.NewDefaultRangeMasker(),
+	}
+	semanticTypesSetting, err := stores.GetSemanticTypesSetting(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get semantic types setting")
+	}
+	for _, semanticType := range semanticTypesSetting.GetTypes() {
+		masker := getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
+		semanticTypeToMasker[semanticType.GetId()] = masker
+	}
+
+	return semanticTypeToMasker, nil
+}
+
+func getCosmosDBContainerObjectSchema(ctx context.Context, stores *store.Store, instanceID string, databaseName string, containerName string) (*storepb.ObjectSchema, error) {
+	dbSchema, err := stores.GetDBSchema(ctx, instanceID, databaseName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database schema: %q", databaseName)
+	}
+
+	if dbSchema == nil {
+		return nil, nil
+	}
+
+	schemas := dbSchema.GetConfig().GetSchemas()
+	if len(schemas) == 0 {
+		return nil, nil
+	}
+
+	schema := schemas[0]
+	tables := schema.GetTables()
+	for _, table := range tables {
+		if table.GetName() == containerName {
+			return table.GetObjectSchema(), nil
+		}
+	}
+
+	return nil, nil
 }
 
 func getSensitivePredicateColumnErrorMessages(sensitiveColumns []base.ColumnResource) string {
