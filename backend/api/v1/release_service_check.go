@@ -233,7 +233,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %s", database.String())
 	}
 	if dbSchema == nil {
-		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
 			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to sync database schema for database %s", database.String())
 		}
 		dbSchema, err = s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)

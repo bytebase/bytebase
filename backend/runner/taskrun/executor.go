@@ -435,7 +435,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 	var syncHistoryPrevUID *int64
 	if mc.migrateType.NeedDump() {
 		opts.LogDatabaseSyncStart()
-		syncHistoryPrev, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database, false)
+		syncHistoryPrev, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database)
 		if err != nil {
 			opts.LogDatabaseSyncEnd(err.Error())
 			return false, errors.Wrapf(err, "failed to sync database metadata and schema")
@@ -475,7 +475,7 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 	}
 
 	if mc.migrateType.NeedDump() {
-		syncHistory, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database, false)
+		syncHistory, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database)
 		if err != nil {
 			return errors.Wrapf(err, "failed to sync database metadata and schema")
 		}

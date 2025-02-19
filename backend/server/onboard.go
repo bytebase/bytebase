@@ -90,7 +90,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	// Need to sync database schema so we can configure sensitive data policy and create the schema
 	// update issue later.
-	if err := s.schemaSyncer.SyncDatabaseSchema(ctx, testDatabase, false /* force */); err != nil {
+	if err := s.schemaSyncer.SyncDatabaseSchema(ctx, testDatabase); err != nil {
 		return errors.Wrapf(err, "failed to sync test sample database schema")
 	}
 
@@ -149,7 +149,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	// Need to sync database schema so we can configure sensitive data policy and create the schema
 	// update issue later.
-	if err := s.schemaSyncer.SyncDatabaseSchema(ctx, prodDatabase, false /* force */); err != nil {
+	if err := s.schemaSyncer.SyncDatabaseSchema(ctx, prodDatabase); err != nil {
 		return errors.Wrapf(err, "failed to sync prod sample database schema")
 	}
 

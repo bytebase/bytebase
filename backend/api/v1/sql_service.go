@@ -470,7 +470,7 @@ func queryRetry(
 		if err != nil {
 			return nil, nil, duration, err
 		}
-		if err := schemaSyncer.SyncDatabaseSchema(ctx, d, false /* force */); err != nil {
+		if err := schemaSyncer.SyncDatabaseSchema(ctx, d); err != nil {
 			return nil, nil, duration, errors.Wrapf(err, "failed to sync database schema for database %q", accessDatabaseName)
 		}
 	}
@@ -1474,7 +1474,7 @@ func (s *SQLService) SQLReviewCheck(
 			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %s", database.String())
 		}
 		if dbSchema == nil {
-			if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+			if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
 				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to sync database schema for database %s", database.String())
 			}
 			dbSchema, err = s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
@@ -1714,7 +1714,6 @@ func (*SQLService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadataReq
 	}
 	sanitizeCommentForSchemaMetadata(storeTargetMetadata, model.NewDatabaseConfig(targetConfig), request.ClassificationFromConfig)
 
-	storeSourceMetadata, storeTargetMetadata = trimDatabaseMetadata(storeSourceMetadata, storeTargetMetadata)
 	if err := checkDatabaseMetadataColumnType(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid target metadata: %v", err)
 	}
@@ -1739,129 +1738,6 @@ func (*SQLService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadataReq
 	return &v1pb.DiffMetadataResponse{
 		Diff: diff,
 	}, nil
-}
-
-func trimDatabaseMetadata(sourceMetadata *storepb.DatabaseSchemaMetadata, targetMetadata *storepb.DatabaseSchemaMetadata) (*storepb.DatabaseSchemaMetadata, *storepb.DatabaseSchemaMetadata) {
-	// TODO(d): handle indexes, etc.
-	sourceModel, targetModel := model.NewDatabaseMetadata(sourceMetadata), model.NewDatabaseMetadata(targetMetadata)
-	s, t := &storepb.DatabaseSchemaMetadata{}, &storepb.DatabaseSchemaMetadata{}
-	for _, schema := range sourceMetadata.GetSchemas() {
-		ts := targetModel.GetSchema(schema.GetName())
-		if ts == nil {
-			s.Schemas = append(s.Schemas, schema)
-			continue
-		}
-		trimSchema := &storepb.SchemaMetadata{Name: schema.GetName()}
-		for _, table := range schema.GetTables() {
-			tt := ts.GetTable(table.GetName())
-			if tt == nil {
-				trimSchema.Tables = append(trimSchema.Tables, table)
-				continue
-			}
-
-			if !common.EqualTable(table, tt.GetProto()) {
-				trimSchema.Tables = append(trimSchema.Tables, table)
-				continue
-			}
-		}
-		for _, view := range schema.GetViews() {
-			tv := ts.GetView(view.GetName())
-			if tv == nil {
-				trimSchema.Views = append(trimSchema.Views, view)
-				continue
-			}
-			if view.GetComment() != tv.GetProto().GetComment() {
-				trimSchema.Views = append(trimSchema.Views, view)
-				continue
-			}
-			if view.GetDefinition() != tv.Definition {
-				trimSchema.Views = append(trimSchema.Views, view)
-				continue
-			}
-		}
-		for _, function := range schema.GetFunctions() {
-			tf := ts.GetFunction(function.GetName())
-			if tf == nil {
-				trimSchema.Functions = append(trimSchema.Functions, function)
-				continue
-			}
-			if function.GetDefinition() != tf.Definition {
-				trimSchema.Functions = append(trimSchema.Functions, function)
-				continue
-			}
-		}
-		for _, procedure := range schema.GetProcedures() {
-			tp := ts.GetProcedure(procedure.GetName())
-			if tp == nil {
-				trimSchema.Procedures = append(trimSchema.Procedures, procedure)
-				continue
-			}
-			if procedure.GetDefinition() != tp.Definition {
-				trimSchema.Procedures = append(trimSchema.Procedures, procedure)
-				continue
-			}
-		}
-		// Always append empty schema to avoid creating schema duplicates.
-		s.Schemas = append(s.Schemas, trimSchema)
-	}
-
-	for _, schema := range targetMetadata.GetSchemas() {
-		ts := sourceModel.GetSchema(schema.GetName())
-		if ts == nil {
-			t.Schemas = append(t.Schemas, schema)
-			continue
-		}
-		trimSchema := &storepb.SchemaMetadata{Name: schema.GetName()}
-		for _, table := range schema.GetTables() {
-			tt := ts.GetTable(table.GetName())
-			if tt == nil {
-				trimSchema.Tables = append(trimSchema.Tables, table)
-				continue
-			}
-
-			if !common.EqualTable(table, tt.GetProto()) {
-				trimSchema.Tables = append(trimSchema.Tables, table)
-				continue
-			}
-		}
-		for _, view := range schema.GetViews() {
-			tv := ts.GetView(view.GetName())
-			if tv == nil {
-				trimSchema.Views = append(trimSchema.Views, view)
-				continue
-			}
-			if view.GetDefinition() != tv.Definition {
-				trimSchema.Views = append(trimSchema.Views, view)
-				continue
-			}
-		}
-		for _, function := range schema.GetFunctions() {
-			tf := ts.GetFunction(function.GetName())
-			if tf == nil {
-				trimSchema.Functions = append(trimSchema.Functions, function)
-				continue
-			}
-			if function.GetDefinition() != tf.Definition {
-				trimSchema.Functions = append(trimSchema.Functions, function)
-				continue
-			}
-		}
-		for _, procedure := range schema.GetProcedures() {
-			tp := ts.GetProcedure(procedure.GetName())
-			if tp == nil {
-				trimSchema.Procedures = append(trimSchema.Procedures, procedure)
-				continue
-			}
-			if procedure.GetDefinition() != tp.Definition {
-				trimSchema.Procedures = append(trimSchema.Procedures, procedure)
-				continue
-			}
-		}
-		// Always append empty schema to avoid creating schema duplicates.
-		t.Schemas = append(t.Schemas, trimSchema)
-	}
-
-	return s, t
 }
 
 func sanitizeCommentForSchemaMetadata(dbSchema *storepb.DatabaseSchemaMetadata, dbModelConfig *model.DatabaseConfig, classificationFromConfig bool) {
