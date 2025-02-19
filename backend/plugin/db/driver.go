@@ -46,6 +46,12 @@ type TableKey struct {
 	Table  string
 }
 
+type TableKeyWithColumns struct {
+	Schema  string
+	Table   string
+	Columns []*storepb.ColumnMetadata
+}
+
 // ColumnKey is the map key for table metadata.
 type ColumnKey struct {
 	Schema string
