@@ -1317,7 +1317,8 @@
       "info": "このオプションは、データベースへの変更を公開するときに手動で公開する必要があるかどうかを制御します。",
       "auto": "自動公開",
       "auto-info": "すべての事前チェックに合格すると、自動的にリリースされ、変更が反映されます。",
-      "manual-by-last-approver": "カスタム承認の最終承認者が公開されます",
+      "last-approver-from-custom-approval": "カスタム承認の最終承認者",
+      "select-at-least-one-role": "ロールアウトポリシーで少なくとも 1 つのロールを選択してください",
       "manual-by-dedicated-roles": "特定の役割の手動リリース",
       "manual-by-dedicated-roles-info": "以下の選択したロールのいずれかを許可し、「公開」ボタンをクリックして変更を実行します。"
     },

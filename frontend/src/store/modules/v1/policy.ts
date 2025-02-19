@@ -4,13 +4,12 @@ import { computed, unref, watchEffect, ref } from "vue";
 import { policyServiceClient } from "@/grpcweb";
 import { policyNamePrefix } from "@/store/modules/v1/common";
 import type { MaybeRef } from "@/types";
-import { UNKNOWN_USER_NAME, VirtualRoleType } from "@/types";
+import { UNKNOWN_USER_NAME } from "@/types";
 import { Policy } from "@/types/proto/v1/org_policy_service";
 import {
   PolicyType,
   PolicyResourceType,
   policyTypeToJSON,
-  RolloutPolicy,
 } from "@/types/proto/v1/org_policy_service";
 import { useCurrentUserV1 } from "../auth";
 
@@ -238,14 +237,6 @@ export const usePolicyByParentAndType = (
 };
 
 // Default RolloutPolicy payload is somehow strict to prevent auto rollout
-export const getDefaultRolloutPolicyPayload = () => {
-  return RolloutPolicy.fromPartial({
-    automatic: false,
-    issueRoles: [],
-    projectRoles: [],
-    workspaceRoles: [VirtualRoleType.WORKSPACE_ADMIN],
-  });
-};
 
 export const getEmptyRolloutPolicy = (
   parentPath: string,
@@ -264,9 +255,8 @@ export const getEmptyRolloutPolicy = (
     enforce: true,
     rolloutPolicy: {
       automatic: true,
+      roles: [],
       issueRoles: [],
-      projectRoles: [],
-      workspaceRoles: [],
     },
   });
 };
