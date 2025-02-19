@@ -492,6 +492,9 @@ func getTables(
 
 		tableMap[schemaName] = append(tableMap[schemaName], table)
 		tableOidMap[oid] = &db.TableKeyWithColumns{Schema: schemaName, Table: table.Name, Columns: table.Columns}
+		if oid == 149777963 {
+			slog.Debug("the owner table of account_choice_package_logs_id_seq", slog.String("schema", schemaName), slog.String("table", table.Name), slog.Int("columns", len(table.Columns)))
+		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, nil, nil, err
@@ -1022,6 +1025,7 @@ func getSequences(txn *sql.Tx, tableOidMap map[int]*db.TableKeyWithColumns, exte
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sequence owners")
 	}
+	slog.Debug("sequenceOwnerMapLength: %v", slog.Int("length", len(sequenceOwnerMap)))
 
 	query := `
 	SELECT
@@ -1086,8 +1090,18 @@ func getSequences(txn *sql.Tx, tableOidMap map[int]*db.TableKeyWithColumns, exte
 				// PostgreSQL column ID is 1-based.
 				if len(tableKey.Columns) > columnOidKey.ColumnID-1 {
 					sequence.OwnerColumn = tableKey.Columns[columnOidKey.ColumnID-1].Name
+				} else {
+					slog.Debug("sequence owner column not found", slog.String("schema", schemaName), slog.String("sequence", sequenceName), slog.Int("oid", oid), slog.Int("tableOid", columnOidKey.TableOid), slog.Int("columnOidKey", columnOidKey.ColumnID))
 				}
+			} else {
+				slog.Debug("sequence owner table not found", slog.String("schema", schemaName), slog.String("sequence", sequenceName), slog.Int("oid", oid), slog.Int("tableOid", columnOidKey.TableOid))
 			}
+		} else {
+			slog.Debug("sequence has no owner", slog.String("schema", schemaName), slog.String("sequence", sequenceName), slog.Int("oid", oid))
+		}
+
+		if sequence.Name == "account_choice_package_logs_id_seq" {
+			slog.Debug("sequence account_choice_package_logs_id_seq", slog.String("schema", schemaName), slog.String("sequence", sequenceName), slog.Int("oid", oid), slog.String("ownerTable", sequence.OwnerTable), slog.String("ownerColumn", sequence.OwnerColumn))
 		}
 
 		sequenceMap[schemaName] = append(sequenceMap[schemaName], sequence)

@@ -3,6 +3,7 @@ package pg
 import (
 	"context"
 	"io"
+	"log/slog"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -101,6 +102,7 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 	for _, schema := range metadataExceptBackup.Schemas {
 		for _, sequence := range schema.Sequences {
 			if sequence.OwnerTable == "" || sequence.OwnerColumn == "" {
+				slog.Debug("Sequence without owner table or column", slog.String("schema", schema.Name), slog.String("sequence", sequence.Name), slog.String("ownerTable", sequence.OwnerTable), slog.String("ownerColumn", sequence.OwnerColumn))
 				if err := writeCreateSequence(out, schema.Name, sequence); err != nil {
 					return err
 				}
