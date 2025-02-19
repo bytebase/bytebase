@@ -43,7 +43,7 @@ import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { TableMetadata } from "@/types/proto/v1/database_service";
 import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
-import { bytesToString, hasSchemaProperty, isGhostTable } from "@/utils";
+import { bytesToString, hasSchemaProperty } from "@/utils";
 import TableDetailDrawer from "./TableDetailDrawer.vue";
 
 type LocalState = {
@@ -239,15 +239,8 @@ const rowProps = (row: TableMetadata) => {
   };
 };
 
-const regularTableList = computed(() =>
-  props.tableList.filter((table) => !isGhostTable(table))
-);
-const reservedTableList = computed(() =>
-  props.tableList.filter((table) => isGhostTable(table))
-);
-
 const mixedTableList = computed(() => {
-  const tableList = [...regularTableList.value, ...reservedTableList.value];
+  const tableList = props.tableList;
   if (props.search) {
     return tableList.filter((table) => {
       return table.name.toLowerCase().includes(props.search.toLowerCase());

@@ -4,7 +4,6 @@ export * from "./collections";
 export * from "./link";
 export * from "./role";
 export * from "./slug";
-export * from "./table";
 export * from "./types";
 export * from "./util";
 export * from "./label";
