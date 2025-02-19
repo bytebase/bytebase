@@ -255,10 +255,6 @@ func convertToApprovalNode(node *storepb.ApprovalNode) *v1pb.ApprovalNode {
 		v1node.Payload = &v1pb.ApprovalNode_Role{
 			Role: payload.Role,
 		}
-	case *storepb.ApprovalNode_ExternalNodeId:
-		v1node.Payload = &v1pb.ApprovalNode_ExternalNodeId{
-			ExternalNodeId: payload.ExternalNodeId,
-		}
 	}
 	return v1node
 }

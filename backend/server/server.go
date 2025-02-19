@@ -48,7 +48,6 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/mail"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
-	"github.com/bytebase/bytebase/backend/runner/relay"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/runner/slowquerysync"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
@@ -75,7 +74,6 @@ type Server struct {
 	slowQuerySyncer    *slowquerysync.Syncer
 	mailSender         *mail.SlowQueryWeeklyMailSender
 	approvalRunner     *approval.Runner
-	relayRunner        *relay.Runner
 	runnerWG           sync.WaitGroup
 
 	webhookManager *webhook.Manager
@@ -278,8 +276,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	if !profile.Readonly {
 		s.slowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
 		s.mailSender = mail.NewSender(s.store, s.stateCfg, s.iamManager)
-		s.relayRunner = relay.NewRunner(storeInstance, s.webhookManager, s.stateCfg)
-		s.approvalRunner = approval.NewRunner(storeInstance, s.sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.relayRunner, s.licenseService)
+		s.approvalRunner = approval.NewRunner(storeInstance, s.sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.licenseService)
 
 		s.taskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg, s.webhookManager, profile, s.licenseService)
 		s.taskSchedulerV2.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
@@ -363,7 +360,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		}
 		return nil
 	}
-	releaseService, planService, rolloutService, issueService, sqlService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, s.relayRunner, postCreateUser, s.secret)
+	releaseService, planService, rolloutService, issueService, sqlService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, postCreateUser, s.secret)
 	if err != nil {
 		return nil, err
 	}
@@ -395,8 +392,6 @@ func (s *Server) Run(ctx context.Context, port int) error {
 		go s.mailSender.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
 		go s.approvalRunner.Run(ctx, &s.runnerWG)
-		s.runnerWG.Add(1)
-		go s.relayRunner.Run(ctx, &s.runnerWG)
 
 		s.runnerWG.Add(1)
 		go s.metricReporter.Run(ctx, &s.runnerWG)

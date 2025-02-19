@@ -12,11 +12,7 @@
       class="w-4 h-4 text-white"
     />
     <template v-else-if="step.status === 'CURRENT'">
-      <heroicons-outline:external-link
-        v-if="isExternalApprovalStep"
-        class="w-4 h-4"
-      />
-      <heroicons-outline:user v-else class="w-4 h-4" />
+      <heroicons-outline:user class="w-4 h-4" />
     </template>
     <template v-else>
       {{ step.index + 1 }}
@@ -31,10 +27,6 @@ import type { WrappedReviewStep } from "@/types";
 const props = defineProps<{
   step: WrappedReviewStep;
 }>();
-
-const isExternalApprovalStep = computed(() => {
-  return !!props.step.step.nodes[0]?.externalNodeId;
-});
 
 const iconClass = computed(() => {
   const { status } = props.step;

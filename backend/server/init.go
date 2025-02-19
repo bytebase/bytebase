@@ -134,18 +134,6 @@ func (s *Server) getInitSetting(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	// initial external approval setting
-	externalApprovalSettingValue, err := protojson.Marshal(&storepb.ExternalApprovalSetting{})
-	if err != nil {
-		return "", errors.Wrap(err, "failed to marshal initial external approval setting")
-	}
-	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:  api.SettingWorkspaceExternalApproval,
-		Value: string(externalApprovalSettingValue),
-	}); err != nil {
-		return "", err
-	}
-
 	// initial schema template setting
 	schemaTemplateSettingValue, err := protojson.Marshal(&storepb.SchemaTemplateSetting{})
 	if err != nil {

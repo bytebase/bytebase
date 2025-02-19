@@ -133,23 +133,6 @@ func (s *Store) GetWorkspaceApprovalSetting(ctx context.Context) (*storepb.Works
 	return payload, nil
 }
 
-// GetWorkspaceExternalApprovalSetting gets the workspace external approval setting.
-func (s *Store) GetWorkspaceExternalApprovalSetting(ctx context.Context) (*storepb.ExternalApprovalSetting, error) {
-	setting, err := s.GetSettingV2(ctx, api.SettingWorkspaceExternalApproval)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get setting %v", api.SettingWorkspaceExternalApproval)
-	}
-	if setting == nil {
-		return nil, errors.Errorf("cannot find setting %v", api.SettingWorkspaceExternalApproval)
-	}
-
-	payload := new(storepb.ExternalApprovalSetting)
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), payload); err != nil {
-		return nil, err
-	}
-	return payload, nil
-}
-
 // GetSemanticTypesSetting gets the semantic types setting.
 func (s *Store) GetSemanticTypesSetting(ctx context.Context) (*storepb.SemanticTypeSetting, error) {
 	setting, err := s.GetSettingV2(ctx, api.SettingSemanticTypes)
