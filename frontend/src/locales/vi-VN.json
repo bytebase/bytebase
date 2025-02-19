@@ -2392,14 +2392,6 @@
       "skip": "Bỏ qua phê duyệt thủ công",
       "risk-not-configured-tips": "Đảm bảo bạn đã xác định {link}.",
       "the-related-risk-rules": "các quy tắc rủi ro liên quan",
-      "external-approval": {
-        "self": "Phê duyệt bên ngoài",
-        "delete": "Xóa nút phê duyệt bên ngoài?",
-        "endpoint": "Điểm cuối",
-        "view-node": "Xem nút phê duyệt bên ngoài",
-        "create-node": "Tạo nút phê duyệt bên ngoài",
-        "edit-node": "Chỉnh sửa nút phê duyệt bên ngoài"
-      },
       "issue-review": {
         "sent-back": "Đã gửi lại",
         "review-sent-back-by": "Đánh giá đã gửi lại bởi {user}"
