@@ -1119,14 +1119,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ExternalApprovalSetting"><span class="badge">M</span>ExternalApprovalSetting</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ExternalApprovalSetting.Node"><span class="badge">M</span>ExternalApprovalSetting.Node</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.GetSettingRequest"><span class="badge">M</span>GetSettingRequest</a>
                 </li>
               
@@ -10417,13 +10409,6 @@ view, function names.</p></td>
                   <td><p>Format: roles/{role} </p></td>
                 </tr>
               
-                <tr>
-                  <td>external_node_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -13322,69 +13307,6 @@ and write back to the schema metadata. </p></td>
 
         
       
-        <h3 id="bytebase.v1.ExternalApprovalSetting">ExternalApprovalSetting</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>nodes</td>
-                  <td><a href="#bytebase.v1.ExternalApprovalSetting.Node">ExternalApprovalSetting.Node</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ExternalApprovalSetting.Node">ExternalApprovalSetting.Node</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A unique identifier for a node in UUID format.
-We will also include the id in the message sending to the external relay service to identify the node. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The title of the node. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>endpoint</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The external endpoint for the relay service, e.g. &#34;http://hello:1234&#34;. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.GetSettingRequest">GetSettingRequest</h3>
         <p>The request message for getting a setting.</p>
 
@@ -14099,13 +14021,6 @@ server would not persist the setting value if it is true. </p></td>
                 <tr>
                   <td>workspace_trial_setting_value</td>
                   <td><a href="#bytebase.v1.WorkspaceTrialSetting">WorkspaceTrialSetting</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>external_approval_setting_value</td>
-                  <td><a href="#bytebase.v1.ExternalApprovalSetting">ExternalApprovalSetting</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>

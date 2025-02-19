@@ -1,9 +1,7 @@
 import { computed, unref } from "vue";
-import { t } from "@/plugins/i18n";
 import {
   candidatesOfApprovalStepV1,
   useAuthStore,
-  useSettingV1Store,
   useUserStore,
 } from "@/store";
 import type {
@@ -154,7 +152,6 @@ export const useWrappedReviewStepsV1 = (
 
 export const displayReviewRoleTitle = (node: ApprovalNode) => {
   const {
-    externalNodeId,
     type,
     groupValue = ApprovalNode_GroupValue.UNRECOGNIZED,
     role,
@@ -163,20 +160,7 @@ export const displayReviewRoleTitle = (node: ApprovalNode) => {
     return "";
   }
 
-  if (externalNodeId) {
-    const setting = useSettingV1Store().getSettingByName(
-      "bb.workspace.approval.external"
-    );
-    const nodes = setting?.value?.externalApprovalSettingValue?.nodes ?? [];
-    const node = nodes.find((n) => n.id === externalNodeId);
-    if (node) {
-      return node.title;
-    } else {
-      return `${t(
-        "custom-approval.approval-flow.external-approval.self"
-      )}: ${externalNodeId}}`;
-    }
-  } else if (groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER) {
+  if (groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER) {
     return displayRoleTitle(PresetRoleType.WORKSPACE_ADMIN);
   } else if (groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA) {
     return displayRoleTitle(PresetRoleType.WORKSPACE_DBA);

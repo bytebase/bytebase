@@ -15,13 +15,6 @@
       >
         <FlowsPanel />
       </NTabPane>
-      <NTabPane
-        name="external-approval"
-        :tab="$t('custom-approval.approval-flow.external-approval.self')"
-        display-directive="show:lazy"
-      >
-        <ExternalApprovalNodesPanel />
-      </NTabPane>
     </NTabs>
   </div>
 </template>
@@ -29,7 +22,6 @@
 <script lang="ts" setup>
 import { NTabPane, NTabs } from "naive-ui";
 import { provideRiskFilter } from "../common/RiskFilter";
-import ExternalApprovalNodesPanel from "./ExternalApprovalNodesPanel";
 import FlowsPanel from "./FlowsPanel";
 import RulesPanel from "./RulesPanel";
 import { useCustomApprovalContext } from "./context";

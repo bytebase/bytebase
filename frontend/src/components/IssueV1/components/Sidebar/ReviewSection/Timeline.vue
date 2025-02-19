@@ -18,12 +18,9 @@
                   {{ approvalNodeText(step.step.nodes[0]) }}
                 </NPerformantEllipsis>
               </div>
-              <div v-if="isExternalApprovalStep(step.step)" class="shrink-0">
-                <ExternalApprovalSyncButton />
-              </div>
             </div>
           </template>
-          <template v-if="!isExternalApprovalStep(step.step)" #footer>
+          <template #footer>
             <i18n-t
               keypath="custom-approval.issue-review.approved-by-n"
               tag="div"
@@ -74,11 +71,8 @@
             </li>
           </ul>
           <hr />
-          <template v-if="!isExternalApprovalStep(step.step)">
+          <template>
             <Candidates :step="step" />
-          </template>
-          <template v-else>
-            <ExternalApprovalSyncButton />
           </template>
         </div>
       </template>
@@ -96,11 +90,9 @@ import {
 import { useIssueContext } from "@/components/IssueV1/logic";
 import type { WrappedReviewStep } from "@/types";
 import { type User } from "@/types/proto/v1/user_service";
-import type { ApprovalStep } from "@/types/proto/v1/issue_service";
 import { approvalNodeText } from "@/utils";
 import Approver from "./Approver.vue";
 import Candidates from "./Candidates.vue";
-import ExternalApprovalSyncButton from "./ExternalApprovalNodeSyncButton.vue";
 import TimelineIcon from "./TimelineIcon.vue";
 
 defineProps<{
@@ -109,7 +101,4 @@ defineProps<{
 
 const { issue } = useIssueContext();
 
-const isExternalApprovalStep = (step: ApprovalStep) => {
-  return !!step.nodes[0]?.externalNodeId;
-};
 </script>

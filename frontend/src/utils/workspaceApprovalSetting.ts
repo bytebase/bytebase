@@ -9,7 +9,7 @@ import {
   resolveCELExpr,
 } from "@/plugins/cel";
 import { t, te } from "@/plugins/i18n";
-import { useSettingV1Store, useUserStore } from "@/store";
+import { useUserStore } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import type { ParsedApprovalRule, UnrecognizedApprovalRule } from "@/types";
 import {
@@ -57,22 +57,12 @@ export const approvalNodeRoleText = (role: string) => {
 };
 
 export const approvalNodeText = (node: ApprovalNode): string => {
-  const { groupValue, role, externalNodeId } = node;
+  const { groupValue, role } = node;
   if (groupValue && groupValue !== ApprovalNode_GroupValue.UNRECOGNIZED) {
     return approvalNodeGroupValueText(groupValue);
   }
   if (role) {
     return approvalNodeRoleText(role);
-  }
-  if (externalNodeId) {
-    const setting = useSettingV1Store().getSettingByName(
-      "bb.workspace.approval.external"
-    );
-    const nodes = setting?.value?.externalApprovalSettingValue?.nodes ?? [];
-    const node = nodes.find((n) => n.id === externalNodeId);
-    if (node) {
-      return node.title;
-    }
   }
   return "";
 };

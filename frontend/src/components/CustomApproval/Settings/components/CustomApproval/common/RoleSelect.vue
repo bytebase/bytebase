@@ -2,7 +2,7 @@
   <NSelect
     style="width: 12rem"
     :options="options"
-    :value="value.groupValue ?? value.role ?? value.externalNodeId"
+    :value="value.groupValue ?? value.role"
     :placeholder="$t('custom-approval.approval-flow.node.select-approver')"
     :consistent-menu-width="false"
     :disabled="!allowAdmin"
@@ -15,13 +15,12 @@ import { type SelectOption, type SelectGroupOption, NSelect } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoleStore, useSettingV1Store } from "@/store";
+import { useRoleStore } from "@/store";
 import type { ApprovalNode } from "@/types/proto/v1/issue_service";
 import {
   ApprovalNode_GroupValue,
   ApprovalNode_Type,
 } from "@/types/proto/v1/issue_service";
-import { ExternalApprovalSetting } from "@/types/proto/v1/setting_service";
 import { isCustomRole } from "@/utils";
 import { approvalNodeGroupValueText, approvalNodeRoleText } from "@/utils";
 import { useCustomApprovalContext } from "../context";
@@ -40,20 +39,9 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const settingStore = useSettingV1Store();
 const context = useCustomApprovalContext();
 const { allowAdmin } = context;
 const { roleList } = storeToRefs(useRoleStore());
-
-const settingValue = computed(() => {
-  const setting = settingStore.getSettingByName(
-    "bb.workspace.approval.external"
-  );
-  return (
-    setting?.value?.externalApprovalSettingValue ??
-    ExternalApprovalSetting.fromJSON({})
-  );
-});
 
 const options = computed(() => {
   const presetGroupValueNodes = [
@@ -81,17 +69,7 @@ const options = computed(() => {
       value: role.name,
     }));
 
-  const externalApprovalNodes =
-    settingValue.value.nodes.map<ApprovalNodeSelectOption>((node) => ({
-      node: {
-        type: ApprovalNode_Type.ANY_IN_GROUP,
-        externalNodeId: node.id,
-      },
-      label: node.title,
-      value: node.id,
-    }));
-
-  if (customRoleNodes.length === 0 && externalApprovalNodes.length === 0) {
+  if (customRoleNodes.length === 0) {
     return presetGroupValueNodes;
   }
 
@@ -110,14 +88,6 @@ const options = computed(() => {
       children: customRoleNodes,
     };
     groups.push(custom);
-  }
-  if (externalApprovalNodes.length > 0) {
-    const external: SelectGroupOption = {
-      type: "group",
-      label: t("custom-approval.approval-flow.external-approval.self"),
-      children: externalApprovalNodes,
-    };
-    groups.push(external);
   }
 
   return groups;

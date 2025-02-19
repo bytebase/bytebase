@@ -236,7 +236,6 @@ export interface ApprovalNode {
     | undefined;
   /** Format: roles/{role} */
   role?: string | undefined;
-  externalNodeId?: string | undefined;
 }
 
 /**
@@ -827,12 +826,7 @@ export const ApprovalStep: MessageFns<ApprovalStep> = {
 };
 
 function createBaseApprovalNode(): ApprovalNode {
-  return {
-    type: ApprovalNode_Type.TYPE_UNSPECIFIED,
-    groupValue: undefined,
-    role: undefined,
-    externalNodeId: undefined,
-  };
+  return { type: ApprovalNode_Type.TYPE_UNSPECIFIED, groupValue: undefined, role: undefined };
 }
 
 export const ApprovalNode: MessageFns<ApprovalNode> = {
@@ -845,9 +839,6 @@ export const ApprovalNode: MessageFns<ApprovalNode> = {
     }
     if (message.role !== undefined) {
       writer.uint32(26).string(message.role);
-    }
-    if (message.externalNodeId !== undefined) {
-      writer.uint32(34).string(message.externalNodeId);
     }
     return writer;
   },
@@ -883,14 +874,6 @@ export const ApprovalNode: MessageFns<ApprovalNode> = {
           message.role = reader.string();
           continue;
         }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.externalNodeId = reader.string();
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -905,7 +888,6 @@ export const ApprovalNode: MessageFns<ApprovalNode> = {
       type: isSet(object.type) ? approvalNode_TypeFromJSON(object.type) : ApprovalNode_Type.TYPE_UNSPECIFIED,
       groupValue: isSet(object.groupValue) ? approvalNode_GroupValueFromJSON(object.groupValue) : undefined,
       role: isSet(object.role) ? globalThis.String(object.role) : undefined,
-      externalNodeId: isSet(object.externalNodeId) ? globalThis.String(object.externalNodeId) : undefined,
     };
   },
 
@@ -920,9 +902,6 @@ export const ApprovalNode: MessageFns<ApprovalNode> = {
     if (message.role !== undefined) {
       obj.role = message.role;
     }
-    if (message.externalNodeId !== undefined) {
-      obj.externalNodeId = message.externalNodeId;
-    }
     return obj;
   },
 
@@ -934,7 +913,6 @@ export const ApprovalNode: MessageFns<ApprovalNode> = {
     message.type = object.type ?? ApprovalNode_Type.TYPE_UNSPECIFIED;
     message.groupValue = object.groupValue ?? undefined;
     message.role = object.role ?? undefined;
-    message.externalNodeId = object.externalNodeId ?? undefined;
     return message;
   },
 };
