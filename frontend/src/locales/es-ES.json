@@ -1018,7 +1018,6 @@
     "encoding": "Codificación",
     "character-set": "Juego de caracteres",
     "collation": "Colación",
-    "select": "Seleccionar base de datos",
     "tables": "Tablas",
     "collections": "Colecciones",
     "views": "Vistas",

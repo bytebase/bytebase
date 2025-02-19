@@ -54,6 +54,7 @@ const props = withDefaults(
   }>(),
   {
     customLabel: undefined,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     filter: (pattern: string, resource: T) => false,
     size: "medium",
     fallbackOption: false,

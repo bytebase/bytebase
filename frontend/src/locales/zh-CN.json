@@ -1018,7 +1018,6 @@
     "encoding": "字符编码",
     "character-set": "字符集",
     "collation": "字符排序规则",
-    "select": "选择数据库",
     "tables": "表",
     "collections": "集合",
     "views": "视图",
