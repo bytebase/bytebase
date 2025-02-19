@@ -196,11 +196,11 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 		if u.RolloutPolicy.GetAutomatic() {
 			usersGetters = append(usersGetters, getUsersFromUsers(e.Issue.Creator))
 		} else {
-			for _, workspaceRole := range u.RolloutPolicy.GetWorkspaceRoles() {
+			for _, workspaceRole := range u.RolloutPolicy.GetRoles() {
 				role := api.Role(strings.TrimPrefix(workspaceRole, "roles/"))
 				usersGetters = append(usersGetters, m.getUsersFromWorkspaceRole(role))
 			}
-			for _, projectRole := range u.RolloutPolicy.GetProjectRoles() {
+			for _, projectRole := range u.RolloutPolicy.GetRoles() {
 				role := api.Role(strings.TrimPrefix(projectRole, "roles/"))
 				usersGetters = append(usersGetters, getUsersFromProjectRole(m.store, role, e.Project.ResourceID))
 			}

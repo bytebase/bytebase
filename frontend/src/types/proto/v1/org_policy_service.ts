@@ -388,8 +388,7 @@ export interface Policy {
 
 export interface RolloutPolicy {
   automatic: boolean;
-  workspaceRoles: string[];
-  projectRoles: string[];
+  roles: string[];
   /**
    * roles/LAST_APPROVER
    * roles/CREATOR
@@ -1418,7 +1417,7 @@ export const Policy: MessageFns<Policy> = {
 };
 
 function createBaseRolloutPolicy(): RolloutPolicy {
-  return { automatic: false, workspaceRoles: [], projectRoles: [], issueRoles: [] };
+  return { automatic: false, roles: [], issueRoles: [] };
 }
 
 export const RolloutPolicy: MessageFns<RolloutPolicy> = {
@@ -1426,14 +1425,11 @@ export const RolloutPolicy: MessageFns<RolloutPolicy> = {
     if (message.automatic !== false) {
       writer.uint32(8).bool(message.automatic);
     }
-    for (const v of message.workspaceRoles) {
+    for (const v of message.roles) {
       writer.uint32(18).string(v!);
     }
-    for (const v of message.projectRoles) {
-      writer.uint32(26).string(v!);
-    }
     for (const v of message.issueRoles) {
-      writer.uint32(34).string(v!);
+      writer.uint32(26).string(v!);
     }
     return writer;
   },
@@ -1458,19 +1454,11 @@ export const RolloutPolicy: MessageFns<RolloutPolicy> = {
             break;
           }
 
-          message.workspaceRoles.push(reader.string());
+          message.roles.push(reader.string());
           continue;
         }
         case 3: {
           if (tag !== 26) {
-            break;
-          }
-
-          message.projectRoles.push(reader.string());
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
             break;
           }
 
@@ -1489,12 +1477,7 @@ export const RolloutPolicy: MessageFns<RolloutPolicy> = {
   fromJSON(object: any): RolloutPolicy {
     return {
       automatic: isSet(object.automatic) ? globalThis.Boolean(object.automatic) : false,
-      workspaceRoles: globalThis.Array.isArray(object?.workspaceRoles)
-        ? object.workspaceRoles.map((e: any) => globalThis.String(e))
-        : [],
-      projectRoles: globalThis.Array.isArray(object?.projectRoles)
-        ? object.projectRoles.map((e: any) => globalThis.String(e))
-        : [],
+      roles: globalThis.Array.isArray(object?.roles) ? object.roles.map((e: any) => globalThis.String(e)) : [],
       issueRoles: globalThis.Array.isArray(object?.issueRoles)
         ? object.issueRoles.map((e: any) => globalThis.String(e))
         : [],
@@ -1506,11 +1489,8 @@ export const RolloutPolicy: MessageFns<RolloutPolicy> = {
     if (message.automatic !== false) {
       obj.automatic = message.automatic;
     }
-    if (message.workspaceRoles?.length) {
-      obj.workspaceRoles = message.workspaceRoles;
-    }
-    if (message.projectRoles?.length) {
-      obj.projectRoles = message.projectRoles;
+    if (message.roles?.length) {
+      obj.roles = message.roles;
     }
     if (message.issueRoles?.length) {
       obj.issueRoles = message.issueRoles;
@@ -1524,8 +1504,7 @@ export const RolloutPolicy: MessageFns<RolloutPolicy> = {
   fromPartial(object: DeepPartial<RolloutPolicy>): RolloutPolicy {
     const message = createBaseRolloutPolicy();
     message.automatic = object.automatic ?? false;
-    message.workspaceRoles = object.workspaceRoles?.map((e) => e) || [];
-    message.projectRoles = object.projectRoles?.map((e) => e) || [];
+    message.roles = object.roles?.map((e) => e) || [];
     message.issueRoles = object.issueRoles?.map((e) => e) || [];
     return message;
   },

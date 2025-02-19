@@ -657,10 +657,9 @@ func convertToV1RolloutPolicyPayload(payloadStr string) (*v1pb.Policy_RolloutPol
 
 func convertToStorePBRolloutPolicy(policy *v1pb.RolloutPolicy) *storepb.RolloutPolicy {
 	return &storepb.RolloutPolicy{
-		Automatic:      policy.Automatic,
-		WorkspaceRoles: policy.WorkspaceRoles,
-		ProjectRoles:   policy.ProjectRoles,
-		IssueRoles:     policy.IssueRoles,
+		Automatic:  policy.Automatic,
+		Roles:      policy.Roles,
+		IssueRoles: policy.IssueRoles,
 	}
 }
 

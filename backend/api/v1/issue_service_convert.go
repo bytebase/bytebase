@@ -129,9 +129,7 @@ func (s *IssueService) convertToIssueReleasers(ctx context.Context, issue *store
 		return releasers, nil
 	}
 
-	releasers = append(releasers, policy.WorkspaceRoles...)
-	releasers = append(releasers, policy.ProjectRoles...)
-
+	releasers = append(releasers, policy.Roles...)
 	for _, role := range policy.IssueRoles {
 		switch role {
 		case "roles/CREATOR":

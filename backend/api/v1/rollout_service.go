@@ -1273,12 +1273,7 @@ func (s *RolloutService) canUserRunStageTasks(ctx context.Context, user *store.U
 		return true, nil
 	}
 
-	for _, role := range p.WorkspaceRoles {
-		if roles[role] {
-			return true, nil
-		}
-	}
-	for _, role := range p.ProjectRoles {
+	for _, role := range p.Roles {
 		if roles[role] {
 			return true, nil
 		}
