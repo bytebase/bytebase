@@ -236,6 +236,7 @@ func NewMigrationContext(ctx context.Context, taskID int, database *store.Databa
 	migrationContext.InspectorConnectionConfig.Key.Port = port
 	migrationContext.CliUser = dataSource.Username
 	migrationContext.CliPassword = password
+	migrationContext.GhostDatabaseName = "bbdataarchive"
 	migrationContext.DatabaseName = database.DatabaseName
 	migrationContext.OriginalTableName = tableName
 	migrationContext.AlterStatement = strings.Join(strings.Fields(statement), " ")
