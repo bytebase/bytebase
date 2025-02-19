@@ -95,7 +95,6 @@ const emit = defineEmits<{
 }>();
 
 const rolloutPolicy = ref(cloneDeep(props.policy.rolloutPolicy!));
-console.log("rolloutPolicy", rolloutPolicy.value);
 
 const hasRolloutPolicyFeature = featureToRef("bb.feature.rollout-policy");
 
@@ -117,11 +116,19 @@ const update = (rp: RolloutPolicy) => {
 };
 const toggleAutomaticRollout = (checked: boolean) => {
   update(
-    RolloutPolicy.fromPartial({
-      automatic: checked,
-      roles: [],
-      issueRoles: [],
-    })
+    RolloutPolicy.fromPartial(
+      checked
+        ? {
+            automatic: true,
+            roles: [],
+            issueRoles: [],
+          }
+        : {
+            automatic: false,
+            roles: rolloutPolicy.value.roles,
+            issueRoles: rolloutPolicy.value.issueRoles,
+          }
+    )
   );
 };
 const toggleIssueRoles = (checked: boolean, role: string) => {
