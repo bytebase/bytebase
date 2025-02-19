@@ -134,7 +134,7 @@ func (exec *SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, driverCtx co
 		Type:              storepb.TaskRunLog_DATABASE_SYNC_START,
 		DatabaseSyncStart: &storepb.TaskRunLog_DatabaseSyncStart{},
 	})
-	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
+	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
 		exec.s.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
 			Type: storepb.TaskRunLog_DATABASE_SYNC_END,
 			DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -98,117 +97,5 @@ func TestGetClassificationAndUserComment(t *testing.T) {
 			rebuildComment := GetCommentFromClassificationAndUserComment(classification, userComment)
 			assert.Equal(t, test.rawComment, rebuildComment)
 		})
-	}
-}
-func TestEqualTable(t *testing.T) {
-	tests := []struct {
-		s    *storepb.TableMetadata
-		t    *storepb.TableMetadata
-		want bool
-	}{
-		{
-			s:    &storepb.TableMetadata{Comment: "a"},
-			t:    &storepb.TableMetadata{Comment: "b"},
-			want: false,
-		},
-		{
-			s: &storepb.TableMetadata{
-				Columns: []*storepb.ColumnMetadata{
-					{Name: "a"},
-				},
-			},
-			t: &storepb.TableMetadata{
-				Columns: []*storepb.ColumnMetadata{
-					{Name: "b"},
-				},
-			},
-			want: false,
-		},
-		{
-			s: &storepb.TableMetadata{
-				Columns: []*storepb.ColumnMetadata{
-					{Name: "a"},
-				},
-			},
-			t: &storepb.TableMetadata{
-				Columns: []*storepb.ColumnMetadata{
-					{Name: "a"},
-					{Name: "b"},
-				},
-			},
-			want: false,
-		},
-		{
-			s: &storepb.TableMetadata{
-				Columns: []*storepb.ColumnMetadata{
-					{Name: "a", Type: "int"},
-					{Name: "b", Type: "int"},
-				},
-			},
-			t: &storepb.TableMetadata{
-				Columns: []*storepb.ColumnMetadata{
-					{Name: "a", Type: "int"},
-					{Name: "b", Type: "varchar"},
-				},
-			},
-			want: false,
-		},
-		{
-			s: &storepb.TableMetadata{
-				Columns: []*storepb.ColumnMetadata{
-					{Name: "a", Type: "int"},
-				},
-			},
-			t: &storepb.TableMetadata{
-				Columns: []*storepb.ColumnMetadata{
-					{Name: "a", Type: "int", Comment: "hello?"},
-				},
-			},
-			want: false,
-		},
-		{
-			s: &storepb.TableMetadata{
-				Columns: []*storepb.ColumnMetadata{
-					{Name: "a", Type: "int"},
-				},
-			},
-			t: &storepb.TableMetadata{
-				Columns: []*storepb.ColumnMetadata{
-					{Name: "a", Type: "int", UserComment: "hello?"},
-				},
-			},
-			want: false,
-		},
-		{
-			s: &storepb.TableMetadata{
-				Columns: []*storepb.ColumnMetadata{
-					{Name: "a", Type: "int", DefaultValue: &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "abc"}},
-				},
-			},
-			t: &storepb.TableMetadata{
-				Columns: []*storepb.ColumnMetadata{
-					{Name: "a", Type: "int", DefaultValue: &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "abc"}},
-				},
-			},
-			want: true,
-		},
-		{
-			s: &storepb.TableMetadata{
-				Columns: []*storepb.ColumnMetadata{
-					{Name: "a", Type: "int", DefaultValue: &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "abc"}},
-				},
-			},
-			t: &storepb.TableMetadata{
-				Columns: []*storepb.ColumnMetadata{
-					{Name: "a", Type: "int", DefaultValue: &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "cba"}},
-				},
-			},
-			want: false,
-		},
-	}
-
-	for i, tc := range tests {
-		got := EqualTable(tc.s, tc.t)
-		require.Equal(t, tc.want, got, i)
 	}
 }

@@ -327,14 +327,14 @@ func (exec *DataUpdateExecutor) backupData(
 	}
 
 	if instance.Engine != storepb.Engine_POSTGRES {
-		if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, backupDatabase, false /* force */); err != nil {
+		if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, backupDatabase); err != nil {
 			slog.Error("failed to sync backup database schema",
 				slog.String("database", payload.PreUpdateBackupDetail.Database),
 				log.BBError(err),
 			)
 		}
 	} else {
-		if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
+		if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
 			slog.Error("failed to sync backup database schema",
 				slog.String("database", fmt.Sprintf("/instances/%s/databases/%s", instance.ResourceID, database.DatabaseName)),
 				log.BBError(err),
