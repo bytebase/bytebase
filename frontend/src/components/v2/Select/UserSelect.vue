@@ -1,23 +1,21 @@
 <template>
-  <NSelect
-    :filterable="true"
-    :virtual-scroll="true"
+  <ResourceSelect
     :multiple="multiple"
-    :value="value"
-    :options="options"
-    :fallback-option="fallbackOption"
-    :filter="filterByTitle"
-    :render-label="renderLabel"
-    :placeholder="$t('settings.members.select-user', multiple ? 2 : 1)"
+    :value="user"
+    :values="users"
     :size="size"
+    :options="options"
+    :custom-label="renderLabel"
+    :placeholder="$t('settings.members.select-user', multiple ? 2 : 1)"
+    :filter="filterByEmail"
+    :show-resource-name="false"
     class="bb-user-select"
-    @update:value="handleValueUpdated"
+    @update:value="(val) => $emit('update:user', val)"
+    @update:values="(val) => $emit('update:users', val)"
   />
 </template>
 
 <script lang="tsx" setup>
-import type { SelectGroupOption, SelectOption, SelectProps } from "naive-ui";
-import { NSelect } from "naive-ui";
 import { computed, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import UserIcon from "~icons/heroicons-outline/user";
@@ -38,14 +36,10 @@ import {
   isValidProjectName,
   PRESET_WORKSPACE_ROLES,
 } from "@/types";
-import { UserType, type User } from "@/types/proto/v1/user_service";
 import { State } from "@/types/proto/v1/common";
+import { UserType, type User } from "@/types/proto/v1/user_service";
 import { extractUserUID } from "@/utils";
-
-export interface UserSelectOption extends SelectOption {
-  value: string;
-  user: User;
-}
+import ResourceSelect from "./ResourceSelect.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -62,8 +56,6 @@ const props = withDefaults(
     allowedWorkspaceRoleList?: string[];
     autoReset?: boolean;
     filter?: (user: User, index: number) => boolean;
-    mapOptions?: (users: User[]) => (UserSelectOption | SelectGroupOption)[];
-    fallbackOption?: SelectProps["fallbackOption"];
     size?: "tiny" | "small" | "medium" | "large";
   }>(),
   {
@@ -83,8 +75,6 @@ const props = withDefaults(
     ],
     autoReset: true,
     filter: undefined,
-    mapOptions: undefined,
-    fallbackOption: false,
     size: "medium",
   }
 );
@@ -98,14 +88,6 @@ const { t } = useI18n();
 const projectV1Store = useProjectV1Store();
 const userStore = useUserStore();
 const workspaceStore = useWorkspaceV1Store();
-
-const value = computed(() => {
-  if (props.multiple) {
-    return props.users || [];
-  } else {
-    return props.user;
-  }
-});
 
 const prepare = () => {
   if (props.projectName && isValidProjectName(props.projectName)) {
@@ -218,22 +200,6 @@ const combinedUserList = computed(() => {
   return list;
 });
 
-const handleValueUpdated = (value: string | string[]) => {
-  if (props.multiple) {
-    if (!value) {
-      // normalize value
-      value = [];
-    }
-    emit("update:users", value as string[]);
-  } else {
-    if (value === null) {
-      // normalize value
-      value = "";
-    }
-    emit("update:user", value as string);
-  }
-};
-
 const renderAvatar = (user: User) => {
   if (user.name === UNKNOWN_USER_NAME) {
     return (
@@ -248,11 +214,7 @@ const renderAvatar = (user: User) => {
   }
 };
 
-const renderLabel = (option: SelectOption) => {
-  if (option.type === "group") {
-    return option.label as string;
-  }
-  const { user } = option as UserSelectOption;
+const renderLabel = (user: User) => {
   const avatar = renderAvatar(user);
   const title =
     user.name === SYSTEM_BOT_USER_NAME
@@ -278,25 +240,17 @@ const renderLabel = (option: SelectOption) => {
 };
 
 const options = computed(() => {
-  if (props.mapOptions) {
-    return props.mapOptions(combinedUserList.value);
-  }
-  return combinedUserList.value.map<UserSelectOption>((user) => {
+  return combinedUserList.value.map((user) => {
     return {
-      user,
+      resource: user,
       value: extractUserUID(user.name),
       label: user.title,
     };
   });
 });
 
-const filterByTitle = (pattern: string, option: SelectOption) => {
-  const { user } = option as UserSelectOption;
-  pattern = pattern.toLowerCase();
-  return (
-    user.title.toLowerCase().includes(pattern) ||
-    user.email.includes(pattern.toLowerCase())
-  );
+const filterByEmail = (pattern: string, user: User) => {
+  return user.email.includes(pattern);
 };
 
 // The user list might change if props change, and the previous selected id
