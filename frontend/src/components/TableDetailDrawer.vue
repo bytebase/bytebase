@@ -22,12 +22,6 @@
                       class="pt-2 pb-2.5 text-xl font-bold leading-6 text-main truncate flex items-center gap-x-3"
                     >
                       {{ getTableName(table.name) }}
-                      <BBBadge
-                        v-if="isGhostTable(table)"
-                        text="gh-ost"
-                        :can-remove="false"
-                        class="text-xs"
-                      />
                     </h1>
                   </div>
                 </div>
@@ -256,7 +250,6 @@ import { computedAsync } from "@vueuse/core";
 import { CodeIcon } from "lucide-vue-next";
 import { NButton, NPopover } from "naive-ui";
 import { computed, reactive, ref } from "vue";
-import { BBBadge } from "@/bbkit";
 import ClassificationLevelBadge from "@/components/SchemaTemplate/ClassificationLevelBadge.vue";
 import TableSchemaViewer from "@/components/TableSchemaViewer.vue";
 import {
@@ -286,7 +279,6 @@ import {
   hasTableEngineProperty,
   instanceV1SupportsTrigger,
   isDatabaseV1Queryable,
-  isGhostTable,
   supportStringifyMetadata,
 } from "@/utils";
 import ColumnDataTable from "./ColumnDataTable/index.vue";
