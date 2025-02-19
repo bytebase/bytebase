@@ -153,7 +153,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get functions from database %q", driver.databaseName)
 	}
-	sequenceMap, err := getSequences(txn, extensionDepend)
+	sequenceMap, err := getSequences(txn, tableOidMap, extensionDepend)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sequences from database %q", driver.databaseName)
 	}
@@ -447,7 +447,7 @@ func getTables(
 	indexMap map[db.TableKey][]*storepb.IndexMetadata,
 	triggerMap map[db.TableKey][]*storepb.TriggerMetadata,
 	extensionDepend map[int]bool,
-) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ExternalTableMetadata, map[int]*db.TableKey, error) {
+) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ExternalTableMetadata, map[int]*db.TableKeyWithColumns, error) {
 	foreignKeysMap, err := getForeignKeys(txn)
 	if err != nil {
 		return nil, nil, nil, errors.Wrapf(err, "failed to get foreign keys")
@@ -458,7 +458,7 @@ func getTables(
 	}
 
 	tableMap := make(map[string][]*storepb.TableMetadata)
-	tableOidMap := make(map[int]*db.TableKey)
+	tableOidMap := make(map[int]*db.TableKeyWithColumns)
 	query := getListTableQuery(isAtLeastPG10)
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -491,7 +491,7 @@ func getTables(
 		table.Triggers = triggerMap[key]
 
 		tableMap[schemaName] = append(tableMap[schemaName], table)
-		tableOidMap[oid] = &db.TableKey{Schema: schemaName, Table: table.Name}
+		tableOidMap[oid] = &db.TableKeyWithColumns{Schema: schemaName, Table: table.Name, Columns: table.Columns}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, nil, nil, err
@@ -1017,7 +1017,12 @@ func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 }
 
 // getSequences gets all sequences of a database.
-func getSequences(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*storepb.SequenceMetadata, error) {
+func getSequences(txn *sql.Tx, tableOidMap map[int]*db.TableKeyWithColumns, extensionDepend map[int]bool) (map[string][]*storepb.SequenceMetadata, error) {
+	sequenceOwnerMap, err := getSequenceOwners(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sequence owners")
+	}
+
 	query := `
 	SELECT
 		pc.oid,
@@ -1075,55 +1080,56 @@ func getSequences(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 			LastValue: lastValueStr,
 			Comment:   sequenceComment,
 		}
+		if columnOidKey, ok := sequenceOwnerMap[oid]; ok {
+			if tableKey, ok := tableOidMap[columnOidKey.TableOid]; ok {
+				sequence.OwnerTable = tableKey.Table
+				// PostgreSQL column ID is 1-based.
+				if len(tableKey.Columns) > columnOidKey.ColumnID-1 {
+					sequence.OwnerColumn = tableKey.Columns[columnOidKey.ColumnID-1].Name
+				}
+			}
+		}
+
 		sequenceMap[schemaName] = append(sequenceMap[schemaName], sequence)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	sequenceOwnerMap, err := getSequenceOwners(txn)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sequence owners")
-	}
-
-	for schemaName, list := range sequenceMap {
-		for _, sequence := range list {
-			if ownerColumn, ok := sequenceOwnerMap[db.SequenceKey{Schema: schemaName, Sequence: sequence.Name}]; ok {
-				sequence.OwnerTable = ownerColumn.Table
-				sequence.OwnerColumn = ownerColumn.Column
-			}
-		}
-	}
-
 	return sequenceMap, nil
 }
 
-func getSequenceOwners(txn *sql.Tx) (map[db.SequenceKey]db.ColumnKey, error) {
-	query := fmt.Sprintf(`
+type ColumnOidKey struct {
+	TableOid int
+	ColumnID int
+}
+
+func getSequenceOwners(txn *sql.Tx) (map[int]ColumnOidKey, error) {
+	query := `
 	SELECT
-		ns.nspname as schema_name,
-		seq.relname as sequence_name,
-		tab.relname as table_name,
-		attr.attname as column_name
-	FROM pg_class as seq
-		JOIN pg_depend as dep ON (seq.relfilenode = dep.objid)
-		JOIN pg_class as tab ON (dep.refobjid = tab.relfilenode)
-		JOIN pg_attribute as attr ON (attr.attnum = dep.refobjsubid AND attr.attrelid = dep.refobjid)
-		JOIN pg_namespace as ns ON (tab.relnamespace = ns.oid)
-	WHERE ns.nspname NOT IN (%s) AND seq.relkind = 'S';
-	`, pgparser.SystemSchemaWhereClause)
+		c.oid,
+		refobjid AS owning_tab,
+		refobjsubid AS owning_col
+	FROM pg_class c
+  		LEFT JOIN pg_depend d ON
+  			(c.relkind =  'S' AND
+                d.classid = 'pg_class'::regclass AND d.objid = c.oid AND
+                d.objsubid = 0 AND
+                d.refclassid = 'pg_class'::regclass AND d.deptype IN ('a', 'i'))
+	WHERE refobjid is NOT NULL and refobjsubid is NOT NULL;`
+
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	sequenceOwnerMap := make(map[db.SequenceKey]db.ColumnKey)
+	sequenceOwnerMap := make(map[int]ColumnOidKey)
 	for rows.Next() {
-		var schemaName, sequenceName, tableName, columnName string
-		if err := rows.Scan(&schemaName, &sequenceName, &tableName, &columnName); err != nil {
+		var oid, tableOid, columnID int
+		if err := rows.Scan(&oid, &tableOid, &columnID); err != nil {
 			return nil, err
 		}
-		sequenceOwnerMap[db.SequenceKey{Schema: schemaName, Sequence: sequenceName}] = db.ColumnKey{Schema: schemaName, Table: tableName, Column: columnName}
+		sequenceOwnerMap[oid] = ColumnOidKey{TableOid: tableOid, ColumnID: columnID}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -1348,7 +1354,8 @@ order by function_schema, function_name;`, pgparser.SystemSchemaWhereClause)
 func getFunctions(
 	txn *sql.Tx,
 	functionDependencyTables map[int][]int,
-	tableOidMap, viewOidMap, materializedViewOidMap map[int]*db.TableKey,
+	tableOidMap map[int]*db.TableKeyWithColumns,
+	viewOidMap, materializedViewOidMap map[int]*db.TableKey,
 	extensionDepend map[int]bool,
 ) (map[string][]*storepb.FunctionMetadata, error) {
 	functionMap := make(map[string][]*storepb.FunctionMetadata)
