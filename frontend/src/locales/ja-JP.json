@@ -2589,7 +2589,8 @@
     },
     "condition": {
       "self": "状態"
-    }
+    },
+    "select": "データベースグループを選択"
   },
   "export-center": {
     "self": "エクスポートセンター",

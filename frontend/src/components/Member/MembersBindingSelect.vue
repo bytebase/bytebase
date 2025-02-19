@@ -52,11 +52,11 @@
 
       <GroupSelect
         key="group-select"
-        :value="memberList"
+        :groups="memberList"
         :disabled="disabled"
         :multiple="true"
         :project-name="projectName"
-        @update:value="onMemberListUpdate($event as string[])"
+        @update:groups="onMemberListUpdate"
       />
     </div>
   </div>

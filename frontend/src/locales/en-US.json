@@ -2589,7 +2589,8 @@
     },
     "condition": {
       "self": "Condition"
-    }
+    },
+    "select": "Select database group"
   },
   "export-center": {
     "self": "Export Center",

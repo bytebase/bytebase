@@ -1,31 +1,25 @@
 <template>
-  <NSelect
+  <ResourceSelect
     v-bind="$attrs"
-    :value="combinedValue"
-    :options="options"
     :placeholder="$t('environment.select')"
-    :filterable="true"
     :multiple="multiple"
-    :filter="filterByName"
-    :render-label="renderLabel"
+    :value="environmentName"
+    :values="environmentNames"
+    :options="options"
+    :custom-label="renderLabel"
     class="bb-environment-select"
-    @update:value="handleValueUpdated"
+    @update:value="(val) => $emit('update:environment-name', val)"
+    @update:values="(val) => $emit('update:environment-names', val)"
   />
 </template>
 
 <script lang="tsx" setup>
-import type { SelectOption } from "naive-ui";
-import { NSelect } from "naive-ui";
 import { computed } from "vue";
 import { useEnvironmentV1Store } from "@/store";
 import { State } from "@/types/proto/v1/common";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import { EnvironmentV1Name } from "../Model";
-
-interface EnvironmentSelectOption extends SelectOption {
-  value: string;
-  environment: Environment;
-}
+import ResourceSelect from "./ResourceSelect.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -48,35 +42,11 @@ const props = withDefaults(
   }
 );
 
-const emit = defineEmits<{
+defineEmits<{
   (event: "update:environment-name", name: string | undefined): void;
   (event: "update:environment-names", names: string[]): void;
 }>();
 const environmentV1Store = useEnvironmentV1Store();
-
-const combinedValue = computed(() => {
-  if (props.multiple) {
-    return props.environmentNames || [];
-  } else {
-    return props.environmentName;
-  }
-});
-
-const handleValueUpdated = (value: string | string[]) => {
-  if (props.multiple) {
-    if (!value) {
-      // normalize value
-      value = [];
-    }
-    emit("update:environment-names", value as string[]);
-  } else {
-    if (value === null) {
-      // normalize value
-      value = "";
-    }
-    emit("update:environment-name", value as string);
-  }
-};
 
 const rawEnvironmentList = computed(() => {
   const list = environmentV1Store.getEnvironmentList(true /* showDeleted */);
@@ -100,43 +70,22 @@ const combinedEnvironmentList = computed(() => {
 });
 
 const options = computed(() => {
-  return combinedEnvironmentList.value.map<EnvironmentSelectOption>(
-    (environment) => {
-      return {
-        environment,
-        value: environment.name,
-        label: environment.title,
-      };
-    }
-  );
+  return combinedEnvironmentList.value.map((environment) => {
+    return {
+      resource: environment,
+      value: environment.name,
+      label: environment.title,
+    };
+  });
 });
 
-const renderLabel = (option: SelectOption) => {
-  const { environment } = option as EnvironmentSelectOption;
-
+const renderLabel = (environment: Environment) => {
   return (
     <EnvironmentV1Name
       environment={environment}
       showIcon={props.showProductionIcon}
       link={false}
-    >
-      {{
-        suffix: () => (
-          <span class="opacity-60 ml-1">
-            {props.renderSuffix(environment.name)}
-          </span>
-        ),
-      }}
-    </EnvironmentV1Name>
-  );
-};
-
-const filterByName = (pattern: string, option: SelectOption) => {
-  const { environment } = option as EnvironmentSelectOption;
-  pattern = pattern.toLowerCase();
-  return (
-    environment.name.toLowerCase().includes(pattern) ||
-    environment.title.toLowerCase().includes(pattern)
+    />
   );
 };
 </script>

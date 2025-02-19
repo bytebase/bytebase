@@ -2589,7 +2589,8 @@
     },
     "condition": {
       "self": "Condición"
-    }
+    },
+    "select": "Seleccionar grupo de bases de datos"
   },
   "export-center": {
     "self": "centro de exportacion",

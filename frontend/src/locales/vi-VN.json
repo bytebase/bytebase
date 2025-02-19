@@ -2589,7 +2589,8 @@
     },
     "condition": {
       "self": "Điều kiện"
-    }
+    },
+    "select": "Chọn nhóm cơ sở dữ liệu"
   },
   "export-center": {
     "self": "Trung tâm xuất",

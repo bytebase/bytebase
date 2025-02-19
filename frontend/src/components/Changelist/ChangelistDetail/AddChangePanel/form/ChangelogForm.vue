@@ -23,6 +23,7 @@
       <DatabaseSelect
         v-model:database-name="state.databaseName"
         :project-name="project.name"
+        style="max-width: max-content"
       />
       <NCheckboxGroup v-model:value="state.changelogTypes">
         <NCheckbox :value="Changelog_Type.MIGRATE">DDL</NCheckbox>

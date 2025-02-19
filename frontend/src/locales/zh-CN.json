@@ -2589,7 +2589,8 @@
     },
     "condition": {
       "self": "条件"
-    }
+    },
+    "select": "选择数据库组"
   },
   "export-center": {
     "self": "导出中心",

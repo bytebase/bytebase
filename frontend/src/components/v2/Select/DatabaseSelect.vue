@@ -1,26 +1,20 @@
 <template>
-  <NSelect
-    :value="combinedValue"
-    :options="options"
-    :placeholder="placeholder ?? $t('database.select')"
-    :virtual-scroll="true"
-    :multiple="multiple"
-    :filter="filterByDatabaseName"
-    :filterable="true"
-    :clearable="clearable"
-    class="bb-database-select"
-    style="width: 12rem"
+  <ResourceSelect
     v-bind="$attrs"
-    :render-label="renderLabel"
-    @update:value="handleValueUpdated"
+    class="bb-database-select"
+    :placeholder="$t('database.select')"
+    :multiple="multiple"
+    :value="databaseName"
+    :values="databaseNames"
+    :options="options"
+    :custom-label="renderLabel"
+    @update:value="(val) => $emit('update:database-name', val)"
+    @update:values="(val) => $emit('update:database-names', val)"
   />
 </template>
 
 <script lang="ts" setup>
-import type { SelectOption, SelectRenderLabel } from "naive-ui";
-import { NSelect } from "naive-ui";
 import { computed, h, watch } from "vue";
-import { useSlots } from "vue";
 import { useI18n } from "vue-i18n";
 import { useDatabaseV1Store } from "@/store";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
@@ -35,13 +29,8 @@ import {
 import type { Engine } from "@/types/proto/v1/common";
 import { instanceV1Name, supportedEngineV1List } from "@/utils";
 import { InstanceV1EngineIcon } from "../Model";
+import ResourceSelect from "./ResourceSelect.vue";
 
-interface DatabaseSelectOption extends SelectOption {
-  value: string;
-  database: ComposedDatabase;
-}
-
-const slots = useSlots();
 const props = withDefaults(
   defineProps<{
     databaseName?: string; // UNKNOWN_DATABASE_NAME stands for "ALL"
@@ -52,7 +41,6 @@ const props = withDefaults(
     allowedEngineTypeList?: readonly Engine[];
     includeAll?: boolean;
     autoReset?: boolean;
-    placeholder?: string;
     filter?: (database: ComposedDatabase, index: number) => boolean;
     multiple?: boolean;
     clearable?: boolean;
@@ -66,7 +54,6 @@ const props = withDefaults(
     allowedEngineTypeList: () => supportedEngineV1List(),
     includeAll: false,
     autoReset: true,
-    placeholder: undefined,
     filter: undefined,
     multiple: false,
     clearable: false,
@@ -80,30 +67,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { ready } = useDatabaseV1List(props.projectName || props.instanceName);
-
-const combinedValue = computed(() => {
-  if (props.multiple) {
-    return props.databaseNames || [];
-  } else {
-    return props.databaseName;
-  }
-});
-
-const handleValueUpdated = (value: string | string[]) => {
-  if (props.multiple) {
-    if (!value) {
-      // normalize value
-      value = [];
-    }
-    emit("update:database-names", value as string[]);
-  } else {
-    if (value === null) {
-      // normalize value
-      value = "";
-    }
-    emit("update:database-name", value as string);
-  }
-};
 
 const rawDatabaseList = computed(() => {
   const list = useDatabaseV1Store().databaseListByUser;
@@ -154,25 +117,16 @@ const combinedDatabaseList = computed(() => {
 });
 
 const options = computed(() => {
-  return combinedDatabaseList.value.map<DatabaseSelectOption>((database) => {
+  return combinedDatabaseList.value.map((database) => {
     return {
-      database,
+      resource: database,
       value: database.name,
       label: database.databaseName,
     };
   });
 });
 
-const renderLabel: SelectRenderLabel = (option) => {
-  const { database } = option as DatabaseSelectOption;
-  if (!database) {
-    return;
-  }
-
-  if (slots.default) {
-    return slots.default({ database });
-  }
-
+const renderLabel = (database: ComposedDatabase) => {
   const children = [h("div", {}, [database.databaseName])];
   if (isValidDatabaseName(database.name)) {
     // prefix engine icon
@@ -200,11 +154,6 @@ const renderLabel: SelectRenderLabel = (option) => {
     },
     children
   );
-};
-
-const filterByDatabaseName = (pattern: string, option: SelectOption) => {
-  const { database } = option as DatabaseSelectOption;
-  return database.databaseName.toLowerCase().includes(pattern.toLowerCase());
 };
 
 // The database list might change if environment changes, and the previous selected id
