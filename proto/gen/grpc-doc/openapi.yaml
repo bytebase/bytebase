@@ -12547,11 +12547,7 @@ components:
             properties:
                 automatic:
                     type: boolean
-                workspaceRoles:
-                    type: array
-                    items:
-                        type: string
-                projectRoles:
+                roles:
                     type: array
                     items:
                         type: string

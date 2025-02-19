@@ -3653,8 +3653,7 @@ RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restrict
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | automatic | [bool](#bool) |  |  |
-| workspace_roles | [string](#string) | repeated |  |
-| project_roles | [string](#string) | repeated |  |
+| roles | [string](#string) | repeated |  |
 | issue_roles | [string](#string) | repeated | roles/LAST_APPROVER roles/CREATOR |
 
 

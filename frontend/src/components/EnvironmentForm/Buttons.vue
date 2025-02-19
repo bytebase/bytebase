@@ -37,9 +37,12 @@
 <script setup lang="ts">
 import { cloneDeep, isEqual } from "lodash-es";
 import { NButton } from "naive-ui";
+import { useI18n } from "vue-i18n";
+import { pushNotification } from "@/store";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { useEnvironmentFormContext } from "./context";
 
+const { t } = useI18n();
 const {
   state,
   environment,
@@ -72,6 +75,27 @@ const createEnvironment = () => {
 };
 
 const updateEnvironment = () => {
+  if (!isEqual(rolloutPolicy.value, state.value.rolloutPolicy)) {
+    // Validate rollout policy.
+    if (
+      !state.value.rolloutPolicy.rolloutPolicy?.automatic &&
+      state.value.rolloutPolicy.rolloutPolicy?.roles.length === 0 &&
+      state.value.rolloutPolicy.rolloutPolicy?.issueRoles.length === 0
+    ) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("policy.rollout.select-at-least-one-role"),
+      });
+      return;
+    }
+    events.emit("update-policy", {
+      environment: state.value.environment,
+      policyType: PolicyType.ROLLOUT_POLICY,
+      policy: state.value.rolloutPolicy,
+    });
+  }
+
   const env = cloneDeep(environment.value);
   if (
     state.value.environment.title !== env.title ||
@@ -85,14 +109,6 @@ const updateEnvironment = () => {
       color: state.value.environment.color,
     };
     events.emit("update", environmentPatch);
-  }
-
-  if (!isEqual(rolloutPolicy.value, state.value.rolloutPolicy)) {
-    events.emit("update-policy", {
-      environment: state.value.environment,
-      policyType: PolicyType.ROLLOUT_POLICY,
-      policy: state.value.rolloutPolicy,
-    });
   }
 };
 </script>
