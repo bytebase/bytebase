@@ -6,7 +6,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func walkAndMaskJSON(data any, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (interface{}, error) {
+func walkAndMaskJSON(data any, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (any, error) {
 	switch data := data.(type) {
 	case map[string]any:
 		if objectSchema.Type == storepb.ObjectSchema_OBJECT {
