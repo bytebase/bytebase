@@ -714,7 +714,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		return nil, status.Errorf(codes.Internal, "failed to check if the approval is approved, error: %v", err)
 	}
 
-	newApprovers, issueComments, err := utils.HandleIncomingApprovalSteps(ctx, s.store, issue, payload.Approval)
+	newApprovers, err := utils.HandleIncomingApprovalSteps(payload.Approval)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to handle incoming approval steps, error: %v", err)
 	}
@@ -751,11 +751,6 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 			Payload:  p,
 		}, user.ID); err != nil {
 			return err
-		}
-		for _, ic := range issueComments {
-			if _, err := s.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
-				return err
-			}
 		}
 		return nil
 	}(); err != nil {
@@ -995,16 +990,16 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 		return nil, status.Errorf(codes.PermissionDenied, "cannot request issues because you are not the issue creator")
 	}
 
-	var newApprovers []*storepb.IssuePayloadApproval_Approver
+	var updatedApprovers []*storepb.IssuePayloadApproval_Approver
 	for _, approver := range payload.Approval.Approvers {
 		if approver.Status == storepb.IssuePayloadApproval_Approver_REJECTED {
 			continue
 		}
-		newApprovers = append(newApprovers, approver)
+		updatedApprovers = append(updatedApprovers, approver)
 	}
-	payload.Approval.Approvers = newApprovers
+	payload.Approval.Approvers = updatedApprovers
 
-	newApprovers, issueComments, err := utils.HandleIncomingApprovalSteps(ctx, s.store, issue, payload.Approval)
+	newApprovers, err := utils.HandleIncomingApprovalSteps(payload.Approval)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to handle incoming approval steps, error: %v", err)
 	}
@@ -1058,11 +1053,6 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 			Payload:  p,
 		}, user.ID); err != nil {
 			return err
-		}
-		for _, ic := range issueComments {
-			if _, err := s.store.CreateIssueComment(ctx, ic, api.SystemBotID); err != nil {
-				return err
-			}
 		}
 		return nil
 	}(); err != nil {

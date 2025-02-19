@@ -275,25 +275,24 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 
 // HandleIncomingApprovalSteps handles incoming approval steps.
 // - Blocks approval steps if no user can approve the step.
-func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) ([]*storepb.IssuePayloadApproval_Approver, []*store.IssueCommentMessage, error) {
+func HandleIncomingApprovalSteps(approval *storepb.IssuePayloadApproval) ([]*storepb.IssuePayloadApproval_Approver, error) {
 	if len(approval.ApprovalTemplates) == 0 {
-		return nil, nil, nil
+		return nil, nil
 	}
 
 	var approvers []*storepb.IssuePayloadApproval_Approver
-	var issueComments []*store.IssueCommentMessage
 
 	step := FindNextPendingStep(approval.ApprovalTemplates[0], approval.Approvers)
 	if step == nil {
-		return nil, nil, nil
+		return nil, nil
 	}
 	if len(step.Nodes) != 1 {
-		return nil, nil, errors.Errorf("expecting one node but got %v", len(step.Nodes))
+		return nil, errors.Errorf("expecting one node but got %v", len(step.Nodes))
 	}
 	if step.Type != storepb.ApprovalStep_ANY {
-		return nil, nil, errors.Errorf("expecting ANY step type but got %v", step.Type)
+		return nil, errors.Errorf("expecting ANY step type but got %v", step.Type)
 	}
-	return approvers, issueComments, nil
+	return approvers, nil
 }
 
 // UpdateProjectPolicyFromGrantIssue updates the project policy from grant issue.
