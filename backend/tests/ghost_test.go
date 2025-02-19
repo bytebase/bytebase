@@ -6,7 +6,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"regexp"
 	"strconv"
 	"testing"
 
@@ -36,8 +35,6 @@ var (
 
 	//go:embed test-data/ghost_test_schema2.result
 	wantDBSchema2 string
-
-	deletedRegex = regexp.MustCompile("~book_[0-9]+_del")
 )
 
 func TestGhostSchemaUpdate(t *testing.T) {
