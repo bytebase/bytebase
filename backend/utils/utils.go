@@ -26,7 +26,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/app/relay"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -276,96 +275,24 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 
 // HandleIncomingApprovalSteps handles incoming approval steps.
 // - Blocks approval steps if no user can approve the step.
-// - creates external approvals for external approval nodes.
-func HandleIncomingApprovalSteps(ctx context.Context, s *store.Store, relayClient *relay.Client, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) ([]*storepb.IssuePayloadApproval_Approver, []*store.IssueCommentMessage, error) {
+func HandleIncomingApprovalSteps(approval *storepb.IssuePayloadApproval) ([]*storepb.IssuePayloadApproval_Approver, error) {
 	if len(approval.ApprovalTemplates) == 0 {
-		return nil, nil, nil
+		return nil, nil
 	}
 
 	var approvers []*storepb.IssuePayloadApproval_Approver
-	var issueComments []*store.IssueCommentMessage
 
 	step := FindNextPendingStep(approval.ApprovalTemplates[0], approval.Approvers)
 	if step == nil {
-		return nil, nil, nil
-	}
-	if len(step.Nodes) != 1 {
-		return nil, nil, errors.Errorf("expecting one node but got %v", len(step.Nodes))
-	}
-	if step.Type != storepb.ApprovalStep_ANY {
-		return nil, nil, errors.Errorf("expecting ANY step type but got %v", step.Type)
-	}
-	node := step.Nodes[0]
-	if v, ok := node.GetPayload().(*storepb.ApprovalNode_ExternalNodeId); ok {
-		if err := handleApprovalNodeExternalNode(ctx, s, relayClient, issue, v.ExternalNodeId); err != nil {
-			approvers = append(approvers, &storepb.IssuePayloadApproval_Approver{
-				Status:      storepb.IssuePayloadApproval_Approver_REJECTED,
-				PrincipalId: api.SystemBotID,
-			})
-
-			issueComments = append(issueComments, &store.IssueCommentMessage{
-				IssueUID: issue.UID,
-				Payload: &storepb.IssueCommentPayload{
-					Event: &storepb.IssueCommentPayload_Approval_{
-						Approval: &storepb.IssueCommentPayload_Approval{
-							Status: storepb.IssueCommentPayload_Approval_APPROVED,
-						},
-					},
-				},
-			})
-		}
-	}
-	return approvers, issueComments, nil
-}
-
-func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, relayClient *relay.Client, issue *store.IssueMessage, externalNodeID string) error {
-	getExternalApprovalByID := func(ctx context.Context, s *store.Store, externalApprovalID string) (*storepb.ExternalApprovalSetting_Node, error) {
-		setting, err := s.GetWorkspaceExternalApprovalSetting(ctx)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get workspace external approval setting")
-		}
-		for _, node := range setting.Nodes {
-			if node.Id == externalApprovalID {
-				return node, nil
-			}
-		}
 		return nil, nil
 	}
-	node, err := getExternalApprovalByID(ctx, s, externalNodeID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get external approval node %s", externalNodeID)
+	if len(step.Nodes) != 1 {
+		return nil, errors.Errorf("expecting one node but got %v", len(step.Nodes))
 	}
-	if node == nil {
-		return errors.Errorf("external approval node %s not found", externalNodeID)
+	if step.Type != storepb.ApprovalStep_ANY {
+		return nil, errors.Errorf("expecting ANY step type but got %v", step.Type)
 	}
-	id, err := relayClient.Create(node.Endpoint, &relay.CreatePayload{
-		IssueID:     fmt.Sprintf("%d", issue.UID),
-		Title:       issue.Title,
-		Description: issue.Description,
-		Project:     issue.Project.ResourceID,
-		CreateTime:  issue.CreatedAt,
-		Creator:     issue.Creator.Email,
-	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to create external approval")
-	}
-	payload, err := protojson.Marshal(&storepb.ExternalApprovalPayload{
-		ExternalApprovalNodeId: node.Id,
-		Id:                     id,
-	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal external approval payload")
-	}
-	if _, err := s.CreateExternalApprovalV2(ctx, &store.ExternalApprovalMessage{
-		IssueUID:     issue.UID,
-		ApproverUID:  api.SystemBotID,
-		Type:         api.ExternalApprovalTypeRelay,
-		Payload:      string(payload),
-		RequesterUID: api.SystemBotID,
-	}); err != nil {
-		return errors.Wrapf(err, "failed to create external approval")
-	}
-	return nil
+	return approvers, nil
 }
 
 // UpdateProjectPolicyFromGrantIssue updates the project policy from grant issue.

@@ -2392,14 +2392,6 @@
       "skip": "Skip manual approval",
       "risk-not-configured-tips": "Make sure you have defined {link}.",
       "the-related-risk-rules": "the related risk rules",
-      "external-approval": {
-        "self": "External Approval",
-        "delete": "Delete external approval node?",
-        "endpoint": "Endpoint",
-        "view-node": "View external approval node",
-        "create-node": "Create external approval node",
-        "edit-node": "Edit external approval node"
-      },
       "issue-review": {
         "sent-back": "Sent back",
         "review-sent-back-by": "Review sent back by {user}"

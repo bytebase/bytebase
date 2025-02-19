@@ -2392,14 +2392,6 @@
       "skip": "手動承認をスキップする",
       "risk-not-configured-tips": "{link} が定義されていることを確認してください。",
       "the-related-risk-rules": "関連するリスクルール",
-      "external-approval": {
-        "self": "外部承認",
-        "delete": "外部承認ノードを削除しますか?",
-        "endpoint": "終点",
-        "view-node": "外部承認ノードを表示する",
-        "create-node": "新しい外部承認ノードを作成する",
-        "edit-node": "外部承認ノードを編集する"
-      },
       "issue-review": {
         "sent-back": "戻ってきた",
         "review-sent-back-by": "{user} から承認が返されました"

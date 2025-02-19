@@ -283,9 +283,6 @@
     - [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-store-DataClassificationSetting-DataClassificationConfig-ClassificationEntry)
     - [DataClassificationSetting.DataClassificationConfig.DataClassification](#bytebase-store-DataClassificationSetting-DataClassificationConfig-DataClassification)
     - [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-store-DataClassificationSetting-DataClassificationConfig-Level)
-    - [ExternalApprovalPayload](#bytebase-store-ExternalApprovalPayload)
-    - [ExternalApprovalSetting](#bytebase-store-ExternalApprovalSetting)
-    - [ExternalApprovalSetting.Node](#bytebase-store-ExternalApprovalSetting-Node)
     - [MaximumSQLResultSizeSetting](#bytebase-store-MaximumSQLResultSizeSetting)
     - [PasswordRestrictionSetting](#bytebase-store-PasswordRestrictionSetting)
     - [SCIMSetting](#bytebase-store-SCIMSetting)
@@ -651,7 +648,6 @@ Used internally for obfuscating the page token.
 | type | [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type) |  |  |
 | group_value | [ApprovalNode.GroupValue](#bytebase-store-ApprovalNode-GroupValue) |  |  |
 | role | [string](#string) |  | Format: roles/{role} |
-| external_node_id | [string](#string) |  |  |
 
 
 
@@ -4403,54 +4399,6 @@ SlowQueryPolicy is the policy configuration for slow query.
 | id | [string](#string) |  |  |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-ExternalApprovalPayload"></a>
-
-### ExternalApprovalPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| external_approval_node_id | [string](#string) |  |  |
-| id | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-ExternalApprovalSetting"></a>
-
-### ExternalApprovalSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| nodes | [ExternalApprovalSetting.Node](#bytebase-store-ExternalApprovalSetting-Node) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-ExternalApprovalSetting-Node"></a>
-
-### ExternalApprovalSetting.Node
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | A unique identifier for a node in UUID format. We will also include the id in the message sending to the external relay service to identify the node. |
-| title | [string](#string) |  | The title of the node. |
-| endpoint | [string](#string) |  | The external endpoint for the relay service, e.g. &#34;http://hello:1234&#34;. |
 
 
 

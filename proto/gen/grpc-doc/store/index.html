@@ -1322,18 +1322,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.ExternalApprovalPayload"><span class="badge">M</span>ExternalApprovalPayload</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ExternalApprovalSetting"><span class="badge">M</span>ExternalApprovalSetting</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ExternalApprovalSetting.Node"><span class="badge">M</span>ExternalApprovalSetting.Node</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.MaximumSQLResultSizeSetting"><span class="badge">M</span>MaximumSQLResultSizeSetting</a>
                 </li>
               
@@ -2302,13 +2290,6 @@ edition(ee).</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Format: roles/{role} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>external_node_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -11035,101 +11016,6 @@ and write back to the schema metadata. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.ExternalApprovalPayload">ExternalApprovalPayload</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>external_approval_node_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.ExternalApprovalSetting">ExternalApprovalSetting</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>nodes</td>
-                  <td><a href="#bytebase.store.ExternalApprovalSetting.Node">ExternalApprovalSetting.Node</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.ExternalApprovalSetting.Node">ExternalApprovalSetting.Node</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A unique identifier for a node in UUID format.
-We will also include the id in the message sending to the external relay
-service to identify the node. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The title of the node. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>endpoint</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The external endpoint for the relay service, e.g. &#34;http://hello:1234&#34;. </p></td>
                 </tr>
               
             </tbody>

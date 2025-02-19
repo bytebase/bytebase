@@ -13,7 +13,6 @@
   </div>
 
   <ApprovalRuleDialog />
-  <ExternalApprovalNodeDrawer />
 
   <FeatureModal
     feature="bb.feature.custom-approval"
@@ -28,7 +27,6 @@ import { BBSpin } from "@/bbkit";
 import {
   CustomApproval,
   ApprovalRuleDialog,
-  ExternalApprovalNodeDrawer,
   provideCustomApprovalContext,
   TabValueList,
 } from "@/components/CustomApproval/Settings/components/CustomApproval/";
@@ -67,7 +65,6 @@ provideCustomApprovalContext({
   ready: toRef(state, "ready"),
   tab,
   dialog: ref(),
-  externalApprovalNodeContext: ref(),
 });
 
 onMounted(async () => {

@@ -278,10 +278,6 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 		case *storepb.ApprovalNode_Role:
 			role := api.Role(strings.TrimPrefix(val.Role, "roles/"))
 			usersGetter = getUsersFromProjectRole(m.store, role, e.Project.ResourceID)
-		case *storepb.ApprovalNode_ExternalNodeId:
-			usersGetter = func(_ context.Context) ([]*store.UserMessage, error) {
-				return nil, nil
-			}
 		default:
 			return nil, errors.Errorf("invalid node payload type")
 		}
