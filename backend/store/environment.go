@@ -275,6 +275,7 @@ func listEnvironmentImplV2(ctx context.Context, tx *Tx, find *FindEnvironmentMes
 	}
 
 	var environments []*EnvironmentMessage
+	environmentResource := `format('environments/%s', environment.resource_id)`
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			environment.resource_id,
@@ -283,9 +284,9 @@ func listEnvironmentImplV2(ctx context.Context, tx *Tx, find *FindEnvironmentMes
 			environment.deleted,
 			policy.payload
 		FROM environment
-		LEFT JOIN policy ON environment.resource_id = policy.resource AND policy.resource_type = 'ENVIRONMENT' AND policy.type = 'bb.policy.environment-tier'
+		LEFT JOIN policy ON %s = policy.resource AND policy.resource_type = 'ENVIRONMENT' AND policy.type = 'bb.policy.environment-tier'
 		WHERE %s
-		ORDER BY environment.order ASC`, strings.Join(where, " AND ")),
+		ORDER BY environment.order ASC`, environmentResource, strings.Join(where, " AND ")),
 		args...,
 	)
 	if err != nil {
