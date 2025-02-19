@@ -6,7 +6,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"regexp"
 	"strconv"
 	"testing"
 
@@ -36,8 +35,6 @@ var (
 
 	//go:embed test-data/ghost_test_schema2.result
 	wantDBSchema2 string
-
-	deletedRegex = regexp.MustCompile("~book_[0-9]+_del")
 )
 
 func TestGhostSchemaUpdate(t *testing.T) {
@@ -86,6 +83,9 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	})
 	a.NoError(err)
 
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, "bbdataarchive", "", nil)
+	a.NoError(err)
+
 	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "", nil)
 	a.NoError(err)
 
@@ -124,5 +124,5 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	dbMetadata, err = ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)})
 	a.NoError(err)
 
-	a.Equal(wantDBSchema2, deletedRegex.ReplaceAllString(dbMetadata.Schema, "xxx"))
+	a.Equal(wantDBSchema2, dbMetadata.Schema)
 }
