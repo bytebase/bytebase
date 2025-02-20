@@ -24,6 +24,7 @@ var RiskFactors = []cel.EnvOption{
 	cel.Variable("database_name", cel.StringType),
 	cel.Variable("db_engine", cel.StringType),
 	cel.Variable("sql_type", cel.StringType),
+	cel.Variable("sql_statement", cel.StringType),
 	cel.Variable("table_name", cel.StringType),
 
 	// number factors

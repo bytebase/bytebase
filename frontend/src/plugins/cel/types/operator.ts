@@ -92,6 +92,7 @@ const OperatorList: Record<Factor, Operator[]> = {
     ...CollectionOperatorList,
     ...StringOperatorList,
   ]),
+  sql_statement: uniq([...StringOperatorList]),
   classification_level: uniq([...CollectionOperatorList]),
 
   // Database group related fields.

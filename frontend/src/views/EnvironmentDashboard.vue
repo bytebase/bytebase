@@ -27,7 +27,6 @@
           class="flex items-center justify-end space-x-2 px-2 pb-1"
         >
           <NButton
-            size="small"
             v-if="
               hasWorkspacePermissionV2('bb.environments.list') &&
               hasWorkspacePermissionV2('bb.environments.update')
@@ -42,7 +41,6 @@
           <NButton
             v-if="hasWorkspacePermissionV2('bb.environments.create')"
             type="primary"
-            size="small"
             @click="createEnvironment"
           >
             <template #icon>

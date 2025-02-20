@@ -83,7 +83,7 @@ export const RiskSourceFactorMap: Map<Risk_Source, string[]> = new Map([
     Risk_Source.DDL,
     uniq(
       without(
-        [...NumberFactorList, ...StringFactorList],
+        [...NumberFactorList, ...StringFactorList, "sql_statement"],
         "level",
         "source",
         "expiration_days",
@@ -95,7 +95,7 @@ export const RiskSourceFactorMap: Map<Risk_Source, string[]> = new Map([
     Risk_Source.DML,
     uniq(
       without(
-        [...NumberFactorList, ...StringFactorList],
+        [...NumberFactorList, ...StringFactorList, "sql_statement"],
         "level",
         "source",
         "expiration_days",

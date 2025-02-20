@@ -433,6 +433,19 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 				return 0, store.RiskSourceUnknown, true, nil
 			}
 
+			taskStatement := ""
+			sheetUID, err := api.GetSheetUIDFromTaskPayload(task.Payload)
+			if err != nil {
+				return 0, store.RiskSourceUnknown, true, errors.Wrapf(err, "failed to get sheet id in task %v", task.ID)
+			}
+			if sheetUID != nil {
+				statement, err := r.store.GetSheetStatementByID(ctx, *sheetUID)
+				if err != nil {
+					return 0, store.RiskSourceUnknown, true, errors.Wrapf(err, "failed to get statement in sheet %v", *sheetUID)
+				}
+				taskStatement = statement
+			}
+
 			environmentID := instance.EnvironmentID
 			var databaseName string
 			if task.Type == api.TaskDatabaseCreate {
@@ -480,7 +493,8 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 						"project_id":     issue.Project.ResourceID,
 						"database_name":  databaseName,
 						// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
-						"db_engine": instance.Engine.String(),
+						"db_engine":     instance.Engine.String(),
+						"sql_statement": taskStatement,
 					}
 
 					vars, err := e.PartialVars(args)
