@@ -28,15 +28,7 @@
       :database="database"
       :advices="advices"
       @close="showDetailPanel = false"
-    >
-      <template #row-title-extra="{ row }">
-        <OnlineMigrationAdviceExtra
-          v-if="row.checkResult.title === 'advice.online-migration'"
-          :row="row"
-          @toggle="handleToggleOnlineMigration"
-        />
-      </template>
-    </SQLCheckPanel>
+    />
   </button>
 </template>
 
@@ -46,7 +38,6 @@ import { SQLCheckPanel } from "@/components/SQLCheck";
 import type { Advice } from "@/types/proto/v1/sql_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import { databaseForTask, useIssueContext } from "../../logic";
-import OnlineMigrationAdviceExtra from "./OnlineMigrationAdviceExtra.vue";
 import { TaskSpinner } from "../common";
 
 const props = defineProps<{
@@ -58,7 +49,7 @@ defineEmits<{
   (event: "click"): void;
 }>();
 
-const { issue, selectedTask, events } = useIssueContext();
+const { issue, selectedTask } = useIssueContext();
 const showDetailPanel = ref(false);
 
 const database = computed(() => {
@@ -121,13 +112,6 @@ const buttonClasses = computed(() => {
 });
 
 const handleClick = () => {
-  showDetailPanel.value = true;
-};
-
-const handleToggleOnlineMigration = (on: boolean) => {
-  events.emit("toggle-online-migration", {
-    on,
-  });
   showDetailPanel.value = true;
 };
 </script>

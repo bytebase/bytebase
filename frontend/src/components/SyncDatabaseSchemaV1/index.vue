@@ -297,7 +297,6 @@ const tryFinishSetup = async () => {
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
     mode: "normal",
-    ghost: undefined,
   };
   const sqlMap: Record<string, string> = {};
   targetDatabaseList.forEach((db) => {
