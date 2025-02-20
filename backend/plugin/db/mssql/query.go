@@ -214,7 +214,7 @@ func (r *tsqlRewriter) handleSelectStatementDryRun(ctx tsql.ISelect_statementCon
 	}
 
 	if ctx.Query_expression() != nil {
-		if ctx.Query_expression().AllSql_union() != nil && len(ctx.Query_expression().AllSql_union()) > 0 {
+		if len(ctx.Query_expression().AllSql_union()) > 0 {
 			r.handleSqlunionDryRun(ctx.Query_expression())
 		}
 		if ctx.Query_expression().Select_order_by_clause() != nil {
@@ -225,7 +225,7 @@ func (r *tsqlRewriter) handleSelectStatementDryRun(ctx tsql.ISelect_statementCon
 }
 
 func (r *tsqlRewriter) handleSqlunionDryRun(ctx tsql.IQuery_expressionContext) {
-	if ctx.AllSql_union() == nil || len(ctx.AllSql_union()) == 0 {
+	if len(ctx.AllSql_union()) == 0 {
 		// non-union
 		return
 	}
@@ -294,7 +294,7 @@ func (r *tsqlRewriter) handleSqlunion(ctx tsql.IQuery_expressionContext) {
 	querySpecification := ctx.Query_specification()
 	if querySpecification.GetAllOrDistinct() != nil {
 		r.hasTop = true
-		r.rewriter.InsertAfterDefault(querySpecification.GetAllOrDistinct().GetStop(), fmt.Sprintf(" TOP %d", r.limitCount))
+		r.rewriter.InsertAfterDefault(querySpecification.GetAllOrDistinct().GetTokenIndex(), fmt.Sprintf(" TOP %d", r.limitCount))
 		return
 	}
 	r.rewriter.InsertAfterDefault(querySpecification.SELECT().GetSourceInterval().Stop, fmt.Sprintf(" TOP %d", r.limitCount))
@@ -303,7 +303,7 @@ func (r *tsqlRewriter) handleSqlunion(ctx tsql.IQuery_expressionContext) {
 	querySpecification = ctx.Get_sql_union().Query_specification()
 	if querySpecification.GetAllOrDistinct() != nil {
 		r.hasTop = true
-		r.rewriter.InsertAfterDefault(querySpecification.GetAllOrDistinct().GetStop(), fmt.Sprintf(" TOP %d", r.limitCount))
+		r.rewriter.InsertAfterDefault(querySpecification.GetAllOrDistinct().GetTokenIndex(), fmt.Sprintf(" TOP %d", r.limitCount))
 		return
 	}
 	r.rewriter.InsertAfterDefault(querySpecification.SELECT().GetSourceInterval().Stop, fmt.Sprintf(" TOP %d", r.limitCount))
@@ -323,7 +323,7 @@ func (r *tsqlRewriter) handleQuerySpecification(ctx tsql.IQuery_specificationCon
 	// append after select_optional_clauses
 	if ctx.GetAllOrDistinct() != nil {
 		r.hasTop = true
-		r.rewriter.InsertAfterDefault(ctx.GetAllOrDistinct().GetStop(), fmt.Sprintf(" TOP %d", r.limitCount))
+		r.rewriter.InsertAfterDefault(ctx.GetAllOrDistinct().GetTokenIndex(), fmt.Sprintf(" TOP %d", r.limitCount))
 		return
 	}
 	// append after select keyword.
@@ -365,6 +365,7 @@ func (r *tsqlRewriter) overrideTopClause(topClause tsql.ITop_clauseContext) {
 }
 
 func (r *tsqlRewriter) overrideFetchRows(ctx tsql.ISelect_order_by_clauseContext) {
+	// SQL Server 2012 or later support OFFSET-FETCH clause to limit the number of rows returned by a query.
 	// Offset must exists.
 	if len(ctx.AllExpression()) > 1 {
 		expression := ctx.Expression(1)
