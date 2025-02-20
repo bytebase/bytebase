@@ -13867,8 +13867,6 @@ components:
                         - DATABASE_SCHEMA_UPDATE
                         - DATABASE_SCHEMA_UPDATE_SDL
                         - DATABASE_SCHEMA_UPDATE_GHOST
-                        - DATABASE_SCHEMA_UPDATE_GHOST_SYNC
-                        - DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER
                         - DATABASE_DATA_UPDATE
                         - DATABASE_DATA_EXPORT
                     type: string

@@ -365,10 +365,6 @@ export enum Task_Type {
   DATABASE_SCHEMA_UPDATE_SDL = "DATABASE_SCHEMA_UPDATE_SDL",
   /** DATABASE_SCHEMA_UPDATE_GHOST - use payload DatabaseSchemaUpdate */
   DATABASE_SCHEMA_UPDATE_GHOST = "DATABASE_SCHEMA_UPDATE_GHOST",
-  /** DATABASE_SCHEMA_UPDATE_GHOST_SYNC - use payload DatabaseSchemaUpdate */
-  DATABASE_SCHEMA_UPDATE_GHOST_SYNC = "DATABASE_SCHEMA_UPDATE_GHOST_SYNC",
-  /** DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER - use payload nil */
-  DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER = "DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER",
   /** DATABASE_DATA_UPDATE - use payload DatabaseDataUpdate */
   DATABASE_DATA_UPDATE = "DATABASE_DATA_UPDATE",
   /** DATABASE_DATA_EXPORT - use payload DatabaseDataExport */
@@ -399,12 +395,6 @@ export function task_TypeFromJSON(object: any): Task_Type {
     case 9:
     case "DATABASE_SCHEMA_UPDATE_GHOST":
       return Task_Type.DATABASE_SCHEMA_UPDATE_GHOST;
-    case 6:
-    case "DATABASE_SCHEMA_UPDATE_GHOST_SYNC":
-      return Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC;
-    case 7:
-    case "DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER":
-      return Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER;
     case 8:
     case "DATABASE_DATA_UPDATE":
       return Task_Type.DATABASE_DATA_UPDATE;
@@ -434,10 +424,6 @@ export function task_TypeToJSON(object: Task_Type): string {
       return "DATABASE_SCHEMA_UPDATE_SDL";
     case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:
       return "DATABASE_SCHEMA_UPDATE_GHOST";
-    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC:
-      return "DATABASE_SCHEMA_UPDATE_GHOST_SYNC";
-    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER:
-      return "DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER";
     case Task_Type.DATABASE_DATA_UPDATE:
       return "DATABASE_DATA_UPDATE";
     case Task_Type.DATABASE_DATA_EXPORT:
@@ -464,10 +450,6 @@ export function task_TypeToNumber(object: Task_Type): number {
       return 5;
     case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:
       return 9;
-    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC:
-      return 6;
-    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER:
-      return 7;
     case Task_Type.DATABASE_DATA_UPDATE:
       return 8;
     case Task_Type.DATABASE_DATA_EXPORT:
