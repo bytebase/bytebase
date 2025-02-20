@@ -1,3 +1,6 @@
+- stmt: SELECT DISTINCT S.*, DS.DistrictId, COUNT(1) OVER() FROM Streets S LEFT JOIN DistrictStreets DS ON S.StreetId = DS.StreetId;
+  limit: 10
+  want: SELECT DISTINCT TOP 10 S.*, DS.DistrictId, COUNT(1) OVER() FROM Streets S LEFT JOIN DistrictStreets DS ON S.StreetId = DS.StreetId;
 - stmt: |
     SELECT 1;
   limit: 10
