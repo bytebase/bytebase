@@ -827,6 +827,8 @@ github.com/bytebase/antlr/v4 v4.0.0-20240827034948-8c385f108920 h1:IfmPt5o5R70NK
 github.com/bytebase/antlr/v4 v4.0.0-20240827034948-8c385f108920/go.mod h1:ykhjIPiv0IWpu3OGXCHdz2eUSe8UNGGD6baqjs8jSuU=
 github.com/bytebase/azure-sdk-for-go/sdk/data/azcosmos v0.0.0-20250109032656-87cf24d45689 h1:tTxTI91JlBuvbX5JPDJSvCje9TxSUoXOzsbRp8qtcPs=
 github.com/bytebase/azure-sdk-for-go/sdk/data/azcosmos v0.0.0-20250109032656-87cf24d45689/go.mod h1:YwUyrNUtcZcibA99JcfCP6UUp95VVQKO2MJfBzgJDwA=
+github.com/bytebase/cosmosdb-parser v0.0.0-20250207092310-6249cdad18cb h1:lGiSU3pSxYP0aa6/qf2IYk5cnSd2diRBHhyYM2Rz5e0=
+github.com/bytebase/cosmosdb-parser v0.0.0-20250207092310-6249cdad18cb/go.mod h1:sivaOoKlMrXkuude2VGsKv6p83CRRGgblNfeVKQka/Y=
 github.com/bytebase/gh-ost2 v0.0.0-20250219092957-07c908d5a171 h1:Y3/Wm6WfOQ/HZyc/ewK7iXgVMlTTo1Eb753CnmIiDjk=
 github.com/bytebase/gh-ost2 v0.0.0-20250219092957-07c908d5a171/go.mod h1:X0CGYwIZUnjfrv02/nBlftxqSBMm4mYJzFwiyn2D4d8=
 github.com/bytebase/go-lsp v0.0.0-20240130071507-c04b5c75010c h1:W832GNANCst4C6TgYbQnKKxbuMZKQxTD4++b3HOuzBo=
