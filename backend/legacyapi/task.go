@@ -42,12 +42,6 @@ const (
 	TaskDatabaseSchemaUpdateSDL TaskType = "bb.task.database.schema.update-sdl"
 	// TaskDatabaseSchemaUpdateGhost is the task type for updating database schemas using gh-ost.
 	TaskDatabaseSchemaUpdateGhost TaskType = "bb.task.database.schema.update-ghost"
-	// TaskDatabaseSchemaUpdateGhostSync is the task type for gh-ost syncing ghost table.
-	// TODO(p0ny): deprecated by TaskDatabaseSchemaUpdateGhost.
-	TaskDatabaseSchemaUpdateGhostSync TaskType = "bb.task.database.schema.update.ghost.sync"
-	// TaskDatabaseSchemaUpdateGhostCutover is the task type for gh-ost switching the original table and the ghost table.
-	// TODO(p0ny): deprecated by TaskDatabaseSchemaUpdateGhost.
-	TaskDatabaseSchemaUpdateGhostCutover TaskType = "bb.task.database.schema.update.ghost.cutover"
 	// TaskDatabaseDataUpdate is the task type for updating database data.
 	TaskDatabaseDataUpdate TaskType = "bb.task.database.data.update"
 	// TaskDatabaseDataExport is the task type for exporting database data.
@@ -60,8 +54,8 @@ func (t TaskType) ChangeDatabasePayload() bool {
 		TaskDatabaseDataUpdate,
 		TaskDatabaseSchemaUpdate,
 		TaskDatabaseSchemaUpdateSDL,
-		TaskDatabaseSchemaBaseline,
-		TaskDatabaseSchemaUpdateGhostSync:
+		TaskDatabaseSchemaUpdateGhost,
+		TaskDatabaseSchemaBaseline:
 		return true
 	default:
 		return false
@@ -74,8 +68,7 @@ func (t TaskType) Sequential() bool {
 	case
 		TaskDatabaseSchemaUpdate,
 		TaskDatabaseSchemaUpdateSDL,
-		TaskDatabaseSchemaUpdateGhostSync,
-		TaskDatabaseSchemaUpdateGhostCutover:
+		TaskDatabaseSchemaUpdateGhost:
 		return true
 	default:
 		return false
