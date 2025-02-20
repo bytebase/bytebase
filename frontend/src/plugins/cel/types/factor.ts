@@ -23,6 +23,7 @@ export const StringFactorList = [
   "instance_id",
   "db_engine",
   "sql_type",
+  "sql_statement",
 
   // Grant request issue related factors
   "resource.database",
