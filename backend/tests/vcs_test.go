@@ -22,6 +22,7 @@ import (
 const baseDirectory = "/bbtest"
 
 func TestVCS(t *testing.T) {
+	t.Parallel()
 	branchName := "feature/foo"
 	pullRequestFiles := []*vcs.PullRequestFile{
 		{Path: "bbtest/0001_😊create_table_book1.sql"},
