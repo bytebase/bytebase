@@ -21,6 +21,32 @@ func TestWalkAndMaskJSON(t *testing.T) {
 
 	testCases := []testCase{
 		{
+			description: "empty object",
+			input:       `{}`,
+			objectSchema: &storepb.ObjectSchema{
+				Type: storepb.ObjectSchema_OBJECT,
+				Kind: &storepb.ObjectSchema_StructKind_{
+					StructKind: &storepb.ObjectSchema_StructKind{
+						Properties: map[string]*storepb.ObjectSchema{
+							"ssn": {
+								SemanticType: "PII-SSN",
+								Type:         storepb.ObjectSchema_STRING,
+							},
+						},
+					},
+				},
+			},
+			semanticTypeToMasker: map[string]masker.Masker{},
+			want:                 `{}`,
+		},
+		{
+			description:          "no semantic type",
+			input:                `{"name": "John"}`,
+			objectSchema:         &storepb.ObjectSchema{},
+			semanticTypeToMasker: map[string]masker.Masker{},
+			want:                 `{"name": "John"}`,
+		},
+		{
 			description: "mask the outest semantic type",
 			input:       `{"name": "John", "ssn": "123-45-6789"}`,
 			objectSchema: &storepb.ObjectSchema{
