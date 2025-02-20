@@ -257,7 +257,8 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	gatewayModifier := auth.GatewayResponseModifier{Store: s.store}
 	mux := grpcruntime.NewServeMux(
 		grpcruntime.WithMarshalerOption(grpcruntime.MIMEWildcard, &grpcruntime.JSONPb{
-			MarshalOptions:   protojson.MarshalOptions{},
+			MarshalOptions: protojson.MarshalOptions{},
+			//nolint:forbidigo
 			UnmarshalOptions: protojson.UnmarshalOptions{},
 		}),
 		grpcruntime.WithForwardResponseOption(gatewayModifier.Modify),
