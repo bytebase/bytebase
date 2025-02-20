@@ -89,8 +89,8 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.
 		}
 	}
 
+	// Check if the ghost database exists if there is any statement that needs online migration and gh-ost is enabled.
 	if len(adviceList) > 0 && ctx.ChangeType == storepb.PlanCheckRunConfig_DDL_GHOST {
-		// Check if the ghost database exists if there is any statement that needs online migration.
 		if !advisor.DatabaseExists(ctx, ghostDatabaseName) {
 			// Prepend the advice.
 			adviceList = append([]*storepb.Advice{
