@@ -164,7 +164,14 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 				checkResult.AffectedRows = summaryReport.AffectedRows
 				response.AffectedRows += summaryReport.AffectedRows
 
-				riskLevel, err := s.calculateRiskLevel(ctx, instance, database, changeType, summaryReport)
+				riskLevel, err := s.calculateRiskLevel(
+					ctx,
+					instance,
+					database,
+					changeType,
+					summaryReport,
+					file.Statement,
+				)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to calculate risk level, error: %v", err)
 				}
@@ -307,7 +314,14 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	return adviceLevel, advices, nil
 }
 
-func (s *ReleaseService) calculateRiskLevel(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType, summaryReport *storepb.PlanCheckRunResult_Result_SqlSummaryReport) (int32, error) {
+func (s *ReleaseService) calculateRiskLevel(
+	ctx context.Context,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	changeType storepb.PlanCheckRunConfig_ChangeDatabaseType,
+	summaryReport *storepb.PlanCheckRunResult_Result_SqlSummaryReport,
+	statement string,
+) (int32, error) {
 	risks, err := s.store.ListRisks(ctx)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to list risks")
@@ -350,7 +364,8 @@ func (s *ReleaseService) calculateRiskLevel(ctx context.Context, instance *store
 				"project_id":     database.ProjectID,
 				"database_name":  database.DatabaseName,
 				// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
-				"db_engine": instance.Engine.String(),
+				"db_engine":     instance.Engine.String(),
+				"sql_statement": statement,
 			}
 
 			vars, err := e.PartialVars(args)
