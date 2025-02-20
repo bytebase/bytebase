@@ -19,6 +19,7 @@ import (
 // 2. The database group is then created with the specified expr.
 // 3. The results obtained are compared with the results given in prepareInstance and they should be consistent.
 func TestCreateDatabaseGroup(t *testing.T) {
+	t.Parallel()
 	type testCasePrepareInstance struct {
 		instanceTitle         string
 		matchedDatabasesName  map[string]any
