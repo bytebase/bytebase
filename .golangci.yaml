@@ -18,6 +18,7 @@ linters:
     - mirror
     - bodyclose
     - exhaustive
+    - tparallel
 
 # golangci-lint run --exclude="Rollback,logger.Sync,pgInstance.Stop"
 issues:
