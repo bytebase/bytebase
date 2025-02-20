@@ -1264,10 +1264,17 @@ func (s *RolloutService) canUserRunStageTasks(ctx context.Context, user *store.U
 
 	policy, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
 	if err != nil {
-		return false, common.Wrapf(err, common.Internal, "failed to get project %s policy", project.ResourceID)
+		return false, common.Wrapf(err, common.Internal, "failed to get project %s IAM policy", project.ResourceID)
 	}
-
+	workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx)
+	if err != nil {
+		return false, common.Wrapf(err, common.Internal, "failed to get workspace IAM policy")
+	}
 	roles := utils.GetUserFormattedRolesMap(ctx, s.store, user, policy.Policy)
+	workspaceRoles := utils.GetUserFormattedRolesMap(ctx, s.store, user, workspacePolicy.Policy)
+	for k := range workspaceRoles {
+		roles[k] = true
+	}
 
 	if p.Automatic {
 		return true, nil
