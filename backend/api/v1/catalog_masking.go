@@ -9,36 +9,34 @@ import (
 func walkAndMaskJSON(data any, objectSchema *storepb.ObjectSchema, semanticTypeToMasker map[string]masker.Masker) (any, error) {
 	switch data := data.(type) {
 	case map[string]any:
-		if objectSchema.Type == storepb.ObjectSchema_OBJECT {
-			if objectSchema.SemanticType != "" {
-				// If the outer semantic type is found, apply the masker recursively to the object.
-				if m, ok := semanticTypeToMasker[objectSchema.SemanticType]; ok {
-					maskedData, err := applyMaskerToData(data, m)
+		if objectSchema.SemanticType != "" {
+			// If the outer semantic type is found, apply the masker recursively to the object.
+			if m, ok := semanticTypeToMasker[objectSchema.SemanticType]; ok {
+				maskedData, err := applyMaskerToData(data, m)
+				if err != nil {
+					return nil, err
+				}
+				return maskedData, nil
+			}
+		} else {
+			// Otherwise, recursively walk the object.
+			structKind := objectSchema.GetStructKind()
+			// Quick return if there is no struct kind in object schema.
+			if structKind == nil {
+				return data, nil
+			}
+			for key, value := range data {
+				if childObjectSchema, ok := structKind.Properties[key]; ok {
+					// Recursively walk the property if child object schema found.
+					var err error
+					data[key], err = walkAndMaskJSON(value, childObjectSchema, semanticTypeToMasker)
 					if err != nil {
 						return nil, err
 					}
-					return maskedData, nil
-				}
-			} else {
-				// Otherwise, recursively walk the object.
-				structKind := objectSchema.GetStructKind()
-				// Quick return if there is no struct kind in object schema.
-				if structKind == nil {
-					return data, nil
-				}
-				for key, value := range data {
-					if childObjectSchema, ok := structKind.Properties[key]; ok {
-						// Recursively walk the property if child object schema found.
-						var err error
-						data[key], err = walkAndMaskJSON(value, childObjectSchema, semanticTypeToMasker)
-						if err != nil {
-							return nil, err
-						}
-					}
 				}
 			}
-			return data, nil
 		}
+		return data, nil
 	default:
 		// For JSON atomic member, apply the masker if semantic type is found.
 		if objectSchema.SemanticType != "" {
