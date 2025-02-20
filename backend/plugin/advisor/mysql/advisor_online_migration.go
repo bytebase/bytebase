@@ -57,21 +57,7 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.
 	title := string(ctx.Rule.Type)
 
 	var adviceList []*storepb.Advice
-	// Check if the ghost database exists first.
-	if !advisor.DatabaseExists(ctx, ghostDatabaseName) {
-		adviceList = append(adviceList, &storepb.Advice{
-			Status:  level,
-			Title:   title,
-			Content: fmt.Sprintf("Needs database %q to save temporary data for online migration but it does not exist", ghostDatabaseName),
-			Code:    advisor.DatabaseNotExists.Int32(),
-			StartPosition: &storepb.Position{
-				Line: 0,
-			},
-		})
-		return adviceList, nil
-	}
-
-	// Check statements.
+	// Check statements first.
 	for _, stmt := range stmtList {
 		checker := &useGhostChecker{
 			currentDatabase:  ctx.CurrentDatabase,
@@ -100,6 +86,23 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.
 					EndPosition:   checker.end,
 				})
 			}
+		}
+	}
+
+	// Check if the ghost database exists if there is any statement that needs online migration and gh-ost is enabled.
+	if len(adviceList) > 0 && ctx.ChangeType == storepb.PlanCheckRunConfig_DDL_GHOST {
+		if !advisor.DatabaseExists(ctx, ghostDatabaseName) {
+			// Prepend the advice.
+			adviceList = append([]*storepb.Advice{
+				{Status: level,
+					Title:   title,
+					Content: fmt.Sprintf("Needs database %q to save temporary data for online migration but it does not exist", ghostDatabaseName),
+					Code:    advisor.DatabaseNotExists.Int32(),
+					StartPosition: &storepb.Position{
+						Line: 0,
+					}},
+			}, adviceList...)
+			return adviceList, nil
 		}
 	}
 
