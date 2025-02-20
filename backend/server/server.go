@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 
@@ -255,6 +256,11 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// the user has to restart the server to take the latest value.
 	gatewayModifier := auth.GatewayResponseModifier{Store: s.store}
 	mux := grpcruntime.NewServeMux(
+		grpcruntime.WithMarshalerOption(grpcruntime.MIMEWildcard, &grpcruntime.JSONPb{
+			MarshalOptions: protojson.MarshalOptions{},
+			//nolint:forbidigo
+			UnmarshalOptions: protojson.UnmarshalOptions{},
+		}),
 		grpcruntime.WithForwardResponseOption(gatewayModifier.Modify),
 		grpcruntime.WithRoutingErrorHandler(func(ctx context.Context, sm *grpcruntime.ServeMux, m grpcruntime.Marshaler, w http.ResponseWriter, r *http.Request, httpStatus int) {
 			if httpStatus != http.StatusNotFound {
