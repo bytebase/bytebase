@@ -7,7 +7,7 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUIStateStore } from "@/store";
 import { emptyStage, emptyTask } from "@/types";
 import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
-import { Task_Type, Stage, Task } from "@/types/proto/v1/rollout_service";
+import { Stage, Task } from "@/types/proto/v1/rollout_service";
 import {
   activeStageInRollout,
   activeTaskInStageV1,
@@ -145,11 +145,6 @@ export const useBaseIssueContext = (
     return reviewContext.done.value ? "ROLLOUT" : "REVIEW";
   });
 
-  const isGhostMode = computed(() => {
-    return flattenTaskV1List(rollout.value).some((task) => {
-      return [Task_Type.DATABASE_SCHEMA_UPDATE_GHOST].includes(task.type);
-    });
-  });
   const isLegacyIssue = computed(() => {
     return !issue.value.plan && !issue.value.planEntity;
   });
@@ -183,7 +178,6 @@ export const useBaseIssueContext = (
 
   return {
     phase,
-    isGhostMode,
     isLegacyIssue,
     events,
     releaserCandidates,

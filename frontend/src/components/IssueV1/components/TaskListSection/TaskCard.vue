@@ -31,6 +31,12 @@
           >
             <ExternalLinkIcon :size="16" />
           </router-link>
+          <NTooltip v-if="showGhostTag">
+            <template #trigger>
+              <NTag size="small" round type="primary">gh-ost</NTag>
+            </template>
+            <span>{{ $t("task.online-migration.self") }}</span>
+          </NTooltip>
           <NTag v-if="schemaVersion" size="small" round>
             {{ schemaVersion }}
           </NTag>
@@ -57,16 +63,17 @@
 
 <script setup lang="ts">
 import { ExternalLinkIcon } from "lucide-vue-next";
-import { NTag } from "naive-ui";
+import { NTag, NTooltip } from "naive-ui";
 import { twMerge } from "tailwind-merge";
 import { computed } from "vue";
 import { InstanceV1Name } from "@/components/v2";
 import { isValidDatabaseName } from "@/types";
+import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
 import { Workflow } from "@/types/proto/v1/project_service";
 import { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Type, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
 import { databaseV1Url, extractSchemaVersionFromTask, isDev } from "@/utils";
-import { databaseForTask, useIssueContext } from "../../logic";
+import { databaseForTask, specForTask, useIssueContext } from "../../logic";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
 
@@ -81,12 +88,7 @@ const project = computed(() => issue.value.projectEntity);
 const selected = computed(() => props.task === selectedTask.value);
 
 const secondaryViewMode = computed((): SecondaryViewMode => {
-  if (
-    [
-      Task_Type.DATABASE_CREATE,
-      Task_Type.DATABASE_SCHEMA_UPDATE_GHOST,
-    ].includes(props.task.type)
-  ) {
+  if ([Task_Type.DATABASE_CREATE].includes(props.task.type)) {
     return "TASK_TITLE";
   }
   return "INSTANCE";
@@ -108,6 +110,16 @@ const schemaVersion = computed(() => {
   if (isCreating.value) return "";
   if (project.value.workflow === Workflow.UI) return "";
   return v;
+});
+
+const showGhostTag = computed(() => {
+  if (isCreating.value) {
+    return (
+      specForTask(issue.value.planEntity, props.task)?.changeDatabaseConfig
+        ?.type === Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST
+    );
+  }
+  return props.task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST;
 });
 
 const taskClass = computed(() => {

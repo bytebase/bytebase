@@ -26,14 +26,6 @@
         </template>
         <SQLCheckBadge v-else :is-running="isRunning" :advices="advices" />
       </template>
-
-      <template #row-title-extra="{ row, confirm }">
-        <OnlineMigrationAdviceExtra
-          v-if="row.checkResult.title === 'advice.online-migration'"
-          :row="row"
-          @toggle="handleToggleOnlineMigration($event, confirm)"
-        />
-      </template>
     </SQLCheckButton>
   </div>
 </template>
@@ -51,16 +43,14 @@ import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
 import { Release_File_ChangeType } from "@/types/proto/v1/release_service";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import { Advice } from "@/types/proto/v1/sql_service";
-import type { Defer } from "@/utils/util";
 import { useTaskSheet } from "../StatementSection/useTaskSheet";
-import OnlineMigrationAdviceExtra from "./OnlineMigrationAdviceExtra.vue";
 import SQLCheckBadge from "./SQLCheckBadge.vue";
 
 defineEmits<{
   (event: "update:advices", advices: Advice[] | undefined): void;
 }>();
 
-const { issue, selectedTask, events } = useIssueContext();
+const { issue, selectedTask } = useIssueContext();
 const { sheetStatement } = useTaskSheet();
 
 const database = computed(() => {
@@ -83,16 +73,6 @@ const getStatement = async () => {
     statement: sheetStatement.value,
     errors: [],
   };
-};
-
-const handleToggleOnlineMigration = (
-  on: boolean,
-  confirm: Defer<boolean> | undefined
-) => {
-  events.emit("toggle-online-migration", {
-    on,
-  });
-  confirm?.resolve(false);
 };
 
 const changeType = computed((): Release_File_ChangeType | undefined => {

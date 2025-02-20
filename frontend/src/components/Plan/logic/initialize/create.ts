@@ -268,10 +268,7 @@ export const buildSpecForTarget = async (
     }
   }
   if (template === "bb.issue.database.schema.update") {
-    const type =
-      query.ghost === "1"
-        ? Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST
-        : Plan_ChangeDatabaseConfig_Type.MIGRATE;
+    const type = Plan_ChangeDatabaseConfig_Type.MIGRATE;
     spec.changeDatabaseConfig = Plan_ChangeDatabaseConfig.fromJSON({
       target,
       type,
