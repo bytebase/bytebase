@@ -81,7 +81,7 @@ const errors = computed(() => {
   if (!database.backupAvailable) {
     errors.push(
       t(
-        "task.online-migration.error.not-applicable.needs-database-for-saving-temp-tables",
+        "task.online-migration.error.not-applicable.needs-database-for-saving-temp-data",
         {
           // The same database name as backup.
           database: "bbdataarchive",
