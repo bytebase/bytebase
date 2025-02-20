@@ -53,9 +53,11 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	mysqlContainer, err := getMySQLContainer(ctx)
 	a.NoError(err)
 
-	defer mysqlContainer.db.Close()
-	defer mysqlContainer.container.Terminate(ctx)
-
+	defer func() {
+		mysqlContainer.db.Close()
+		err := mysqlContainer.container.Terminate(ctx)
+		a.NoError(err)
+	}()
 	mysqlDB := mysqlContainer.db
 
 	_, err = mysqlDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
