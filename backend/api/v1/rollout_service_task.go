@@ -471,50 +471,14 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		return []*store.TaskMessage{taskCreate}, nil, nil
 
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST:
-		if common.IsDev() {
-			_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
-			}
-			if _, err := ghost.GetUserFlags(c.GhostFlags); err != nil {
-				return nil, nil, errors.Wrapf(err, "invalid ghost flags %q", c.GhostFlags)
-			}
-			payload := &storepb.TaskDatabaseUpdatePayload{
-				SpecId:        spec.Id,
-				SheetId:       int32(sheetUID),
-				SchemaVersion: c.SchemaVersion,
-				Flags:         c.GhostFlags,
-				TaskReleaseSource: &storepb.TaskReleaseSource{
-					File: spec.SpecReleaseSource.GetFile(),
-				},
-			}
-			bytes, err := protojson.Marshal(payload)
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "failed to marshal database schema update ghost payload")
-			}
-			taskCreate := &store.TaskMessage{
-				Name:         fmt.Sprintf("DDL(gh-ost) for database %q", database.DatabaseName),
-				InstanceID:   database.InstanceID,
-				DatabaseName: &database.DatabaseName,
-				Type:         api.TaskDatabaseSchemaUpdateGhost,
-				Payload:      string(bytes),
-			}
-			if spec.EarliestAllowedTime.GetSeconds() > 0 {
-				t := spec.EarliestAllowedTime.AsTime()
-				taskCreate.EarliestAllowedAt = &t
-			}
-			return []*store.TaskMessage{taskCreate}, nil, nil
-		}
 		_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
 		if _, err := ghost.GetUserFlags(c.GhostFlags); err != nil {
-			return nil, nil, errors.Wrapf(err, "invalid ghost flags %q, error: %v", c.GhostFlags, err)
+			return nil, nil, errors.Wrapf(err, "invalid ghost flags %q", c.GhostFlags)
 		}
-		var taskCreateList []*store.TaskMessage
-		// task "sync"
-		payloadSync := &storepb.TaskDatabaseUpdatePayload{
+		payload := &storepb.TaskDatabaseUpdatePayload{
 			SpecId:        spec.Id,
 			SheetId:       int32(sheetUID),
 			SchemaVersion: c.SchemaVersion,
@@ -523,50 +487,22 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 				File: spec.SpecReleaseSource.GetFile(),
 			},
 		}
-		bytesSync, err := protojson.Marshal(payloadSync)
+		bytes, err := protojson.Marshal(payload)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to marshal database schema update gh-ost sync payload")
+			return nil, nil, errors.Wrapf(err, "failed to marshal database schema update ghost payload")
 		}
-		v := &store.TaskMessage{
-			Name:         fmt.Sprintf("Update schema gh-ost sync for database %q", database.DatabaseName),
+		taskCreate := &store.TaskMessage{
+			Name:         fmt.Sprintf("DDL(gh-ost) for database %q", database.DatabaseName),
 			InstanceID:   database.InstanceID,
 			DatabaseName: &database.DatabaseName,
-			Type:         api.TaskDatabaseSchemaUpdateGhostSync,
-			Payload:      string(bytesSync),
+			Type:         api.TaskDatabaseSchemaUpdateGhost,
+			Payload:      string(bytes),
 		}
 		if spec.EarliestAllowedTime.GetSeconds() > 0 {
 			t := spec.EarliestAllowedTime.AsTime()
-			v.EarliestAllowedAt = &t
+			taskCreate.EarliestAllowedAt = &t
 		}
-		taskCreateList = append(taskCreateList, v)
-
-		// task "cutover"
-		payloadCutover := &storepb.TaskDatabaseUpdatePayload{
-			SpecId: spec.Id,
-		}
-		bytesCutover, err := protojson.Marshal(payloadCutover)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to marshal database schema update ghost cutover payload")
-		}
-		cutoverV := &store.TaskMessage{
-			Name:         fmt.Sprintf("Update schema gh-ost cutover for database %q", database.DatabaseName),
-			InstanceID:   database.InstanceID,
-			DatabaseName: &database.DatabaseName,
-			Type:         api.TaskDatabaseSchemaUpdateGhostCutover,
-			Payload:      string(bytesCutover),
-		}
-		if spec.EarliestAllowedTime.GetSeconds() > 0 {
-			t := spec.EarliestAllowedTime.AsTime()
-			cutoverV.EarliestAllowedAt = &t
-		}
-		taskCreateList = append(taskCreateList, cutoverV)
-
-		// The below list means that taskCreateList[0] blocks taskCreateList[1].
-		// In other words, task "sync" blocks task "cutover".
-		taskIndexDAGList := []store.TaskIndexDAG{
-			{FromIndex: 0, ToIndex: 1},
-		}
-		return taskCreateList, taskIndexDAGList, nil
+		return []*store.TaskMessage{taskCreate}, nil, nil
 
 	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
 		_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)

@@ -156,8 +156,6 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 					api.TaskDatabaseSchemaUpdate,
 					api.TaskDatabaseSchemaUpdateSDL,
 					api.TaskDatabaseSchemaUpdateGhost,
-					api.TaskDatabaseSchemaUpdateGhostSync,
-					api.TaskDatabaseSchemaUpdateGhostCutover,
 				}
 			case "DML":
 				issueFind.TaskTypes = &[]api.TaskType{
