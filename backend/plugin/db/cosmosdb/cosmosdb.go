@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -90,6 +91,12 @@ func (*Driver) Dump(_ context.Context, _ io.Writer, _ *storepb.DatabaseSchemaMet
 func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	if queryContext.Container == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "container argument is required for CosmosDB")
+	}
+
+	// Allow `SELECT * FROM {container} [alias]` only.
+	_, _, err := base.ValidateSQLForEditor(storepb.Engine_COSMOSDB, statement)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "support simple SELECT statement for Cosmos DB engine only, err: %s", err.Error())
 	}
 
 	startTime := time.Now()
