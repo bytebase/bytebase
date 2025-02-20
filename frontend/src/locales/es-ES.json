@@ -286,11 +286,10 @@
         "x-status-task-is-not-editable": "La tarea {status} no es editable",
         "nothing-changed": "nada ha cambiado",
         "not-applicable": {
-          "some-tasks-dont-meet-ghost-requirement": "Algunas tareas no cumplen con los requisitos de gh-ost."
+          "task-doesnt-meet-ghost-requirement": "La tarea no cumple con el requisito de gh-ost",
+          "needs-database-for-saving-temp-tables": "Necesita la base de datos ({database}) para guardar tablas temporales."
         }
       },
-      "enable": "Habilitar la migración en línea",
-      "disable": "Deshabilitar la migración en línea",
       "advice-split-statement-to-single-online-migration-issue": "Se recomienda dividir esta declaración en un único problema de migración en línea."
     },
     "prior-backup-tips": "Haga una copia de seguridad de los datos afectados con anticipación"

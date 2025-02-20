@@ -14,27 +14,10 @@ import { rolloutServiceClient } from "@/grpcweb";
 import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
 import TaskRunTable from "./TaskRunTable.vue";
 
-type ViewMode = "SINGLE" | "MERGED";
-
-const { issue, selectedTask, isGhostMode } = useIssueContext();
-
-/**
- * MERGED mode: merge all tasks' activities into one table
- * SINGLE mode: show only selected task's activities
- */
-const mode = computed((): ViewMode => {
-  if (isGhostMode.value) return "MERGED";
-  return "SINGLE";
-});
+const { issue, selectedTask } = useIssueContext();
 
 const flattenTaskRunList = computed(() => {
-  if (mode.value === "SINGLE") {
-    return taskRunListForTask(issue.value, selectedTask.value);
-  }
-  if (mode.value === "MERGED") {
-    return issue.value.rolloutTaskRunList;
-  }
-  return [];
+  return taskRunListForTask(issue.value, selectedTask.value);
 });
 
 watchEffect(async () => {

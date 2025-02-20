@@ -29,14 +29,16 @@ import {
   task_StatusToJSON,
 } from "@/types/proto/v1/rollout_service";
 import {
-  MIN_GHOST_SUPPORT_MARIADB_VERSION,
-  MIN_GHOST_SUPPORT_MYSQL_VERSION,
   extractUserResourceName,
   flattenTaskV1List,
   getSheetStatement,
   hasProjectPermissionV2,
   semverCompare,
 } from "@/utils";
+
+export const MIN_GHOST_SUPPORT_MYSQL_VERSION = "5.6.0";
+
+export const MIN_GHOST_SUPPORT_MARIADB_VERSION = "10.6.0";
 
 export type GhostUIViewType = "NONE" | "OFF" | "ON";
 
@@ -167,15 +169,6 @@ export const allowChangeTaskGhostFlags = (issue: ComposedIssue, task: Task) => {
 };
 
 export const allowGhostForDatabase = (database: ComposedDatabase) => {
-  if (
-    !useSubscriptionV1Store().hasInstanceFeature(
-      "bb.feature.online-migration",
-      database.instanceResource
-    )
-  ) {
-    return false;
-  }
-
   return (
     (database.instanceResource.engine === Engine.MYSQL &&
       semverCompare(

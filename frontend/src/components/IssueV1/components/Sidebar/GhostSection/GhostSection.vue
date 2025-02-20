@@ -34,7 +34,7 @@
           <LockIcon class="w-4 h-4 text-accent" />
         </FeatureBadgeForInstanceLicense>
       </div>
-      <GhostSwitch v-if="isCreating" />
+      <GhostSwitch />
     </div>
 
     <GhostConfigButton v-if="viewType === 'ON'" />
@@ -58,17 +58,13 @@ import FeatureBadgeForInstanceLicense from "@/components/FeatureGuard/FeatureBad
 import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { featureToRef } from "@/store";
-import { flattenTaskV1List, isDatabaseChangeRelatedIssue } from "@/utils";
+import { isDatabaseChangeRelatedIssue } from "@/utils";
 import GhostConfigButton from "./GhostConfigButton.vue";
 import GhostFlagsPanel from "./GhostFlagsPanel.vue";
 import GhostSwitch from "./GhostSwitch.vue";
-import {
-  allowGhostForDatabase,
-  ghostViewTypeForTask,
-  provideIssueGhostContext,
-} from "./common";
+import { allowGhostForTask, provideIssueGhostContext } from "./common";
 
-const { isCreating, issue, selectedTask: task } = useIssueContext();
+const { isCreating, issue, selectedTask } = useIssueContext();
 
 const { viewType, showFeatureModal, showMissingInstanceLicense } =
   provideIssueGhostContext();
@@ -84,26 +80,16 @@ const shouldShowGhostSection = computed(() => {
     return false;
   }
 
-  // We need all tasks and specs to be gh-ost-able to enable gh-ost mode.
-  const tasks = flattenTaskV1List(issue.value.rolloutEntity);
   if (isCreating.value) {
-    // When an issue is pending create, we should show the gh-ost section
-    // whenever gh-ost is on or off.
-    return (
-      tasks.some((task) => {
-        const database = databaseForTask(issue.value, task);
-        return allowGhostForDatabase(database);
-      }) &&
-      tasks.every((task) => ghostViewTypeForTask(issue.value, task) !== "NONE")
-    );
+    return allowGhostForTask(issue.value, selectedTask.value);
   } else {
-    return viewType.value === "ON";
+    return viewType.value !== "NONE";
   }
 });
 
 const hasOnlineMigrationFeature = featureToRef("bb.feature.online-migration");
 
 const instance = computed(() => {
-  return databaseForTask(issue.value, task.value).instanceResource;
+  return databaseForTask(issue.value, selectedTask.value).instanceResource;
 });
 </script>

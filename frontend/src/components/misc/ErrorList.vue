@@ -5,20 +5,27 @@
   >
     <li v-for="(item, i) in errors" :key="i" :style="itemStyle(item)">
       <slot name="prefix" />
-
-      {{ itemText(item) }}
+      <component v-if="isJSXElement(itemText(item))" :is="itemText(item)" />
+      <span v-else>{{ itemText(item) }}</span>
     </li>
   </ul>
 </template>
 
-<script setup lang="ts">
+<script setup lang="tsx">
 import { computed } from "vue";
+import { isVNode } from "vue";
+import type { JSX } from "vue/jsx-runtime";
 
 export type NestedError = {
-  error: string;
+  error: string | JSX.Element;
   indent: number;
 };
-export type ErrorItem = string | NestedError;
+
+export type ErrorItem = string | JSX.Element | NestedError;
+
+const isJSXElement = (item: any): item is JSX.Element => {
+  return isVNode(item);
+};
 
 const props = withDefaults(
   defineProps<{
@@ -36,21 +43,23 @@ const showBullets = computed(() => {
       return props.errors.length > 1;
     case "always":
       return true;
-    case "none":
+    default:
       return false;
   }
-  console.error("should never reach this line");
-  return false;
 });
 
 const itemStyle = (item: ErrorItem) => {
   if (typeof item === "string") {
     return "";
   }
-  return `margin-left: ${item.indent}rem;`;
+  if ("indent" in item) {
+    return `margin-left: ${item.indent}rem;`;
+  }
+  return "";
 };
+
 const itemText = (item: ErrorItem) => {
-  if (typeof item === "string") {
+  if (typeof item === "string" || isJSXElement(item)) {
     return item;
   }
   return item.error;

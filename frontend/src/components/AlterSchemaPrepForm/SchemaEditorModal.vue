@@ -86,10 +86,6 @@
         <SchemaEditorSQLCheckButton
           :database-list="databaseList"
           :get-statement="generateOrGetEditingDDL"
-          :use-online-schema-migration="state.useOnlineSchemaMigration"
-          @toggle-online-schema-migration="
-            state.useOnlineSchemaMigration = $event
-          "
         />
       </template>
     </NTabs>
@@ -102,12 +98,6 @@
           v-model:checked="state.planOnly"
         >
           {{ $t("issue.sql-review-only") }}
-        </NCheckbox>
-        <NCheckbox
-          v-if="allowUseOnlineSchemaMigration"
-          v-model:checked="state.useOnlineSchemaMigration"
-        >
-          {{ $t("task.online-migration.enable") }}
         </NCheckbox>
         <NButton @click="dismissModal">
           {{ $t("common.cancel") }}
@@ -165,7 +155,6 @@ import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import {
   TinyTimer,
-  allowGhostMigrationV1,
   defer,
   extractProjectResourceName,
   generateIssueTitle,
@@ -192,7 +181,6 @@ interface LocalState {
   isUploadingFile: boolean;
   // planOnly is used to indicate whether only to create plan.
   planOnly: boolean;
-  useOnlineSchemaMigration: boolean;
 }
 
 const props = defineProps({
@@ -231,7 +219,6 @@ const state = reactive<LocalState>({
   targets: [],
   isUploadingFile: false,
   planOnly: props.planOnly,
-  useOnlineSchemaMigration: false,
 });
 const databaseV1Store = useDatabaseV1Store();
 const dbCatalogStore = useDatabaseCatalogV1Store();
@@ -273,13 +260,6 @@ const editTargetsKey = computed(() => {
     databaseNameList: props.databaseNames,
     alterType: props.alterType,
   });
-});
-
-const allowUseOnlineSchemaMigration = computed(() => {
-  return (
-    databaseChangeMode.value === DatabaseChangeMode.PIPELINE &&
-    allowGhostMigrationV1(databaseList.value)
-  );
 });
 
 const prepareDatabaseMetadata = async () => {
@@ -459,9 +439,6 @@ const handlePreviewIssue = async () => {
     template: "bb.issue.database.schema.update",
   };
   query.databaseList = databaseList.value.map((db) => db.name).join(",");
-  if (state.useOnlineSchemaMigration) {
-    query.ghost = "1";
-  }
 
   if (state.selectedTab === "raw-sql") {
     query.name = generateIssueTitle(
@@ -514,8 +491,7 @@ const handlePreviewIssue = async () => {
     const databaseNameList = databaseList.value.map((db) => db.databaseName);
     query.name = generateIssueTitle(
       "bb.issue.database.schema.update",
-      databaseNameList,
-      !!query.ghost
+      databaseNameList
     );
   }
 
