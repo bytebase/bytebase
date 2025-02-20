@@ -6,10 +6,8 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"strconv"
 	"testing"
 
-	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
@@ -52,13 +50,15 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	mysqlPort := getTestPort()
-	stopInstance := mysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
-	defer stopInstance()
-
-	mysqlDB, err := connectTestMySQL(mysqlPort, "")
+	mysqlContainer, err := getMySQLContainer(ctx)
 	a.NoError(err)
-	defer mysqlDB.Close()
+
+	defer func() {
+		mysqlContainer.db.Close()
+		err := mysqlContainer.container.Terminate(ctx)
+		a.NoError(err)
+	}()
+	mysqlDB := mysqlContainer.db
 
 	_, err = mysqlDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
 	a.NoError(err)
@@ -78,7 +78,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 			Engine:      v1pb.Engine_MYSQL,
 			Environment: "environments/prod",
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "bytebase", Password: "bytebase", Id: "admin"}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "bytebase", Password: "bytebase", Id: "admin"}},
 		},
 	})
 	a.NoError(err)
