@@ -704,10 +704,8 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 		return convertToTaskFromDatabaseCreate(ctx, s, project, task)
 	case api.TaskDatabaseSchemaBaseline:
 		return convertToTaskFromSchemaBaseline(ctx, s, project, task)
-	case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhost, api.TaskDatabaseSchemaUpdateGhostSync:
+	case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhost:
 		return convertToTaskFromSchemaUpdate(ctx, s, project, task)
-	case api.TaskDatabaseSchemaUpdateGhostCutover:
-		return convertToTaskFromSchemaUpdateGhostCutover(ctx, s, project, task)
 	case api.TaskDatabaseDataUpdate:
 		return convertToTaskFromDataUpdate(ctx, s, project, task)
 	case api.TaskDatabaseDataExport:
@@ -843,35 +841,6 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 	return v1pbTask, nil
 }
 
-func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	if task.DatabaseName == nil {
-		return nil, errors.Errorf("ghost cutover task database is nil")
-	}
-	payload := &storepb.TaskDatabaseUpdatePayload{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal task payload")
-	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database")
-	}
-	if database == nil {
-		return nil, errors.Errorf("database not found")
-	}
-	v1pbTask := &v1pb.Task{
-		Name:           common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		Title:          task.Name,
-		SpecId:         payload.SpecId,
-		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
-		SkippedReason:  payload.SkippedReason,
-		Type:           convertToTaskType(task.Type),
-		DependsOnTasks: nil,
-		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
-		Payload:        nil,
-	}
-	return v1pbTask, nil
-}
-
 func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	if task.DatabaseName == nil {
 		return nil, errors.Errorf("data update task database is nil")
@@ -983,10 +952,6 @@ func convertToTaskType(taskType api.TaskType) v1pb.Task_Type {
 		return v1pb.Task_DATABASE_SCHEMA_UPDATE_SDL
 	case api.TaskDatabaseSchemaUpdateGhost:
 		return v1pb.Task_DATABASE_SCHEMA_UPDATE_GHOST
-	case api.TaskDatabaseSchemaUpdateGhostSync:
-		return v1pb.Task_DATABASE_SCHEMA_UPDATE_GHOST_SYNC
-	case api.TaskDatabaseSchemaUpdateGhostCutover:
-		return v1pb.Task_DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER
 	case api.TaskDatabaseDataUpdate:
 		return v1pb.Task_DATABASE_DATA_UPDATE
 	case api.TaskDatabaseDataExport:
