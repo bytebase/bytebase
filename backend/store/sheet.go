@@ -363,7 +363,7 @@ func (s *Store) PatchSheet(ctx context.Context, patch *PatchSheetMessage) (*Shee
 	var uid int
 	if err := s.db.db.QueryRowContext(ctx, `
 		UPDATE sheet
-		SET 
+		SET
 			sha256 = $1
 		WHERE id = $2
 		RETURNING id
