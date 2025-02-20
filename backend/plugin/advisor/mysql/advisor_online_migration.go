@@ -89,7 +89,7 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.
 		}
 	}
 
-	if len(adviceList) > 0 {
+	if len(adviceList) > 0 && ctx.ChangeType == storepb.PlanCheckRunConfig_DDL_GHOST {
 		// Check if the ghost database exists if there is any statement that needs online migration.
 		if !advisor.DatabaseExists(ctx, ghostDatabaseName) {
 			// Prepend the advice.
