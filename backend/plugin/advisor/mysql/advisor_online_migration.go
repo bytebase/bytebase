@@ -17,6 +17,12 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+const (
+	// The database name to save temporary data for online migration.
+	// Use backup database name for now.
+	ghostDatabaseName = "bbdataarchive"
+)
+
 var (
 	_ advisor.Advisor = (*OnlineMigrationAdvisor)(nil)
 )
@@ -80,6 +86,19 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.
 				})
 			}
 		}
+	}
+
+	if !advisor.DatabaseExists(ctx, ghostDatabaseName) {
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:  level,
+			Title:   title,
+			Content: fmt.Sprintf("Needs database %q to save temporary data for online migration but it does not exist", ghostDatabaseName),
+			Code:    advisor.DatabaseNotExists.Int32(),
+			StartPosition: &storepb.Position{
+				Line: 0,
+			},
+		})
+		return adviceList, nil
 	}
 
 	// More than one statements need online migration.
