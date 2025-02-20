@@ -286,11 +286,10 @@
         "x-status-task-is-not-editable": "{status} task is not editable",
         "nothing-changed": "Nothing changed",
         "not-applicable": {
-          "some-tasks-dont-meet-ghost-requirement": "Some tasks don't meet gh-ost's requirement"
+          "task-doesnt-meet-ghost-requirement": "Task doesn't meet gh-ost's requirement",
+          "needs-database-for-saving-temp-tables": "Needs database({database}) for saving temporary tables."
         }
       },
-      "enable": "Enable online migration",
-      "disable": "Disable online migration",
       "advice-split-statement-to-single-online-migration-issue": "Advice splitting this statement to single online migration issue."
     },
     "prior-backup-tips": "Backup affected data ahead of time"

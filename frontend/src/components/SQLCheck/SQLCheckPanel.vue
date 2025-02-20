@@ -6,7 +6,7 @@
     container-class="!pt-0 -mt-px"
     @close="onClose"
   >
-    <div class="w-full flex flex-row gap-2">
+    <div class="w-full flex flex-row gap-2 mb-2">
       <NTag round v-if="riskLevelText">
         <span class="text-gray-400 text-sm mr-1">{{
           $t("issue.risk-level.self")

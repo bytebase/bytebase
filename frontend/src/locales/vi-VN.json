@@ -286,11 +286,10 @@
         "x-status-task-is-not-editable": "Tác vụ trạng thái {status} không thể chỉnh sửa",
         "nothing-changed": "Không có gì thay đổi",
         "not-applicable": {
-          "some-tasks-dont-meet-ghost-requirement": "Một số tác vụ không đáp ứng yêu cầu gh-ost"
+          "task-doesnt-meet-ghost-requirement": "Nhiệm vụ không đáp ứng được yêu cầu của gh-ost",
+          "needs-database-for-saving-temp-tables": "Cần có cơ sở dữ liệu ({database}) để lưu các bảng tạm thời."
         }
       },
-      "enable": "Bật di chuyển trực tuyến",
-      "disable": "Tắt di chuyển trực tuyến",
       "advice-split-statement-to-single-online-migration-issue": "Đề nghị chia câu lệnh này thành một vấn đề di chuyển trực tuyến."
     },
     "prior-backup-tips": "Sao lưu dữ liệu bị ảnh hưởng trước"

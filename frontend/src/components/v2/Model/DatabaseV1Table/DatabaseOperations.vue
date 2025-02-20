@@ -296,8 +296,7 @@ const generateMultiDb = async (
     template: type,
     name: generateIssueTitle(
       type,
-      props.databases.map((db) => db.databaseName),
-      false
+      props.databases.map((db) => db.databaseName)
     ),
     databaseList: props.databases.map((db) => db.name).join(","),
   };

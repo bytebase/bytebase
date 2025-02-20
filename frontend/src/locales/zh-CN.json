@@ -286,11 +286,10 @@
         "x-status-task-is-not-editable": "{status} 的任务不可编辑",
         "nothing-changed": "无任何改变",
         "not-applicable": {
-          "some-tasks-dont-meet-ghost-requirement": "部分任务不符合 gh-ost 的要求"
+          "task-doesnt-meet-ghost-requirement": "任务不符合 gh-ost 的要求",
+          "needs-database-for-saving-temp-tables": "需要数据库({database})来保存临时表。"
         }
       },
-      "enable": "启用在线大表变更",
-      "disable": "关闭在线大表变更",
       "advice-split-statement-to-single-online-migration-issue": "建议将该语句拆分成单独的在线大表变更工单。"
     },
     "prior-backup-tips": "提前备份受影响的数据"
