@@ -24,6 +24,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.34.16
 	github.com/beltran/gohive v1.7.0
 	github.com/blang/semver/v4 v4.0.0
+	github.com/bytebase/cosmosdb-parser v0.0.0-20250207092310-6249cdad18cb
 	github.com/bytebase/google-sql-parser v0.0.0-20250116032737-689a327f9465
 	github.com/bytebase/mysql-parser v0.0.0-20241224071214-cb9fd84811dd
 	github.com/bytebase/plsql-parser v0.0.0-20250218041636-9fed633593d1
@@ -136,7 +137,6 @@ require (
 	github.com/biogo/store v0.0.0-20201120204734-aad293a2328f // indirect
 	github.com/blevesearch/snowballstem v0.9.0 // indirect
 	github.com/boombuler/barcode v1.0.1 // indirect
-	github.com/bytebase/cosmosdb-parser v0.0.0-20250207092310-6249cdad18cb // indirect
 	github.com/cloudfoundry/gosigar v1.3.6 // indirect
 	github.com/cockroachdb/apd/v3 v3.1.0 // indirect
 	github.com/cockroachdb/errors v1.9.0 // indirect
