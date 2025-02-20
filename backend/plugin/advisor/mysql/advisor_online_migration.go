@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	// The database name to save temporary data for online migration.
+	// The database name to save temporary data for gh-ost.
 	// Use backup database name for now.
 	ghostDatabaseName = "bbdataarchive"
 )
