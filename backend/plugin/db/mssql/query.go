@@ -297,7 +297,7 @@ func (r *tsqlRewriter) handleSqlunion(ctx tsql.IQuery_expressionContext) {
 		r.rewriter.InsertAfterDefault(querySpecification.GetAllOrDistinct().GetTokenIndex(), fmt.Sprintf(" TOP %d", r.limitCount))
 		return
 	}
-	r.rewriter.InsertAfterDefault(querySpecification.SELECT().GetSourceInterval().Stop, fmt.Sprintf(" TOP %d", r.limitCount))
+	r.rewriter.InsertAfterDefault(querySpecification.SELECT().GetSymbol().GetTokenIndex(), fmt.Sprintf(" TOP %d", r.limitCount))
 
 	// handle union right side
 	querySpecification = ctx.Get_sql_union().Query_specification()
@@ -306,7 +306,7 @@ func (r *tsqlRewriter) handleSqlunion(ctx tsql.IQuery_expressionContext) {
 		r.rewriter.InsertAfterDefault(querySpecification.GetAllOrDistinct().GetTokenIndex(), fmt.Sprintf(" TOP %d", r.limitCount))
 		return
 	}
-	r.rewriter.InsertAfterDefault(querySpecification.SELECT().GetSourceInterval().Stop, fmt.Sprintf(" TOP %d", r.limitCount))
+	r.rewriter.InsertAfterDefault(querySpecification.SELECT().GetSymbol().GetTokenIndex(), fmt.Sprintf(" TOP %d", r.limitCount))
 }
 
 func (r *tsqlRewriter) handleQuerySpecification(ctx tsql.IQuery_specificationContext) {
@@ -327,7 +327,7 @@ func (r *tsqlRewriter) handleQuerySpecification(ctx tsql.IQuery_specificationCon
 		return
 	}
 	// append after select keyword.
-	r.rewriter.InsertAfterDefault(ctx.SELECT().GetSourceInterval().Stop, fmt.Sprintf(" TOP %d", r.limitCount))
+	r.rewriter.InsertAfterDefault(ctx.SELECT().GetSymbol().GetTokenIndex(), fmt.Sprintf(" TOP %d", r.limitCount))
 	r.hasTop = true
 }
 
