@@ -37,6 +37,35 @@ func walkAndMaskJSON(data any, objectSchema *storepb.ObjectSchema, semanticTypeT
 			}
 		}
 		return data, nil
+	case []any:
+		if objectSchema.SemanticType != "" {
+			// If the outer semantic type is found, apply the masker recursively to the array.
+			if m, ok := semanticTypeToMasker[objectSchema.SemanticType]; ok {
+				maskedData, err := applyMaskerToData(data, m)
+				if err != nil {
+					return nil, err
+				}
+				return maskedData, nil
+			}
+		} else {
+			arrayKind := objectSchema.GetArrayKind()
+			// Quick return if there is no array kind in object schema.
+			if arrayKind == nil {
+				return data, nil
+			}
+			childObjectSchema := arrayKind.GetKind()
+			if childObjectSchema == nil {
+				return data, nil
+			}
+			// Otherwise, recursively walk the array.
+			for i, value := range data {
+				maskedValue, err := walkAndMaskJSON(value, childObjectSchema, semanticTypeToMasker)
+				if err != nil {
+					return nil, err
+				}
+				data[i] = maskedValue
+			}
+		}
 	default:
 		// For JSON atomic member, apply the masker if semantic type is found.
 		if objectSchema.SemanticType != "" {
