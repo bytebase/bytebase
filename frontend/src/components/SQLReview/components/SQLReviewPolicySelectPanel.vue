@@ -28,7 +28,7 @@
             :review-list="sqlReviewStore.reviewPolicyList"
             :allow-edit="false"
             :custom-click="true"
-            @row-click="onReviewSelect"
+            @row-click="emit('select', $event)"
           />
         </div>
       </template>
@@ -46,11 +46,10 @@
 <script setup lang="ts">
 import { NButton } from "naive-ui";
 import { watchEffect, computed } from "vue";
-import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { WORKSPACE_ROUTE_SQL_REVIEW_CREATE } from "@/router/dashboard/workspaceRoutes";
-import { useSQLReviewStore, pushNotification } from "@/store";
+import { useSQLReviewStore } from "@/store";
 import type { SQLReviewPolicy } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import SQLReviewPolicyDataTable from "./SQLReviewPolicyDataTable.vue";
@@ -62,11 +61,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: "close"): void;
+  (event: "select", review: SQLReviewPolicy): void;
 }>();
 
 const sqlReviewStore = useSQLReviewStore();
 const router = useRouter();
-const { t } = useI18n();
 
 watchEffect(() => {
   sqlReviewStore.fetchReviewPolicyList();
@@ -83,19 +82,5 @@ const createPolicy = () => {
       attachedResource: props.resource,
     },
   });
-};
-
-const onReviewSelect = async (review: SQLReviewPolicy) => {
-  await sqlReviewStore.upsertReviewConfigTag({
-    oldResources: [...review.resources],
-    newResources: [...review.resources, props.resource],
-    review: review.id,
-  });
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("common.updated"),
-  });
-  emit("close");
 };
 </script>
