@@ -19,33 +19,19 @@
         <template #suffix> MB </template>
       </NInputNumber>
     </div>
-
-    <div v-if="showUpdateButton" class="flex justify-end mt-2">
-      <NButton
-        type="primary"
-        :disabled="!allowEdit || !allowUpdate"
-        @click="handleClickUpdate"
-      >
-        {{ $t("common.update") }}
-      </NButton>
-    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import Long from "long";
-import { NButton, NInputNumber } from "naive-ui";
+import { NInputNumber } from "naive-ui";
 import { ref, computed } from "vue";
-import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 
-const props = defineProps<{
+defineProps<{
   allowEdit: boolean;
-  showUpdateButton?: boolean;
 }>();
 
-const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const timing = ref<ReturnType<typeof setTimeout>>();
 
@@ -77,24 +63,16 @@ const updateChange = async () => {
       },
     },
   });
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("settings.general.workspace.config-updated"),
-  });
 };
 
 const handleInput = (value: number | null) => {
   if (value === null) return;
   if (value === undefined) return;
   maximumSQLResultLimit.value = value;
-  if (props.showUpdateButton) {
-    return;
-  }
-  updateChange();
 };
 
-const handleClickUpdate = () => {
-  updateChange();
-};
+defineExpose({
+  isDirty: allowUpdate,
+  update: updateChange,
+});
 </script>

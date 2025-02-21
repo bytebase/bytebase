@@ -194,4 +194,8 @@ const onLogoSelect = (file: File) => {
   state.logoFile = file;
   state.logoUrl = URL.createObjectURL(file);
 };
+
+defineExpose({
+  isDirty: allowSave,
+});
 </script>

@@ -49,7 +49,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useDebounceFn } from "@vueuse/core";
+import { isEqual } from "lodash-es";
 import { NInputNumber, NRadioGroup, NRadio, NTooltip } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { featureToRef } from "@/store";
@@ -104,7 +104,7 @@ const handleValueFieldClick = () => {
   }
 };
 
-const handleFrequencySettingChange = useDebounceFn(async () => {
+const handleFrequencySettingChange = async () => {
   const seconds =
     state.timeFormat === "HOURS"
       ? state.inputValue * 60 * 60
@@ -115,7 +115,7 @@ const handleFrequencySettingChange = useDebounceFn(async () => {
     },
     updateMask: ["value.workspace_profile_setting_value.token_duration"],
   });
-}, 2000);
+};
 
 watch(
   () => [state.timeFormat],
@@ -126,15 +126,8 @@ watch(
   }
 );
 
-watch(
-  () => [state.inputValue, state.timeFormat],
-  () => {
-    if (!hasSecureTokenFeature.value) {
-      state.showFeatureModal = true;
-      return;
-    }
-
-    handleFrequencySettingChange();
-  }
-);
+defineExpose({
+  isDirty: computed(() => !isEqual(getInitialState(), state)),
+  update: handleFrequencySettingChange,
+});
 </script>

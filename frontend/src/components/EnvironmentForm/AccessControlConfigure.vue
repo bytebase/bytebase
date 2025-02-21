@@ -9,10 +9,9 @@
     <div>
       <div class="w-full inline-flex items-center gap-x-2">
         <Switch
-          :value="disableCopyDataPolicy"
+          v-model:value="state.disableCopyDataPolicy.active"
           :text="true"
           :disabled="!allowUpdatePolicy || !hasAccessControlFeature"
-          @update:value="updateDisableCopyDataPolicy"
         />
         <span class="textlabel">{{
           $t("environment.access-control.disable-copy-data-from-sql-editor")
@@ -32,14 +31,10 @@
         </div>
         <div v-if="adminDataSourceQueruRestrictionEnabled" class="ml-12">
           <NRadioGroup
-            :value="adminDataSourceQueryRestriction"
-            :disabled="!allowUpdatePolicy || !hasAccessControlFeature"
-            @update:value="
-              (value) =>
-                updateAdminDataSourceQueryRestrctionPolicy({
-                  adminDataSourceRestriction: value,
-                })
+            v-model:value="
+              state.dataSourceQueryPolicy.adminDataSourceRestriction
             "
+            :disabled="!allowUpdatePolicy || !hasAccessControlFeature"
           >
             <NRadio
               class="w-full"
@@ -78,14 +73,9 @@
     <div>
       <div class="w-full inline-flex items-center gap-x-2">
         <Switch
-          :value="dataSourceQueryPolicy?.disallowDdl ?? false"
+          v-model:value="state.dataSourceQueryPolicy.disallowDdl"
           :text="true"
           :disabled="!allowUpdatePolicy"
-          @update:value="
-            (on: boolean) => {
-              updateAdminDataSourceQueryRestrctionPolicy({ disallowDdl: on });
-            }
-          "
         />
         <span class="textlabel">
           {{ $t("environment.statement-execution.disallow-ddl") }}
@@ -93,14 +83,9 @@
       </div>
       <div class="w-full inline-flex items-center gap-x-2">
         <Switch
-          :value="dataSourceQueryPolicy?.disallowDml ?? false"
+          v-model:value="state.dataSourceQueryPolicy.disallowDml"
           :text="true"
           :disabled="!allowUpdatePolicy"
-          @update:value="
-            (on: boolean) => {
-              updateAdminDataSourceQueryRestrctionPolicy({ disallowDml: on });
-            }
-          "
         />
         <span class="textlabel">
           {{ $t("environment.statement-execution.disallow-dml") }}
@@ -111,13 +96,14 @@
 </template>
 
 <script setup lang="ts">
+import { isEqual, cloneDeep } from "lodash-es";
 import { NRadioGroup, NRadio } from "naive-ui";
-import { computed, watchEffect } from "vue";
-import { useI18n } from "vue-i18n";
-import { hasFeature, pushNotification, usePolicyV1Store } from "@/store";
+import { computed, watchEffect, reactive } from "vue";
+import { hasFeature, usePolicyV1Store } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import {
   DataSourceQueryPolicy,
+  DisableCopyDataPolicy,
   DataSourceQueryPolicy_Restriction,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
@@ -125,13 +111,36 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 import { Switch } from "../v2";
 
+interface LocalState {
+  disableCopyDataPolicy: DisableCopyDataPolicy;
+  dataSourceQueryPolicy: DataSourceQueryPolicy;
+}
+
 const props = defineProps<{
   resource: string;
   allowEdit: boolean;
 }>();
 
 const policyStore = usePolicyV1Store();
-const { t } = useI18n();
+
+const getInitialState = (): LocalState => {
+  return {
+    disableCopyDataPolicy: cloneDeep(
+      policyStore.getPolicyByParentAndType({
+        parentPath: props.resource,
+        policyType: PolicyType.DISABLE_COPY_DATA,
+      })?.disableCopyDataPolicy ?? DisableCopyDataPolicy.fromPartial({})
+    ),
+    dataSourceQueryPolicy: cloneDeep(
+      policyStore.getPolicyByParentAndType({
+        parentPath: props.resource,
+        policyType: PolicyType.DATA_SOURCE_QUERY,
+      })?.dataSourceQueryPolicy ?? DataSourceQueryPolicy.fromPartial({})
+    ),
+  };
+};
+
+const state = reactive<LocalState>(getInitialState());
 
 watchEffect(async () => {
   await Promise.all([
@@ -144,33 +153,17 @@ watchEffect(async () => {
       policyType: PolicyType.DATA_SOURCE_QUERY,
     }),
   ]);
-});
 
-const disableCopyDataPolicy = computed(() => {
-  return policyStore.getPolicyByParentAndType({
-    parentPath: props.resource,
-    policyType: PolicyType.DISABLE_COPY_DATA,
-  })?.disableCopyDataPolicy?.active;
-});
-
-const dataSourceQueryPolicy = computed(() => {
-  return policyStore.getPolicyByParentAndType({
-    parentPath: props.resource,
-    policyType: PolicyType.DATA_SOURCE_QUERY,
-  })?.dataSourceQueryPolicy;
-});
-
-const adminDataSourceQueryRestriction = computed(() => {
-  return dataSourceQueryPolicy.value?.adminDataSourceRestriction;
+  Object.assign(state, getInitialState());
 });
 
 const adminDataSourceQueruRestrictionEnabled = computed(() => {
   return (
-    adminDataSourceQueryRestriction.value &&
+    state.dataSourceQueryPolicy.adminDataSourceRestriction &&
     [
       DataSourceQueryPolicy_Restriction.DISALLOW,
       DataSourceQueryPolicy_Restriction.FALLBACK,
-    ].includes(adminDataSourceQueryRestriction.value)
+    ].includes(state.dataSourceQueryPolicy.adminDataSourceRestriction)
   );
 });
 
@@ -182,48 +175,53 @@ const allowUpdatePolicy = computed(() => {
   return props.allowEdit && hasWorkspacePermissionV2("bb.policies.update");
 });
 
-const updateDisableCopyDataPolicy = async (on: boolean) => {
+const updateDisableCopyDataPolicy = async () => {
   await policyStore.upsertPolicy({
     parentPath: props.resource,
     policy: {
       type: PolicyType.DISABLE_COPY_DATA,
       disableCopyDataPolicy: {
-        active: on,
+        ...state.disableCopyDataPolicy,
       },
     },
   });
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("common.updated"),
-  });
 };
 
-const switchDataSourceQueryPolicyEnabled = async (on: boolean) => {
-  await updateAdminDataSourceQueryRestrctionPolicy({
-    adminDataSourceRestriction: on
-      ? DataSourceQueryPolicy_Restriction.DISALLOW
-      : DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
-  });
+const switchDataSourceQueryPolicyEnabled = (on: boolean) => {
+  state.dataSourceQueryPolicy.adminDataSourceRestriction = on
+    ? DataSourceQueryPolicy_Restriction.DISALLOW
+    : DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED;
 };
 
-const updateAdminDataSourceQueryRestrctionPolicy = async (
-  policy: Partial<DataSourceQueryPolicy>
-) => {
+const updateAdminDataSourceQueryRestrctionPolicy = async () => {
   await policyStore.upsertPolicy({
     parentPath: props.resource,
     policy: {
       type: PolicyType.DATA_SOURCE_QUERY,
       dataSourceQueryPolicy: DataSourceQueryPolicy.fromPartial({
-        ...(dataSourceQueryPolicy.value ?? {}),
-        ...policy,
+        ...state.dataSourceQueryPolicy,
       }),
     },
   });
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("common.updated"),
-  });
 };
+
+defineExpose({
+  isDirty: computed(() => !isEqual(state, getInitialState())),
+  update: async () => {
+    const initialState = getInitialState();
+    if (
+      !isEqual(state.dataSourceQueryPolicy, initialState.dataSourceQueryPolicy)
+    ) {
+      await updateAdminDataSourceQueryRestrctionPolicy();
+    }
+    if (
+      !isEqual(state.disableCopyDataPolicy, initialState.disableCopyDataPolicy)
+    ) {
+      await updateDisableCopyDataPolicy();
+    }
+  },
+  revert: () => {
+    Object.assign(state, getInitialState());
+  },
+});
 </script>
