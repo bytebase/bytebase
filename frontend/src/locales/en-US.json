@@ -493,7 +493,6 @@
         "security": "Security",
         "account": "Account",
         "watermark": {
-          "update-success": "Watermark setting updated",
           "description": "Display watermarks on pages, including username, ID and email.",
           "enable": "Enable watermark"
         },

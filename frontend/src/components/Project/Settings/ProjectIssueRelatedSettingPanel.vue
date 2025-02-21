@@ -175,7 +175,14 @@
 <script setup lang="tsx">
 import { isEqual, cloneDeep } from "lodash-es";
 import { TriangleAlertIcon } from "lucide-vue-next";
-import { NButton, NDynamicTags, NTag, NColorPicker, NCheckbox } from "naive-ui";
+import {
+  NButton,
+  NDynamicTags,
+  NTag,
+  NColorPicker,
+  NCheckbox,
+  NTooltip,
+} from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { FeatureBadge } from "@/components/FeatureGuard";

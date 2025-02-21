@@ -493,7 +493,6 @@
         "security": "安全",
         "account": "帐户",
         "watermark": {
-          "update-success": "水印设置已更新",
           "description": "在页面上显示水印，包含用户名、ID 和 Email。",
           "enable": "开启水印"
         },

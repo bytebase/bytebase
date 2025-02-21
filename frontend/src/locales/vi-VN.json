@@ -493,7 +493,6 @@
         "security": "Bảo mật",
         "account": "Tài khoản",
         "watermark": {
-          "update-success": "Đã cập nhật cài đặt hình mờ",
           "description": "Hiển thị hình mờ trên các trang, bao gồm tên người dùng, ID và email.",
           "enable": "Bật hình mờ"
         },

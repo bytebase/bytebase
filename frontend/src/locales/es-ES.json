@@ -493,7 +493,6 @@
         "security": "Seguridad",
         "account": "Cuenta",
         "watermark": {
-          "update-success": "Configuración de marca de agua actualizada",
           "description": "Mostrar marcas de agua en las páginas, incluyendo el nombre de usuario, el ID y el correo electrónico.",
           "enable": "Activar marca de agua"
         },

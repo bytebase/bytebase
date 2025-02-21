@@ -111,7 +111,7 @@
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
 import { NButton, NInput, NTooltip } from "naive-ui";
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { AnnouncementLevelSelect } from "@/components/v2";
 import { pushNotification, featureToRef } from "@/store";

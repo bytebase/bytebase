@@ -29,6 +29,7 @@
 </template>
 
 <script setup lang="ts">
+import { NButton } from "naive-ui";
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import AccessControlConfigure from "@/components/EnvironmentForm/AccessControlConfigure.vue";

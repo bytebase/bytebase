@@ -83,6 +83,7 @@
 
 <script lang="ts" setup>
 import { isEqual } from "lodash-es";
+import { NButton } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { Switch } from "@/components/v2";
