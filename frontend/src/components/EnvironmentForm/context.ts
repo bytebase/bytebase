@@ -17,6 +17,7 @@ export type LocalState = {
   environment: Environment;
   rolloutPolicy: Policy;
   environmentTier: EnvironmentTier;
+  policyChanged: boolean;
 };
 
 const KEY = Symbol(
@@ -42,6 +43,10 @@ export const provideEnvironmentFormContext = (baseContext: {
       policyType: PolicyType;
       policy: Policy;
     };
+    "update-access-control": undefined;
+    "revert-access-control": undefined;
+    "update-sql-review": undefined;
+    "revert-sql-review": undefined;
     archive: Environment;
     restore: Environment;
     cancel: undefined;
@@ -51,6 +56,7 @@ export const provideEnvironmentFormContext = (baseContext: {
     environment: cloneDeep(environment.value),
     rolloutPolicy: cloneDeep(rolloutPolicy.value),
     environmentTier: environmentTier.value,
+    policyChanged: false,
   });
   const missingFeature = ref<FeatureType | undefined>(undefined);
   const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
@@ -74,7 +80,8 @@ export const provideEnvironmentFormContext = (baseContext: {
         return (
           !isEqual(environment.value, state.value.environment) ||
           !isEqual(rolloutPolicy.value, state.value.rolloutPolicy) ||
-          !isEqual(environmentTier.value, state.value.environmentTier)
+          !isEqual(environmentTier.value, state.value.environmentTier) ||
+          state.value.policyChanged
         );
     }
   };

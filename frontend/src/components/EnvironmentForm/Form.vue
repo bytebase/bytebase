@@ -90,12 +90,14 @@
 
       <SQLReviewForResource
         v-if="features.includes('SQL_REVIEW') && !create"
+        ref="sqlReviewForResourceRef"
         :resource="environment.name"
         :allow-edit="allowEdit"
       />
 
       <AccessControlConfigure
         v-if="features.includes('ACCESS_CONTROL') && !create"
+        ref="accessControlConfigureRef"
         :resource="environment.name"
         :allow-edit="allowEdit"
       />
@@ -141,9 +143,10 @@
 <script lang="tsx" setup>
 import { NCheckbox, NInput, NColorPicker } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useEnvironmentV1List,
   useEnvironmentV1Store,
@@ -195,6 +198,25 @@ const {
   resourceIdField,
 } = useEnvironmentFormContext();
 const environmentList = useEnvironmentV1List();
+
+const accessControlConfigureRef =
+  ref<InstanceType<typeof AccessControlConfigure>>();
+const sqlReviewForResourceRef =
+  ref<InstanceType<typeof SQLReviewForResource>>();
+
+watch(
+  () => [
+    accessControlConfigureRef.value?.isDirty ?? false,
+    sqlReviewForResourceRef.value?.isDirty ?? false,
+  ],
+  ([d1, d2]) => {
+    if (d1 || d2) {
+      state.value.policyChanged = true;
+    } else if (!d1 && !d2) {
+      state.value.policyChanged = false;
+    }
+  }
+);
 
 const hasEnvironmentPolicyFeature = computed(() =>
   hasFeature("bb.feature.environment-tier-policy")
@@ -285,4 +307,21 @@ const archiveEnvironment = () => {
 const restoreEnvironment = () => {
   events.emit("restore", state.value.environment);
 };
+
+useEmitteryEventListener(events, "update-access-control", async () => {
+  if (accessControlConfigureRef.value?.isDirty) {
+    await accessControlConfigureRef.value.update();
+  }
+});
+useEmitteryEventListener(events, "revert-access-control", () => {
+  accessControlConfigureRef.value?.revert();
+});
+useEmitteryEventListener(events, "update-sql-review", async () => {
+  if (sqlReviewForResourceRef.value?.isDirty) {
+    await sqlReviewForResourceRef.value.update();
+  }
+});
+useEmitteryEventListener(events, "revert-sql-review", () => {
+  sqlReviewForResourceRef.value?.revert();
+});
 </script>

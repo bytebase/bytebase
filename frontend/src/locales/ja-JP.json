@@ -493,7 +493,6 @@
         "security": "セキュリティ",
         "account": "アカウント",
         "watermark": {
-          "update-success": "ウォーターマーク設定が更新されました",
           "description": "ユーザー名、ID、メールアドレスを含むページにウォーターマークを表示します。",
           "enable": "ウォーターマークをオンにする"
         },
@@ -1621,10 +1620,12 @@
         "self": "イシュー関連",
         "labels": {
           "self": "ラベル",
+          "description": "問題にラベルを貼って管理できる",
           "configure-labels": "ラベルを設定する",
           "force-issue-labels": {
             "self": "すべてのイシューにラベルが必要",
-            "description": "イシューを作成するときは、少なくとも 1 つのラベルが必要です。"
+            "description": "イシューを作成するときは、少なくとも 1 つのラベルが必要です。",
+            "warning": "少なくとも 1 つのラベルを設定する必要があります"
           }
         },
         "allow-modify-statement": {

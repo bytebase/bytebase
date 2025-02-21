@@ -146,4 +146,8 @@ const updateNetworkSetting = async () => {
   state.gitopsWebhookUrl =
     settingV1Store.workspaceProfileSetting?.gitopsWebhookUrl ?? "";
 };
+
+defineExpose({
+  isDirty: allowSave,
+});
 </script>

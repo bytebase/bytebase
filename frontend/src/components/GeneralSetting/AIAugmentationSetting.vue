@@ -250,4 +250,8 @@ onMounted(() => {
     });
   }
 });
+
+defineExpose({
+  isDirty: allowSave,
+});
 </script>

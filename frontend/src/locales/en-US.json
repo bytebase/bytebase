@@ -493,7 +493,6 @@
         "security": "Security",
         "account": "Account",
         "watermark": {
-          "update-success": "Watermark setting updated",
           "description": "Display watermarks on pages, including username, ID and email.",
           "enable": "Enable watermark"
         },
@@ -1621,10 +1620,12 @@
         "self": "Issue Related",
         "labels": {
           "self": "Labels",
+          "description": "Labels can be attached in the issues for management",
           "configure-labels": "Configure labels",
           "force-issue-labels": {
             "self": "Require labels for all issues",
-            "description": "Require at least one label when creating issues."
+            "description": "Require at least one label when creating issues.",
+            "warning": "Require at least configured one label"
           }
         },
         "allow-modify-statement": {

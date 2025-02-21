@@ -1,9 +1,12 @@
 <template>
   <div class="w-full flex flex-col justify-start items-start pt-6 space-y-4">
     <div class="space-y-2 mb-4">
-      <span class="text-lg font-medium text-main">
+      <div class="text-lg font-medium text-main">
         {{ $t("project.settings.issue-related.labels.self") }}
-      </span>
+        <div class="textinfolabel">
+          {{ $t("project.settings.issue-related.labels.description") }}
+        </div>
+      </div>
       <NDynamicTags
         :size="'large'"
         :disabled="!allowEdit"
@@ -56,10 +59,27 @@
           :disabled="
             !allowUpdateIssueProjectSetting || state.issueLabels.length === 0
           "
-          :label="
-            $t('project.settings.issue-related.labels.force-issue-labels.self')
-          "
-        />
+        >
+          <template #default>
+            <div class="flex items-center gap-x-2">
+              {{
+                $t(
+                  "project.settings.issue-related.labels.force-issue-labels.self"
+                )
+              }}
+              <NTooltip v-if="allowEdit && state.issueLabels.length === 0">
+                <template #trigger>
+                  <TriangleAlertIcon class="w-4 text-warning" />
+                </template>
+                {{
+                  $t(
+                    "project.settings.issue-related.labels.force-issue-labels.warning"
+                  )
+                }}
+              </NTooltip>
+            </div>
+          </template>
+        </NCheckbox>
         <p class="text-sm text-gray-400 pl-6 ml-0.5">
           {{
             $t(
@@ -154,7 +174,15 @@
 
 <script setup lang="tsx">
 import { isEqual, cloneDeep } from "lodash-es";
-import { NButton, NDynamicTags, NTag, NColorPicker, NCheckbox } from "naive-ui";
+import { TriangleAlertIcon } from "lucide-vue-next";
+import {
+  NButton,
+  NDynamicTags,
+  NTag,
+  NColorPicker,
+  NCheckbox,
+  NTooltip,
+} from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { FeatureBadge } from "@/components/FeatureGuard";
@@ -312,4 +340,8 @@ const getUpdateMask = () => {
   }
   return mask;
 };
+
+defineExpose({
+  isDirty: valueChanged,
+});
 </script>
