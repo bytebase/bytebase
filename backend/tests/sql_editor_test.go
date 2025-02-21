@@ -183,7 +183,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			instance = mysqlInstance
 		case storepb.Engine_POSTGRES:
 			instance = pgInstance
-			databaseOwner = "root"
+			databaseOwner = "postgres"
 		default:
 			a.FailNow("unsupported db type")
 		}
