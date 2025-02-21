@@ -57,3 +57,45 @@ func getMySQLContainer(ctx context.Context) (*Container, error) {
 		db:        db,
 	}, nil
 }
+
+func getPgContainer(ctx context.Context) (*Container, error) {
+	req := testcontainers.ContainerRequest{
+		Image: "postgres:16-alpine",
+		Env: map[string]string{
+			"LANG":              "en_US.UTF-8",
+			"POSTGRES_PASSWORD": "root-password",
+		},
+		ExposedPorts: []string{"5432/tcp"},
+		WaitingFor:   wait.ForListeningPort("5432/tcp"),
+	}
+
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	host, err := c.Host(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	port, err := c.MappedPort(ctx, "5432/tcp")
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres", host, port.Port()))
+	if err != nil {
+		return nil, err
+	}
+
+	return &Container{
+		container: c,
+		host:      host,
+		port:      port.Port(),
+		db:        db,
+	}, nil
+}

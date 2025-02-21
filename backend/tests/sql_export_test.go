@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -16,8 +15,6 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	resourcemysql "github.com/bytebase/bytebase/backend/resources/mysql"
-	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -125,14 +122,23 @@ func TestSQLExport(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	mysqlPort := getTestPort()
-	mysqlStopInstance := resourcemysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
-	defer mysqlStopInstance()
+	mysqlContainer, err := getMySQLContainer(ctx)
+	a.NoError(err)
 
-	// Create a PostgreSQL instance.
-	pgPort := getTestPort()
-	stopInstance := postgres.SetupTestInstance(pgBinDir, t.TempDir(), pgPort)
-	defer stopInstance()
+	defer func() {
+		mysqlContainer.db.Close()
+		err := mysqlContainer.container.Terminate(ctx)
+		a.NoError(err)
+	}()
+
+	pgContainer, err := getPgContainer(ctx)
+	a.NoError(err)
+
+	defer func() {
+		pgContainer.db.Close()
+		err := pgContainer.container.Terminate(ctx)
+		a.NoError(err)
+	}()
 
 	mysqlInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance", 10),
@@ -141,7 +147,7 @@ func TestSQLExport(t *testing.T) {
 			Engine:      v1pb.Engine_MYSQL,
 			Environment: "environments/prod",
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "root", Password: "", Id: "admin"}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "root", Password: "root-password", Id: "admin"}},
 		},
 	})
 	a.NoError(err)
@@ -153,7 +159,7 @@ func TestSQLExport(t *testing.T) {
 			Engine:      v1pb.Engine_POSTGRES,
 			Environment: "environments/prod",
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "root", Id: "admin"}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "postgres", Password: "root-password", Id: "admin"}},
 		},
 	})
 	a.NoError(err)
@@ -166,7 +172,7 @@ func TestSQLExport(t *testing.T) {
 			instance = mysqlInstance
 		case storepb.Engine_POSTGRES:
 			instance = pgInstance
-			databaseOwner = "root"
+			databaseOwner = "postgres"
 		default:
 			a.FailNow("unsupported db type")
 		}
