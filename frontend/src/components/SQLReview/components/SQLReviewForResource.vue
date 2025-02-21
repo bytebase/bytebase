@@ -4,7 +4,10 @@
       {{ $t("sql-review.title") }}
     </label>
     <div>
-      <div v-if="sqlReviewPolicy" class="inline-flex items-center gap-x-2">
+      <div
+        v-if="pendingSelectReviewPolicy"
+        class="inline-flex items-center gap-x-2"
+      >
         <Switch
           v-if="allowEditSQLReviewPolicy"
           v-model:value="enforceSQLReviewPolicy"
@@ -14,7 +17,12 @@
           class="textlabel normal-link !text-accent"
           @click="onSQLReviewPolicyClick"
         >
-          {{ sqlReviewPolicy.name }}
+          {{ pendingSelectReviewPolicy.name }}
+          <NButton quaternary size="tiny" @click.stop="onReviewPolicyRemove">
+            <template #icon>
+              <XIcon class="w-4 h-auto" />
+            </template>
+          </NButton>
         </span>
       </div>
       <NButton
@@ -33,16 +41,20 @@
     :resource="resource"
     :show="showReviewSelectPanel"
     @close="showReviewSelectPanel = false"
+    @select="onReviewPolicySelect"
   />
 </template>
 
 <script setup lang="ts">
+import { isEqual } from "lodash-es";
+import { XIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { computed, ref } from "vue";
+import { computed, ref, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import { Switch } from "@/components/v2";
 import { WORKSPACE_ROUTE_SQL_REVIEW_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import { useSQLReviewStore, useReviewPolicyByResource } from "@/store";
+import type { SQLReviewPolicy } from "@/types";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
 import SQLReviewPolicySelectPanel from "./SQLReviewPolicySelectPanel.vue";
 
@@ -54,35 +66,79 @@ const props = defineProps<{
 const router = useRouter();
 const reviewStore = useSQLReviewStore();
 const showReviewSelectPanel = ref<boolean>(false);
+const pendingSelectReviewPolicy = ref<SQLReviewPolicy | undefined>(undefined);
 
 const sqlReviewPolicy = useReviewPolicyByResource(
   computed(() => props.resource)
 );
-const enforceSQLReviewPolicy = ref<boolean>(
-  sqlReviewPolicy.value?.enforce ?? false
-);
+const enforceSQLReviewPolicy = ref<boolean>(false);
+
+const resetState = () => {
+  pendingSelectReviewPolicy.value = sqlReviewPolicy.value;
+  enforceSQLReviewPolicy.value = sqlReviewPolicy.value?.enforce ?? false;
+};
+
+watchEffect(resetState);
 
 const allowEditSQLReviewPolicy = computed(() => {
   return props.allowEdit && hasWorkspacePermissionV2("bb.policies.update");
 });
 
+const onReviewPolicySelect = (review: SQLReviewPolicy) => {
+  pendingSelectReviewPolicy.value = review;
+  enforceSQLReviewPolicy.value = true;
+  showReviewSelectPanel.value = false;
+};
+
+const onReviewPolicyRemove = () => {
+  pendingSelectReviewPolicy.value = undefined;
+  enforceSQLReviewPolicy.value = false;
+};
+
 const toggleSQLReviewPolicy = async () => {
-  const policy = sqlReviewPolicy.value;
-  if (!policy) return;
-  const originalOn = policy.enforce;
-  if (enforceSQLReviewPolicy.value === originalOn) return;
-  await reviewStore.upsertReviewPolicy({
-    id: policy.id,
-    enforce: enforceSQLReviewPolicy.value,
-  });
+  if (!isEqual(sqlReviewPolicy.value, pendingSelectReviewPolicy.value)) {
+    if (sqlReviewPolicy.value) {
+      // remove resource from old review policy
+      await reviewStore.upsertReviewConfigTag({
+        oldResources: [...sqlReviewPolicy.value.resources],
+        newResources: sqlReviewPolicy.value.resources.filter(
+          (resource) => resource !== props.resource
+        ),
+        review: sqlReviewPolicy.value.id,
+      });
+    }
+    if (pendingSelectReviewPolicy.value) {
+      // attach resource to new selected review policy.
+      await reviewStore.upsertReviewConfigTag({
+        oldResources: [...pendingSelectReviewPolicy.value.resources],
+        newResources: [
+          ...pendingSelectReviewPolicy.value.resources,
+          props.resource,
+        ],
+        review: pendingSelectReviewPolicy.value.id,
+      });
+    }
+  }
+
+  if (
+    pendingSelectReviewPolicy.value &&
+    pendingSelectReviewPolicy.value.enforce !== enforceSQLReviewPolicy.value
+  ) {
+    await reviewStore.upsertReviewPolicy({
+      id: pendingSelectReviewPolicy.value.id,
+      enforce: enforceSQLReviewPolicy.value,
+    });
+  }
 };
 
 const onSQLReviewPolicyClick = () => {
-  if (sqlReviewPolicy.value) {
+  if (pendingSelectReviewPolicy.value) {
     router.push({
       name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
       params: {
-        sqlReviewPolicySlug: sqlReviewPolicySlug(sqlReviewPolicy.value),
+        sqlReviewPolicySlug: sqlReviewPolicySlug(
+          pendingSelectReviewPolicy.value
+        ),
       },
     });
   }
@@ -91,10 +147,11 @@ const onSQLReviewPolicyClick = () => {
 defineExpose({
   isDirty: computed(
     () =>
-      enforceSQLReviewPolicy.value !== (sqlReviewPolicy.value?.enforce ?? false)
+      enforceSQLReviewPolicy.value !==
+        (pendingSelectReviewPolicy.value?.enforce ?? false) ||
+      !isEqual(pendingSelectReviewPolicy.value, sqlReviewPolicy.value)
   ),
   update: toggleSQLReviewPolicy,
-  revert: () =>
-    (enforceSQLReviewPolicy.value = sqlReviewPolicy.value?.enforce ?? false),
+  revert: resetState,
 });
 </script>
