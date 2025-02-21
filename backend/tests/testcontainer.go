@@ -49,6 +49,9 @@ func getMySQLContainer(ctx context.Context) (*Container, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
 
 	return &Container{
 		container: c,
@@ -89,6 +92,10 @@ func getPgContainer(ctx context.Context) (*Container, error) {
 
 	db, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres", host, port.Port()))
 	if err != nil {
+		return nil, err
+	}
+
+	if err := db.Ping(); err != nil {
 		return nil, err
 	}
 
