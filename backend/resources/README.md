@@ -1,7 +1,5 @@
 # Resources
 
-You need to run `go generate -tags mysql ./...` to download some resources manually.
-
 ## Postgresql
 
 We will embed Postgres binaries to serve and store backend data. We will extract the binary to a binary path and install Postgres. We will use Go file suffix build tags to include the embedded file only for the build platform. For example, resources_darwin_amd64.go will only be included for building Bytebase on darwin/amd64 platform.
@@ -16,7 +14,7 @@ darwin/amd64 used for MacOS amd64: https://repo1.maven.org/maven2/io/zonky/test/
 
 darwin/arm64v8 used for MacOS arm64v8: https://repo1.maven.org/maven2/io/zonky/test/postgres/embedded-postgres-binaries-darwin-arm64v8/14.2.0/embedded-postgres-binaries-darwin-arm64v8-14.2.0.jar
 
-### Embeded Postgres binary
+## Embeded Postgres binary
 
 https://github.com/zonkyio/embedded-postgres-binaries
 
@@ -24,18 +22,6 @@ https://github.com/zonkyio/embedded-postgres-binaries
 ./gradlew clean install -Pversion=16.0.0 -PpgVersion=16.0 -ParchName=arm64v8
 
 Darwin should bring in "lib/libpq*".
-
-## MySQL/mysqlutil
-
-We will embed MySQL binaries for testing. You need to run `GOOS=darwin GOARCH=amd64 go generate -tags mysql ./...` to download MySQL distributions first. We embed mysqlutil for PITR. MySQL does not provide separate mysql, mysqldump and mysqlbinlog binaries, and we need to extract our files from the MySQL distribution manually with `GOOS=darwin GOARCH=amd64 go generate --tags mysqlutil ./...`.
-
-linux-glibc2.17-x86_64 used for Linux amd64: https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.33-linux-glibc2.17-x86_64-minimal.tar.xz
-
-linux-glibc2.17-aarch64.tar.gz used for Linux amd64: https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.33-linux-glibc2.17-aarch64.tar.gz
-
-macos13-arm64 used for MacOS Apple Silicon: https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.33-macos13-arm64.tar.gz
-
-macos13-x86_64 used for MacOS Intel processor: https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.33-macos13-x86_64.tar.gz
 
 ### mongoutil
 

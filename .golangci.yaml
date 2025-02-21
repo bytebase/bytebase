@@ -36,8 +36,6 @@ issues:
 
 run:
   timeout: 30m
-  build-tags:
-    - mysql
 
 linters-settings:
   goimports:
