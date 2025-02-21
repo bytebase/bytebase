@@ -137,7 +137,6 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 
 	mysqlContainer, err := getMySQLContainer(ctx)
 	a.NoError(err)
-
 	defer func() {
 		mysqlContainer.db.Close()
 		err := mysqlContainer.container.Terminate(ctx)
@@ -146,7 +145,6 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 
 	pgContainer, err := getPgContainer(ctx)
 	a.NoError(err)
-
 	defer func() {
 		pgContainer.db.Close()
 		err := pgContainer.container.Terminate(ctx)
@@ -172,7 +170,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			Engine:      v1pb.Engine_POSTGRES,
 			Environment: "environments/prod",
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "root", Password: "root-password", Id: "admin"}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "postgres", Password: "root-password", Id: "admin"}},
 		},
 	})
 	a.NoError(err)
