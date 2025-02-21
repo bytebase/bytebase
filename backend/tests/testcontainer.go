@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -44,7 +43,6 @@ func getMySQLContainer(ctx context.Context) (*Container, error) {
 	if err != nil {
 		return nil, err
 	}
-	time.Sleep(10 * time.Second)
 
 	dsn := fmt.Sprintf("root:root-password@tcp(%s:%s)/?multiStatements=true", host, port.Port())
 	db, err := sql.Open("mysql", dsn)
@@ -91,7 +89,6 @@ func getPgContainer(ctx context.Context) (*Container, error) {
 	if err != nil {
 		return nil, err
 	}
-	time.Sleep(10 * time.Second)
 
 	db, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres", host, port.Port()))
 	if err != nil {
