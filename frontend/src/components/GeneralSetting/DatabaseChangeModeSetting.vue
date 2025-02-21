@@ -183,4 +183,8 @@ const goToSQLEditor = () => {
     name: SQL_EDITOR_HOME_MODULE,
   });
 };
+
+defineExpose({
+  isDirty: allowSave,
+});
 </script>

@@ -2,10 +2,9 @@
   <div>
     <div class="flex items-center gap-x-2">
       <Switch
-        :value="restrictIssueCreationForSQLReview"
+        v-model:value="restrictIssueCreationForSQLReview"
         :text="true"
         :disabled="!allowEdit"
-        @update:value="handleRestrictIssueCreationForSQLReviewToggle"
       />
       <span class="textlabel">
         {{
@@ -27,11 +26,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import { useI18n } from "vue-i18n";
+import { computed, ref } from "vue";
 import {
   hasFeature,
-  pushNotification,
   usePolicyV1Store,
   usePolicyByParentAndType,
 } from "@/store";
@@ -48,7 +45,6 @@ const props = defineProps<{
   allowEdit: boolean;
 }>();
 
-const { t } = useI18n();
 const policyV1Store = usePolicyV1Store();
 
 const allowEdit = computed(() => {
@@ -66,28 +62,29 @@ const { policy } = usePolicyByParentAndType(
   }))
 );
 
-const restrictIssueCreationForSQLReview = computed((): boolean => {
-  return (
-    policy.value?.restrictIssueCreationForSqlReviewPolicy?.disallow ?? false
-  );
-});
+const restrictIssueCreationForSQLReview = ref<boolean>(
+  policy.value?.restrictIssueCreationForSqlReviewPolicy?.disallow ?? false
+);
 
-const handleRestrictIssueCreationForSQLReviewToggle = async (on: boolean) => {
+const handleRestrictIssueCreationForSQLReviewToggle = async () => {
   await policyV1Store.upsertPolicy({
     parentPath: props.resource,
     policy: {
       type: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
       resourceType: PolicyResourceType.PROJECT,
       restrictIssueCreationForSqlReviewPolicy: {
-        disallow: on,
+        disallow: restrictIssueCreationForSQLReview.value,
       },
     },
   });
-
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("settings.general.workspace.config-updated"),
-  });
 };
+
+defineExpose({
+  isDirty: computed(
+    () =>
+      restrictIssueCreationForSQLReview.value !==
+      (policy.value?.restrictIssueCreationForSqlReviewPolicy?.disallow ?? false)
+  ),
+  update: handleRestrictIssueCreationForSQLReviewToggle,
+});
 </script>

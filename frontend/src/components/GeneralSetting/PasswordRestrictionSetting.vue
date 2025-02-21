@@ -9,7 +9,7 @@
     <div class="w-full flex flex-col space-y-3">
       <div class="flex items-center space-x-2">
         <NInputNumber
-          :value="passwordRestrictionSetting.minLength"
+          :value="state.minLength"
           :readonly="!allowEdit"
           class="w-24"
           :min="1"
@@ -28,13 +28,13 @@
         <span class="textlabel">
           {{
             $t("settings.general.workspace.password-restriction.min-length", {
-              min: passwordRestrictionSetting.minLength || DEFAULT_MIN_LENGTH,
+              min: state.minLength || DEFAULT_MIN_LENGTH,
             })
           }}
         </span>
       </div>
       <NCheckbox
-        :checked="passwordRestrictionSetting.requireNumber"
+        :checked="state.requireNumber"
         :readonly="!allowEdit"
         @update:checked="
           (val) => {
@@ -49,7 +49,7 @@
         </span>
       </NCheckbox>
       <NCheckbox
-        :checked="passwordRestrictionSetting.requireLetter"
+        :checked="state.requireLetter"
         :readonly="!allowEdit"
         @update:checked="
           (val) => {
@@ -64,7 +64,7 @@
         </span>
       </NCheckbox>
       <NCheckbox
-        :checked="passwordRestrictionSetting.requireUppercaseLetter"
+        :checked="state.requireUppercaseLetter"
         :readonly="!allowEdit"
         @update:checked="
           (val) => {
@@ -81,7 +81,7 @@
         </span>
       </NCheckbox>
       <NCheckbox
-        :checked="passwordRestrictionSetting.requireSpecialCharacter"
+        :checked="state.requireSpecialCharacter"
         :readonly="!allowEdit"
         @update:checked="
           (val) => {
@@ -98,7 +98,7 @@
         </span>
       </NCheckbox>
       <NCheckbox
-        :checked="passwordRestrictionSetting.requireResetPasswordForFirstLogin"
+        :checked="state.requireResetPasswordForFirstLogin"
         :readonly="!allowEdit"
         @update:checked="
           (val) => {
@@ -115,7 +115,7 @@
         </span>
       </NCheckbox>
       <NCheckbox
-        :checked="!!passwordRestrictionSetting.passwordRotation"
+        :checked="!!state.passwordRotation"
         :readonly="!allowEdit"
         class="!flex !items-center"
         @update:checked="
@@ -138,13 +138,9 @@
         >
           <template #day>
             <NInputNumber
-              v-if="passwordRestrictionSetting.passwordRotation"
+              v-if="state.passwordRotation"
               :value="
-                Number(
-                  passwordRestrictionSetting.passwordRotation.seconds.divide(
-                    24 * 60 * 60
-                  )
-                )
+                Number(state.passwordRotation.seconds.divide(24 * 60 * 60))
               "
               :readonly="!allowEdit"
               :min="1"
@@ -178,10 +174,10 @@
 </template>
 
 <script setup lang="tsx">
+import { cloneDeep, isEqual } from "lodash-es";
 import { NInputNumber, NCheckbox } from "naive-ui";
-import { computed, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import { featureToRef, pushNotification } from "@/store";
+import { computed, ref, reactive } from "vue";
+import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
@@ -193,7 +189,6 @@ defineProps<{
   allowEdit: boolean;
 }>();
 
-const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const showFeatureModal = ref<boolean>(false);
 const hasPasswordFeature = featureToRef("bb.feature.password-restriction");
@@ -204,24 +199,29 @@ const passwordRestrictionSetting = computed(
       ?.passwordRestrictionSetting ?? PasswordRestrictionSetting.fromPartial({})
 );
 
+const state = reactive<PasswordRestrictionSetting>(
+  cloneDeep(passwordRestrictionSetting.value)
+);
+
 const onUpdate = async (update: Partial<PasswordRestrictionSetting>) => {
   if (!hasPasswordFeature.value) {
     showFeatureModal.value = true;
     return;
   }
-  await settingV1Store.upsertSetting({
-    name: "bb.workspace.password-restriction",
-    value: {
-      passwordRestrictionSetting: {
-        ...passwordRestrictionSetting.value,
-        ...update,
-      },
-    },
-  });
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("common.updated"),
-  });
+  Object.assign(state, update);
 };
+
+defineExpose({
+  isDirty: computed(() => !isEqual(passwordRestrictionSetting.value, state)),
+  update: async () => {
+    await settingV1Store.upsertSetting({
+      name: "bb.workspace.password-restriction",
+      value: {
+        passwordRestrictionSetting: {
+          ...state,
+        },
+      },
+    });
+  },
+});
 </script>

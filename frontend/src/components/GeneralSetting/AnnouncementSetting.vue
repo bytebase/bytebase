@@ -28,7 +28,7 @@
             <div class="flex flex-wrap py-2 radio-set-row gap-4">
               <AnnouncementLevelSelect
                 v-model:level="state.announcement.level"
-                :allow-edit="allowEdit"
+                :allow-edit="allowEdit && hasAnnouncementFeature"
               />
             </div>
           </template>
@@ -57,7 +57,7 @@
               :placeholder="
                 $t('settings.general.workspace.announcement-text.placeholder')
               "
-              :disabled="!allowEdit"
+              :disabled="!allowEdit || !hasAnnouncementFeature"
             />
           </template>
           <span class="text-sm text-gray-400 -translate-y-2">
@@ -82,7 +82,7 @@
               :placeholder="
                 $t('settings.general.workspace.extra-link.placeholder')
               "
-              :disabled="!allowEdit"
+              :disabled="!allowEdit || !hasAnnouncementFeature"
             />
           </template>
           <span class="text-sm text-gray-400 -translate-y-2">
@@ -100,39 +100,28 @@
             :disabled="!allowEdit || !allowSave"
             @click.prevent="updateAnnouncementSetting"
           >
-            <FeatureBadge
-              feature="bb.feature.announcement"
-              custom-class="mr-1 text-white pointer-events-none"
-            />
             {{ $t("common.update") }}
           </NButton>
         </div>
       </div>
     </div>
-
-    <FeatureModal
-      feature="bb.feature.announcement"
-      :open="state.showFeatureModal"
-      @cancel="state.showFeatureModal = false"
-    />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
 import { NButton, NInput, NTooltip } from "naive-ui";
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { AnnouncementLevelSelect } from "@/components/v2";
 import { pushNotification, featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import type { Announcement } from "@/types/proto/v1/setting_service";
+import { Announcement } from "@/types/proto/v1/setting_service";
 import { Announcement_AlertLevel } from "@/types/proto/v1/setting_service";
-import { FeatureBadge, FeatureModal } from "../FeatureGuard";
+import { FeatureBadge } from "../FeatureGuard";
 
 interface LocalState {
   announcement: Announcement;
-  showFeatureModal: boolean;
 }
 
 defineProps<{
@@ -141,48 +130,26 @@ defineProps<{
 
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
-const hasAnnouncementSetting = featureToRef("bb.feature.announcement");
+const hasAnnouncementFeature = featureToRef("bb.feature.announcement");
 
-const defaultAnnouncement = function (): Announcement {
-  return {
-    level: Announcement_AlertLevel.ALERT_LEVEL_INFO,
-    text: "",
-    link: "",
-  };
-};
+const rawAnnouncement = computed(() =>
+  cloneDeep(
+    settingV1Store.workspaceProfileSetting?.announcement ??
+      Announcement.fromPartial({
+        level: Announcement_AlertLevel.ALERT_LEVEL_INFO,
+      })
+  )
+);
 
 const state = reactive<LocalState>({
-  announcement: defaultAnnouncement(),
-  showFeatureModal: false,
-});
-
-watchEffect(() => {
-  const announcement = settingV1Store.workspaceProfileSetting?.announcement;
-  if (announcement) {
-    state.announcement = cloneDeep(announcement);
-  }
+  announcement: cloneDeep(rawAnnouncement.value),
 });
 
 const allowSave = computed((): boolean => {
-  if (
-    settingV1Store.workspaceProfileSetting?.announcement === undefined &&
-    state.announcement.text === ""
-  ) {
-    return false;
-  }
-
-  return !isEqual(
-    settingV1Store.workspaceProfileSetting?.announcement,
-    state.announcement
-  );
+  return !isEqual(rawAnnouncement.value, state.announcement);
 });
 
 const updateAnnouncementSetting = async () => {
-  if (!hasAnnouncementSetting.value) {
-    state.showFeatureModal = true;
-    return;
-  }
-
   if (state.announcement.text === "" && state.announcement.link !== "") {
     state.announcement.link = "";
   }
@@ -199,19 +166,15 @@ const updateAnnouncementSetting = async () => {
     },
     updateMask: ["value.workspace_profile_setting_value.announcement"],
   });
+  state.announcement = cloneDeep(rawAnnouncement.value);
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
     title: t("settings.general.workspace.announcement.update-success"),
   });
-
-  const currentSetting: Announcement | undefined = cloneDeep(
-    settingV1Store.workspaceProfileSetting?.announcement
-  );
-  if (currentSetting === undefined) {
-    state.announcement = defaultAnnouncement();
-  } else {
-    state.announcement = cloneDeep(currentSetting);
-  }
 };
+
+defineExpose({
+  isDirty: allowSave,
+});
 </script>

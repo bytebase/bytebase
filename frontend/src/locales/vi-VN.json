@@ -493,7 +493,6 @@
         "security": "Bảo mật",
         "account": "Tài khoản",
         "watermark": {
-          "update-success": "Đã cập nhật cài đặt hình mờ",
           "description": "Hiển thị hình mờ trên các trang, bao gồm tên người dùng, ID và email.",
           "enable": "Bật hình mờ"
         },
@@ -1621,10 +1620,12 @@
         "self": "Liên quan đến vấn đề",
         "labels": {
           "self": "Nhãn",
+          "description": "Có thể gắn nhãn vào các vấn đề để quản lý",
           "configure-labels": "Cấu hình nhãn",
           "force-issue-labels": {
             "self": "Yêu cầu nhãn cho tất cả các vấn đề",
-            "description": "Yêu cầu ít nhất một nhãn khi tạo vấn đề."
+            "description": "Yêu cầu ít nhất một nhãn khi tạo vấn đề.",
+            "warning": "Yêu cầu ít nhất một nhãn được cấu hình"
           }
         },
         "allow-modify-statement": {
