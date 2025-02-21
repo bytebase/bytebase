@@ -493,7 +493,6 @@
         "security": "安全",
         "account": "帐户",
         "watermark": {
-          "update-success": "水印设置已更新",
           "description": "在页面上显示水印，包含用户名、ID 和 Email。",
           "enable": "开启水印"
         },
@@ -1621,10 +1620,12 @@
         "self": "工单相关",
         "labels": {
           "self": "标签",
+          "description": "可以在工单中附加标签以便管理",
           "configure-labels": "配置标签",
           "force-issue-labels": {
             "self": "要求所有工单都必须有标签",
-            "description": "创建工单时必须添加至少一个标签。"
+            "description": "创建工单时必须添加至少一个标签。",
+            "warning": "至少需要配置一个标签"
           }
         },
         "allow-modify-statement": {

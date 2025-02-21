@@ -47,24 +47,14 @@
         </NCheckbox>
       </div>
     </div>
-    <div class="flex justify-end mt-2">
-      <NButton
-        type="primary"
-        :disabled="!allowSaveUpdates"
-        @click="saveDomainRestrictionSettings"
-      >
-        {{ $t("common.update") }}
-      </NButton>
-    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { head, isEqual } from "lodash-es";
-import { NButton, NCheckbox, NInput } from "naive-ui";
+import { NCheckbox, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
-import { pushNotification, featureToRef } from "@/store";
+import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { FeatureBadge } from "../FeatureGuard";
 
@@ -94,34 +84,27 @@ defineProps<{
   allowEdit: boolean;
 }>();
 
-const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const state = reactive<LocalState>(getInitialState());
 
-const allowSaveUpdates = computed(() => {
-  return !isEqual(state, getInitialState());
-});
-
 const hasFeature = featureToRef("bb.feature.domain-restriction");
 
-const saveDomainRestrictionSettings = async () => {
-  if (state.domain.length === 0) {
-    state.enableRestriction = false;
-  }
-  await settingV1Store.updateWorkspaceProfile({
-    payload: {
-      domains: state.domain ? [state.domain] : [],
-      enforceIdentityDomain: state.enableRestriction,
-    },
-    updateMask: [
-      "value.workspace_profile_setting_value.domains",
-      "value.workspace_profile_setting_value.enforce_identity_domain",
-    ],
-  });
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("settings.general.workspace.config-updated"),
-  });
-};
+defineExpose({
+  isDirty: computed(() => !isEqual(state, getInitialState())),
+  update: async () => {
+    if (state.domain.length === 0) {
+      state.enableRestriction = false;
+    }
+    await settingV1Store.updateWorkspaceProfile({
+      payload: {
+        domains: state.domain ? [state.domain] : [],
+        enforceIdentityDomain: state.enableRestriction,
+      },
+      updateMask: [
+        "value.workspace_profile_setting_value.domains",
+        "value.workspace_profile_setting_value.enforce_identity_domain",
+      ],
+    });
+  },
+});
 </script>

@@ -94,4 +94,8 @@ const save = () => {
     });
   });
 };
+
+defineExpose({
+  isDirty: allowSave,
+});
 </script>

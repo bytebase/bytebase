@@ -493,7 +493,6 @@
         "security": "Seguridad",
         "account": "Cuenta",
         "watermark": {
-          "update-success": "Configuración de marca de agua actualizada",
           "description": "Mostrar marcas de agua en las páginas, incluyendo el nombre de usuario, el ID y el correo electrónico.",
           "enable": "Activar marca de agua"
         },
@@ -1621,10 +1620,12 @@
         "self": "Problema Relacionado",
         "labels": {
           "self": "Etiquetas",
+          "description": "Se pueden colocar etiquetas en los problemas para su gestión.",
           "configure-labels": "Configurar etiquetas",
           "force-issue-labels": {
             "self": "Requerir etiquetas para todos los problemas",
-            "description": "Exija al menos una etiqueta al crear problemas."
+            "description": "Exija al menos una etiqueta al crear problemas.",
+            "warning": "Requiere al menos una etiqueta configurada"
           }
         },
         "allow-modify-statement": {

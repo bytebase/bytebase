@@ -7,9 +7,8 @@
       <div v-if="sqlReviewPolicy" class="inline-flex items-center gap-x-2">
         <Switch
           v-if="allowEditSQLReviewPolicy"
-          :value="sqlReviewPolicy.enforce"
+          v-model:value="enforceSQLReviewPolicy"
           :text="true"
-          @update:value="toggleSQLReviewPolicy"
         />
         <span
           class="textlabel normal-link !text-accent"
@@ -40,15 +39,10 @@
 <script setup lang="ts">
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
-import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { Switch } from "@/components/v2";
 import { WORKSPACE_ROUTE_SQL_REVIEW_DETAIL } from "@/router/dashboard/workspaceRoutes";
-import {
-  pushNotification,
-  useSQLReviewStore,
-  useReviewPolicyByResource,
-} from "@/store";
+import { useSQLReviewStore, useReviewPolicyByResource } from "@/store";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
 import SQLReviewPolicySelectPanel from "./SQLReviewPolicySelectPanel.vue";
 
@@ -57,28 +51,29 @@ const props = defineProps<{
   allowEdit: boolean;
 }>();
 
-const { t } = useI18n();
 const router = useRouter();
 const reviewStore = useSQLReviewStore();
 const showReviewSelectPanel = ref<boolean>(false);
+
+const sqlReviewPolicy = useReviewPolicyByResource(
+  computed(() => props.resource)
+);
+const enforceSQLReviewPolicy = ref<boolean>(
+  sqlReviewPolicy.value?.enforce ?? false
+);
 
 const allowEditSQLReviewPolicy = computed(() => {
   return props.allowEdit && hasWorkspacePermissionV2("bb.policies.update");
 });
 
-const toggleSQLReviewPolicy = async (on: boolean) => {
+const toggleSQLReviewPolicy = async () => {
   const policy = sqlReviewPolicy.value;
   if (!policy) return;
   const originalOn = policy.enforce;
-  if (on === originalOn) return;
+  if (enforceSQLReviewPolicy.value === originalOn) return;
   await reviewStore.upsertReviewPolicy({
     id: policy.id,
-    enforce: on,
-  });
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("sql-review.policy-updated"),
+    enforce: enforceSQLReviewPolicy.value,
   });
 };
 
@@ -93,7 +88,13 @@ const onSQLReviewPolicyClick = () => {
   }
 };
 
-const sqlReviewPolicy = useReviewPolicyByResource(
-  computed(() => props.resource)
-);
+defineExpose({
+  isDirty: computed(
+    () =>
+      enforceSQLReviewPolicy.value !== (sqlReviewPolicy.value?.enforce ?? false)
+  ),
+  update: toggleSQLReviewPolicy,
+  revert: () =>
+    (enforceSQLReviewPolicy.value = sqlReviewPolicy.value?.enforce ?? false),
+});
 </script>
