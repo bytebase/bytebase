@@ -2,16 +2,13 @@ package tests
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"net/http"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
-	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -145,10 +142,14 @@ func TestExternalSecretManager(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	// Create a PostgreSQL instance.
-	pgPort := getTestPort()
-	stopInstance := postgres.SetupTestInstance(pgBinDir, t.TempDir(), pgPort)
-	defer stopInstance()
+	pgContainer, err := getPgContainer(ctx)
+	a.NoError(err)
+
+	defer func() {
+		pgContainer.db.Close()
+		err := pgContainer.container.Terminate(ctx)
+		a.NoError(err)
+	}()
 
 	smPort := getTestPort()
 	sm := fake.NewSecretManager(smPort)
@@ -159,9 +160,7 @@ func TestExternalSecretManager(t *testing.T) {
 	}()
 	defer sm.Close()
 
-	pgDB, err := sql.Open("pgx", fmt.Sprintf("host=/tmp port=%d user=root database=postgres", pgPort))
-	a.NoError(err)
-	defer pgDB.Close()
+	pgDB := pgContainer.db
 	err = pgDB.Ping()
 	a.NoError(err)
 
@@ -178,7 +177,7 @@ func TestExternalSecretManager(t *testing.T) {
 			Engine:      v1pb.Engine_POSTGRES,
 			Environment: "environments/prod",
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "/tmp", Port: strconv.Itoa(pgPort), Username: "bytebase", Password: secretURL, Id: "admin"}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "bytebase", Password: secretURL, Id: "admin"}},
 		},
 	})
 	a.NoError(err)

@@ -2,9 +2,7 @@ package tests
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"strconv"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -12,7 +10,6 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -134,15 +131,16 @@ func TestSensitiveData(t *testing.T) {
 	})
 	a.NoError(err)
 
-	// Create a MySQL instance.
-	mysqlPort := getTestPort()
-	stopInstance := mysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
-	defer stopInstance()
-
-	mysqlDB, err := sql.Open("mysql", fmt.Sprintf("root@tcp(127.0.0.1:%d)/mysql", mysqlPort))
+	mysqlContainer, err := getMySQLContainer(ctx)
 	a.NoError(err)
-	defer mysqlDB.Close()
 
+	defer func() {
+		mysqlContainer.db.Close()
+		err := mysqlContainer.container.Terminate(ctx)
+		a.NoError(err)
+	}()
+
+	mysqlDB := mysqlContainer.db
 	_, err = mysqlDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
 	a.NoError(err)
 
@@ -161,7 +159,7 @@ func TestSensitiveData(t *testing.T) {
 			Engine:      v1pb.Engine_MYSQL,
 			Environment: "environments/prod",
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: "127.0.0.1", Port: strconv.Itoa(mysqlPort), Username: "bytebase", Password: "bytebase", Id: "admin"}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "bytebase", Password: "bytebase", Id: "admin"}},
 		},
 	})
 	a.NoError(err)
