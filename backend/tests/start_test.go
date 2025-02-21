@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
-	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
 
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
@@ -64,9 +63,6 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 	pgBinDir = dir
-	if _, err := mysqlutil.Install(resourceDir); err != nil {
-		log.Fatal(err)
-	}
 	if _, err := mongoutil.Install(resourceDir); err != nil {
 		log.Fatal(err)
 	}

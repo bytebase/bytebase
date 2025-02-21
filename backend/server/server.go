@@ -43,7 +43,6 @@ import (
 	"github.com/bytebase/bytebase/backend/migrator"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
-	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/runner/mail"
@@ -141,11 +140,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	var err error
 	if err = os.MkdirAll(profile.ResourceDir, os.ModePerm); err != nil {
 		return nil, errors.Wrapf(err, "failed to create directory: %q", profile.ResourceDir)
-	}
-	// Install mysqlutil.
-	s.mysqlBinDir, err = mysqlutil.Install(profile.ResourceDir)
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot install mysql utility binaries")
 	}
 
 	// Install mongoutil.

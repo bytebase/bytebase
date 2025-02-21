@@ -1,10 +1,10 @@
-FROM golang:1.23.4 as backend
+FROM golang:1.24.0 as backend
 ADD go.mod go.sum /
 RUN go mod download
 
 ARG VERSION="development"
 ARG VERSION_SUFFIX=""
-ARG GO_VERSION="1.23.4"
+ARG GO_VERSION="1.24.0"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
