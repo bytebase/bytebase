@@ -272,6 +272,7 @@ CREATE TABLE "public"."book" (
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			a := require.New(t)
 			var instance *v1pb.Instance
 			switch test.dbType {
 			case storepb.Engine_POSTGRES:
