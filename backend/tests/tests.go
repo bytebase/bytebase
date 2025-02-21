@@ -171,7 +171,6 @@ var (
 	// resourceDir is the shared resource directory.
 	resourceDir string
 	pgBinDir    string
-	mysqlBinDir string
 )
 
 func getTestPort() int {
