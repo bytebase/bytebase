@@ -102,8 +102,6 @@ func (exec *SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, driverCtx co
 			// https://github.com/bytebase/gh-ost2/pull/4
 			gomysql.DeregisterTLSConfig(migrationContext.Uuid)
 		}()
-		// TODO(p0ny): unset in NewMigrationContext.
-		migrationContext.PostponeCutOverFlagFile = ""
 
 		migrator := logic.NewMigrator(migrationContext, "bb")
 
