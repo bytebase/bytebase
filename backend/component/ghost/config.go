@@ -2,7 +2,6 @@ package ghost
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -176,15 +175,6 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 	return f, nil
 }
 
-func getSocketFilename(taskID int) string {
-	return fmt.Sprintf("/tmp/gh-ost.%d.sock", taskID)
-}
-
-// GetPostponeFlagFilename gets the postpone flag filename for gh-ost.
-func GetPostponeFlagFilename(taskID int) string {
-	return fmt.Sprintf("/tmp/gh-ost.%d.postponeFlag", taskID)
-}
-
 // NewMigrationContext is the context for gh-ost migration.
 func NewMigrationContext(ctx context.Context, taskID int, database *store.DatabaseMessage, dataSource *store.DataSourceMessage, secret string, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*base.MigrationContext, error) {
 	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, secret)
@@ -236,6 +226,7 @@ func NewMigrationContext(ctx context.Context, taskID int, database *store.Databa
 	migrationContext.InspectorConnectionConfig.Key.Port = port
 	migrationContext.CliUser = dataSource.Username
 	migrationContext.CliPassword = password
+	// GhostDatabaseName is our homemade parameter to allow creating temporary tables under another database.
 	migrationContext.GhostDatabaseName = "bbdataarchive"
 	migrationContext.DatabaseName = database.DatabaseName
 	migrationContext.OriginalTableName = tableName
@@ -274,8 +265,8 @@ func NewMigrationContext(ctx context.Context, taskID int, database *store.Databa
 		}
 		migrationContext.OriginalTableName = parser.GetExplicitTable()
 	}
-	migrationContext.ServeSocketFile = getSocketFilename(taskID)
-	migrationContext.PostponeCutOverFlagFile = GetPostponeFlagFilename(taskID)
+	migrationContext.ServeSocketFile = ""
+	migrationContext.PostponeCutOverFlagFile = ""
 	migrationContext.TimestampOldTable = defaultConfig.timestampOldTable
 	migrationContext.SetHeartbeatIntervalMilliseconds(defaultConfig.heartbeatIntervalMilliseconds)
 	migrationContext.SetNiceRatio(defaultConfig.niceRatio)
