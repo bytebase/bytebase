@@ -13,7 +13,7 @@ cd "$(dirname "$0")/../"
 OUTPUT_DIR=$(mkdir_output "$1")
 OUTPUT_BINARY=$OUTPUT_DIR/bytebase
 
-TARGET_GO_VERSION="1.23.4"
+TARGET_GO_VERSION="1.24.0"
 GO_VERSION=`go version | { read _ _ v _; echo ${v#go}; }`
 if [ "$(version ${GO_VERSION})" -lt "$(version $TARGET_GO_VERSION)" ];
 then

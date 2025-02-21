@@ -40,7 +40,6 @@
   "i18n-ally.parserOptions": {},
   "go.lintOnSave": "workspace",
   "go.lintTool": "staticcheck",
-  "go.buildTags": "mysql",
   "gopls": {
     "formatting.local": "github.com/bytebase/bytebase"
   },
