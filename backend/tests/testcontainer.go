@@ -24,7 +24,7 @@ func getMySQLContainer(ctx context.Context) (*Container, error) {
 			"MYSQL_ROOT_PASSWORD": "root-password",
 		},
 		ExposedPorts: []string{"3306/tcp"},
-		WaitingFor:   wait.ForListeningPort("3306/tcp"),
+		WaitingFor:   wait.ForLog("port: 3306  MySQL Community Server"),
 	}
 
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
