@@ -2,7 +2,7 @@
   <div id="network" class="py-6 lg:flex">
     <div class="text-left lg:w-1/4">
       <h1 class="text-2xl font-bold">
-        {{ $t("settings.general.workspace.network") }}
+        {{ title }}
       </h1>
       <span v-if="!allowEdit" class="text-sm text-gray-400">
         {{ $t("settings.general.workspace.only-admin-can-edit") }}
@@ -62,31 +62,21 @@
             {{ $t("settings.general.workspace.only-admin-can-edit") }}
           </span>
         </NTooltip>
-
-        <div class="flex justify-end">
-          <NButton
-            type="primary"
-            :disabled="!allowEdit || !allowSave"
-            @click.prevent="updateNetworkSetting"
-          >
-            {{ $t("common.update") }}
-          </NButton>
-        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { NButton, NInput, NTooltip } from "naive-ui";
+import { NInput, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
 import { useSettingV1Store, useActuatorV1Store } from "@/store";
 import LearnMoreLink from "../LearnMoreLink.vue";
 
-defineProps<{
+const props = defineProps<{
+  title: string;
   allowEdit: boolean;
 }>();
 
@@ -100,17 +90,12 @@ const settingV1Store = useSettingV1Store();
 const actuatorV1Store = useActuatorV1Store();
 
 const state = reactive<LocalState>({
-  externalUrl: "",
-  gitopsWebhookUrl: "",
+  externalUrl: settingV1Store.workspaceProfileSetting?.externalUrl ?? "",
+  gitopsWebhookUrl:
+    settingV1Store.workspaceProfileSetting?.gitopsWebhookUrl ?? "",
 });
 
 const { isSaaSMode } = storeToRefs(actuatorV1Store);
-
-watchEffect(() => {
-  state.externalUrl = settingV1Store.workspaceProfileSetting?.externalUrl ?? "";
-  state.gitopsWebhookUrl =
-    settingV1Store.workspaceProfileSetting?.gitopsWebhookUrl ?? "";
-});
 
 const allowSave = computed((): boolean => {
   const externalUrlChanged =
@@ -126,6 +111,7 @@ const updateNetworkSetting = async () => {
   if (!allowSave.value) {
     return;
   }
+
   await settingV1Store.updateWorkspaceProfile({
     payload: {
       externalUrl: state.externalUrl,
@@ -136,11 +122,6 @@ const updateNetworkSetting = async () => {
       "value.workspace_profile_setting_value.gitops_webhook_url",
     ],
   });
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("settings.general.workspace.config-updated"),
-  });
 
   state.externalUrl = settingV1Store.workspaceProfileSetting?.externalUrl ?? "";
   state.gitopsWebhookUrl =
@@ -148,6 +129,8 @@ const updateNetworkSetting = async () => {
 };
 
 defineExpose({
+  title: props.title,
   isDirty: allowSave,
+  update: updateNetworkSetting,
 });
 </script>

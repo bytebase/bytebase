@@ -489,7 +489,6 @@
         "select-logo": "Tải lên một tệp",
         "drag-logo": "hoặc kéo vào đây",
         "logo-upload-tip": "{extension} tối đa {size} MiB",
-        "logo-upload-succeed": "Đã cập nhật logo thành công",
         "security": "Bảo mật",
         "account": "Tài khoản",
         "watermark": {
@@ -559,6 +558,8 @@
           "password-rotation": "Yêu cầu người dùng đặt lại mật khẩu của họ sau mỗi {day} ngày"
         },
         "config-updated": "Cấu hình được cập nhật.",
+        "config-partly-updated": "Cấu hình đã được cập nhật một phần.",
+        "failed-to-update-setting": "Không cập nhật được cài đặt \"{title}\"",
         "ai-assistant": {
           "self": "Trợ lý AI",
           "description": "Sử dụng OpenAPI để hỗ trợ các tác vụ phát triển cơ sở dữ liệu.",
@@ -579,7 +580,6 @@
         },
         "announcement": {
           "self": "Thông báo",
-          "update-success": "Cài đặt thông báo được cập nhật thành công.",
           "admin-or-dba-can-edit": "Chỉ quản trị viên không gian làm việc hoặc DBA mới có thể cập nhật cài đặt thông báo."
         },
         "announcement-alert-level": {
@@ -594,7 +594,6 @@
           "self": "Liên kết",
           "placeholder": "Nhập liên kết thông báo"
         },
-        "confirm-delete-custom-logo": "Xóa logo thương hiệu tùy chỉnh?",
         "restrict-issue-creation-for-sql-review": {
           "title": "Không cho phép tạo vấn đề khi đánh giá SQL có lỗi",
           "description": "Khi được bật, người dùng chỉ được phép tạo vấn đề nếu đánh giá SQL không chứa bất kỳ lỗi nào."

@@ -489,7 +489,6 @@
         "select-logo": "選ぶ",
         "drag-logo": "またはファイルをドラッグ アンド ドロップします",
         "logo-upload-tip": "{extension} タイプのファイルをサポートします。{size} MiB より大きくすることはできません",
-        "logo-upload-succeed": "ロゴ更新完了",
         "security": "セキュリティ",
         "account": "アカウント",
         "watermark": {
@@ -559,6 +558,8 @@
           "password-rotation": "ユーザーに{day}日ごとにパスワードのリセットを要求する"
         },
         "config-updated": "設定が更新されました。",
+        "config-partly-updated": "設定が部分的に更新されました。",
+        "failed-to-update-setting": "設定「{title}」の更新に失敗しました",
         "ai-assistant": {
           "self": "AI アシスタント",
           "description": "OpenAPI を使用してデータベース開発タスクを支援します。",
@@ -579,7 +580,6 @@
         },
         "announcement": {
           "self": "お知らせ",
-          "update-success": "お知らせの設定が更新されました。",
           "admin-or-dba-can-edit": "管理者または DBA のみがお知らせの設定を更新できます。"
         },
         "announcement-alert-level": {
@@ -594,7 +594,6 @@
           "self": "リンク",
           "placeholder": "お知らせのリンクを入力してください"
         },
-        "confirm-delete-custom-logo": "カスタム ブランド ロゴを削除しますか?",
         "restrict-issue-creation-for-sql-review": {
           "title": "エラーアラートを含むイシューの提出は禁止されています",
           "description": "有効にすると、プレビュー段階で「エラー」レベルのアラームを含まないイシューのみを送信できます。"

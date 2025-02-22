@@ -489,7 +489,6 @@
         "select-logo": "Upload a file",
         "drag-logo": "or drag here",
         "logo-upload-tip": "{extension} up to {size} MiB",
-        "logo-upload-succeed": "Successfully updated the logo",
         "security": "Security",
         "account": "Account",
         "watermark": {
@@ -559,6 +558,8 @@
           "password-rotation": "Require users reset their password every {day} days"
         },
         "config-updated": "Configuration is updated.",
+        "config-partly-updated": "Configuration partly updated.",
+        "failed-to-update-setting": "Failed to update setting \"{title}\"",
         "ai-assistant": {
           "self": "AI Assistant",
           "description": "Use OpenAPI to assist the database development tasks.",
@@ -579,7 +580,6 @@
         },
         "announcement": {
           "self": "Announcement",
-          "update-success": "Announcement setting updated.",
           "admin-or-dba-can-edit": "Only workspace admin or DBA can update announcement setting."
         },
         "announcement-alert-level": {
@@ -594,7 +594,6 @@
           "self": "Link",
           "placeholder": "Input announcement link"
         },
-        "confirm-delete-custom-logo": "Delete custom branding logo?",
         "restrict-issue-creation-for-sql-review": {
           "title": "Disallow issue creation for SQL review with errors",
           "description": "Once enabled, users are only allowed to create issues if the SQL review does not contain any errors."
