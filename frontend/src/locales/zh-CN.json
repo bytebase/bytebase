@@ -489,7 +489,6 @@
         "select-logo": "选择",
         "drag-logo": "或拖拽文件",
         "logo-upload-tip": "支持 {extension} 类型文件，不能大于 {size} MiB",
-        "logo-upload-succeed": "Logo 更新完成",
         "security": "安全",
         "account": "帐户",
         "watermark": {
@@ -559,6 +558,8 @@
           "password-rotation": "要求用户每 {day} 天重置一次密码"
         },
         "config-updated": "配置已更新。",
+        "config-partly-updated": "配置部分更新。",
+        "failed-to-update-setting": "无法更新设置“{title}”",
         "ai-assistant": {
           "self": "AI 助手",
           "description": "使用 OpenAPI 来辅助数据库开发任务。",
@@ -579,7 +580,6 @@
         },
         "announcement": {
           "self": "公告",
-          "update-success": "公告设置已更新。",
           "admin-or-dba-can-edit": "只有管理员或 DBA 可以更新公告设置。"
         },
         "announcement-alert-level": {
@@ -594,7 +594,6 @@
           "self": "链接",
           "placeholder": "输入公告链接"
         },
-        "confirm-delete-custom-logo": "删除自定义品牌 Logo？",
         "restrict-issue-creation-for-sql-review": {
           "title": "禁止提交包含错误告警的工单",
           "description": "启用后，只有在预览阶段不包含任何“错误”级别告警的工单才能被提交。"

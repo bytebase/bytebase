@@ -3,7 +3,7 @@
     <div class="text-left lg:w-1/4">
       <div class="flex items-center space-x-2">
         <h1 class="text-2xl font-bold">
-          {{ $t("settings.general.workspace.announcement.self") }}
+          {{ title }}
         </h1>
         <FeatureBadge feature="bb.feature.announcement" />
       </div>
@@ -93,16 +93,6 @@
             }}
           </span>
         </NTooltip>
-
-        <div class="flex justify-end">
-          <NButton
-            type="primary"
-            :disabled="!allowEdit || !allowSave"
-            @click.prevent="updateAnnouncementSetting"
-          >
-            {{ $t("common.update") }}
-          </NButton>
-        </div>
       </div>
     </div>
   </div>
@@ -110,11 +100,10 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
-import { NButton, NInput, NTooltip } from "naive-ui";
+import { NInput, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
 import { AnnouncementLevelSelect } from "@/components/v2";
-import { pushNotification, featureToRef } from "@/store";
+import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { Announcement } from "@/types/proto/v1/setting_service";
 import { Announcement_AlertLevel } from "@/types/proto/v1/setting_service";
@@ -124,11 +113,11 @@ interface LocalState {
   announcement: Announcement;
 }
 
-defineProps<{
+const props = defineProps<{
+  title: string;
   allowEdit: boolean;
 }>();
 
-const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const hasAnnouncementFeature = featureToRef("bb.feature.announcement");
 
@@ -150,31 +139,18 @@ const allowSave = computed((): boolean => {
 });
 
 const updateAnnouncementSetting = async () => {
-  if (state.announcement.text === "" && state.announcement.link !== "") {
-    state.announcement.link = "";
-  }
-
-  // remove announcement setting from store if both text and link are empty regardless of level.
-  let announcement: Announcement | undefined = cloneDeep(state.announcement);
-  if (announcement.text === "" && announcement.link === "") {
-    announcement = undefined;
-  }
-
   await settingV1Store.updateWorkspaceProfile({
     payload: {
-      announcement: announcement,
+      announcement: state.announcement,
     },
     updateMask: ["value.workspace_profile_setting_value.announcement"],
   });
   state.announcement = cloneDeep(rawAnnouncement.value);
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("settings.general.workspace.announcement.update-success"),
-  });
 };
 
 defineExpose({
   isDirty: allowSave,
+  title: props.title,
+  update: updateAnnouncementSetting,
 });
 </script>
