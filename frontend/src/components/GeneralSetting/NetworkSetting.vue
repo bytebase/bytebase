@@ -70,7 +70,7 @@
 <script lang="ts" setup>
 import { NInput, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useSettingV1Store, useActuatorV1Store } from "@/store";
 import LearnMoreLink from "../LearnMoreLink.vue";
@@ -90,17 +90,12 @@ const settingV1Store = useSettingV1Store();
 const actuatorV1Store = useActuatorV1Store();
 
 const state = reactive<LocalState>({
-  externalUrl: "",
-  gitopsWebhookUrl: "",
+  externalUrl: settingV1Store.workspaceProfileSetting?.externalUrl ?? "",
+  gitopsWebhookUrl:
+    settingV1Store.workspaceProfileSetting?.gitopsWebhookUrl ?? "",
 });
 
 const { isSaaSMode } = storeToRefs(actuatorV1Store);
-
-watchEffect(() => {
-  state.externalUrl = settingV1Store.workspaceProfileSetting?.externalUrl ?? "";
-  state.gitopsWebhookUrl =
-    settingV1Store.workspaceProfileSetting?.gitopsWebhookUrl ?? "";
-});
 
 const allowSave = computed((): boolean => {
   const externalUrlChanged =

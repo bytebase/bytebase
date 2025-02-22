@@ -130,10 +130,10 @@ const onUpdate = async () => {
       }
     }
   }
-  if (failedCount !== totalCount) {
+  if (totalCount > 0 && totalCount !== failedCount) {
     pushNotification({
       module: "bytebase",
-      style: failedCount === 0 ? "SUCCESS" : "INFO",
+      style: failedCount === 0 ? "SUCCESS" : "WARN",
       title:
         failedCount === 0
           ? t("settings.general.workspace.config-updated")

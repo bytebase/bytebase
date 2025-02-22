@@ -63,7 +63,7 @@
 
 <script lang="ts" setup>
 import { NButton, NTooltip } from "naive-ui";
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive } from "vue";
 import { featureToRef } from "@/store";
 import { useActuatorV1Store } from "@/store/modules/v1/actuator";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
@@ -96,13 +96,9 @@ const convertFileToBase64 = (file: File) =>
 const settingV1Store = useSettingV1Store();
 
 const state = reactive<LocalState>({
-  logoUrl: "",
+  logoUrl: settingV1Store.brandingLogo,
   loading: false,
   showFeatureModal: false,
-});
-
-watchEffect(() => {
-  state.logoUrl = settingV1Store.brandingLogo;
 });
 
 const allowSave = computed((): boolean => {
