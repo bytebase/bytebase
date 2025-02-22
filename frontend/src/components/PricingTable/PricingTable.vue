@@ -16,8 +16,6 @@
             class="h-full pt-8 px-6 align-top"
           >
             <div class="flex-1">
-              <img :src="plan.image" class="hidden lg:block p-4" />
-
               <div class="flex flex-row items-center h-10">
                 <h3 class="text-xl font-semibold text-gray-900">
                   {{ $t(`subscription.plan.${plan.title}.title`) }}
@@ -150,8 +148,6 @@
   <div class="xl:hidden">
     <div v-for="plan in plans" :key="plan.type" class="mb-16">
       <div class="flex flex-col items-center">
-        <img :src="plan.image" class="block w-2/4" />
-
         <div class="flex flex-row items-center">
           <h3 class="text-2xl font-semibold text-gray-900">
             {{ $t(`subscription.plan.${plan.title}.title`) }}
@@ -324,10 +320,6 @@ watch(
 const plans = computed((): LocalPlan[] => {
   return PLANS.map((plan) => ({
     ...plan,
-    image: new URL(
-      `../../assets/plan-${plan.title.toLowerCase()}.png`,
-      import.meta.url
-    ).href,
     buttonText: getButtonText(plan),
     highlight: plan.type === PlanType.ENTERPRISE,
     isAvailable: plan.type === PlanType.TEAM,
