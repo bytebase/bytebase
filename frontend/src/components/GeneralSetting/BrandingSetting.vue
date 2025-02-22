@@ -3,7 +3,7 @@
     <div class="text-left lg:w-1/4">
       <div class="flex items-center space-x-2">
         <h1 class="text-2xl font-bold">
-          {{ $t("settings.general.workspace.branding") }}
+          {{ title }}
         </h1>
         <FeatureBadge feature="bb.feature.branding" />
       </div>
@@ -33,7 +33,7 @@
                 :class="[state.logoUrl ? 'opacity-0 hover:opacity-90' : '']"
                 :max-file-size-in-mi-b="maxFileSizeInMiB"
                 :support-file-extensions="supportImageExtensions"
-                :disabled="!allowEdit"
+                :disabled="!allowEdit || !hasBrandingFeature"
                 @on-select="onLogoSelect"
               />
             </div>
@@ -44,29 +44,11 @@
         </NTooltip>
       </div>
       <div class="flex justify-end gap-x-3">
-        <NPopconfirm
-          v-if="allowEdit && allowDelete"
-          @positive-click="deleteLogo"
-        >
-          <template #trigger>
-            <NButton :disabled="!allowEdit">
-              {{ $t("common.delete") }}
-            </NButton>
-          </template>
-          <template #default>
-            {{ t("settings.general.workspace.confirm-delete-custom-logo") }}
-          </template>
-        </NPopconfirm>
         <NButton
-          type="primary"
-          :disabled="!allowEdit || !allowSave"
-          @click.prevent="uploadLogo"
+          v-if="allowEdit && !!state.logoUrl"
+          @click="() => (state.logoUrl = '')"
         >
-          <FeatureBadge
-            feature="bb.feature.branding"
-            custom-class="mr-1 text-white pointer-events-none"
-          />
-          {{ $t("common.update") }}
+          {{ $t("common.delete") }}
         </NButton>
       </div>
     </div>
@@ -80,24 +62,22 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton, NPopconfirm, NTooltip } from "naive-ui";
-import { computed, reactive, watchEffect } from "vue";
-import { useI18n } from "vue-i18n";
-import { featureToRef, pushNotification } from "@/store";
+import { NButton, NTooltip } from "naive-ui";
+import { computed, reactive } from "vue";
+import { featureToRef } from "@/store";
 import { useActuatorV1Store } from "@/store/modules/v1/actuator";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 import SingleFileSelector from "../SingleFileSelector.vue";
 
 interface LocalState {
-  displayName?: string;
   logoUrl?: string;
-  logoFile: File | null;
   loading: boolean;
   showFeatureModal: boolean;
 }
 
-defineProps<{
+const props = defineProps<{
+  title: string;
   allowEdit: boolean;
 }>();
 
@@ -114,88 +94,49 @@ const convertFileToBase64 = (file: File) =>
   });
 
 const settingV1Store = useSettingV1Store();
-const { t } = useI18n();
 
 const state = reactive<LocalState>({
-  displayName: "",
-  logoUrl: "",
-  logoFile: null,
+  logoUrl: settingV1Store.brandingLogo,
   loading: false,
   showFeatureModal: false,
 });
 
-watchEffect(() => {
-  state.logoUrl = settingV1Store.brandingLogo;
-});
-
-const valid = computed((): boolean => {
-  return !!state.displayName || !!state.logoFile;
-});
-
-const allowDelete = computed(() => {
-  return settingV1Store.brandingLogo !== "";
-});
-
 const allowSave = computed((): boolean => {
-  return state.logoFile !== null && valid.value && !state.loading;
+  return state.logoUrl !== settingV1Store.brandingLogo;
 });
 
 const hasBrandingFeature = featureToRef("bb.feature.branding");
 
-const doUpdate = async (content: string, message: string) => {
+const doUpdate = async (content: string) => {
+  if (state.loading) {
+    return;
+  }
   state.loading = true;
   try {
-    const setting = await settingV1Store.upsertSetting({
+    await settingV1Store.upsertSetting({
       name: "bb.branding.logo",
       value: {
         stringValue: content,
       },
     });
-
     useActuatorV1Store().setLogo(content);
-
-    state.logoFile = null;
-    state.logoUrl = setting.value?.stringValue;
-
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: message,
-    });
   } finally {
     state.loading = false;
   }
 };
-const deleteLogo = async () => {
-  state.loading = true;
-
-  await doUpdate("", t("common.deleted"));
-};
 
 const uploadLogo = async () => {
-  if (!hasBrandingFeature.value) {
-    state.showFeatureModal = true;
-    return;
-  }
-  if (!state.logoFile) {
-    return;
-  }
-
-  state.loading = true;
-  const fileInBase64 = await convertFileToBase64(state.logoFile);
-
-  await doUpdate(
-    fileInBase64,
-    t("settings.general.workspace.logo-upload-succeed")
-  );
+  await doUpdate(state.logoUrl ?? "");
 };
 
-const onLogoSelect = (file: File) => {
-  state.logoFile = file;
-  state.logoUrl = URL.createObjectURL(file);
+const onLogoSelect = async (file: File) => {
+  const fileInBase64 = await convertFileToBase64(file);
+  state.logoUrl = fileInBase64;
 };
 
 defineExpose({
+  title: props.title,
   isDirty: allowSave,
+  update: uploadLogo,
 });
 </script>

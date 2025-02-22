@@ -489,7 +489,6 @@
         "select-logo": "Subir un archivo",
         "drag-logo": "o arrastrar aquí",
         "logo-upload-tip": "{extension} hasta {size} MiB",
-        "logo-upload-succeed": "Logo actualizado correctamente",
         "security": "Seguridad",
         "account": "Cuenta",
         "watermark": {
@@ -559,6 +558,8 @@
           "password-rotation": "Requerir que los usuarios restablezcan su contraseña cada {day} días"
         },
         "config-updated": "La configuración se ha actualizado.",
+        "config-partly-updated": "Configuración parcialmente actualizada.",
+        "failed-to-update-setting": "No se pudo actualizar la configuración \"{title}\"",
         "ai-assistant": {
           "self": "Asistente de AI",
           "description": "Utilice OpenAPI para ayudar en las tareas de desarrollo de bases de datos.",
@@ -579,7 +580,6 @@
         },
         "announcement": {
           "self": "Anuncio",
-          "update-success": "Configuración de anuncios actualizada.",
           "admin-or-dba-can-edit": "Solo el administrador del espacio de trabajo o el DBA pueden actualizar la configuración de anuncios."
         },
         "announcement-alert-level": {
@@ -594,7 +594,6 @@
           "self": "Enlace",
           "placeholder": "Enlace de anuncio de entrada"
         },
-        "confirm-delete-custom-logo": "¿Eliminar el logotipo de marca personalizado?",
         "restrict-issue-creation-for-sql-review": {
           "title": "Prohibir la creación de problemas para la revisión de SQL con errores.",
           "description": "Una vez habilitado, a los usuarios solo se les permite crear problemas si la revisión de SQL no contiene errores."
