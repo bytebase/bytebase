@@ -23,8 +23,6 @@
       </div>
       <div v-else class="flex items-center gap-x-2">
         <NButton
-          secondary
-          type="primary"
           class="capitalize"
           :disabled="
             !hasPermission ||

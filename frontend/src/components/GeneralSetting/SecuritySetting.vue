@@ -3,7 +3,7 @@
     <div class="text-left lg:w-1/4">
       <div class="flex items-center space-x-2">
         <h1 class="text-2xl font-bold">
-          {{ $t("settings.general.workspace.security") }}
+          {{ title }}
         </h1>
       </div>
       <span v-if="!allowEdit" class="text-sm text-gray-400">
@@ -61,16 +61,6 @@
         ref="domainRestrictionSettingRef"
         :allow-edit="allowEdit"
       />
-
-      <div class="flex justify-end">
-        <NButton
-          type="primary"
-          :disabled="!allowEdit || !isDirty"
-          @click.prevent="onUpdate"
-        >
-          {{ $t("common.update") }}
-        </NButton>
-      </div>
     </div>
   </div>
 
@@ -83,13 +73,10 @@
 
 <script lang="ts" setup>
 import { isEqual } from "lodash-es";
-import { NButton } from "naive-ui";
 import { computed, reactive, ref } from "vue";
-import { useI18n } from "vue-i18n";
 import { Switch } from "@/components/v2";
 import {
   featureToRef,
-  pushNotification,
   useSettingV1Store,
   usePolicyV1Store,
   usePolicyByParentAndType,
@@ -111,11 +98,11 @@ interface LocalState {
   enableDataExport: boolean;
 }
 
-defineProps<{
+const props = defineProps<{
+  title: string;
   allowEdit: boolean;
 }>();
 
-const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const policyV1Store = usePolicyV1Store();
 const hasWatermarkFeature = featureToRef("bb.feature.branding");
@@ -203,15 +190,11 @@ const onUpdate = async () => {
   if (state.enableDataExport !== getInitialState().enableDataExport) {
     await handleDataExportToggle();
   }
-
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("settings.general.workspace.config-updated"),
-  });
 };
 
 defineExpose({
   isDirty,
+  update: onUpdate,
+  title: props.title,
 });
 </script>

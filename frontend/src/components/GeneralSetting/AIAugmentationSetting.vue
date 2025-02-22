@@ -3,7 +3,7 @@
     <div class="text-left lg:w-1/4">
       <div class="flex items-center space-x-2">
         <h1 class="text-2xl font-bold">
-          {{ $t("settings.general.workspace.ai-assistant.self") }}
+          {{ title }}
         </h1>
         <FeatureBadge feature="bb.feature.ai-assistant" />
       </div>
@@ -111,20 +111,6 @@
             {{ $t("settings.general.workspace.only-admin-can-edit") }}
           </span>
         </NTooltip>
-
-        <div class="flex justify-end">
-          <NButton
-            type="primary"
-            :disabled="!allowEdit || !allowSave"
-            @click.prevent="updateOpenAIKeyEndpoint"
-          >
-            <FeatureBadge
-              feature="bb.feature.ai-assistant"
-              custom-class="mr-1 text-white pointer-events-none"
-            />
-            {{ $t("common.update") }}
-          </NButton>
-        </div>
       </div>
     </div>
 
@@ -137,12 +123,11 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton, NInput, NTooltip } from "naive-ui";
+import { NInput, NTooltip } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, onMounted, reactive, ref, watchEffect } from "vue";
-import { useI18n } from "vue-i18n";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import { hasFeature, pushNotification } from "@/store";
+import { hasFeature } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 
@@ -153,11 +138,11 @@ interface LocalState {
   showFeatureModal: boolean;
 }
 
-defineProps<{
+const props = defineProps<{
+  title: string;
   allowEdit: boolean;
 }>();
 
-const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const containerRef = ref<HTMLDivElement>();
 
@@ -234,11 +219,6 @@ const updateOpenAIKeyEndpoint = async () => {
       },
     });
   }
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("settings.general.workspace.config-updated"),
-  });
 };
 
 onMounted(() => {
@@ -253,5 +233,7 @@ onMounted(() => {
 
 defineExpose({
   isDirty: allowSave,
+  title: props.title,
+  update: updateOpenAIKeyEndpoint,
 });
 </script>

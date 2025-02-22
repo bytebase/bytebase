@@ -3,7 +3,7 @@
     <div class="text-left lg:w-1/4">
       <div class="flex items-center space-x-2">
         <h1 class="text-2xl font-bold">
-          {{ $t("settings.general.workspace.account") }}
+          {{ title }}
         </h1>
       </div>
       <span v-if="!allowEdit" class="text-sm text-gray-400">
@@ -104,16 +104,6 @@
         ref="signInFrequencySettingRef"
         :allow-edit="allowEdit"
       />
-
-      <div class="flex justify-end">
-        <NButton
-          type="primary"
-          :disabled="!allowEdit || !isDirty"
-          @click.prevent="onUpdate"
-        >
-          {{ $t("common.update") }}
-        </NButton>
-      </div>
     </div>
   </div>
 
@@ -127,14 +117,12 @@
 <script lang="ts" setup>
 import { isEqual } from "lodash-es";
 import { TriangleAlertIcon } from "lucide-vue-next";
-import { NDivider, NButton, NTooltip } from "naive-ui";
+import { NDivider, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive, ref, watchEffect } from "vue";
-import { useI18n } from "vue-i18n";
 import { Switch } from "@/components/v2";
 import {
   featureToRef,
-  pushNotification,
   useActuatorV1Store,
   useIdentityProviderStore,
 } from "@/store";
@@ -153,11 +141,11 @@ interface LocalState {
   disallowPasswordSignin: boolean;
 }
 
-defineProps<{
+const props = defineProps<{
+  title: string;
   allowEdit: boolean;
 }>();
 
-const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const actuatorStore = useActuatorV1Store();
 const idpStore = useIdentityProviderStore();
@@ -244,15 +232,11 @@ const onUpdate = async () => {
       updateMask: updateMasks,
     });
   }
-
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("settings.general.workspace.config-updated"),
-  });
 };
 
 defineExpose({
   isDirty,
+  title: props.title,
+  update: onUpdate,
 });
 </script>
