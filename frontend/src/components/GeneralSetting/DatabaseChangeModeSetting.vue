@@ -171,5 +171,8 @@ defineExpose({
   isDirty: allowSave,
   update: onUpdate,
   title: props.title,
+  revert: () => {
+    Object.assign(state, getInitialState());
+  },
 });
 </script>

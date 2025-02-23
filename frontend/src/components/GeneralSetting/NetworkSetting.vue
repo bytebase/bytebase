@@ -89,11 +89,15 @@ const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const actuatorV1Store = useActuatorV1Store();
 
-const state = reactive<LocalState>({
-  externalUrl: settingV1Store.workspaceProfileSetting?.externalUrl ?? "",
-  gitopsWebhookUrl:
-    settingV1Store.workspaceProfileSetting?.gitopsWebhookUrl ?? "",
-});
+const getInitialState = (): LocalState => {
+  return {
+    externalUrl: settingV1Store.workspaceProfileSetting?.externalUrl ?? "",
+    gitopsWebhookUrl:
+      settingV1Store.workspaceProfileSetting?.gitopsWebhookUrl ?? "",
+  };
+};
+
+const state = reactive<LocalState>(getInitialState());
 
 const { isSaaSMode } = storeToRefs(actuatorV1Store);
 
@@ -132,5 +136,8 @@ defineExpose({
   title: props.title,
   isDirty: allowSave,
   update: updateNetworkSetting,
+  revert: () => {
+    return Object.assign(state, getInitialState());
+  },
 });
 </script>

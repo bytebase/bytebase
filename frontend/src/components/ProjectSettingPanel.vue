@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full space-y-6 mb-6">
+  <div class="w-full space-y-6">
     <div class="divide-y divide-block-border space-y-6">
       <ProjectGeneralSettingPanel
         ref="projectGeneralSettingPanelRef"
@@ -23,16 +23,30 @@
       >
         <ProjectArchiveRestoreButton :project="project" />
       </div>
+
+      <div v-if="allowEdit && isDirty" class="sticky bottom-0 z-10">
+        <div
+          class="flex justify-between w-full pt-4 border-block-border bg-white"
+        >
+          <NButton @click.prevent="onRevert">
+            {{ $t("common.cancel") }}
+          </NButton>
+          <NButton type="primary" @click.prevent="onUpdate">
+            {{ $t("common.confirm-and-update") }}
+          </NButton>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { useEventListener } from "@vueuse/core";
+import { NButton } from "naive-ui";
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { onBeforeRouteLeave } from "vue-router";
-import { useAppFeature } from "@/store";
+import { useAppFeature, pushNotification } from "@/store";
 import type { ComposedProject } from "@/types";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import ProjectArchiveRestoreButton from "./Project/ProjectArchiveRestoreButton.vue";
@@ -57,12 +71,16 @@ const projectGeneralSettingPanelRef =
 const projectIssueRelatedSettingPanelRef =
   ref<InstanceType<typeof ProjectIssueRelatedSettingPanel>>();
 
+const settingRefList = computed(() => {
+  return [
+    projectGeneralSettingPanelRef,
+    projectSecuritySettingPanelRef,
+    projectIssueRelatedSettingPanelRef,
+  ];
+});
+
 const isDirty = computed(() => {
-  return (
-    projectSecuritySettingPanelRef.value?.isDirty ||
-    projectGeneralSettingPanelRef.value?.isDirty ||
-    projectIssueRelatedSettingPanelRef.value?.isDirty
-  );
+  return settingRefList.value.some((settingRef) => settingRef.value?.isDirty);
 });
 
 useEventListener("beforeunload", (e) => {
@@ -81,4 +99,33 @@ onBeforeRouteLeave((to, from, next) => {
   }
   next();
 });
+
+const onUpdate = async () => {
+  for (const settingRef of settingRefList.value) {
+    if (!settingRef.value?.isDirty) {
+      continue;
+    }
+    try {
+      await settingRef.value.update();
+    } catch {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("project.settings.update-failed"),
+      });
+      return;
+    }
+  }
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("project.settings.success-updated"),
+  });
+};
+
+const onRevert = () => {
+  for (const settingRef of settingRefList.value) {
+    settingRef.value?.revert();
+  }
+};
 </script>

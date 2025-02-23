@@ -20,22 +20,15 @@
       :resource="project.name"
       :allow-edit="allowEdit"
     />
-    <div v-if="allowEdit" class="w-full flex justify-end">
-      <NButton type="primary" :disabled="!isDirty" @click.prevent="onUpdate">
-        {{ $t("common.update") }}
-      </NButton>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { NButton } from "naive-ui";
 import { ref, computed } from "vue";
-import { useI18n } from "vue-i18n";
 import AccessControlConfigure from "@/components/EnvironmentForm/AccessControlConfigure.vue";
 import RestrictIssueCreationConfigure from "@/components/GeneralSetting/RestrictIssueCreationConfigure.vue";
 import { SQLReviewForResource } from "@/components/SQLReview";
-import { useAppFeature, pushNotification } from "@/store";
+import { useAppFeature } from "@/store";
 import type { ComposedProject } from "@/types";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 
@@ -45,7 +38,6 @@ defineProps<{
 }>();
 
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
-const { t } = useI18n();
 
 const restrictIssueCreationConfigureRef =
   ref<InstanceType<typeof RestrictIssueCreationConfigure>>();
@@ -71,14 +63,17 @@ const onUpdate = async () => {
   if (accessControlConfigureRef.value?.isDirty) {
     await accessControlConfigureRef.value.update();
   }
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("settings.general.workspace.config-updated"),
-  });
+};
+
+const resetState = () => {
+  sqlReviewForResourceRef.value?.revert();
+  accessControlConfigureRef.value?.revert();
+  restrictIssueCreationConfigureRef.value?.revert();
 };
 
 defineExpose({
   isDirty,
+  update: onUpdate,
+  revert: resetState,
 });
 </script>

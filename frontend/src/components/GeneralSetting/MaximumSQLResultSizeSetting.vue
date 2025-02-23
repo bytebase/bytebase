@@ -74,5 +74,6 @@ const handleInput = (value: number | null) => {
 defineExpose({
   isDirty: allowUpdate,
   update: updateChange,
+  revert: () => (maximumSQLResultLimit.value = initialState()),
 });
 </script>

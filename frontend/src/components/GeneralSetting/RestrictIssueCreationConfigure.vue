@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import {
   hasFeature,
   usePolicyV1Store,
@@ -55,15 +55,27 @@ const allowEdit = computed(() => {
   );
 });
 
-const { policy } = usePolicyByParentAndType(
+const { policy, ready } = usePolicyByParentAndType(
   computed(() => ({
     parentPath: props.resource,
     policyType: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
   }))
 );
 
-const restrictIssueCreationForSQLReview = ref<boolean>(
-  policy.value?.restrictIssueCreationForSqlReviewPolicy?.disallow ?? false
+const restrictIssueCreationForSQLReview = ref<boolean>(false);
+
+const resetState = () => {
+  restrictIssueCreationForSQLReview.value =
+    policy.value?.restrictIssueCreationForSqlReviewPolicy?.disallow ?? false;
+};
+
+watch(
+  () => ready.value,
+  () => {
+    if (ready.value) {
+      resetState();
+    }
+  }
 );
 
 const handleRestrictIssueCreationForSQLReviewToggle = async () => {
@@ -86,5 +98,6 @@ defineExpose({
       (policy.value?.restrictIssueCreationForSqlReviewPolicy?.disallow ?? false)
   ),
   update: handleRestrictIssueCreationForSQLReviewToggle,
+  revert: resetState,
 });
 </script>

@@ -1605,6 +1605,7 @@
     },
     "settings": {
       "success-updated": "Đã cập nhật thành công cài đặt dự án.",
+      "update-failed": "Không cập nhật được cài đặt dự án.",
       "success-member-added-prompt": "Đã thêm thành công vào dự án.",
       "archive": {
         "title": "Lưu trữ dự án",

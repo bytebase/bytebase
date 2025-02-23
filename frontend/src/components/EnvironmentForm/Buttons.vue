@@ -17,19 +17,15 @@
   </div>
 
   <div
-    v-if="!create && allowEdit"
-    class="flex items-center justify-end gap-x-3"
+    v-if="!create && allowEdit && valueChanged()"
+    class="flex items-center justify-between gap-x-3"
     v-bind="$attrs"
   >
-    <NButton v-if="valueChanged()" @click.prevent="revertEnvironment">
-      {{ $t("common.revert") }}
+    <NButton @click.prevent="revertEnvironment">
+      {{ $t("common.cancel") }}
     </NButton>
-    <NButton
-      type="primary"
-      :disabled="!valueChanged()"
-      @click.prevent="updateEnvironment"
-    >
-      {{ $t("common.update") }}
+    <NButton type="primary" @click.prevent="updateEnvironment">
+      {{ $t("common.confirm-and-update") }}
     </NButton>
   </div>
 </template>
@@ -115,5 +111,13 @@ const updateEnvironment = () => {
     };
     events.emit("update", environmentPatch);
   }
+
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("environment.successfully-updated-environment", {
+      name: state.value.environment.title,
+    }),
+  });
 };
 </script>

@@ -27,7 +27,7 @@
           <template #trigger>
             <div class="flex flex-wrap py-2 radio-set-row gap-4">
               <AnnouncementLevelSelect
-                v-model:level="state.announcement.level"
+                v-model:level="state.level"
                 :allow-edit="allowEdit && hasAnnouncementFeature"
               />
             </div>
@@ -52,7 +52,7 @@
         <NTooltip placement="top-start" :disabled="allowEdit">
           <template #trigger>
             <NInput
-              v-model:value="state.announcement.text"
+              v-model:value="state.text"
               class="mb-3 w-full"
               :placeholder="
                 $t('settings.general.workspace.announcement-text.placeholder')
@@ -77,7 +77,7 @@
         <NTooltip placement="top-start" :disabled="allowEdit">
           <template #trigger>
             <NInput
-              v-model:value="state.announcement.link"
+              v-model:value="state.link"
               class="mb-5 w-full"
               :placeholder="
                 $t('settings.general.workspace.extra-link.placeholder')
@@ -109,10 +109,6 @@ import { Announcement } from "@/types/proto/v1/setting_service";
 import { Announcement_AlertLevel } from "@/types/proto/v1/setting_service";
 import { FeatureBadge } from "../FeatureGuard";
 
-interface LocalState {
-  announcement: Announcement;
-}
-
 const props = defineProps<{
   title: string;
   allowEdit: boolean;
@@ -130,27 +126,27 @@ const rawAnnouncement = computed(() =>
   )
 );
 
-const state = reactive<LocalState>({
-  announcement: cloneDeep(rawAnnouncement.value),
-});
+const state = reactive<Announcement>(rawAnnouncement.value);
 
 const allowSave = computed((): boolean => {
-  return !isEqual(rawAnnouncement.value, state.announcement);
+  return !isEqual(rawAnnouncement.value, state);
 });
 
 const updateAnnouncementSetting = async () => {
   await settingV1Store.updateWorkspaceProfile({
     payload: {
-      announcement: state.announcement,
+      announcement: { ...state },
     },
     updateMask: ["value.workspace_profile_setting_value.announcement"],
   });
-  state.announcement = cloneDeep(rawAnnouncement.value);
 };
 
 defineExpose({
   isDirty: allowSave,
   title: props.title,
   update: updateAnnouncementSetting,
+  revert: () => {
+    Object.assign(state, rawAnnouncement.value);
+  },
 });
 </script>

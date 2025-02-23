@@ -1605,6 +1605,7 @@
     },
     "settings": {
       "success-updated": "Project settings updated successfully.",
+      "update-failed": "Failed to update the project setting.",
       "success-member-added-prompt": "Successfully added to the project.",
       "archive": {
         "title": "Archive project",

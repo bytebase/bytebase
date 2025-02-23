@@ -1605,6 +1605,7 @@
     },
     "settings": {
       "success-updated": "项目设置更新成功",
+      "update-failed": "无法更新项目设置。",
       "success-member-added-prompt": "成功添加到当前项目中.",
       "archive": {
         "title": "归档项目",
