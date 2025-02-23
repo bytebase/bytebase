@@ -110,6 +110,7 @@ const {
   checkDataSource,
   extractDataSourceFromEdit,
   pendingCreateInstance,
+  valueChanged,
 } = context;
 
 const router = useRouter();
@@ -123,15 +124,6 @@ const resetChanges = () => {
   basicInfo.value = cloneDeep(original.basicInfo);
   dataSourceEditState.value.dataSources = cloneDeep(original.dataSources);
 };
-
-const valueChanged = computed(() => {
-  const original = getOriginalEditState();
-  const editing = {
-    basicInfo: basicInfo.value,
-    dataSources: dataSourceEditState.value.dataSources,
-  };
-  return !isEqual(editing, original);
-});
 
 const allowUpdate = computed((): boolean => {
   if (!valueChanged.value) {

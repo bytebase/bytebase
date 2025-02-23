@@ -38,6 +38,11 @@ import { Duration } from "@/types/proto/google/protobuf/duration";
 
 const DEFAULT_EXPIRATION_DAYS = 90;
 
+interface LocalState {
+  inputValue: number;
+  neverExpire: boolean;
+}
+
 const getInitialState = (): LocalState => {
   const defaultState: LocalState = {
     inputValue: DEFAULT_EXPIRATION_DAYS,
@@ -52,11 +57,6 @@ const getInitialState = (): LocalState => {
   }
   return defaultState;
 };
-
-interface LocalState {
-  inputValue: number;
-  neverExpire: boolean;
-}
 
 defineProps<{
   allowEdit: boolean;
@@ -82,6 +82,9 @@ const handleSettingChange = async () => {
 
 defineExpose({
   isDirty: computed(() => !isEqual(state, getInitialState())),
+  revert: () => {
+    Object.assign(state, getInitialState());
+  },
   update: handleSettingChange,
 });
 </script>

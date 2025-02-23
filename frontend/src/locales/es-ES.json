@@ -1605,6 +1605,7 @@
     },
     "settings": {
       "success-updated": "La configuración del proyecto se actualizó correctamente.",
+      "update-failed": "No se pudo actualizar la configuración del proyecto.",
       "success-member-added-prompt": "Se agregó correctamente al proyecto.",
       "archive": {
         "title": "Archivar proyecto",

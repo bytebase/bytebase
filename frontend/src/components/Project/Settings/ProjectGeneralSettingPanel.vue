@@ -25,37 +25,21 @@
         </div>
       </dl>
     </div>
-
-    <div v-if="allowEdit" class="flex justify-end">
-      <NButton type="primary" :disabled="!allowSave" @click.prevent="save">
-        {{ $t("common.update") }}
-      </NButton>
-    </div>
-
-    <FeatureModal
-      :open="!!state.requiredFeature"
-      :feature="state.requiredFeature"
-      @cancel="state.requiredFeature = undefined"
-    />
   </form>
 </template>
 
 <script lang="ts" setup>
 import { cloneDeep, isEmpty } from "lodash-es";
-import { NButton, NInput } from "naive-ui";
+import { NInput } from "naive-ui";
 import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
-import { FeatureModal } from "@/components/FeatureGuard";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
-import { pushNotification, useProjectV1Store } from "@/store";
-import type { FeatureType } from "@/types";
+import { useProjectV1Store } from "@/store";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
 import { extractProjectResourceName } from "@/utils";
 
 interface LocalState {
   title: string;
-  requiredFeature: FeatureType | undefined;
 }
 
 const props = defineProps<{
@@ -63,12 +47,10 @@ const props = defineProps<{
   allowEdit: boolean;
 }>();
 
-const { t } = useI18n();
 const projectV1Store = useProjectV1Store();
 
 const state = reactive<LocalState>({
   title: props.project.title,
-  requiredFeature: undefined,
 });
 
 const allowSave = computed((): boolean => {
@@ -79,23 +61,19 @@ const allowSave = computed((): boolean => {
   );
 });
 
-const save = () => {
+const onUpdate = async () => {
   const projectPatch = cloneDeep(props.project);
-  const updateMask: string[] = [];
   if (state.title !== props.project.title) {
     projectPatch.title = state.title;
-    updateMask.push("title");
+    await projectV1Store.updateProject(projectPatch, ["title"]);
   }
-  projectV1Store.updateProject(projectPatch, updateMask).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("project.settings.success-updated"),
-    });
-  });
 };
 
 defineExpose({
   isDirty: allowSave,
+  update: onUpdate,
+  revert: () => {
+    state.title = props.project.title;
+  },
 });
 </script>

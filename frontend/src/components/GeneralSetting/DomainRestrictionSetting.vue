@@ -106,5 +106,8 @@ defineExpose({
       ],
     });
   },
+  revert: () => {
+    Object.assign(state, getInitialState());
+  },
 });
 </script>
