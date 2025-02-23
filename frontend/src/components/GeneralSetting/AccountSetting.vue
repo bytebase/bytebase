@@ -238,5 +238,10 @@ defineExpose({
   isDirty,
   title: props.title,
   update: onUpdate,
+  revert: () => {
+    Object.assign(state, getInitialState());
+    passwordRestrictionSettingRef.value?.revert();
+    signInFrequencySettingRef.value?.revert();
+  },
 });
 </script>

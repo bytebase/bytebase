@@ -160,15 +160,6 @@
         </p>
       </div>
     </div>
-    <div class="w-full flex justify-end gap-x-3">
-      <NButton
-        type="primary"
-        :disabled="!valueChanged || !allowEdit"
-        @click.prevent="doUpdate"
-      >
-        {{ $t("common.update") }}
-      </NButton>
-    </div>
   </div>
 </template>
 
@@ -176,7 +167,6 @@
 import { isEqual, cloneDeep } from "lodash-es";
 import { TriangleAlertIcon } from "lucide-vue-next";
 import {
-  NButton,
   NDynamicTags,
   NTag,
   NColorPicker,
@@ -184,9 +174,8 @@ import {
   NTooltip,
 } from "naive-ui";
 import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
 import { FeatureBadge } from "@/components/FeatureGuard";
-import { hasFeature, pushNotification, useProjectV1Store } from "@/store";
+import { hasFeature, useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
 import { Label } from "@/types/proto/v1/project_service";
 
@@ -224,7 +213,6 @@ const props = defineProps<{
   allowEdit: boolean;
 }>();
 
-const { t } = useI18n();
 const projectStore = useProjectV1Store();
 const state = reactive<LocalState>(getInitialLocalState());
 
@@ -292,16 +280,15 @@ const renderLabel = (value: string, index: number) => {
 };
 
 const doUpdate = async () => {
+  const updateMask = getUpdateMask();
+  if (updateMask.length === 0) {
+    return;
+  }
   const projectPatch = {
     ...cloneDeep(props.project),
     ...state,
   };
-  await projectStore.updateProject(projectPatch, getUpdateMask());
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("common.updated"),
-  });
+  await projectStore.updateProject(projectPatch, updateMask);
 };
 
 const getUpdateMask = () => {
@@ -343,5 +330,9 @@ const getUpdateMask = () => {
 
 defineExpose({
   isDirty: valueChanged,
+  update: doUpdate,
+  revert: () => {
+    Object.assign(state, getInitialLocalState());
+  },
 });
 </script>

@@ -1,5 +1,8 @@
 <template>
-  <template v-if="allowArchiveOrRestore">
+  <div
+    v-if="allowArchiveOrRestore"
+    class="t-6 border-t border-block-border flex justify-between items-center pt-4 pb-2"
+  >
     <template v-if="instance.state === State.ACTIVE">
       <BBButtonConfirm
         :type="'ARCHIVE'"
@@ -40,7 +43,7 @@
         @confirm="archiveOrRestoreInstance(false)"
       />
     </template>
-  </template>
+  </div>
   <FeatureModal
     feature="bb.feature.instance-count"
     :open="state.showFeatureModal"

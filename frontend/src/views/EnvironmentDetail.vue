@@ -16,11 +16,11 @@
     <EnvironmentFormBody
       :features="features"
       :hide-archive-restore="hideArchiveRestore"
-      class="w-full px-4 pb-2"
+      class="w-full px-4 pb-4"
       :class="bodyClass"
     />
     <EnvironmentFormButtons
-      class="sticky bottom-0 bg-white py-2 px-4 border-t border-block-border"
+      class="sticky bottom-0 bg-white py-4 px-2 border-t border-block-border"
       :class="buttonsClass"
     />
   </EnvironmentForm>

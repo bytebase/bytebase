@@ -129,5 +129,8 @@ watch(
 defineExpose({
   isDirty: computed(() => !isEqual(getInitialState(), state)),
   update: handleFrequencySettingChange,
+  revert: () => {
+    Object.assign(state, getInitialState());
+  },
 });
 </script>

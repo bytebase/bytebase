@@ -223,5 +223,8 @@ defineExpose({
       },
     });
   },
+  revert: () => {
+    Object.assign(state, passwordRestrictionSetting.value);
+  },
 });
 </script>
