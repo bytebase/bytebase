@@ -117,6 +117,13 @@ const maximumSQLResultSizeSettingRef =
 const restrictIssueCreationConfigureRef =
   ref<InstanceType<typeof RestrictIssueCreationConfigure>>();
 
+const settingRefList = computed(() => [
+  domainRestrictionSettingRef,
+  maximumRoleExpirationSettingRef,
+  maximumSQLResultSizeSettingRef,
+  restrictIssueCreationConfigureRef,
+]);
+
 const { policy: exportDataPolicy } = usePolicyByParentAndType(
   computed(() => ({
     parentPath: "",
@@ -140,10 +147,7 @@ const state = reactive<LocalState>({
 const isDirty = computed(() => {
   return (
     !isEqual(state, getInitialState()) ||
-    domainRestrictionSettingRef.value?.isDirty ||
-    restrictIssueCreationConfigureRef.value?.isDirty ||
-    maximumSQLResultSizeSettingRef.value?.isDirty ||
-    maximumRoleExpirationSettingRef.value?.isDirty
+    settingRefList.value.some((settingRef) => settingRef.value?.isDirty)
   );
 });
 
@@ -171,19 +175,11 @@ const handleWatermarkToggle = async () => {
 };
 
 const onUpdate = async () => {
-  if (domainRestrictionSettingRef.value?.isDirty) {
-    await domainRestrictionSettingRef.value.update();
+  for (const settingRef of settingRefList.value) {
+    if (settingRef.value?.isDirty) {
+      await settingRef.value.update();
+    }
   }
-  if (restrictIssueCreationConfigureRef.value?.isDirty) {
-    await restrictIssueCreationConfigureRef.value.update();
-  }
-  if (maximumSQLResultSizeSettingRef.value?.isDirty) {
-    await maximumSQLResultSizeSettingRef.value.update();
-  }
-  if (maximumRoleExpirationSettingRef.value?.isDirty) {
-    await maximumRoleExpirationSettingRef.value.update();
-  }
-
   if (state.enableWatermark !== getInitialState().enableWatermark) {
     await handleWatermarkToggle();
   }
@@ -196,5 +192,11 @@ defineExpose({
   isDirty,
   update: onUpdate,
   title: props.title,
+  revert: () => {
+    Object.assign(state, getInitialState());
+    for (const settingRef of settingRefList.value) {
+      settingRef.value?.revert();
+    }
+  },
 });
 </script>

@@ -1605,6 +1605,7 @@
     },
     "settings": {
       "success-updated": "プロジェクト設定が正常に更新されました",
+      "update-failed": "プロジェクト設定の更新に失敗しました。",
       "success-member-added-prompt": "現在のプロジェクトに正常に追加されました。",
       "archive": {
         "title": "アーカイブアイテム",

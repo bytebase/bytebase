@@ -105,7 +105,7 @@
 
     <div
       v-if="!create && !hideArchiveRestore"
-      class="mt-6 flex justify-between items-center pt-5"
+      class="mt-6 border-t border-block-border flex justify-between items-center pt-4 pb-2"
     >
       <template v-if="state.environment.state === State.ACTIVE">
         <BBButtonConfirm

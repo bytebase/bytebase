@@ -138,5 +138,6 @@ defineExpose({
   title: props.title,
   isDirty: allowSave,
   update: uploadLogo,
+  revert: () => (state.logoUrl = settingV1Store.brandingLogo),
 });
 </script>

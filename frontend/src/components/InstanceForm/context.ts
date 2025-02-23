@@ -1,5 +1,5 @@
 import Emittery from "emittery";
-import { cloneDeep, omit } from "lodash-es";
+import { cloneDeep, omit, isEqual } from "lodash-es";
 import { useDialog } from "naive-ui";
 import type { InjectionKey, Ref } from "vue";
 import { provide, inject, computed, ref } from "vue";
@@ -433,6 +433,18 @@ export const provideInstanceFormContext = (baseContext: {
     }
   };
 
+  const valueChanged = computed(() => {
+    const original = {
+      basicInfo: extractBasicInfo(instance.value),
+      dataSources: extractDataSourceEditState(instance.value).dataSources,
+    };
+    const editing = {
+      basicInfo: basicInfo.value,
+      dataSources: dataSourceEditState.value.dataSources,
+    };
+    return !isEqual(editing, original);
+  });
+
   const context = {
     ...baseContext,
     $d,
@@ -457,6 +469,7 @@ export const provideInstanceFormContext = (baseContext: {
     extractDataSourceFromEdit,
     testConnection,
     pendingCreateInstance,
+    valueChanged,
   };
   provide(KEY, context);
 

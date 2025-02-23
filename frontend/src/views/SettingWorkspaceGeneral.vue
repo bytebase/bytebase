@@ -38,7 +38,12 @@
     />
 
     <div v-if="allowEdit && isDirty" class="sticky -bottom-4 z-10">
-      <div class="flex justify-end w-full py-4 border-block-border bg-white">
+      <div
+        class="flex justify-between w-full py-4 border-block-border bg-white"
+      >
+        <NButton @click.prevent="onRevert">
+          {{ $t("common.cancel") }}
+        </NButton>
         <NButton type="primary" @click.prevent="onUpdate">
           {{ $t("common.confirm-and-update") }}
         </NButton>
@@ -109,6 +114,12 @@ const { isSaaSMode } = storeToRefs(actuatorStore);
 const isDirty = computed(() => {
   return settingRefList.value.some((settingRef) => settingRef.value?.isDirty);
 });
+
+const onRevert = () => {
+  for (const settingRef of settingRefList.value) {
+    settingRef.value?.revert();
+  }
+};
 
 const onUpdate = async () => {
   let failedCount = 0;

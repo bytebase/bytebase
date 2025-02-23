@@ -49,7 +49,7 @@
             <NInput
               v-model:value="state.openAIKey"
               class="mb-4 w-full"
-              :disabled="!allowEdit"
+              :disabled="!allowEdit || !hasAIFeature"
               :placeholder="
                 $t(
                   'settings.general.workspace.ai-assistant.openai-key.placeholder'
@@ -79,7 +79,7 @@
             <NInput
               v-model:value="state.openAIEndpoint"
               class="mb-4 w-full"
-              :disabled="!allowEdit"
+              :disabled="!allowEdit || !hasAIFeature"
             />
           </template>
           <span class="text-sm text-gray-400 -translate-y-2">
@@ -104,7 +104,7 @@
             <NInput
               v-model:value="state.openAIModel"
               class="mb-4 w-full"
-              :disabled="!allowEdit"
+              :disabled="!allowEdit || !hasAIFeature"
             />
           </template>
           <span class="text-sm text-gray-400 -translate-y-2">
@@ -113,12 +113,6 @@
         </NTooltip>
       </div>
     </div>
-
-    <FeatureModal
-      feature="bb.feature.ai-assistant"
-      :open="state.showFeatureModal"
-      @cancel="state.showFeatureModal = false"
-    />
   </div>
 </template>
 
@@ -129,13 +123,12 @@ import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { hasFeature } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { FeatureBadge, FeatureModal } from "../FeatureGuard";
+import { FeatureBadge } from "../FeatureGuard";
 
 interface LocalState {
   openAIKey: string;
   openAIEndpoint: string;
   openAIModel: string;
-  showFeatureModal: boolean;
 }
 
 const props = defineProps<{
@@ -150,7 +143,6 @@ const state = reactive<LocalState>({
   openAIKey: "",
   openAIEndpoint: "",
   openAIModel: "",
-  showFeatureModal: false,
 });
 
 const openAIKeySetting = settingV1Store.getSettingByName(
@@ -163,10 +155,18 @@ const openAIModelSetting = settingV1Store.getSettingByName(
   "bb.plugin.openai.model"
 );
 
+const hasAIFeature = computed(() => hasFeature("bb.feature.ai-assistant"));
+
+const getInitialState = (): LocalState => {
+  return {
+    openAIKey: maskKey(openAIKeySetting?.value?.stringValue),
+    openAIEndpoint: openAIEndpointSetting?.value?.stringValue ?? "",
+    openAIModel: openAIModelSetting?.value?.stringValue ?? "",
+  };
+};
+
 watchEffect(() => {
-  state.openAIKey = maskKey(openAIKeySetting?.value?.stringValue);
-  state.openAIEndpoint = openAIEndpointSetting?.value?.stringValue ?? "";
-  state.openAIModel = openAIModelSetting?.value?.stringValue ?? "";
+  Object.assign(state, getInitialState);
 });
 
 const allowSave = computed((): boolean => {
@@ -185,13 +185,6 @@ function maskKey(key: string | undefined): string {
 }
 
 const updateOpenAIKeyEndpoint = async () => {
-  // Always allow to unset the key.
-  const isUnset = state.openAIKey === "" && state.openAIEndpoint === "";
-  if (!isUnset && !hasFeature("bb.feature.ai-assistant")) {
-    state.showFeatureModal = true;
-    return;
-  }
-
   if (
     state.openAIKey !== maskKey(openAIKeySetting?.value?.stringValue) ||
     !state.openAIKey.includes("***")
@@ -235,5 +228,8 @@ defineExpose({
   isDirty: allowSave,
   title: props.title,
   update: updateOpenAIKeyEndpoint,
+  revert: () => {
+    Object.assign(state, getInitialState());
+  },
 });
 </script>

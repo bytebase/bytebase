@@ -16,11 +16,11 @@
     <EnvironmentFormBody
       :features="features"
       :hide-archive-restore="hideArchiveRestore"
-      class="w-full px-4 pb-2"
+      class="w-full px-4 pb-4"
       :class="bodyClass"
     />
     <EnvironmentFormButtons
-      class="sticky bottom-0 bg-white py-2 px-4 border-t border-block-border"
+      class="sticky bottom-0 bg-white py-4 px-2 border-t border-block-border"
       :class="buttonsClass"
     />
   </EnvironmentForm>
@@ -29,7 +29,6 @@
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
 import { reactive, watch, watchEffect } from "vue";
-import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import {
@@ -39,7 +38,6 @@ import {
 } from "@/components/EnvironmentForm";
 import { ENVIRONMENT_V1_ROUTE_DETAIL } from "@/router/dashboard/environmentV1";
 import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
-import { pushNotification } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
 import {
@@ -76,7 +74,6 @@ const props = defineProps<{
 
 const emit = defineEmits(["archive"]);
 
-const { t } = useI18n();
 const router = useRouter();
 const environmentV1Store = useEnvironmentV1Store();
 const policyV1Store = usePolicyV1Store();
@@ -138,20 +135,9 @@ const doUpdate = (environmentPatch: Environment) => {
     pendingUpdate.color = environmentPatch.color;
   }
 
-  environmentV1Store
-    .updateEnvironment(pendingUpdate)
-    .then((environment) => {
-      assignEnvironment(environment);
-    })
-    .then(() => {
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("environment.successfully-updated-environment", {
-          name: state.environment.title,
-        }),
-      });
-    });
+  environmentV1Store.updateEnvironment(pendingUpdate).then((environment) => {
+    assignEnvironment(environment);
+  });
 };
 
 const doArchive = (environment: Environment) => {
@@ -181,16 +167,6 @@ const doRestore = (environment: Environment) => {
     });
 };
 
-const success = () => {
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("environment.successfully-updated-environment", {
-      name: state.environment.title,
-    }),
-  });
-};
-
 const updatePolicy = async (params: {
   environment: Environment;
   policyType: PolicyType;
@@ -207,7 +183,5 @@ const updatePolicy = async (params: {
       state.rolloutPolicy = updatedPolicy;
       break;
   }
-
-  success();
 };
 </script>
