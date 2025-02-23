@@ -111,5 +111,13 @@ const updateEnvironment = () => {
     };
     events.emit("update", environmentPatch);
   }
+
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("environment.successfully-updated-environment", {
+      name: state.value.environment.title,
+    }),
+  });
 };
 </script>
