@@ -411,11 +411,6 @@ message CheckRequest {
 
   string statement = 1;
 
-  // The database metadata to check against. It can be used to check against an
-  // uncommitted metadata. If not provided, the database metadata will be
-  // fetched from the database.
-  DatabaseMetadata metadata = 3 [(google.api.field_behavior) = OPTIONAL];
-
   enum ChangeType {
     CHANGE_TYPE_UNSPECIFIED = 0;
     DDL = 1;
@@ -428,6 +423,9 @@ message CheckRequest {
 
 message CheckResponse {
   repeated Advice advices = 1;
+
+  // The count of affected rows of the statement on the target database.
+  int32 affected_rows = 2;
 }
 
 message ParseMyBatisMapperRequest {

@@ -422,12 +422,6 @@ export interface CheckRequest {
    */
   name: string;
   statement: string;
-  /**
-   * The database metadata to check against. It can be used to check against an
-   * uncommitted metadata. If not provided, the database metadata will be
-   * fetched from the database.
-   */
-  metadata: DatabaseMetadata | undefined;
   changeType: CheckRequest_ChangeType;
 }
 
@@ -502,6 +496,8 @@ export function checkRequest_ChangeTypeToNumber(object: CheckRequest_ChangeType)
 
 export interface CheckResponse {
   advices: Advice[];
+  /** The count of affected rows of the statement on the target database. */
+  affectedRows: number;
 }
 
 export interface ParseMyBatisMapperRequest {
@@ -2889,7 +2885,7 @@ export const PrettyResponse: MessageFns<PrettyResponse> = {
 };
 
 function createBaseCheckRequest(): CheckRequest {
-  return { name: "", statement: "", metadata: undefined, changeType: CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED };
+  return { name: "", statement: "", changeType: CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED };
 }
 
 export const CheckRequest: MessageFns<CheckRequest> = {
@@ -2899,9 +2895,6 @@ export const CheckRequest: MessageFns<CheckRequest> = {
     }
     if (message.statement !== "") {
       writer.uint32(10).string(message.statement);
-    }
-    if (message.metadata !== undefined) {
-      DatabaseMetadata.encode(message.metadata, writer.uint32(26).fork()).join();
     }
     if (message.changeType !== CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED) {
       writer.uint32(32).int32(checkRequest_ChangeTypeToNumber(message.changeType));
@@ -2932,14 +2925,6 @@ export const CheckRequest: MessageFns<CheckRequest> = {
           message.statement = reader.string();
           continue;
         }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.metadata = DatabaseMetadata.decode(reader, reader.uint32());
-          continue;
-        }
         case 4: {
           if (tag !== 32) {
             break;
@@ -2961,7 +2946,6 @@ export const CheckRequest: MessageFns<CheckRequest> = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
-      metadata: isSet(object.metadata) ? DatabaseMetadata.fromJSON(object.metadata) : undefined,
       changeType: isSet(object.changeType)
         ? checkRequest_ChangeTypeFromJSON(object.changeType)
         : CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED,
@@ -2976,9 +2960,6 @@ export const CheckRequest: MessageFns<CheckRequest> = {
     if (message.statement !== "") {
       obj.statement = message.statement;
     }
-    if (message.metadata !== undefined) {
-      obj.metadata = DatabaseMetadata.toJSON(message.metadata);
-    }
     if (message.changeType !== CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED) {
       obj.changeType = checkRequest_ChangeTypeToJSON(message.changeType);
     }
@@ -2992,22 +2973,22 @@ export const CheckRequest: MessageFns<CheckRequest> = {
     const message = createBaseCheckRequest();
     message.name = object.name ?? "";
     message.statement = object.statement ?? "";
-    message.metadata = (object.metadata !== undefined && object.metadata !== null)
-      ? DatabaseMetadata.fromPartial(object.metadata)
-      : undefined;
     message.changeType = object.changeType ?? CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED;
     return message;
   },
 };
 
 function createBaseCheckResponse(): CheckResponse {
-  return { advices: [] };
+  return { advices: [], affectedRows: 0 };
 }
 
 export const CheckResponse: MessageFns<CheckResponse> = {
   encode(message: CheckResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     for (const v of message.advices) {
       Advice.encode(v!, writer.uint32(10).fork()).join();
+    }
+    if (message.affectedRows !== 0) {
+      writer.uint32(16).int32(message.affectedRows);
     }
     return writer;
   },
@@ -3027,6 +3008,14 @@ export const CheckResponse: MessageFns<CheckResponse> = {
           message.advices.push(Advice.decode(reader, reader.uint32()));
           continue;
         }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.affectedRows = reader.int32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3039,6 +3028,7 @@ export const CheckResponse: MessageFns<CheckResponse> = {
   fromJSON(object: any): CheckResponse {
     return {
       advices: globalThis.Array.isArray(object?.advices) ? object.advices.map((e: any) => Advice.fromJSON(e)) : [],
+      affectedRows: isSet(object.affectedRows) ? globalThis.Number(object.affectedRows) : 0,
     };
   },
 
@@ -3046,6 +3036,9 @@ export const CheckResponse: MessageFns<CheckResponse> = {
     const obj: any = {};
     if (message.advices?.length) {
       obj.advices = message.advices.map((e) => Advice.toJSON(e));
+    }
+    if (message.affectedRows !== 0) {
+      obj.affectedRows = Math.round(message.affectedRows);
     }
     return obj;
   },
@@ -3056,6 +3049,7 @@ export const CheckResponse: MessageFns<CheckResponse> = {
   fromPartial(object: DeepPartial<CheckResponse>): CheckResponse {
     const message = createBaseCheckResponse();
     message.advices = object.advices?.map((e) => Advice.fromPartial(e)) || [];
+    message.affectedRows = object.affectedRows ?? 0;
     return message;
   },
 };
