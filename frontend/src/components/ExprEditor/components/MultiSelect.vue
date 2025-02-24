@@ -3,6 +3,7 @@
     :value="value"
     :options="options"
     :multiple="true"
+    :filterable="true"
     :consistent-menu-width="false"
     :placeholder="$t('cel.condition.select-value')"
     :disabled="!allowAdmin"
