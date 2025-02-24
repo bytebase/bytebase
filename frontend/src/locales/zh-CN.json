@@ -2053,9 +2053,7 @@
     "inquire-enterprise-plan": "企业版询价",
     "enterprise-free-trial": "企业版 {days} 天免费试用",
     "button": {
-      "upgrade": "升级",
-      "contact-us": "联系我们",
-      "view-subscription": "查看订阅"
+      "upgrade": "升级"
     },
     "trial-start-modal": {
       "title": "已开启{plan}试用",

@@ -2053,9 +2053,7 @@
     "inquire-enterprise-plan": "Consulta el Plan de Empresas",
     "enterprise-free-trial": "{days}-días de prueba gratuita para la empresa",
     "button": {
-      "upgrade": "Actualizar",
-      "contact-us": "Contáctanos",
-      "view-subscription": "Ver suscripción"
+      "upgrade": "Actualizar"
     },
     "trial-start-modal": {
       "title": "Comience su prueba de {plan}",

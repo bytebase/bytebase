@@ -115,6 +115,10 @@
         type="textarea"
         :placeholder="$t('subscription.sensitive-placeholder')"
       />
+      <div class="textinfolabel mt-2">
+        {{ $t("subscription.plan-compare") }}
+        <LearnMoreLink url="https://www.bytebase.com/pricing?source=console" />
+      </div>
       <div class="ml-auto mt-3">
         <NButton
           type="primary"
@@ -125,13 +129,6 @@
           {{ $t("subscription.upload-license") }}
         </NButton>
       </div>
-    </div>
-    <NDivider />
-    <div class="sm:flex sm:flex-col sm:align-center">
-      <div class="textinfolabel">
-        {{ $t("subscription.plan-compare") }}
-      </div>
-      <PricingTable @on-trial="openTrialModal" />
     </div>
     <TrialModal
       v-if="state.showTrialModal"
@@ -152,6 +149,7 @@ import { NButton, NDivider, NInput } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import TrialModal from "@/components/TrialModal.vue";
 import WeChatQRModal from "@/components/WeChatQRModal.vue";
 import WorkspaceInstanceLicenseStats from "@/components/WorkspaceInstanceLicenseStats.vue";
@@ -164,7 +162,6 @@ import {
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import PricingTable from "../components/PricingTable/";
 
 interface LocalState {
   loading: boolean;
