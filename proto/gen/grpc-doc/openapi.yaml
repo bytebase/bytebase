@@ -9088,13 +9088,6 @@ components:
                          Format: instances/{instance}/databases/{database}
                 statement:
                     type: string
-                metadata:
-                    allOf:
-                        - $ref: '#/components/schemas/DatabaseMetadata'
-                    description: |-
-                        The database metadata to check against. It can be used to check against an
-                         uncommitted metadata. If not provided, the database metadata will be
-                         fetched from the database.
                 changeType:
                     enum:
                         - CHANGE_TYPE_UNSPECIFIED
@@ -9111,6 +9104,10 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Advice'
+                affectedRows:
+                    type: integer
+                    description: The count of affected rows of the statement on the target database.
+                    format: int32
         ColumnCatalog:
             type: object
             properties:

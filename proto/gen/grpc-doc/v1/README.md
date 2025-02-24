@@ -8834,7 +8834,6 @@ Type is the database change type.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The database name to check against. Format: instances/{instance}/databases/{database} |
 | statement | [string](#string) |  |  |
-| metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The database metadata to check against. It can be used to check against an uncommitted metadata. If not provided, the database metadata will be fetched from the database. |
 | change_type | [CheckRequest.ChangeType](#bytebase-v1-CheckRequest-ChangeType) |  |  |
 
 
@@ -8851,6 +8850,7 @@ Type is the database change type.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | advices | [Advice](#bytebase-v1-Advice) | repeated |  |
+| affected_rows | [int32](#int32) |  | The count of affected rows of the statement on the target database. |
 
 
 
