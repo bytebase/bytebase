@@ -103,7 +103,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get extension dependencies from database %q", driver.databaseName)
 	}
-	schemas, schemaOwners, err := getSchemas(txn, extensionDepend)
+	schemas, schemaOwners, skipDumps, err := getSchemas(txn, extensionDepend)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
 	}
@@ -189,6 +189,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			MaterializedViews: materializedViewMap[schemaName],
 			Owner:             schemaOwners[i],
 			EnumTypes:         enumTypes[schemaName],
+			SkipDump:          skipDumps[i],
 		})
 	}
 	databaseMetadata.Extensions = extensions
@@ -383,34 +384,32 @@ WHERE nspname NOT IN (%s)
 ORDER BY nspname;
 `, pgparser.SystemSchemaWhereClause)
 
-func getSchemas(txn *sql.Tx, extensionDepend map[int]bool) ([]string, []string, error) {
+func getSchemas(txn *sql.Tx, extensionDepend map[int]bool) ([]string, []string, []bool, error) {
 	rows, err := txn.Query(listSchemaQuery)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	defer rows.Close()
 
 	var schemaNames, schemaOwners []string
+	var skipDump []bool
 	for rows.Next() {
 		var oid int
 		var schemaName, schemaOwner string
 		if err := rows.Scan(&oid, &schemaName, &schemaOwner); err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		if pgparser.IsSystemSchema(schemaName) {
 			continue
 		}
-		if extensionDepend[oid] {
-			// Skip extension schema.
-			continue
-		}
+		skipDump = append(skipDump, extensionDepend[oid])
 		schemaNames = append(schemaNames, schemaName)
 		schemaOwners = append(schemaOwners, schemaOwner)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	return schemaNames, schemaOwners, nil
+	return schemaNames, schemaOwners, skipDump, nil
 }
 
 func getListForeignTableQuery() string {
@@ -478,8 +477,7 @@ func getTables(
 			continue
 		}
 		if extensionDepend[oid] {
-			// Skip extension table.
-			continue
+			table.SkipDump = true
 		}
 		if comment.Valid {
 			table.Comment = comment.String
@@ -766,8 +764,7 @@ func getMaterializedViews(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.Index
 			continue
 		}
 		if extensionDepend[oid] {
-			// Skip extension view.
-			continue
+			matview.SkipDump = true
 		}
 
 		// Return error on NULL view definition.
@@ -832,8 +829,7 @@ func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata, 
 			continue
 		}
 		if extensionDepend[oid] {
-			// Skip extension view.
-			continue
+			view.SkipDump = true
 		}
 
 		// Return error on NULL view definition.
@@ -968,6 +964,7 @@ func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 	currentEnumSchema := ""
 	currentEnumNmae := ""
 	currentEnumComment := ""
+	currentSkipDump := false
 	var currentEnumValues []string
 	for rows.Next() {
 		var oid int
@@ -977,27 +974,24 @@ func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 			return nil, err
 		}
 
-		if extensionDepend[oid] {
-			// Skip extension enum.
-			continue
-		}
-
-		if comment.Valid {
-			currentEnumComment = comment.String
-		}
-
 		if currentEnumSchema != schemaName || currentEnumNmae != enumName {
 			if currentEnumSchema != "" {
 				enumTypes[currentEnumSchema] = append(enumTypes[currentEnumSchema], &storepb.EnumTypeMetadata{
-					Name:    currentEnumNmae,
-					Values:  currentEnumValues,
-					Comment: currentEnumComment,
+					Name:     currentEnumNmae,
+					Values:   currentEnumValues,
+					Comment:  currentEnumComment,
+					SkipDump: currentSkipDump,
 				})
 			}
 			currentEnumSchema = schemaName
 			currentEnumNmae = enumName
 			currentEnumValues = []string{}
-			currentEnumComment = ""
+			if comment.Valid {
+				currentEnumComment = comment.String
+			} else {
+				currentEnumComment = ""
+			}
+			currentSkipDump = extensionDepend[oid]
 		}
 		currentEnumValues = append(currentEnumValues, enumValue)
 	}
@@ -1007,9 +1001,10 @@ func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 
 	if currentEnumSchema != "" {
 		enumTypes[currentEnumSchema] = append(enumTypes[currentEnumSchema], &storepb.EnumTypeMetadata{
-			Name:    currentEnumNmae,
-			Values:  currentEnumValues,
-			Comment: currentEnumComment,
+			Name:     currentEnumNmae,
+			Values:   currentEnumValues,
+			Comment:  currentEnumComment,
+			SkipDump: currentSkipDump,
 		})
 	}
 
@@ -1056,9 +1051,9 @@ func getSequences(txn *sql.Tx, tableOidMap map[int]*db.TableKeyWithColumns, exte
 		if err := rows.Scan(&oid, &schemaName, &sequenceName, &dataType, &startValue, &minValue, &maxValue, &incrementBy, &cycle, &cacheSize, &lastValue, &comment); err != nil {
 			return nil, err
 		}
+		skipDump := false
 		if extensionDepend[oid] {
-			// Skip extension sequence.
-			continue
+			skipDump = true
 		}
 		lastValueStr := ""
 		if lastValue.Valid {
@@ -1079,6 +1074,7 @@ func getSequences(txn *sql.Tx, tableOidMap map[int]*db.TableKeyWithColumns, exte
 			CacheSize: strconv.FormatInt(cacheSize, 10),
 			LastValue: lastValueStr,
 			Comment:   sequenceComment,
+			SkipDump:  skipDump,
 		}
 		if columnOidKey, ok := sequenceOwnerMap[oid]; ok {
 			if tableKey, ok := tableOidMap[columnOidKey.TableOid]; ok {
@@ -1166,8 +1162,7 @@ func getTriggers(txn *sql.Tx, extensionDepend map[int]bool) (map[db.TableKey][]*
 			return nil, err
 		}
 		if extensionDepend[oid] {
-			// Skip extension trigger.
-			continue
+			trigger.SkipDump = true
 		}
 		if comment.Valid {
 			trigger.Comment = comment.String
@@ -1378,8 +1373,7 @@ func getFunctions(
 			continue
 		}
 		if extensionDepend[oid] {
-			// Skip extension function.
-			continue
+			function.SkipDump = true
 		}
 		if comment.Valid {
 			function.Comment = comment.String
