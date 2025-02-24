@@ -350,7 +350,7 @@ func NewMigrationContext(ctx context.Context, taskID int, database *store.Databa
 	}
 	if v := userFlags.throttleControlReplicas; v != nil {
 		if err := migrationContext.ReadThrottleControlReplicaKeys(*v); err != nil {
-			migrationContext.Log.Fatale(err)
+			return nil, errors.Wrapf("failed to set throttleControlReplicas")
 		}
 	}
 	// Uses specified port. GCP, Aliyun, Azure are equivalent here.
