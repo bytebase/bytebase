@@ -8,10 +8,7 @@
     :disabled="!allowAdmin"
     max-tag-count="responsive"
     size="small"
-    style="min-width: 12rem; width: auto; overflow-x: hidden"
-    :menu-props="{
-      style: 'width: 14rem',
-    }"
+    style="min-width: 12rem; width: auto; max-width: 20rem; overflow-x: hidden"
     @update:value="$emit('update:value', $event)"
   >
     <template #action>
