@@ -217,7 +217,6 @@
     "resources": "Resources",
     "closed": "Closed",
     "options": "Options",
-    "reset": "Reset",
     "refresh": "Refresh",
     "rollback": "Rollback",
     "rows": {
@@ -1622,6 +1621,7 @@
           "self": "Labels",
           "description": "Labels can be attached in the issues for management",
           "configure-labels": "Configure labels",
+          "placeholder": "Press Enter to add tag",
           "force-issue-labels": {
             "self": "Require labels for all issues",
             "description": "Require at least one label when creating issues.",
@@ -1734,10 +1734,15 @@
     "this-is-example-deployment-config": "This is the deployment config example. You need to edit and save it.",
     "add-stage": "Add stage",
     "confirm-to-revert": "Confirm to revert your editing?",
-    "confirm-to-reset": "Confirm reset to default?",
     "name-placeholder": "Stage name...",
     "error": {
-      "env-in-selector-required": "\"Environment\" is required in each stage"
+      "at-least-one-stage": "At least 1 stage",
+      "stage-name-required": "Stage name is required",
+      "at-least-one-selector": "At least 1 selector in each stage",
+      "env-in-selector-required": "\"Environment\" is required in each stage",
+      "env-selector-must-has-one-value": "\"Environment ID\" must has exactly one value",
+      "key-required": "Key is required",
+      "values-required": "Values are required"
     },
     "matched-databases": {
       "all": "All matched databases",
