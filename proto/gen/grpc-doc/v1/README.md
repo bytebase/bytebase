@@ -2311,6 +2311,7 @@ DependencyColumn is the metadata for dependency columns.
 | name | [string](#string) |  | The name of a type. |
 | values | [string](#string) | repeated | The enum values of a type. |
 | comment | [string](#string) |  |  |
+| skip_dump | [bool](#bool) |  |  |
 
 
 
@@ -2412,6 +2413,7 @@ FunctionMetadata is the metadata for functions.
 | sql_mode | [string](#string) |  |  |
 | comment | [string](#string) |  |  |
 | dependency_tables | [DependencyTable](#bytebase-v1-DependencyTable) | repeated | The dependency_tables is the list of dependency tables of a function. For PostgreSQL, it&#39;s the list of tables that the function depends on the return type definition. |
+| skip_dump | [bool](#bool) |  |  |
 
 
 
@@ -2773,6 +2775,7 @@ MaterializedViewMetadata is the metadata for materialized views.
 | dependency_columns | [DependencyColumn](#bytebase-v1-DependencyColumn) | repeated | The dependency_columns is the list of dependency columns of a materialized view. |
 | triggers | [TriggerMetadata](#bytebase-v1-TriggerMetadata) | repeated | The columns is the ordered list of columns in a table. |
 | indexes | [IndexMetadata](#bytebase-v1-IndexMetadata) | repeated | The indexes is the list of indexes in a table. |
+| skip_dump | [bool](#bool) |  |  |
 
 
 
@@ -2810,6 +2813,7 @@ ProcedureMetadata is the metadata for procedures.
 | collation_connection | [string](#string) |  |  |
 | database_collation | [string](#string) |  |  |
 | sql_mode | [string](#string) |  |  |
+| skip_dump | [bool](#bool) |  |  |
 
 
 
@@ -2866,6 +2870,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | sequences | [SequenceMetadata](#bytebase-v1-SequenceMetadata) | repeated | The sequences is the list of sequences in a schema, sorted by name. |
 | events | [EventMetadata](#bytebase-v1-EventMetadata) | repeated |  |
 | enum_types | [EnumTypeMetadata](#bytebase-v1-EnumTypeMetadata) | repeated |  |
+| skip_dump | [bool](#bool) |  |  |
 
 
 
@@ -2911,6 +2916,7 @@ Secret is the secret of the database now.
 | owner_table | [string](#string) |  | The owner table of the sequence. |
 | owner_column | [string](#string) |  | The owner column of the sequence. |
 | comment | [string](#string) |  |  |
+| skip_dump | [bool](#bool) |  |  |
 
 
 
@@ -3054,6 +3060,7 @@ TableMetadata is the metadata for tables.
 | owner | [string](#string) |  |  |
 | sorting_keys | [string](#string) | repeated | The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field. Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by |
 | triggers | [TriggerMetadata](#bytebase-v1-TriggerMetadata) | repeated |  |
+| skip_dump | [bool](#bool) |  |  |
 
 
 
@@ -3121,6 +3128,7 @@ TablePartitionMetadata is the metadata for table partitions.
 | character_set_client | [string](#string) |  |  |
 | collation_connection | [string](#string) |  |  |
 | comment | [string](#string) |  |  |
+| skip_dump | [bool](#bool) |  |  |
 
 
 
@@ -3176,6 +3184,7 @@ ViewMetadata is the metadata for views.
 | dependency_columns | [DependencyColumn](#bytebase-v1-DependencyColumn) | repeated | The dependency_columns is the list of dependency columns of a view. |
 | columns | [ColumnMetadata](#bytebase-v1-ColumnMetadata) | repeated | The columns is the ordered list of columns in a table. |
 | triggers | [TriggerMetadata](#bytebase-v1-TriggerMetadata) | repeated | The triggers is the list of triggers in a view. |
+| skip_dump | [bool](#bool) |  |  |
 
 
 
