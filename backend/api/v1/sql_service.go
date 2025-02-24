@@ -37,6 +37,7 @@ import (
 	mapperparser "github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -1413,21 +1414,24 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 		return nil, status.Errorf(codes.NotFound, "database %q not found", request.Name)
 	}
 
-	var overideMetadata *storepb.DatabaseSchemaMetadata
-	if request.Metadata != nil {
-		overideMetadata, err = convertV1DatabaseMetadata(request.Metadata)
-		if err != nil {
-			return nil, err
-		}
+	checkResponse := &v1pb.CheckResponse{}
+	changeType := convertChangeType(request.ChangeType)
+	// Get SQL summary report for the statement and target database.
+	// Including affected rows.
+	summaryReport, err := plancheck.GetSQLSummaryReport(ctx, s.store, s.sheetManager, s.dbFactory, database, request.Statement)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get SQL summary report, error: %v", err)
 	}
-	_, adviceList, err := s.SQLReviewCheck(ctx, request.Statement, convertChangeType(request.ChangeType), instance, database, overideMetadata)
+	if summaryReport != nil {
+		checkResponse.AffectedRows = summaryReport.AffectedRows
+	}
+
+	_, adviceList, err := s.SQLReviewCheck(ctx, request.Statement, changeType, instance, database)
 	if err != nil {
 		return nil, err
 	}
-
-	return &v1pb.CheckResponse{
-		Advices: adviceList,
-	}, nil
+	checkResponse.Advices = adviceList
+	return checkResponse, nil
 }
 
 func getClassificationByProject(ctx context.Context, stores *store.Store, projectID string) *storepb.DataClassificationSetting_DataClassificationConfig {
@@ -1452,43 +1456,37 @@ func getClassificationByProject(ctx context.Context, stores *store.Store, projec
 	return classificationConfig
 }
 
-// SQLReviewCheck checks the SQL statement against the SQL review policy bind to given environment,
-// against the database schema bind to the given database, if the overrideMetadata is provided,
-// it will be used instead of fetching the database schema from the store.
+// SQLReviewCheck checks the SQL statement against the SQL review policy bind to given environment.
 func (s *SQLService) SQLReviewCheck(
 	ctx context.Context,
 	statement string,
 	changeType storepb.PlanCheckRunConfig_ChangeDatabaseType,
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
-	overrideMetadata *storepb.DatabaseSchemaMetadata,
 ) (storepb.Advice_Status, []*v1pb.Advice, error) {
 	if !isSQLReviewSupported(instance.Engine) || database == nil {
 		return storepb.Advice_SUCCESS, nil, nil
 	}
 
-	dbMetadata := overrideMetadata
-	if dbMetadata == nil {
-		dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+	dbSchema, err := s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
+	if err != nil {
+		return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %s", database.String())
+	}
+	if dbSchema == nil {
+		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
+			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to sync database schema for database %s", database.String())
+		}
+		dbSchema, err = s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
 		if err != nil {
 			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %s", database.String())
 		}
 		if dbSchema == nil {
-			if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
-				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to sync database schema for database %s", database.String())
-			}
-			dbSchema, err = s.store.GetDBSchema(ctx, database.InstanceID, database.DatabaseName)
-			if err != nil {
-				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %s", database.String())
-			}
-			if dbSchema == nil {
-				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "cannot found schema for database %s", database.String())
-			}
+			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "cannot found schema for database %s", database.String())
 		}
-		dbMetadata = dbSchema.GetMetadata()
 	}
+	dbMetadata := dbSchema.GetMetadata()
 
-	catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), overrideMetadata)
+	catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), dbMetadata)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to create a catalog: %v", err)
 	}
