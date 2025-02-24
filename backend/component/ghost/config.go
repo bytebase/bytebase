@@ -60,6 +60,7 @@ type UserFlags struct {
 	assumeRBR                     *bool
 	heartbeatIntervalMillis       *int64
 	niceRatio                     *float64
+	throttleControlReplicas       *string
 }
 
 var knownKeys = map[string]bool{
@@ -75,6 +76,7 @@ var knownKeys = map[string]bool{
 	"assume-rbr":                       true,
 	"heartbeat-interval-millis":        true,
 	"nice-ratio":                       true,
+	"throttle-control-replicas":        true,
 }
 
 func GetUserFlags(flags map[string]string) (*UserFlags, error) {
@@ -171,6 +173,9 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 			return nil, errors.Wrapf(err, "failed to convert nice-ratio %q to float", v)
 		}
 		f.niceRatio = &niceRatio
+	}
+	if v, ok := flags["throttle-control-replicas"]; ok {
+		f.throttleControlReplicas = &v
 	}
 	return f, nil
 }
@@ -327,6 +332,11 @@ func NewMigrationContext(ctx context.Context, taskID int, database *store.Databa
 	}
 	if v := userFlags.niceRatio; v != nil {
 		migrationContext.SetNiceRatio(*v)
+	}
+	if v := userFlags.throttleControlReplicas; v != nil {
+		if err := migrationContext.ReadThrottleControlReplicaKeys(*v); err != nil {
+			migrationContext.Log.Fatale(err)
+		}
 	}
 	// Uses specified port. GCP, Aliyun, Azure are equivalent here.
 	migrationContext.GoogleCloudPlatform = true
