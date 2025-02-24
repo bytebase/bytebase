@@ -61,8 +61,6 @@ COPY ./backend/resources /tmp/bytebase/resources/
 # we extract resources to a specific dir here and the backend will create symlinks at runtime.
 RUN mkdir -p /var/opt/bytebase/resources/mongoutil-1.6.1-linux-${TARGETARCH}/
 RUN tar -Jxf /tmp/bytebase/resources/mongoutil/mongoutil-1.6.1-linux-${TARGETARCH}.txz -C /var/opt/bytebase/resources/mongoutil-1.6.1-linux-${TARGETARCH}/
-RUN mkdir -p /var/opt/bytebase/resources/mysqlutil-8.0.33-linux-${TARGETARCH}/
-RUN tar -zxf /tmp/bytebase/resources/mysqlutil/mysqlutil-8.0.33-linux-${TARGETARCH}.tar.gz -C /var/opt/bytebase/resources/mysqlutil-8.0.33-linux-${TARGETARCH}/
 RUN mkdir -p /var/opt/bytebase/resources/postgres-linux-${TARGETARCH}-16
 RUN tar -Jxf /tmp/bytebase/resources/postgres/postgres-linux-${TARGETARCH}.txz -C /var/opt/bytebase/resources/postgres-linux-${TARGETARCH}-16/
 
