@@ -9,9 +9,14 @@
       </div>
       <NDynamicTags
         :size="'large'"
-        :disabled="!allowEdit"
+        :disabled="!allowEdit || loading"
         :value="labelValues"
         :render-tag="renderLabel"
+        :input-props="{
+          placeholder: $t('project.settings.issue-related.labels.placeholder'),
+          clearable: true,
+        }"
+        :input-style="'min-width: 12rem;'"
         @update:value="onLabelsUpdate"
       />
     </div>
@@ -26,7 +31,7 @@
         <NCheckbox
           v-model:checked="state.allowModifyStatement"
           size="large"
-          :disabled="!allowUpdateIssueProjectSetting"
+          :disabled="!allowUpdateIssueProjectSetting || loading"
           :label="
             $t('project.settings.issue-related.allow-modify-statement.self')
           "
@@ -43,7 +48,7 @@
         <NCheckbox
           v-model:checked="state.autoResolveIssue"
           size="large"
-          :disabled="!allowUpdateIssueProjectSetting"
+          :disabled="!allowUpdateIssueProjectSetting || loading"
           :label="$t('project.settings.issue-related.auto-resolve-issue.self')"
         />
         <p class="text-sm text-gray-400 pl-6 ml-0.5">
@@ -57,7 +62,9 @@
           v-model:checked="state.forceIssueLabels"
           size="large"
           :disabled="
-            !allowUpdateIssueProjectSetting || state.issueLabels.length === 0
+            !allowUpdateIssueProjectSetting ||
+            state.issueLabels.length === 0 ||
+            loading
           "
         >
           <template #default>
@@ -92,7 +99,7 @@
         <NCheckbox
           v-model:checked="state.enforceIssueTitle"
           size="large"
-          :disabled="!allowUpdateIssueProjectSetting"
+          :disabled="!allowUpdateIssueProjectSetting || loading"
           :label="$t('project.settings.issue-related.enforce-issue-title.self')"
         />
         <p class="text-sm text-gray-400 pl-6 ml-0.5">
@@ -105,7 +112,7 @@
         <NCheckbox
           v-model:checked="state.allowSelfApproval"
           size="large"
-          :disabled="!allowUpdateIssueProjectSetting"
+          :disabled="!allowUpdateIssueProjectSetting || loading"
           :label="$t('project.settings.issue-related.allow-self-approval.self')"
         />
         <p class="text-sm text-gray-400 pl-6 ml-0.5">
@@ -118,7 +125,7 @@
         <NCheckbox
           v-model:checked="state.autoEnableBackup"
           size="large"
-          :disabled="!allowUpdateIssueProjectSetting"
+          :disabled="!allowUpdateIssueProjectSetting || loading"
           :label="$t('project.settings.issue-related.auto-enable-backup.self')"
         />
         <p class="text-sm text-gray-400 pl-6 ml-0.5">
@@ -131,7 +138,7 @@
         <NCheckbox
           v-model:checked="state.skipBackupErrors"
           size="large"
-          :disabled="!allowUpdateIssueProjectSetting"
+          :disabled="!allowUpdateIssueProjectSetting || loading"
           :label="$t('project.settings.issue-related.skip-backup-errors.self')"
         />
         <p class="text-sm text-gray-400 pl-6 ml-0.5">
@@ -144,7 +151,7 @@
         <NCheckbox
           v-model:checked="state.postgresDatabaseTenantMode"
           size="large"
-          :disabled="!allowUpdateIssueProjectSetting"
+          :disabled="!allowUpdateIssueProjectSetting || loading"
           :label="
             $t(
               'project.settings.issue-related.postgres-database-tenant-mode.self'
@@ -173,7 +180,7 @@ import {
   NCheckbox,
   NTooltip,
 } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed, reactive, ref } from "vue";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import { hasFeature, useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
@@ -215,6 +222,7 @@ const props = defineProps<{
 
 const projectStore = useProjectV1Store();
 const state = reactive<LocalState>(getInitialLocalState());
+const loading = ref<boolean>(false);
 
 const labelValues = computed(() => state.issueLabels.map((l) => l.value));
 
@@ -280,18 +288,25 @@ const renderLabel = (value: string, index: number) => {
 };
 
 const doUpdate = async () => {
-  const updateMask = getUpdateMask();
-  if (updateMask.length === 0) {
+  if (loading.value) {
     return;
   }
+  if (updateMask.value.length === 0) {
+    return;
+  }
+  loading.value = true;
   const projectPatch = {
     ...cloneDeep(props.project),
     ...state,
   };
-  await projectStore.updateProject(projectPatch, updateMask);
+  try {
+    await projectStore.updateProject(projectPatch, updateMask.value);
+  } finally {
+    loading.value = false;
+  }
 };
 
-const getUpdateMask = () => {
+const updateMask = computed(() => {
   const mask: string[] = [];
   if (!isEqual(state.issueLabels, props.project.issueLabels)) {
     mask.push("issue_labels");
@@ -326,7 +341,7 @@ const getUpdateMask = () => {
     mask.push("postgres_database_tenant_mode");
   }
   return mask;
-};
+});
 
 defineExpose({
   isDirty: valueChanged,

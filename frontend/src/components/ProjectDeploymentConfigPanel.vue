@@ -32,44 +32,36 @@
         :description="$t('deployment-config.this-is-example-deployment-config')"
       >
       </BBAttention>
-      <div v-else>
-        <DeploymentConfigTool
-          v-if="state.deployment.schedule"
-          :schedule="state.deployment.schedule"
-          :allow-edit="allowEdit"
-          :database-list="databaseList"
-        />
-        <div class="pt-4 border-t flex justify-between items-center">
-          <div class="flex items-center space-x-2">
-            <NButton
-              :disabled="!allowResetToDefaultDeploymentConfig"
-              text
-              @click="resetToDefaultDeploymentConfig"
-            >
-              <template #icon>
-                <Undo2Icon class="w-4 h-auto" />
-              </template>
-              {{ $t("common.reset") }}
-            </NButton>
-          </div>
-          <div v-if="allowEdit" class="flex items-center space-x-2">
-            <NPopover v-if="allowEdit" :disabled="!state.error" trigger="hover">
-              <template #trigger>
-                <NButton
-                  type="primary"
-                  :disabled="!allowUpdateDeploymentConfig"
-                  @click="updateDeploymentConfig"
-                >
-                  {{ $t("common.update") }}
-                </NButton>
-              </template>
+      <DeploymentConfigTool
+        v-else-if="state.deployment.schedule"
+        :schedule="state.deployment.schedule"
+        :allow-edit="allowEdit"
+        :database-list="databaseList"
+      />
+    </div>
+    <div v-if="isDeploymentConfigDirty" class="sticky bottom-0 z-10">
+      <div
+        class="flex justify-between w-full pt-4 border-t border-block-border bg-white"
+      >
+        <NButton @click.prevent="onCancel">
+          {{ $t("common.cancel") }}
+        </NButton>
 
-              <span v-if="state.error" class="text-error">
-                {{ $t(state.error) }}
-              </span>
-            </NPopover>
-          </div>
-        </div>
+        <NPopover :disabled="!state.error" trigger="hover">
+          <template #trigger>
+            <NButton
+              type="primary"
+              :disabled="!!state.error"
+              @click="updateDeploymentConfig"
+            >
+              {{ $t("common.confirm-and-update") }}
+            </NButton>
+          </template>
+
+          <span v-if="state.error" class="text-error">
+            {{ $t(state.error) }}
+          </span>
+        </NPopover>
       </div>
     </div>
   </div>
@@ -79,13 +71,15 @@
 </template>
 
 <script lang="ts" setup>
+import { useEventListener } from "@vueuse/core";
 import { cloneDeep, isEqual } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
-import { Undo2Icon } from "lucide-vue-next";
-import { NButton, NPopover, useDialog } from "naive-ui";
+import { NButton, NPopover } from "naive-ui";
 import type { PropType } from "vue";
 import { computed, nextTick, reactive, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
+import { onBeforeRouteLeave } from "vue-router";
+import { BBAttention, BBSpin } from "@/bbkit";
 import {
   getDefaultDeploymentConfig,
   pushNotification,
@@ -104,7 +98,6 @@ import {
   validateDeploymentConfigV1,
 } from "../utils";
 import DeploymentConfigTool, { DeploymentMatrix } from "./DeploymentConfigTool";
-import { BBAttention, BBSpin } from "@/bbkit";
 
 type LocalState = {
   ready: boolean;
@@ -129,7 +122,6 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
-const dialog = useDialog();
 const deploymentConfigV1Store = useDeploymentConfigV1Store();
 
 const state = reactive<LocalState>({
@@ -141,17 +133,6 @@ const state = reactive<LocalState>({
 
 const isDeploymentConfigDirty = computed((): boolean => {
   return !isEqual(state.deployment, state.originalDeployment);
-});
-
-const defaultDeploymentConfigSchedule = computed(
-  () => getDefaultDeploymentConfig().schedule
-);
-
-const allowResetToDefaultDeploymentConfig = computed((): boolean => {
-  return !isEqual(
-    defaultDeploymentConfigSchedule.value,
-    state.deployment?.schedule
-  );
 });
 
 const allowUpdateDeploymentConfig = computed((): boolean => {
@@ -175,7 +156,10 @@ watchEffect(async () => {
   // We clone the saved deployment-config
   // <DeploymentConfigTool /> will mutate `state.deployment` directly
   // when update button clicked, we save the draft to backend.
-  state.deployment = cloneDeep(deploymentConfig);
+  state.deployment = DeploymentConfig.fromPartial({
+    ...getDefaultDeploymentConfig(),
+    ...cloneDeep(deploymentConfig),
+  });
   // clone the object to the backup
   state.originalDeployment = cloneDeep(state.deployment);
   // clean up error and dirty status
@@ -211,25 +195,9 @@ const validate = () => {
   state.error = validateDeploymentConfigV1(state.deployment);
 };
 
-const resetToDefaultDeploymentConfig = () => {
-  dialog.create({
-    positiveText: t("common.confirm"),
-    negativeText: t("common.cancel"),
-    title: t("deployment-config.confirm-to-reset"),
-    autoFocus: false,
-    closable: false,
-    maskClosable: false,
-    closeOnEsc: false,
-    onNegativeClick: () => {
-      // nothing to do
-    },
-    onPositiveClick: () => {
-      state.deployment = DeploymentConfig.fromPartial({
-        ...cloneDeep(state.originalDeployment),
-        schedule: getDefaultDeploymentConfig().schedule,
-      });
-      resetStates();
-    },
+const onCancel = () => {
+  state.deployment = DeploymentConfig.fromPartial({
+    ...cloneDeep(state.originalDeployment),
   });
 };
 
@@ -263,4 +231,21 @@ watch(
   },
   { deep: true }
 );
+
+useEventListener("beforeunload", (e) => {
+  if (!isDeploymentConfigDirty.value) {
+    return;
+  }
+  e.returnValue = t("common.leave-without-saving");
+  return e.returnValue;
+});
+
+onBeforeRouteLeave((to, from, next) => {
+  if (isDeploymentConfigDirty.value) {
+    if (!window.confirm(t("common.leave-without-saving"))) {
+      return;
+    }
+  }
+  next();
+});
 </script>

@@ -217,7 +217,6 @@
     "resources": "リソース",
     "closed": "閉まっている",
     "options": "オプション",
-    "reset": "リセット",
     "refresh": "リフレッシュ",
     "rollback": "ロールバック",
     "rows": {
@@ -1622,6 +1621,7 @@
           "self": "ラベル",
           "description": "問題にラベルを貼って管理できる",
           "configure-labels": "ラベルを設定する",
+          "placeholder": "Enterキーを押してタグを追加してください",
           "force-issue-labels": {
             "self": "すべてのイシューにラベルが必要",
             "description": "イシューを作成するときは、少なくとも 1 つのラベルが必要です。",
@@ -1734,10 +1734,15 @@
     "this-is-example-deployment-config": "これはサンプルのデプロイ設定であり、編集して保存する必要があります。",
     "add-stage": "ステージを追加",
     "confirm-to-revert": "編集を元に戻してもよろしいですか?",
-    "confirm-to-reset": "デフォルトにリセットしますか?",
     "name-placeholder": "芸名…",
     "error": {
-      "env-in-selector-required": "各ステージには「環境」の選択条件が必要です"
+      "at-least-one-stage": "少なくとも 1 つのステージが必要です",
+      "stage-name-required": "ステージ名の指定が必要です",
+      "at-least-one-selector": "各ステージには少なくとも 1 つの選択基準が必要です",
+      "env-in-selector-required": "各ステージには「環境」の選択条件が必要です",
+      "env-selector-must-has-one-value": "「環境 ID」の値は 1 つだけでなければなりません",
+      "key-required": "キーを指定する必要があります",
+      "values-required": "値を指定する必要があります"
     },
     "matched-databases": {
       "all": "一致したすべてのデータベース",

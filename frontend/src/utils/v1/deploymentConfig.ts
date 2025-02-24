@@ -1,4 +1,5 @@
 import { orderBy, uniq } from "lodash-es";
+import { t } from "@/plugins/i18n";
 import type { ComposedDatabase } from "@/types";
 import type {
   DeploymentConfig,
@@ -27,13 +28,13 @@ export const validateDeploymentConfigV1 = (
 ): string | undefined => {
   const deployments = config.schedule?.deployments ?? [];
   if (deployments.length === 0) {
-    return "deployment-config.error.at-least-one-stage";
+    return t("deployment-config.error.at-least-one-stage");
   }
 
   for (let i = 0; i < deployments.length; i++) {
     const deployment = deployments[i];
     if (!deployment.title.trim()) {
-      return "deployment-config.error.stage-name-required";
+      return t("deployment-config.error.stage-name-required");
     }
     const error = validateDeploymentSpecV1(deployment.spec);
     if (error) return error;
@@ -47,27 +48,27 @@ export const validateDeploymentSpecV1 = (
 ): string | undefined => {
   const rules = spec?.labelSelector?.matchExpressions ?? [];
   if (rules.length === 0) {
-    return "deployment-config.error.at-least-one-selector";
+    return t("deployment-config.error.at-least-one-selector");
   }
   const envRule = rules.find((rule) => rule.key === "environment");
   if (!envRule || envRule.operator !== OperatorType.OPERATOR_TYPE_IN) {
-    return "deployment-config.error.env-in-selector-required";
+    return t("deployment-config.error.env-in-selector-required");
   }
   if (envRule.values.length !== 1) {
-    return "deployment-config.error.env-selector-must-has-one-value";
+    return t("deployment-config.error.env-selector-must-has-one-value");
   }
 
   for (let i = 0; i < rules.length; i++) {
     const rule = rules[i];
     if (!rule.key) {
-      return "deployment-config.error.key-required";
+      return t("deployment-config.error.key-required");
     }
     if (
       (rule.operator === OperatorType.OPERATOR_TYPE_IN ||
         rule.operator === OperatorType.OPERATOR_TYPE_NOT_IN) &&
       rule.values.length === 0
     ) {
-      return "deployment-config.error.values-required";
+      return t("deployment-config.error.values-required");
     }
   }
   return undefined;
