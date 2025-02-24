@@ -13758,6 +13758,8 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/TriggerMetadata'
+                skipDump:
+                    type: boolean
             description: TableMetadata is the metadata for tables.
         TablePartitionMetadata:
             type: object
@@ -14255,6 +14257,8 @@ components:
                     type: string
                 comment:
                     type: string
+                skipDump:
+                    type: boolean
         UndeleteEnvironmentRequest:
             required:
                 - name

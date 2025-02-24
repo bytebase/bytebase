@@ -94,6 +94,8 @@ message SchemaMetadata {
   repeated EventMetadata events = 14;
 
   repeated EnumTypeMetadata enum_types = 15;
+
+  bool skip_dump = 16;
 }
 
 message EnumTypeMetadata {
@@ -104,6 +106,8 @@ message EnumTypeMetadata {
   repeated string values = 2;
 
   string comment = 3;
+
+  bool skip_dump = 4;
 }
 
 message EventMetadata {
@@ -158,6 +162,8 @@ message SequenceMetadata {
   string owner_column = 11;
 
   string comment = 12;
+
+  bool skip_dump = 13;
 }
 
 message TriggerMetadata {
@@ -181,6 +187,8 @@ message TriggerMetadata {
   string collation_connection = 8;
 
   string comment = 9;
+
+  bool skip_dump = 10;
 }
 
 message TaskMetadata {
@@ -318,6 +326,8 @@ message TableMetadata {
   repeated string sorting_keys = 19;
 
   repeated TriggerMetadata triggers = 20;
+
+  bool skip_dump = 21;
 }
 
 message CheckConstraintMetadata {
@@ -487,6 +497,8 @@ message ViewMetadata {
 
   // The triggers is the list of triggers in a view.
   repeated TriggerMetadata triggers = 6;
+
+  bool skip_dump = 7;
 }
 
 // DependencyColumn is the metadata for dependency columns.
@@ -520,6 +532,8 @@ message MaterializedViewMetadata {
 
   // The indexes is the list of indexes in a table.
   repeated IndexMetadata indexes = 6;
+
+  bool skip_dump = 7;
 }
 
 message DependencyTable {
@@ -556,6 +570,8 @@ message FunctionMetadata {
   // The dependency_tables is the list of dependency tables of a function.
   // For PostgreSQL, it's the list of tables that the function depends on the return type definition.
   repeated DependencyTable dependency_tables = 9;
+
+  bool skip_dump = 10;
 }
 
 // ProcedureMetadata is the metadata for procedures.
@@ -578,6 +594,8 @@ message ProcedureMetadata {
   string database_collation = 6;
 
   string sql_mode = 7;
+
+  bool skip_dump = 8;
 }
 
 // PackageMetadata is the metadata for packages.

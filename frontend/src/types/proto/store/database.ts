@@ -89,6 +89,7 @@ export interface SchemaMetadata {
   owner: string;
   events: EventMetadata[];
   enumTypes: EnumTypeMetadata[];
+  skipDump: boolean;
 }
 
 export interface EnumTypeMetadata {
@@ -97,6 +98,7 @@ export interface EnumTypeMetadata {
   /** The enum values of a type. */
   values: string[];
   comment: string;
+  skipDump: boolean;
 }
 
 export interface EventMetadata {
@@ -135,6 +137,7 @@ export interface SequenceMetadata {
   /** The owner column of the sequence. */
   ownerColumn: string;
   comment: string;
+  skipDump: boolean;
 }
 
 export interface TriggerMetadata {
@@ -153,6 +156,7 @@ export interface TriggerMetadata {
   characterSetClient: string;
   collationConnection: string;
   comment: string;
+  skipDump: boolean;
 }
 
 export interface TaskMetadata {
@@ -403,6 +407,7 @@ export interface TableMetadata {
    */
   sortingKeys: string[];
   triggers: TriggerMetadata[];
+  skipDump: boolean;
 }
 
 export interface CheckConstraintMetadata {
@@ -744,6 +749,7 @@ export interface ViewMetadata {
   columns: ColumnMetadata[];
   /** The triggers is the list of triggers in a view. */
   triggers: TriggerMetadata[];
+  skipDump: boolean;
 }
 
 /** DependencyColumn is the metadata for dependency columns. */
@@ -770,6 +776,7 @@ export interface MaterializedViewMetadata {
   triggers: TriggerMetadata[];
   /** The indexes is the list of indexes in a table. */
   indexes: IndexMetadata[];
+  skipDump: boolean;
 }
 
 export interface DependencyTable {
@@ -801,6 +808,7 @@ export interface FunctionMetadata {
    * For PostgreSQL, it's the list of tables that the function depends on the return type definition.
    */
   dependencyTables: DependencyTable[];
+  skipDump: boolean;
 }
 
 /** ProcedureMetadata is the metadata for procedures. */
@@ -819,6 +827,7 @@ export interface ProcedureMetadata {
   collationConnection: string;
   databaseCollation: string;
   sqlMode: string;
+  skipDump: boolean;
 }
 
 /** PackageMetadata is the metadata for packages. */
@@ -1583,6 +1592,7 @@ function createBaseSchemaMetadata(): SchemaMetadata {
     owner: "",
     events: [],
     enumTypes: [],
+    skipDump: false,
   };
 }
 
@@ -1629,6 +1639,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     }
     for (const v of message.enumTypes) {
       EnumTypeMetadata.encode(v!, writer.uint32(122).fork()).join();
+    }
+    if (message.skipDump !== false) {
+      writer.uint32(128).bool(message.skipDump);
     }
     return writer;
   },
@@ -1752,6 +1765,14 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
           message.enumTypes.push(EnumTypeMetadata.decode(reader, reader.uint32()));
           continue;
         }
+        case 16: {
+          if (tag !== 128) {
+            break;
+          }
+
+          message.skipDump = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1793,6 +1814,7 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
       enumTypes: globalThis.Array.isArray(object?.enumTypes)
         ? object.enumTypes.map((e: any) => EnumTypeMetadata.fromJSON(e))
         : [],
+      skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
     };
   },
 
@@ -1840,6 +1862,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     if (message.enumTypes?.length) {
       obj.enumTypes = message.enumTypes.map((e) => EnumTypeMetadata.toJSON(e));
     }
+    if (message.skipDump !== false) {
+      obj.skipDump = message.skipDump;
+    }
     return obj;
   },
 
@@ -1862,12 +1887,13 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     message.owner = object.owner ?? "";
     message.events = object.events?.map((e) => EventMetadata.fromPartial(e)) || [];
     message.enumTypes = object.enumTypes?.map((e) => EnumTypeMetadata.fromPartial(e)) || [];
+    message.skipDump = object.skipDump ?? false;
     return message;
   },
 };
 
 function createBaseEnumTypeMetadata(): EnumTypeMetadata {
-  return { name: "", values: [], comment: "" };
+  return { name: "", values: [], comment: "", skipDump: false };
 }
 
 export const EnumTypeMetadata: MessageFns<EnumTypeMetadata> = {
@@ -1880,6 +1906,9 @@ export const EnumTypeMetadata: MessageFns<EnumTypeMetadata> = {
     }
     if (message.comment !== "") {
       writer.uint32(26).string(message.comment);
+    }
+    if (message.skipDump !== false) {
+      writer.uint32(32).bool(message.skipDump);
     }
     return writer;
   },
@@ -1915,6 +1944,14 @@ export const EnumTypeMetadata: MessageFns<EnumTypeMetadata> = {
           message.comment = reader.string();
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.skipDump = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1929,6 +1966,7 @@ export const EnumTypeMetadata: MessageFns<EnumTypeMetadata> = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       values: globalThis.Array.isArray(object?.values) ? object.values.map((e: any) => globalThis.String(e)) : [],
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
+      skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
     };
   },
 
@@ -1943,6 +1981,9 @@ export const EnumTypeMetadata: MessageFns<EnumTypeMetadata> = {
     if (message.comment !== "") {
       obj.comment = message.comment;
     }
+    if (message.skipDump !== false) {
+      obj.skipDump = message.skipDump;
+    }
     return obj;
   },
 
@@ -1954,6 +1995,7 @@ export const EnumTypeMetadata: MessageFns<EnumTypeMetadata> = {
     message.name = object.name ?? "";
     message.values = object.values?.map((e) => e) || [];
     message.comment = object.comment ?? "";
+    message.skipDump = object.skipDump ?? false;
     return message;
   },
 };
@@ -2112,6 +2154,7 @@ function createBaseSequenceMetadata(): SequenceMetadata {
     ownerTable: "",
     ownerColumn: "",
     comment: "",
+    skipDump: false,
   };
 }
 
@@ -2152,6 +2195,9 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     }
     if (message.comment !== "") {
       writer.uint32(98).string(message.comment);
+    }
+    if (message.skipDump !== false) {
+      writer.uint32(104).bool(message.skipDump);
     }
     return writer;
   },
@@ -2259,6 +2305,14 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
           message.comment = reader.string();
           continue;
         }
+        case 13: {
+          if (tag !== 104) {
+            break;
+          }
+
+          message.skipDump = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2282,6 +2336,7 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
       ownerTable: isSet(object.ownerTable) ? globalThis.String(object.ownerTable) : "",
       ownerColumn: isSet(object.ownerColumn) ? globalThis.String(object.ownerColumn) : "",
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
+      skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
     };
   },
 
@@ -2323,6 +2378,9 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     if (message.comment !== "") {
       obj.comment = message.comment;
     }
+    if (message.skipDump !== false) {
+      obj.skipDump = message.skipDump;
+    }
     return obj;
   },
 
@@ -2343,6 +2401,7 @@ export const SequenceMetadata: MessageFns<SequenceMetadata> = {
     message.ownerTable = object.ownerTable ?? "";
     message.ownerColumn = object.ownerColumn ?? "";
     message.comment = object.comment ?? "";
+    message.skipDump = object.skipDump ?? false;
     return message;
   },
 };
@@ -2357,6 +2416,7 @@ function createBaseTriggerMetadata(): TriggerMetadata {
     characterSetClient: "",
     collationConnection: "",
     comment: "",
+    skipDump: false,
   };
 }
 
@@ -2385,6 +2445,9 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
     }
     if (message.comment !== "") {
       writer.uint32(74).string(message.comment);
+    }
+    if (message.skipDump !== false) {
+      writer.uint32(80).bool(message.skipDump);
     }
     return writer;
   },
@@ -2460,6 +2523,14 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
           message.comment = reader.string();
           continue;
         }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.skipDump = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2479,6 +2550,7 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
       characterSetClient: isSet(object.characterSetClient) ? globalThis.String(object.characterSetClient) : "",
       collationConnection: isSet(object.collationConnection) ? globalThis.String(object.collationConnection) : "",
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
+      skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
     };
   },
 
@@ -2508,6 +2580,9 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
     if (message.comment !== "") {
       obj.comment = message.comment;
     }
+    if (message.skipDump !== false) {
+      obj.skipDump = message.skipDump;
+    }
     return obj;
   },
 
@@ -2524,6 +2599,7 @@ export const TriggerMetadata: MessageFns<TriggerMetadata> = {
     message.characterSetClient = object.characterSetClient ?? "";
     message.collationConnection = object.collationConnection ?? "";
     message.comment = object.comment ?? "";
+    message.skipDump = object.skipDump ?? false;
     return message;
   },
 };
@@ -2947,6 +3023,7 @@ function createBaseTableMetadata(): TableMetadata {
     owner: "",
     sortingKeys: [],
     triggers: [],
+    skipDump: false,
   };
 }
 
@@ -3008,6 +3085,9 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     }
     for (const v of message.triggers) {
       TriggerMetadata.encode(v!, writer.uint32(162).fork()).join();
+    }
+    if (message.skipDump !== false) {
+      writer.uint32(168).bool(message.skipDump);
     }
     return writer;
   },
@@ -3171,6 +3251,14 @@ export const TableMetadata: MessageFns<TableMetadata> = {
           message.triggers.push(TriggerMetadata.decode(reader, reader.uint32()));
           continue;
         }
+        case 21: {
+          if (tag !== 168) {
+            break;
+          }
+
+          message.skipDump = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3215,6 +3303,7 @@ export const TableMetadata: MessageFns<TableMetadata> = {
       triggers: globalThis.Array.isArray(object?.triggers)
         ? object.triggers.map((e: any) => TriggerMetadata.fromJSON(e))
         : [],
+      skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
     };
   },
 
@@ -3277,6 +3366,9 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     if (message.triggers?.length) {
       obj.triggers = message.triggers.map((e) => TriggerMetadata.toJSON(e));
     }
+    if (message.skipDump !== false) {
+      obj.skipDump = message.skipDump;
+    }
     return obj;
   },
 
@@ -3312,6 +3404,7 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     message.owner = object.owner ?? "";
     message.sortingKeys = object.sortingKeys?.map((e) => e) || [];
     message.triggers = object.triggers?.map((e) => TriggerMetadata.fromPartial(e)) || [];
+    message.skipDump = object.skipDump ?? false;
     return message;
   },
 };
@@ -4039,7 +4132,7 @@ export const GenerationMetadata: MessageFns<GenerationMetadata> = {
 };
 
 function createBaseViewMetadata(): ViewMetadata {
-  return { name: "", definition: "", comment: "", dependencyColumns: [], columns: [], triggers: [] };
+  return { name: "", definition: "", comment: "", dependencyColumns: [], columns: [], triggers: [], skipDump: false };
 }
 
 export const ViewMetadata: MessageFns<ViewMetadata> = {
@@ -4061,6 +4154,9 @@ export const ViewMetadata: MessageFns<ViewMetadata> = {
     }
     for (const v of message.triggers) {
       TriggerMetadata.encode(v!, writer.uint32(50).fork()).join();
+    }
+    if (message.skipDump !== false) {
+      writer.uint32(56).bool(message.skipDump);
     }
     return writer;
   },
@@ -4120,6 +4216,14 @@ export const ViewMetadata: MessageFns<ViewMetadata> = {
           message.triggers.push(TriggerMetadata.decode(reader, reader.uint32()));
           continue;
         }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.skipDump = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4143,6 +4247,7 @@ export const ViewMetadata: MessageFns<ViewMetadata> = {
       triggers: globalThis.Array.isArray(object?.triggers)
         ? object.triggers.map((e: any) => TriggerMetadata.fromJSON(e))
         : [],
+      skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
     };
   },
 
@@ -4166,6 +4271,9 @@ export const ViewMetadata: MessageFns<ViewMetadata> = {
     if (message.triggers?.length) {
       obj.triggers = message.triggers.map((e) => TriggerMetadata.toJSON(e));
     }
+    if (message.skipDump !== false) {
+      obj.skipDump = message.skipDump;
+    }
     return obj;
   },
 
@@ -4180,6 +4288,7 @@ export const ViewMetadata: MessageFns<ViewMetadata> = {
     message.dependencyColumns = object.dependencyColumns?.map((e) => DependencyColumn.fromPartial(e)) || [];
     message.columns = object.columns?.map((e) => ColumnMetadata.fromPartial(e)) || [];
     message.triggers = object.triggers?.map((e) => TriggerMetadata.fromPartial(e)) || [];
+    message.skipDump = object.skipDump ?? false;
     return message;
   },
 };
@@ -4277,7 +4386,7 @@ export const DependencyColumn: MessageFns<DependencyColumn> = {
 };
 
 function createBaseMaterializedViewMetadata(): MaterializedViewMetadata {
-  return { name: "", definition: "", comment: "", dependencyColumns: [], triggers: [], indexes: [] };
+  return { name: "", definition: "", comment: "", dependencyColumns: [], triggers: [], indexes: [], skipDump: false };
 }
 
 export const MaterializedViewMetadata: MessageFns<MaterializedViewMetadata> = {
@@ -4299,6 +4408,9 @@ export const MaterializedViewMetadata: MessageFns<MaterializedViewMetadata> = {
     }
     for (const v of message.indexes) {
       IndexMetadata.encode(v!, writer.uint32(50).fork()).join();
+    }
+    if (message.skipDump !== false) {
+      writer.uint32(56).bool(message.skipDump);
     }
     return writer;
   },
@@ -4358,6 +4470,14 @@ export const MaterializedViewMetadata: MessageFns<MaterializedViewMetadata> = {
           message.indexes.push(IndexMetadata.decode(reader, reader.uint32()));
           continue;
         }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.skipDump = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4381,6 +4501,7 @@ export const MaterializedViewMetadata: MessageFns<MaterializedViewMetadata> = {
       indexes: globalThis.Array.isArray(object?.indexes)
         ? object.indexes.map((e: any) => IndexMetadata.fromJSON(e))
         : [],
+      skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
     };
   },
 
@@ -4404,6 +4525,9 @@ export const MaterializedViewMetadata: MessageFns<MaterializedViewMetadata> = {
     if (message.indexes?.length) {
       obj.indexes = message.indexes.map((e) => IndexMetadata.toJSON(e));
     }
+    if (message.skipDump !== false) {
+      obj.skipDump = message.skipDump;
+    }
     return obj;
   },
 
@@ -4418,6 +4542,7 @@ export const MaterializedViewMetadata: MessageFns<MaterializedViewMetadata> = {
     message.dependencyColumns = object.dependencyColumns?.map((e) => DependencyColumn.fromPartial(e)) || [];
     message.triggers = object.triggers?.map((e) => TriggerMetadata.fromPartial(e)) || [];
     message.indexes = object.indexes?.map((e) => IndexMetadata.fromPartial(e)) || [];
+    message.skipDump = object.skipDump ?? false;
     return message;
   },
 };
@@ -4509,6 +4634,7 @@ function createBaseFunctionMetadata(): FunctionMetadata {
     sqlMode: "",
     comment: "",
     dependencyTables: [],
+    skipDump: false,
   };
 }
 
@@ -4540,6 +4666,9 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     }
     for (const v of message.dependencyTables) {
       DependencyTable.encode(v!, writer.uint32(74).fork()).join();
+    }
+    if (message.skipDump !== false) {
+      writer.uint32(80).bool(message.skipDump);
     }
     return writer;
   },
@@ -4623,6 +4752,14 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
           message.dependencyTables.push(DependencyTable.decode(reader, reader.uint32()));
           continue;
         }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.skipDump = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4645,6 +4782,7 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
       dependencyTables: globalThis.Array.isArray(object?.dependencyTables)
         ? object.dependencyTables.map((e: any) => DependencyTable.fromJSON(e))
         : [],
+      skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
     };
   },
 
@@ -4677,6 +4815,9 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     if (message.dependencyTables?.length) {
       obj.dependencyTables = message.dependencyTables.map((e) => DependencyTable.toJSON(e));
     }
+    if (message.skipDump !== false) {
+      obj.skipDump = message.skipDump;
+    }
     return obj;
   },
 
@@ -4694,6 +4835,7 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     message.sqlMode = object.sqlMode ?? "";
     message.comment = object.comment ?? "";
     message.dependencyTables = object.dependencyTables?.map((e) => DependencyTable.fromPartial(e)) || [];
+    message.skipDump = object.skipDump ?? false;
     return message;
   },
 };
@@ -4707,6 +4849,7 @@ function createBaseProcedureMetadata(): ProcedureMetadata {
     collationConnection: "",
     databaseCollation: "",
     sqlMode: "",
+    skipDump: false,
   };
 }
 
@@ -4732,6 +4875,9 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
     }
     if (message.sqlMode !== "") {
       writer.uint32(58).string(message.sqlMode);
+    }
+    if (message.skipDump !== false) {
+      writer.uint32(64).bool(message.skipDump);
     }
     return writer;
   },
@@ -4799,6 +4945,14 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
           message.sqlMode = reader.string();
           continue;
         }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.skipDump = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4817,6 +4971,7 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
       collationConnection: isSet(object.collationConnection) ? globalThis.String(object.collationConnection) : "",
       databaseCollation: isSet(object.databaseCollation) ? globalThis.String(object.databaseCollation) : "",
       sqlMode: isSet(object.sqlMode) ? globalThis.String(object.sqlMode) : "",
+      skipDump: isSet(object.skipDump) ? globalThis.Boolean(object.skipDump) : false,
     };
   },
 
@@ -4843,6 +4998,9 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
     if (message.sqlMode !== "") {
       obj.sqlMode = message.sqlMode;
     }
+    if (message.skipDump !== false) {
+      obj.skipDump = message.skipDump;
+    }
     return obj;
   },
 
@@ -4858,6 +5016,7 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
     message.collationConnection = object.collationConnection ?? "";
     message.databaseCollation = object.databaseCollation ?? "";
     message.sqlMode = object.sqlMode ?? "";
+    message.skipDump = object.skipDump ?? false;
     return message;
   },
 };

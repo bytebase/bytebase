@@ -54,6 +54,9 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 
 	// Construct schemas.
 	for _, schema := range metadataExceptBackup.Schemas {
+		if schema.SkipDump {
+			continue
+		}
 		if err := writeSchema(out, schema); err != nil {
 			return err
 		}
@@ -69,6 +72,9 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 	// Construct enums.
 	for _, schema := range metadataExceptBackup.Schemas {
 		for _, enum := range schema.EnumTypes {
+			if enum.SkipDump {
+				continue
+			}
 			if err := writeEnum(out, schema.Name, enum); err != nil {
 				return err
 			}
@@ -85,6 +91,9 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 	// Construct functions.
 	for _, schema := range metadataExceptBackup.Schemas {
 		for _, function := range schema.Functions {
+			if function.SkipDump {
+				continue
+			}
 			funcID := getObjectID(schema.Name, function.Name)
 			functionMap[funcID] = function
 			graph.AddNode(funcID)
@@ -100,6 +109,9 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
 	for _, schema := range metadataExceptBackup.Schemas {
 		for _, sequence := range schema.Sequences {
+			if sequence.SkipDump {
+				continue
+			}
 			if sequence.OwnerTable == "" || sequence.OwnerColumn == "" {
 				if err := writeCreateSequence(out, schema.Name, sequence); err != nil {
 					return err
@@ -118,6 +130,9 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 	// Construct tables.
 	for _, schema := range metadataExceptBackup.Schemas {
 		for _, table := range schema.Tables {
+			if table.SkipDump {
+				continue
+			}
 			tableID := getObjectID(schema.Name, table.Name)
 			tableMap[tableID] = table
 			graph.AddNode(tableID)
@@ -126,6 +141,9 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 
 	for _, schema := range metadataExceptBackup.Schemas {
 		for _, view := range schema.Views {
+			if view.SkipDump {
+				continue
+			}
 			viewID := getObjectID(schema.Name, view.Name)
 			viewMap[viewID] = view
 			graph.AddNode(viewID)
@@ -135,6 +153,9 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 			}
 		}
 		for _, view := range schema.MaterializedViews {
+			if view.SkipDump {
+				continue
+			}
 			viewID := getObjectID(schema.Name, view.Name)
 			materializedViewMap[viewID] = view
 			graph.AddNode(viewID)
@@ -180,6 +201,9 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 	for _, schema := range metadataExceptBackup.Schemas {
 		for _, table := range schema.Tables {
 			for _, trigger := range table.Triggers {
+				if trigger.SkipDump {
+					continue
+				}
 				if err := writeTrigger(out, schema.Name, table.Name, trigger); err != nil {
 					return err
 				}
@@ -188,6 +212,9 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 
 		for _, view := range schema.Views {
 			for _, trigger := range view.Triggers {
+				if trigger.SkipDump {
+					continue
+				}
 				if err := writeTrigger(out, schema.Name, view.Name, trigger); err != nil {
 					return err
 				}
@@ -196,6 +223,9 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 
 		for _, materializedView := range schema.MaterializedViews {
 			for _, trigger := range materializedView.Triggers {
+				if trigger.SkipDump {
+					continue
+				}
 				if err := writeTrigger(out, schema.Name, materializedView.Name, trigger); err != nil {
 					return err
 				}
@@ -206,6 +236,9 @@ func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.Database
 	// Construct foreign keys.
 	for _, schema := range metadataExceptBackup.Schemas {
 		for _, table := range schema.Tables {
+			if table.SkipDump {
+				continue
+			}
 			for _, fk := range table.ForeignKeys {
 				if err := writeForeignKey(out, schema.Name, table.Name, fk); err != nil {
 					return err
