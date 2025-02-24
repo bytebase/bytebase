@@ -1456,7 +1456,7 @@ func getClassificationByProject(ctx context.Context, stores *store.Store, projec
 	return classificationConfig
 }
 
-// SQLReviewCheck checks the SQL statement against the SQL review policy bind to given environment
+// SQLReviewCheck checks the SQL statement against the SQL review policy bind to given environment.
 func (s *SQLService) SQLReviewCheck(
 	ctx context.Context,
 	statement string,
