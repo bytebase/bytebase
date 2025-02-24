@@ -1,20 +1,11 @@
 import { uniq } from "lodash-es";
 import type { SelectOption } from "naive-ui";
+import { getRenderOptionFunc } from "@/components/CustomApproval/Settings/components/common";
 import type { Factor, Operator } from "@/plugins/cel";
 import { EqualityOperatorList, CollectionOperatorList } from "@/plugins/cel";
-import {
-  useInstanceResourceList,
-  useEnvironmentV1Store,
-  useProjectV1List,
-  useSettingV1Store,
-} from "@/store";
-import { DEFAULT_PROJECT_NAME } from "@/types";
+import { useInstanceResourceList, useSettingV1Store } from "@/store";
 import type { Algorithm } from "@/types/proto/v1/setting_service";
-import {
-  extractEnvironmentResourceName,
-  extractInstanceResourceName,
-  extractProjectResourceName,
-} from "@/utils";
+import { extractInstanceResourceName } from "@/utils";
 
 export const getClassificationLevelOptions = () => {
   const settingStore = useSettingV1Store();
@@ -35,39 +26,16 @@ export const getClassificationLevelOptions = () => {
   }));
 };
 
-export const getEnvironmentIdOptions = () => {
-  const environmentList = useEnvironmentV1Store().getEnvironmentList();
-  return environmentList.map<SelectOption>((env) => {
-    const environmentName = extractEnvironmentResourceName(env.name);
-    return {
-      label: environmentName,
-      value: environmentName,
-    };
-  });
-};
-
 export const getInstanceIdOptions = () => {
   const instanceList = useInstanceResourceList();
   return instanceList.value.map<SelectOption>((ins) => {
     const instanceId = extractInstanceResourceName(ins.name);
     return {
-      label: instanceId,
+      label: `${ins.title} (${instanceId})`,
       value: instanceId,
+      render: getRenderOptionFunc(ins),
     };
   });
-};
-
-export const getProjectIdOptions = () => {
-  const { projectList } = useProjectV1List();
-  return projectList.value
-    .filter((proj) => proj.name != DEFAULT_PROJECT_NAME)
-    .map<SelectOption>((proj) => {
-      const projectId = extractProjectResourceName(proj.name);
-      return {
-        label: `${projectId} (${proj.title})`,
-        value: projectId,
-      };
-    });
 };
 
 export const factorSupportDropdown: Factor[] = [
