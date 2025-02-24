@@ -1,48 +1,5 @@
 <template>
   <div class="mx-auto">
-    <div v-if="subscriptionStore.isSelfHostLicense" class="textinfolabel mb-4">
-      {{ $t("subscription.description") }}
-      <a
-        class="text-accent"
-        :href="subscriptionStore.purchaseLicenseUrl"
-        target="__blank"
-      >
-        {{ $t("subscription.purchase-license") }}
-      </a>
-      <span v-if="subscriptionStore.canTrial" class="ml-1">
-        {{ $t("common.or") }}
-        <span class="text-accent cursor-pointer" @click="openTrialModal">
-          {{ $t("subscription.plan.try") }}
-        </span>
-      </span>
-    </div>
-    <div>
-      <label class="flex items-center gap-x-2">
-        <span class="text-main">
-          {{ $t("settings.general.workspace.id") }}
-        </span>
-      </label>
-      <div class="mb-3 text-sm text-gray-400">
-        {{ $t("settings.general.workspace.id-description") }}
-      </div>
-      <div class="mb-4 flex space-x-2">
-        <NInput
-          ref="workspaceIdField"
-          class="mb-4 w-full"
-          readonly
-          :value="workspaceId"
-          @click="selectWorkspaceId"
-        />
-        <NButton
-          v-if="isSupported"
-          :disabled="!workspaceId"
-          @click="handleCopyId"
-        >
-          <heroicons-outline:clipboard-document class="w-4 h-4" />
-        </NButton>
-      </div>
-    </div>
-    <NDivider />
     <dl class="text-left grid grid-cols-2 gap-x-6 my-4 xl:grid-cols-4">
       <div class="my-3">
         <dt class="flex text-main">
@@ -66,6 +23,8 @@
           </div>
         </dd>
       </div>
+    </dl>
+    <dl class="text-left grid grid-cols-2 gap-x-6 my-4 xl:grid-cols-4">
       <WorkspaceInstanceLicenseStats v-if="allowManageInstanceLicenses" />
       <div v-if="!subscriptionStore.isFreePlan" class="my-3">
         <dt class="text-main">
@@ -106,6 +65,43 @@
         </dd>
       </div>
     </dl>
+    <NDivider />
+    <div>
+      <label class="flex items-center gap-x-2">
+        <span class="text-main">
+          {{ $t("settings.general.workspace.id") }}
+        </span>
+      </label>
+      <div class="mb-3 text-sm text-gray-400">
+        {{ $t("settings.general.workspace.id-description") }}
+      </div>
+      <div class="mb-4 flex space-x-2">
+        <NInput
+          ref="workspaceIdField"
+          class="mb-4 w-full"
+          readonly
+          :value="workspaceId"
+          @click="selectWorkspaceId"
+        />
+        <NButton
+          v-if="isSupported"
+          :disabled="!workspaceId"
+          @click="handleCopyId"
+        >
+          <heroicons-outline:clipboard-document class="w-4 h-4" />
+        </NButton>
+      </div>
+    </div>
+    <div v-if="subscriptionStore.isSelfHostLicense" class="textinfolabel mb-4">
+      {{ $t("subscription.description") }}
+      {{ $t("subscription.plan-compare") }}
+      <LearnMoreLink url="https://www.bytebase.com/pricing?source=console" />
+      <span v-if="subscriptionStore.canTrial" class="ml-1">
+        <span class="text-accent cursor-pointer" @click="openTrialModal">
+          {{ $t("subscription.plan.try") }}
+        </span>
+      </span>
+    </div>
     <div
       v-if="allowEdit && subscriptionStore.isSelfHostLicense"
       class="w-full mt-4 flex flex-col"
@@ -115,10 +111,6 @@
         type="textarea"
         :placeholder="$t('subscription.sensitive-placeholder')"
       />
-      <div class="textinfolabel mt-2">
-        {{ $t("subscription.plan-compare") }}
-        <LearnMoreLink url="https://www.bytebase.com/pricing?source=console" />
-      </div>
       <div class="ml-auto mt-3">
         <NButton
           type="primary"
