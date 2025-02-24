@@ -120,9 +120,18 @@ import { NButton, type SelectOption } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, nextTick, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import {
+  getEnvironmentIdOptions,
+  getProjectIdOptions,
+} from "@/components/CustomApproval/Settings/components/common";
 import { useBodyLayoutContext } from "@/layouts/common";
 import type { Factor } from "@/plugins/cel";
-import { featureToRef, pushNotification, usePolicyV1Store } from "@/store";
+import {
+  featureToRef,
+  pushNotification,
+  usePolicyV1Store,
+  useInstanceV1List,
+} from "@/store";
 import type { Policy } from "@/types/proto/v1/org_policy_service";
 import {
   PolicyType,
@@ -136,9 +145,7 @@ import { MiniActionButton } from "../v2";
 import MaskingRuleConfig from "./components/MaskingRuleConfig.vue";
 import {
   getClassificationLevelOptions,
-  getEnvironmentIdOptions,
   getInstanceIdOptions,
-  getProjectIdOptions,
 } from "./components/utils";
 
 type MaskingRuleMode = "NORMAL" | "EDIT" | "CREATE";
@@ -163,6 +170,7 @@ const state = reactive<LocalState>({
   reorderRules: false,
 });
 
+useInstanceV1List();
 const policyStore = usePolicyV1Store();
 const hasPermission = computed(() => {
   return hasWorkspacePermissionV2("bb.policies.update");

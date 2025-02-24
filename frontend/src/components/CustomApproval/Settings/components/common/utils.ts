@@ -1,5 +1,7 @@
 import { uniq, without } from "lodash-es";
+import { CheckIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
+import { h, type VNode } from "vue";
 import { type Factor, SQLTypeList } from "@/plugins/cel";
 import { t } from "@/plugins/i18n";
 import { useEnvironmentV1Store, useProjectV1List } from "@/store";
@@ -166,26 +168,51 @@ export const getFactorList = (source: Risk_Source) => {
   return RiskSourceFactorMap.get(source) ?? [];
 };
 
-const getEnvironmentIdOptions = () => {
+export const getRenderOptionFunc = (resource: {
+  title: string;
+  name: string;
+}): ((info: { node: VNode; selected: boolean }) => VNode) => {
+  return (info: { node: VNode; selected: boolean }) => {
+    return h(
+      info.node,
+      { class: "flex items-center justify-between space-x-4" },
+      [
+        h("div", { class: "flex flex-col px-1 py-1 z-10" }, [
+          h(
+            "div",
+            { class: `textlabel ${info.selected ? "!text-accent" : ""}` },
+            resource.title
+          ),
+          h("div", { class: "opacity-60 textinfolabel" }, resource.name),
+        ]),
+        info.selected ? h(CheckIcon, { class: "w-4 z-10" }) : undefined,
+      ]
+    );
+  };
+};
+
+export const getEnvironmentIdOptions = () => {
   const environmentList = useEnvironmentV1Store().getEnvironmentList();
   return environmentList.map<SelectOption>((env) => {
-    const environmentName = extractEnvironmentResourceName(env.name);
+    const environmentId = extractEnvironmentResourceName(env.name);
     return {
-      label: environmentName,
-      value: environmentName,
+      label: `${env.title} (${environmentId})`,
+      value: environmentId,
+      render: getRenderOptionFunc(env),
     };
   });
 };
 
-const getProjectIdOptions = () => {
+export const getProjectIdOptions = () => {
   const { projectList } = useProjectV1List();
   return projectList.value
     .filter((proj) => proj.name != DEFAULT_PROJECT_NAME)
     .map<SelectOption>((proj) => {
       const projectId = extractProjectResourceName(proj.name);
       return {
-        label: `${projectId} (${proj.title})`,
+        label: `${proj.title} (${projectId})`,
         value: projectId,
+        render: getRenderOptionFunc(proj),
       };
     });
 };
