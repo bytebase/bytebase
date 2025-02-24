@@ -81,6 +81,8 @@ func (exec *SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, driverCtx co
 		migrationError := make(chan error, 1)
 
 		statement := strings.TrimSpace(execStatement)
+		// Trim trailing semicolons.
+		statement = strings.TrimRight(statement, ";")
 
 		tableName, err := ghost.GetTableNameFromStatement(statement)
 		if err != nil {
