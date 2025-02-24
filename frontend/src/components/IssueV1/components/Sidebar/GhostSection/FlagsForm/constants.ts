@@ -7,6 +7,7 @@ export type GhostParameter<T extends GhostParameterType = any> = {
 };
 
 export const SupportedGhostParameters: GhostParameter[] = [
+  { key: "attempt-instant-ddl", type: "bool", defaults: "true"},
   { key: "allow-on-master", type: "bool", defaults: "true" },
   { key: "assume-rbr", type: "bool", defaults: "false" },
   { key: "chunk-size", type: "int", defaults: "1000" },

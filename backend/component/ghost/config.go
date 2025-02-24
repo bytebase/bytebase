@@ -16,6 +16,7 @@ import (
 )
 
 var defaultConfig = struct {
+	attemptInstantDDL                   bool
 	allowedRunningOnMaster              bool
 	concurrentCountTableRows            bool
 	timestampOldTable                   bool
@@ -31,6 +32,7 @@ var defaultConfig = struct {
 	throttleHTTPIntervalMillis          int64
 	throttleHTTPTimeoutMillis           int64
 }{
+	attemptInstantDDL:                   true, // attempt-instant-ddl
 	allowedRunningOnMaster:              true, // allow-on-master
 	concurrentCountTableRows:            true, // concurrent-rowcount
 	timestampOldTable:                   true, // doesn't have a gh-ost cli flag counterpart
@@ -61,6 +63,7 @@ type UserFlags struct {
 	heartbeatIntervalMillis       *int64
 	niceRatio                     *float64
 	throttleControlReplicas       *string
+	attemptInstantDDL             *bool
 }
 
 var knownKeys = map[string]bool{
@@ -77,6 +80,7 @@ var knownKeys = map[string]bool{
 	"heartbeat-interval-millis":        true,
 	"nice-ratio":                       true,
 	"throttle-control-replicas":        true,
+	"attempt-instant-ddl":              true,
 }
 
 func GetUserFlags(flags map[string]string) (*UserFlags, error) {
@@ -177,6 +181,13 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 	if v, ok := flags["throttle-control-replicas"]; ok {
 		f.throttleControlReplicas = &v
 	}
+	if v, ok := flags["attempt-instant-ddl"]; ok {
+		attemptInstantDDL, err := strconv.ParseBool(v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert attempt-instant-ddl %q to bool", v)
+		}
+		f.attemptInstantDDL = &attemptInstantDDL
+	}
 	return f, nil
 }
 
@@ -245,6 +256,7 @@ func NewMigrationContext(ctx context.Context, taskID int, database *store.Databa
 	if err := migrationContext.SetConnectionConfig(""); err != nil {
 		return nil, err
 	}
+	migrationContext.AttemptInstantDDL = defaultConfig.attemptInstantDDL
 	migrationContext.AllowedRunningOnMaster = defaultConfig.allowedRunningOnMaster
 	migrationContext.ConcurrentCountTableRows = defaultConfig.concurrentCountTableRows
 	migrationContext.HooksStatusIntervalSec = defaultConfig.hooksStatusIntervalSec
@@ -290,6 +302,9 @@ func NewMigrationContext(ctx context.Context, taskID int, database *store.Databa
 	userFlags, err := GetUserFlags(flags)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get user flags")
+	}
+	if v := userFlags.attemptInstantDDL; v != nil {
+		migrationContext.AttemptInstantDDL = *v
 	}
 	if v := userFlags.maxLoad; v != nil {
 		if err := migrationContext.ReadMaxLoad(*v); err != nil {
