@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/github/gh-ost/go/logic"
@@ -94,6 +95,8 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 	materials := utils.GetSecretMapFromDatabaseMessage(database)
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := utils.RenderStatement(statement, materials)
+	// Trim trailing semicolons.
+	renderedStatement = strings.TrimRight(renderedStatement, ";")
 
 	tableName, err := ghost.GetTableNameFromStatement(renderedStatement)
 	if err != nil {
