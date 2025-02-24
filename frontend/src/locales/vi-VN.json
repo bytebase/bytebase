@@ -2053,9 +2053,7 @@
     "inquire-enterprise-plan": "Yêu cầu gói Doanh nghiệp",
     "enterprise-free-trial": "Dùng thử Doanh nghiệp miễn phí {days} ngày",
     "button": {
-      "upgrade": "Nâng cấp",
-      "contact-us": "Liên hệ chúng tôi",
-      "view-subscription": "Xem gói đăng ký"
+      "upgrade": "Nâng cấp"
     },
     "trial-start-modal": {
       "title": "Bắt đầu dùng thử {plan} của bạn",

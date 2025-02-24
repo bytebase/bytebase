@@ -2053,9 +2053,7 @@
     "inquire-enterprise-plan": "Enterprise版のお問い合わせ",
     "enterprise-free-trial": "Enterprise の {days} 日間の無料トライアル",
     "button": {
-      "upgrade": "アップグレード",
-      "contact-us": "お問い合わせ",
-      "view-subscription": "サブスクリプションを表示する"
+      "upgrade": "アップグレード"
     },
     "trial-start-modal": {
       "title": "{plan} トライアルが開始されました",

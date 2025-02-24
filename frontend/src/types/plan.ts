@@ -1,4 +1,3 @@
-import { t } from "@/plugins/i18n";
 import {
   PlanType,
   planTypeFromJSON,
@@ -92,10 +91,6 @@ export const planTypeToString = (planType: PlanType): string => {
   }
 };
 
-export type PlanPatch = {
-  type: PlanType;
-};
-
 interface PlanFeature {
   type: string;
   content?: string;
@@ -117,35 +112,7 @@ export interface Plan {
   featureList: PlanFeature[];
 }
 
-export const FEATURE_SECTIONS: { type: string; featureList: string[] }[] =
-  planData.categoryList;
-
 export const PLANS: Plan[] = planData.planList.map((raw: Plan) => ({
   ...raw,
   type: planTypeFromJSON(raw.type + 1),
 }));
-
-export const getFeatureLocalization = (feature: PlanFeature): PlanFeature => {
-  for (const section of FEATURE_SECTIONS) {
-    if (new Set(section.featureList).has(feature.type)) {
-      const res: PlanFeature = {
-        type: t(
-          `subscription.feature-sections.${section.type}.features.${feature.type}`
-        ),
-      };
-      if (feature.content) {
-        res.content = t(
-          `subscription.feature-sections.${section.type}.features.${feature.content}`
-        );
-      }
-      if (feature.tooltip) {
-        res.tooltip = t(
-          `subscription.feature-sections.${section.type}.features.${feature.tooltip}`
-        );
-      }
-      return res;
-    }
-  }
-
-  return feature;
-};
