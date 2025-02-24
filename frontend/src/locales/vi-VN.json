@@ -217,7 +217,6 @@
     "resources": "Tài nguyên",
     "closed": "Đã đóng",
     "options": "Tùy chọn",
-    "reset": "Đặt lại",
     "refresh": "Làm mới",
     "rollback": "Hoàn tác",
     "rows": {
@@ -1622,6 +1621,7 @@
           "self": "Nhãn",
           "description": "Có thể gắn nhãn vào các vấn đề để quản lý",
           "configure-labels": "Cấu hình nhãn",
+          "placeholder": "Nhấn Enter để thêm thẻ",
           "force-issue-labels": {
             "self": "Yêu cầu nhãn cho tất cả các vấn đề",
             "description": "Yêu cầu ít nhất một nhãn khi tạo vấn đề.",
@@ -1734,10 +1734,15 @@
     "this-is-example-deployment-config": "Đây là ví dụ cấu hình triển khai. Bạn cần chỉnh sửa và lưu nó.",
     "add-stage": "Thêm giai đoạn",
     "confirm-to-revert": "Xác nhận hoàn tác chỉnh sửa của bạn?",
-    "confirm-to-reset": "Xác nhận đặt lại về mặc định?",
     "name-placeholder": "Tên giai đoạn...",
     "error": {
-      "env-in-selector-required": "\"Môi trường\" là bắt buộc trong mỗi giai đoạn"
+      "at-least-one-stage": "Ít nhất 1 giai đoạn",
+      "stage-name-required": "Tên sân khấu là bắt buộc",
+      "at-least-one-selector": "Ít nhất 1 bộ chọn ở mỗi giai đoạn",
+      "env-in-selector-required": "\"Môi trường\" là bắt buộc trong mỗi giai đoạn",
+      "env-selector-must-has-one-value": "\"ID môi trường\" phải có đúng một giá trị",
+      "key-required": "Chìa khóa là bắt buộc",
+      "values-required": "Các giá trị được yêu cầu"
     },
     "matched-databases": {
       "all": "Tất cả cơ sở dữ liệu phù hợp",

@@ -217,7 +217,6 @@
     "resources": "资源",
     "closed": "已关闭",
     "options": "配置项",
-    "reset": "重置",
     "refresh": "刷新",
     "rollback": "回滚",
     "rows": {
@@ -1622,6 +1621,7 @@
           "self": "标签",
           "description": "可以在工单中附加标签以便管理",
           "configure-labels": "配置标签",
+          "placeholder": "按 Enter 键添加标签",
           "force-issue-labels": {
             "self": "要求所有工单都必须有标签",
             "description": "创建工单时必须添加至少一个标签。",
@@ -1734,10 +1734,15 @@
     "this-is-example-deployment-config": "这是部署配置的样例，您需要在此基础上编辑并保存。",
     "add-stage": "添加阶段",
     "confirm-to-revert": "确定撤销编辑？",
-    "confirm-to-reset": "确认重置为默认值吗？",
     "name-placeholder": "阶段名称…",
     "error": {
-      "env-in-selector-required": "每个阶段都需要有 \"Environment\" 选择条件"
+      "at-least-one-stage": "至少需要 1 个阶段",
+      "stage-name-required": "需要指定阶段名称",
+      "at-least-one-selector": "每个阶段至少需要 1 个选择条件",
+      "env-in-selector-required": "每个阶段都需要有 \"Environment\" 选择条件",
+      "env-selector-must-has-one-value": "\"Environment ID\" 必须有且只有 1 个值",
+      "key-required": "需要指定 Key",
+      "values-required": "需要指定值"
     },
     "matched-databases": {
       "all": "所有匹配的数据库",
