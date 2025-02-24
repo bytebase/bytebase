@@ -21,8 +21,9 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 			continue
 		}
 		s := &v1pb.SchemaMetadata{
-			Name:  schema.Name,
-			Owner: schema.Owner,
+			Name:     schema.Name,
+			Owner:    schema.Owner,
+			SkipDump: schema.SkipDump,
 		}
 		for _, table := range schema.Tables {
 			if table == nil {
@@ -53,6 +54,7 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 				Name:       view.Name,
 				Definition: view.Definition,
 				Comment:    view.Comment,
+				SkipDump:   view.SkipDump,
 			}
 
 			for _, column := range view.Columns {
@@ -96,6 +98,7 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 				DatabaseCollation:   function.DatabaseCollation,
 				SqlMode:             function.SqlMode,
 				Comment:             function.Comment,
+				SkipDump:            function.SkipDump,
 			}
 			for _, dep := range function.DependencyTables {
 				v1Func.DependencyTables = append(v1Func.DependencyTables, &v1pb.DependencyTable{
@@ -117,6 +120,7 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 				CollationConnection: procedure.CollationConnection,
 				DatabaseCollation:   procedure.DatabaseCollation,
 				SqlMode:             procedure.SqlMode,
+				SkipDump:            procedure.SkipDump,
 			}
 			s.Procedures = append(s.Procedures, v1Procedure)
 		}
@@ -182,6 +186,7 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 				OwnerTable:  sequence.OwnerTable,
 				OwnerColumn: sequence.OwnerColumn,
 				Comment:     sequence.Comment,
+				SkipDump:    sequence.SkipDump,
 			}
 			s.Sequences = append(s.Sequences, v1Sequence)
 		}
@@ -206,9 +211,10 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 				continue
 			}
 			v1Enum := &v1pb.EnumTypeMetadata{
-				Name:    enum.Name,
-				Values:  enum.Values,
-				Comment: enum.Comment,
+				Name:     enum.Name,
+				Values:   enum.Values,
+				Comment:  enum.Comment,
+				SkipDump: enum.SkipDump,
 			}
 			s.EnumTypes = append(s.EnumTypes, v1Enum)
 		}
@@ -221,6 +227,7 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 				Name:       matview.Name,
 				Definition: matview.Definition,
 				Comment:    matview.Comment,
+				SkipDump:   matview.SkipDump,
 			}
 
 			for _, dependencyColumn := range matview.DependencyColumns {
@@ -302,6 +309,7 @@ func convertStoreTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata
 		Charset:       table.Charset,
 		Owner:         table.Owner,
 		SortingKeys:   table.SortingKeys,
+		SkipDump:      table.SkipDump,
 	}
 	for _, partition := range table.Partitions {
 		if partition == nil {
@@ -365,6 +373,7 @@ func convertStoreTriggerMetadata(trigger *storepb.TriggerMetadata) *v1pb.Trigger
 		CharacterSetClient:  trigger.CharacterSetClient,
 		CollationConnection: trigger.CollationConnection,
 		Comment:             trigger.Comment,
+		SkipDump:            trigger.SkipDump,
 	}
 }
 
@@ -495,8 +504,9 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 			continue
 		}
 		s := &storepb.SchemaMetadata{
-			Name:  schema.Name,
-			Owner: schema.Owner,
+			Name:     schema.Name,
+			Owner:    schema.Owner,
+			SkipDump: schema.SkipDump,
 		}
 		for _, table := range schema.Tables {
 			if table == nil {
@@ -512,6 +522,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 				Name:       view.Name,
 				Definition: view.Definition,
 				Comment:    view.Comment,
+				SkipDump:   view.SkipDump,
 			}
 
 			for _, column := range view.Columns {
@@ -547,6 +558,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 				Name:       materializedView.Name,
 				Definition: materializedView.Definition,
 				Comment:    materializedView.Comment,
+				SkipDump:   materializedView.SkipDump,
 			}
 			for _, dependencyColumn := range materializedView.DependencyColumns {
 				if dependencyColumn == nil {
@@ -589,6 +601,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 				DatabaseCollation:   function.DatabaseCollation,
 				SqlMode:             function.SqlMode,
 				Comment:             function.Comment,
+				SkipDump:            function.SkipDump,
 			}
 			for _, dep := range function.DependencyTables {
 				storeFunc.DependencyTables = append(storeFunc.DependencyTables, &storepb.DependencyTable{
@@ -610,6 +623,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 				CollationConnection: procedure.CollationConnection,
 				DatabaseCollation:   procedure.DatabaseCollation,
 				SqlMode:             procedure.SqlMode,
+				SkipDump:            procedure.SkipDump,
 			}
 			s.Procedures = append(s.Procedures, storeProcedure)
 		}
@@ -676,9 +690,10 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 				continue
 			}
 			storeEnum := &storepb.EnumTypeMetadata{
-				Name:    enum.Name,
-				Values:  enum.Values,
-				Comment: enum.Comment,
+				Name:     enum.Name,
+				Values:   enum.Values,
+				Comment:  enum.Comment,
+				SkipDump: enum.SkipDump,
 			}
 			s.EnumTypes = append(s.EnumTypes, storeEnum)
 		}
@@ -699,6 +714,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 				OwnerTable:  sequence.OwnerTable,
 				OwnerColumn: sequence.OwnerColumn,
 				Comment:     sequence.Comment,
+				SkipDump:    sequence.SkipDump,
 			}
 			s.Sequences = append(s.Sequences, storeSequence)
 		}
@@ -752,6 +768,7 @@ func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 		Charset:       table.Charset,
 		Owner:         table.Owner,
 		SortingKeys:   table.SortingKeys,
+		SkipDump:      table.SkipDump,
 	}
 	for _, column := range table.Columns {
 		if column == nil {
@@ -814,6 +831,7 @@ func convertV1TriggerMetadata(trigger *v1pb.TriggerMetadata) *storepb.TriggerMet
 		CharacterSetClient:  trigger.CharacterSetClient,
 		CollationConnection: trigger.CollationConnection,
 		Comment:             trigger.Comment,
+		SkipDump:            trigger.SkipDump,
 	}
 }
 
