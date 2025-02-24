@@ -2053,9 +2053,7 @@
     "inquire-enterprise-plan": "Inquire Enterprise Plan",
     "enterprise-free-trial": "{days}-day free Enterprise trial",
     "button": {
-      "upgrade": "Upgrade",
-      "contact-us": "Contact us",
-      "view-subscription": "View subscription"
+      "upgrade": "Upgrade"
     },
     "trial-start-modal": {
       "title": "Start your {plan} trial",
