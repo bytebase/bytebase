@@ -338,6 +338,6 @@ const renderTab = (env: Environment, index: number) => {
     }
   }
 
-  return h("div", { class: "flex items-center space-x-2" }, child);
+  return h("div", { class: "flex items-center space-x-2 py-1" }, child);
 };
 </script>
