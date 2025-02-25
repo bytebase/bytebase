@@ -18,19 +18,31 @@
       :show-code-location="true"
       @update:advices="$emit('update:advices', $event)"
     >
-      <template #result="{ advices, isRunning }">
-        <template v-if="advices === undefined">
-          <span class="textinfolabel">
-            {{ $t("issue.sql-check.not-executed-yet") }}
-          </span>
-        </template>
-        <SQLCheckBadge v-else :is-running="isRunning" :advices="advices" />
+      <template #result="{ affectedRows, advices, isRunning }">
+        <span v-if="advices === undefined" class="textinfolabel">
+          {{ $t("issue.sql-check.not-executed-yet") }}
+        </span>
+        <div v-else class="flex flex-row justify-start items-center gap-2">
+          <SQLCheckBadge :is-running="isRunning" :advices="advices" />
+          <NTooltip v-if="affectedRows && affectedRows > 0">
+            <template #trigger>
+              <NTag :size="'small'" round>
+                <span class="opacity-80"
+                  >{{ $t("task.check-type.affected-rows.self") }}:
+                </span>
+                <span>{{ affectedRows }}</span>
+              </NTag>
+            </template>
+            {{ $t("task.check-type.affected-rows.description") }}
+          </NTooltip>
+        </div>
       </template>
     </SQLCheckButton>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { NTag, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import {
   useIssueContext,

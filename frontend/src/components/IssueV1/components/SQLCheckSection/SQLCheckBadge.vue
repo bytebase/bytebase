@@ -1,38 +1,39 @@
 <template>
-  <button
-    class="inline-flex items-center px-3 py-0.5 rounded-full text-sm border border-control-border"
-    :class="buttonClasses"
+  <NTag
+    :class="[clickable && 'cursor-pointer']"
+    :type="tagType"
+    :size="'small'"
+    round
     @click="handleClick"
   >
-    <template v-if="status === 'RUNNING'">
-      <TaskSpinner class="-ml-1 mr-1.5 h-4 w-4 text-info" />
+    <template #icon>
+      <template v-if="status === 'RUNNING'">
+        <TaskSpinner class="h-4 w-4 text-info" />
+      </template>
+      <template v-else-if="status === 'SUCCESS'">
+        <CheckIcon :size="16" />
+      </template>
+      <template v-else-if="status === 'WARNING'">
+        <CircleAlertIcon :size="16" />
+      </template>
+      <template v-else-if="status === 'ERROR'">
+        <ShieldXIcon :size="16" />
+      </template>
     </template>
-    <template v-else-if="status === 'SUCCESS'">
-      <heroicons-outline:check
-        class="-ml-1 mr-1.5 mt-0.5 h-4 w-4 text-success"
-      />
-    </template>
-    <template v-else-if="status === 'WARNING'">
-      <heroicons-outline:exclamation
-        class="-ml-1 mr-1.5 mt-0.5 h-4 w-4 text-warning"
-      />
-    </template>
-    <template v-else-if="status === 'ERROR'">
-      <span class="mr-1.5 font-medium text-error" aria-hidden="true"> ! </span>
-    </template>
-
     <span>{{ $t("task.check-type.sql-review") }}</span>
+  </NTag>
 
-    <SQLCheckPanel
-      v-if="showDetailPanel"
-      :database="database"
-      :advices="advices"
-      @close="showDetailPanel = false"
-    />
-  </button>
+  <SQLCheckPanel
+    v-if="showDetailPanel"
+    :database="database"
+    :advices="advices"
+    @close="showDetailPanel = false"
+  />
 </template>
 
 <script setup lang="ts">
+import { CheckIcon, CircleAlertIcon, ShieldXIcon } from "lucide-vue-next";
+import { NTag } from "naive-ui";
 import { computed, ref } from "vue";
 import { SQLCheckPanel } from "@/components/SQLCheck";
 import type { Advice } from "@/types/proto/v1/sql_service";
@@ -74,41 +75,19 @@ const clickable = computed(() => {
   return status.value === "ERROR" || status.value === "WARNING";
 });
 
-const buttonClasses = computed(() => {
-  let bgColor = "";
-  let bgHoverColor = "";
-  let textColor = "";
+const tagType = computed(() => {
   switch (status.value) {
     case "RUNNING":
-      bgColor = "bg-blue-100";
-      bgHoverColor = "bg-blue-300";
-      textColor = "text-blue-800";
-      break;
+      return "info";
     case "SUCCESS":
-      bgColor = "bg-gray-100";
-      bgHoverColor = "bg-gray-300";
-      textColor = "text-gray-800";
-      break;
+      return "success";
     case "WARNING":
-      bgColor = "bg-yellow-100";
-      bgHoverColor = "bg-yellow-300";
-      textColor = "text-yellow-800";
-      break;
+      return "warning";
     case "ERROR":
-      bgColor = "bg-red-100";
-      bgHoverColor = "bg-red-300";
-      textColor = "text-red-800";
-      break;
+      return "error";
   }
-
-  const styleList: string[] = [textColor, bgColor];
-  if (clickable.value) {
-    styleList.push("cursor-pointer", `hover:${bgHoverColor}`);
-  } else {
-    styleList.push("cursor-default");
-  }
-
-  return styleList.join(" ");
+  // Should not reach here.
+  return "default";
 });
 
 const handleClick = () => {
