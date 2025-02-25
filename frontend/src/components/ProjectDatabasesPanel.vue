@@ -66,15 +66,13 @@
 </template>
 
 <script lang="ts" setup>
-import { useClipboard } from "@vueuse/core";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { reactive, computed, onMounted } from "vue";
+import { reactive, computed } from "vue";
 import { useRouter } from "vue-router";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import { Drawer } from "@/components/v2";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
-import { pushNotification } from "@/store";
 import type { ComposedDatabase, ComposedProject } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import type { SearchParams } from "@/utils";
@@ -112,46 +110,6 @@ const state = reactive<LocalState>({
     scopes: [],
   },
   showCreateDrawer: false,
-});
-
-const { copy: copyTextToClipboard } = useClipboard({
-  legacy: true,
-});
-
-onMounted(() => {
-  const res: string[] = [];
-  for (let i = 7000; i < 7001; i++) {
-    const database = `test${i}`;
-    const sql = `
-CREATE DATABASE IF NOT EXISTS ${database} CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE ${database};
-`;
-    res.push(sql);
-    break;
-  }
-
-  for (let i = 6000; i < 7000; i++) {
-    const sql = `
-CREATE TABLE IF NOT EXISTS principal${i} (
-  id int NOT NULL,
-  name char(255) NOT NULL,
-  email char(255) NOT NULL,
-  PRIMARY KEY (id)
-);
-  `;
-    res.push(sql);
-  }
-
-  copyTextToClipboard(res.join("\n")).then(() => {
-    console.log("sql");
-    console.log(res.join("\n"));
-
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: "SQL copied!",
-    });
-  });
 });
 
 const allowToCreateDB = computed(() => {
