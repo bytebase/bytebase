@@ -323,6 +323,10 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 		return nil, status.Errorf(codes.NotFound, "plan %q not found", request.Plan.Name)
 	}
 
+	if oldPlan.Config.GetReleaseSource().GetRelease() != "" && slices.Contains(request.UpdateMask.Paths, "steps") {
+		return nil, status.Errorf(codes.InvalidArgument, "disallowed to update the plan steps because the plan is created from a release")
+	}
+
 	ok, err = func() (bool, error) {
 		if oldPlan.CreatorUID == user.ID {
 			return true, nil
