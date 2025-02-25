@@ -26,7 +26,7 @@ type StatementDisallowCommitAdvisor struct {
 }
 
 // Check checks for to disallow commit.
-func (*StatementDisallowCommitAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*StatementDisallowCommitAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")

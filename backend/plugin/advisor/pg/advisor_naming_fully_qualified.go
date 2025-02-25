@@ -126,7 +126,7 @@ var (
 	_ ast.Visitor     = (*FullyQualifiedObjectNameChecker)(nil)
 )
 
-func (*FullyQualifiedObjectNameAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*FullyQualifiedObjectNameAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	checker := &FullyQualifiedObjectNameChecker{}
 	status, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
 	if err != nil {

@@ -28,7 +28,7 @@ type ColumnCommentConventionAdvisor struct {
 }
 
 // Check checks for column comment convention.
-func (*ColumnCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*ColumnCommentConventionAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")

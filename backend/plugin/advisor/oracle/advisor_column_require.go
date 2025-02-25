@@ -29,7 +29,7 @@ type ColumnRequireAdvisor struct {
 }
 
 // Check checks for column requirement.
-func (*ColumnRequireAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*ColumnRequireAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")

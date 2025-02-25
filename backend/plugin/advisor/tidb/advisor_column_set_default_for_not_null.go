@@ -26,7 +26,7 @@ type ColumnSetDefaultForNotNullAdvisor struct {
 }
 
 // Check checks for set default value for not null column.
-func (*ColumnSetDefaultForNotNullAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*ColumnSetDefaultForNotNullAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")

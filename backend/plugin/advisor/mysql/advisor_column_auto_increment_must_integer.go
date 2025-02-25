@@ -30,7 +30,7 @@ type ColumnAutoIncrementMustIntegerAdvisor struct {
 }
 
 // Check checks for auto-increment column type.
-func (*ColumnAutoIncrementMustIntegerAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*ColumnAutoIncrementMustIntegerAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")

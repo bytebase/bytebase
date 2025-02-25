@@ -26,7 +26,7 @@ type IndexNoDuplicateColumnAdvisor struct {
 }
 
 // Check checks for no duplicate columns in index.
-func (*IndexNoDuplicateColumnAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*IndexNoDuplicateColumnAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")

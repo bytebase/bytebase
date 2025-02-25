@@ -27,7 +27,7 @@ type StatementMaximumLimitValueAdvisor struct {
 }
 
 // Check checks for LIMIT maximum value in SELECT statements.
-func (*StatementMaximumLimitValueAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*StatementMaximumLimitValueAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")

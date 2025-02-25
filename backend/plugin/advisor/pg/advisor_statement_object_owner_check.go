@@ -30,7 +30,7 @@ const (
 type StatementObjectOwnerCheckAdvisor struct {
 }
 
-func (*StatementObjectOwnerCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*StatementObjectOwnerCheckAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	var adviceList []*storepb.Advice
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {

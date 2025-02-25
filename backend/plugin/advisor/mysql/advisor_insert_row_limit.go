@@ -31,7 +31,7 @@ type InsertRowLimitAdvisor struct {
 }
 
 // Check checks for table naming convention.
-func (*InsertRowLimitAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*InsertRowLimitAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	list, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql ParseResult")
