@@ -32,21 +32,21 @@ var defaultConfig = struct {
 	throttleHTTPIntervalMillis          int64
 	throttleHTTPTimeoutMillis           int64
 }{
-	attemptInstantDDL:                   true, // attempt-instant-ddl
-	allowedRunningOnMaster:              true, // allow-on-master
-	concurrentCountTableRows:            true, // concurrent-rowcount
-	timestampOldTable:                   true, // doesn't have a gh-ost cli flag counterpart
-	hooksStatusIntervalSec:              60,   // hooks-status-interval
-	heartbeatIntervalMilliseconds:       100,  // heartbeat-interval-millis
-	niceRatio:                           0,    // nice-ratio
-	chunkSize:                           1000, // chunk-size
-	dmlBatchSize:                        10,   // dml-batch-size
-	maxLagMillisecondsThrottleThreshold: 1500, // max-lag-millis
-	defaultNumRetries:                   60,   // default-retries
-	cutoverLockTimeoutSeconds:           10,   // cut-over-lock-timeout-seconds
-	exponentialBackoffMaxInterval:       64,   // exponential-backoff-max-interval
-	throttleHTTPIntervalMillis:          100,  // throttle-http-interval-millis
-	throttleHTTPTimeoutMillis:           1000, // throttle-http-timeout-millis
+	attemptInstantDDL:                   true,  // attempt-instant-ddl
+	allowedRunningOnMaster:              true,  // allow-on-master
+	concurrentCountTableRows:            true,  // concurrent-rowcount
+	timestampOldTable:                   false, // doesn't have a gh-ost cli flag counterpart
+	hooksStatusIntervalSec:              60,    // hooks-status-interval
+	heartbeatIntervalMilliseconds:       100,   // heartbeat-interval-millis
+	niceRatio:                           0,     // nice-ratio
+	chunkSize:                           1000,  // chunk-size
+	dmlBatchSize:                        10,    // dml-batch-size
+	maxLagMillisecondsThrottleThreshold: 1500,  // max-lag-millis
+	defaultNumRetries:                   60,    // default-retries
+	cutoverLockTimeoutSeconds:           10,    // cut-over-lock-timeout-seconds
+	exponentialBackoffMaxInterval:       64,    // exponential-backoff-max-interval
+	throttleHTTPIntervalMillis:          100,   // throttle-http-interval-millis
+	throttleHTTPTimeoutMillis:           1000,  // throttle-http-timeout-millis
 }
 
 type UserFlags struct {
