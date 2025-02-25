@@ -95,9 +95,7 @@ defineExpose({
     if (state.domain.length === 0) {
       state.enableRestriction = false;
     }
-    const updateMask: string[] = [
-      "value.workspace_profile_setting_value.domains",
-    ];
+    const updateMask: string[] = [];
     if (initialState.value.enableRestriction !== state.enableRestriction) {
       updateMask.push(
         "value.workspace_profile_setting_value.enforce_identity_domain"
