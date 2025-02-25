@@ -24,7 +24,7 @@
         </span>
         <div v-else class="flex flex-row justify-start items-center gap-2">
           <SQLCheckBadge :is-running="isRunning" :advices="advices" />
-          <NTooltip>
+          <NTooltip v-if="affectedRows && affectedRows > 0">
             <template #trigger>
               <NTag :size="'small'" round>
                 <span class="opacity-80"
