@@ -29,20 +29,24 @@
 </template>
 
 <script setup lang="tsx">
+import { cloneDeep } from "lodash-es";
 import { NSwitch, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import InstanceAssignment from "@/components/InstanceAssignment.vue";
 import {
   databaseForTask,
+  notifyNotEditableLegacyIssue,
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import { default as ErrorList } from "@/components/misc/ErrorList.vue";
-import { hasFeature } from "@/store";
+import { planServiceClient } from "@/grpcweb";
+import { hasFeature, pushNotification, useIssueCommentStore } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
+import { Task_Status } from "@/types/proto/v1/rollout_service";
 import { engineNameV1, hasWorkspacePermissionV2 } from "@/utils";
 import {
   allowGhostForTask,
@@ -107,10 +111,21 @@ const allowChange = computed(() => {
   if (errors.value.length > 0) {
     return false;
   }
+  // Always allow changing ghost status when creating.
   if (isCreating.value) {
     return true;
   }
-  // We don't support changing task type yet.
+  // Allow changing ghost status only when task is in one of the following states.
+  if (
+    [
+      Task_Status.FAILED,
+      Task_Status.CANCELED,
+      Task_Status.NOT_STARTED,
+    ].includes(selectedTask.value.status)
+  ) {
+    return true;
+  }
+  // Otherwise, disallow changing ghost status.
   return false;
 });
 
@@ -128,15 +143,47 @@ const toggleChecked = async (on: boolean) => {
   if (errors.value.length > 0) {
     return;
   }
-  if (!isCreating.value) {
-    return;
-  }
 
-  const spec = specForTask(issue.value.planEntity, selectedTask.value);
-  if (!spec || !spec.changeDatabaseConfig) return;
-  spec.changeDatabaseConfig.type = on
-    ? Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST
-    : Plan_ChangeDatabaseConfig_Type.MIGRATE;
+  if (isCreating.value) {
+    const spec = specForTask(issue.value.planEntity, selectedTask.value);
+    if (!spec || !spec.changeDatabaseConfig) return;
+    spec.changeDatabaseConfig.type = on
+      ? Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST
+      : Plan_ChangeDatabaseConfig_Type.MIGRATE;
+  } else {
+    const planPatch = cloneDeep(issue.value.planEntity);
+    const spec = specForTask(planPatch, selectedTask.value);
+    if (!planPatch || !spec || !spec.changeDatabaseConfig) {
+      notifyNotEditableLegacyIssue();
+      return;
+    }
+
+    spec.changeDatabaseConfig.type = on
+      ? Plan_ChangeDatabaseConfig_Type.MIGRATE_GHOST
+      : Plan_ChangeDatabaseConfig_Type.MIGRATE;
+    const updatedPlan = await planServiceClient.updatePlan({
+      plan: planPatch,
+      updateMask: ["steps"],
+    });
+    issue.value.planEntity = updatedPlan;
+
+    const action = on ? "Enable" : "Disable";
+    try {
+      await useIssueCommentStore().createIssueComment({
+        issueName: issue.value.name,
+        comment: `${action} online migration for task [${selectedTask.value.title}].`,
+      });
+    } catch {
+      // fail to comment won't be too bad.
+    }
+
+    events.emit("status-changed", { eager: true });
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
+  }
 };
 
 events.on("toggle-online-migration", ({ on }) => {
