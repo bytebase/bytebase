@@ -198,7 +198,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	histories, err := storeInstance.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{})
 	require.NoError(t, err)
 	require.Len(t, histories, 1)
-	require.Equal(t, histories[0].Version.Version, releaseVersion.String())
+	require.Equal(t, histories[0].Version, releaseVersion.String())
 
 	// Check no migration after passing current version as the release cutoff version.
 	_, err = migrate(ctx, storeInstance, metadataDriver, releaseVersion)
