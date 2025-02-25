@@ -73,9 +73,7 @@ type TaskPatch struct {
 	DatabaseName            *string
 	EarliestAllowedTs       *time.Time
 	UpdateEarliestAllowedTs bool
-
-	// Payload and others cannot be set at the same time.
-	Payload *string
+	Type                    *api.TaskType
 
 	SheetID               *int
 	SchemaVersion         *string
@@ -370,8 +368,8 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessag
 	if v := patch.DatabaseName; v != nil {
 		set, args = append(set, fmt.Sprintf("db_name = $%d", len(args)+1)), append(args, *v)
 	}
-	if (patch.SchemaVersion != nil || patch.SheetID != nil) && patch.Payload != nil {
-		return nil, errors.Errorf("cannot set both sheetID/schemaVersion and payload for TaskPatch")
+	if v := patch.Type; v != nil {
+		set, args = append(set, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *v)
 	}
 	var payloadSet []string
 	if v := patch.SheetID; v != nil {
@@ -402,13 +400,6 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessag
 	}
 	if len(payloadSet) != 0 {
 		set = append(set, fmt.Sprintf(`payload = payload || %s`, strings.Join(payloadSet, "||")))
-	}
-	if v := patch.Payload; v != nil {
-		payload := "{}"
-		if *v != "" {
-			payload = *v
-		}
-		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, payload)
 	}
 	if patch.UpdateEarliestAllowedTs {
 		if patch.EarliestAllowedTs == nil {
