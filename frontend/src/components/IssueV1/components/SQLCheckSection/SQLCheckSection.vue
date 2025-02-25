@@ -11,7 +11,7 @@
       :database="database"
       :change-type="changeType"
       :button-props="{
-        size: 'tiny',
+        size: 'small',
       }"
       button-style="--n-padding: 0 8px 0 6px; --n-icon-margin: 3px;"
       class="justify-between flex-1"
@@ -26,7 +26,7 @@
           <SQLCheckBadge :is-running="isRunning" :advices="advices" />
           <NTooltip v-if="affectedRows && affectedRows > 0">
             <template #trigger>
-              <NTag :size="'small'" round>
+              <NTag round>
                 <span class="opacity-80"
                   >{{ $t("task.check-type.affected-rows.self") }}:
                 </span>
