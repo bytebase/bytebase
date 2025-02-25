@@ -135,6 +135,7 @@ const commentLink = computed((): CommentLink => {
       case Task_Type.DATABASE_SCHEMA_BASELINE:
       case Task_Type.DATABASE_SCHEMA_UPDATE:
       case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
+      case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST:
       case Task_Type.DATABASE_DATA_UPDATE: {
         if (taskRun.changelog === "") {
           return {
