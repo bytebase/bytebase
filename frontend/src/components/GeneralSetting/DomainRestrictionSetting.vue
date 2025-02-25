@@ -108,16 +108,28 @@ const saveDomainRestrictionSettings = async () => {
   if (state.domain.length === 0) {
     state.enableRestriction = false;
   }
-  await settingV1Store.updateWorkspaceProfile({
-    payload: {
-      domains: state.domain ? [state.domain] : [],
-      enforceIdentityDomain: state.enableRestriction,
-    },
-    updateMask: [
-      "value.workspace_profile_setting_value.domains",
-      "value.workspace_profile_setting_value.enforce_identity_domain",
-    ],
-  });
+  const initialState = getInitialState();
+  const updateMask: string[] = [
+    "value.workspace_profile_setting_value.domains",
+  ];
+  if (initialState.enableRestriction !== state.enableRestriction) {
+    updateMask.push(
+      "value.workspace_profile_setting_value.enforce_identity_domain"
+    );
+  }
+  if (initialState.domain !== state.domain) {
+    updateMask.push("value.workspace_profile_setting_value.domains");
+  }
+
+  if (updateMask.length > 0) {
+    await settingV1Store.updateWorkspaceProfile({
+      payload: {
+        domains: state.domain ? [state.domain] : [],
+        enforceIdentityDomain: state.enableRestriction,
+      },
+      updateMask,
+    });
+  }
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
