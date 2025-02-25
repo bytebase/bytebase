@@ -73,7 +73,7 @@ type Context struct {
 
 // Advisor is the interface for advisor.
 type Advisor interface {
-	Check(ctx Context, statement string) ([]*storepb.Advice, error)
+	Check(ctx Context) ([]*storepb.Advice, error)
 }
 
 var (
@@ -129,5 +129,5 @@ func Check(dbType storepb.Engine, advType Type, ctx Context, statement string) (
 		return nil, errors.Errorf("advisor: unknown advisor %v for %v", advType, dbType)
 	}
 
-	return f.Check(ctx, statement)
+	return f.Check(ctx)
 }

@@ -23,7 +23,7 @@ type StatementDisallowMixInDDLAdvisor struct {
 }
 
 // Check checks for no mixed DDL and DML.
-func (*StatementDisallowMixInDDLAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*StatementDisallowMixInDDLAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	switch ctx.ChangeType {
 	case storepb.PlanCheckRunConfig_DDL, storepb.PlanCheckRunConfig_SDL, storepb.PlanCheckRunConfig_DDL_GHOST:
 	default:

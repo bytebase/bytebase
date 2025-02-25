@@ -29,7 +29,7 @@ type StatementDmlDryRunAdvisor struct {
 }
 
 // Check checks for DML dry run.
-func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")

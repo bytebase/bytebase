@@ -25,7 +25,7 @@ func init() {
 type TableDisallowDDLAdvisor struct {
 }
 
-func (*TableDisallowDDLAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*TableDisallowDDLAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")

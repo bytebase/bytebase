@@ -31,7 +31,7 @@ type ColumnDisallowDropInIndexAdvisor struct {
 }
 
 // Check checks for disallow Drop COLUMN in index statement.
-func (*ColumnDisallowDropInIndexAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*ColumnDisallowDropInIndexAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")

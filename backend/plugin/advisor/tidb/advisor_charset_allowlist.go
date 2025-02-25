@@ -27,7 +27,7 @@ type CharsetAllowlistAdvisor struct {
 }
 
 // Check checks for charset allowlist.
-func (*CharsetAllowlistAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*CharsetAllowlistAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")

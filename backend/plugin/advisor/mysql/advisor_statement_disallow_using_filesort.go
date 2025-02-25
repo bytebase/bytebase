@@ -28,7 +28,7 @@ func init() {
 type StatementDisallowUsingFilesortAdvisor struct {
 }
 
-func (*StatementDisallowUsingFilesortAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*StatementDisallowUsingFilesortAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql ParseResult")

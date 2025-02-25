@@ -24,7 +24,7 @@ func init() {
 type TableDisallowDDLAdvisor struct {
 }
 
-func (*TableDisallowDDLAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*TableDisallowDDLAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	list, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")

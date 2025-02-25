@@ -28,7 +28,7 @@ type ColumnDisallowDropAdvisor struct {
 }
 
 // Check checks for disallow DROP COLUMN statement.
-func (*ColumnDisallowDropAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*ColumnDisallowDropAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")

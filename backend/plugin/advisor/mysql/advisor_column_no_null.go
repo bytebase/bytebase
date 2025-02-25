@@ -29,7 +29,7 @@ type ColumnNoNullAdvisor struct {
 }
 
 // Check checks for column no NULL value.
-func (*ColumnNoNullAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*ColumnNoNullAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
