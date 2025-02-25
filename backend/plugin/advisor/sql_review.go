@@ -592,7 +592,6 @@ func SQLReviewCheck(
 				ListDatabaseNamesFunc:    checkContext.ListDatabaseNamesFunc,
 				InstanceID:               checkContext.InstanceID,
 			},
-			statements,
 		)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to check statement")

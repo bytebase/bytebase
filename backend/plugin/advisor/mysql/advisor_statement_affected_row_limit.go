@@ -32,7 +32,7 @@ type StatementAffectedRowLimitAdvisor struct {
 }
 
 // Check checks for UPDATE/DELETE affected row limit.
-func (*StatementAffectedRowLimitAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*StatementAffectedRowLimitAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")

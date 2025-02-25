@@ -24,7 +24,7 @@ type NoSelectAllAdvisor struct {
 }
 
 // Check checks for no "select *".
-func (*NoSelectAllAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*NoSelectAllAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	stmts, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")

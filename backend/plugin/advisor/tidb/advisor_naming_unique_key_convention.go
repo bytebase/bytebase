@@ -26,7 +26,7 @@ type NamingUKConventionAdvisor struct {
 }
 
 // Check checks for index naming convention.
-func (*NamingUKConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*NamingUKConventionAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")

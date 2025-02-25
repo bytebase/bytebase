@@ -27,7 +27,7 @@ type TableRequirePKAdvisor struct {
 }
 
 // Check checks table requires PK.
-func (*TableRequirePKAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*TableRequirePKAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")

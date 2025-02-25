@@ -26,7 +26,7 @@ type DisallowOrderByAdvisor struct {
 }
 
 // Check checks for no ORDER BY clause in DELETE/UPDATE statements.
-func (*DisallowOrderByAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*DisallowOrderByAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")

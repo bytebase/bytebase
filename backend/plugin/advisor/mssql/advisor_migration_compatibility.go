@@ -27,7 +27,7 @@ type MigrationCompatibilityAdvisor struct {
 }
 
 // Check checks for migration compatibility..
-func (*MigrationCompatibilityAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*MigrationCompatibilityAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")

@@ -31,7 +31,7 @@ type NamingAutoIncrementColumnAdvisor struct {
 }
 
 // Check checks for auto-increment naming convention.
-func (*NamingAutoIncrementColumnAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*NamingAutoIncrementColumnAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")

@@ -24,7 +24,7 @@ func init() {
 type StatementPriorBackupCheckAdvisor struct {
 }
 
-func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	if ctx.PreUpdateBackupDetail == nil || ctx.ChangeType != storepb.PlanCheckRunConfig_DML {
 		return nil, nil
 	}

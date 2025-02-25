@@ -31,7 +31,7 @@ type StatementPriorBackupCheckAdvisor struct {
 }
 
 // Check checks for no mixed DDL and DML.
-func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	if ctx.PreUpdateBackupDetail == nil || ctx.ChangeType != storepb.PlanCheckRunConfig_DML {
 		return nil, nil
 	}

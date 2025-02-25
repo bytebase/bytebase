@@ -28,7 +28,7 @@ type CompatibilityAdvisor struct {
 }
 
 // Check checks schema backward compatibility.
-func (*CompatibilityAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*CompatibilityAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
