@@ -58,7 +58,7 @@ import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { FeatureBadge } from "../FeatureGuard";
 
-const getInitialState = (): LocalState => {
+const initialState = computed((): LocalState => {
   const defaultState: LocalState = {
     domain: "",
     enableRestriction: false,
@@ -73,7 +73,7 @@ const getInitialState = (): LocalState => {
       settingV1Store.workspaceProfileSetting?.enforceIdentityDomain || false;
   }
   return defaultState;
-};
+});
 
 interface LocalState {
   domain: string;
@@ -85,29 +85,37 @@ defineProps<{
 }>();
 
 const settingV1Store = useSettingV1Store();
-const state = reactive<LocalState>(getInitialState());
+const state = reactive<LocalState>(initialState.value);
 
 const hasFeature = featureToRef("bb.feature.domain-restriction");
 
 defineExpose({
-  isDirty: computed(() => !isEqual(state, getInitialState())),
+  isDirty: computed(() => !isEqual(state, initialState.value)),
   update: async () => {
     if (state.domain.length === 0) {
       state.enableRestriction = false;
     }
-    await settingV1Store.updateWorkspaceProfile({
-      payload: {
-        domains: state.domain ? [state.domain] : [],
-        enforceIdentityDomain: state.enableRestriction,
-      },
-      updateMask: [
-        "value.workspace_profile_setting_value.domains",
-        "value.workspace_profile_setting_value.enforce_identity_domain",
-      ],
-    });
+    const updateMask: string[] = [];
+    if (initialState.value.enableRestriction !== state.enableRestriction) {
+      updateMask.push(
+        "value.workspace_profile_setting_value.enforce_identity_domain"
+      );
+    }
+    if (initialState.value.domain !== state.domain) {
+      updateMask.push("value.workspace_profile_setting_value.domains");
+    }
+    if (updateMask.length > 0) {
+      await settingV1Store.updateWorkspaceProfile({
+        payload: {
+          domains: state.domain ? [state.domain] : [],
+          enforceIdentityDomain: state.enableRestriction,
+        },
+        updateMask,
+      });
+    }
   },
   revert: () => {
-    Object.assign(state, getInitialState());
+    Object.assign(state, initialState.value);
   },
 });
 </script>
