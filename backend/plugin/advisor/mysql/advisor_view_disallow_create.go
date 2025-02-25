@@ -26,7 +26,7 @@ type ViewDisallowCreateAdvisor struct {
 }
 
 // Check checks for disallow creating view.
-func (*ViewDisallowCreateAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*ViewDisallowCreateAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")

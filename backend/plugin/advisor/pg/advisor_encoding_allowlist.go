@@ -25,7 +25,7 @@ type EncodingAllowlistAdvisor struct {
 }
 
 // Check checks for encoding allowlist.
-func (*EncodingAllowlistAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*EncodingAllowlistAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")

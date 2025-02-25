@@ -27,7 +27,7 @@ type TableCommentConventionAdvisor struct {
 }
 
 // Check checks for table comment convention.
-func (*TableCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*TableCommentConventionAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")

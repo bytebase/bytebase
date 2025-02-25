@@ -28,7 +28,7 @@ type TableCommentConventionAdvisor struct {
 }
 
 // Check checks for table comment convention.
-func (*TableCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*TableCommentConventionAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	list, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")

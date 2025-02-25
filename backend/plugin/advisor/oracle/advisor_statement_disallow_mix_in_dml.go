@@ -23,7 +23,7 @@ func init() {
 type StatementDisallowMixInDMLAdvisor struct {
 }
 
-func (*StatementDisallowMixInDMLAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*StatementDisallowMixInDMLAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	switch ctx.ChangeType {
 	case storepb.PlanCheckRunConfig_DML:
 	default:

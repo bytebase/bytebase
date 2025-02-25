@@ -73,7 +73,7 @@ type Context struct {
 
 // Advisor is the interface for advisor.
 type Advisor interface {
-	Check(ctx Context, statement string) ([]*storepb.Advice, error)
+	Check(ctx Context) ([]*storepb.Advice, error)
 }
 
 var (
@@ -104,7 +104,7 @@ func Register(dbType storepb.Engine, advType Type, f Advisor) {
 }
 
 // Check runs the advisor and returns the advices.
-func Check(dbType storepb.Engine, advType Type, ctx Context, statement string) (adviceList []*storepb.Advice, err error) {
+func Check(dbType storepb.Engine, advType Type, ctx Context) (adviceList []*storepb.Advice, err error) {
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
 			panicErr, ok := panicErr.(error)
@@ -129,5 +129,5 @@ func Check(dbType storepb.Engine, advType Type, ctx Context, statement string) (
 		return nil, errors.Errorf("advisor: unknown advisor %v for %v", advType, dbType)
 	}
 
-	return f.Check(ctx, statement)
+	return f.Check(ctx)
 }

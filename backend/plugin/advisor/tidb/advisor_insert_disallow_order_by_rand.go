@@ -26,7 +26,7 @@ type InsertDisallowOrderByRandAdvisor struct {
 }
 
 // Check checks for to disallow order by rand in INSERT statements.
-func (*InsertDisallowOrderByRandAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*InsertDisallowOrderByRandAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")

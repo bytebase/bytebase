@@ -26,7 +26,7 @@ type NamingColumnConventionAdvisor struct {
 }
 
 // Check checks for column naming convention.
-func (*NamingColumnConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*NamingColumnConventionAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	list, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql ParseResult")

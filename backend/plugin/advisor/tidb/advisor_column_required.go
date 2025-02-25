@@ -26,7 +26,7 @@ type ColumnRequirementAdvisor struct {
 }
 
 // Check checks for the column requirement.
-func (*ColumnRequirementAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*ColumnRequirementAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")

@@ -31,7 +31,7 @@ type ColumnCommentConventionAdvisor struct {
 }
 
 // Check checks for column comment convention.
-func (*ColumnCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*ColumnCommentConventionAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")

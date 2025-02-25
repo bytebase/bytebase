@@ -26,7 +26,7 @@ type NamingTableNoKeywordAdvisor struct {
 }
 
 // Check checks for table naming convention without keyword..
-func (*NamingTableNoKeywordAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*NamingTableNoKeywordAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
