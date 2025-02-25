@@ -64,7 +64,7 @@ import GhostFlagsPanel from "./GhostFlagsPanel.vue";
 import GhostSwitch from "./GhostSwitch.vue";
 import { allowGhostForTask, provideIssueGhostContext } from "./common";
 
-const { isCreating, issue, selectedTask } = useIssueContext();
+const { issue, selectedTask } = useIssueContext();
 
 const { viewType, showFeatureModal, showMissingInstanceLicense } =
   provideIssueGhostContext();
@@ -80,11 +80,11 @@ const shouldShowGhostSection = computed(() => {
     return false;
   }
 
-  if (isCreating.value) {
-    return allowGhostForTask(issue.value, selectedTask.value);
-  } else {
-    return viewType.value !== "NONE";
+  if (!allowGhostForTask(issue.value, selectedTask.value)) {
+    return false;
   }
+
+  return viewType.value !== "NONE";
 });
 
 const hasOnlineMigrationFeature = featureToRef("bb.feature.online-migration");

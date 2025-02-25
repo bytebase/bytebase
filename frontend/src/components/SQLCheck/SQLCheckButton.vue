@@ -1,8 +1,14 @@
 <template>
   <div class="flex flex-row items-center gap-2">
-    <slot name="result" :advices="filteredAdvices" :is-running="isRunning">
+    <slot
+      name="result"
+      :is-running="isRunning"
+      :advices="filteredAdvices"
+      :affected-rows="checkResult?.affectedRows"
+      :risk-level="checkResult?.riskLevel"
+    >
       <SQLCheckSummary
-        v-if="filteredAdvices !== undefined && !isRunning"
+        v-if="filteredAdvices && !isRunning"
         :database="database"
         :advices="filteredAdvices"
         @click="showDetailPanel = true"
@@ -55,7 +61,7 @@
     </NPopover>
 
     <SQLCheckPanel
-      v-if="filteredAdvices && showDetailPanel"
+      v-if="checkResult && filteredAdvices && showDetailPanel"
       :database="database"
       :advices="filteredAdvices"
       :affected-rows="checkResult.affectedRows"
@@ -139,13 +145,11 @@ const showDetailPanel = ref(false);
 const allowForceContinue = ref(true);
 const context = useSQLCheckContext();
 const confirmDialog = ref<Defer<boolean>>();
-const checkResult = ref<CheckReleaseResponse>(
-  CheckReleaseResponse.fromPartial({})
-);
+const checkResult = ref<CheckReleaseResponse | undefined>();
 
 const filteredAdvices = computed(() => {
   const { adviceFilter } = props;
-  const advices = checkResult.value.results.flatMap((r) => r.advices);
+  const advices = checkResult.value?.results.flatMap((r) => r.advices);
   if (!adviceFilter) {
     return advices;
   }
