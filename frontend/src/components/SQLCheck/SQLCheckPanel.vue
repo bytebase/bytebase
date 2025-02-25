@@ -4,6 +4,7 @@
     class="!w-[56rem]"
     header-class="whitespace-pre-wrap break-all gap-x-1"
     container-class="!pt-0 -mt-px"
+    mask-closable
     @close="onClose"
   >
     <div class="w-full flex flex-row gap-2 mb-2">
