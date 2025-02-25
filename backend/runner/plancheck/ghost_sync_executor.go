@@ -3,6 +3,7 @@ package plancheck
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math/rand"
 	"strings"
 	"time"
@@ -12,25 +13,29 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/ghost"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // NewGhostSyncExecutor creates a gh-ost sync check executor.
-func NewGhostSyncExecutor(store *store.Store, secret string) Executor {
+func NewGhostSyncExecutor(store *store.Store, secret string, dbFactory *dbfactory.DBFactory) Executor {
 	return &GhostSyncExecutor{
-		store:  store,
-		secret: secret,
+		store:     store,
+		secret:    secret,
+		dbFactory: dbFactory,
 	}
 }
 
 // GhostSyncExecutor is the gh-ost sync check executor.
 type GhostSyncExecutor struct {
-	store  *store.Store
-	secret string
+	store     *store.Store
+	secret    string
+	dbFactory *dbfactory.DBFactory
 }
 
 // Run runs the gh-ost sync check executor.
@@ -115,6 +120,31 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 	}()
 
 	migrator := logic.NewMigrator(migrationContext, "bb")
+
+	defer func() {
+		if err := func() error {
+			ctx := context.Background()
+			driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+			if err != nil {
+				return errors.Wrapf(err, "failed to get driver")
+			}
+			defer driver.Close(ctx)
+
+			sql := fmt.Sprintf("DROP TABLE IF EXISTS `%s`.`%s`; DROP TABLE IF EXISTS `%s`.`%s`;",
+				"bbdataarchive",
+				migrationContext.GetGhostTableName(),
+				"bbdataarchive",
+				migrationContext.GetChangelogTableName(),
+			)
+
+			if _, err := driver.GetDB().ExecContext(ctx, sql); err != nil {
+				return errors.Wrapf(err, "failed to drop gh-ost temp tables")
+			}
+			return nil
+		}(); err != nil {
+			slog.Warn("failed to cleanup gh-ost temp tables")
+		}
+	}()
 
 	if err := migrator.Migrate(); err != nil {
 		return []*storepb.PlanCheckRunResult_Result{
