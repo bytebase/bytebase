@@ -293,7 +293,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseConnect, databaseConnectExecutor)
 		statementAdviseExecutor := plancheck.NewStatementAdviseExecutor(storeInstance, s.sheetManager, s.dbFactory, s.licenseService)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementAdvise, statementAdviseExecutor)
-		ghostSyncExecutor := plancheck.NewGhostSyncExecutor(storeInstance, s.secret)
+		ghostSyncExecutor := plancheck.NewGhostSyncExecutor(storeInstance, s.secret, s.dbFactory)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseGhostSync, ghostSyncExecutor)
 		statementReportExecutor := plancheck.NewStatementReportExecutor(storeInstance, s.sheetManager, s.dbFactory)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementSummaryReport, statementReportExecutor)

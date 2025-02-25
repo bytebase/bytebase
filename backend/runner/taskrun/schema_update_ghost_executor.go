@@ -108,6 +108,31 @@ func (exec *SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, driverCtx co
 
 		migrator := logic.NewMigrator(migrationContext, "bb")
 
+		defer func() {
+			if err := func() error {
+				ctx := context.Background()
+				driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+				if err != nil {
+					return errors.Wrapf(err, "failed to get driver")
+				}
+				defer driver.Close(ctx)
+
+				sql := fmt.Sprintf("DROP TABLE IF EXISTS `%s`.`%s`; DROP TABLE IF EXISTS `%s`.`%s`;",
+					"bbdataarchive",
+					migrationContext.GetGhostTableName(),
+					"bbdataarchive",
+					migrationContext.GetChangelogTableName(),
+				)
+
+				if _, err := driver.GetDB().ExecContext(ctx, sql); err != nil {
+					return errors.Wrapf(err, "failed to drop gh-ost temp tables")
+				}
+				return nil
+			}(); err != nil {
+				slog.Warn("")
+			}
+		}()
+
 		go func() {
 			if err := migrator.Migrate(); err != nil {
 				slog.Error("failed to run gh-ost migration", log.BBError(err))
