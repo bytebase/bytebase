@@ -109,9 +109,7 @@ const saveDomainRestrictionSettings = async () => {
     state.enableRestriction = false;
   }
   const initialState = getInitialState();
-  const updateMask: string[] = [
-    "value.workspace_profile_setting_value.domains",
-  ];
+  const updateMask: string[] = [];
   if (initialState.enableRestriction !== state.enableRestriction) {
     updateMask.push(
       "value.workspace_profile_setting_value.enforce_identity_domain"
