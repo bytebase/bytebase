@@ -254,8 +254,10 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				}
 				oldSetting.Domains = payload.Domains
 			case "value.workspace_profile_setting_value.enforce_identity_domain":
-				if err := s.licenseService.IsFeatureEnabled(api.FeatureDomainRestriction); err != nil {
-					return nil, status.Error(codes.PermissionDenied, err.Error())
+				if payload.EnforceIdentityDomain {
+					if err := s.licenseService.IsFeatureEnabled(api.FeatureDomainRestriction); err != nil {
+						return nil, status.Error(codes.PermissionDenied, err.Error())
+					}
 				}
 				oldSetting.EnforceIdentityDomain = payload.EnforceIdentityDomain
 			case "value.workspace_profile_setting_value.database_change_mode":
