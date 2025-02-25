@@ -82,6 +82,7 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.
 		return nil, err
 	}
 	if _, err := metadataDriver.GetDB().ExecContext(ctx, `
+		DELETE FROM instance_change_history WHERE status = 'FAILED';
 		UPDATE instance_change_history
 		SET
 			version = ARRAY_TO_STRING(
