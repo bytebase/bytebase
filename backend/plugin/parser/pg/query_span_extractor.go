@@ -1053,11 +1053,11 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 	case pgquery.SetOperation_SETOP_UNION, pgquery.SetOperation_SETOP_INTERSECT, pgquery.SetOperation_SETOP_EXCEPT:
 		leftSpanResults, err := q.extractTableSourceFromSelect(&pgquery.Node_SelectStmt{SelectStmt: node.SelectStmt.Larg})
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to extract span result from left select: %+v", node.SelectStmt.Larg)
+			return nil, errors.Wrapf(err, "failed to extract span result from left select")
 		}
 		rightSpanResults, err := q.extractTableSourceFromSelect(&pgquery.Node_SelectStmt{SelectStmt: node.SelectStmt.Rarg})
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to extract span result from right select: %+v", node.SelectStmt.Rarg)
+			return nil, errors.Wrapf(err, "failed to extract span result from right select")
 		}
 		leftQuerySpanResult, rightQuerySpanResult := leftSpanResults.GetQuerySpanResult(), rightSpanResults.GetQuerySpanResult()
 		if len(leftQuerySpanResult) != len(rightQuerySpanResult) {
@@ -1183,12 +1183,12 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 func (q *querySpanExtractor) extractTableSourceFromJoin(node *pgquery.Node_JoinExpr) (*base.PseudoTable, error) {
 	leftTableSource, err := q.extractTableSourceFromNode(node.JoinExpr.Larg)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to extract span result from left join: %+v", node.JoinExpr.Larg)
+		return nil, errors.Wrapf(err, "failed to extract span result from left join")
 	}
 	q.tableSourcesFrom = append(q.tableSourcesFrom, leftTableSource)
 	rightTableSource, err := q.extractTableSourceFromNode(node.JoinExpr.Rarg)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to extract span result from right join: %+v", node.JoinExpr.Rarg)
+		return nil, errors.Wrapf(err, "failed to extract span result from right join")
 	}
 	q.tableSourcesFrom = append(q.tableSourcesFrom, rightTableSource)
 	return q.mergeJoinTableSource(node, leftTableSource, rightTableSource)
