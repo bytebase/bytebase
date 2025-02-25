@@ -138,8 +138,8 @@ func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMes
 	}
 	var distinctOn, orderBy string
 	if find.LatestOnly {
-		distinctOn = "DISTINCT ON (plan_check_run.type, plan_check_run.config->>'instanceUid', plan_check_run.config->>'databaseName', plan_check_run.config->>'sheetUid')"
-		orderBy = "ORDER BY plan_check_run.type, plan_check_run.config->>'instanceUid', plan_check_run.config->>'databaseName', plan_check_run.config->>'sheetUid', plan_check_run.id DESC"
+		distinctOn = "DISTINCT ON (plan_check_run.type, plan_check_run.config->>'instanceId', plan_check_run.config->>'databaseName', plan_check_run.config->>'sheetUid')"
+		orderBy = "ORDER BY plan_check_run.type, plan_check_run.config->>'instanceId', plan_check_run.config->>'databaseName', plan_check_run.config->>'sheetUid', plan_check_run.id DESC"
 	} else {
 		orderBy = "ORDER BY plan_check_run.id DESC"
 	}
