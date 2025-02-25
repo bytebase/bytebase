@@ -104,7 +104,7 @@ func Register(dbType storepb.Engine, advType Type, f Advisor) {
 }
 
 // Check runs the advisor and returns the advices.
-func Check(dbType storepb.Engine, advType Type, ctx Context, statement string) (adviceList []*storepb.Advice, err error) {
+func Check(dbType storepb.Engine, advType Type, ctx Context) (adviceList []*storepb.Advice, err error) {
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
 			panicErr, ok := panicErr.(error)
