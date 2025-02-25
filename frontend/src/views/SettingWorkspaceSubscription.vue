@@ -1,7 +1,7 @@
 <template>
-  <div class="mx-auto">
-    <dl class="text-left grid grid-cols-2 gap-x-6 my-4 xl:grid-cols-4">
-      <div class="my-3">
+  <div class="w-full mx-auto">
+    <div class="w-full grid grid-cols-2 gap-x-6 lg:grid-cols-3 my-4">
+      <dl class="flex flex-col text-left">
         <dt class="flex text-main">
           {{ $t("subscription.current") }}
           <span
@@ -17,28 +17,26 @@
             {{ $t("subscription.trialing") }}
           </span>
         </dt>
-        <dd class="text-indigo-600 mt-1 text-4xl">
-          <div>
-            {{ currentPlan }}
-          </div>
+        <dd class="text-indigo-600 mt-1 text-3xl lg:text-4xl">
+          {{ currentPlan }}
         </dd>
-      </div>
-    </dl>
-    <dl class="text-left grid grid-cols-2 gap-x-6 my-4 xl:grid-cols-4">
-      <WorkspaceInstanceLicenseStats v-if="allowManageInstanceLicenses" />
-      <div v-if="!subscriptionStore.isFreePlan" class="my-3">
+      </dl>
+      <dl v-if="!subscriptionStore.isFreePlan" class="my-3">
         <dt class="text-main">
           {{ $t("subscription.expires-at") }}
         </dt>
-        <dd class="mt-1 text-4xl">{{ expireAt || "n/a" }}</dd>
-      </div>
-      <div v-if="subscriptionStore.canTrial && allowEdit" class="my-3">
+        <dd class="mt-1 text-3xl lg:text-4xl">{{ expireAt || "N/A" }}</dd>
+      </dl>
+      <dl v-if="subscriptionStore.canTrial && allowEdit" class="my-3">
         <dt class="text-main">
           {{ $t("subscription.try-for-free") }}
         </dt>
-
         <dd class="mt-1">
-          <NButton type="primary" @click="state.showTrialModal = true">
+          <NButton
+            type="primary"
+            size="large"
+            @click="state.showTrialModal = true"
+          >
             {{
               $t("subscription.enterprise-free-trial", {
                 days: subscriptionStore.trialingDays,
@@ -46,8 +44,8 @@
             }}
           </NButton>
         </dd>
-      </div>
-      <div
+      </dl>
+      <dl
         v-if="
           subscriptionStore.isTrialing &&
           subscriptionStore.currentPlan == PlanType.ENTERPRISE
@@ -57,14 +55,16 @@
         <dt class="text-main">
           {{ $t("subscription.inquire-enterprise-plan") }}
         </dt>
-
         <dd class="mt-1 ml-auto">
-          <NButton type="primary" @click="inquireEnterprise">
+          <NButton type="primary" size="large" @click="inquireEnterprise">
             {{ $t("subscription.contact-us") }}
           </NButton>
         </dd>
-      </div>
-    </dl>
+      </dl>
+    </div>
+    <div class="text-left grid grid-cols-2 gap-x-6 my-4 xl:grid-cols-3">
+      <WorkspaceInstanceLicenseStats v-if="allowManageInstanceLicenses" />
+    </div>
     <NDivider />
     <div>
       <label class="flex items-center gap-x-2">
