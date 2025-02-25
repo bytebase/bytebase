@@ -1,5 +1,3 @@
-//go:build mysql
-
 package tests
 
 import (
