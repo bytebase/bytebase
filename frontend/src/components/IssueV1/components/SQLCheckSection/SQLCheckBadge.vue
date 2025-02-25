@@ -2,7 +2,6 @@
   <NTag
     :class="[clickable && 'cursor-pointer']"
     :type="tagType"
-    :size="'small'"
     round
     @click="handleClick"
   >
@@ -11,13 +10,13 @@
         <TaskSpinner class="h-4 w-4 text-info" />
       </template>
       <template v-else-if="status === 'SUCCESS'">
-        <CheckIcon :size="16" />
+        <CheckIcon :size="16" class="text-success" />
       </template>
       <template v-else-if="status === 'WARNING'">
-        <CircleAlertIcon :size="16" />
+        <TriangleAlertIcon :size="16" />
       </template>
       <template v-else-if="status === 'ERROR'">
-        <ShieldXIcon :size="16" />
+        <CircleAlertIcon :size="16" />
       </template>
     </template>
     <span>{{ $t("task.check-type.sql-review") }}</span>
@@ -32,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { CheckIcon, CircleAlertIcon, ShieldXIcon } from "lucide-vue-next";
+import { CheckIcon, TriangleAlertIcon, CircleAlertIcon } from "lucide-vue-next";
 import { NTag } from "naive-ui";
 import { computed, ref } from "vue";
 import { SQLCheckPanel } from "@/components/SQLCheck";
@@ -77,10 +76,10 @@ const clickable = computed(() => {
 
 const tagType = computed(() => {
   switch (status.value) {
+    case "SUCCESS":
+      return "default";
     case "RUNNING":
       return "info";
-    case "SUCCESS":
-      return "success";
     case "WARNING":
       return "warning";
     case "ERROR":

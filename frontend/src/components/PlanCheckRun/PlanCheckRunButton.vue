@@ -1,34 +1,16 @@
 <template>
-  <ContextMenuButton
-    v-if="actionList.length > 0"
-    :action-list="actionList"
-    :disabled="hasRunningPlanCheck"
-    preference-key="issue.task.run-checks"
-    default-action-key="RUN-CHECKS"
-    @click="handleRunChecks"
-  >
+  <NButton size="small" :loading="hasRunningPlanCheck" @click="handleRunChecks">
     <template #icon>
-      <BBSpin v-if="hasRunningPlanCheck" :size="16" />
-      <PlayIcon v-else class="w-4 h-4" />
+      <PlayIcon />
     </template>
-    <template #default="{ action }">
-      <template v-if="hasRunningPlanCheck">
-        {{ $t("task.checking") }}
-      </template>
-      <template v-else>
-        {{ action.text }}
-      </template>
-    </template>
-  </ContextMenuButton>
+    {{ hasRunningPlanCheck ? $t("task.checking") : $t("task.run-checks") }}
+  </NButton>
 </template>
 
 <script setup lang="ts">
 import { PlayIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
 import { computed } from "vue";
-import { useI18n } from "vue-i18n";
-import { BBSpin } from "@/bbkit";
-import type { ContextMenuButtonAction } from "@/components/v2";
-import { ContextMenuButton } from "@/components/v2";
 import {
   PlanCheckRun,
   PlanCheckRun_Status,
@@ -41,18 +23,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: "run-checks"): void;
 }>();
-
-const { t } = useI18n();
-
-const actionList = computed(() => {
-  const actionList: ContextMenuButtonAction[] = [];
-  actionList.push({
-    key: "RUN-CHECKS",
-    text: t("task.run-checks"),
-    params: {},
-  });
-  return actionList;
-});
 
 const hasRunningPlanCheck = computed((): boolean => {
   return props.planCheckRunList.some(
