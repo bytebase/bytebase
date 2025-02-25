@@ -167,13 +167,6 @@ const toggleChecked = async (on: boolean) => {
     });
     issue.value.planEntity = updatedPlan;
 
-    events.emit("status-changed", { eager: true });
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.updated"),
-    });
-
     const action = on ? "Enable" : "Disable";
     try {
       await useIssueCommentStore().createIssueComment({
@@ -183,6 +176,13 @@ const toggleChecked = async (on: boolean) => {
     } catch {
       // fail to comment won't be too bad.
     }
+
+    events.emit("status-changed", { eager: true });
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
   }
 };
 
