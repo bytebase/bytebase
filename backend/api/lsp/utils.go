@@ -102,7 +102,7 @@ func getSQLStatementRangesUTF16Position(content []byte) []lsp.Range {
 			} else {
 				// Check rune utf16 length by BMP.
 				if r <= 0xFFFF {
-					character += 1
+					character++
 				} else {
 					character += 2
 				}
@@ -118,12 +118,12 @@ func getSQLStatementRangesUTF16Position(content []byte) []lsp.Range {
 		begin := lsp.Position{Line: line, Character: character}
 		for _, r := range statement {
 			if r == '\n' {
-				line += 1
+				line++
 				character = 0
 			} else {
 				// Check rune utf16 length by BMP.
 				if r <= 0xFFFF {
-					character += 1
+					character++
 				} else {
 					character += 2
 				}
@@ -134,17 +134,17 @@ func getSQLStatementRangesUTF16Position(content []byte) []lsp.Range {
 		// End is exclusive, so we check the next byte.
 		if i == len(statements)-1 {
 			// End of the content.
-			endLine += 1
+			endLine++
 			endCharacter = 0
 		} else {
 			// Next byte is ';', include it.
-			character += 1
-			endCharacter += 1
+			character++
+			endCharacter++
 			if nextStatement := statements[i+1]; len(nextStatement) > 0 && nextStatement[0] == '\n' {
-				endLine += 1
+				endLine++
 				endCharacter = 0
 			} else {
-				endCharacter += 1
+				endCharacter++
 			}
 		}
 		end := lsp.Position{Line: endLine, Character: endCharacter}
