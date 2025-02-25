@@ -26,8 +26,10 @@
           <SQLCheckBadge :is-running="isRunning" :advices="advices" />
           <NTooltip>
             <template #trigger>
-              <NTag :type="'info'" :size="'small'" round>
-                <span>{{ $t("task.check-type.affected-rows.self") }}: </span>
+              <NTag :size="'small'" round>
+                <span class="opacity-80"
+                  >{{ $t("task.check-type.affected-rows.self") }}:
+                </span>
                 <span>{{ affectedRows }}</span>
               </NTag>
             </template>
