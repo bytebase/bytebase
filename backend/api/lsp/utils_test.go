@@ -85,3 +85,34 @@ func TestOffsetForPosition(t *testing.T) {
 		require.Equal(t, tc.expected, offset, "test cases %d", idx)
 	}
 }
+
+func TestGetSQLStatementRangesUTF16Position(t *testing.T) {
+	testCases := []struct {
+		content []byte
+		ranges  []lsp.Range
+	}{
+		{
+			content: []byte("SELECT 1;\nSELECT 2"),
+			ranges: []lsp.Range{
+				{Start: lsp.Position{Line: 0, Character: 0}, End: lsp.Position{Line: 1, Character: 0}},
+				{Start: lsp.Position{Line: 1, Character: 0}, End: lsp.Position{Line: 2, Character: 0}},
+			},
+		},
+		{
+			content: []byte(`SELECT 1;
+
+
+
+SELECT * FROM public.anomaly;`),
+			ranges: []lsp.Range{
+				{Start: lsp.Position{Line: 0, Character: 0}, End: lsp.Position{Line: 1, Character: 0}},
+				{Start: lsp.Position{Line: 4, Character: 0}, End: lsp.Position{Line: 4, Character: 30}},
+			},
+		},
+	}
+
+	for idx, tc := range testCases {
+		ranges := getSQLStatementRangesUTF16Position(tc.content)
+		require.Equal(t, tc.ranges, ranges, "test cases %d", idx)
+	}
+}

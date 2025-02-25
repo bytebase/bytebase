@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/url"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/pkg/errors"
@@ -41,7 +42,7 @@ func offsetForPosition(content []byte, p lsp.Position) (byteOffset int, whyInval
 		}
 	}
 
-	// Validate line number, notes that the Posititon in LSP is 0-based.
+	// Validate line number, notes that the Position in LSP is 0-based.
 	if p.Line >= lineNumber {
 		return 0, errors.Errorf("line number %d out of range [0, %d)", p.Line, lineNumber)
 	}
@@ -78,4 +79,76 @@ func offsetForPosition(content []byte, p lsp.Position) (byteOffset int, whyInval
 		col8 += sz
 	}
 	return offset + col8, nil
+}
+
+func getSQLStatementRangesUTF16Position(content []byte) []lsp.Range {
+	s := strings.TrimRightFunc(string(content), unicode.IsSpace)
+	// Assuming the content is UTF-8 encoded.
+	statements := strings.Split(s, ";")
+
+	var ranges []lsp.Range
+	// 0-based UTF-16 encoded line and character.
+	line, character := 0, 0
+
+	for i, statement := range statements {
+		// Trim left space to provide more accurate range.
+		statement = strings.TrimLeftFunc(statement, func(r rune) bool {
+			if !unicode.IsSpace(r) {
+				return false
+			}
+			if r == '\n' {
+				line++
+				character = 0
+			} else {
+				// Check rune utf16 length by BMP.
+				if r <= 0xFFFF {
+					character++
+				} else {
+					character += 2
+				}
+			}
+			return true
+		})
+
+		// If the statement is empty, skip it.
+		if statement == "" {
+			continue
+		}
+
+		begin := lsp.Position{Line: line, Character: character}
+		for _, r := range statement {
+			if r == '\n' {
+				line++
+				character = 0
+			} else {
+				// Check rune utf16 length by BMP.
+				if r <= 0xFFFF {
+					character++
+				} else {
+					character += 2
+				}
+			}
+		}
+
+		endLine, endCharacter := line, character
+		// End is exclusive, so we check the next byte.
+		if i == len(statements)-1 {
+			// End of the content.
+			endLine++
+			endCharacter = 0
+		} else {
+			// Next byte is ';', include it.
+			character++
+			endCharacter++
+			if nextStatement := statements[i+1]; len(nextStatement) > 0 && nextStatement[0] == '\n' {
+				endLine++
+				endCharacter = 0
+			} else {
+				endCharacter++
+			}
+		}
+		end := lsp.Position{Line: endLine, Character: endCharacter}
+		ranges = append(ranges, lsp.Range{Start: begin, End: end})
+	}
+	return ranges
 }

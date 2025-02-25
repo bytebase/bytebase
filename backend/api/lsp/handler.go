@@ -39,11 +39,11 @@ const (
 
 	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_publishDiagnostics.
 	LSPMethodPublishDiagnostics Method = "textDocument/publishDiagnostics"
-)
 
-type PingResult struct {
-	Result string `json:"result"`
-}
+	// Custom Methods.
+	// See dollar request: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#dollarRequests.
+	LSPCustomMethodSQLStatementRanges Method = "$/textDocument/statementRanges"
+)
 
 // NewHandler creates a new Language Server Protocol handler.
 func NewHandler(s *store.Store, profile *config.Profile) jsonrpc2.Handler {

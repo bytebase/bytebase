@@ -13,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // GetFS returns the file system.
@@ -86,10 +87,22 @@ func (h *Handler) handleFileSystemRequest(ctx context.Context, conn *jsonrpc2.Co
 			if err != nil {
 				slog.Warn("diagnose error", log.BBError(err))
 			}
-			return conn.Notify(ctx, string(LSPMethodPublishDiagnostics), &lsp.PublishDiagnosticsParams{
+			if err := conn.Notify(ctx, string(LSPMethodPublishDiagnostics), &lsp.PublishDiagnosticsParams{
 				URI:         uri,
 				Diagnostics: diagnostics,
-			})
+			}); err != nil {
+				return err
+			}
+			// TODO(zp): Simple PostgreSQL splitter, replace it with our regular splitter later.
+			if h.getEngineType(ctx) == store.Engine_POSTGRES {
+				ranges := getSQLStatementRangesUTF16Position(content)
+				return conn.Notify(ctx, string(LSPCustomMethodSQLStatementRanges), &SQLStatementRangesParams{
+					URI:    uri,
+					Ranges: ranges,
+				})
+			}
+
+			return nil
 		})
 	case LSPMethodTextDocumentDidClose:
 		var params lsp.DidCloseTextDocumentParams
