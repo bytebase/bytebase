@@ -11,7 +11,12 @@ MonacoEditorReady.then(() => (ready.value = true));
 // Store TextModel uniq by filename
 const TextModelMapByFilename = new Map<string, editor.ITextModel>();
 
-export const createTextModel = (
+export const getUriByFilename = (filename: string) => {
+  const normalizedFilename = slug(filename);
+  return Uri.parse(`/workspace/${normalizedFilename}`);
+};
+
+const createTextModel = (
   filename: string,
   content: string,
   language: string
@@ -22,7 +27,7 @@ export const createTextModel = (
     return TextModelMapByFilename.get(normalizedFilename)!;
   }
 
-  const uri = Uri.parse(`/workspace/${normalizedFilename}`);
+  const uri = getUriByFilename(filename);
   const model = editor.createModel(content, language, uri);
   TextModelMapByFilename.set(normalizedFilename, model);
   return model;
