@@ -28,7 +28,7 @@ type ColumnAddNotNullColumnRequireDefaultAdvisor struct {
 }
 
 // Check checks for adding not null column requires default.
-func (*ColumnAddNotNullColumnRequireDefaultAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*ColumnAddNotNullColumnRequireDefaultAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")

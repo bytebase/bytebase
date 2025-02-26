@@ -27,7 +27,7 @@ type ColumnDisallowChangingOrderAdvisor struct {
 }
 
 // Check checks for disallow changing column order.
-func (*ColumnDisallowChangingOrderAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*ColumnDisallowChangingOrderAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := checkCtx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")

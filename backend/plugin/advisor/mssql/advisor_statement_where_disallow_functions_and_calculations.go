@@ -35,7 +35,7 @@ type DisallowFuncAndCalculationsChecker struct {
 
 var _ advisor.Advisor = (*DisallowFuncAndCalculationsAdvisor)(nil)
 
-func (*DisallowFuncAndCalculationsAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*DisallowFuncAndCalculationsAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to AST tree")

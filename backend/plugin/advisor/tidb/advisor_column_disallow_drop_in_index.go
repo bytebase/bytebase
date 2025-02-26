@@ -28,7 +28,7 @@ type ColumnDisallowDropInIndexAdvisor struct {
 }
 
 // Check checks for disallow Drop COLUMN in index statement.
-func (*ColumnDisallowDropInIndexAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := checkCtx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")

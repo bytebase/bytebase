@@ -33,7 +33,7 @@ var (
 )
 
 // If table size > xx bytes, then warning/error.
-func (*MaximumTableSizeAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*MaximumTableSizeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	var adviceList []*storepb.Advice
 
 	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)

@@ -26,7 +26,7 @@ type WhereRequirementForSelectAdvisor struct {
 }
 
 // Check checks for the WHERE clause requirement.
-func (*WhereRequirementForSelectAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*WhereRequirementForSelectAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	root, ok := checkCtx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")

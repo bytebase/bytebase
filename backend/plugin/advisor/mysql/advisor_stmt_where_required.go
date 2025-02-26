@@ -28,7 +28,7 @@ type WhereRequirementAdvisor struct {
 }
 
 // Check checks for the WHERE clause requirement.
-func (*WhereRequirementAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*WhereRequirementAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	root, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")

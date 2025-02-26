@@ -26,7 +26,7 @@ type StatementDisallowRemoveTblCascadeAdvisor struct {
 }
 
 // Check checks for DML dry run.
-func (*StatementDisallowRemoveTblCascadeAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*StatementDisallowRemoveTblCascadeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmt := checkCtx.Statements
 	if stmt == "" {
 		return nil, nil

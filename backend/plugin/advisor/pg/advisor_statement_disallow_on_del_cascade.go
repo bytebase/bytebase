@@ -26,7 +26,7 @@ type StatementDisallowOnDelCascadeAdvisor struct {
 }
 
 // Check checks for DML dry run.
-func (*StatementDisallowOnDelCascadeAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*StatementDisallowOnDelCascadeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmt := checkCtx.Statements
 	if stmt == "" {
 		return nil, nil

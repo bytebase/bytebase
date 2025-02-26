@@ -30,7 +30,7 @@ type ColumnMaximumCharacterLengthAdvisor struct {
 }
 
 // Check checks for maximum character length.
-func (*ColumnMaximumCharacterLengthAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*ColumnMaximumCharacterLengthAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")

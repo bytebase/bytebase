@@ -27,7 +27,7 @@ type TableNoForeignKeyAdvisor struct {
 }
 
 // Check checks for table disallow foreign key.
-func (*TableNoForeignKeyAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*TableNoForeignKeyAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")

@@ -29,7 +29,7 @@ type StatementAddColumnWithoutPositionAdvisor struct {
 }
 
 // Check checks for checking no position in ADD COLUMN clause.
-func (*StatementAddColumnWithoutPositionAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*StatementAddColumnWithoutPositionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")

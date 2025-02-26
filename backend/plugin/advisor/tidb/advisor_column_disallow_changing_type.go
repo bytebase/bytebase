@@ -29,7 +29,7 @@ type ColumnDisallowChangingTypeAdvisor struct {
 }
 
 // Check checks for disallow changing column type..
-func (*ColumnDisallowChangingTypeAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := checkCtx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")

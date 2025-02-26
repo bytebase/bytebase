@@ -28,7 +28,7 @@ type StatementMergeAlterTableAdvisor struct {
 }
 
 // Check checks for no redundant ALTER TABLE statements.
-func (*StatementMergeAlterTableAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*StatementMergeAlterTableAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := checkCtx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")

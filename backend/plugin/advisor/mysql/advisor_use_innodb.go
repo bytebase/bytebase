@@ -32,7 +32,7 @@ type UseInnoDBAdvisor struct {
 }
 
 // Check checks for using InnoDB engine.
-func (*UseInnoDBAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*UseInnoDBAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	list, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")

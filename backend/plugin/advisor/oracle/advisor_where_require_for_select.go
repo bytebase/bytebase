@@ -28,7 +28,7 @@ type WhereRequireForSelectAdvisor struct {
 }
 
 // Check checks for WHERE clause requirement.
-func (*WhereRequireForSelectAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*WhereRequireForSelectAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")

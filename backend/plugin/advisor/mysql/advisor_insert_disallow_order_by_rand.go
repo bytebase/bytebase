@@ -34,7 +34,7 @@ type InsertDisallowOrderByRandAdvisor struct {
 }
 
 // Check checks for to disallow order by rand in INSERT statements.
-func (*InsertDisallowOrderByRandAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*InsertDisallowOrderByRandAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")

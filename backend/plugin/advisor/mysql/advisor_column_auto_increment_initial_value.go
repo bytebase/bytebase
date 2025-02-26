@@ -32,7 +32,7 @@ type ColumnAutoIncrementInitialValueAdvisor struct {
 }
 
 // Check checks for auto-increment column initial value.
-func (*ColumnAutoIncrementInitialValueAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*ColumnAutoIncrementInitialValueAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")

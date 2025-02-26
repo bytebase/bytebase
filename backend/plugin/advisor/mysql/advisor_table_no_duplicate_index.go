@@ -30,7 +30,7 @@ type TableNoDuplicateIndexAdvisor struct {
 }
 
 // Check checks for no duplicate index in table.
-func (*TableNoDuplicateIndexAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*TableNoDuplicateIndexAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")

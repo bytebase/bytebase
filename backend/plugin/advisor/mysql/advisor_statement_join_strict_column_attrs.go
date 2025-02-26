@@ -27,7 +27,7 @@ func init() {
 type StatementJoinStrictColumnAttrsAdvisor struct {
 }
 
-func (*StatementJoinStrictColumnAttrsAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*StatementJoinStrictColumnAttrsAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")

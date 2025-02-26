@@ -30,7 +30,7 @@ type ColumnMaximumVarcharLengthAdvisor struct {
 }
 
 // Check checks for maximum varchar length.
-func (*ColumnMaximumVarcharLengthAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*ColumnMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")

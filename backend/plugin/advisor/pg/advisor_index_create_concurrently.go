@@ -26,7 +26,7 @@ type IndexCreateConcurrentlyAdvisor struct {
 }
 
 // Check checks for to create index concurrently.
-func (*IndexCreateConcurrentlyAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*IndexCreateConcurrentlyAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmtList, ok := checkCtx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")

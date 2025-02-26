@@ -25,7 +25,7 @@ type ProcedureDisallowCreateOrAlterChecker struct {
 	adviceList []*storepb.Advice
 }
 
-func (*ProcedureDisallowCreateOrAlterAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*ProcedureDisallowCreateOrAlterAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
