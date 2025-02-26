@@ -4,6 +4,7 @@
   >
     <MonacoEditor
       class="w-full h-full"
+      ref="monacoEditorRef"
       :filename="filename"
       :content="content"
       :language="language"
@@ -39,7 +40,6 @@ import type {
 } from "@/components/MonacoEditor";
 import type { Selection as MonacoSelection } from "@/components/MonacoEditor";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
-import { getActiveContentByCursor } from "@/components/MonacoEditor/composables";
 import {
   extensionNameOfLanguage,
   formatEditorContent,
@@ -85,6 +85,7 @@ const pendingSetSelectionCommand = ref<{
   end?: { line: number; column: number };
 }>();
 const { events: executeSQLEvents } = useExecuteSQL();
+const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
 
 const content = computed(() => currentTab.value?.statement ?? "");
 const advices = computed((): AdviceOption[] => {
@@ -152,12 +153,23 @@ const handleSaveSheet = () => {
   editorEvents.emit("save-sheet", { tab });
 };
 
+const getActiveStatement = () => {
+  const tab = tabStore.currentTab;
+  if (!tab) {
+    return "";
+  }
+  return (
+    tab.selectedStatement ||
+    monacoEditorRef.value?.getActiveStatementByCursor() ||
+    tab.statement ||
+    ""
+  );
+};
+
 const runQueryAction = ({
-  editor,
   explain = false,
   newTab = false,
 }: {
-  editor: IStandaloneCodeEditor;
   explain: boolean;
   newTab: boolean;
 }) => {
@@ -165,11 +177,7 @@ const runQueryAction = ({
   if (!tab) {
     return;
   }
-  const statement =
-    tab.selectedStatement ||
-    getActiveContentByCursor(editor) ||
-    tab.statement ||
-    "";
+  const statement = getActiveStatement();
   const params: SQLEditorQueryParams = {
     connection: { ...tab.connection },
     statement,
@@ -201,7 +209,7 @@ const handleEditorReady = (
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
     contextMenuGroupId: "operation",
     contextMenuOrder: 0,
-    run: () => runQueryAction({ editor, explain: false, newTab: false }),
+    run: () => runQueryAction({ explain: false, newTab: false }),
   });
   editor.addAction({
     id: "RunQueryInNewTab",
@@ -211,7 +219,7 @@ const handleEditorReady = (
     ],
     contextMenuGroupId: "operation",
     contextMenuOrder: 0,
-    run: () => runQueryAction({ editor, explain: false, newTab: true }),
+    run: () => runQueryAction({ explain: false, newTab: true }),
   });
   editor.addAction({
     id: "ExplainQuery",
@@ -219,7 +227,7 @@ const handleEditorReady = (
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE],
     contextMenuGroupId: "operation",
     contextMenuOrder: 0,
-    run: () => runQueryAction({ editor, explain: true, newTab: false }),
+    run: () => runQueryAction({ explain: true, newTab: false }),
   });
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
     handleSaveSheet();
@@ -233,11 +241,7 @@ const handleEditorReady = (
 
       showAIPanel.value = true;
       const tab = tabStore.currentTab;
-      const statement =
-        tab?.selectedStatement ||
-        getActiveContentByCursor(editor) ||
-        tab?.statement ||
-        "";
+      const statement = getActiveStatement();
       if (!statement) return;
 
       await nextAnimationFrame();
@@ -411,5 +415,9 @@ useEmitteryEventListener(
 
 onBeforeUnmount(() => {
   activeSQLEditorRef.value = undefined;
+});
+
+defineExpose({
+  getActiveStatement,
 });
 </script>
