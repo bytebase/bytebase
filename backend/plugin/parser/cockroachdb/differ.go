@@ -14,15 +14,15 @@ func init() {
 
 // SchemaDiff computes the schema differences between two SQL statements for CockroachDB.
 func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
-	// It sanitizes the CockroachDB-specific syntax before reusing the PostgreSQL schema diff implementation.
-	// CockroachDB has some syntax that is not supported by PostgreSQL, but we want to reuse the PostgreSQL schema diff.
-	// Currently, we handle this with simple strings.ReplaceAll calls.
 	oldStmt = sanitizeCockroachSyntax(oldStmt)
 	newStmt = sanitizeCockroachSyntax(newStmt)
 	// Reuse the PostgreSQL schema diff implementation.
 	return pgparser.SchemaDiff(base.DiffContext{}, oldStmt, newStmt)
 }
 
+// sanitizeCockroachSyntax sanitizes the CockroachDB-specific syntax before reusing the PostgreSQL schema diff implementation.
+// CockroachDB has some syntax that is not supported by PostgreSQL, but we want to reuse the PostgreSQL schema diff.
+// Currently, we handle this with simple strings.ReplaceAll calls.
 func sanitizeCockroachSyntax(sql string) string {
 	sql = removeVisible(sql)
 	sql = removePrimaryKeyASC(sql)
