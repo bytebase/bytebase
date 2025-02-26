@@ -30,27 +30,27 @@ const (
 type StatementObjectOwnerCheckAdvisor struct {
 }
 
-func (*StatementObjectOwnerCheckAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
+func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	var adviceList []*storepb.Advice
-	stmtList, ok := ctx.AST.([]ast.Node)
+	stmtList, ok := checkCtx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	title := string(ctx.Rule.Type)
+	title := string(checkCtx.Rule.Type)
 
-	dbMetadata := model.NewDatabaseMetadata(ctx.DBSchema)
-	currentRole := ctx.DBSchema.Owner
+	dbMetadata := model.NewDatabaseMetadata(checkCtx.DBSchema)
+	currentRole := checkCtx.DBSchema.Owner
 	defaultSchema := "public"
-	if !ctx.UsePostgresDatabaseOwner {
-		currentRole, err = getCurrentUser(ctx.Context, ctx.Driver)
+	if !checkCtx.UsePostgresDatabaseOwner {
+		currentRole, err = getCurrentUser(ctx, checkCtx.Driver)
 		if err != nil {
 			slog.Debug("Failed to get current user", log.BBError(err))
-			currentRole = ctx.DBSchema.Owner
+			currentRole = checkCtx.DBSchema.Owner
 		}
 	}
 

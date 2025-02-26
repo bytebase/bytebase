@@ -2,6 +2,8 @@
 package oracle
 
 import (
+	"context"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/plsql-parser"
 	"github.com/pkg/errors"
@@ -25,21 +27,21 @@ type SelectNoSelectAllAdvisor struct {
 }
 
 // Check checks for no select all.
-func (*SelectNoSelectAllAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := ctx.AST.(antlr.Tree)
+func (*SelectNoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
 	listener := &selectNoSelectAllListener{
 		level:           level,
-		title:           string(ctx.Rule.Type),
-		currentDatabase: ctx.CurrentDatabase,
+		title:           string(checkCtx.Rule.Type),
+		currentDatabase: checkCtx.CurrentDatabase,
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)

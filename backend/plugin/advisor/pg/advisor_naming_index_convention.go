@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -26,29 +27,29 @@ type NamingIndexConventionAdvisor struct {
 }
 
 // Check checks for index naming convention.
-func (*NamingIndexConventionAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, ok := ctx.AST.([]ast.Node)
+func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	stmts, ok := checkCtx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
-	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(advisor.SQLReviewRuleType(ctx.Rule.Type), ctx.Rule.Payload)
+	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(advisor.SQLReviewRuleType(checkCtx.Rule.Type), checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 
 	checker := &namingIndexConventionChecker{
 		level:        level,
-		title:        string(ctx.Rule.Type),
+		title:        string(checkCtx.Rule.Type),
 		format:       format,
 		maxLength:    maxLength,
 		templateList: templateList,
-		catalog:      ctx.Catalog,
+		catalog:      checkCtx.Catalog,
 	}
 	for _, stmt := range stmts {
 		ast.Walk(checker, stmt)

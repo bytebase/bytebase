@@ -1,6 +1,7 @@
 package tidb
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -26,17 +27,17 @@ type ColumnRequirementAdvisor struct {
 }
 
 // Check checks for the column requirement.
-func (*ColumnRequirementAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	root, ok := ctx.AST.([]ast.StmtNode)
+func (*ColumnRequirementAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	root, ok := checkCtx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	columnList, err := advisor.UnmarshalRequiredColumnList(ctx.Rule.Payload)
+	columnList, err := advisor.UnmarshalRequiredColumnList(checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +47,7 @@ func (*ColumnRequirementAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, 
 	}
 	checker := &columnRequirementChecker{
 		level:           level,
-		title:           string(ctx.Rule.Type),
+		title:           string(checkCtx.Rule.Type),
 		requiredColumns: requiredColumns,
 		tables:          make(tableState),
 		line:            make(map[string]int),

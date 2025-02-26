@@ -1,6 +1,7 @@
 package mssql
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -34,20 +35,20 @@ type DisallowFuncAndCalculationsChecker struct {
 
 var _ advisor.Advisor = (*DisallowFuncAndCalculationsAdvisor)(nil)
 
-func (*DisallowFuncAndCalculationsAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := ctx.AST.(antlr.Tree)
+func (*DisallowFuncAndCalculationsAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to AST tree")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
 	checker := &DisallowFuncAndCalculationsChecker{
 		level:            level,
-		title:            ctx.Rule.Type,
+		title:            checkCtx.Rule.Type,
 		selectStatCnt:    0,
 		whereCnt:         0,
 		havingCnt:        0,

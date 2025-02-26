@@ -2,6 +2,7 @@
 package mssql
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 
@@ -27,24 +28,24 @@ type TableDropNamingConventionAdvisor struct {
 }
 
 // Check checks for table drop with naming convention..
-func (*TableDropNamingConventionAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := ctx.AST.(antlr.Tree)
+func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	format, _, err := advisor.UnmarshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
+	format, _, err := advisor.UnmarshalNamingRulePayloadAsRegexp(checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 
 	listener := &tableDropNamingConventionChecker{
 		level:  level,
-		title:  string(ctx.Rule.Type),
+		title:  string(checkCtx.Rule.Type),
 		format: format,
 	}
 

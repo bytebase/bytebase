@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -24,20 +25,20 @@ type NoSelectAllAdvisor struct {
 }
 
 // Check checks for no "select *".
-func (*NoSelectAllAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, ok := ctx.AST.([]ast.Node)
+func (*NoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	stmts, ok := checkCtx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
 	checker := &noSelectAllChecker{
 		level: level,
-		title: string(ctx.Rule.Type),
+		title: string(checkCtx.Rule.Type),
 	}
 	for _, stmt := range stmts {
 		checker.text = stmt.Text()

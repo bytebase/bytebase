@@ -2,6 +2,7 @@
 package mssql
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -27,21 +28,21 @@ type MigrationCompatibilityAdvisor struct {
 }
 
 // Check checks for migration compatibility..
-func (*MigrationCompatibilityAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := ctx.AST.(antlr.Tree)
+func (*MigrationCompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
 	listener := &migrationCompatibilityChecker{
 		level:                              level,
-		title:                              string(ctx.Rule.Type),
-		currentDatabase:                    ctx.CurrentDatabase,
+		title:                              string(checkCtx.Rule.Type),
+		currentDatabase:                    checkCtx.CurrentDatabase,
 		normalizedNewCreateTableNameMap:    make(map[string]any),
 		normalizedNewCreateSchemaNameMap:   make(map[string]any),
 		normalizedNewCreateDatabaseNameMap: make(map[string]any),

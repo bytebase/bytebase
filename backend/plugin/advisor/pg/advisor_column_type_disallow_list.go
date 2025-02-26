@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -20,24 +21,24 @@ type ColumnTypeDisallowListAdvisor struct {
 }
 
 // Check checks for column type restriction.
-func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.Node)
+func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	stmtList, ok := checkCtx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
-	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	checker := &columnTypeDisallowListChecker{
 		level:           level,
-		title:           string(ctx.Rule.Type),
+		title:           string(checkCtx.Rule.Type),
 		typeRestriction: make(map[string]bool),
 	}
 	for _, tp := range payload.List {

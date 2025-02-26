@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -24,23 +25,23 @@ func init() {
 type StatementWhereMaximumLogicalOperatorCountAdvisor struct {
 }
 
-func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
+func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	checker := &statementWhereMaximumLogicalOperatorCountChecker{
 		level:   level,
-		title:   string(ctx.Rule.Type),
+		title:   string(checkCtx.Rule.Type),
 		maximum: payload.Number,
 	}
 
