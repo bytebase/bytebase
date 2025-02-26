@@ -32,15 +32,15 @@ func sanitizeCockroachSyntax(sql string) string {
 // removeVisible removes "NOT VISIBLE" and "VISIBLE" clauses.
 // Postgres does not support "VISIBLE" clause for certain statements.
 func removeVisible(sql string) string {
-	sql = remove(sql, "NOT VISIBLE")
-	sql = remove(sql, "VISIBLE")
+	sql = remove(sql, " NOT VISIBLE")
+	sql = remove(sql, " VISIBLE")
 	return sql
 }
 
 // removePrimaryKeyASC removes "ASC" from PRIMARY KEY definitions.
 // PRIMARY KEY (rowid ASC) -> PRIMARY KEY (rowid).
 func removePrimaryKeyASC(sql string) string {
-	return remove(sql, "ASC")
+	return remove(sql, " ASC")
 }
 
 func remove(sql, keyword string) string {
