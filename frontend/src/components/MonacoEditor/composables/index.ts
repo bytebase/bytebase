@@ -11,3 +11,4 @@ export * from "./useAutoHeight";
 export * from "./useAutoComplete";
 export * from "./useLSPConnectionState";
 export * from "./useOverrideSuggestIcons";
+export * from "./useSQLParser";

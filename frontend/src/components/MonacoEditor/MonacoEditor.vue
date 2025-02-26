@@ -20,7 +20,8 @@ import { computed, toRef } from "vue";
 import { ref } from "vue";
 import type { Language } from "@/types";
 import MonacoTextModelEditor from "./MonacoTextModelEditor.vue";
-import { useMonacoTextModel } from "./text-model";
+import { useSQLParser } from "./composables";
+import { useMonacoTextModel, getUriByFilename } from "./text-model";
 import { extensionNameOfLanguage } from "./utils";
 
 const textModelEditorRef = ref<InstanceType<typeof MonacoTextModelEditor>>();
@@ -49,11 +50,14 @@ const content = computed({
   },
 });
 
+const { getActiveStatementRange } = useSQLParser();
+
 const filename = computed(() => {
   if (props.filename) return props.filename;
 
   return `${uuidv4()}.${extensionNameOfLanguage(props.language)}`;
 });
+
 const model = useMonacoTextModel(filename, content, toRef(props, "language"));
 
 const handleChange = (value: string) => {
@@ -63,6 +67,29 @@ const handleChange = (value: string) => {
 defineExpose({
   get editor() {
     return textModelEditorRef.value;
+  },
+  getActiveStatementByCursor: () => {
+    if (!textModelEditorRef.value || !textModelEditorRef.value.codeEditor) {
+      return "";
+    }
+    const model = textModelEditorRef.value.codeEditor.getModel();
+    if (!model) {
+      return "";
+    }
+
+    const position = textModelEditorRef.value.codeEditor.getPosition();
+    if (!position) {
+      return "";
+    }
+    const range = getActiveStatementRange(
+      getUriByFilename(filename.value).toString(),
+      position.lineNumber
+    );
+    if (!range) {
+      return "";
+    }
+    textModelEditorRef.value.codeEditor.setSelection(range);
+    return model.getValueInRange(range);
   },
 });
 </script>

@@ -57,7 +57,9 @@ export const useAutoComplete = async (
   watch(
     () => JSON.stringify(params.value),
     async () => {
-      const result = executeCommand(client, "setMetadata", [params.value]);
+      const result = await executeCommand(client, "setMetadata", [
+        params.value,
+      ]);
       console.debug(
         `setMetadata(${JSON.stringify(params.value)}): ${JSON.stringify(
           result
