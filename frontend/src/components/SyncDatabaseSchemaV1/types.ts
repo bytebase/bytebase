@@ -22,4 +22,5 @@ export const ALLOWED_ENGINES: Engine[] = [
   Engine.TIDB,
   Engine.ORACLE,
   Engine.MSSQL,
+  Engine.COCKROACHDB,
 ];
