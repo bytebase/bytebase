@@ -1,6 +1,8 @@
 package mysql
 
 import (
+	"context"
+
 	"github.com/antlr4-go/antlr/v4"
 	mysql "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
@@ -26,25 +28,25 @@ func init() {
 type RequireAlgorithmOrLockOptionAdvisor struct {
 }
 
-func (*RequireAlgorithmOrLockOptionAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
+func (*RequireAlgorithmOrLockOptionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to stmt list")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
 	requiredOption, errorCode := "ALGORITHM", advisor.StatementNoAlgorithmOption
-	if ctx.Rule.Type == string(advisor.SchemaRuleStatementRequireLockOption) {
+	if checkCtx.Rule.Type == string(advisor.SchemaRuleStatementRequireLockOption) {
 		requiredOption, errorCode = "LOCK", advisor.StatementNoLockOption
 	}
 	checker := &RequireAlgorithmOptionChecker{
 		requiredOption: requiredOption,
 		level:          level,
-		title:          string(ctx.Rule.Type),
+		title:          string(checkCtx.Rule.Type),
 		adviceList:     []*storepb.Advice{},
 		errorCode:      errorCode,
 	}

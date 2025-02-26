@@ -2,6 +2,7 @@
 package oracle
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -27,25 +28,25 @@ type IndexKeyNumberLimitAdvisor struct {
 }
 
 // Check checks for index key number limit.
-func (*IndexKeyNumberLimitAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := ctx.AST.(antlr.Tree)
+func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 
 	listener := &indexKeyNumberLimitListener{
 		level:           level,
-		title:           string(ctx.Rule.Type),
-		currentDatabase: ctx.CurrentDatabase,
+		title:           string(checkCtx.Rule.Type),
+		currentDatabase: checkCtx.CurrentDatabase,
 		max:             payload.Number,
 	}
 

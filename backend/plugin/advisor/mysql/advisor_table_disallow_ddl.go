@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -24,23 +25,23 @@ func init() {
 type TableDisallowDDLAdvisor struct {
 }
 
-func (*TableDisallowDDLAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	list, ok := ctx.AST.([]*mysqlparser.ParseResult)
+func (*TableDisallowDDLAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	list, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	checker := &tableDisallowDDLChecker{
 		level:        level,
-		title:        string(ctx.Rule.Type),
+		title:        string(checkCtx.Rule.Type),
 		disallowList: payload.List,
 	}
 	for _, stmt := range list {

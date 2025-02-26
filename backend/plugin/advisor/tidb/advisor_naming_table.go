@@ -1,6 +1,7 @@
 package tidb
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 
@@ -25,23 +26,23 @@ type NamingTableConventionAdvisor struct {
 }
 
 // Check checks for table naming convention.
-func (*NamingTableConventionAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	root, ok := ctx.AST.([]ast.StmtNode)
+func (*NamingTableConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	root, ok := checkCtx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	format, maxLength, err := advisor.UnmarshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
+	format, maxLength, err := advisor.UnmarshalNamingRulePayloadAsRegexp(checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	checker := &namingTableConventionChecker{
 		level:     level,
-		title:     string(ctx.Rule.Type),
+		title:     string(checkCtx.Rule.Type),
 		format:    format,
 		maxLength: maxLength,
 	}

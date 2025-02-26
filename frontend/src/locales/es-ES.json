@@ -200,7 +200,6 @@
     "search-user": "Buscar usuario",
     "info": "Información",
     "minutes": "Minutos",
-    "go-to-configure": "Configurar",
     "filter-by-name": "Filtrar por nombre",
     "license": "Licencia",
     "view-details": "Ver detalles",
@@ -920,6 +919,7 @@
     "sql-check": {
       "sql-checks": "Comprobaciones SQL",
       "not-executed-yet": "Aún no ejecutado",
+      "statement-is-required": "Se requiere una declaración SQL",
       "statement-is-too-large": "Como el tamaño de la declaración actual supera 2MB, se omitirá la comprobación de SQL.",
       "back-to-edit": "Volver a editar",
       "sql-review-violations": "Infracciones de revisión de SQL"

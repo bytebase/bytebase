@@ -27,22 +27,22 @@ func init() {
 type StatementDmlDryRunAdvisor struct {
 }
 
-func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := ctx.AST.(antlr.Tree)
+func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
 	checker := &statementDmlDryRunChecker{
 		level:  level,
-		title:  string(ctx.Rule.Type),
-		driver: ctx.Driver,
-		ctx:    ctx.Context,
+		title:  string(checkCtx.Rule.Type),
+		driver: checkCtx.Driver,
+		ctx:    ctx,
 	}
 
 	if checker.driver != nil {

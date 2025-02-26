@@ -2,6 +2,7 @@
 package oracle
 
 import (
+	"context"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -27,21 +28,21 @@ type WhereNoLeadingWildcardLikeAdvisor struct {
 }
 
 // Check checks for no leading wildcard LIKE.
-func (*WhereNoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := ctx.AST.(antlr.Tree)
+func (*WhereNoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
 	listener := &whereNoLeadingWildcardLikeListener{
 		level:           level,
-		title:           string(ctx.Rule.Type),
-		currentDatabase: ctx.CurrentDatabase,
+		title:           string(checkCtx.Rule.Type),
+		currentDatabase: checkCtx.CurrentDatabase,
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)

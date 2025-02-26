@@ -1,6 +1,7 @@
 package tidb
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -25,24 +26,24 @@ type NamingFKConventionAdvisor struct {
 }
 
 // Check checks for foreign key naming convention.
-func (*NamingFKConventionAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	root, ok := ctx.AST.([]ast.StmtNode)
+func (*NamingFKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	root, ok := checkCtx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
-	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(advisor.SQLReviewRuleType(ctx.Rule.Type), ctx.Rule.Payload)
+	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(advisor.SQLReviewRuleType(checkCtx.Rule.Type), checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	checker := &namingFKConventionChecker{
 		level:        level,
-		title:        string(ctx.Rule.Type),
+		title:        string(checkCtx.Rule.Type),
 		format:       format,
 		maxLength:    maxLength,
 		templateList: templateList,

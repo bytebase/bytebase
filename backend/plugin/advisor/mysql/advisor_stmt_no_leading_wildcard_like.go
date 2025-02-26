@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -29,19 +30,19 @@ type NoLeadingWildcardLikeAdvisor struct {
 }
 
 // Check checks for no leading wildcard LIKE.
-func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	root, ok := ctx.AST.([]*mysqlparser.ParseResult)
+func (*NoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	root, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
 	checker := &noLeadingWildcardLikeChecker{
-		title: string(ctx.Rule.Type),
+		title: string(checkCtx.Rule.Type),
 		level: level,
 	}
 	for _, stmtNode := range root {

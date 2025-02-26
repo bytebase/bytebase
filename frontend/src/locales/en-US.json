@@ -200,7 +200,6 @@
     "search-user": "Search user",
     "info": "Info",
     "minutes": "Minutes",
-    "go-to-configure": "Configure",
     "filter-by-name": "Filter by name",
     "license": "License",
     "view-details": "View details",
@@ -920,6 +919,7 @@
     "sql-check": {
       "sql-checks": "SQL Checks",
       "not-executed-yet": "Not executed yet",
+      "statement-is-required": "SQL statement is required",
       "statement-is-too-large": "As the current statement size exceeds 2MB, the SQL check will be skipped.",
       "back-to-edit": "Back to edit",
       "sql-review-violations": "SQL Review Violations"

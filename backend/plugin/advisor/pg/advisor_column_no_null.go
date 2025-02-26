@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
@@ -26,21 +27,21 @@ type ColumnNoNullAdvisor struct {
 }
 
 // Check checks for column no NULL value.
-func (*ColumnNoNullAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, ok := ctx.AST.([]ast.Node)
+func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	stmts, ok := checkCtx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
 	checker := &columnNoNullChecker{
 		level:           level,
-		title:           string(ctx.Rule.Type),
-		catalog:         ctx.Catalog,
+		title:           string(checkCtx.Rule.Type),
+		catalog:         checkCtx.Catalog,
 		nullableColumns: make(columnMap),
 	}
 

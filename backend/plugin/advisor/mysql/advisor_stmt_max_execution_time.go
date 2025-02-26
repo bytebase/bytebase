@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -27,25 +28,25 @@ func init() {
 type MaxExecutionTimeAdvisor struct {
 }
 
-func (*MaxExecutionTimeAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
+func (*MaxExecutionTimeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to stmt list")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
 	systemVariable := "max_execution_time"
 	// For MariaDB, the system variable is `max_statement_time`.
-	if ctx.Rule.Engine == storepb.Engine_MARIADB {
+	if checkCtx.Rule.Engine == storepb.Engine_MARIADB {
 		systemVariable = "max_statement_time"
 	}
 	checker := &maxExecutionTimeChecker{
 		level:          level,
-		title:          string(ctx.Rule.Type),
+		title:          string(checkCtx.Rule.Type),
 		systemVariable: systemVariable,
 		adviceList:     []*storepb.Advice{},
 	}

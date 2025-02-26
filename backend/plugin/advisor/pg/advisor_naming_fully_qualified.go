@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -126,16 +127,16 @@ var (
 	_ ast.Visitor     = (*FullyQualifiedObjectNameChecker)(nil)
 )
 
-func (*FullyQualifiedObjectNameAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
+func (*FullyQualifiedObjectNameAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	checker := &FullyQualifiedObjectNameChecker{}
-	status, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	status, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 	checker.status = status
-	checker.title = ctx.Rule.Type
+	checker.title = checkCtx.Rule.Type
 
-	nodes, ok := ctx.AST.([]ast.Node)
+	nodes, ok := checkCtx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
 	}
@@ -145,10 +146,10 @@ func (*FullyQualifiedObjectNameAdvisor) Check(ctx advisor.Context) ([]*storepb.A
 		ast.Walk(checker, node)
 		// Dive in again for the object names in the subquery if it's a select statement.
 		if checker.isSelectStmt {
-			if ctx.DBSchema == nil {
+			if checkCtx.DBSchema == nil {
 				continue
 			}
-			for _, tableName := range findAllTables(node.Text(), ctx.DBSchema) {
+			for _, tableName := range findAllTables(node.Text(), checkCtx.DBSchema) {
 				checker.appendAdviceByObjName(tableName.String())
 			}
 		}

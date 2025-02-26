@@ -200,7 +200,6 @@
     "search-user": "ユーザーを検索する",
     "info": "情報",
     "minutes": "分",
-    "go-to-configure": "設定に移動",
     "filter-by-name": "名前でフィルタリングする",
     "license": "ライセンス",
     "view-details": "詳細を確認する",
@@ -920,6 +919,7 @@
     "sql-check": {
       "sql-checks": "SQLチェック項目",
       "not-executed-yet": "まだ実行されていません",
+      "statement-is-required": "SQL文が必要です",
       "statement-is-too-large": "現在のステートメント サイズが 1MB を超えているため、SQL チェックはスキップされます。",
       "back-to-edit": "編集に戻る",
       "sql-review-violations": "SQL監査ルール違反"

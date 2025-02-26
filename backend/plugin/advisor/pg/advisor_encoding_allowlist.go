@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -25,25 +26,25 @@ type EncodingAllowlistAdvisor struct {
 }
 
 // Check checks for encoding allowlist.
-func (*EncodingAllowlistAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.Node)
+func (*EncodingAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	stmtList, ok := checkCtx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
-	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 
 	checker := &encodingAllowlistChecker{
 		level:     level,
-		title:     string(ctx.Rule.Type),
+		title:     string(checkCtx.Rule.Type),
 		allowlist: make(map[string]bool),
 	}
 

@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -28,22 +29,22 @@ type CharsetAllowlistAdvisor struct {
 }
 
 // Check checks for charset allowlist.
-func (*CharsetAllowlistAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
+func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	checker := &charsetAllowlistChecker{
 		level:     level,
-		title:     string(ctx.Rule.Type),
+		title:     string(checkCtx.Rule.Type),
 		allowList: make(map[string]bool),
 	}
 	for _, charset := range payload.List {

@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -24,24 +25,24 @@ func init() {
 type StatementPriorBackupCheckAdvisor struct {
 }
 
-func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	if ctx.PreUpdateBackupDetail == nil || ctx.ChangeType != storepb.PlanCheckRunConfig_DML {
+func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	if checkCtx.PreUpdateBackupDetail == nil || checkCtx.ChangeType != storepb.PlanCheckRunConfig_DML {
 		return nil, nil
 	}
 
 	var adviceList []*storepb.Advice
-	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
+	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	title := string(ctx.Rule.Type)
+	title := string(checkCtx.Rule.Type)
 
-	if len(ctx.Statements) > common.MaxSheetCheckSize {
+	if len(checkCtx.Statements) > common.MaxSheetCheckSize {
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:  level,
 			Title:   title,
@@ -70,12 +71,12 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context) ([]*storepb.
 		}
 	}
 
-	databaseName := extractDatabaseName(ctx.PreUpdateBackupDetail.Database)
-	if !advisor.DatabaseExists(ctx, databaseName) {
+	databaseName := extractDatabaseName(checkCtx.PreUpdateBackupDetail.Database)
+	if !advisor.DatabaseExists(ctx, checkCtx, databaseName) {
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:  level,
 			Title:   title,
-			Content: fmt.Sprintf("Need database %q to do prior backup but it does not exist", ctx.PreUpdateBackupDetail.Database),
+			Content: fmt.Sprintf("Need database %q to do prior backup but it does not exist", checkCtx.PreUpdateBackupDetail.Database),
 			Code:    advisor.DatabaseNotExists.Int32(),
 			StartPosition: &storepb.Position{
 				Line: 1,
@@ -83,7 +84,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context) ([]*storepb.
 		})
 	}
 
-	tableReferences, err := prepareTransformation(ctx.DBSchema.Name, stmtList)
+	tableReferences, err := prepareTransformation(checkCtx.DBSchema.Name, stmtList)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare transformation")
 	}

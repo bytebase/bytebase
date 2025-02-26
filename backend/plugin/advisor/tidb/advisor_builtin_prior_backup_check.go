@@ -1,6 +1,7 @@
 package tidb
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -31,22 +32,22 @@ type StatementPriorBackupCheckAdvisor struct {
 }
 
 // Check checks for no mixed DDL and DML.
-func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	if ctx.PreUpdateBackupDetail == nil || ctx.ChangeType != storepb.PlanCheckRunConfig_DML {
+func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	if checkCtx.PreUpdateBackupDetail == nil || checkCtx.ChangeType != storepb.PlanCheckRunConfig_DML {
 		return nil, nil
 	}
 
 	var adviceList []*storepb.Advice
-	root, ok := ctx.AST.([]ast.StmtNode)
+	root, ok := checkCtx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	title := string(ctx.Rule.Type)
+	title := string(checkCtx.Rule.Type)
 
 	var updateStatements []*ast.UpdateStmt
 	var deleteStatements []*ast.DeleteStmt
@@ -78,11 +79,11 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context) ([]*storepb.
 		}
 	}
 
-	if !advisor.DatabaseExists(ctx, extractDatabaseName(ctx.PreUpdateBackupDetail.Database)) {
+	if !advisor.DatabaseExists(ctx, checkCtx, extractDatabaseName(checkCtx.PreUpdateBackupDetail.Database)) {
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:  level,
 			Title:   title,
-			Content: fmt.Sprintf("Need database %q to do prior backup but it does not exist", ctx.PreUpdateBackupDetail.Database),
+			Content: fmt.Sprintf("Need database %q to do prior backup but it does not exist", checkCtx.PreUpdateBackupDetail.Database),
 			Code:    advisor.DatabaseNotExists.Int32(),
 			StartPosition: &storepb.Position{
 				Line: 0,
@@ -90,7 +91,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context) ([]*storepb.
 		})
 	}
 
-	if len(updateStatements)+len(deleteStatements) > maxMixedDMLCount && !updateForOneTableWithUnique(ctx.DBSchema, updateStatements, deleteStatements) {
+	if len(updateStatements)+len(deleteStatements) > maxMixedDMLCount && !updateForOneTableWithUnique(checkCtx.DBSchema, updateStatements, deleteStatements) {
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:  level,
 			Title:   title,
