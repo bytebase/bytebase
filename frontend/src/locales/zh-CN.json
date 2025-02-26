@@ -200,7 +200,6 @@
     "search-user": "搜索用户",
     "info": "信息",
     "minutes": "分钟",
-    "go-to-configure": "去配置",
     "filter-by-name": "按名称过滤",
     "license": "证书",
     "view-details": "查看详情",
@@ -920,6 +919,7 @@
     "sql-check": {
       "sql-checks": "SQL 检查项",
       "not-executed-yet": "尚未执行",
+      "statement-is-required": "SQL 语句不能为空",
       "statement-is-too-large": "当前语句大小超过 2MB，将跳过 SQL 检查。",
       "back-to-edit": "返回编辑",
       "sql-review-violations": "违反的 SQL 审核规则"

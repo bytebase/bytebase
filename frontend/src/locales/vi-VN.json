@@ -200,7 +200,6 @@
     "search-user": "Tìm người dùng",
     "info": "Thông tin",
     "minutes": "Phút",
-    "go-to-configure": "Đi tới cấu hình",
     "filter-by-name": "Lọc theo tên",
     "license": "Giấy phép",
     "view-details": "Xem chi tiết",
@@ -920,6 +919,7 @@
     "sql-check": {
       "sql-checks": "Kiểm tra SQL",
       "not-executed-yet": "Chưa được thực hiện",
+      "statement-is-required": "Câu lệnh SQL là bắt buộc",
       "statement-is-too-large": "Vì kích thước câu lệnh hiện tại vượt quá 2MB, việc kiểm tra SQL sẽ bị bỏ qua.",
       "back-to-edit": "Quay lại chỉnh sửa",
       "sql-review-violations": "Vi phạm đánh giá SQL"
