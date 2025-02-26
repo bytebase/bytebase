@@ -41,7 +41,7 @@ func removeVisible(sql string) string {
 // removePrimaryKeyASC removes "ASC" from PRIMARY KEY definitions.
 // PRIMARY KEY (rowid ASC) -> PRIMARY KEY (rowid)
 func removePrimaryKeyASC(sql string) string {
-	return strings.ReplaceAll(sql, "ASC", "")
+	return remove(sql, "ASC")
 }
 
 func remove(sql, keyword string) string {
