@@ -30,11 +30,10 @@ func sanitizeCockroachSyntax(sql string) string {
 }
 
 // removeVisible removes "NOT VISIBLE" and "VISIBLE" clauses.
+// Postgres does not support "VISIBLE" clause for certain statements.
 func removeVisible(sql string) string {
-	// Postgres does not support "VISIBLE" clause for certain statements.
 	sql = remove(sql, "NOT VISIBLE")
 	sql = remove(sql, "VISIBLE")
-
 	return sql
 }
 
