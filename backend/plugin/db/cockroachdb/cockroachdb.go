@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"net"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -332,13 +331,9 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSche
 	return databases, nil
 }
 
-// getVersion gets the version of Postgres server.
 func (driver *Driver) getVersion(ctx context.Context) (string, error) {
-	// SHOW server_version_num returns an integer such as 100005, which means 10.0.5.
-	// It is more convenient to use SHOW server_version to get the version string.
-	// PostgreSQL supports it since 8.2.
-	// https://www.postgresql.org/docs/current/functions-info.html
-	query := "SHOW server_version_num"
+	// https://www.cockroachlabs.com/docs/v25.1/cluster-settings#setting-version
+	query := "SHOW CLUSTER SETTING version;"
 	var version string
 	if err := driver.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
 		if err == sql.ErrNoRows {
@@ -346,14 +341,7 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 		}
 		return "", util.FormatErrorWithQuery(err, query)
 	}
-	versionNum, err := strconv.Atoi(version)
-	if err != nil {
-		return "", err
-	}
-	// https://www.postgresql.org/docs/current/libpq-status.html#LIBPQ-PQSERVERVERSION
-	// Convert to semantic version.
-	major, minor, patch := versionNum/1_00_00, (versionNum/100)%100, versionNum%100
-	return fmt.Sprintf("%d.%d.%d", major, minor, patch), nil
+	return version, nil
 }
 
 func (driver *Driver) getPGStatStatementsVersion(ctx context.Context) (string, error) {
