@@ -1,6 +1,6 @@
 import { useLocalStorage } from "@vueuse/core";
 import type monaco from "monaco-editor";
-import { ref, watchEffect } from "vue";
+import { watchEffect } from "vue";
 
 interface WebSocketMessage {
   method: string;
