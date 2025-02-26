@@ -1,6 +1,8 @@
 package pg
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -20,19 +22,19 @@ func init() {
 type StatementCreateSpecifySchema struct {
 }
 
-func (*StatementCreateSpecifySchema) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, ok := ctx.AST.([]ast.Node)
+func (*StatementCreateSpecifySchema) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	stmts, ok := checkCtx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 	checker := &statementCreateSpecifySchemaChecker{
 		level: level,
-		title: string(ctx.Rule.Type),
+		title: string(checkCtx.Rule.Type),
 	}
 
 	for _, stmt := range stmts {

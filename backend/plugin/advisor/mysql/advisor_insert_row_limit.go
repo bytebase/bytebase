@@ -31,28 +31,28 @@ type InsertRowLimitAdvisor struct {
 }
 
 // Check checks for table naming convention.
-func (*InsertRowLimitAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	list, ok := ctx.AST.([]*mysqlparser.ParseResult)
+func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	list, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql ParseResult")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 
 	checker := &insertRowLimitChecker{
 		level:  level,
-		title:  string(ctx.Rule.Type),
+		title:  string(checkCtx.Rule.Type),
 		maxRow: payload.Number,
-		driver: ctx.Driver,
-		ctx:    ctx.Context,
+		driver: checkCtx.Driver,
+		ctx:    ctx,
 	}
 
 	for _, stmt := range list {

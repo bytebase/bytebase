@@ -1,6 +1,8 @@
 package pg
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -19,13 +21,13 @@ func init() {
 type StatementCheckSetRoleVariable struct {
 }
 
-func (*StatementCheckSetRoleVariable) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, ok := ctx.AST.([]ast.Node)
+func (*StatementCheckSetRoleVariable) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	stmts, ok := checkCtx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +51,7 @@ func (*StatementCheckSetRoleVariable) Check(ctx advisor.Context) ([]*storepb.Adv
 		return []*storepb.Advice{{
 			Status:  level,
 			Code:    advisor.StatementCheckSetRoleVariable.Int32(),
-			Title:   string(ctx.Rule.Type),
+			Title:   string(checkCtx.Rule.Type),
 			Content: "No SET ROLE statement found.",
 			StartPosition: &storepb.Position{
 				Line: 1,

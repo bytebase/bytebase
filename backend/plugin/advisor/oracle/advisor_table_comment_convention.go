@@ -2,6 +2,7 @@
 package oracle
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -27,27 +28,27 @@ func init() {
 type TableCommentConventionAdvisor struct {
 }
 
-func (*TableCommentConventionAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := ctx.AST.(antlr.Tree)
+func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalCommentConventionRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalCommentConventionRulePayload(checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 
 	listener := &tableCommentConventionListener{
 		level:                level,
-		title:                string(ctx.Rule.Type),
-		currentDatabase:      ctx.CurrentDatabase,
+		title:                string(checkCtx.Rule.Type),
+		currentDatabase:      checkCtx.CurrentDatabase,
 		payload:              payload,
-		classificationConfig: ctx.ClassificationConfig,
+		classificationConfig: checkCtx.ClassificationConfig,
 		tableNames:           []string{},
 		tableComment:         make(map[string]string),
 		tableLine:            make(map[string]int),

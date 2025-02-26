@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -24,19 +25,19 @@ type WhereRequirementForSelectAdvisor struct {
 }
 
 // Check checks for the WHERE clause requirement.
-func (*WhereRequirementForSelectAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, ok := ctx.AST.([]ast.Node)
+func (*WhereRequirementForSelectAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	stmts, ok := checkCtx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 	checker := &whereRequirementForSelectChecker{
 		level: level,
-		title: string(ctx.Rule.Type),
+		title: string(checkCtx.Rule.Type),
 	}
 
 	for _, stmt := range stmts {

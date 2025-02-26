@@ -1,6 +1,7 @@
 package tidb
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 
@@ -25,24 +26,24 @@ type TableDropNamingConventionAdvisor struct {
 }
 
 // Check checks for drop table naming convention.
-func (*TableDropNamingConventionAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	root, ok := ctx.AST.([]ast.StmtNode)
+func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	root, ok := checkCtx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	format, _, err := advisor.UnmarshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
+	format, _, err := advisor.UnmarshalNamingRulePayloadAsRegexp(checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 
 	checker := &namingDropTableConventionChecker{
 		level:  level,
-		title:  string(ctx.Rule.Type),
+		title:  string(checkCtx.Rule.Type),
 		format: format,
 	}
 	for _, stmtNode := range root {

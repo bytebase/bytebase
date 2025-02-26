@@ -1511,7 +1511,6 @@ func (s *SQLService) SQLReviewCheck(
 		DbType:                   instance.Engine,
 		Catalog:                  catalog,
 		Driver:                   connection,
-		Context:                  ctx,
 		CurrentDatabase:          database.DatabaseName,
 		ClassificationConfig:     classificationConfig,
 		UsePostgresDatabaseOwner: useDatabaseOwner,
@@ -1529,7 +1528,7 @@ func (s *SQLService) SQLReviewCheck(
 		}
 	}
 
-	res, err := advisor.SQLReviewCheck(s.sheetManager, statement, reviewConfig.SqlReviewRules, context)
+	res, err := advisor.SQLReviewCheck(ctx, s.sheetManager, statement, reviewConfig.SqlReviewRules, context)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to exec SQL review with error: %v", err)
 	}

@@ -1,6 +1,7 @@
 package mssql
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -35,22 +36,22 @@ type IndexNotRedundantChecker struct {
 }
 
 // TODO(zp): we currently don't have runtime checks for indexes created in the statements.
-func (IndexNotRedundantAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := ctx.AST.(antlr.Tree)
+func (IndexNotRedundantAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to AST tree")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
 	checker := &IndexNotRedundantChecker{
 		level:    level,
-		title:    ctx.Rule.Type,
-		curDB:    ctx.CurrentDatabase,
-		indexMap: getIndexMapFromMetadata(ctx.DBSchema),
+		title:    checkCtx.Rule.Type,
+		curDB:    checkCtx.CurrentDatabase,
+		indexMap: getIndexMapFromMetadata(checkCtx.DBSchema),
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree)

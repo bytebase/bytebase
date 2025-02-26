@@ -2,6 +2,7 @@
 package snowflake
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -32,24 +33,24 @@ type ColumnMaximumVarcharLengthAdvisor struct {
 }
 
 // Check checks for maximum varchar length.
-func (*ColumnMaximumVarcharLengthAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := ctx.AST.(antlr.Tree)
+func (*ColumnMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 
 	listener := &columnMaximumVarcharLengthChecker{
 		level:   level,
-		title:   string(ctx.Rule.Type),
+		title:   string(checkCtx.Rule.Type),
 		maximum: payload.Number,
 	}
 

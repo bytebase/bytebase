@@ -1,6 +1,7 @@
 package mssql
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -27,21 +28,21 @@ type DisallowCrossDBQueriesChecker struct {
 	adviceList []*storepb.Advice
 }
 
-func (*DisallowCrossDBQueriesAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := ctx.AST.(antlr.Tree)
+func (*DisallowCrossDBQueriesAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
 	checker := &DisallowCrossDBQueriesChecker{
 		level: level,
-		title: ctx.Rule.Type,
-		curDB: ctx.CurrentDatabase,
+		title: checkCtx.Rule.Type,
+		curDB: checkCtx.CurrentDatabase,
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree)

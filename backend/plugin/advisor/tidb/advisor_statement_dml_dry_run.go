@@ -29,21 +29,21 @@ type StatementDmlDryRunAdvisor struct {
 }
 
 // Check checks for DML dry run.
-func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.StmtNode)
+func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	stmtList, ok := checkCtx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 	checker := &statementDmlDryRunChecker{
 		level:  level,
-		title:  string(ctx.Rule.Type),
-		driver: ctx.Driver,
-		ctx:    ctx.Context,
+		title:  string(checkCtx.Rule.Type),
+		driver: checkCtx.Driver,
+		ctx:    ctx,
 	}
 
 	if checker.driver != nil {

@@ -1,6 +1,7 @@
 package tidb
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
@@ -23,22 +24,22 @@ type StatementDisallowMixInDDLAdvisor struct {
 }
 
 // Check checks for no mixed DDL and DML.
-func (*StatementDisallowMixInDDLAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	switch ctx.ChangeType {
+func (*StatementDisallowMixInDDLAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	switch checkCtx.ChangeType {
 	case storepb.PlanCheckRunConfig_DDL, storepb.PlanCheckRunConfig_SDL, storepb.PlanCheckRunConfig_DDL_GHOST:
 	default:
 		return nil, nil
 	}
-	root, ok := ctx.AST.([]ast.StmtNode)
+	root, ok := checkCtx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	title := string(ctx.Rule.Type)
+	title := string(checkCtx.Rule.Type)
 
 	var adviceList []*storepb.Advice
 	for _, stmtNode := range root {

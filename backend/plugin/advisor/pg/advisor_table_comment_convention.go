@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -24,25 +25,25 @@ func init() {
 type TableCommentConventionAdvisor struct {
 }
 
-func (*TableCommentConventionAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, ok := ctx.AST.([]ast.Node)
+func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	stmtList, ok := checkCtx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalCommentConventionRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalCommentConventionRulePayload(checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	checker := &tableCommentConventionChecker{
 		level:                level,
-		title:                string(ctx.Rule.Type),
+		title:                string(checkCtx.Rule.Type),
 		payload:              payload,
-		classificationConfig: ctx.ClassificationConfig,
+		classificationConfig: checkCtx.ClassificationConfig,
 	}
 
 	for _, stmt := range stmtList {

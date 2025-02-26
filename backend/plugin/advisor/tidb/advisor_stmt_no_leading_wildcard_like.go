@@ -1,6 +1,7 @@
 package tidb
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
@@ -29,13 +30,13 @@ type NoLeadingWildcardLikeAdvisor struct {
 }
 
 // Check checks for no leading wildcard LIKE.
-func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	root, ok := ctx.AST.([]ast.StmtNode)
+func (*NoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	root, ok := checkCtx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +51,7 @@ func (*NoLeadingWildcardLikeAdvisor) Check(ctx advisor.Context) ([]*storepb.Advi
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
 				Code:    advisor.StatementLeadingWildcardLike.Int32(),
-				Title:   string(ctx.Rule.Type),
+				Title:   string(checkCtx.Rule.Type),
 				Content: fmt.Sprintf("\"%s\" uses leading wildcard LIKE", checker.text),
 				StartPosition: &storepb.Position{
 					Line: int32(stmtNode.OriginTextPosition()),

@@ -29,27 +29,27 @@ type InsertRowLimitAdvisor struct {
 }
 
 // Check checks for the WHERE clause requirement.
-func (*InsertRowLimitAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, ok := ctx.AST.([]ast.Node)
+func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	stmts, ok := checkCtx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	checker := &insertRowLimitChecker{
 		level:                    level,
-		title:                    string(ctx.Rule.Type),
+		title:                    string(checkCtx.Rule.Type),
 		maxRow:                   payload.Number,
-		driver:                   ctx.Driver,
-		ctx:                      ctx.Context,
-		UsePostgresDatabaseOwner: ctx.UsePostgresDatabaseOwner,
+		driver:                   checkCtx.Driver,
+		ctx:                      ctx,
+		UsePostgresDatabaseOwner: checkCtx.UsePostgresDatabaseOwner,
 	}
 
 	if payload.Number > 0 {

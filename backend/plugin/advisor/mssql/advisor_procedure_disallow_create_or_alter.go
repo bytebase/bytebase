@@ -1,6 +1,8 @@
 package mssql
 
 import (
+	"context"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/tsql-parser"
 	"github.com/pkg/errors"
@@ -23,20 +25,20 @@ type ProcedureDisallowCreateOrAlterChecker struct {
 	adviceList []*storepb.Advice
 }
 
-func (*ProcedureDisallowCreateOrAlterAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := ctx.AST.(antlr.Tree)
+func (*ProcedureDisallowCreateOrAlterAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
 	checker := &ProcedureDisallowCreateOrAlterChecker{
 		level: level,
-		title: ctx.Rule.Type,
+		title: checkCtx.Rule.Type,
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(checker, tree)
