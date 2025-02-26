@@ -38,7 +38,7 @@ func removeVisible(sql string) string {
 }
 
 // removePrimaryKeyASC removes "ASC" from PRIMARY KEY definitions.
-// PRIMARY KEY (rowid ASC) -> PRIMARY KEY (rowid)
+// PRIMARY KEY (rowid ASC) -> PRIMARY KEY (rowid).
 func removePrimaryKeyASC(sql string) string {
 	return remove(sql, "ASC")
 }
