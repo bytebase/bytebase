@@ -32,26 +32,26 @@ type StatementAffectedRowLimitAdvisor struct {
 }
 
 // Check checks for UPDATE/DELETE affected row limit.
-func (*StatementAffectedRowLimitAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
+func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	checker := &statementAffectedRowLimitChecker{
 		level:  level,
-		title:  string(ctx.Rule.Type),
+		title:  string(checkCtx.Rule.Type),
 		maxRow: payload.Number,
-		driver: ctx.Driver,
-		ctx:    ctx.Context,
+		driver: checkCtx.Driver,
+		ctx:    ctx,
 	}
 
 	if checker.driver != nil {

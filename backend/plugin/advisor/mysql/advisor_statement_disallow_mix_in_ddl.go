@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -22,23 +23,23 @@ func init() {
 type StatementDisallowMixInDDLAdvisor struct {
 }
 
-func (*StatementDisallowMixInDDLAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	switch ctx.ChangeType {
+func (*StatementDisallowMixInDDLAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	switch checkCtx.ChangeType {
 	case storepb.PlanCheckRunConfig_DDL, storepb.PlanCheckRunConfig_SDL, storepb.PlanCheckRunConfig_DDL_GHOST:
 	default:
 		return nil, nil
 	}
 
-	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
+	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	title := string(ctx.Rule.Type)
+	title := string(checkCtx.Rule.Type)
 
 	var adviceList []*storepb.Advice
 	for _, stmt := range stmtList {

@@ -2,6 +2,7 @@
 package mssql
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
@@ -27,25 +28,25 @@ type ColumnRequireAdvisor struct {
 }
 
 // Check checks for column requirement..
-func (*ColumnRequireAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := ctx.AST.(antlr.Tree)
+func (*ColumnRequireAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
-	columnList, err := advisor.UnmarshalRequiredColumnList(ctx.Rule.Payload)
+	columnList, err := advisor.UnmarshalRequiredColumnList(checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 
 	listener := &columnRequireChecker{
 		level:          level,
-		title:          string(ctx.Rule.Type),
+		title:          string(checkCtx.Rule.Type),
 		requireColumns: make(map[string]any),
 	}
 

@@ -2,6 +2,7 @@
 package snowflake
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -27,20 +28,20 @@ type NamingIdentifierCaseAdvisor struct {
 }
 
 // Check checks for identifier case.
-func (*NamingIdentifierCaseAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := ctx.AST.(antlr.Tree)
+func (*NamingIdentifierCaseAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
 	listener := &namingIdentifierCaseChecker{
 		level:                    level,
-		title:                    string(ctx.Rule.Type),
+		title:                    string(checkCtx.Rule.Type),
 		currentOriginalTableName: "",
 	}
 

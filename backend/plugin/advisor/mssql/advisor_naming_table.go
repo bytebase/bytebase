@@ -2,6 +2,7 @@
 package mssql
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -29,24 +30,24 @@ type NamingTableAdvisor struct {
 }
 
 // Check checks for table naming convention..
-func (*NamingTableAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := ctx.AST.(antlr.Tree)
+func (*NamingTableAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	format, maxLength, err := advisor.UnmarshalNamingRulePayloadAsRegexp(ctx.Rule.Payload)
+	format, maxLength, err := advisor.UnmarshalNamingRulePayloadAsRegexp(checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 
 	listener := &namingTableListener{
 		level:     level,
-		title:     string(ctx.Rule.Type),
+		title:     string(checkCtx.Rule.Type),
 		format:    format,
 		maxLength: maxLength,
 	}

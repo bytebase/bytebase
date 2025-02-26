@@ -1,6 +1,8 @@
 package oracle
 
 import (
+	"context"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -23,23 +25,23 @@ func init() {
 type StatementDisallowMixInDMLAdvisor struct {
 }
 
-func (*StatementDisallowMixInDMLAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	switch ctx.ChangeType {
+func (*StatementDisallowMixInDMLAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	switch checkCtx.ChangeType {
 	case storepb.PlanCheckRunConfig_DML:
 	default:
 		return nil, nil
 	}
 
-	tree, ok := ctx.AST.(antlr.Tree)
+	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	title := ctx.Rule.Type
+	title := checkCtx.Rule.Type
 
 	var adviceList []*storepb.Advice
 	for _, item := range tree.GetChildren() {

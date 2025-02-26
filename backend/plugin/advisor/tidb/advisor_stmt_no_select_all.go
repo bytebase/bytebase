@@ -1,6 +1,7 @@
 package tidb
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
@@ -24,19 +25,19 @@ type NoSelectAllAdvisor struct {
 }
 
 // Check checks for no "select *".
-func (*NoSelectAllAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	root, ok := ctx.AST.([]ast.StmtNode)
+func (*NoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	root, ok := checkCtx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 	checker := &noSelectAllChecker{
 		level: level,
-		title: string(ctx.Rule.Type),
+		title: string(checkCtx.Rule.Type),
 	}
 	for _, stmtNode := range root {
 		checker.text = stmtNode.Text()

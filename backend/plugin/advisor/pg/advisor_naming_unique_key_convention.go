@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -26,29 +27,29 @@ type NamingUKConventionAdvisor struct {
 }
 
 // Check checks for unique key naming convention.
-func (*NamingUKConventionAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	root, ok := ctx.AST.([]ast.Node)
+func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	root, ok := checkCtx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
-	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(advisor.SQLReviewRuleType(ctx.Rule.Type), ctx.Rule.Payload)
+	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(advisor.SQLReviewRuleType(checkCtx.Rule.Type), checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 
 	checker := &namingUKConventionChecker{
 		level:        level,
-		title:        string(ctx.Rule.Type),
+		title:        string(checkCtx.Rule.Type),
 		format:       format,
 		maxLength:    maxLength,
 		templateList: templateList,
-		catalog:      ctx.Catalog,
+		catalog:      checkCtx.Catalog,
 	}
 
 	for _, stmtNode := range root {

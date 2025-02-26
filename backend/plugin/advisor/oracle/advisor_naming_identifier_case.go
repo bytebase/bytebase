@@ -2,6 +2,7 @@
 package oracle
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -28,25 +29,25 @@ type NamingIdentifierCaseAdvisor struct {
 }
 
 // Check checks for identifier case.
-func (*NamingIdentifierCaseAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := ctx.AST.(antlr.Tree)
+func (*NamingIdentifierCaseAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNamingCaseRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalNamingCaseRulePayload(checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 
 	listener := &namingIdentifierCaseListener{
 		level:           level,
-		title:           string(ctx.Rule.Type),
-		currentDatabase: ctx.CurrentDatabase,
+		title:           string(checkCtx.Rule.Type),
+		currentDatabase: checkCtx.CurrentDatabase,
 		upper:           payload.Upper,
 	}
 

@@ -2,6 +2,7 @@
 package oracle
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
@@ -30,21 +31,21 @@ type ColumnNoNullAdvisor struct {
 }
 
 // Check checks for column no NULL value.
-func (*ColumnNoNullAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	tree, ok := ctx.AST.(antlr.Tree)
+func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	tree, ok := checkCtx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
 	listener := &columnNoNullListener{
 		level:           level,
-		title:           string(ctx.Rule.Type),
-		currentDatabase: ctx.CurrentDatabase,
+		title:           string(checkCtx.Rule.Type),
+		currentDatabase: checkCtx.CurrentDatabase,
 		nullableColumns: make(columnMap),
 	}
 

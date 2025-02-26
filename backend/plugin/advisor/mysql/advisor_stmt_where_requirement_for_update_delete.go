@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -27,19 +28,19 @@ type WhereRequirementForUpdateDeleteAdvisor struct {
 }
 
 // Check checks for the WHERE clause requirement.
-func (*WhereRequirementForUpdateDeleteAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	root, ok := ctx.AST.([]*mysqlparser.ParseResult)
+func (*WhereRequirementForUpdateDeleteAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	root, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 	checker := &whereRequirementForUpdateDeleteChecker{
 		level: level,
-		title: string(ctx.Rule.Type),
+		title: string(checkCtx.Rule.Type),
 	}
 	for _, stmtNode := range root {
 		checker.baseLine = stmtNode.BaseLine

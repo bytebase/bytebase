@@ -33,22 +33,9 @@ func NewStatusBySQLReviewRuleLevel(level storepb.SQLReviewRuleLevel) (storepb.Ad
 	return storepb.Advice_STATUS_UNSPECIFIED, errors.Errorf("unexpected rule level type: %s", level)
 }
 
-// SyntaxMode is the type of syntax mode.
-type SyntaxMode int
-
-const (
-	// SyntaxModeNormal is the normal syntax mode.
-	SyntaxModeNormal SyntaxMode = iota
-	// SyntaxModeSDL is the SDL syntax mode.
-	SyntaxModeSDL
-)
-
 // Context is the context for advisor.
 type Context struct {
-	Charset               string
-	Collation             string
 	DBSchema              *storepb.DatabaseSchemaMetadata
-	SyntaxMode            SyntaxMode
 	ChangeType            storepb.PlanCheckRunConfig_ChangeDatabaseType
 	PreUpdateBackupDetail *storepb.PreUpdateBackupDetail
 	ClassificationConfig  *storepb.DataClassificationSetting_DataClassificationConfig
@@ -60,7 +47,6 @@ type Context struct {
 	Rule    *storepb.SQLReviewRule
 	Catalog *catalog.Finder
 	Driver  *sql.DB
-	Context context.Context
 
 	// CurrentDatabase is the current database.
 	CurrentDatabase string
@@ -73,7 +59,7 @@ type Context struct {
 
 // Advisor is the interface for advisor.
 type Advisor interface {
-	Check(ctx Context) ([]*storepb.Advice, error)
+	Check(ctx context.Context, checkCtx Context) ([]*storepb.Advice, error)
 }
 
 var (
@@ -104,7 +90,7 @@ func Register(dbType storepb.Engine, advType Type, f Advisor) {
 }
 
 // Check runs the advisor and returns the advices.
-func Check(dbType storepb.Engine, advType Type, ctx Context) (adviceList []*storepb.Advice, err error) {
+func Check(ctx context.Context, dbType storepb.Engine, advType Type, checkCtx Context) (adviceList []*storepb.Advice, err error) {
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
 			panicErr, ok := panicErr.(error)
@@ -129,5 +115,5 @@ func Check(dbType storepb.Engine, advType Type, ctx Context) (adviceList []*stor
 		return nil, errors.Errorf("advisor: unknown advisor %v for %v", advType, dbType)
 	}
 
-	return f.Check(ctx)
+	return f.Check(ctx, checkCtx)
 }

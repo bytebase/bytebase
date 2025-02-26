@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -28,24 +29,24 @@ func init() {
 type TableMaximumVarcharLengthAdvisor struct {
 }
 
-func (*TableMaximumVarcharLengthAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
+func (*TableMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parse result")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(ctx.Rule.Payload)
+	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 	checker := &tableFieldsMaximumVarcharLengthChecker{
 		level:   level,
-		title:   string(ctx.Rule.Type),
-		catalog: ctx.Catalog,
+		title:   string(checkCtx.Rule.Type),
+		catalog: checkCtx.Catalog,
 		maximum: payload.Number,
 	}
 

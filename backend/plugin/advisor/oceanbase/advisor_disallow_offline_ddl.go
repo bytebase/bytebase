@@ -31,22 +31,22 @@ type DisallowOfflineDdlAdvisor struct {
 }
 
 // Check checks for disallow Offline DDL.
-func (*DisallowOfflineDdlAdvisor) Check(ctx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
+func (*DisallowOfflineDdlAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	stmtList, ok := checkCtx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
 	}
 
-	level, err := advisor.NewStatusBySQLReviewRuleLevel(ctx.Rule.Level)
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
 	checker := &disallowOfflineDdlChecker{
 		level:     level,
-		title:     ctx.Rule.Type,
-		driver:    ctx.Driver,
-		currentDb: ctx.CurrentDatabase,
+		title:     checkCtx.Rule.Type,
+		driver:    checkCtx.Driver,
+		currentDb: checkCtx.CurrentDatabase,
 	}
 
 	for _, stmtNode := range stmtList {
