@@ -129,7 +129,7 @@ func (exec *SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, driverCtx co
 				}
 				return nil
 			}(); err != nil {
-				slog.Warn("")
+				slog.Warn("failed to cleanup gh-ost temp tables", log.BBError(err))
 			}
 		}()
 
