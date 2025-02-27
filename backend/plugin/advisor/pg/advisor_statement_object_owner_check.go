@@ -43,7 +43,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	}
 	title := string(checkCtx.Rule.Type)
 
-	dbMetadata := model.NewDatabaseMetadata(checkCtx.DBSchema)
+	dbMetadata := model.NewDatabaseMetadata(checkCtx.DBSchema, checkCtx.IsObjectCaseSensitive, true /* IsDetailCaseSensitive */)
 	currentRole := checkCtx.DBSchema.Owner
 	defaultSchema := "public"
 	if !checkCtx.UsePostgresDatabaseOwner {

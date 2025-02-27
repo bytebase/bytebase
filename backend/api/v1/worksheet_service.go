@@ -78,10 +78,10 @@ func (s *WorksheetService) CreateWorksheet(ctx context.Context, request *v1pb.Cr
 		}
 
 		find := &store.FindDatabaseMessage{
-			ProjectID:           &projectResourceID,
-			InstanceID:          &instanceResourceID,
-			DatabaseName:        &databaseName,
-			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+			ProjectID:       &projectResourceID,
+			InstanceID:      &instanceResourceID,
+			DatabaseName:    &databaseName,
+			IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 		}
 		db, err := s.store.GetDatabaseV2(ctx, find)
 		if err != nil {

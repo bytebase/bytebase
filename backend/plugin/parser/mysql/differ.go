@@ -2796,7 +2796,7 @@ func (t *mysqlTransformer) buildDBSchemaMetadataGetterAndLister() (base.GetDatab
 
 	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 			m := make(map[string]*model.DatabaseMetadata)
-			m[databaseSchema.Name] = model.NewDatabaseMetadata(databaseSchema)
+			m[databaseSchema.Name] = model.NewDatabaseMetadata(databaseSchema, true /* isObjectCaseSensitive */, true /* isDetailCaseSensitive */)
 
 			if databaseMetadata, ok := m[databaseName]; ok {
 				return "", databaseMetadata, nil

@@ -14,7 +14,7 @@ type Catalog struct {
 }
 
 // NewCatalog creates a new database catalog.
-func NewCatalog(ctx context.Context, s *store.Store, instanceID, databaseName string, engineType storepb.Engine, ignoreCaseSensitive bool, overrideDatabaseMetadata *storepb.DatabaseSchemaMetadata) (*Catalog, error) {
+func NewCatalog(ctx context.Context, s *store.Store, instanceID, databaseName string, engineType storepb.Engine, isCaseSensitive bool, overrideDatabaseMetadata *storepb.DatabaseSchemaMetadata) (*Catalog, error) {
 	c := &Catalog{}
 
 	dbMetadata := overrideDatabaseMetadata
@@ -28,7 +28,7 @@ func NewCatalog(ctx context.Context, s *store.Store, instanceID, databaseName st
 		}
 		dbMetadata = databaseMeta.GetMetadata()
 	}
-	c.Finder = NewFinder(dbMetadata, &FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: ignoreCaseSensitive})
+	c.Finder = NewFinder(dbMetadata, &FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: !isCaseSensitive})
 	return c, nil
 }
 

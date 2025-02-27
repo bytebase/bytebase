@@ -40,7 +40,7 @@ type Store struct {
 
 	// Large objects.
 	sheetStatementCache *lru.Cache[int, string]
-	dbSchemaCache       *lru.Cache[string, *model.DBSchema]
+	dbSchemaCache       *lru.Cache[string, *model.DatabaseSchema]
 }
 
 // New creates a new instance of Store.
@@ -121,7 +121,7 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	dbSchemaCache, err := lru.New[string, *model.DBSchema](128)
+	dbSchemaCache, err := lru.New[string, *model.DatabaseSchema](128)
 	if err != nil {
 		return nil, err
 	}

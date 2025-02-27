@@ -78,9 +78,9 @@ func (s *AnomalyService) SearchAnomalies(ctx context.Context, request *v1pb.Sear
 				return nil, status.Errorf(codes.NotFound, "instance %q not found", insID)
 			}
 			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-				InstanceID:          &insID,
-				DatabaseName:        &dbName,
-				IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+				InstanceID:      &insID,
+				DatabaseName:    &dbName,
+				IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 			})
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())

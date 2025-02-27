@@ -131,7 +131,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 				},
 			},
 		},
-	}), nil
+	}, true /* isObjectCaseSensitive */, true /* isDetailCaseSensitive */), nil
 }
 
 func catchCaret(s string) (string, int) {

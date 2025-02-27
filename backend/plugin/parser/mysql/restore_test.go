@@ -46,7 +46,7 @@ func TestRestore(t *testing.T) {
 		result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
 			GetDatabaseMetadataFunc: getter,
 			ListDatabaseNamesFunc:   lister,
-			IgnoreCaseSensitive:     false,
+			IsCaseSensitive:         false,
 		}, t.Input, &store.PriorBackupDetail_Item{
 			SourceTable: &store.PriorBackupDetail_Item_Table{
 				Database: "instances/i1/databases/" + t.OriginalDatabase,

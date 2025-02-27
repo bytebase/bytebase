@@ -175,5 +175,5 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 				},
 			},
 		},
-	}), nil
+	}, false /* isObjectCaseSensitive */, false /* isDetailCaseSensitive */), nil
 }

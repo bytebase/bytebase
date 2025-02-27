@@ -43,9 +43,9 @@ func (s *DatabaseCatalogService) GetDatabaseCatalog(ctx context.Context, request
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		InstanceID:      &instanceID,
+		DatabaseName:    &databaseName,
+		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -81,9 +81,9 @@ func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, requ
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		InstanceID:      &instanceID,
+		DatabaseName:    &databaseName,
+		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

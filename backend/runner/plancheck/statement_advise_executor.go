@@ -167,7 +167,7 @@ func (e *StatementAdviseExecutor) runReview(
 		}
 	}
 
-	catalog, err := catalog.NewCatalog(ctx, e.store, database.InstanceID, database.DatabaseName, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil /* Override Metadata */)
+	catalog, err := catalog.NewCatalog(ctx, e.store, database.InstanceID, database.DatabaseName, instance.Engine, store.IsObjectCaseSensitive(instance), nil /* Override Metadata */)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
 	}
@@ -204,6 +204,7 @@ func (e *StatementAdviseExecutor) runReview(
 		UsePostgresDatabaseOwner: useDatabaseOwner,
 		ListDatabaseNamesFunc:    e.buildListDatabaseNamesFunc(),
 		InstanceID:               instance.ResourceID,
+		IsObjectCaseSensitive:    store.IsObjectCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, err

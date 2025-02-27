@@ -17,7 +17,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_OCEANBASE_ORACLE, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, _ string, dbSchema *model.DBSchema, asts any, statement string) (*base.ChangeSummary, error) {
+func extractChangedResources(currentDatabase string, _ string, dbSchema *model.DatabaseSchema, asts any, statement string) (*base.ChangeSummary, error) {
 	// currentDatabase is the same as currentSchema for Oracle.
 	tree, ok := asts.(antlr.Tree)
 	if !ok {
@@ -46,7 +46,7 @@ type plsqlChangedResourceExtractListener struct {
 	*parser.BasePlSqlParserListener
 
 	currentSchema    string
-	dbSchema         *model.DBSchema
+	dbSchema         *model.DatabaseSchema
 	changedResources *model.ChangedResources
 	statement        string
 	sampleDMLs       []string
@@ -202,16 +202,11 @@ func (l *plsqlChangedResourceExtractListener) EnterDrop_index(ctx *parser.Drop_i
 	if foundSchema == nil {
 		return
 	}
-	var foundTable string
-	for _, table := range foundSchema.ListTableNames() {
-		if l.dbSchema.FindIndex(schema, table, index) != nil {
-			foundTable = table
-			break
-		}
-	}
-	if foundTable == "" {
+	indexes := foundSchema.GetIndexes(index)
+	if len(indexes) == 0 {
 		return
 	}
+	foundTable := indexes[0].GetTableProto().GetName()
 
 	l.changedResources.AddTable(
 		schema,

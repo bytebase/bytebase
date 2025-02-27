@@ -20,6 +20,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -306,9 +307,9 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 		}
 
 		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			InstanceID:          &instance.ResourceID,
-			DatabaseName:        &databaseName,
-			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+			InstanceID:      &instance.ResourceID,
+			DatabaseName:    &databaseName,
+			IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 		})
 		if err != nil {
 			if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
@@ -331,9 +332,9 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 			if resource.Database != dbSchema.GetMetadata().Name {
 				// MySQL allows cross-database query, we should check the corresponding database.
 				resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-					InstanceID:          &instance.ResourceID,
-					DatabaseName:        &resource.Database,
-					IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+					InstanceID:      &instance.ResourceID,
+					DatabaseName:    &resource.Database,
+					IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 				})
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
@@ -345,16 +346,14 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
 				}
-				if !resourceDBSchema.TableExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) &&
-					!resourceDBSchema.ViewExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) {
+				if !resourceExists(resourceDBSchema, resource) {
 					// If table not found, we regard it as a CTE/alias/... and skip.
 					continue
 				}
 				result = append(result, resource)
 				continue
 			}
-			if !dbSchema.TableExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) &&
-				!dbSchema.ViewExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) {
+			if !resourceExists(dbSchema, resource) {
 				// If table not found, skip.
 				continue
 			}
@@ -368,9 +367,9 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 		}
 
 		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			InstanceID:          &instance.ResourceID,
-			DatabaseName:        &databaseName,
-			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+			InstanceID:      &instance.ResourceID,
+			DatabaseName:    &databaseName,
+			IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
@@ -391,8 +390,7 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 				continue
 			}
 
-			if !dbSchema.TableExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) &&
-				!dbSchema.ViewExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) {
+			if !resourceExists(dbSchema, resource) {
 				// If table not found, skip.
 				continue
 			}
@@ -408,9 +406,9 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 		}
 
 		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			InstanceID:          &instance.ResourceID,
-			DatabaseName:        &databaseName,
-			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+			InstanceID:      &instance.ResourceID,
+			DatabaseName:    &databaseName,
+			IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
@@ -428,9 +426,9 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 		for _, resource := range list {
 			if resource.Database != dbSchema.GetMetadata().Name {
 				resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-					InstanceID:          &instance.ResourceID,
-					DatabaseName:        &resource.Database,
-					IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+					InstanceID:      &instance.ResourceID,
+					DatabaseName:    &resource.Database,
+					IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 				})
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
@@ -442,8 +440,7 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
 				}
-				if !resourceDBSchema.TableExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) &&
-					!resourceDBSchema.ViewExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) {
+				if !resourceExists(resourceDBSchema, resource) {
 					// If table not found, we regard it as a CTE/alias/... and skip.
 					continue
 				}
@@ -451,8 +448,7 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 				continue
 			}
 
-			if !dbSchema.TableExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) &&
-				!dbSchema.ViewExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) {
+			if !resourceExists(dbSchema, resource) {
 				// If table not found, skip.
 				continue
 			}
@@ -476,9 +472,9 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
 		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			InstanceID:          &instance.ResourceID,
-			DatabaseName:        &databaseName,
-			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+			InstanceID:      &instance.ResourceID,
+			DatabaseName:    &databaseName,
+			IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 		})
 		if err != nil {
 			if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
@@ -501,9 +497,9 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 			if resource.Database != dbSchema.GetMetadata().Name {
 				// Snowflake allows cross-database query, we should check the corresponding database.
 				resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-					InstanceID:          &instance.ResourceID,
-					DatabaseName:        &resource.Database,
-					IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+					InstanceID:      &instance.ResourceID,
+					DatabaseName:    &resource.Database,
+					IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 				})
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
@@ -515,16 +511,14 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
 				}
-				if !resourceDBSchema.TableExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) &&
-					!resourceDBSchema.ViewExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) {
+				if !resourceExists(resourceDBSchema, resource) {
 					// If table not found, we regard it as a CTE/alias/... and skip.
 					continue
 				}
 				result = append(result, resource)
 				continue
 			}
-			if !dbSchema.TableExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) &&
-				!dbSchema.ViewExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) {
+			if !resourceExists(dbSchema, resource) {
 				// If table not found, skip.
 				continue
 			}
@@ -546,9 +540,9 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 			return nil, status.Errorf(codes.Internal, "failed to extract resource list: %s", err.Error())
 		}
 		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			InstanceID:          &instance.ResourceID,
-			DatabaseName:        &databaseName,
-			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+			InstanceID:      &instance.ResourceID,
+			DatabaseName:    &databaseName,
+			IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 		})
 		if err != nil {
 			if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
@@ -574,9 +568,9 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 			if resource.Database != dbSchema.GetMetadata().Name {
 				// MSSQL allows cross-database query, we should check the corresponding database.
 				resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-					InstanceID:          &instance.ResourceID,
-					DatabaseName:        &resource.Database,
-					IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+					InstanceID:      &instance.ResourceID,
+					DatabaseName:    &resource.Database,
+					IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 				})
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
@@ -588,16 +582,14 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get database schema %v in instance %v, err: %v", resource.Database, instance.ResourceID, err)
 				}
-				if !resourceDBSchema.TableExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) &&
-					!resourceDBSchema.ViewExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) {
+				if !resourceExists(resourceDBSchema, resource) {
 					// If table not found, we regard it as a CTE/alias/... and skip.
 					continue
 				}
 				result = append(result, resource)
 				continue
 			}
-			if !dbSchema.TableExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) &&
-				!dbSchema.ViewExists(resource.Schema, resource.Table, store.IgnoreDatabaseAndTableCaseSensitive(instance)) {
+			if !resourceExists(dbSchema, resource) {
 				// If table not found, skip.
 				continue
 			}
@@ -807,4 +799,21 @@ func convertValueToStringInXLSX(value *v1pb.RowValue) string {
 	default:
 		return ""
 	}
+}
+
+func resourceExists(dbSchema *model.DatabaseSchema, resource base.SchemaResource) bool {
+	schema := dbSchema.GetDatabaseMetadata().GetSchema(resource.Schema)
+	if schema == nil {
+		return false
+	}
+	if schema.GetTable(resource.Table) != nil {
+		return true
+	}
+	if schema.GetView(resource.Table) != nil {
+		return true
+	}
+	if schema.GetMaterializedView(resource.Table) != nil {
+		return true
+	}
+	return false
 }

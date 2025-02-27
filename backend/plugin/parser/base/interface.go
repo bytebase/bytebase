@@ -30,7 +30,7 @@ var (
 )
 
 type ValidateSQLForEditorFunc func(string) (bool, bool, error)
-type ExtractChangedResourcesFunc func(string, string, *model.DBSchema, any, string) (*ChangeSummary, error)
+type ExtractChangedResourcesFunc func(string, string, *model.DatabaseSchema, any, string) (*ChangeSummary, error)
 type ExtractResourceListFunc func(string, string, string) ([]SchemaResource, error)
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
 type SchemaDiffFunc func(ctx DiffContext, oldStmt, newStmt string) (string, error)
@@ -95,7 +95,7 @@ func RegisterExtractChangedResourcesFunc(engine storepb.Engine, f ExtractChanged
 }
 
 // ExtractChangedResources extracts the changed resources from the SQL.
-func ExtractChangedResources(engine storepb.Engine, currentDatabase string, currentSchema string, dbSchema *model.DBSchema, ast any, statement string) (*ChangeSummary, error) {
+func ExtractChangedResources(engine storepb.Engine, currentDatabase string, currentSchema string, dbSchema *model.DatabaseSchema, ast any, statement string) (*ChangeSummary, error) {
 	f, ok := changedResourcesGetters[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
