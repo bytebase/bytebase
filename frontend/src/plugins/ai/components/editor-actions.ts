@@ -2,7 +2,10 @@ import type monaco from "monaco-editor";
 import type { MaybeRef } from "vue";
 import { computed, shallowRef, unref, watchEffect } from "vue";
 import type { MonacoModule } from "@/components/MonacoEditor";
-import { useSelectedContent } from "@/components/MonacoEditor/composables";
+import {
+  useSelectedContent,
+  useSelection,
+} from "@/components/MonacoEditor/composables";
 import { useTextModelLanguage } from "@/components/MonacoEditor/composables/common";
 import { useEditorContextKey } from "@/components/MonacoEditor/utils";
 import type { AIContext, ChatAction } from "../types";
@@ -38,7 +41,8 @@ export const useAIActions = async (
     contentEmpty.set(checkContentEmpty());
   });
 
-  const selectedContent = useSelectedContent(editor);
+  const selection = useSelection(editor);
+  const selectedContent = useSelectedContent(editor, selection);
   useEditorContextKey(
     editor,
     "bb.ai.selectedContentEmpty",
