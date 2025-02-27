@@ -93,7 +93,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
 
       return dayjs(
         getDateForPbTimestamp(state.subscription.expiresTime)
-      ).format("YYYY-MM-DD HH:mm:ss");
+      ).format("YYYY/MM/DD HH:mm:ss");
     },
     isTrialing(state): boolean {
       return !!state.subscription?.trialing;
