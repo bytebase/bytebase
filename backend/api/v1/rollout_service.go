@@ -1210,13 +1210,6 @@ func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, snapsho
 }
 
 func GetValidRolloutPolicyForStage(ctx context.Context, stores *store.Store, licenseService enterprise.LicenseService, stage *store.StageMessage) (*storepb.RolloutPolicy, error) {
-	if licenseService.IsFeatureEnabled(api.FeatureRolloutPolicy) != nil {
-		// nolint:nilerr
-		return &storepb.RolloutPolicy{
-			Automatic: true,
-		}, nil
-	}
-
 	for _, task := range stage.TaskList {
 		instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 		if err != nil {
@@ -1224,12 +1217,6 @@ func GetValidRolloutPolicyForStage(ctx context.Context, stores *store.Store, lic
 		}
 		if instance == nil || instance.Deleted {
 			continue
-		}
-		if licenseService.IsFeatureEnabledForInstance(api.FeatureRolloutPolicy, instance) != nil {
-			// nolint:nilerr
-			return &storepb.RolloutPolicy{
-				Automatic: true,
-			}, nil
 		}
 	}
 
