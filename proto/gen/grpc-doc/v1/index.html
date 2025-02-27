@@ -367,6 +367,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.DataSource.ClientSecretCredential"><span class="badge">M</span>DataSource.ClientSecretCredential</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DataSourceExternalSecret"><span class="badge">M</span>DataSourceExternalSecret</a>
                 </li>
               
@@ -4546,6 +4550,13 @@ Used for authentication when connecting to the data source. </p></td>
                 </tr>
               
                 <tr>
+                  <td>client_secret_credential</td>
+                  <td><a href="#bytebase.v1.DataSource.ClientSecretCredential">DataSource.ClientSecretCredential</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>authentication_type</td>
                   <td><a href="#bytebase.v1.DataSource.AuthenticationType">DataSource.AuthenticationType</a></td>
                   <td></td>
@@ -4655,6 +4666,44 @@ Used for authentication when connecting to the data source. </p></td>
               
                 <tr>
                   <td>port</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DataSource.ClientSecretCredential">DataSource.ClientSecretCredential</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>tenant_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_secret</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -5523,6 +5572,12 @@ Format: instances/{instance} </p></td>
               <tr>
                 <td>AWS_RDS_IAM</td>
                 <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>AZURE_IAM</td>
+                <td>4</td>
                 <td><p></p></td>
               </tr>
             
