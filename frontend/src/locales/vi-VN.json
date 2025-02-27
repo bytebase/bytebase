@@ -2079,6 +2079,7 @@
       "n-license-remain": "còn lại {n}",
       "manage-license": "Quản lý giấy phép phiên bản",
       "used-and-total-license": "Giấy phép phiên bản đã gán / Tổng số",
+      "used-and-total-user": "Giới hạn người dùng đang hoạt động / Tổng số",
       "success-notification": "Đã cập nhật thành công gán giấy phép",
       "missing-license-for-feature": "Thiếu giấy phép phiên bản để bật {feature}. Nhấp để gán ngay."
     },

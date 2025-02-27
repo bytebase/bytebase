@@ -2079,6 +2079,7 @@
       "n-license-remain": "残り {n}",
       "manage-license": "ライセンスの管理",
       "used-and-total-license": "割り当てられた/合計インスタンスライセンス",
+      "used-and-total-user": "アクティブ/合計ユーザー制限",
       "success-notification": "ライセンスの割り当てが正常に更新されました",
       "missing-license-for-feature": "{feature} を有効にするためのインスタンスライセンスがありません。クリックしてライセンスを割り当てます。"
     },
