@@ -158,12 +158,7 @@ const getActiveStatement = () => {
   if (!tab) {
     return "";
   }
-  return (
-    tab.selectedStatement ||
-    monacoEditorRef.value?.getActiveStatementByCursor() ||
-    tab.statement ||
-    ""
-  );
+  return monacoEditorRef.value?.getActiveStatement() || tab.statement || "";
 };
 
 const runQueryAction = ({

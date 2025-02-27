@@ -1,11 +1,7 @@
 import type monaco from "monaco-editor";
 import { shallowRef } from "vue";
-import type { MonacoModule } from "../types";
 
-export const useSelection = (
-  monaco: MonacoModule,
-  editor: monaco.editor.IStandaloneCodeEditor
-) => {
+export const useSelection = (editor: monaco.editor.IStandaloneCodeEditor) => {
   const selection = shallowRef<monaco.Selection | null>(getSelection(editor));
   const update = () => {
     selection.value = getSelection(editor);

@@ -8,13 +8,6 @@ export const useLineHighlights = (
   editor: monaco.editor.IStandaloneCodeEditor,
   options: MaybeRef<LineHighlightOption[]>
 ) => {
-  const OverviewRulerPositionMap = {
-    LEFT: monaco.editor.OverviewRulerLane.Left,
-    RIGHT: monaco.editor.OverviewRulerLane.Right,
-    CENTER: monaco.editor.OverviewRulerLane.Center,
-    FULL: monaco.editor.OverviewRulerLane.Full,
-  };
-
   watchEffect((onCleanup) => {
     const opts = unref(options);
     requestAnimationFrame(() => {
@@ -22,24 +15,17 @@ export const useLineHighlights = (
         opts.map((opt) => {
           return {
             range: new monaco.Range(
-              opt.lineNumber,
+              opt.startLineNumber,
               1,
-              opt.lineNumber,
+              opt.endLineNumber,
               Infinity
             ),
             options: {
-              isWholeLine: true,
-              inlineClassName: opt.className,
-              overviewRuler: opt.overviewRuler
-                ? {
-                    color: opt.overviewRuler.color,
-                    position:
-                      OverviewRulerPositionMap[opt.overviewRuler.position],
-                  }
-                : undefined,
+              ...opt.options,
+              blockPadding: [3, 3, 3, 3],
               stickiness:
                 monaco.editor.TrackedRangeStickiness
-                  .NeverGrowsWhenTypingAtEdges,
+                  .AlwaysGrowsWhenTypingAtEdges,
             },
           };
         })

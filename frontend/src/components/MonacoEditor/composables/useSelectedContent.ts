@@ -1,45 +1,18 @@
 import type monaco from "monaco-editor";
-import { ref } from "vue";
+import { ref, type ShallowRef, watchEffect } from "vue";
 
 export const useSelectedContent = (
-  editor: monaco.editor.IStandaloneCodeEditor
+  editor: monaco.editor.IStandaloneCodeEditor,
+  selection: ShallowRef<monaco.Selection | null>
 ) => {
-  const selectedContent = ref(getSelectedContent(editor));
-  const update = () => {
-    selectedContent.value = getSelectedContent(editor);
-  };
+  const selectedContent = ref<string>("");
 
-  editor.onDidChangeCursorSelection(update);
-  editor.onDidChangeModel(update);
-  editor.onDidChangeModelContent(update);
+  watchEffect(() => {
+    const model = editor.getModel();
+    if (selection.value && model) {
+      selectedContent.value = model.getValueInRange(selection.value);
+    }
+  });
 
   return selectedContent;
-};
-
-const getSelectedContent = (editor: monaco.editor.IStandaloneCodeEditor) => {
-  const model = editor.getModel();
-  if (!model) return "";
-  const selection = editor.getSelection();
-  if (!selection) return "";
-
-  return model.getValueInRange(selection);
-};
-
-export const getActiveContentByCursor = (
-  editor: monaco.editor.IStandaloneCodeEditor
-) => {
-  const model = editor.getModel();
-  if (!model) {
-    return "";
-  }
-  const position = editor.getPosition();
-  if (!position) {
-    return "";
-  }
-  return model.getValueInRange({
-    startLineNumber: position.lineNumber,
-    startColumn: 1,
-    endLineNumber: position.lineNumber + 1,
-    endColumn: 0,
-  });
 };
