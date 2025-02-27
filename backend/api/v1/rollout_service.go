@@ -1209,14 +1209,7 @@ func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, snapsho
 	return pipelineCreate, nil
 }
 
-func GetValidRolloutPolicyForStage(ctx context.Context, stores *store.Store, licenseService enterprise.LicenseService, stage *store.StageMessage) (*storepb.RolloutPolicy, error) {
-	if licenseService.IsFeatureEnabled(api.FeatureRolloutPolicy) != nil {
-		// nolint:nilerr
-		return &storepb.RolloutPolicy{
-			Automatic: true,
-		}, nil
-	}
-
+func GetValidRolloutPolicyForStage(ctx context.Context, stores *store.Store, stage *store.StageMessage) (*storepb.RolloutPolicy, error) {
 	for _, task := range stage.TaskList {
 		instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 		if err != nil {
@@ -1224,12 +1217,6 @@ func GetValidRolloutPolicyForStage(ctx context.Context, stores *store.Store, lic
 		}
 		if instance == nil || instance.Deleted {
 			continue
-		}
-		if licenseService.IsFeatureEnabledForInstance(api.FeatureRolloutPolicy, instance) != nil {
-			// nolint:nilerr
-			return &storepb.RolloutPolicy{
-				Automatic: true,
-			}, nil
 		}
 	}
 
@@ -1257,7 +1244,7 @@ func (s *RolloutService) canUserRunStageTasks(ctx context.Context, user *store.U
 		return true, nil
 	}
 
-	p, err := GetValidRolloutPolicyForStage(ctx, s.store, s.licenseService, stage)
+	p, err := GetValidRolloutPolicyForStage(ctx, s.store, stage)
 	if err != nil {
 		return false, err
 	}

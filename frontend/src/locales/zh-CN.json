@@ -1310,13 +1310,10 @@
     "rollout": {
       "name": "发布策略",
       "tip": "新策略对旧工单也生效",
-      "info": "当要发布对数据库的变更时，该选项控制了是否需要人工发布。",
+      "info": "拥有 “taskRuns.create” 权限或以下角色的用户可以发布",
       "auto": "自动发布",
       "auto-info": "如果预检查都通过的话，会自动发布，执行变更。",
-      "last-approver-from-custom-approval": "自定义审批的最后一个审批人",
-      "select-at-least-one-role": "请在发布策略中至少选择一个角色",
-      "manual-by-dedicated-roles": "特定角色手工发布",
-      "manual-by-dedicated-roles-info": "允许以下任一选中角色，点击「发布」按钮后，执行变更。"
+      "last-issue-approver": "自定义审批的最后一个审批人"
     },
     "environment-tier": {
       "name": "环境级别",

@@ -1310,13 +1310,10 @@
     "rollout": {
       "name": "Chính sách triển khai",
       "tip": "Chính sách được áp dụng cho các vấn đề hồi tố.",
-      "info": "Để triển khai thay đổi cơ sở dữ liệu, cài đặt này kiểm soát việc triển khai có yêu cầu phê duyệt thủ công hay không.",
+      "info": "Các tác vụ có thể được thực hiện bởi người dùng có quyền 'taskRuns.Create' hoặc các vai trò sau",
       "auto": "Triển khai tự động",
       "auto-info": "Nếu tất cả kiểm tra vượt qua, thay đổi sẽ được triển khai và thực hiện tự động.",
-      "last-approver-from-custom-approval": "Người phê duyệt cuối cùng từ phê duyệt tùy chỉnh",
-      "select-at-least-one-role": "Vui lòng chọn ít nhất một vai trò trong chính sách triển khai",
-      "manual-by-dedicated-roles": "Triển khai thủ công bởi các vai trò chuyên dụng",
-      "manual-by-dedicated-roles-info": "Cho phép bất kỳ vai trò nào được chọn sau đây nhấp vào nút \"Triển khai\" và sau đó thay đổi sẽ được thực hiện."
+      "last-issue-approver": "Người phê duyệt vấn đề cuối cùng"
     },
     "environment-tier": {
       "name": "Cấp môi trường",

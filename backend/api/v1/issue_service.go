@@ -807,7 +807,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 				return nil
 			}
 
-			policy, err := GetValidRolloutPolicyForStage(ctx, s.store, s.licenseService, stages[0])
+			policy, err := GetValidRolloutPolicyForStage(ctx, s.store, stages[0])
 			if err != nil {
 				return err
 			}
