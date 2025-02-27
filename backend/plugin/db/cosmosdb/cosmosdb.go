@@ -61,10 +61,10 @@ func (*Driver) Close(_ context.Context) error {
 }
 
 // Ping pings the database.
-func (driver *Driver) Ping(_ context.Context) error {
+func (driver *Driver) Ping(ctx context.Context) error {
 	queryPager := driver.client.NewQueryDatabasesPager("select 1", nil)
 	for queryPager.More() {
-		_, err := queryPager.NextPage(context.Background())
+		_, err := queryPager.NextPage(ctx)
 		if err != nil {
 			// TODO(zp): Deserialize the error into azcore.ResponseError
 			return errors.Wrapf(err, "failed to ping CosmosDB")
