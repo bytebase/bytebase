@@ -26,12 +26,6 @@
                 </template>
                 <div class="whitespace-nowrap">
                   <span>{{ $t("issue.sdl.left-schema-may-change") }}</span>
-                  <LearnMoreLink
-                    url="https://www.bytebase.com/docs/change-database/state-based-migration/?source=console#caveats"
-                    color="light"
-                    class="ml-1"
-                    hide-when-embedded
-                  />
                 </div>
               </NTooltip>
             </div>
