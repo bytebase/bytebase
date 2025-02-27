@@ -88,8 +88,7 @@ func (sm *Manager) BatchCreateSheet(ctx context.Context, sheets []*store.SheetMe
 }
 
 func getSheetCommands(engine storepb.Engine, statement string) []*storepb.SheetCommand {
-	// Burnout for large SQL. This could cause issue for Oracle and MSSQL that requires sending one command at a time.
-	// But we do what we can do.
+	// Burnout for large SQL.
 	if len(statement) > common.MaxSheetCheckSize {
 		return nil
 	}
@@ -274,8 +273,6 @@ func cockroachdbSyntaxCheck(statement string) (any, []*storepb.Advice) {
 	if result == nil {
 		return nil, nil
 	}
-
-	// TODO(d): burnout early.
 	return result.Stmts, nil
 }
 
@@ -312,8 +309,6 @@ func partiqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 	if result == nil {
 		return nil, nil
 	}
-
-	// TODO(d): burnout early.
 	return result.Tree, nil
 }
 
@@ -350,8 +345,6 @@ func mssqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 	if result == nil {
 		return nil, nil
 	}
-
-	// TODO(d): burnout early.
 	return result.Tree, nil
 }
 
@@ -387,8 +380,6 @@ func snowflakeSyntaxCheck(statement string) (any, []*storepb.Advice) {
 	if result == nil {
 		return nil, nil
 	}
-
-	// TODO(d): burnout early.
 	return result.Tree, nil
 }
 
@@ -421,8 +412,6 @@ func oracleSyntaxCheck(statement string) (any, []*storepb.Advice) {
 			},
 		}
 	}
-
-	// TODO(d): burnout early.
 	return tree, nil
 }
 
@@ -459,10 +448,6 @@ func postgresSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		if node != nil {
 			res = append(res, node)
 		}
-	}
-	// Burnout if the number of SQL commands exceeds the limit.
-	if len(res) > common.MaximumCommands {
-		res = res[:common.MaximumCommands]
 	}
 	return res, nil
 }
@@ -523,10 +508,6 @@ func mysqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		}
 	}
 
-	// Burnout if the number of SQL commands exceeds the limit.
-	if len(res) > common.MaximumCommands {
-		res = res[:common.MaximumCommands]
-	}
 	return res, nil
 }
 
@@ -608,9 +589,5 @@ func tidbSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		baseLine = singleSQL.LastLine
 	}
 
-	// Burnout if the number of SQL commands exceeds the limit.
-	if len(returnNodes) > common.MaximumCommands {
-		returnNodes = returnNodes[:common.MaximumCommands]
-	}
 	return returnNodes, adviceList
 }
