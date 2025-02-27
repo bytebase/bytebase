@@ -1,23 +1,7 @@
 <template>
   <div class="flex flex-col items-start gap-y-2">
     <div class="flex flex-col gap-y-2">
-      <NCheckbox
-        :checked="isAutomaticRolloutChecked"
-        :disabled="disabled"
-        @update:checked="toggleAutomaticRollout($event)"
-        >
-        <div class="flex flex-col gap-y-1">
-          <div class="textlabel">
-            {{ $t("policy.rollout.auto") }}
-          </div>
-          <div class="textinfolabel">
-            {{ $t("policy.rollout.auto-info") }}
-          </div>
-        </div>
-      </NCheckbox>
-    </div>
-    <div class="flex flex-col gap-y-2">
-      <div class="flex flex-col gap-y-2 pl-8">
+      <div class="flex flex-col gap-y-2">
         <RoleSelect
           v-model:value="rolloutPolicy.roles"
           :disabled="disabled"
@@ -47,6 +31,21 @@
           </div>
         </NCheckbox>
       </div>
+      <NCheckbox
+        :checked="isAutomaticRolloutChecked"
+        :disabled="disabled"
+        style="--n-label-padding: 0 0 0 1rem"
+        @update:checked="toggleAutomaticRollout($event)"
+        >
+        <div class="flex flex-col gap-y-1">
+          <div class="textlabel">
+            {{ $t("policy.rollout.auto") }}
+          </div>
+          <div class="textinfolabel">
+            {{ $t("policy.rollout.auto-info") }}
+          </div>
+        </div>
+      </NCheckbox>
     </div>
   </div>
 </template>
