@@ -9,7 +9,7 @@ import (
 type ChangedResources struct {
 	databases map[string]*ChangedDatabase
 
-	dbSchema *DBSchema
+	dbSchema *DatabaseSchema
 }
 
 type ChangedDatabase struct {
@@ -28,7 +28,7 @@ type ChangedTable struct {
 	affectedTable bool
 }
 
-func NewChangedResources(dbSchema *DBSchema) *ChangedResources {
+func NewChangedResources(dbSchema *DatabaseSchema) *ChangedResources {
 	return &ChangedResources{
 		databases: make(map[string]*ChangedDatabase),
 		dbSchema:  dbSchema,

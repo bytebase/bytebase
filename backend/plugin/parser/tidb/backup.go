@@ -106,7 +106,7 @@ func generateSQLForSingleTable(ctx context.Context, tCtx base.TransformContext, 
 			return nil, errors.Errorf("prior backup cannot handle statements on different tables more than %d", maxMixedDMLCount)
 		}
 	}
-	generatedColumns, normalColumns, err := classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc, tCtx.IgnoreCaseSensitive, tCtx.InstanceID, table)
+	generatedColumns, normalColumns, err := classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc, tCtx.IsCaseSensitive, tCtx.InstanceID, table)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to classify columns")
 	}
@@ -219,7 +219,7 @@ func generateSQLForMixedDML(ctx context.Context, tCtx base.TransformContext, sta
 		if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s`.`%s` LIKE `%s`.`%s`;\n", databaseName, targetTable, table.Database, table.Table)); err != nil {
 			return nil, errors.Wrap(err, "failed to write create table statement")
 		}
-		generatedColumns, normalColumns, err := classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc, tCtx.IgnoreCaseSensitive, tCtx.InstanceID, table)
+		generatedColumns, normalColumns, err := classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc, tCtx.IsCaseSensitive, tCtx.InstanceID, table)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to classify columns")
 		}
@@ -279,7 +279,7 @@ func generateSQLForMixedDML(ctx context.Context, tCtx base.TransformContext, sta
 	return result, nil
 }
 
-func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDatabaseMetadataFunc, listDatabaseNamesFunc base.ListDatabaseNamesFunc, ignoreCaseSensitive bool, instanceID string, table *TableReference) ([]string, []string, error) {
+func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDatabaseMetadataFunc, listDatabaseNamesFunc base.ListDatabaseNamesFunc, isCaseSensitive bool, instanceID string, table *TableReference) ([]string, []string, error) {
 	if getDatabaseMetadataFunc == nil {
 		return nil, nil, errors.New("GetDatabaseMetadataFunc is not set")
 	}
@@ -289,7 +289,7 @@ func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDataba
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to list databases names")
 	}
-	if ignoreCaseSensitive {
+	if !isCaseSensitive {
 		for _, db := range allDatabaseNames {
 			if strings.EqualFold(db, table.Database) {
 				_, dbSchema, err = getDatabaseMetadataFunc(ctx, instanceID, db)
@@ -321,16 +321,9 @@ func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDataba
 		return nil, nil, errors.New("failed to get schema metadata")
 	}
 
-	var tableSchema *model.TableMetadata
-	if ignoreCaseSensitive {
-		for _, tableName := range schema.ListTableNames() {
-			if strings.EqualFold(tableName, table.Table) {
-				tableSchema = schema.GetTable(tableName)
-				break
-			}
-		}
-	} else {
-		tableSchema = schema.GetTable(table.Table)
+	tableSchema := schema.GetTable(table.Table)
+	if tableSchema == nil {
+		return nil, nil, errors.Errorf("failed to get table metadata for table %q", table.Table)
 	}
 
 	var generatedColumns, normalColumns []string

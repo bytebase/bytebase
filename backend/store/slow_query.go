@@ -201,9 +201,9 @@ func (s *Store) UpsertSlowLog(ctx context.Context, upsert *UpsertSlowLogMessage)
 			return err
 		}
 		database, err := s.GetDatabaseV2(ctx, &FindDatabaseMessage{
-			InstanceID:          &upsert.InstanceID,
-			DatabaseName:        &upsert.DatabaseName,
-			IgnoreCaseSensitive: IgnoreDatabaseAndTableCaseSensitive(instance),
+			InstanceID:      &upsert.InstanceID,
+			DatabaseName:    &upsert.DatabaseName,
+			IsCaseSensitive: IsObjectCaseSensitive(instance),
 		})
 		if err != nil {
 			return err

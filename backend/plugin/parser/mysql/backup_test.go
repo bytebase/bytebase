@@ -44,7 +44,7 @@ func TestBackup(t *testing.T) {
 		result, err := TransformDMLToSelect(context.Background(), base.TransformContext{
 			GetDatabaseMetadataFunc: getter,
 			ListDatabaseNamesFunc:   lister,
-			IgnoreCaseSensitive:     true,
+			IsCaseSensitive:         false,
 		}, t.Input, "db", "backupDB", "_rollback")
 		a.NoError(err)
 		sort.Slice(result, func(i, j int) bool {
@@ -171,7 +171,7 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 			return database, model.NewDatabaseMetadata(&store.DatabaseSchemaMetadata{
 				Name:    database,
 				Schemas: schemaMetadata,
-			}), nil
+			}, true /* isObjectCaseSensitive */, true /* isDetailCaseSensitive */), nil
 		}, func(_ context.Context, _ string) ([]string, error) {
 			return []string{"db", "db1", "db2"}, nil
 		}

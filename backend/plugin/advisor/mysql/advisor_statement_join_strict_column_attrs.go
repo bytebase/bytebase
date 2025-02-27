@@ -42,7 +42,7 @@ func (*StatementJoinStrictColumnAttrsAdvisor) Check(_ context.Context, checkCtx 
 		title: string(checkCtx.Rule.Type),
 	}
 	if checkCtx.DBSchema != nil {
-		dbSchema := model.NewDBSchema(checkCtx.DBSchema, nil, nil)
+		dbSchema := model.NewDatabaseSchema(checkCtx.DBSchema, nil, nil, storepb.Engine_MYSQL, checkCtx.IsObjectCaseSensitive)
 		checker.dbSchema = dbSchema
 	}
 
@@ -62,7 +62,7 @@ type statementJoinStrictColumnAttrsChecker struct {
 	level          storepb.Advice_Status
 	title          string
 	text           string
-	dbSchema       *model.DBSchema
+	dbSchema       *model.DatabaseSchema
 	isSelect       bool
 	isInFromClause bool
 }

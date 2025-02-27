@@ -54,7 +54,7 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 	if err != nil {
 		return nil, err
 	}
-	dbSchema := model.NewDBSchema(checkCtx.DBSchema, nil, nil)
+	dbSchema := model.NewDatabaseSchema(checkCtx.DBSchema, nil, nil, storepb.Engine_MYSQL, checkCtx.IsObjectCaseSensitive)
 	title := string(checkCtx.Rule.Type)
 
 	// Check gh-ost database existence first if the change type is gh-ost.

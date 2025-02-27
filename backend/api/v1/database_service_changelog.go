@@ -32,9 +32,9 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, request *v1pb.List
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		InstanceID:      &instanceID,
+		DatabaseName:    &databaseName,
+		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -138,9 +138,9 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, request *v1pb.GetCha
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		InstanceID:      &instanceID,
+		DatabaseName:    &databaseName,
+		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

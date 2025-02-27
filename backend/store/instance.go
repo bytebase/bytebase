@@ -488,19 +488,19 @@ func validateDataSourceList(dataSources []*DataSourceMessage) error {
 	return nil
 }
 
-// IgnoreDatabaseAndTableCaseSensitive returns true if the engine ignores database and table case sensitive.
-func IgnoreDatabaseAndTableCaseSensitive(instance *InstanceMessage) bool {
+// IsObjectCaseSensitive returns true if the engine ignores database and table case sensitive.
+func IsObjectCaseSensitive(instance *InstanceMessage) bool {
 	switch instance.Engine {
 	case storepb.Engine_TIDB:
-		return true
+		return false
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
-		return instance.Metadata != nil && instance.Metadata.MysqlLowerCaseTableNames != 0
+		return !(instance.Metadata != nil && instance.Metadata.MysqlLowerCaseTableNames != 0)
 	case storepb.Engine_MSSQL:
 		// In fact, SQL Server is possible to create a case-sensitive database and case-insensitive database on one instance.
 		// https://www.webucator.com/article/how-to-check-case-sensitivity-in-sql-server/
 		// But by default, SQL Server is case-insensitive.
-		return true
-	default:
 		return false
+	default:
+		return true
 	}
 }

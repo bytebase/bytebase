@@ -19,7 +19,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_DORIS, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, _ string, dbSchema *model.DBSchema, asts any, statement string) (*base.ChangeSummary, error) {
+func extractChangedResources(currentDatabase string, _ string, dbSchema *model.DatabaseSchema, asts any, statement string) (*base.ChangeSummary, error) {
 	nodes, ok := asts.([]*ParseResult)
 	if !ok {
 		return nil, errors.Errorf("invalid ast type %T", asts)
