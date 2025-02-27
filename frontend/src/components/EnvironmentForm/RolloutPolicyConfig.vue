@@ -28,11 +28,6 @@
           <div class="textlabel flex flex-row gap-x-1">
             <span>{{ $t("policy.rollout.manual-by-dedicated-roles") }}</span>
             <FeatureBadge feature="bb.feature.rollout-policy" />
-            <FeatureBadgeForInstanceLicense
-              :show="hasRolloutPolicyFeature"
-              feature="bb.feature.rollout-policy"
-              :tooltip="$t('subscription.instance-assignment.require-license')"
-            />
           </div>
           <div class="textinfolabel">
             {{ $t("policy.rollout.manual-by-dedicated-roles-info") }}
