@@ -420,6 +420,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.DataSourceOptions.ClientSecretCredential"><span class="badge">M</span>DataSourceOptions.ClientSecretCredential</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.KerberosConfig"><span class="badge">M</span>KerberosConfig</a>
                 </li>
               
@@ -3506,6 +3510,13 @@ Used for authentication when connecting to the data source. </p></td>
                 </tr>
               
                 <tr>
+                  <td>client_secret_credential</td>
+                  <td><a href="#bytebase.store.DataSourceOptions.ClientSecretCredential">DataSourceOptions.ClientSecretCredential</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>sasl_config</td>
                   <td><a href="#bytebase.store.SASLConfig">SASLConfig</a></td>
                   <td></td>
@@ -3615,6 +3626,44 @@ Used for authentication when connecting to the data source. </p></td>
               
                 <tr>
                   <td>port</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.DataSourceOptions.ClientSecretCredential">DataSourceOptions.ClientSecretCredential</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>tenant_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_secret</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -3841,6 +3890,12 @@ Used for authentication when connecting to the data source. </p></td>
               <tr>
                 <td>AWS_RDS_IAM</td>
                 <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>AZURE_IAM</td>
+                <td>4</td>
                 <td><p></p></td>
               </tr>
             

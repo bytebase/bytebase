@@ -64,6 +64,7 @@
     - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
     - [DataSourceOptions.Address](#bytebase-store-DataSourceOptions-Address)
+    - [DataSourceOptions.ClientSecretCredential](#bytebase-store-DataSourceOptions-ClientSecretCredential)
     - [KerberosConfig](#bytebase-store-KerberosConfig)
     - [SASLConfig](#bytebase-store-SASLConfig)
   
@@ -1169,6 +1170,7 @@ Metadata about the request.
 | authentication_private_key_obfuscated | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
 | external_secret | [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret) |  |  |
 | authentication_type | [DataSourceOptions.AuthenticationType](#bytebase-store-DataSourceOptions-AuthenticationType) |  |  |
+| client_secret_credential | [DataSourceOptions.ClientSecretCredential](#bytebase-store-DataSourceOptions-ClientSecretCredential) |  |  |
 | sasl_config | [SASLConfig](#bytebase-store-SASLConfig) |  |  |
 | additional_addresses | [DataSourceOptions.Address](#bytebase-store-DataSourceOptions-Address) | repeated | additional_addresses is used for MongoDB replica set. |
 | replica_set | [string](#string) |  | replica_set is used for MongoDB replica set. |
@@ -1197,6 +1199,23 @@ Metadata about the request.
 | ----- | ---- | ----- | ----------- |
 | host | [string](#string) |  |  |
 | port | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-DataSourceOptions-ClientSecretCredential"></a>
+
+### DataSourceOptions.ClientSecretCredential
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tenant_id | [string](#string) |  |  |
+| client_id | [string](#string) |  |  |
+| client_secret | [string](#string) |  |  |
 
 
 
@@ -1292,6 +1311,7 @@ Metadata about the request.
 | PASSWORD | 1 |  |
 | GOOGLE_CLOUD_SQL_IAM | 2 |  |
 | AWS_RDS_IAM | 3 |  |
+| AZURE_IAM | 4 |  |
 
 
 

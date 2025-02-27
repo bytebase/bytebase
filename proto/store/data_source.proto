@@ -89,9 +89,19 @@ message DataSourceOptions {
     PASSWORD = 1;
     GOOGLE_CLOUD_SQL_IAM = 2;
     AWS_RDS_IAM = 3;
+    AZURE_IAM = 4;
   }
 
   AuthenticationType authentication_type = 12;
+
+  message ClientSecretCredential {
+    string tenant_id = 1;
+    string client_id = 2;
+    string client_secret = 3;
+  }
+  oneof iam_extension {
+    ClientSecretCredential client_secret_credential = 26;
+  }
 
   SASLConfig sasl_config = 13;
 

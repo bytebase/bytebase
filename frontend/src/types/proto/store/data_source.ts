@@ -241,6 +241,7 @@ export interface DataSourceOptions {
   authenticationPrivateKeyObfuscated: string;
   externalSecret: DataSourceExternalSecret | undefined;
   authenticationType: DataSourceOptions_AuthenticationType;
+  clientSecretCredential?: DataSourceOptions_ClientSecretCredential | undefined;
   saslConfig:
     | SASLConfig
     | undefined;
@@ -271,6 +272,7 @@ export enum DataSourceOptions_AuthenticationType {
   PASSWORD = "PASSWORD",
   GOOGLE_CLOUD_SQL_IAM = "GOOGLE_CLOUD_SQL_IAM",
   AWS_RDS_IAM = "AWS_RDS_IAM",
+  AZURE_IAM = "AZURE_IAM",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -288,6 +290,9 @@ export function dataSourceOptions_AuthenticationTypeFromJSON(object: any): DataS
     case 3:
     case "AWS_RDS_IAM":
       return DataSourceOptions_AuthenticationType.AWS_RDS_IAM;
+    case 4:
+    case "AZURE_IAM":
+      return DataSourceOptions_AuthenticationType.AZURE_IAM;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -305,6 +310,8 @@ export function dataSourceOptions_AuthenticationTypeToJSON(object: DataSourceOpt
       return "GOOGLE_CLOUD_SQL_IAM";
     case DataSourceOptions_AuthenticationType.AWS_RDS_IAM:
       return "AWS_RDS_IAM";
+    case DataSourceOptions_AuthenticationType.AZURE_IAM:
+      return "AZURE_IAM";
     case DataSourceOptions_AuthenticationType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -321,6 +328,8 @@ export function dataSourceOptions_AuthenticationTypeToNumber(object: DataSourceO
       return 2;
     case DataSourceOptions_AuthenticationType.AWS_RDS_IAM:
       return 3;
+    case DataSourceOptions_AuthenticationType.AZURE_IAM:
+      return 4;
     case DataSourceOptions_AuthenticationType.UNRECOGNIZED:
     default:
       return -1;
@@ -386,6 +395,12 @@ export function dataSourceOptions_RedisTypeToNumber(object: DataSourceOptions_Re
     default:
       return -1;
   }
+}
+
+export interface DataSourceOptions_ClientSecretCredential {
+  tenantId: string;
+  clientId: string;
+  clientSecret: string;
 }
 
 export interface DataSourceOptions_Address {
@@ -725,6 +740,7 @@ function createBaseDataSourceOptions(): DataSourceOptions {
     authenticationPrivateKeyObfuscated: "",
     externalSecret: undefined,
     authenticationType: DataSourceOptions_AuthenticationType.AUTHENTICATION_UNSPECIFIED,
+    clientSecretCredential: undefined,
     saslConfig: undefined,
     additionalAddresses: [],
     replicaSet: "",
@@ -777,6 +793,9 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
     }
     if (message.authenticationType !== DataSourceOptions_AuthenticationType.AUTHENTICATION_UNSPECIFIED) {
       writer.uint32(96).int32(dataSourceOptions_AuthenticationTypeToNumber(message.authenticationType));
+    }
+    if (message.clientSecretCredential !== undefined) {
+      DataSourceOptions_ClientSecretCredential.encode(message.clientSecretCredential, writer.uint32(210).fork()).join();
     }
     if (message.saslConfig !== undefined) {
       SASLConfig.encode(message.saslConfig, writer.uint32(106).fork()).join();
@@ -920,6 +939,14 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
           message.authenticationType = dataSourceOptions_AuthenticationTypeFromJSON(reader.int32());
           continue;
         }
+        case 26: {
+          if (tag !== 210) {
+            break;
+          }
+
+          message.clientSecretCredential = DataSourceOptions_ClientSecretCredential.decode(reader, reader.uint32());
+          continue;
+        }
         case 13: {
           if (tag !== 106) {
             break;
@@ -1049,6 +1076,9 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
       authenticationType: isSet(object.authenticationType)
         ? dataSourceOptions_AuthenticationTypeFromJSON(object.authenticationType)
         : DataSourceOptions_AuthenticationType.AUTHENTICATION_UNSPECIFIED,
+      clientSecretCredential: isSet(object.clientSecretCredential)
+        ? DataSourceOptions_ClientSecretCredential.fromJSON(object.clientSecretCredential)
+        : undefined,
       saslConfig: isSet(object.saslConfig) ? SASLConfig.fromJSON(object.saslConfig) : undefined,
       additionalAddresses: globalThis.Array.isArray(object?.additionalAddresses)
         ? object.additionalAddresses.map((e: any) => DataSourceOptions_Address.fromJSON(e))
@@ -1107,6 +1137,9 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
     }
     if (message.authenticationType !== DataSourceOptions_AuthenticationType.AUTHENTICATION_UNSPECIFIED) {
       obj.authenticationType = dataSourceOptions_AuthenticationTypeToJSON(message.authenticationType);
+    }
+    if (message.clientSecretCredential !== undefined) {
+      obj.clientSecretCredential = DataSourceOptions_ClientSecretCredential.toJSON(message.clientSecretCredential);
     }
     if (message.saslConfig !== undefined) {
       obj.saslConfig = SASLConfig.toJSON(message.saslConfig);
@@ -1167,6 +1200,10 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
       : undefined;
     message.authenticationType = object.authenticationType ??
       DataSourceOptions_AuthenticationType.AUTHENTICATION_UNSPECIFIED;
+    message.clientSecretCredential =
+      (object.clientSecretCredential !== undefined && object.clientSecretCredential !== null)
+        ? DataSourceOptions_ClientSecretCredential.fromPartial(object.clientSecretCredential)
+        : undefined;
     message.saslConfig = (object.saslConfig !== undefined && object.saslConfig !== null)
       ? SASLConfig.fromPartial(object.saslConfig)
       : undefined;
@@ -1182,6 +1219,98 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
     message.redisType = object.redisType ?? DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED;
     message.useSsl = object.useSsl ?? false;
     message.cluster = object.cluster ?? "";
+    return message;
+  },
+};
+
+function createBaseDataSourceOptions_ClientSecretCredential(): DataSourceOptions_ClientSecretCredential {
+  return { tenantId: "", clientId: "", clientSecret: "" };
+}
+
+export const DataSourceOptions_ClientSecretCredential: MessageFns<DataSourceOptions_ClientSecretCredential> = {
+  encode(message: DataSourceOptions_ClientSecretCredential, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.tenantId !== "") {
+      writer.uint32(10).string(message.tenantId);
+    }
+    if (message.clientId !== "") {
+      writer.uint32(18).string(message.clientId);
+    }
+    if (message.clientSecret !== "") {
+      writer.uint32(26).string(message.clientSecret);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DataSourceOptions_ClientSecretCredential {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataSourceOptions_ClientSecretCredential();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.tenantId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.clientId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.clientSecret = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataSourceOptions_ClientSecretCredential {
+    return {
+      tenantId: isSet(object.tenantId) ? globalThis.String(object.tenantId) : "",
+      clientId: isSet(object.clientId) ? globalThis.String(object.clientId) : "",
+      clientSecret: isSet(object.clientSecret) ? globalThis.String(object.clientSecret) : "",
+    };
+  },
+
+  toJSON(message: DataSourceOptions_ClientSecretCredential): unknown {
+    const obj: any = {};
+    if (message.tenantId !== "") {
+      obj.tenantId = message.tenantId;
+    }
+    if (message.clientId !== "") {
+      obj.clientId = message.clientId;
+    }
+    if (message.clientSecret !== "") {
+      obj.clientSecret = message.clientSecret;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DataSourceOptions_ClientSecretCredential>): DataSourceOptions_ClientSecretCredential {
+    return DataSourceOptions_ClientSecretCredential.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DataSourceOptions_ClientSecretCredential>): DataSourceOptions_ClientSecretCredential {
+    const message = createBaseDataSourceOptions_ClientSecretCredential();
+    message.tenantId = object.tenantId ?? "";
+    message.clientId = object.clientId ?? "";
+    message.clientSecret = object.clientSecret ?? "";
     return message;
   },
 };
