@@ -27,7 +27,7 @@
           "
         >
           <div class="textlabel">
-            {{ $t("policy.rollout.last-approver-from-custom-approval") }}
+            {{ $t("policy.rollout.last-issue-approver") }}
           </div>
         </NCheckbox>
       </div>

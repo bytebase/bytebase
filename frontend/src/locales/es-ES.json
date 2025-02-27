@@ -1310,10 +1310,10 @@
     "rollout": {
       "name": "Política de Implementación",
       "tip": "La política se aplica retrospectivamente a las incidencias.",
-      "info": "Para implementar cambios en la base de datos, esta configuración controla si la implementación requiere aprobación manual.",
-      "auto": "Implementar automático",
+      "info": "Las tareas pueden ser ejecutadas por usuarios con el permiso 'taskRuns.create' o los siguientes roles",
+      "auto": "Automático",
       "auto-info": "Si se aprueban todas las comprobaciones, el cambio se implementará y ejecutará automáticamente.",
-      "last-approver-from-custom-approval": "Último aprobador de la aprobación personalizada"
+      "last-issue-approver": "Aprobador de último tema"
     },
     "environment-tier": {
       "name": "Nivel de Entorno",
