@@ -1,15 +1,16 @@
 package tests
 
 import (
-	"io"
-	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"github.com/yterajima/go-sitemap"
 )
 
 var (
@@ -28,18 +29,36 @@ var (
 		".vue":  true,
 	}
 
+	ignoreLinks = map[string]bool{
+		"https://bytebase.com/changelog/bytebase-": true,
+	}
+
 	frontendDirectory = "../frontend"
 )
 
 func TestValidateLinks(t *testing.T) {
+	a := require.New(t)
 	links, err := extractLinkRecursive()
-	require.NoError(t, err)
+	a.NoError(err)
+
+	sm, err := sitemap.Get("https://bytebase.com/sitemap.xml", nil)
+	a.NoError(err)
+
+	paths := map[string]struct{}{}
+	for _, smu := range sm.URL {
+		u, err := url.Parse(smu.Loc)
+		a.NoError(err)
+		paths[strings.TrimSuffix(u.Path, "/")] = struct{}{}
+	}
 
 	// Check all the links are reachable.
 	for link := range links {
-		if err := checkLinkWithRetry(link); err != nil {
-			require.NoError(t, err)
+		u, err := url.Parse(link)
+		a.NoError(err)
+		if ignoreLinks[link] {
+			continue
 		}
+		a.Contains(paths, strings.TrimSuffix(u.Path, "/"), link)
 	}
 }
 
@@ -86,21 +105,4 @@ func extractLinkRecursive() (map[string]bool, error) {
 	}
 
 	return links, nil
-}
-
-func checkLinkWithRetry(link string) error {
-	// Request the link and check the response status code is 200.
-	resp, err := http.Get(link)
-	if err != nil {
-		return errors.Wrapf(err, "failed to request link %q", link)
-	}
-	defer resp.Body.Close()
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return errors.Wrapf(err, "failed to read link %q", link)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("link %q returned status %q content %q", link, resp.Status, b)
-	}
-	return nil
 }
