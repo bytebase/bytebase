@@ -199,8 +199,8 @@ onMounted(async () => {
       toRef(props, "formatContentOptions")
     );
     const content = useContent(monaco, editor);
-    const selectedContent = useSelectedContent(editor);
-    const selection = useSelection(monaco, editor);
+    const selection = useSelection(editor);
+    const selectedContent = useSelectedContent(editor, selection);
     useAdvices(monaco, editor, toRef(props, "advices"));
     useLineHighlights(monaco, editor, toRef(props, "lineHighlights"));
     useAutoHeight(monaco, editor, containerRef, toRef(props, "autoHeight"));
