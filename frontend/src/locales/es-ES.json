@@ -1312,9 +1312,9 @@
       "tip": "La política se aplica retrospectivamente a las incidencias.",
       "info": "Para implementar cambios en la base de datos, esta configuración controla si la implementación requiere aprobación manual.",
       "auto": "Implementar automático",
+      "manual": "Despliegue manual",
       "auto-info": "Si se aprueban todas las comprobaciones, el cambio se implementará y ejecutará automáticamente.",
       "last-approver-from-custom-approval": "Último aprobador de la aprobación personalizada",
-      "manual-by-dedicated-roles": "Implementación manual por roles especializados",
       "manual-by-dedicated-roles-info": "Permita que cualquiera de los siguientes roles seleccionados haga clic en el botón \"Implementar\" y luego se ejecutará el cambio."
     },
     "environment-tier": {

@@ -26,7 +26,7 @@
       >
         <div class="flex flex-col gap-y-1">
           <div class="textlabel flex flex-row gap-x-1">
-            <span>{{ $t("policy.rollout.manual-by-dedicated-roles") }}</span>
+            <span>{{ $t("policy.rollout.manual") }}</span>
             <FeatureBadge feature="bb.feature.rollout-policy" />
           </div>
           <div class="textinfolabel">
