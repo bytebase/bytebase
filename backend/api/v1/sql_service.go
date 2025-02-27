@@ -289,7 +289,7 @@ func extractSourceTable(comment string) (string, string, string, error) {
 	return "", "", "", errors.Errorf("failed to extract source table from comment: %s", comment)
 }
 
-func getSchemaMetadata(engine storepb.Engine, dbSchema *model.DBSchema) *model.SchemaMetadata {
+func getSchemaMetadata(engine storepb.Engine, dbSchema *model.DatabaseSchema) *model.SchemaMetadata {
 	switch engine {
 	case storepb.Engine_POSTGRES:
 		return dbSchema.GetDatabaseMetadata().GetSchema(backupDatabaseName)
@@ -421,7 +421,7 @@ func queryRetry(
 			statement,
 			database.DatabaseName,
 			queryContext.Schema,
-			store.IgnoreDatabaseAndTableCaseSensitive(instance),
+			!store.IsObjectCaseSensitive(instance),
 		)
 		if err != nil {
 			return nil, nil, time.Duration(0), err
@@ -489,7 +489,7 @@ func queryRetry(
 			statement,
 			database.DatabaseName,
 			queryContext.Schema,
-			store.IgnoreDatabaseAndTableCaseSensitive(instance),
+			!store.IsObjectCaseSensitive(instance),
 		)
 		if err != nil {
 			return nil, nil, time.Duration(0), err
@@ -1207,9 +1207,9 @@ func (s *SQLService) accessCheck(
 				}
 
 				databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-					InstanceID:          &instance.ResourceID,
-					DatabaseName:        &column.Database,
-					IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+					InstanceID:      &instance.ResourceID,
+					DatabaseName:    &column.Database,
+					IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 				})
 				if err != nil {
 					return err
@@ -1297,9 +1297,9 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 	}
 
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:          &instance.ResourceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		InstanceID:      &instance.ResourceID,
+		DatabaseName:    &databaseName,
+		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
@@ -1488,7 +1488,7 @@ func (s *SQLService) SQLReviewCheck(
 		dbMetadata = dbSchema.GetMetadata()
 	}
 
-	catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), overrideMetadata)
+	catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, instance.Engine, store.IsObjectCaseSensitive(instance), overrideMetadata)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to create a catalog: %v", err)
 	}
@@ -1519,6 +1519,7 @@ func (s *SQLService) SQLReviewCheck(
 		UsePostgresDatabaseOwner: useDatabaseOwner,
 		ListDatabaseNamesFunc:    BuildListDatabaseNamesFunc(s.store),
 		InstanceID:               instance.ResourceID,
+		IsObjectCaseSensitive:    store.IsObjectCaseSensitive(instance),
 	}
 
 	reviewConfig, err := s.store.GetReviewConfigForDatabase(ctx, database)

@@ -92,9 +92,9 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 	}
 
 	find := &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		InstanceID:      &instanceID,
+		DatabaseName:    &databaseName,
+		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 	}
 	databaseMessage, err := s.store.GetDatabaseV2(ctx, find)
 	if err != nil {
@@ -255,9 +255,9 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		InstanceID:      &instanceID,
+		DatabaseName:    &databaseName,
+		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -352,9 +352,9 @@ func (s *DatabaseService) SyncDatabase(ctx context.Context, request *v1pb.SyncDa
 	}
 
 	find := &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		InstanceID:      &instanceID,
+		DatabaseName:    &databaseName,
+		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 	}
 	database, err := s.store.GetDatabaseV2(ctx, find)
 	if err != nil {
@@ -392,9 +392,9 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 			return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 		}
 		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			InstanceID:          &instanceID,
-			DatabaseName:        &databaseName,
-			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+			InstanceID:      &instanceID,
+			DatabaseName:    &databaseName,
+			IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 		})
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
@@ -459,9 +459,9 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		InstanceID:      &instanceID,
+		DatabaseName:    &databaseName,
+		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -518,9 +518,9 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		InstanceID:      &instanceID,
+		DatabaseName:    &databaseName,
+		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -745,9 +745,9 @@ func (s *DatabaseService) ListSecrets(ctx context.Context, request *v1pb.ListSec
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		InstanceID:      &instanceID,
+		DatabaseName:    &databaseName,
+		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -789,9 +789,9 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 	}
 
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		InstanceID:      &instanceID,
+		DatabaseName:    &databaseName,
+		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -888,9 +888,9 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 	}
 
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		InstanceID:      &instanceID,
+		DatabaseName:    &databaseName,
+		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -973,7 +973,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 			}
 			findDatabase.InstanceID = &instanceID
 			findDatabase.DatabaseName = &databaseName
-			findDatabase.IgnoreCaseSensitive = store.IgnoreDatabaseAndTableCaseSensitive(instance)
+			findDatabase.IsCaseSensitive = store.IsObjectCaseSensitive(instance)
 		case filterKeyStartTime:
 			switch expr.Operator {
 			case ComparatorTypeGreater:
@@ -1328,9 +1328,9 @@ func (s *DatabaseService) AdviseIndex(ctx context.Context, request *v1pb.AdviseI
 	}
 
 	findDatabase := &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		InstanceID:      &instanceID,
+		DatabaseName:    &databaseName,
+		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 	}
 	database, err := s.store.GetDatabaseV2(ctx, findDatabase)
 	if err != nil {
@@ -1356,7 +1356,7 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 		return nil, err
 	}
 
-	var schemas []*model.DBSchema
+	var schemas []*model.DatabaseSchema
 	// Deal with the cross database query.
 	resources, err := base.ExtractResourceList(instance.Engine, database.DatabaseName, "", request.Statement)
 	if err != nil {
@@ -1376,9 +1376,9 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 
 	for _, db := range databases {
 		findDatabase := &store.FindDatabaseMessage{
-			InstanceID:          &instance.ResourceID,
-			DatabaseName:        &db,
-			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+			InstanceID:      &instance.ResourceID,
+			DatabaseName:    &db,
+			IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 		}
 		database, err := s.store.GetDatabaseV2(ctx, findDatabase)
 		if err != nil {
@@ -1432,7 +1432,7 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 			if len(matches) != 4 {
 				return errors.Errorf("failed to extract index name, database name and table name from %s", resp.CurrentIndex)
 			}
-			var dbSchema *model.DBSchema
+			var dbSchema *model.DatabaseSchema
 			for _, schema := range schemas {
 				if schema.GetMetadata().Name == matches[2] {
 					dbSchema = schema
@@ -1442,11 +1442,16 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 			if dbSchema == nil {
 				return errors.Errorf("database %s doesn't exist", matches[2])
 			}
-			indexMetadata := dbSchema.FindIndex("", matches[3], matches[1])
+			tableMetadata := dbSchema.GetDatabaseMetadata().GetSchema("").GetTable(matches[3])
+			if tableMetadata == nil {
+				return errors.Errorf("table %s doesn't exist", matches[3])
+			}
+			indexMetadata := tableMetadata.GetIndex(matches[1])
 			if indexMetadata == nil {
 				return errors.Errorf("index %s doesn't exist", resp.CurrentIndex)
 			}
-			resp.CurrentIndex = fmt.Sprintf("USING %s (%s)", indexMetadata.Type, strings.Join(indexMetadata.Expressions, ", "))
+			indexProto := indexMetadata.GetProto()
+			resp.CurrentIndex = fmt.Sprintf("USING %s (%s)", indexProto.Type, strings.Join(indexProto.Expressions, ", "))
 		} else {
 			resp.CurrentIndex = "No usable index"
 		}
@@ -1556,11 +1561,20 @@ func (s *DatabaseService) pgAdviseIndex(ctx context.Context, request *v1pb.Advis
 			if len(matches) != 4 {
 				return errors.Errorf("failed to extract index name, schema name and table name from %s", resp.CurrentIndex)
 			}
-			indexMetadata := schema.FindIndex(matches[2], matches[3], matches[1])
+			schemaMetadata := schema.GetDatabaseMetadata().GetSchema(matches[2])
+			if schemaMetadata == nil {
+				return errors.Errorf("schema %s doesn't exist", matches[2])
+			}
+			tableMetadata := schemaMetadata.GetTable(matches[3])
+			if tableMetadata == nil {
+				return errors.Errorf("table %s doesn't exist", matches[3])
+			}
+			indexMetadata := tableMetadata.GetIndex(matches[1])
 			if indexMetadata == nil {
 				return errors.Errorf("index %s doesn't exist", resp.CurrentIndex)
 			}
-			resp.CurrentIndex = fmt.Sprintf("USING %s (%s)", indexMetadata.Type, strings.Join(indexMetadata.Expressions, ", "))
+			indexProto := indexMetadata.GetProto()
+			resp.CurrentIndex = fmt.Sprintf("USING %s (%s)", indexProto.Type, strings.Join(indexProto.Expressions, ", "))
 		} else {
 			resp.CurrentIndex = "No usable index"
 		}

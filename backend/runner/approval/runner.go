@@ -745,10 +745,10 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 				continue
 			}
 			database, err := r.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-				ProjectID:           &issue.Project.ResourceID,
-				InstanceID:          &instanceID,
-				DatabaseName:        &databaseName,
-				IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+				ProjectID:       &issue.Project.ResourceID,
+				InstanceID:      &instanceID,
+				DatabaseName:    &databaseName,
+				IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 			})
 			if err != nil {
 				return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get database")
