@@ -226,7 +226,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		if len(stages) == 0 {
 			return nil
 		}
-		policy, err := apiv1.GetValidRolloutPolicyForStage(ctx, r.store, r.licenseService, stages[0])
+		policy, err := apiv1.GetValidRolloutPolicyForStage(ctx, r.store, stages[0])
 		if err != nil {
 			return err
 		}
