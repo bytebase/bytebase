@@ -1314,7 +1314,6 @@
       "auto": "Automatic rollout",
       "auto-info": "If all check pass, the change will be rolled out and executed automatically.",
       "last-approver-from-custom-approval": "Last approver from the custom approval",
-      "select-at-least-one-role": "Please select at least one role in rollout policy",
       "manual-by-dedicated-roles": "Manual rollout by dedicated roles",
       "manual-by-dedicated-roles-info": "Allow any of the following selected roles to click the \"Rollout\" button, and then the change will be executed."
     },

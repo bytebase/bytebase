@@ -1314,7 +1314,6 @@
       "auto": "Implementar automático",
       "auto-info": "Si se aprueban todas las comprobaciones, el cambio se implementará y ejecutará automáticamente.",
       "last-approver-from-custom-approval": "Último aprobador de la aprobación personalizada",
-      "select-at-least-one-role": "Seleccione al menos un rol en la política de implementación",
       "manual-by-dedicated-roles": "Implementación manual por roles especializados",
       "manual-by-dedicated-roles-info": "Permita que cualquiera de los siguientes roles seleccionados haga clic en el botón \"Implementar\" y luego se ejecutará el cambio."
     },
