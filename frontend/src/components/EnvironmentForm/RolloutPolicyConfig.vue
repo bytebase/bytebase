@@ -73,12 +73,10 @@ import { cloneDeep, uniq } from "lodash-es";
 import { NCheckbox, NRadio } from "naive-ui";
 import { ref, watch } from "vue";
 import { computed } from "vue";
-import { featureToRef } from "@/store";
 import { VirtualRoleType } from "@/types";
 import type { Policy } from "@/types/proto/v1/org_policy_service";
 import { RolloutPolicy } from "@/types/proto/v1/org_policy_service";
 import FeatureBadge from "../FeatureGuard/FeatureBadge.vue";
-import FeatureBadgeForInstanceLicense from "../FeatureGuard/FeatureBadgeForInstanceLicense.vue";
 import { RoleSelect } from "../v2";
 
 const props = defineProps<{
@@ -91,8 +89,6 @@ const emit = defineEmits<{
 }>();
 
 const rolloutPolicy = ref(cloneDeep(props.policy.rolloutPolicy!));
-
-const hasRolloutPolicyFeature = featureToRef("bb.feature.rollout-policy");
 
 const isAutomaticRolloutChecked = computed(() => {
   return rolloutPolicy.value.automatic;
