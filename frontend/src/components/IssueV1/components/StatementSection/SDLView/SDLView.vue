@@ -26,12 +26,6 @@
                 </template>
                 <div class="whitespace-nowrap">
                   <span>{{ $t("issue.sdl.left-schema-may-change") }}</span>
-                  <LearnMoreLink
-                    url="https://www.bytebase.com/docs/change-database/state-based-migration/?source=console#caveats"
-                    color="light"
-                    class="ml-1"
-                    hide-when-embedded
-                  />
                 </div>
               </NTooltip>
             </div>
@@ -93,7 +87,6 @@ import { reactive } from "vue";
 import { BBSpin } from "@/bbkit";
 import { FeatureModal } from "@/components/FeatureGuard";
 import { useIssueContext } from "@/components/IssueV1/logic";
-import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
 import { hasFeature, pushNotification } from "@/store";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
