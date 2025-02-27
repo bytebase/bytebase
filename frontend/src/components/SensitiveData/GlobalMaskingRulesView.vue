@@ -51,7 +51,7 @@
     <div class="textinfolabel">
       {{ $t("settings.sensitive-data.global-rules.description") }}
       <LearnMoreLink
-        url="https://www.bytebase.com/docs/security/mask-data?source=console"
+        url="https://www.bytebase.com/docs/security/data-masking/overview/?source=console"
       />
     </div>
     <NoDataPlaceholder v-if="state.maskingRuleItemList.length === 0" />
