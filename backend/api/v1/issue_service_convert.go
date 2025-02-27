@@ -118,7 +118,7 @@ func (s *IssueService) convertToIssueReleasers(ctx context.Context, issue *store
 	if activeStage == nil {
 		return nil, nil
 	}
-	policy, err := GetValidRolloutPolicyForStage(ctx, s.store, s.licenseService, activeStage)
+	policy, err := GetValidRolloutPolicyForStage(ctx, s.store, activeStage)
 	if err != nil {
 		return nil, err
 	}

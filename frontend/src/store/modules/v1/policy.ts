@@ -254,7 +254,7 @@ export const getEmptyRolloutPolicy = (
     resourceType,
     enforce: true,
     rolloutPolicy: {
-      automatic: true,
+      automatic: false,
       roles: [],
       issueRoles: [],
     },

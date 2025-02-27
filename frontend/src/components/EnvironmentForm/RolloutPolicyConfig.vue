@@ -1,45 +1,7 @@
 <template>
   <div class="flex flex-col items-start gap-y-2">
     <div class="flex flex-col gap-y-2">
-      <NRadio
-        :checked="isAutomaticRolloutChecked"
-        :disabled="disabled"
-        style="--n-label-padding: 0 0 0 1rem"
-        @update:checked="toggleAutomaticRollout(true)"
-      >
-        <div class="flex flex-col gap-y-1">
-          <div class="textlabel">
-            {{ $t("policy.rollout.auto") }}
-          </div>
-          <div class="textinfolabel">
-            {{ $t("policy.rollout.auto-info") }}
-          </div>
-        </div>
-      </NRadio>
-    </div>
-    <div class="flex flex-col gap-y-2">
-      <NRadio
-        :checked="!isAutomaticRolloutChecked"
-        :disabled="disabled"
-        style="--n-label-padding: 0 0 0 1rem"
-        @update:checked="toggleAutomaticRollout(false)"
-      >
-        <div class="flex flex-col gap-y-1">
-          <div class="textlabel flex flex-row gap-x-1">
-            <span>{{ $t("policy.rollout.manual-by-dedicated-roles") }}</span>
-            <FeatureBadge feature="bb.feature.rollout-policy" />
-            <FeatureBadgeForInstanceLicense
-              :show="hasRolloutPolicyFeature"
-              feature="bb.feature.rollout-policy"
-              :tooltip="$t('subscription.instance-assignment.require-license')"
-            />
-          </div>
-          <div class="textinfolabel">
-            {{ $t("policy.rollout.manual-by-dedicated-roles-info") }}
-          </div>
-        </div>
-      </NRadio>
-      <div class="flex flex-col gap-y-2 pl-8" v-if="!isAutomaticRolloutChecked">
+      <div class="flex flex-col gap-y-2">
         <RoleSelect
           v-model:value="rolloutPolicy.roles"
           :disabled="disabled"
@@ -65,25 +27,37 @@
           "
         >
           <div class="textlabel">
-            {{ $t("policy.rollout.last-approver-from-custom-approval") }}
+            {{ $t("policy.rollout.last-issue-approver") }}
           </div>
         </NCheckbox>
       </div>
+      <NCheckbox
+        :checked="isAutomaticRolloutChecked"
+        :disabled="disabled"
+        style="--n-label-padding: 0 0 0 1rem"
+        @update:checked="toggleAutomaticRollout($event)"
+        >
+        <div class="flex flex-col gap-y-1">
+          <div class="textlabel">
+            {{ $t("policy.rollout.auto") }}
+          </div>
+          <div class="textinfolabel">
+            {{ $t("policy.rollout.auto-info") }}
+          </div>
+        </div>
+      </NCheckbox>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { cloneDeep, uniq } from "lodash-es";
-import { NCheckbox, NRadio } from "naive-ui";
+import { NCheckbox } from "naive-ui";
 import { ref, watch } from "vue";
 import { computed } from "vue";
-import { featureToRef } from "@/store";
 import { VirtualRoleType } from "@/types";
 import type { Policy } from "@/types/proto/v1/org_policy_service";
 import { RolloutPolicy } from "@/types/proto/v1/org_policy_service";
-import FeatureBadge from "../FeatureGuard/FeatureBadge.vue";
-import FeatureBadgeForInstanceLicense from "../FeatureGuard/FeatureBadgeForInstanceLicense.vue";
 import { RoleSelect } from "../v2";
 
 const props = defineProps<{
@@ -96,8 +70,6 @@ const emit = defineEmits<{
 }>();
 
 const rolloutPolicy = ref(cloneDeep(props.policy.rolloutPolicy!));
-
-const hasRolloutPolicyFeature = featureToRef("bb.feature.rollout-policy");
 
 const isAutomaticRolloutChecked = computed(() => {
   return rolloutPolicy.value.automatic;
@@ -115,47 +87,34 @@ const update = (rp: RolloutPolicy) => {
     rolloutPolicy: rp,
   });
 };
-const toggleAutomaticRollout = (checked: boolean) => {
-  update(
-    RolloutPolicy.fromPartial(
-      checked
-        ? {
-            automatic: true,
-            roles: [],
-            issueRoles: [],
-          }
-        : {
-            automatic: false,
-            roles: rolloutPolicy.value.roles,
-            issueRoles: rolloutPolicy.value.issueRoles,
-          }
-    )
-  );
+const toggleAutomaticRollout = (selected: boolean) => {
+  update(RolloutPolicy.fromJSON({
+    ...rolloutPolicy.value,
+    automatic: selected,
+  }));
 };
 const toggleIssueRoles = (checked: boolean, role: string) => {
-  const roles = rolloutPolicy.value.issueRoles;
+  const issueRoles = rolloutPolicy.value.issueRoles;
   if (checked) {
-    roles.push(role);
+    issueRoles.push(role);
   } else {
-    const index = roles.indexOf(role);
+    const index = issueRoles.indexOf(role);
     if (index !== -1) {
-      roles.splice(index, 1);
+      issueRoles.splice(index, 1);
     }
   }
   update(
     RolloutPolicy.fromPartial({
-      automatic: false,
-      roles: rolloutPolicy.value.roles,
-      issueRoles: uniq(roles),
+      ...rolloutPolicy.value,
+      issueRoles: uniq(issueRoles),
     })
   );
 };
 const updateRoles = (roles: string[]) => {
   update(
     RolloutPolicy.fromPartial({
-      automatic: false,
-      roles,
-      issueRoles: rolloutPolicy.value.issueRoles,
+      ...rolloutPolicy.value,
+      roles: roles,
     })
   );
 };
