@@ -682,7 +682,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 			return nil, err
 		}
 
-		// Sanitize the schema name by escaping any quotes
+		// Sanitize the schema name by escaping any quotes.
 		safeSchemeName := strings.ReplaceAll(queryContext.Schema, "\"", "\"\"")
 
 		// If the queryContext.Schema is not empty, set the search path for the database connection to the specified schema.
