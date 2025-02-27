@@ -9331,12 +9331,15 @@ components:
                          Used for authentication when connecting to the data source.
                 externalSecret:
                     $ref: '#/components/schemas/DataSourceExternalSecret'
+                clientSecretCredential:
+                    $ref: '#/components/schemas/DataSource_ClientSecretCredential'
                 authenticationType:
                     enum:
                         - AUTHENTICATION_UNSPECIFIED
                         - PASSWORD
                         - GOOGLE_CLOUD_SQL_IAM
                         - AWS_RDS_IAM
+                        - AZURE_IAM
                     type: string
                     format: enum
                 saslConfig:
@@ -9453,6 +9456,15 @@ components:
                 host:
                     type: string
                 port:
+                    type: string
+        DataSource_ClientSecretCredential:
+            type: object
+            properties:
+                tenantId:
+                    type: string
+                clientId:
+                    type: string
+                clientSecret:
                     type: string
         Database:
             type: object

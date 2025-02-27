@@ -555,6 +555,7 @@ export interface DataSource {
    */
   authenticationPrivateKey: string;
   externalSecret: DataSourceExternalSecret | undefined;
+  clientSecretCredential?: DataSource_ClientSecretCredential | undefined;
   authenticationType: DataSource_AuthenticationType;
   saslConfig:
     | SASLConfig
@@ -584,6 +585,7 @@ export enum DataSource_AuthenticationType {
   PASSWORD = "PASSWORD",
   GOOGLE_CLOUD_SQL_IAM = "GOOGLE_CLOUD_SQL_IAM",
   AWS_RDS_IAM = "AWS_RDS_IAM",
+  AZURE_IAM = "AZURE_IAM",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -601,6 +603,9 @@ export function dataSource_AuthenticationTypeFromJSON(object: any): DataSource_A
     case 3:
     case "AWS_RDS_IAM":
       return DataSource_AuthenticationType.AWS_RDS_IAM;
+    case 4:
+    case "AZURE_IAM":
+      return DataSource_AuthenticationType.AZURE_IAM;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -618,6 +623,8 @@ export function dataSource_AuthenticationTypeToJSON(object: DataSource_Authentic
       return "GOOGLE_CLOUD_SQL_IAM";
     case DataSource_AuthenticationType.AWS_RDS_IAM:
       return "AWS_RDS_IAM";
+    case DataSource_AuthenticationType.AZURE_IAM:
+      return "AZURE_IAM";
     case DataSource_AuthenticationType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -634,6 +641,8 @@ export function dataSource_AuthenticationTypeToNumber(object: DataSource_Authent
       return 2;
     case DataSource_AuthenticationType.AWS_RDS_IAM:
       return 3;
+    case DataSource_AuthenticationType.AZURE_IAM:
+      return 4;
     case DataSource_AuthenticationType.UNRECOGNIZED:
     default:
       return -1;
@@ -699,6 +708,12 @@ export function dataSource_RedisTypeToNumber(object: DataSource_RedisType): numb
     default:
       return -1;
   }
+}
+
+export interface DataSource_ClientSecretCredential {
+  tenantId: string;
+  clientId: string;
+  clientSecret: string;
 }
 
 export interface DataSource_Address {
@@ -2655,6 +2670,7 @@ function createBaseDataSource(): DataSource {
     sshPrivateKey: "",
     authenticationPrivateKey: "",
     externalSecret: undefined,
+    clientSecretCredential: undefined,
     authenticationType: DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED,
     saslConfig: undefined,
     additionalAddresses: [],
@@ -2737,6 +2753,9 @@ export const DataSource: MessageFns<DataSource> = {
     }
     if (message.externalSecret !== undefined) {
       DataSourceExternalSecret.encode(message.externalSecret, writer.uint32(170).fork()).join();
+    }
+    if (message.clientSecretCredential !== undefined) {
+      DataSource_ClientSecretCredential.encode(message.clientSecretCredential, writer.uint32(290).fork()).join();
     }
     if (message.authenticationType !== DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED) {
       writer.uint32(176).int32(dataSource_AuthenticationTypeToNumber(message.authenticationType));
@@ -2960,6 +2979,14 @@ export const DataSource: MessageFns<DataSource> = {
           message.externalSecret = DataSourceExternalSecret.decode(reader, reader.uint32());
           continue;
         }
+        case 36: {
+          if (tag !== 290) {
+            break;
+          }
+
+          message.clientSecretCredential = DataSource_ClientSecretCredential.decode(reader, reader.uint32());
+          continue;
+        }
         case 22: {
           if (tag !== 176) {
             break;
@@ -3095,6 +3122,9 @@ export const DataSource: MessageFns<DataSource> = {
       externalSecret: isSet(object.externalSecret)
         ? DataSourceExternalSecret.fromJSON(object.externalSecret)
         : undefined,
+      clientSecretCredential: isSet(object.clientSecretCredential)
+        ? DataSource_ClientSecretCredential.fromJSON(object.clientSecretCredential)
+        : undefined,
       authenticationType: isSet(object.authenticationType)
         ? dataSource_AuthenticationTypeFromJSON(object.authenticationType)
         : DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED,
@@ -3184,6 +3214,9 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.externalSecret !== undefined) {
       obj.externalSecret = DataSourceExternalSecret.toJSON(message.externalSecret);
     }
+    if (message.clientSecretCredential !== undefined) {
+      obj.clientSecretCredential = DataSource_ClientSecretCredential.toJSON(message.clientSecretCredential);
+    }
     if (message.authenticationType !== DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED) {
       obj.authenticationType = dataSource_AuthenticationTypeToJSON(message.authenticationType);
     }
@@ -3252,6 +3285,10 @@ export const DataSource: MessageFns<DataSource> = {
     message.externalSecret = (object.externalSecret !== undefined && object.externalSecret !== null)
       ? DataSourceExternalSecret.fromPartial(object.externalSecret)
       : undefined;
+    message.clientSecretCredential =
+      (object.clientSecretCredential !== undefined && object.clientSecretCredential !== null)
+        ? DataSource_ClientSecretCredential.fromPartial(object.clientSecretCredential)
+        : undefined;
     message.authenticationType = object.authenticationType ?? DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED;
     message.saslConfig = (object.saslConfig !== undefined && object.saslConfig !== null)
       ? SASLConfig.fromPartial(object.saslConfig)
@@ -3266,6 +3303,98 @@ export const DataSource: MessageFns<DataSource> = {
     message.masterPassword = object.masterPassword ?? "";
     message.redisType = object.redisType ?? DataSource_RedisType.REDIS_TYPE_UNSPECIFIED;
     message.cluster = object.cluster ?? "";
+    return message;
+  },
+};
+
+function createBaseDataSource_ClientSecretCredential(): DataSource_ClientSecretCredential {
+  return { tenantId: "", clientId: "", clientSecret: "" };
+}
+
+export const DataSource_ClientSecretCredential: MessageFns<DataSource_ClientSecretCredential> = {
+  encode(message: DataSource_ClientSecretCredential, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.tenantId !== "") {
+      writer.uint32(10).string(message.tenantId);
+    }
+    if (message.clientId !== "") {
+      writer.uint32(18).string(message.clientId);
+    }
+    if (message.clientSecret !== "") {
+      writer.uint32(26).string(message.clientSecret);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DataSource_ClientSecretCredential {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataSource_ClientSecretCredential();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.tenantId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.clientId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.clientSecret = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataSource_ClientSecretCredential {
+    return {
+      tenantId: isSet(object.tenantId) ? globalThis.String(object.tenantId) : "",
+      clientId: isSet(object.clientId) ? globalThis.String(object.clientId) : "",
+      clientSecret: isSet(object.clientSecret) ? globalThis.String(object.clientSecret) : "",
+    };
+  },
+
+  toJSON(message: DataSource_ClientSecretCredential): unknown {
+    const obj: any = {};
+    if (message.tenantId !== "") {
+      obj.tenantId = message.tenantId;
+    }
+    if (message.clientId !== "") {
+      obj.clientId = message.clientId;
+    }
+    if (message.clientSecret !== "") {
+      obj.clientSecret = message.clientSecret;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DataSource_ClientSecretCredential>): DataSource_ClientSecretCredential {
+    return DataSource_ClientSecretCredential.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DataSource_ClientSecretCredential>): DataSource_ClientSecretCredential {
+    const message = createBaseDataSource_ClientSecretCredential();
+    message.tenantId = object.tenantId ?? "";
+    message.clientId = object.clientId ?? "";
+    message.clientSecret = object.clientSecret ?? "";
     return message;
   },
 };
