@@ -284,6 +284,7 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, isObjectCaseS
 			externalTableMetadata := &ExternalTableMetadata{
 				isDetailCaseSensitive: isDetailCaseSensitive,
 				internal:              make(map[string]*storepb.ColumnMetadata),
+				proto:                 externalTable,
 			}
 			for _, column := range externalTable.Columns {
 				var columnID string
@@ -324,6 +325,7 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, isObjectCaseS
 			}
 			schemaMetadata.internalMaterializedView[viewID] = &MaterializedViewMetadata{
 				Definition: materializedView.Definition,
+				proto:      materializedView,
 			}
 		}
 		for _, function := range schema.Functions {
@@ -397,20 +399,32 @@ func (d *DatabaseMetadata) GetName() string {
 
 // GetSchema gets the schema by name.
 func (d *DatabaseMetadata) GetSchema(name string) *SchemaMetadata {
-	return d.internal[name]
+	var schemaID string
+	if d.isObjectCaseSensitive {
+		schemaID = name
+	} else {
+		schemaID = strings.ToLower(name)
+	}
+	return d.internal[schemaID]
 }
 
 // ListSchemaNames lists the schema names.
 func (d *DatabaseMetadata) ListSchemaNames() []string {
 	var result []string
-	for schemaName := range d.internal {
-		result = append(result, schemaName)
+	for _, schema := range d.internal {
+		result = append(result, schema.GetProto().Name)
 	}
 	return result
 }
 
 func (d *DatabaseMetadata) GetLinkedDatabase(name string) *LinkedDatabaseMetadata {
-	return d.linkedDatabase[name]
+	var nameID string
+	if d.isObjectCaseSensitive {
+		nameID = name
+	} else {
+		nameID = strings.ToLower(name)
+	}
+	return d.linkedDatabase[nameID]
 }
 
 func (d *DatabaseMetadata) GetOwner() string {
@@ -576,8 +590,8 @@ func (s *SchemaMetadata) GetProto() *storepb.SchemaMetadata {
 // ListTableNames lists the table names.
 func (s *SchemaMetadata) ListTableNames() []string {
 	var result []string
-	for tableName := range s.internalTables {
-		result = append(result, tableName)
+	for _, table := range s.internalTables {
+		result = append(result, table.GetProto().GetName())
 	}
 
 	sort.Strings(result)
@@ -587,8 +601,8 @@ func (s *SchemaMetadata) ListTableNames() []string {
 // ListProcedureNames lists the procedure names.
 func (s *SchemaMetadata) ListProcedureNames() []string {
 	var result []string
-	for procedureName := range s.internalProcedures {
-		result = append(result, procedureName)
+	for _, procedure := range s.internalProcedures {
+		result = append(result, procedure.GetProto().GetName())
 	}
 
 	sort.Strings(result)
@@ -609,8 +623,8 @@ func (s *SchemaMetadata) ListFunctionNames() []string {
 // ListViewNames lists the view names.
 func (s *SchemaMetadata) ListViewNames() []string {
 	var result []string
-	for viewName := range s.internalViews {
-		result = append(result, viewName)
+	for _, view := range s.internalViews {
+		result = append(result, view.GetProto().GetName())
 	}
 
 	sort.Strings(result)
@@ -620,8 +634,8 @@ func (s *SchemaMetadata) ListViewNames() []string {
 // ListForeignTableNames lists the foreign table names.
 func (s *SchemaMetadata) ListForeignTableNames() []string {
 	var result []string
-	for tableName := range s.internalExternalTable {
-		result = append(result, tableName)
+	for _, table := range s.internalExternalTable {
+		result = append(result, table.GetProto().GetName())
 	}
 
 	sort.Strings(result)
@@ -631,8 +645,8 @@ func (s *SchemaMetadata) ListForeignTableNames() []string {
 // ListMaterializedViewNames lists the materialized view names.
 func (s *SchemaMetadata) ListMaterializedViewNames() []string {
 	var result []string
-	for viewName := range s.internalMaterializedView {
-		result = append(result, viewName)
+	for _, view := range s.internalMaterializedView {
+		result = append(result, view.GetProto().GetName())
 	}
 
 	sort.Strings(result)
@@ -806,6 +820,11 @@ type ExternalTableMetadata struct {
 	isDetailCaseSensitive bool
 	internal              map[string]*storepb.ColumnMetadata
 	columns               []*storepb.ColumnMetadata
+	proto                 *storepb.ExternalTableMetadata
+}
+
+func (t *ExternalTableMetadata) GetProto() *storepb.ExternalTableMetadata {
+	return t.proto
 }
 
 // GetColumn gets the column by name.
@@ -849,6 +868,11 @@ func (v *ViewMetadata) GetProto() *storepb.ViewMetadata {
 
 type MaterializedViewMetadata struct {
 	Definition string
+	proto      *storepb.MaterializedViewMetadata
+}
+
+func (m *MaterializedViewMetadata) GetProto() *storepb.MaterializedViewMetadata {
+	return m.proto
 }
 
 type FunctionMetadata struct {
