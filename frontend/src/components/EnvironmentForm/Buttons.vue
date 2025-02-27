@@ -75,18 +75,6 @@ const createEnvironment = () => {
 const updateEnvironment = () => {
   if (!isEqual(rolloutPolicy.value, state.value.rolloutPolicy)) {
     // Validate rollout policy.
-    if (
-      !state.value.rolloutPolicy.rolloutPolicy?.automatic &&
-      state.value.rolloutPolicy.rolloutPolicy?.roles.length === 0 &&
-      state.value.rolloutPolicy.rolloutPolicy?.issueRoles.length === 0
-    ) {
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: t("policy.rollout.select-at-least-one-role"),
-      });
-      return;
-    }
     events.emit("update-policy", {
       environment: state.value.environment,
       policyType: PolicyType.ROLLOUT_POLICY,
