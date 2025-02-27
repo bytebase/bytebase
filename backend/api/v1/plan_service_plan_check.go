@@ -181,9 +181,9 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseTarget(ctx context.Context,
 		return nil, errors.Errorf("instance %q not found", instanceID)
 	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		InstanceID:      &instanceID,
+		DatabaseName:    &databaseName,
+		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
@@ -294,9 +294,9 @@ func getPlanCheckRunsFromExportDataConfigDatabaseTarget(ctx context.Context, s *
 		return nil, errors.Errorf("instance %q not found", instanceID)
 	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		InstanceID:      &instanceID,
+		DatabaseName:    &databaseName,
+		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database %q", databaseName)

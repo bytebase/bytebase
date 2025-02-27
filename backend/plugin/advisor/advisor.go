@@ -41,6 +41,7 @@ type Context struct {
 	ClassificationConfig  *storepb.DataClassificationSetting_DataClassificationConfig
 	ListDatabaseNamesFunc base.ListDatabaseNamesFunc
 	InstanceID            string
+	IsObjectCaseSensitive bool
 
 	// SQL review rule special fields.
 	AST     any

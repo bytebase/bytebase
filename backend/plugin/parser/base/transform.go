@@ -5,5 +5,5 @@ type TransformContext struct {
 	InstanceID              string
 	GetDatabaseMetadataFunc GetDatabaseMetadataFunc
 	ListDatabaseNamesFunc   ListDatabaseNamesFunc
-	IgnoreCaseSensitive     bool
+	IsCaseSensitive         bool
 }

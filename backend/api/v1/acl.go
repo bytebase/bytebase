@@ -429,10 +429,10 @@ func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceNam
 	}
 
 	find := &store.FindDatabaseMessage{
-		InstanceID:          &instanceID,
-		DatabaseName:        &databaseName,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
-		ShowDeleted:         true,
+		InstanceID:      &instanceID,
+		DatabaseName:    &databaseName,
+		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
+		ShowDeleted:     true,
 	}
 	database, err := s.GetDatabaseV2(ctx, find)
 	if err != nil {

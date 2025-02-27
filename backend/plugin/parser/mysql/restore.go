@@ -58,7 +58,7 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get target database ID for %s", backupItem.TargetTable.Database)
 	}
-	generatedColumns, normalColumns, normalColumnsExceptPrimary, err := classifyColumns(ctx, rCtx.GetDatabaseMetadataFunc, rCtx.ListDatabaseNamesFunc, rCtx.IgnoreCaseSensitive, rCtx.InstanceID, &TableReference{
+	generatedColumns, normalColumns, normalColumnsExceptPrimary, err := classifyColumns(ctx, rCtx.GetDatabaseMetadataFunc, rCtx.ListDatabaseNamesFunc, rCtx.IsCaseSensitive, rCtx.InstanceID, &TableReference{
 		Database: sourceDatabase,
 		Table:    backupItem.SourceTable.Table,
 	})

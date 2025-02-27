@@ -209,7 +209,7 @@ func (exec *DataUpdateExecutor) backupData(
 		InstanceID:              instance.ResourceID,
 		GetDatabaseMetadataFunc: BuildGetDatabaseMetadataFunc(exec.store),
 		ListDatabaseNamesFunc:   BuildListDatabaseNamesFunc(exec.store),
-		IgnoreCaseSensitive:     store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		IsCaseSensitive:         store.IsObjectCaseSensitive(instance),
 	}
 	if instance.Engine == storepb.Engine_ORACLE {
 		oracleDriver, ok := driver.(*oracle.Driver)

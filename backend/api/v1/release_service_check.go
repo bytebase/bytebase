@@ -119,7 +119,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 			return nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
 		}
 
-		catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil)
+		catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, instance.Engine, store.IsObjectCaseSensitive(instance), nil)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create catalog: %v", err)
 		}
@@ -288,6 +288,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		UsePostgresDatabaseOwner: useDatabaseOwner,
 		ListDatabaseNamesFunc:    BuildListDatabaseNamesFunc(s.store),
 		InstanceID:               instance.ResourceID,
+		IsObjectCaseSensitive:    store.IsObjectCaseSensitive(instance),
 	}
 
 	reviewConfig, err := s.store.GetReviewConfigForDatabase(ctx, database)

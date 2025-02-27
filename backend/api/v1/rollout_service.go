@@ -929,7 +929,7 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, request *v1
 			InstanceID:              instance.ResourceID,
 			GetDatabaseMetadataFunc: BuildGetDatabaseMetadataFunc(s.store),
 			ListDatabaseNamesFunc:   BuildListDatabaseNamesFunc(s.store),
-			IgnoreCaseSensitive:     store.IgnoreDatabaseAndTableCaseSensitive(instance),
+			IsCaseSensitive:         store.IsObjectCaseSensitive(instance),
 		}, statements, item)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate restore sql, error: %v", err)
