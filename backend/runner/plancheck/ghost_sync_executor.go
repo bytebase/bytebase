@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/ghost"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -142,7 +143,7 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 			}
 			return nil
 		}(); err != nil {
-			slog.Warn("failed to cleanup gh-ost temp tables")
+			slog.Warn("failed to cleanup gh-ost temp tables", log.BBError(err))
 		}
 	}()
 
