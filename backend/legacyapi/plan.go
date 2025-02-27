@@ -335,7 +335,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureSyncSchemaAllVersions:         {false, true, true},
 	FeatureIndexAdvisor:                  {true, true, true},
 	// Policy Control
-	FeatureRolloutPolicy:         {false, true, true},
+	FeatureRolloutPolicy:         {true, true, true},
 	FeatureEnvironmentTierPolicy: {false, false, true},
 	FeatureSensitiveData:         {false, false, true},
 	FeatureAccessControl:         {false, false, true},
