@@ -7,7 +7,7 @@
   >
     <Pane class="flex flex-col overflow-hidden justify-start items-stretch">
       <template v-if="isDisconnected || allowReadonlyMode">
-        <EditorAction @execute="handleExecute" />
+        <EditorAction @execute="handleExecuteFromActionBar" />
 
         <Splitpanes
           v-if="tab"
@@ -17,6 +17,7 @@
           <Pane>
             <Suspense>
               <SQLEditor
+                ref="sqlEditorRef"
                 @execute="handleExecute"
                 @execute-in-new-tab="handleExecuteInNewTab"
               />
@@ -71,7 +72,7 @@
 import { cloneDeep } from "lodash-es";
 import { storeToRefs } from "pinia";
 import { Pane, Splitpanes } from "splitpanes";
-import { computed, defineAsyncComponent, nextTick } from "vue";
+import { computed, defineAsyncComponent, nextTick, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
@@ -103,6 +104,7 @@ const { currentTab: tab, isDisconnected } = storeToRefs(tabStore);
 const { instance } = useConnectionOfCurrentSQLEditorTab();
 const { showAIPanel, AIPanelSize, handleAIPanelResize } = useSQLEditorContext();
 const { cloneViewState } = useEditorPanelContext();
+const sqlEditorRef = ref<InstanceType<typeof SQLEditor>>();
 
 const allowReadonlyMode = computed(() => {
   if (isDisconnected.value) return false;
@@ -111,6 +113,14 @@ const allowReadonlyMode = computed(() => {
 });
 
 const { execute } = useExecuteSQL();
+
+const handleExecuteFromActionBar = (params: SQLEditorQueryParams) => {
+  if (!tab.value || !sqlEditorRef.value) {
+    return;
+  }
+  const statement = sqlEditorRef.value.getActiveStatement();
+  handleExecute({ ...params, statement });
+};
 
 const handleExecute = (params: SQLEditorQueryParams) => {
   execute(params);

@@ -144,14 +144,14 @@ func Query(ctx context.Context, qCtx QueryContext, connection *sql.DB, engine st
 	return []any{columnNames, columnTypeNames, data}, nil
 }
 
-func DatabaseExists(ctx Context, database string) bool {
-	if ctx.ListDatabaseNamesFunc == nil {
+func DatabaseExists(ctx context.Context, checkCtx Context, database string) bool {
+	if checkCtx.ListDatabaseNamesFunc == nil {
 		return false
 	}
 
-	names, err := ctx.ListDatabaseNamesFunc(ctx.Context, ctx.InstanceID)
+	names, err := checkCtx.ListDatabaseNamesFunc(ctx, checkCtx.InstanceID)
 	if err != nil {
-		slog.Debug("failed to list databases", slog.String("instance", ctx.InstanceID), log.BBError(err))
+		slog.Debug("failed to list databases", slog.String("instance", checkCtx.InstanceID), log.BBError(err))
 		return false
 	}
 

@@ -578,11 +578,9 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, request *v1pb.DiffSche
 	}
 
 	strictMode := true
-
 	if engine == storepb.Engine_ORACLE {
 		strictMode = false
 	}
-
 	diff, err := base.SchemaDiff(engine, base.DiffContext{
 		IgnoreCaseSensitive: false,
 		StrictMode:          strictMode,
@@ -680,6 +678,8 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 		engine = storepb.Engine_ORACLE
 	case storepb.Engine_MSSQL:
 		engine = storepb.Engine_MSSQL
+	case storepb.Engine_COCKROACHDB:
+		engine = storepb.Engine_COCKROACHDB
 	default:
 		return engine, status.Errorf(codes.InvalidArgument, "invalid engine type %v", instance.Engine)
 	}

@@ -1,19 +1,25 @@
 <template>
   <div class="flex flex-row items-center gap-2">
-    <slot name="result" :advices="filteredAdvices" :is-running="isRunning">
+    <slot
+      name="result"
+      :is-running="isRunning"
+      :advices="filteredAdvices"
+      :affected-rows="checkResult?.affectedRows"
+      :risk-level="checkResult?.riskLevel"
+    >
       <SQLCheckSummary
-        v-if="filteredAdvices !== undefined && !isRunning"
+        v-if="filteredAdvices && !isRunning"
         :database="database"
         :advices="filteredAdvices"
         @click="showDetailPanel = true"
       />
     </slot>
 
-    <NPopover :disabled="policyErrors.length === 0" to="body">
+    <NPopover :disabled="statementErrors.length === 0" to="body">
       <template #trigger>
         <NButton
           style="--n-padding: 0 14px 0 10px"
-          :disabled="policyErrors.length > 0"
+          :disabled="statementErrors.length > 0"
           :style="buttonStyle"
           tag="div"
           v-bind="buttonProps"
@@ -34,28 +40,12 @@
         </NButton>
       </template>
       <template #default>
-        <template v-if="noReviewPolicyTips">
-          <i18n-t :keypath="noReviewPolicyTips" tag="div">
-            <template #environment>
-              <span>{{ database.effectiveEnvironmentEntity.title }}</span>
-            </template>
-            <template #link>
-              <router-link
-                v-if="hasManageSQLReviewPolicyPermission"
-                :to="{ name: WORKSPACE_ROUTE_SQL_REVIEW }"
-                class="ml-1 normal-link underline"
-              >
-                {{ $t("common.go-to-configure") }}
-              </router-link>
-            </template>
-          </i18n-t>
-        </template>
-        <ErrorList v-else :errors="policyErrors" />
+        <ErrorList :errors="statementErrors" />
       </template>
     </NPopover>
 
     <SQLCheckPanel
-      v-if="filteredAdvices && showDetailPanel"
+      v-if="checkResult && filteredAdvices && showDetailPanel"
       :database="database"
       :advices="filteredAdvices"
       :affected-rows="checkResult.affectedRows"
@@ -75,6 +65,7 @@
 </template>
 
 <script lang="ts" setup>
+import { asyncComputed } from "@vueuse/core";
 import type { ButtonProps } from "naive-ui";
 import { NButton, NPopover } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
@@ -83,8 +74,6 @@ import { onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import { releaseServiceClient } from "@/grpcweb";
-import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
-import { useReviewPolicyForDatabase } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import {
@@ -94,7 +83,7 @@ import {
 } from "@/types/proto/v1/release_service";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer, VueStyle } from "@/utils";
-import { defer, hasWorkspacePermissionV2 } from "@/utils";
+import { defer } from "@/utils";
 import { providePlanCheckRunContext } from "../PlanCheckRun/context";
 import ErrorList from "../misc/ErrorList.vue";
 import SQLCheckPanel from "./SQLCheckPanel.vue";
@@ -139,48 +128,30 @@ const showDetailPanel = ref(false);
 const allowForceContinue = ref(true);
 const context = useSQLCheckContext();
 const confirmDialog = ref<Defer<boolean>>();
-const checkResult = ref<CheckReleaseResponse>(
-  CheckReleaseResponse.fromPartial({})
-);
+const checkResult = ref<CheckReleaseResponse | undefined>();
 
 const filteredAdvices = computed(() => {
   const { adviceFilter } = props;
-  const advices = checkResult.value.results.flatMap((r) => r.advices);
+  const advices = checkResult.value?.results.flatMap((r) => r.advices);
   if (!adviceFilter) {
     return advices;
   }
   return advices?.filter(adviceFilter);
 });
 
-const reviewPolicy = useReviewPolicyForDatabase(
-  computed(() => {
-    return props.database;
-  })
-);
-
-const hasManageSQLReviewPolicyPermission = computed(() => {
-  return hasWorkspacePermissionV2("bb.policies.update");
-});
-
-const noReviewPolicyTips = computed(() => {
-  if (
-    !reviewPolicy.value ||
-    !reviewPolicy.value.enforce ||
-    reviewPolicy.value.ruleList.length === 0
-  ) {
-    if (hasManageSQLReviewPolicyPermission.value) {
-      return "issue.sql-check.no-configured-sql-review-policy.admin";
-    } else {
-      return "issue.sql-check.no-configured-sql-review-policy.developer";
-    }
+const statementErrors = asyncComputed(async () => {
+  const { statement, errors } = await props.getStatement();
+  if (errors.length > 0) {
+    return errors;
   }
-  return "";
-});
-
-const policyErrors = computed(() => {
-  if (noReviewPolicyTips.value) return [noReviewPolicyTips.value];
+  if (statement.length === 0) {
+    return [t("issue.sql-check.statement-is-required")];
+  }
+  if (new Blob([statement]).size > SKIP_CHECK_THRESHOLD) {
+    return [t("issue.sql-check.statement-is-too-large")];
+  }
   return [];
-});
+}, []);
 
 providePlanCheckRunContext({});
 
@@ -217,7 +188,7 @@ const handleButtonClick = async () => {
 };
 
 const runChecks = async () => {
-  if (policyErrors.value.length > 0) {
+  if (statementErrors.value.length > 0) {
     return;
   }
 
@@ -271,8 +242,7 @@ const hasError = computed(() => {
 onMounted(() => {
   if (!context) return;
   context.runSQLCheck.value = async () => {
-    if (policyErrors.value.length > 0) {
-      // If SQL Check is disabled, we will do nothing to stop the user.
+    if (statementErrors.value.length > 0) {
       return true;
     }
 

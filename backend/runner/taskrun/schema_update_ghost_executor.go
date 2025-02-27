@@ -2,6 +2,7 @@ package taskrun
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"strings"
 	"time"
@@ -94,7 +95,7 @@ func (exec *SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, driverCtx co
 			return common.Errorf(common.Internal, "admin data source not found for instance %s", instance.ResourceID)
 		}
 
-		migrationContext, err := ghost.NewMigrationContext(ctx, task.ID, database, adminDataSource, exec.secret, tableName, "", execStatement, false, flags, 10000000)
+		migrationContext, err := ghost.NewMigrationContext(ctx, task.ID, database, adminDataSource, exec.secret, tableName, fmt.Sprintf("_%d", time.Now().Unix()), execStatement, false, flags, 10000000)
 		if err != nil {
 			return errors.Wrap(err, "failed to init migrationContext for gh-ost")
 		}
@@ -106,6 +107,31 @@ func (exec *SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, driverCtx co
 		}()
 
 		migrator := logic.NewMigrator(migrationContext, "bb")
+
+		defer func() {
+			if err := func() error {
+				ctx := context.Background()
+				driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+				if err != nil {
+					return errors.Wrapf(err, "failed to get driver")
+				}
+				defer driver.Close(ctx)
+
+				sql := fmt.Sprintf("DROP TABLE IF EXISTS `%s`.`%s`; DROP TABLE IF EXISTS `%s`.`%s`;",
+					"bbdataarchive",
+					migrationContext.GetGhostTableName(),
+					"bbdataarchive",
+					migrationContext.GetChangelogTableName(),
+				)
+
+				if _, err := driver.GetDB().ExecContext(ctx, sql); err != nil {
+					return errors.Wrapf(err, "failed to drop gh-ost temp tables")
+				}
+				return nil
+			}(); err != nil {
+				slog.Warn("failed to cleanup gh-ost temp tables", log.BBError(err))
+			}
+		}()
 
 		go func() {
 			if err := migrator.Migrate(); err != nil {

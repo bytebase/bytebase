@@ -191,7 +191,7 @@ func (e *StatementAdviseExecutor) runReview(
 	renderedStatement := utils.RenderStatement(statement, materials)
 	classificationConfig := getClassificationByProject(ctx, e.store, database.ProjectID)
 
-	adviceList, err := advisor.SQLReviewCheck(e.sheetManager, renderedStatement, reviewConfig.SqlReviewRules, advisor.SQLReviewCheckContext{
+	adviceList, err := advisor.SQLReviewCheck(ctx, e.sheetManager, renderedStatement, reviewConfig.SqlReviewRules, advisor.SQLReviewCheckContext{
 		Charset:                  dbSchema.GetMetadata().CharacterSet,
 		Collation:                dbSchema.GetMetadata().Collation,
 		DBSchema:                 dbSchema.GetMetadata(),
@@ -199,7 +199,6 @@ func (e *StatementAdviseExecutor) runReview(
 		DbType:                   instance.Engine,
 		Catalog:                  catalog,
 		Driver:                   connection,
-		Context:                  ctx,
 		PreUpdateBackupDetail:    preUpdateBackupDetail,
 		ClassificationConfig:     classificationConfig,
 		UsePostgresDatabaseOwner: useDatabaseOwner,

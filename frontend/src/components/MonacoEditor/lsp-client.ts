@@ -126,7 +126,7 @@ const state = {
   clientInitialized: undefined as Promise<MonacoLanguageClient> | undefined,
 };
 
-export const createLanguageClient = (
+const createLanguageClient = (
   connectionProvider: IConnectionProvider
 ): MonacoLanguageClient => {
   return new MonacoLanguageClient({
@@ -164,7 +164,7 @@ export const createLanguageClient = (
   });
 };
 
-export const createWebSocketAndStartClient = (): {
+const createWebSocketAndStartClient = (): {
   languageClient: Promise<MonacoLanguageClient>;
 } => {
   const languageClient = new Promise<MonacoLanguageClient>((resolve) => {
@@ -283,3 +283,4 @@ const useHeartbeat = (ws: WebSocket) => {
 
 export const connectionState = toRef(conn, "state");
 export const connectionHeartbeat = toRef(conn, "heartbeat");
+export const connectionWebSocket = toRef(conn, "ws");

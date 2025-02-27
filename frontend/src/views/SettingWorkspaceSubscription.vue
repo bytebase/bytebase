@@ -1,21 +1,71 @@
 <template>
-  <div class="mx-auto">
-    <div v-if="subscriptionStore.isSelfHostLicense" class="textinfolabel mb-4">
-      {{ $t("subscription.description") }}
-      <a
-        class="text-accent"
-        :href="subscriptionStore.purchaseLicenseUrl"
-        target="__blank"
+  <div class="w-full mx-auto">
+    <div class="w-full grid grid-cols-2 gap-x-6 lg:grid-cols-3 my-4">
+      <dl class="flex flex-col text-left">
+        <dt class="flex text-main">
+          {{ $t("subscription.current") }}
+          <span
+            v-if="isExpired"
+            class="ml-2 inline-flex items-center px-3 py-0.5 rounded-full text-base font-sm bg-red-100 text-red-800 h-6"
+          >
+            {{ $t("subscription.expired") }}
+          </span>
+          <span
+            v-else-if="isTrialing"
+            class="ml-2 inline-flex items-center px-3 py-0.5 rounded-full text-base font-sm bg-indigo-100 text-indigo-800 h-6"
+          >
+            {{ $t("subscription.trialing") }}
+          </span>
+        </dt>
+        <dd class="text-indigo-600 mt-1 text-3xl lg:text-4xl">
+          {{ currentPlan }}
+        </dd>
+      </dl>
+      <dl v-if="!subscriptionStore.isFreePlan" class="my-3">
+        <dt class="text-main">
+          {{ $t("subscription.expires-at") }}
+        </dt>
+        <dd class="mt-1 text-3xl lg:text-4xl">{{ expireAt || "N/A" }}</dd>
+      </dl>
+      <dl v-if="subscriptionStore.canTrial && allowEdit" class="my-3">
+        <dt class="text-main">
+          {{ $t("subscription.try-for-free") }}
+        </dt>
+        <dd class="mt-1">
+          <NButton
+            type="primary"
+            size="large"
+            @click="state.showTrialModal = true"
+          >
+            {{
+              $t("subscription.enterprise-free-trial", {
+                days: subscriptionStore.trialingDays,
+              })
+            }}
+          </NButton>
+        </dd>
+      </dl>
+      <dl
+        v-if="
+          subscriptionStore.isTrialing &&
+          subscriptionStore.currentPlan == PlanType.ENTERPRISE
+        "
+        class="my-3"
       >
-        {{ $t("subscription.purchase-license") }}
-      </a>
-      <span v-if="subscriptionStore.canTrial" class="ml-1">
-        {{ $t("common.or") }}
-        <span class="text-accent cursor-pointer" @click="openTrialModal">
-          {{ $t("subscription.plan.try") }}
-        </span>
-      </span>
+        <dt class="text-main">
+          {{ $t("subscription.inquire-enterprise-plan") }}
+        </dt>
+        <dd class="mt-1 ml-auto">
+          <NButton type="primary" size="large" @click="inquireEnterprise">
+            {{ $t("subscription.contact-us") }}
+          </NButton>
+        </dd>
+      </dl>
     </div>
+    <div class="text-left grid grid-cols-2 gap-x-6 my-4 xl:grid-cols-3">
+      <WorkspaceInstanceLicenseStats v-if="allowManageInstanceLicenses" />
+    </div>
+    <NDivider />
     <div>
       <label class="flex items-center gap-x-2">
         <span class="text-main">
@@ -42,70 +92,16 @@
         </NButton>
       </div>
     </div>
-    <NDivider />
-    <dl class="text-left grid grid-cols-2 gap-x-6 my-4 xl:grid-cols-4">
-      <div class="my-3">
-        <dt class="flex text-main">
-          {{ $t("subscription.current") }}
-          <span
-            v-if="isExpired"
-            class="ml-2 inline-flex items-center px-3 py-0.5 rounded-full text-base font-sm bg-red-100 text-red-800 h-6"
-          >
-            {{ $t("subscription.expired") }}
-          </span>
-          <span
-            v-else-if="isTrialing"
-            class="ml-2 inline-flex items-center px-3 py-0.5 rounded-full text-base font-sm bg-indigo-100 text-indigo-800 h-6"
-          >
-            {{ $t("subscription.trialing") }}
-          </span>
-        </dt>
-        <dd class="text-indigo-600 mt-1 text-4xl">
-          <div>
-            {{ currentPlan }}
-          </div>
-        </dd>
-      </div>
-      <WorkspaceInstanceLicenseStats v-if="allowManageInstanceLicenses" />
-      <div v-if="!subscriptionStore.isFreePlan" class="my-3">
-        <dt class="text-main">
-          {{ $t("subscription.expires-at") }}
-        </dt>
-        <dd class="mt-1 text-4xl">{{ expireAt || "n/a" }}</dd>
-      </div>
-      <div v-if="subscriptionStore.canTrial && allowEdit" class="my-3">
-        <dt class="text-main">
-          {{ $t("subscription.try-for-free") }}
-        </dt>
-
-        <dd class="mt-1">
-          <NButton type="primary" @click="state.showTrialModal = true">
-            {{
-              $t("subscription.enterprise-free-trial", {
-                days: subscriptionStore.trialingDays,
-              })
-            }}
-          </NButton>
-        </dd>
-      </div>
-      <div
-        v-if="
-          subscriptionStore.isTrialing &&
-          subscriptionStore.currentPlan == PlanType.ENTERPRISE
-        "
-        class="my-3"
-      >
-        <dt class="text-main">
-          {{ $t("subscription.inquire-enterprise-plan") }}
-        </dt>
-
-        <dd class="mt-1 ml-auto">
-          <NButton type="primary" @click="inquireEnterprise">
-            {{ $t("subscription.contact-us") }}
-          </NButton>
-        </dd>
-      </div>
-    </dl>
+    <div v-if="subscriptionStore.isSelfHostLicense" class="textinfolabel mb-4">
+      {{ $t("subscription.description") }}
+      {{ $t("subscription.plan-compare") }}
+      <LearnMoreLink url="https://www.bytebase.com/pricing?source=console" />
+      <span v-if="subscriptionStore.canTrial" class="ml-1">
+        <span class="text-accent cursor-pointer" @click="openTrialModal">
+          {{ $t("subscription.plan.try") }}
+        </span>
+      </span>
+    </div>
     <div
       v-if="allowEdit && subscriptionStore.isSelfHostLicense"
       class="w-full mt-4 flex flex-col"
@@ -115,10 +111,6 @@
         type="textarea"
         :placeholder="$t('subscription.sensitive-placeholder')"
       />
-      <div class="textinfolabel mt-2">
-        {{ $t("subscription.plan-compare") }}
-        <LearnMoreLink url="https://www.bytebase.com/pricing?source=console" />
-      </div>
       <div class="ml-auto mt-3">
         <NButton
           type="primary"

@@ -6,19 +6,6 @@
       :redirect="WORKSPACE_ROUTE_LANDING"
     />
     <ProjectSwitchPopover />
-    <router-link
-      :to="sqlEditorLink"
-      class="flex flex-row justify-center items-center"
-      exact-active-class=""
-      target="_blank"
-    >
-      <NButton size="small">
-        <template #icon>
-          <SquareTerminalIcon class="w-4 h-auto" />
-        </template>
-        <span class="whitespace-nowrap">{{ $t("sql-editor.self") }}</span>
-      </NButton>
-    </router-link>
 
     <div class="flex-1 flex justify-end items-center space-x-3">
       <NButton
@@ -32,6 +19,20 @@
         </template>
         <span class="hidden lg:block">{{ $t("common.want-help") }}</span>
       </NButton>
+
+      <router-link
+        :to="sqlEditorLink"
+        class="flex flex-row justify-center items-center"
+        exact-active-class=""
+        target="_blank"
+      >
+        <NButton size="small">
+          <template #icon>
+            <SquareTerminalIcon class="w-4 h-auto" />
+          </template>
+          <span class="whitespace-nowrap">{{ $t("sql-editor.self") }}</span>
+        </NButton>
+      </router-link>
 
       <NTooltip :disabled="windowWidth >= 640">
         <template #trigger>

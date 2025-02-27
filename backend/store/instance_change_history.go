@@ -7,14 +7,13 @@ import (
 	"strings"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // InstanceChangeHistoryMessage records the change history of an instance.
 // it deprecates the old MigrationHistory.
 type InstanceChangeHistoryMessage struct {
 	Status              db.MigrationStatus
-	Version             model.Version
+	Version             string
 	ExecutionDurationNs int64
 
 	// Output only
@@ -23,7 +22,7 @@ type InstanceChangeHistoryMessage struct {
 
 // FindInstanceChangeHistoryMessage is for listing a list of instance change history.
 type FindInstanceChangeHistoryMessage struct {
-	Version *model.Version
+	Version *string
 }
 
 // UpdateInstanceChangeHistoryMessage is for updating an instance change history.
@@ -49,7 +48,7 @@ func (s *Store) CreateInstanceChangeHistoryForMigrator(ctx context.Context, crea
 }
 
 // CreatePendingInstanceChangeHistory creates an instance change history.
-func (s *Store) CreatePendingInstanceChangeHistoryForMigrator(ctx context.Context, version model.Version) (string, error) {
+func (s *Store) CreatePendingInstanceChangeHistoryForMigrator(ctx context.Context, version string) (string, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return "", err
@@ -84,15 +83,10 @@ func (*Store) createInstanceChangeHistoryImplForMigrator(ctx context.Context, tx
 		) VALUES ($1, $2, $3)
 		RETURNING id`
 
-	storedVersion, err := create.Version.Marshal()
-	if err != nil {
-		return "", err
-	}
-
 	var uid string
 	if err := tx.QueryRowContext(ctx, query,
 		create.Status,
-		storedVersion,
+		create.Version,
 		create.ExecutionDurationNs,
 	).Scan(&uid); err != nil {
 		return "", err
@@ -137,13 +131,10 @@ func (s *Store) UpdateInstanceChangeHistory(ctx context.Context, update *UpdateI
 func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *FindInstanceChangeHistoryMessage) ([]*InstanceChangeHistoryMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.Version; v != nil {
-		storedVersion, err := find.Version.Marshal()
-		if err != nil {
-			return nil, err
-		}
-		where, args = append(where, fmt.Sprintf("version = $%d", len(args)+1)), append(args, storedVersion)
+		where, args = append(where, fmt.Sprintf("version = $%d", len(args)+1)), append(args, *v)
 	}
 
+	// Ordering by ID is enough to ensure the correct version order.
 	query := `
 		SELECT
 			id,
@@ -168,21 +159,14 @@ func (s *Store) ListInstanceChangeHistoryForMigrator(ctx context.Context, find *
 	var list []*InstanceChangeHistoryMessage
 	for rows.Next() {
 		var changeHistory InstanceChangeHistoryMessage
-		var storedVersion string
 		if err := rows.Scan(
 			&changeHistory.UID,
 			&changeHistory.Status,
-			&storedVersion,
+			&changeHistory.Version,
 			&changeHistory.ExecutionDurationNs,
 		); err != nil {
 			return nil, err
 		}
-		version, err := model.NewVersion(storedVersion)
-		if err != nil {
-			return nil, err
-		}
-		changeHistory.Version = version
-
 		list = append(list, &changeHistory)
 	}
 	if err := rows.Err(); err != nil {

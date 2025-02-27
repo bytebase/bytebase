@@ -367,6 +367,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.DataSource.ClientSecretCredential"><span class="badge">M</span>DataSource.ClientSecretCredential</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DataSourceExternalSecret"><span class="badge">M</span>DataSourceExternalSecret</a>
                 </li>
               
@@ -4546,6 +4550,13 @@ Used for authentication when connecting to the data source. </p></td>
                 </tr>
               
                 <tr>
+                  <td>client_secret_credential</td>
+                  <td><a href="#bytebase.v1.DataSource.ClientSecretCredential">DataSource.ClientSecretCredential</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>authentication_type</td>
                   <td><a href="#bytebase.v1.DataSource.AuthenticationType">DataSource.AuthenticationType</a></td>
                   <td></td>
@@ -4655,6 +4666,44 @@ Used for authentication when connecting to the data source. </p></td>
               
                 <tr>
                   <td>port</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DataSource.ClientSecretCredential">DataSource.ClientSecretCredential</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>tenant_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_secret</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -5523,6 +5572,12 @@ Format: instances/{instance} </p></td>
               <tr>
                 <td>AWS_RDS_IAM</td>
                 <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>AZURE_IAM</td>
+                <td>4</td>
                 <td><p></p></td>
               </tr>
             
@@ -24465,15 +24520,6 @@ Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
-                  <td>metadata</td>
-                  <td><a href="#bytebase.v1.DatabaseMetadata">DatabaseMetadata</a></td>
-                  <td></td>
-                  <td><p>The database metadata to check against. It can be used to check against an
-uncommitted metadata. If not provided, the database metadata will be
-fetched from the database. </p></td>
-                </tr>
-              
-                <tr>
                   <td>change_type</td>
                   <td><a href="#bytebase.v1.CheckRequest.ChangeType">CheckRequest.ChangeType</a></td>
                   <td></td>
@@ -24502,6 +24548,13 @@ fetched from the database. </p></td>
                   <td><a href="#bytebase.v1.Advice">Advice</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>affected_rows</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The count of affected rows of the statement on the target database. </p></td>
                 </tr>
               
             </tbody>
