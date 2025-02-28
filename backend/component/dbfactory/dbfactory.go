@@ -175,6 +175,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			MasterPassword:            masterPassword,
 			ExtraConnectionParameters: dataSource.ExtraConnectionParameters,
 			MaximumSQLResultSize:      maximumSQLResultSize,
+			ClientSecretCredential:    dataSource.ClientSecretCredential,
 		},
 	)
 	if err != nil {
