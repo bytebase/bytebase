@@ -279,7 +279,6 @@ export interface Issue {
   /**
    * The releasers of the pending stage of the issue rollout, judging
    * from the rollout policy.
-   * If the policy is auto rollout, the releasers are the project owners and the issue creator.
    * Format:
    * - roles/workspaceOwner
    * - roles/workspaceDBA

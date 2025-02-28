@@ -1210,16 +1210,6 @@ func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, snapsho
 }
 
 func GetValidRolloutPolicyForStage(ctx context.Context, stores *store.Store, stage *store.StageMessage) (*storepb.RolloutPolicy, error) {
-	for _, task := range stage.TaskList {
-		instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
-		if err != nil {
-			return nil, err
-		}
-		if instance == nil || instance.Deleted {
-			continue
-		}
-	}
-
 	policy, err := stores.GetRolloutPolicy(ctx, stage.Environment)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get rollout policy for stageEnvironmentID %s", stage.Environment)
@@ -1235,8 +1225,7 @@ func (s *RolloutService) canUserRunStageTasks(ctx context.Context, user *store.U
 	}
 
 	// Users with bb.taskRuns.create can always create task runs.
-	// The roles should be set on the workspace level, workspace Admin and DBA.
-	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionTaskRunsCreate, user)
+	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionTaskRunsCreate, user, project.ResourceID)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to check workspace role")
 	}
@@ -1261,10 +1250,6 @@ func (s *RolloutService) canUserRunStageTasks(ctx context.Context, user *store.U
 	workspaceRoles := utils.GetUserFormattedRolesMap(ctx, s.store, user, workspacePolicy.Policy)
 	for k := range workspaceRoles {
 		roles[k] = true
-	}
-
-	if p.Automatic {
-		return true, nil
 	}
 
 	for _, role := range p.Roles {
