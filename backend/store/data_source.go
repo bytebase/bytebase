@@ -400,7 +400,7 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return errors.New("Failed to begin transaction")
+		return errors.New("failed to begin transaction")
 	}
 	defer tx.Rollback()
 
