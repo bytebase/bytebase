@@ -333,7 +333,7 @@ func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceID string, dataS
 	return nil
 }
 
-func (s *Store) getDataSourceOption(ctx context.Context, tx *Tx, find *FindDataSourceMessage) (*storepb.DataSourceOptions, error) {
+func getDataSourceOption(ctx context.Context, tx *Tx, find *FindDataSourceMessage) (*storepb.DataSourceOptions, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if find.ID != nil {
 		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *find.ID)
@@ -404,7 +404,7 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	}
 	defer tx.Rollback()
 
-	dataSource, err := s.getDataSourceOption(ctx, tx, &FindDataSourceMessage{
+	dataSource, err := getDataSourceOption(ctx, tx, &FindDataSourceMessage{
 		InstanceID: &patch.InstanceID,
 		Name:       &patch.DataSourceID,
 	})
