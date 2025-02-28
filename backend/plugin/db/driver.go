@@ -201,6 +201,10 @@ type ConnectionConfig struct {
 	MasterUsername string
 	MasterPassword string
 
+	// ExtraConnectionParameters contains additional parameters to include in connection strings
+	// For example, "target_session_attrs=read-write" for Postgres HA clusters
+	ExtraConnectionParameters map[string]string
+
 	// The maximum number of bytes for sql results in response body.
 	MaximumSQLResultSize int64
 }

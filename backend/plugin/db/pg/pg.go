@@ -158,6 +158,13 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 	sslMode := getSSLMode(config.TLSConfig, config.SSHConfig)
 	connStr += fmt.Sprintf(" sslmode=%s", sslMode)
 
+	// Add target_session_attrs=read-write if specified in ExtraConnectionParameters
+	if len(config.ExtraConnectionParameters) > 0 {
+		for key, value := range config.ExtraConnectionParameters {
+			connStr += fmt.Sprintf(" %s=%s", key, value)
+		}
+	}
+
 	connConfig, err := pgx.ParseConfig(connStr)
 	if err != nil {
 		return nil, err
