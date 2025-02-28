@@ -2397,6 +2397,30 @@ func TestInsertStmt(t *testing.T) {
 				},
 			},
 		},
+		{
+			stmt: "INSERT INTO tech_book VALUES(TRUE)",
+			want: []ast.Node{
+				&ast.InsertStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "tech_book",
+					},
+					ValueList: [][]ast.ExpressionNode{
+						{
+							&ast.BoolDef{
+								Value: true,
+							},
+						},
+					},
+				},
+			},
+			statementList: []base.SingleSQL{
+				{
+					Text:     "INSERT INTO tech_book VALUES(TRUE)",
+					LastLine: 1,
+				},
+			},
+		},
 	}
 
 	runTests(t, tests)
