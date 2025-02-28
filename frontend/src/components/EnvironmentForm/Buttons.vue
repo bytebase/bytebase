@@ -74,7 +74,6 @@ const createEnvironment = () => {
 
 const updateEnvironment = () => {
   if (!isEqual(rolloutPolicy.value, state.value.rolloutPolicy)) {
-    // Validate rollout policy.
     events.emit("update-policy", {
       environment: state.value.environment,
       policyType: PolicyType.ROLLOUT_POLICY,
