@@ -1177,6 +1177,8 @@ func convertExpressionNode(node *pgquery.Node) (ast.ExpressionNode, []*ast.Patte
 			return &ast.StringDef{Value: val.Sval.Sval}, nil, nil, nil
 		case *pgquery.A_Const_Ival:
 			return &ast.IntegerDef{Value: val.Ival.Ival}, nil, nil, nil
+		case *pgquery.A_Const_Boolval:
+			return &ast.BoolDef{Value: val.Boolval.Boolval}, nil, nil, nil
 		default:
 			return &ast.UnconvertedExpressionDef{}, nil, nil, nil
 		}
