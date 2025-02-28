@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 	"github.com/pkg/errors"
@@ -41,9 +42,19 @@ func newDriver(_ db.DriverConfig) db.Driver {
 // Open opens a CosmosDB driver.
 func (driver *Driver) Open(_ context.Context, _ storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
 	endpoint := connCfg.Host
-	credential, err := azidentity.NewDefaultAzureCredential(nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to found default Azure credential")
+	var credential azcore.TokenCredential
+	if clientSecretCredential := connCfg.ClientSecretCredential; clientSecretCredential != nil {
+		c, err := azidentity.NewClientSecretCredential(clientSecretCredential.TenantId, clientSecretCredential.ClientId, clientSecretCredential.ClientSecret, nil)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to create client secret credential")
+		}
+		credential = c
+	} else {
+		c, err := azidentity.NewDefaultAzureCredential(nil)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to found default Azure credential")
+		}
+		credential = c
 	}
 	client, err := azcosmos.NewClient(endpoint, credential, nil)
 	if err != nil {

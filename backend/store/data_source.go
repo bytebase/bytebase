@@ -59,6 +59,7 @@ type DataSourceMessage struct {
 	MasterObfuscatedPassword string
 	// Extra connection parameters
 	ExtraConnectionParameters map[string]string
+	ClientSecretCredential    *storepb.DataSourceOptions_ClientSecretCredential
 }
 
 // FindDataSourceMessage is the message for finding a database.
@@ -106,6 +107,7 @@ func (m *DataSourceMessage) Copy() *DataSourceMessage {
 		MasterUsername:                     m.MasterUsername,
 		MasterObfuscatedPassword:           m.MasterObfuscatedPassword,
 		ExtraConnectionParameters:          m.ExtraConnectionParameters,
+		ClientSecretCredential:             m.ClientSecretCredential,
 	}
 }
 
@@ -153,6 +155,8 @@ type UpdateDataSourceMessage struct {
 	MasterName               *string
 	MasterUsername           *string
 	MasterObfuscatedPassword *string
+
+	ClientSecretCredential *storepb.DataSourceOptions_ClientSecretCredential
 }
 
 func (*Store) listInstanceDataSourceMap(ctx context.Context, tx *Tx, find *FindDataSourceMessage) (map[string][]*DataSourceMessage, error) {
@@ -241,6 +245,9 @@ func (*Store) listInstanceDataSourceMap(ctx context.Context, tx *Tx, find *FindD
 		dataSourceMessage.MasterObfuscatedPassword = dataSourceOptions.MasterObfuscatedPassword
 		dataSourceMessage.MasterUsername = dataSourceOptions.MasterUsername
 		dataSourceMessage.ExtraConnectionParameters = dataSourceOptions.ExtraConnectionParameters
+		if dataSourceOptions.GetClientSecretCredential() != nil {
+			dataSourceMessage.ClientSecretCredential = dataSourceOptions.GetClientSecretCredential()
+		}
 		instanceDataSourcesMap[instanceID] = append(instanceDataSourcesMap[instanceID], &dataSourceMessage)
 	}
 	if err := rows.Err(); err != nil {
@@ -488,6 +495,11 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	if v := patch.MasterObfuscatedPassword; v != nil {
 		dataSource.MasterObfuscatedPassword = *v
 	}
+	if v := patch.ClientSecretCredential; v != nil {
+		dataSource.IamExtension = &storepb.DataSourceOptions_ClientSecretCredential_{
+			ClientSecretCredential: v,
+		}
+	}
 	protoBytes, err := protojson.Marshal(dataSource)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal data source options")
@@ -544,6 +556,11 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 		MasterUsername:                     dataSource.MasterName,
 		MasterObfuscatedPassword:           dataSource.MasterObfuscatedPassword,
 		ExtraConnectionParameters:          dataSource.ExtraConnectionParameters,
+	}
+	if dataSource.ClientSecretCredential != nil {
+		dataSourceOptions.IamExtension = &storepb.DataSourceOptions_ClientSecretCredential_{
+			ClientSecretCredential: dataSource.ClientSecretCredential,
+		}
 	}
 	protoBytes, err := protojson.Marshal(&dataSourceOptions)
 	if err != nil {

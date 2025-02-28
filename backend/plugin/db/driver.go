@@ -207,6 +207,9 @@ type ConnectionConfig struct {
 
 	// The maximum number of bytes for sql results in response body.
 	MaximumSQLResultSize int64
+
+	// At most one of the following could be set.
+	ClientSecretCredential *storepb.DataSourceOptions_ClientSecretCredential
 }
 
 // SSHConfig is the configuration for connection over SSH.

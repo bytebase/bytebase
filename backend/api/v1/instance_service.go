@@ -852,8 +852,17 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			obfuscated := common.Obfuscate(request.DataSource.MasterPassword, s.secret)
 			dataSource.MasterObfuscatedPassword = obfuscated
 			patch.MasterObfuscatedPassword = &obfuscated
+		case "iam_extension":
+			if v := request.DataSource.IamExtension; v != nil {
+				switch v := v.(type) {
+				case *v1pb.DataSource_ClientSecretCredential_:
+					dataSource.ClientSecretCredential = convertToStoreClientSecretCredential(v.ClientSecretCredential)
+					patch.ClientSecretCredential = dataSource.ClientSecretCredential
+				default:
+				}
+			}
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
+			return nil, status.Errorf(codes.InvalidArgument, `unsupported update_mask "%s"`, path)
 		}
 	}
 
@@ -1177,7 +1186,7 @@ func convertToV1DataSources(dataSources []*store.DataSourceMessage) ([]*v1pb.Dat
 			authenticationType = v1pb.DataSource_AZURE_IAM
 		}
 
-		dataSourceList = append(dataSourceList, &v1pb.DataSource{
+		dataSource := &v1pb.DataSource{
 			Id:       ds.ID,
 			Type:     dataSourceType,
 			Username: ds.Username,
@@ -1201,10 +1210,28 @@ func convertToV1DataSources(dataSources []*store.DataSourceMessage) ([]*v1pb.Dat
 			RedisType:              convertToV1RedisType(ds.RedisType),
 			MasterName:             ds.MasterName,
 			MasterUsername:         ds.MasterUsername,
-		})
+		}
+		if clientSecretCredential := convertToV1ClientSecretCredential(ds.ClientSecretCredential); clientSecretCredential != nil {
+			dataSource.IamExtension = &v1pb.DataSource_ClientSecretCredential_{
+				ClientSecretCredential: clientSecretCredential,
+			}
+		}
+
+		dataSourceList = append(dataSourceList, dataSource)
 	}
 
 	return dataSourceList, nil
+}
+
+func convertToV1ClientSecretCredential(clientSecretCredential *storepb.DataSourceOptions_ClientSecretCredential) *v1pb.DataSource_ClientSecretCredential {
+	if clientSecretCredential == nil {
+		return nil
+	}
+	return &v1pb.DataSource_ClientSecretCredential{
+		TenantId:     clientSecretCredential.TenantId,
+		ClientId:     clientSecretCredential.ClientId,
+		ClientSecret: clientSecretCredential.ClientSecret,
+	}
 }
 
 func convertToStoreDataSourceExternalSecret(externalSecret *v1pb.DataSourceExternalSecret) (*storepb.DataSourceExternalSecret, error) {
@@ -1371,6 +1398,7 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 		return nil, err
 	}
 	saslConfig := convertToStoreDataSourceSaslConfig(dataSource.SaslConfig)
+	clientSecretCredential := convertToStoreClientSecretCredential(dataSource.GetClientSecretCredential())
 
 	return &store.DataSourceMessage{
 		ID:                                 dataSource.Id,
@@ -1406,7 +1434,19 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 		MasterName:                         dataSource.MasterName,
 		MasterUsername:                     dataSource.MasterUsername,
 		MasterObfuscatedPassword:           common.Obfuscate(dataSource.MasterPassword, s.secret),
+		ClientSecretCredential:             clientSecretCredential,
 	}, nil
+}
+
+func convertToStoreClientSecretCredential(credential *v1pb.DataSource_ClientSecretCredential) *storepb.DataSourceOptions_ClientSecretCredential {
+	if credential == nil {
+		return nil
+	}
+	return &storepb.DataSourceOptions_ClientSecretCredential{
+		TenantId:     credential.TenantId,
+		ClientId:     credential.ClientId,
+		ClientSecret: credential.ClientSecret,
+	}
 }
 
 func (s *InstanceService) instanceCountGuard(ctx context.Context) error {
