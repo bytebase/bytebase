@@ -265,6 +265,11 @@ export interface DataSourceOptions {
   useSsl: boolean;
   /** Cluster is the cluster name for the data source. Used by CockroachDB. */
   cluster: string;
+  /**
+   * Extra connection parameters for the database connection.
+   * For PostgreSQL HA, this can be used to set target_session_attrs=read-write
+   */
+  extraConnectionParameters: { [key: string]: string };
 }
 
 export enum DataSourceOptions_AuthenticationType {
@@ -406,6 +411,11 @@ export interface DataSourceOptions_ClientSecretCredential {
 export interface DataSourceOptions_Address {
   host: string;
   port: string;
+}
+
+export interface DataSourceOptions_ExtraConnectionParametersEntry {
+  key: string;
+  value: string;
 }
 
 export interface SASLConfig {
@@ -753,6 +763,7 @@ function createBaseDataSourceOptions(): DataSourceOptions {
     redisType: DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED,
     useSsl: false,
     cluster: "",
+    extraConnectionParameters: {},
   };
 }
 
@@ -833,6 +844,10 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
     if (message.cluster !== "") {
       writer.uint32(202).string(message.cluster);
     }
+    Object.entries(message.extraConnectionParameters).forEach(([key, value]) => {
+      DataSourceOptions_ExtraConnectionParametersEntry.encode({ key: key as any, value }, writer.uint32(218).fork())
+        .join();
+    });
     return writer;
   },
 
@@ -1043,6 +1058,17 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
           message.cluster = reader.string();
           continue;
         }
+        case 27: {
+          if (tag !== 218) {
+            break;
+          }
+
+          const entry27 = DataSourceOptions_ExtraConnectionParametersEntry.decode(reader, reader.uint32());
+          if (entry27.value !== undefined) {
+            message.extraConnectionParameters[entry27.key] = entry27.value;
+          }
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1097,6 +1123,12 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
         : DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED,
       useSsl: isSet(object.useSsl) ? globalThis.Boolean(object.useSsl) : false,
       cluster: isSet(object.cluster) ? globalThis.String(object.cluster) : "",
+      extraConnectionParameters: isObject(object.extraConnectionParameters)
+        ? Object.entries(object.extraConnectionParameters).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
     };
   },
 
@@ -1177,6 +1209,15 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
     if (message.cluster !== "") {
       obj.cluster = message.cluster;
     }
+    if (message.extraConnectionParameters) {
+      const entries = Object.entries(message.extraConnectionParameters);
+      if (entries.length > 0) {
+        obj.extraConnectionParameters = {};
+        entries.forEach(([k, v]) => {
+          obj.extraConnectionParameters[k] = v;
+        });
+      }
+    }
     return obj;
   },
 
@@ -1219,6 +1260,14 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
     message.redisType = object.redisType ?? DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED;
     message.useSsl = object.useSsl ?? false;
     message.cluster = object.cluster ?? "";
+    message.extraConnectionParameters = Object.entries(object.extraConnectionParameters ?? {}).reduce<
+      { [key: string]: string }
+    >((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = globalThis.String(value);
+      }
+      return acc;
+    }, {});
     return message;
   },
 };
@@ -1387,6 +1436,91 @@ export const DataSourceOptions_Address: MessageFns<DataSourceOptions_Address> = 
     const message = createBaseDataSourceOptions_Address();
     message.host = object.host ?? "";
     message.port = object.port ?? "";
+    return message;
+  },
+};
+
+function createBaseDataSourceOptions_ExtraConnectionParametersEntry(): DataSourceOptions_ExtraConnectionParametersEntry {
+  return { key: "", value: "" };
+}
+
+export const DataSourceOptions_ExtraConnectionParametersEntry: MessageFns<
+  DataSourceOptions_ExtraConnectionParametersEntry
+> = {
+  encode(
+    message: DataSourceOptions_ExtraConnectionParametersEntry,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DataSourceOptions_ExtraConnectionParametersEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataSourceOptions_ExtraConnectionParametersEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataSourceOptions_ExtraConnectionParametersEntry {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
+  },
+
+  toJSON(message: DataSourceOptions_ExtraConnectionParametersEntry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    return obj;
+  },
+
+  create(
+    base?: DeepPartial<DataSourceOptions_ExtraConnectionParametersEntry>,
+  ): DataSourceOptions_ExtraConnectionParametersEntry {
+    return DataSourceOptions_ExtraConnectionParametersEntry.fromPartial(base ?? {});
+  },
+  fromPartial(
+    object: DeepPartial<DataSourceOptions_ExtraConnectionParametersEntry>,
+  ): DataSourceOptions_ExtraConnectionParametersEntry {
+    const message = createBaseDataSourceOptions_ExtraConnectionParametersEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };
@@ -1639,6 +1773,10 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;
