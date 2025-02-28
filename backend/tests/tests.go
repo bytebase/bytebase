@@ -33,7 +33,6 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/server"
-	"github.com/bytebase/bytebase/backend/tests/fake"
 )
 
 var (
@@ -42,17 +41,9 @@ var (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NULL
 	);`
-	migrationStatement2 = `
-	CREATE TABLE book2 (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);`
 
 	//go:embed test-data/book_schema.result
 	wantBookSchema string
-
-	//go:embed test-data/book_2_schema.result
-	want2BookSchema string
 
 	dataUpdateStatement = `
 	INSERT INTO book(name) VALUES
@@ -60,15 +51,6 @@ var (
 		(NULL);
 	`
 	dumpedSchema = `CREATE TABLE book (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);
-`
-	dumpedSchema2 = `CREATE TABLE book (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NULL
-	);
-CREATE TABLE book2 (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NULL
 	);
@@ -128,7 +110,6 @@ type controller struct {
 	reviewConfigServiceClient    v1pb.ReviewConfigServiceClient
 	projectServiceClient         v1pb.ProjectServiceClient
 	databaseGroupServiceClient   v1pb.DatabaseGroupServiceClient
-	vcsConnectorServiceClient    v1pb.VCSConnectorServiceClient
 	authServiceClient            v1pb.AuthServiceClient
 	userServiceClient            v1pb.UserServiceClient
 	settingServiceClient         v1pb.SettingServiceClient
@@ -137,7 +118,6 @@ type controller struct {
 	databaseServiceClient        v1pb.DatabaseServiceClient
 	databaseCatalogServiceClient v1pb.DatabaseCatalogServiceClient
 	sheetServiceClient           v1pb.SheetServiceClient
-	evcsClient                   v1pb.VCSProviderServiceClient
 	sqlServiceClient             v1pb.SQLServiceClient
 	subscriptionServiceClient    v1pb.SubscriptionServiceClient
 	actuatorServiceClient        v1pb.ActuatorServiceClient
@@ -145,17 +125,13 @@ type controller struct {
 	cookie  string
 	project *v1pb.Project
 
-	vcsProvider fake.VCSProvider
-
 	rootURL  string
 	apiURL   string
-	vcsURL   string
 	v1APIURL string
 }
 
 type config struct {
 	dataDir            string
-	vcsProviderCreator fake.VCSProviderCreator
 	readOnly           bool
 	skipOnboardingData bool
 }
@@ -200,10 +176,6 @@ func getTestDatabaseString() string {
 
 // StartServerWithExternalPg starts the main server with external Postgres.
 func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *config) (context.Context, error) {
-	if err := ctl.startMockServers(config.vcsProviderCreator); err != nil {
-		return nil, err
-	}
-
 	pgMainURL := fmt.Sprintf("postgresql://%s@:%d/%s?host=%s", postgres.TestPgUser, externalPgPort, "postgres", common.GetPostgresSocketDir())
 	db, err := sql.Open("pgx", pgMainURL)
 	if err != nil {
@@ -268,9 +240,6 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context, config *co
 
 // StartServer starts the main server with embed Postgres.
 func (ctl *controller) StartServer(ctx context.Context, config *config) (context.Context, error) {
-	if err := ctl.startMockServers(config.vcsProviderCreator); err != nil {
-		return nil, err
-	}
 	serverPort := getTestPortForEmbeddedPg()
 	profile := getTestProfile(config.dataDir, resourceDir, serverPort, config.readOnly)
 	server, err := server.NewServer(ctx, profile)
@@ -344,27 +313,6 @@ func getTestProfileWithExternalPg(dataDir, resourceDir string, port int, pgUser 
 	}
 }
 
-func (ctl *controller) startMockServers(vcsProviderCreator fake.VCSProviderCreator) error {
-	// Set up VCS provider.
-	vcsPort := getTestPort()
-	ctl.vcsProvider = vcsProviderCreator(vcsPort)
-	ctl.vcsURL = fmt.Sprintf("http://localhost:%d", vcsPort)
-
-	errChan := make(chan error, 1)
-
-	go func() {
-		if err := ctl.vcsProvider.Run(); err != nil {
-			errChan <- errors.Wrap(err, "failed to run vcsProvider server")
-		}
-	}()
-
-	if err := waitForVCSStart(ctl.vcsProvider, errChan); err != nil {
-		return errors.Wrap(err, "failed to wait for vcsProvider to start")
-	}
-
-	return nil
-}
-
 // start only called by StartServer() and StartServerWithExternalPg().
 func (ctl *controller) start(ctx context.Context, port int) (context.Context, error) {
 	ctl.rootURL = fmt.Sprintf("http://localhost:%d", port)
@@ -395,7 +343,6 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.reviewConfigServiceClient = v1pb.NewReviewConfigServiceClient(ctl.grpcConn)
 	ctl.projectServiceClient = v1pb.NewProjectServiceClient(ctl.grpcConn)
 	ctl.databaseGroupServiceClient = v1pb.NewDatabaseGroupServiceClient(ctl.grpcConn)
-	ctl.vcsConnectorServiceClient = v1pb.NewVCSConnectorServiceClient(ctl.grpcConn)
 	ctl.authServiceClient = v1pb.NewAuthServiceClient(ctl.grpcConn)
 	ctl.userServiceClient = v1pb.NewUserServiceClient(ctl.grpcConn)
 	ctl.settingServiceClient = v1pb.NewSettingServiceClient(ctl.grpcConn)
@@ -404,7 +351,6 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.databaseServiceClient = v1pb.NewDatabaseServiceClient(ctl.grpcConn)
 	ctl.databaseCatalogServiceClient = v1pb.NewDatabaseCatalogServiceClient(ctl.grpcConn)
 	ctl.sheetServiceClient = v1pb.NewSheetServiceClient(ctl.grpcConn)
-	ctl.evcsClient = v1pb.NewVCSProviderServiceClient(ctl.grpcConn)
 	ctl.sqlServiceClient = v1pb.NewSQLServiceClient(ctl.grpcConn)
 	ctl.subscriptionServiceClient = v1pb.NewSubscriptionServiceClient(ctl.grpcConn)
 	ctl.actuatorServiceClient = v1pb.NewActuatorServiceClient(ctl.grpcConn)
@@ -421,26 +367,6 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 		"Authorization",
 		fmt.Sprintf("Bearer %s", authToken),
 	)), nil
-}
-
-func waitForVCSStart(p fake.VCSProvider, errChan <-chan error) error {
-	ticker := time.NewTicker(100 * time.Millisecond)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			addr := p.ListenerAddr()
-			if addr != nil && strings.Contains(addr.String(), ":") {
-				return nil // was started
-			}
-		case err := <-errChan:
-			if err == http.ErrServerClosed {
-				return nil
-			}
-			return err
-		}
-	}
 }
 
 func (ctl *controller) waitForHealthz(ctx context.Context) error {
@@ -471,11 +397,6 @@ func (ctl *controller) Close(ctx context.Context) error {
 	var e error
 	if ctl.server != nil {
 		if err := ctl.server.Shutdown(ctx); err != nil {
-			e = multierr.Append(e, err)
-		}
-	}
-	if ctl.vcsProvider != nil {
-		if err := ctl.vcsProvider.Close(); err != nil {
 			e = multierr.Append(e, err)
 		}
 	}

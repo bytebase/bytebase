@@ -21,7 +21,6 @@ const (
 	UserNamePrefix             = "users/"
 	IdentityProviderNamePrefix = "idps/"
 	SettingNamePrefix          = "settings/"
-	VCSProviderPrefix          = "vcsProviders/"
 	RiskPrefix                 = "risks/"
 	RolloutPrefix              = "rollouts/"
 	StagePrefix                = "stages/"
@@ -45,7 +44,6 @@ const (
 	BranchPrefix               = "branches/"
 	DeploymentConfigPrefix     = "deploymentConfigs/"
 	ChangelistsPrefix          = "changelists/"
-	VCSConnectorPrefix         = "vcsConnectors/"
 	AuditLogPrefix             = "auditLogs/"
 	GroupPrefix                = "groups/"
 	ReviewConfigPrefix         = "reviewConfigs/"
@@ -53,10 +51,9 @@ const (
 	FileNamePrefix             = "files/"
 	RevisionNamePrefix         = "revisions/"
 
-	SchemaSuffix     = "/schema"
-	MetadataSuffix   = "/metadata"
-	CatalogSuffix    = "/catalog"
-	GitOpsInfoSuffix = "/gitOpsInfo"
+	SchemaSuffix   = "/schema"
+	MetadataSuffix = "/metadata"
+	CatalogSuffix  = "/catalog"
 
 	UserBindingPrefix  = "user:"
 	GroupBindingPrefix = "group:"
@@ -250,15 +247,6 @@ func GetSettingName(name string) (string, error) {
 // GetIdentityProviderID returns the identity provider ID from a resource name.
 func GetIdentityProviderID(name string) (string, error) {
 	tokens, err := GetNameParentTokens(name, IdentityProviderNamePrefix)
-	if err != nil {
-		return "", err
-	}
-	return tokens[0], nil
-}
-
-// GetVCSProviderID returns the VCS provider ID from a resource name.
-func GetVCSProviderID(name string) (string, error) {
-	tokens, err := GetNameParentTokens(name, VCSProviderPrefix)
 	if err != nil {
 		return "", err
 	}
@@ -576,24 +564,6 @@ func GetProjectAndBranchID(name string) (string, string, error) {
 		return "", "", errors.Errorf("invalid branch name %q", name)
 	}
 	return matches[1], matches[2], nil
-}
-
-// GetProjectVCSConnectorID returns the workspace, project, and VCS connector ID from a resource name.
-func GetProjectVCSConnectorID(name string) (string, string, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, VCSConnectorPrefix)
-	if err != nil {
-		return "", "", err
-	}
-	return tokens[0], tokens[1], nil
-}
-
-// GetWorkspaceProjectVCSConnectorID returns the workspace, project, and VCS connector ID from a resource name.
-func GetWorkspaceProjectVCSConnectorID(name string) (string, string, string, error) {
-	tokens, err := GetNameParentTokens(name, WorkspacePrefix, ProjectNamePrefix, VCSConnectorPrefix)
-	if err != nil {
-		return "", "", "", err
-	}
-	return tokens[0], tokens[1], tokens[2], nil
 }
 
 // GetGroupEmail returns the group email.

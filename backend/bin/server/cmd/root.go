@@ -109,11 +109,6 @@ func init() {
 	// When running the release build in production, most of the time, users would not expose Bytebase directly to the public.
 	// Instead they would configure a gateway to forward the traffic to Bytebase. Users need to set --external-url to the address
 	// exposed on that gateway accordingly.
-	//
-	// It's important to set the correct --external-url. This is used for:
-	// 1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend.
-	// 2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend.
-	// Since frontend and backend are bundled and run on the same address in the release build, thus we just need to specify a single external URL.
 	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", "", "the external URL where user visits Bytebase, must start with http:// or https://")
 	// Support environment variable for deploying to render.com using its blueprint file.
 	// Render blueprint allows to specify a postgres database along with a service.
