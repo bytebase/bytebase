@@ -69,8 +69,8 @@ type FindDatabaseMessage struct {
 	// This is used for existing tasks with archived databases.
 	ShowDeleted bool
 
-	// IgnoreCaseSensitive is used to ignore case sensitive when finding database.
-	IgnoreCaseSensitive bool
+	// IsCaseSensitive is used to ignore case sensitive when finding database.
+	IsCaseSensitive bool
 
 	Limit  *int
 	Offset *int
@@ -395,10 +395,10 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		where, args = append(where, fmt.Sprintf("db.instance = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.DatabaseName; v != nil {
-		if find.IgnoreCaseSensitive {
-			where, args = append(where, fmt.Sprintf("LOWER(db.name) = LOWER($%d)", len(args)+1)), append(args, *v)
-		} else {
+		if find.IsCaseSensitive {
 			where, args = append(where, fmt.Sprintf("db.name = $%d", len(args)+1)), append(args, *v)
+		} else {
+			where, args = append(where, fmt.Sprintf("LOWER(db.name) = LOWER($%d)", len(args)+1)), append(args, *v)
 		}
 	}
 	if v := find.Engine; v != nil {

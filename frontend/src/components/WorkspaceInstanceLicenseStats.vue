@@ -1,5 +1,5 @@
 <template>
-  <div class="my-3">
+  <div v-bind="$attrs">
     <dt class="text-main">
       {{
         subscriptionStore.currentPlan === PlanType.FREE

@@ -158,6 +158,13 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 	sslMode := getSSLMode(config.TLSConfig, config.SSHConfig)
 	connStr += fmt.Sprintf(" sslmode=%s", sslMode)
 
+	// Add target_session_attrs=read-write if specified in ExtraConnectionParameters
+	if len(config.ExtraConnectionParameters) > 0 {
+		for key, value := range config.ExtraConnectionParameters {
+			connStr += fmt.Sprintf(" %s=%s", key, value)
+		}
+	}
+
 	connConfig, err := pgx.ParseConfig(connStr)
 	if err != nil {
 		return nil, err
@@ -682,9 +689,12 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 			return nil, err
 		}
 
+		// Sanitize the schema name by escaping any quotes.
+		safeSchemeName := strings.ReplaceAll(queryContext.Schema, "\"", "\"\"")
+
 		// If the queryContext.Schema is not empty, set the search path for the database connection to the specified schema.
 		if queryContext.Schema != "" {
-			if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET search_path TO %s;", queryContext.Schema)); err != nil {
+			if _, err := conn.ExecContext(ctx, fmt.Sprintf(`SET search_path TO "%s";`, safeSchemeName)); err != nil {
 				return nil, err
 			}
 		}

@@ -153,7 +153,7 @@ func generateSQL(ctx context.Context, tCtx base.TransformContext, statementInfoL
 func generateSQLForTable(ctx context.Context, tCtx base.TransformContext, statementInfoList []StatementInfo, databaseName string, tablePrefix string) (*base.BackupStatement, error) {
 	table := statementInfoList[0].Table
 
-	generatedColumns, normalColumns, _, err := classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc, tCtx.IgnoreCaseSensitive, tCtx.InstanceID, table)
+	generatedColumns, normalColumns, _, err := classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc, tCtx.IsCaseSensitive, tCtx.InstanceID, table)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to classify columns")
 	}
@@ -262,7 +262,7 @@ func extractCTE(ctx antlr.ParserRuleContext) string {
 	return ""
 }
 
-func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDatabaseMetadataFunc, listDatabaseNamesFunc base.ListDatabaseNamesFunc, ignoreCaseSensitive bool, instanceID string, table *TableReference) ([]string, []string, []string, error) {
+func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDatabaseMetadataFunc, listDatabaseNamesFunc base.ListDatabaseNamesFunc, isCaseSensitive bool, instanceID string, table *TableReference) ([]string, []string, []string, error) {
 	if getDatabaseMetadataFunc == nil {
 		return nil, nil, nil, errors.New("GetDatabaseMetadataFunc is not set")
 	}
@@ -272,7 +272,7 @@ func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDataba
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "failed to list databases names")
 	}
-	if ignoreCaseSensitive {
+	if !isCaseSensitive {
 		for _, db := range allDatabaseNames {
 			if strings.EqualFold(db, table.Database) {
 				_, dbSchema, err = getDatabaseMetadataFunc(ctx, instanceID, db)
@@ -305,7 +305,7 @@ func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDataba
 	}
 
 	var tableSchema *model.TableMetadata
-	if ignoreCaseSensitive {
+	if !isCaseSensitive {
 		for _, tableName := range schema.ListTableNames() {
 			if strings.EqualFold(tableName, table.Table) {
 				tableSchema = schema.GetTable(tableName)

@@ -15,4 +15,7 @@ export interface DataSourceOptions {
   sshPassword: string;
   sshPrivateKey: string;
   authenticationPrivateKey: string;
+  // Extra connection parameters for the database connection string
+  // For PostgreSQL HA, this can be used to set target_session_attrs=read-write
+  extraConnectionParameters?: { [key: string]: string };
 }

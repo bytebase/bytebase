@@ -129,7 +129,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 					},
 				},
 			},
-		}), nil
+		}, true /* isObjectCaseSensitive */, true /* isDetailCaseSensitive */), nil
 	case "SCHEMA2":
 		return "SCHEMA2", model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
 			Name: databaseName,
@@ -171,7 +171,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 					},
 				},
 			},
-		}), nil
+		}, true /* isObjectCaseSensitive */, true /* isDetailCaseSensitive */), nil
 	case "SCHEMA3":
 		return "SCHEMA3", model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
 			Name: databaseName,
@@ -213,7 +213,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 					},
 				},
 			},
-		}), nil
+		}, true /* isObjectCaseSensitive */, true /* isDetailCaseSensitive */), nil
 	default:
 		return "", nil, nil
 	}

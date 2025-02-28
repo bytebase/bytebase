@@ -141,9 +141,7 @@ func (s *Store) GetRolloutPolicy(ctx context.Context, environment string) (*stor
 		return nil, errors.Wrapf(err, "failed to get policy")
 	}
 	if policy == nil {
-		return &storepb.RolloutPolicy{
-			Automatic: true,
-		}, nil
+		return &storepb.RolloutPolicy{}, nil
 	}
 
 	p := &storepb.RolloutPolicy{}

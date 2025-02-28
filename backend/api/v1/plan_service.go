@@ -562,9 +562,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 									return status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 								}
 								database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-									InstanceID:          &instanceID,
-									DatabaseName:        &databaseName,
-									IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+									InstanceID:      &instanceID,
+									DatabaseName:    &databaseName,
+									IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 								})
 								if err != nil {
 									return errors.Wrapf(err, "failed to get database %s", databaseName)

@@ -12,7 +12,7 @@ import (
 )
 
 func TestExtractChangedResources(t *testing.T) {
-	dbSchema := model.NewDBSchema(&storepb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{})
+	dbSchema := model.NewDatabaseSchema(&storepb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
 	statement :=
 		`CREATE TABLE t1 (c1 INT);
 						DROP TABLE t1;

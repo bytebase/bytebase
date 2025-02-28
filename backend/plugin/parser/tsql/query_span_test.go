@@ -83,7 +83,7 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaM
 	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 			m := make(map[string]*model.DatabaseMetadata)
 			for _, metadata := range databaseMetadata {
-				m[metadata.Name] = model.NewDatabaseMetadata(metadata)
+				m[metadata.Name] = model.NewDatabaseMetadata(metadata, false /* isObjectCaseSensitive */, false /* isDetailCaseSensitive */)
 			}
 
 			if databaseMetadata, ok := m[databaseName]; ok {

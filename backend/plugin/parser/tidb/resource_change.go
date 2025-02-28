@@ -18,7 +18,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_TIDB, extractChangedResources)
 }
 
-func extractChangedResources(database string, _ string, dbSchema *model.DBSchema, asts any, statement string) (*base.ChangeSummary, error) {
+func extractChangedResources(database string, _ string, dbSchema *model.DatabaseSchema, asts any, statement string) (*base.ChangeSummary, error) {
 	nodes, ok := asts.([]tidbast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("invalid ast type %T", asts)

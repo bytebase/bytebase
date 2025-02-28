@@ -507,6 +507,7 @@ type SQLReviewCheckContext struct {
 	ClassificationConfig  *storepb.DataClassificationSetting_DataClassificationConfig
 	ListDatabaseNamesFunc base.ListDatabaseNamesFunc
 	InstanceID            string
+	IsObjectCaseSensitive bool
 
 	// Snowflake specific fields
 	CurrentDatabase string
@@ -589,6 +590,7 @@ func SQLReviewCheck(
 				UsePostgresDatabaseOwner: checkContext.UsePostgresDatabaseOwner,
 				ListDatabaseNamesFunc:    checkContext.ListDatabaseNamesFunc,
 				InstanceID:               checkContext.InstanceID,
+				IsObjectCaseSensitive:    checkContext.IsObjectCaseSensitive,
 			},
 		)
 		if err != nil {

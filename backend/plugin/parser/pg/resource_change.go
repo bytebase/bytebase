@@ -16,7 +16,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_REDSHIFT, extractChangedResources)
 }
 
-func extractChangedResources(database string, schema string, dbSchema *model.DBSchema, asts any, statement string) (*base.ChangeSummary, error) {
+func extractChangedResources(database string, schema string, dbSchema *model.DatabaseSchema, asts any, statement string) (*base.ChangeSummary, error) {
 	nodes, ok := asts.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("invalid ast type %T", asts)

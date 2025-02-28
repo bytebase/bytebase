@@ -65,6 +65,7 @@
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
     - [DataSourceOptions.Address](#bytebase-store-DataSourceOptions-Address)
     - [DataSourceOptions.ClientSecretCredential](#bytebase-store-DataSourceOptions-ClientSecretCredential)
+    - [DataSourceOptions.ExtraConnectionParametersEntry](#bytebase-store-DataSourceOptions-ExtraConnectionParametersEntry)
     - [KerberosConfig](#bytebase-store-KerberosConfig)
     - [SASLConfig](#bytebase-store-SASLConfig)
   
@@ -1183,6 +1184,7 @@ Metadata about the request.
 | redis_type | [DataSourceOptions.RedisType](#bytebase-store-DataSourceOptions-RedisType) |  |  |
 | use_ssl | [bool](#bool) |  | Use SSL to connect to the data source. By default, we use system default SSL configuration. |
 | cluster | [string](#string) |  | Cluster is the cluster name for the data source. Used by CockroachDB. |
+| extra_connection_parameters | [DataSourceOptions.ExtraConnectionParametersEntry](#bytebase-store-DataSourceOptions-ExtraConnectionParametersEntry) | repeated | Extra connection parameters for the database connection. For PostgreSQL HA, this can be used to set target_session_attrs=read-write |
 
 
 
@@ -1216,6 +1218,22 @@ Metadata about the request.
 | tenant_id | [string](#string) |  |  |
 | client_id | [string](#string) |  |  |
 | client_secret | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-DataSourceOptions-ExtraConnectionParametersEntry"></a>
+
+### DataSourceOptions.ExtraConnectionParametersEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
 
 
 
