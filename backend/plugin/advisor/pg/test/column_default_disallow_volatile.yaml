@@ -1,29 +1,5 @@
-- statement: CREATE TABLE t(a serial primary key, b int default 1, c boolean default true)
+- statement: CREATE TABLE t(a serial primary key, b int default 1, c boolean default true, d int default current_user)
   changeType: 0
-- statement: CREATE TABLE t(a serial primary key, b int default current_user)
-  changeType: 0
-  want:
-    - status: 2
-      code: 420
-      title: column.default-disallow-volatile
-      content: Column "t"."b" in schema "public" has volatile DEFAULT
-      detail: ""
-      startposition:
-        line: 1
-        column: 0
-      endposition: null
-- statement: CREATE TABLE t(a serial primary key, b int default now())
-  changeType: 0
-  want:
-    - status: 2
-      code: 420
-      title: column.default-disallow-volatile
-      content: Column "t"."b" in schema "public" has volatile DEFAULT
-      detail: ""
-      startposition:
-        line: 1
-        column: 0
-      endposition: null
 - statement: ALTER TABLE tech_book ADD COLUMN b timestamp default now();
   changeType: 0
   want:

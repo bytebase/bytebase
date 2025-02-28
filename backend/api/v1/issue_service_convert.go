@@ -124,10 +124,6 @@ func (s *IssueService) convertToIssueReleasers(ctx context.Context, issue *store
 	}
 
 	var releasers []string
-	if policy.Automatic {
-		releasers = append(releasers, common.FormatRole(api.ProjectOwner.String()), common.FormatUserEmail(issue.Creator.Email))
-		return releasers, nil
-	}
 
 	releasers = append(releasers, policy.Roles...)
 	for _, role := range policy.IssueRoles {
