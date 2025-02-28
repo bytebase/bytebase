@@ -98,16 +98,12 @@
     "detail": "Detalle",
     "type": "Tipo",
     "language": "Idioma",
-    "repository": "Repositorio",
     "change": "Cambiar",
-    "branch": "Rama",
     "sensitive-placeholder": "Sensible - solo escritura",
     "enabled": "habilitado",
     "default": "predeterminado",
-    "gitops": "GitOps",
     "restore": "Restaurar",
     "detailed-guide": "guía detallada",
-    "workspace": "espacio de trabajo",
     "confirm": "Confirmar",
     "learn-more": "Aprender más",
     "troubleshoot": "Solucionar problemas",
@@ -337,7 +333,6 @@
       "iam-and-admin": "IAM y administración",
       "im-integration": "Integración de IM",
       "sso": "SSO",
-      "gitops": "GitOps",
       "subscription": "Suscripción",
       "global-masking": "Enmascaramiento Global",
       "data-classification": "Clasificación de datos",
@@ -987,7 +982,6 @@
     }
   },
   "alter-schema": {
-    "vcs-info": "VCS habilitado. Seleccionar esto lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
     "no-databases-in-project": "No hay bases de datos en este proyecto. Haga clic en Nueva BD o Transferir BD para agregar bases de datos."
   },
   "quick-action": {
@@ -1363,7 +1357,6 @@
     "batch-action-disabled-for-unassigned": "No se puede {action} para una base de datos no asignada",
     "data-export-action-disabled": "No se puede exportar datos de más de una base de datos",
     "successfully-transferred-databases": "Bases de datos transferidas exitosamente",
-    "gitops-enabled": "GitOps habilitado",
     "nullable": "Anulable",
     "expression": "Expresión",
     "position": "Posición",
@@ -1479,34 +1472,6 @@
       }
     },
     "not-found": "No se puede encontrar la base de datos"
-  },
-  "repository": {
-    "our-webhook-link": "El webhook creado por Bytebase se puede encontrar en {webhookLink}.",
-    "branch-observe-file-change": "La rama donde Bytebase observa el cambio de archivo.",
-    "database-group-description": "Por defecto, los cambios se aplicarán a todas las bases de datos dentro del proyecto. Alternativamente, pueden aplicarse al grupo de bases de datos.",
-    "base-directory": "Directorio base",
-    "base-directory-description": "El directorio raíz donde Bytebase observa el cambio del archivo. Utilice \"/\" si los archivos están almacenados en el directorio raíz del repositorio.",
-    "git-provider": "Proveedor de Git",
-    "gitops-naming-format": "formato de nombre",
-    "gitops-description-file-path": "Los scripts de migración de bases de datos se almacenan en {fullPath}. Para realizar cambios en la base de datos, un desarrollador crearía un script de migración que se ajuste a {naming}.",
-    "gitops-description-branch": "Una vez que el script se aprueba y se fusiona en la rama {branch}, Bytebase creará automáticamente el problema para aplicar el cambio en la base de datos.",
-    "setup-wizard-guide": "Si encuentras errores durante el proceso, consulta nuestra {guide}",
-    "add-git-provider": "Agregar proveedor de Git",
-    "choose-git-provider": "Elegir proveedor de Git",
-    "select-repository": "Seleccionar repositorio",
-    "configure-deploy": "Configurar implementación",
-    "choose-git-provider-description": "Elige el proveedor Git donde se encuentran alojados tus scripts de esquema de base de datos (.sql). Cuando subas el script modificado al repositorio Git, Bytebase creará automáticamente un pipeline para aplicar el cambio de esquema a la base de datos.",
-    "choose-git-provider-visit-workspace": "Visita la configuración de {workspace} para agregar más proveedores Git.",
-    "choose-git-provider-contact-workspace-admin": "Contacta al administrador de tu espacio de trabajo en Bytebase si deseas que aparezcan otros proveedores de Git aquí. Actualmente, Bytebase admite GitLab EE/CE autohospedado y planea agregar GitLab.com y GitHub Enterprise más adelante.",
-    "select-repository-attention-gitlab": "Bytebase solo enumera los proyectos de GitLab que te otorgan al menos el rol de 'Mantenedor', lo que te permite configurar el webhook del proyecto para observar el evento de empuje de código.",
-    "select-repository-attention-github": "Bytebase solo enumera los repositorios de GitHub en los que tienes permisos de administrador, lo que te permite configurar el webhook del repositorio para observar el evento de empuje de código.",
-    "select-repository-attention-bitbucket": "Bytebase solo enumera los repositorios de Bitbucket en los que tienes permisos de administrador, lo que te permite configurar el webhook del repositorio para observar el evento de empuje de código.",
-    "select-repository-attention-azure-devops": "Bytebase solo enumera los repositorios de Azure DevOps en la organización a la que se otorga acceso a aplicaciones de terceros a través de OAuth. \nSi no ve el repositorio que desea, vaya a Organización -> Configuración de la organización -> Políticas para habilitar el acceso a aplicaciones de terceros.",
-    "select-repository-search": "Buscar repositorio",
-    "linked": "Repositorios vinculados"
-  },
-  "workflow": {
-    "gitops-workflow-description": "Los scripts de migración de bases de datos se almacenan en un repositorio git. Para realizar cambios en la base de datos, un desarrollador crearía un script de migración y lo enviaría para su revisión en el VCS correspondiente, como GitLab. Una vez que el script se aprueba y se fusiona en la rama configurada, Bytebase iniciará automáticamente la tarea para aplicar el cambio en la base de datos."
   },
   "anomaly": {
     "attention-desc": "Bytebase detecta periódicamente anomalías según el intervalo de escaneo de la instancia y muestra los hallazgos aquí.",
@@ -1673,56 +1638,10 @@
     },
     "select": "Seleccionar Proyecto",
     "all": "Todos los proyectos",
-    "gitops-connector": {
-      "add": "Agregar conector GitOps",
-      "delete": "Eliminar conector GitOps",
-      "update-success": "Conector GitOps actualizado correctamente",
-      "create-success": "Conector GitOps creado correctamente",
-      "delete-success": "Se elimina el conector GitOps"
-    },
     "masking-exemption": {
       "self": "Exenciones de Enmascaramiento",
       "grant-exemption": "Conceder Exención",
       "revoke-exemption-title": "Eliminar tanto las exenciones de exportación como de consulta de enmascaramiento para {member}?"
-    }
-  },
-  "gitops": {
-    "setting": {
-      "description": "En el flujo de trabajo GitOps de Bytebase, los desarrolladores almacenan scripts de migración en VCS. Las solicitudes de extracción provocan revisiones SQL, y las fusionadas inician planes de migración. Los administradores configuran proveedores de VCS, mientras que los propietarios del proyecto establecen conexiones de VCS dentro de los proyectos.",
-      "add-git-provider": {
-        "self": "Agregar un proveedor de Git",
-        "description": "Antes de que cualquier proyecto pueda habilitar el flujo de trabajo de GitOps, Bytebase primero debe integrarse con el sistema de control de versiones (VCS) correspondiente registrándose como una aplicación OAuth en ese VCS.",
-        "gitlab-self-host": "GitLab autohospedado",
-        "github-self-host": "GitHub autohospedado",
-        "azure-devops-service": "Servicio Azure DevOps",
-        "add-success": "Proveedor de Git {vcs} agregado exitosamente",
-        "choose": "Elige proveedor de Git",
-        "basic-info": {
-          "gitlab-instance-url": "URL de la instancia de GitLab",
-          "gitlab-instance-url-label": "La URL de la instancia VCS. Asegúrate de que esta instancia y Bytebase sean accesibles desde la red.",
-          "github-instance-url": "URL de la instancia de GitHub",
-          "bitbucket-instance-url": "URL de la instancia de Bitbucket",
-          "azure-instance-url": "URL de la instancia de Azure DevOps",
-          "instance-url-error": "La URL de la instancia debe comenzar con https:// o http://",
-          "display-name": "Nombre para mostrar",
-          "display-name-label": "Un nombre opcional para identificar entre diferentes configuraciones que utilizan el mismo proveedor de Git."
-        },
-        "access-token": {
-          "personal-access-token": "ficha de acceso personal",
-          "github-fine-grained-token": "token de acceso personal detallado",
-          "gitlab-personal-access-token": "Cree un usuario de servicio dedicado y genere un {token} con el rol de mantenedor y al menos los siguientes permisos para el grupo o proyectos que se administrarán. Puede generar un token de acceso al proyecto para administrar un solo proyecto o generar un token de acceso grupal para administrar todos los proyectos dentro del grupo.",
-          "github-personal-access-token": "Cree un usuario de servicio dedicado y genere un {token} con el rol de miembro de la organización o de todos los proyectos que se administrarán.",
-          "bitbucket-app-access-token": "Genere un usuario de servicio específico y cree una {app_password} con al menos los siguientes permisos para que las organizaciones, proyectos o repositorios relevantes los administren.",
-          "bitbucket-app-access-token-tips": "Insertar '{secret}' debajo.",
-          "bitbucket-app-password": "contraseña de la aplicación",
-          "azure-devops-personal-access-token": "Cree un usuario de servicio dedicado y genere un {token} con el rol de miembro para todas las organizaciones accesibles con los siguientes alcances. El campo \"Organización\" debe estar configurado en \"Todas las organizaciones accesibles\"."
-        }
-      },
-      "git-provider": {
-        "delete-forbidden": "Para eliminar este proveedor, primero desenlaza todos los repositorios.",
-        "delete": "Eliminar este proveedor de Git",
-        "delete-confirm": "¿Eliminar el proveedor de Git \"{name}\"?"
-      }
     }
   },
   "deployment-config": {
@@ -2571,7 +2490,6 @@
     }
   },
   "database-group": {
-    "self": "Grupo de Bases de Datos",
     "create": "Crear grupo de bases de datos",
     "edit": "Editar grupo de bases de datos",
     "matched-database": "Base de datos coincidente",
