@@ -825,10 +825,13 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			patch.AdditionalAddress = &additionalAddresses
 		case "replica_set":
 			dataSource.ReplicaSet = request.DataSource.ReplicaSet
+			patch.ReplicaSet = &request.DataSource.ReplicaSet
 		case "direct_connection":
 			dataSource.DirectConnection = request.DataSource.DirectConnection
+			patch.DirectConnection = &request.DataSource.DirectConnection
 		case "region":
 			dataSource.Region = request.DataSource.Region
+			patch.Region = &request.DataSource.Region
 		case "warehouse_id":
 			dataSource.WarehouseID = request.DataSource.WarehouseId
 			patch.WarehouseID = &request.DataSource.WarehouseId
