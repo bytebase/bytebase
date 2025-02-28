@@ -11,14 +11,12 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/mongoutil"
 
 	"github.com/bytebase/bytebase/backend/resources/postgres"
-	"github.com/bytebase/bytebase/backend/tests/fake"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func startStopServer(ctx context.Context, a *require.Assertions, ctl *controller, dataDir string) {
 	ctx, err := ctl.StartServer(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir: dataDir,
 	})
 	a.NoError(err)
 
@@ -42,8 +40,7 @@ func TestServerRestart(t *testing.T) {
 	dataDir := t.TempDir()
 	// Start server in non-readonly mode to init schema and register user.
 	ctx, err := ctl.StartServer(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir: dataDir,
 	})
 	a.NoError(err)
 	err = ctl.Close(ctx)

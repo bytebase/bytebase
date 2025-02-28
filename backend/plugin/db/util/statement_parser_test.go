@@ -393,9 +393,6 @@ CREATE TABLE migration_history (
     -- Used to detect out of order migration together with 'namespace' and 'version' column.
     sequence INT64 NOT NULL,
     CONSTRAINT sequence_is_non_negative CHECK (sequence >= 0),
-    -- We call it source because maybe we could load history from other migration tool.
-    -- Current allowed values are UI, VCS, LIBRARY.
-    source STRING(MAX) NOT NULL,
     -- Current allowed values are BASELINE, MIGRATE, MIGRATE_SDL, BRANCH, DATA.
     type STRING(MAX) NOT NULL,
     -- Current allowed values are PENDING, DONE, FAILED.
@@ -441,9 +438,6 @@ CREATE INDEX bytebase_idx_migration_history_namespace_created ON migration_histo
     
     sequence INT64 NOT NULL,
     CONSTRAINT sequence_is_non_negative CHECK (sequence >= 0),
-    
-    
-    source STRING(MAX) NOT NULL,
     
     type STRING(MAX) NOT NULL,
     

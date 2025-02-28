@@ -26,10 +26,6 @@ export const WORKSPACE_ROUTE_USERS = "workspace.users";
 export const WORKSPACE_ROUTE_MEMBERS = "workspace.members";
 export const WORKSPACE_ROUTE_ROLES = "workspace.roles";
 
-export const WORKSPACE_ROUTE_GITOPS = "workspace.gitops";
-export const WORKSPACE_ROUTE_GITOPS_CREATE = `${WORKSPACE_ROUTE_GITOPS}.create`;
-export const WORKSPACE_ROUTE_GITOPS_DETAIL = `${WORKSPACE_ROUTE_GITOPS}.detail`;
-
 export const WORKSPACE_ROUTE_SSO = "workspace.sso";
 export const WORKSPACE_ROUTE_SSO_CREATE = `${WORKSPACE_ROUTE_SSO}.create`;
 export const WORKSPACE_ROUTE_SSO_DETAIL = `${WORKSPACE_ROUTE_SSO}.detail`;

@@ -8,8 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
-
-	"github.com/bytebase/bytebase/backend/tests/fake"
 )
 
 func TestSyncSchema(t *testing.T) {
@@ -44,8 +42,7 @@ DROP SCHEMA "schema_a";
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir: dataDir,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)

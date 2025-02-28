@@ -98,16 +98,12 @@
     "detail": "详情",
     "type": "类型",
     "language": "语言",
-    "repository": "仓库",
     "change": "变更",
-    "branch": "分支",
     "sensitive-placeholder": "敏感数据 - 仅写入",
     "enabled": "开启",
     "default": "默认",
-    "gitops": "GitOps",
     "restore": "恢复",
     "detailed-guide": "详细指南",
-    "workspace": "工作空间",
     "confirm": "确认",
     "learn-more": "了解更多",
     "troubleshoot": "排查问题",
@@ -337,7 +333,6 @@
       "iam-and-admin": "IAM & 管理",
       "im-integration": "IM",
       "sso": "SSO",
-      "gitops": "GitOps",
       "subscription": "订阅",
       "global-masking": "全局数据脱敏",
       "data-classification": "数据分类",
@@ -987,7 +982,6 @@
     }
   },
   "alter-schema": {
-    "vcs-info": "已开启 VCS 版本管理。选择该数据库会跳转到对应的 Git 仓库以发起变更流程。",
     "no-databases-in-project": "该项目里没有数据库。点击 创建数据库 或 转移数据库 以添加数据库。"
   },
   "quick-action": {
@@ -1363,7 +1357,6 @@
     "batch-action-disabled-for-unassigned": "无法对未分配的数据库{action}",
     "data-export-action-disabled": "无法对多个数据库进行数据导出",
     "successfully-transferred-databases": "数据库转移完成",
-    "gitops-enabled": "已启用 GitOps",
     "nullable": "可为空",
     "expression": "表达式",
     "position": "位置",
@@ -1479,34 +1472,6 @@
       }
     },
     "not-found": "找不到数据库"
-  },
-  "repository": {
-    "our-webhook-link": "Bytebase 创建的 webhook 可以在 {webhookLink} 中找到。",
-    "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
-    "database-group-description": "默认情况下，更改将应用于项目中的所有数据库。或者，也可以应用于指定的数据库分组。",
-    "base-directory": "根目录",
-    "base-directory-description": "Bytebase 观察文件变化的根目录。如果文件存储在存储库根目录中，请使用“/”。",
-    "git-provider": "Git 提供方",
-    "gitops-naming-format": "命名格式",
-    "gitops-description-file-path": "数据库变更脚本存放在 {fullPath}。为了进行一次变更，开发者需要创建一个匹配 {naming} 的变更脚本。",
-    "gitops-description-branch": "当脚本审核通过并且合并到 {branch} 分支后，Bytebase 将自动创建工单来进行数据库变更。",
-    "setup-wizard-guide": "如果您在过程中遇到问题, 请参考 {guide}",
-    "add-git-provider": "添加 Git 提供方",
-    "choose-git-provider": "选择 Git 提供方",
-    "select-repository": "选择仓库",
-    "configure-deploy": "配置部署",
-    "choose-git-provider-description": "选择存放着您数据库 schema 脚本的 Git 提供方。当您把变更脚本推送到 Git 仓库后，Bytebase 会自动创建工单把数据库变更应用到数据库上。",
-    "choose-git-provider-visit-workspace": "访问 {workspace} 设置以添加更多 Git 提供方.",
-    "choose-git-provider-contact-workspace-admin": "如果您希望其他 Git 提供方出现在列表中，请联系 Bytebase 工作空间管理员。当前 Bytebase 支持自己托管的 GitLab EE/CE，我们之后也会支持 GitLab.com 和 GitHub Enterprise",
-    "select-repository-attention-gitlab": "Bytebase 仅列出您至少拥有 'Maintainer' 权限的 GitLab 项目。因为只有至少拥有该权限，才能够配置项目的 webhook 用来监听代码推送事件。",
-    "select-repository-attention-github": "Bytebase 仅列出您拥有管理员权限的 GitHub 仓库。因为只有拥有该权限，才能够配置仓库的 webhook 用来监听代码推送事件。",
-    "select-repository-attention-bitbucket": "Bytebase 仅列出您拥有管理员权限的 Bitbucket 仓库。因为只有拥有该权限，才能够配置仓库的 webhook 用来监听代码推送事件。",
-    "select-repository-attention-azure-devops": "Bytebase 仅列出授予第三方应用程序通过 OAuth 访问的组织下的 Azure DevOps 存储库。\n如果您没有看到所需的存储库，请转到组织 -> 组织设置 -> 策略 以启用第三方应用程序访问。",
-    "select-repository-search": "搜索仓库",
-    "linked": "关联的仓库"
-  },
-  "workflow": {
-    "gitops-workflow-description": "数据库变更脚本保存在 Git 仓库中。为了进行一次数据库变更，开发者会创建一个变更脚本并且提交至诸如 GitLab 这样的 VCS 进行审核。 当审核通过并且合并到配置的分支后，Bytebase 会自动生成工单来进行数据库变更。"
   },
   "anomaly": {
     "attention-desc": "Bytebase 会根据实例配置的扫描间隔检测异常，并且展示在这里。",
@@ -1673,56 +1638,10 @@
     },
     "select": "选择项目",
     "all": "所有项目",
-    "gitops-connector": {
-      "add": "新增 GitOps 连接",
-      "delete": "删除 GitOps 连接",
-      "update-success": "GitOps 连接已更新",
-      "create-success": "GitOps 连接已创建",
-      "delete-success": "GitOps 连接已删除"
-    },
     "masking-exemption": {
       "self": "脱敏豁免",
       "grant-exemption": "授予豁免",
       "revoke-exemption-title": "是否撤销 {member} 的导出和查询脱敏？"
-    }
-  },
-  "gitops": {
-    "setting": {
-      "description": "在 Bytebase GitOps 工作流程中，开发人员将迁移脚本存储在 VCS 中。拉取请求触发 SQL 审查，合并后启动迁移计划。管理员配置 VCS 提供商，而项目所有者在项目内建立 VCS 连接。",
-      "add-git-provider": {
-        "self": "添加 Git 提供方",
-        "description": "在项目可以启用 GitOps 工作流前，Bytebase 首先需要以在 VCS 中注册为 OAuth 应用的方式和 VCS 进行集成。",
-        "gitlab-self-host": "自托管 GitLab",
-        "github-self-host": "自托管 GitHub",
-        "azure-devops-service": "Azure DevOps 服务",
-        "add-success": "成功添加了 Git 提供方「{vcs}」",
-        "choose": "选择 Git 提供方",
-        "basic-info": {
-          "gitlab-instance-url": "GitLab 实例 URL",
-          "gitlab-instance-url-label": "VCS 实例 URL。请确认这个实例和 Bytebase 之间网络是互通的。",
-          "github-instance-url": "GitHub 实例 URL",
-          "bitbucket-instance-url": "Bitbucket 实例 URL",
-          "azure-instance-url": "Azure DevOps 实例 URL",
-          "instance-url-error": "实例 URL 必须以 https:// or http:// 开头",
-          "display-name": "展示名称",
-          "display-name-label": "一个可选的展示名称用以区分不同的 Git 供应方。"
-        },
-        "access-token": {
-          "personal-access-token": "个人访问令牌",
-          "github-fine-grained-token": "细粒度的个人访问令牌",
-          "gitlab-personal-access-token": "创建专用服务用户并生成具有维护者角色的{token}，并且至少具有要管理的组或项目的以下权限。您可以生成项目访问令牌来管理单个项目，或生成组访问令牌来管理组内的所有项目。",
-          "github-personal-access-token": "创建一个专用服务用户，并为组织或所有需要管理的项目生成一个具有成员角色的{token}。",
-          "bitbucket-app-access-token": "生成特定服务用户并创建一个至少具有以下权限的 {app_password}，以便管理相关组织、项目或存储库。",
-          "bitbucket-app-access-token-tips": "在下面插入‘{secret}’。",
-          "bitbucket-app-password": "应用程序密码",
-          "azure-devops-personal-access-token": "创建专用服务用户并为具有以下范围的所有可访问组织生成具有成员角色的{token}。 “组织”字段应设置为“所有可访问的组织”。"
-        }
-      },
-      "git-provider": {
-        "delete-forbidden": "删除这个提供方前，需要先解除所有仓库的关联。",
-        "delete": "删除 Git 提供方",
-        "delete-confirm": "删除 Git 提供方 \"{name}\"？"
-      }
     }
   },
   "deployment-config": {
@@ -2571,7 +2490,6 @@
     }
   },
   "database-group": {
-    "self": "数据库分组",
     "create": "新建数据库分组",
     "edit": "编辑数据库分组",
     "matched-database": "相匹配的数据库",

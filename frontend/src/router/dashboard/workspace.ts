@@ -19,9 +19,6 @@ import {
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
   WORKSPACE_ROUTE_DATA_CLASSIFICATION,
   WORKSPACE_ROUTE_AUDIT_LOG,
-  WORKSPACE_ROUTE_GITOPS,
-  WORKSPACE_ROUTE_GITOPS_CREATE,
-  WORKSPACE_ROUTE_GITOPS_DETAIL,
   WORKSPACE_ROUTE_SSO,
   WORKSPACE_ROUTE_SSO_CREATE,
   WORKSPACE_ROUTE_SSO_DETAIL,
@@ -178,50 +175,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
           requiredWorkspacePermissionList: () => ["bb.policies.get"],
         },
         component: () => import("@/views/SettingWorkspaceSQLReviewDetail.vue"),
-        props: true,
-      },
-    ],
-  },
-  {
-    path: "gitops",
-    meta: {
-      title: () => t("settings.sidebar.gitops"),
-    },
-    components: {
-      content: () => import("@/layouts/SettingLayout.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
-    },
-    props: {
-      content: true,
-      leftSidebar: true,
-    },
-    children: [
-      {
-        path: "",
-        name: WORKSPACE_ROUTE_GITOPS,
-        meta: {
-          requiredWorkspacePermissionList: () => ["bb.vcsProviders.list"],
-        },
-        component: () => import("@/views/SettingWorkspaceVCS.vue"),
-        props: true,
-      },
-      {
-        path: "new",
-        name: WORKSPACE_ROUTE_GITOPS_CREATE,
-        meta: {
-          title: () => t("repository.add-git-provider"),
-          requiredWorkspacePermissionList: () => ["bb.vcsProviders.create"],
-        },
-        component: () => import("@/views/SettingWorkspaceVCSCreate.vue"),
-        props: true,
-      },
-      {
-        path: ":vcsResourceId",
-        name: WORKSPACE_ROUTE_GITOPS_DETAIL,
-        meta: {
-          requiredWorkspacePermissionList: () => ["bb.vcsProviders.get"],
-        },
-        component: () => import("@/views/SettingWorkspaceVCSDetail.vue"),
         props: true,
       },
     ],

@@ -98,16 +98,12 @@
     "detail": "詳細",
     "type": "タイプ",
     "language": "言語",
-    "repository": "リポジトリ",
     "change": "変化",
-    "branch": "ブランチ",
     "sensitive-placeholder": "機密データ - 書き込みのみ",
     "enabled": "オンにする",
     "default": "デフォルト",
-    "gitops": "GitOps",
     "restore": "復元する",
     "detailed-guide": "詳細ガイド",
-    "workspace": "ワークスペース",
     "confirm": "確認する",
     "learn-more": "もっと詳しく知る",
     "troubleshoot": "トラブルシューティング",
@@ -337,7 +333,6 @@
       "iam-and-admin": "IAM と管理",
       "im-integration": "IM",
       "sso": "SSO",
-      "gitops": "GitOps",
       "subscription": "サブスクリプション",
       "global-masking": "グローバルマスキング",
       "data-classification": "データ分類",
@@ -987,7 +982,6 @@
     }
   },
   "alter-schema": {
-    "vcs-info": "VCS バージョン管理が有効になっています。データベースを選択すると、対応する Git リポジトリにジャンプし、変更プロセスが開始されます。",
     "no-databases-in-project": "このプロジェクトにはデータベースがありません。 「データベースの作成」または「データベースの転送」をクリックしてデータベースを追加します。"
   },
   "quick-action": {
@@ -1363,7 +1357,6 @@
     "batch-action-disabled-for-unassigned": "未割り当てのデータベース {action} にアクセスできません",
     "data-export-action-disabled": "複数のデータベースからデータをエクスポートできない",
     "successfully-transferred-databases": "データベースの移行が完了しました",
-    "gitops-enabled": "GitOps が有効になっている",
     "nullable": "null も可能",
     "expression": "表現",
     "position": "位置",
@@ -1479,34 +1472,6 @@
       }
     },
     "not-found": "データベースが見つかりません"
-  },
-  "repository": {
-    "our-webhook-link": "Bytebase によって作成された Webhook は、{webhookLink} にあります。",
-    "branch-observe-file-change": "バイトベースはファイルへのブランチ変更を追跡します。",
-    "database-group-description": "デフォルトでは、変更はプロジェクト内のすべてのデータベースに適用されます。あるいは、データベース グループに適用することもできます。",
-    "base-directory": "ルートディレクトリ",
-    "base-directory-description": "Bytebase は、ファイルの変更を監視するためのルート ディレクトリです。ファイルがリポジトリ ルートに保存されている場合は、「/」を使用します。",
-    "git-provider": "Gitプロバイダー",
-    "gitops-naming-format": "命名形式",
-    "gitops-description-file-path": "データベース変更スクリプトは {fullPath} にあります。変更を加えるには、開発者は {naming} に一致する変更スクリプトを作成する必要があります。",
-    "gitops-description-branch": "スクリプトが承認され、{branch} ブランチにマージされると、Bytebase はデータベースを変更するためのイシューを自動的に作成します。",
-    "setup-wizard-guide": "プロセス中に問題が発生した場合は、{guide} を参照してください。",
-    "add-git-provider": "Gitプロバイダーの追加",
-    "choose-git-provider": "Git プロバイダーを選択する",
-    "select-repository": "リポジトリを選択してください",
-    "configure-deploy": "デプロイ設定",
-    "choose-git-provider-description": "データベース スキーマ スクリプトをホストする Git プロバイダーを選択します。変更スクリプトを Git リポジトリにプッシュすると、Bytebase はデータベースの変更をデータベースに適用するためのイシューを自動的に作成します。",
-    "choose-git-provider-visit-workspace": "さらに Git プロバイダを追加するには、{workspace} 設定にアクセスしてください。",
-    "choose-git-provider-contact-workspace-admin": "他の Git プロバイダーをリストに表示したい場合は、Bytebase ワークスペース管理者に問い合わせてください。現在、Bytebase は独自にホストされた GitLab EE/CE をサポートしていますが、将来的には GitLab.com と GitHub Enterprise もサポートする予定です",
-    "select-repository-attention-gitlab": "Bytebase には、少なくとも「Maintainer」権限を持つ GitLab プロジェクトのみがリストされます。少なくともこの権限を持っている場合にのみ、コード プッシュ イベントをリッスンするようにプロジェクトの Webhook を設定できるためです。",
-    "select-repository-attention-github": "Bytebase には、管理者権限を持つ GitHub リポジトリのみがリストされます。この権限があればのみ、コード プッシュ イベントをリッスンするようにウェアハウスの Webhook を設定できるためです。",
-    "select-repository-attention-bitbucket": "Bytebase には、管理者権限がある Bitbucket リポジトリのみがリストされます。この権限があればのみ、コード プッシュ イベントをリッスンするようにウェアハウスの Webhook を設定できるためです。",
-    "select-repository-attention-azure-devops": "Bytebase には、OAuth を介してサードパーティ アプリケーションへのアクセスを許可する組織に属する Azure DevOps リポジトリのみがリストされます。\n必要なリポジトリが表示されない場合は、[組織] -> [組織の設定] -> [ポリシー] に移動して、サードパーティ アプリケーションのアクセスを有効にします。",
-    "select-repository-search": "リポジトリを検索する",
-    "linked": "関連倉庫"
-  },
-  "workflow": {
-    "gitops-workflow-description": "データベース変更スクリプトは Git リポジトリに保存されます。データベースを変更するには、開発者は変更スクリプトを作成し、レビューのために GitLab などの VCS に送信します。レビューが合格し、設定されたブランチにマージされると、Bytebase はデータベースを変更するためのイシューを自動的に生成します。"
   },
   "anomaly": {
     "attention-desc": "Bytebase は、インスタンスに設定されたスキャン間隔に基づいて異常を検出し、ここに表示します。",
@@ -1673,56 +1638,10 @@
     },
     "select": "アイテムを選択",
     "all": "全てのアイテム",
-    "gitops-connector": {
-      "add": "新しい GitOps 接続を追加",
-      "delete": "GitOps接続を削除する",
-      "update-success": "GitOps 接続が更新されました",
-      "create-success": "GitOps 接続が作成されました",
-      "delete-success": "GitOps 接続が削除されました"
-    },
     "masking-exemption": {
       "self": "マスキング免除",
       "grant-exemption": "免除を付与",
       "revoke-exemption-title": "{member} のエクスポートおよびクエリのマスキング免除を両方削除しますか？"
-    }
-  },
-  "gitops": {
-    "setting": {
-      "description": "Bytebase GitOps ワークフローでは、開発者は移行スクリプトを VCS に保存します。プル リクエストにより SQL レビューがトリガーされ、マージ時に移行計画が開始されます。管理者は VCS プロバイダーを設定し、プロジェクト所有者はプロジェクト内で VCS 接続を確立します。",
-      "add-git-provider": {
-        "self": "Gitプロバイダーの追加",
-        "description": "プロジェクトで GitOps ワークフローを有効にする前に、まず Bytebase を VCS に OAuth アプリケーションとして登録して VCS と統合する必要があります。",
-        "gitlab-self-host": "自己ホスト型 GitLab",
-        "github-self-host": "セルフホスト型 GitHub",
-        "azure-devops-service": "Azure DevOps サービス",
-        "add-success": "Git プロバイダー「{vcs}」が正常に追加されました",
-        "choose": "Git プロバイダーを選択する",
-        "basic-info": {
-          "gitlab-instance-url": "GitLab インスタンスの URL",
-          "gitlab-instance-url-label": "VCS インスタンスの URL。このインスタンスと Bytebase の間のネットワークが相互接続されていることを確認してください。",
-          "github-instance-url": "GitHub インスタンスの URL",
-          "bitbucket-instance-url": "Bitbucket インスタンスの URL",
-          "azure-instance-url": "Azure DevOps インスタンスの URL",
-          "instance-url-error": "インスタンス URL は https:// または http:// で始まる必要があります",
-          "display-name": "表示名",
-          "display-name-label": "異なる Git プロバイダーを区別するためのオプションの表示名。"
-        },
-        "access-token": {
-          "personal-access-token": "個人アクセストークン",
-          "github-fine-grained-token": "きめ細かい個人アクセス トークン",
-          "gitlab-personal-access-token": "専用のサービス ユーザーを作成し、メンテナー ロールと、管理するグループまたはプロジェクトに対する少なくとも次の権限を持つ {token} を生成します。プロジェクト アクセス トークンを生成して単一のプロジェクトを管理することも、グループ アクセス トークンを生成してグループ内のすべてのプロジェクトを管理することもできます。",
-          "github-personal-access-token": "専用のサービス ユーザーを作成し、組織または管理する必要があるすべてのプロジェクトのメンバー ロールを持つ {token} を生成します。",
-          "bitbucket-app-access-token": "特定のサービス ユーザーを生成し、関連する組織、プロジェクト、またはリポジトリを管理するための少なくとも次の権限を持つ 1 つの {app_password} を作成します。",
-          "bitbucket-app-access-token-tips": "以下に「{secret}」を挿入します。",
-          "bitbucket-app-password": "アプリケーションパスワード",
-          "azure-devops-personal-access-token": "専用のサービス ユーザーを作成し、次のスコープを持つアクセス可能なすべての組織のメンバー ロールを持つ {token} を生成します。 「組織」フィールドは「アクセス可能なすべての組織」に設定する必要があります。"
-        }
-      },
-      "git-provider": {
-        "delete-forbidden": "このプロバイダーを削除する前に、すべてのウェアハウスの関連付けを解除する必要があります。",
-        "delete": "Git プロバイダーを削除する",
-        "delete-confirm": "Git プロバイダー「{name}」を削除しますか?"
-      }
     }
   },
   "deployment-config": {
@@ -2571,7 +2490,6 @@
     }
   },
   "database-group": {
-    "self": "データベースのグループ化",
     "create": "新しいデータベースグループを作成する",
     "edit": "データベースグループの編集",
     "matched-database": "マッチングデータベース",

@@ -1,6 +1,5 @@
 <template>
   <div class="flex flex-col gap-y-3 py-2 px-3">
-    <VCSInfo />
     <ReleaseInfo />
     <TaskCheckSummarySection />
     <ReviewSection />
@@ -22,5 +21,4 @@ import PreBackupSection from "./PreBackupSection";
 import ReleaseInfo from "./ReleaseInfo.vue";
 import ReviewSection from "./ReviewSection";
 import TaskCheckSummarySection from "./TaskCheckSummarySection";
-import VCSInfo from "./VCSInfo.vue";
 </script>

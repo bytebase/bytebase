@@ -25,7 +25,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
-	"github.com/bytebase/bytebase/backend/api/gitops"
 	"github.com/bytebase/bytebase/backend/api/lsp"
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -358,17 +357,15 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		}
 		return nil
 	}
-	releaseService, planService, rolloutService, issueService, sqlService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, postCreateUser, s.secret)
+	_, planService, rolloutService, issueService, _, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, postCreateUser, s.secret)
 	if err != nil {
 		return nil, err
 	}
 	s.planService, s.rolloutService, s.issueService = planService, rolloutService, issueService
-	// GitOps webhook server.
-	gitOpsServer := gitops.NewService(s.store, s.licenseService, releaseService, planService, rolloutService, issueService, sqlService, s.sheetManager, profile)
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager)
 
 	// Configure echo server routes.
-	configureEchoRouters(s.echoServer, s.grpcServer, s.lspServer, gitOpsServer, directorySyncServer, mux, profile)
+	configureEchoRouters(s.echoServer, s.grpcServer, s.lspServer, directorySyncServer, mux, profile)
 
 	serverStarted = true
 	return s, nil
