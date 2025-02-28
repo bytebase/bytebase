@@ -94,9 +94,8 @@ func configureEchoRouters(
 	// LSP server.
 	e.GET(lspAPI, lspServer.Router)
 
-	// GitOps Webhook server.
-	webhookGroup := e.Group(webhookAPIPrefix)
-	scimGroup := webhookGroup.Group(scimAPIPrefix)
+	hookGroup := e.Group(webhookAPIPrefix)
+	scimGroup := hookGroup.Group(scimAPIPrefix)
 	directorySyncServer.RegisterDirectorySyncRoutes(scimGroup)
 }
 

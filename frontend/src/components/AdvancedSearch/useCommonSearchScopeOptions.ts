@@ -1,7 +1,6 @@
 import type { Ref, VNode } from "vue";
 import { computed, h, unref } from "vue";
 import { useRoute } from "vue-router";
-import GitIcon from "@/components/GitIcon.vue";
 import {
   InstanceV1Name,
   ProjectV1Name,
@@ -19,7 +18,6 @@ import {
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import { UNKNOWN_ID, type MaybeRef } from "@/types";
 import { engineToJSON } from "@/types/proto/v1/common";
-import { Workflow } from "@/types/proto/v1/project_service";
 import type { SearchParams, SearchScopeId } from "@/utils";
 import {
   environmentV1Name,
@@ -81,9 +79,6 @@ export const useCommonSearchScopeOptions = (
               const children: VNode[] = [
                 h(ProjectV1Name, { project: project, link: false }),
               ];
-              if (project.workflow === Workflow.VCS) {
-                children.push(h(GitIcon, { class: "h-4" }));
-              }
               return h("div", { class: "flex items-center gap-x-2" }, children);
             },
           };

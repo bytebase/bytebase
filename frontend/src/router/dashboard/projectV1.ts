@@ -272,54 +272,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         props: true,
       },
       {
-        path: "gitops",
-        meta: {
-          overrideTitle: true,
-        },
-        props: true,
-        children: [
-          {
-            path: "",
-            name: PROJECT_V1_ROUTE_GITOPS,
-            meta: {
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
-                "bb.vcsConnectors.list",
-              ],
-            },
-            component: () =>
-              import("@/views/project/ProjectVersionControlPanel.vue"),
-            props: true,
-          },
-          {
-            path: "new",
-            name: PROJECT_V1_ROUTE_GITOPS_CREATE,
-            meta: {
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
-                "bb.vcsConnectors.create",
-              ],
-            },
-            component: () =>
-              import("@/views/project/ProjectVersionControlCreate.vue"),
-            props: true,
-          },
-          {
-            path: ":vcsConnectorId",
-            name: PROJECT_V1_ROUTE_GITOPS_DETAIL,
-            meta: {
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
-                "bb.vcsConnectors.get",
-              ],
-            },
-            component: () =>
-              import("@/views/project/ProjectVersionControlDetail.vue"),
-            props: true,
-          },
-        ],
-      },
-      {
         path: "webhooks",
         meta: {
           overrideTitle: true,

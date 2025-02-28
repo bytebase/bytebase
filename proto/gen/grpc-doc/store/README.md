@@ -351,9 +351,6 @@
     - [MFAConfig](#bytebase-store-MFAConfig)
     - [UserProfile](#bytebase-store-UserProfile)
   
-- [store/vcs.proto](#store_vcs-proto)
-    - [VCSConnector](#bytebase-store-VCSConnector)
-  
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -5406,45 +5403,6 @@ MFAConfig is the MFA configuration for a user.
 | last_login_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | last_change_password_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | source | [string](#string) |  | source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
-<a name="store_vcs-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/vcs.proto
-
-
-
-<a name="bytebase-store-VCSConnector"></a>
-
-### VCSConnector
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  | The title or display name of the VCS connector. |
-| full_path | [string](#string) |  | Full path from the corresponding VCS provider. For GitLab, this is the project full path. e.g. group1/project-1 |
-| web_url | [string](#string) |  | Web url from the corresponding VCS provider. For GitLab, this is the project web url. e.g. https://gitlab.example.com/group1/project-1 |
-| branch | [string](#string) |  | Branch to listen to. |
-| base_directory | [string](#string) |  | Base working directory we are interested. |
-| external_id | [string](#string) |  | Repository id from the corresponding VCS provider. For GitLab, this is the project id. e.g. 123 |
-| external_webhook_id | [string](#string) |  | Push webhook id from the corresponding VCS provider. For GitLab, this is the project webhook id. e.g. 123 |
-| webhook_secret_token | [string](#string) |  | For GitLab, webhook request contains this in the &#39;X-Gitlab-Token&#34; header and we compare it with the one stored in db to validate it sends to the expected endpoint. |
-| database_group | [string](#string) |  | Apply changes to the database group. Optional, if not set, will apply changes to all databases in the project. Format: projects/{project}/databaseGroups/{databaseGroup} |
 
 
 

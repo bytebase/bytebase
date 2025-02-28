@@ -69,7 +69,6 @@ import { computed } from "vue";
 import { InstanceV1Name } from "@/components/v2";
 import { isValidDatabaseName } from "@/types";
 import { Plan_ChangeDatabaseConfig_Type } from "@/types/proto/v1/plan_service";
-import { Workflow } from "@/types/proto/v1/project_service";
 import { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Type, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
 import { databaseV1Url, extractSchemaVersionFromTask, isDev } from "@/utils";
@@ -84,7 +83,6 @@ const props = defineProps<{
 }>();
 
 const { isCreating, issue, selectedTask, events } = useIssueContext();
-const project = computed(() => issue.value.projectEntity);
 const selected = computed(() => props.task === selectedTask.value);
 
 const secondaryViewMode = computed((): SecondaryViewMode => {
@@ -105,10 +103,7 @@ const schemaVersion = computed(() => {
   if (issue.value.planEntity?.releaseSource?.release) {
     return v;
   }
-  // show the schema version for a task if
-  // the project is standard mode and VCS workflow
   if (isCreating.value) return "";
-  if (project.value.workflow === Workflow.UI) return "";
   return v;
 });
 

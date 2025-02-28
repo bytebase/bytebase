@@ -51,10 +51,9 @@ const (
 	FileNamePrefix             = "files/"
 	RevisionNamePrefix         = "revisions/"
 
-	SchemaSuffix     = "/schema"
-	MetadataSuffix   = "/metadata"
-	CatalogSuffix    = "/catalog"
-	GitOpsInfoSuffix = "/gitOpsInfo"
+	SchemaSuffix   = "/schema"
+	MetadataSuffix = "/metadata"
+	CatalogSuffix  = "/catalog"
 
 	UserBindingPrefix  = "user:"
 	GroupBindingPrefix = "group:"

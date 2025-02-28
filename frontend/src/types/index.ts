@@ -13,7 +13,6 @@ export * from "./oauth";
 export * from "./plan";
 export * from "./member";
 export * from "./store";
-export * from "./vcs";
 export * from "./sqlEditor";
 export * from "./sheet";
 export * from "./sqlReview";

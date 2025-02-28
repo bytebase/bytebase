@@ -14,59 +14,6 @@ import { GetIamPolicyRequest, IamPolicy, SetIamPolicyRequest } from "./iam_polic
 
 export const protobufPackage = "bytebase.v1";
 
-export enum Workflow {
-  WORKFLOW_UNSPECIFIED = "WORKFLOW_UNSPECIFIED",
-  UI = "UI",
-  VCS = "VCS",
-  UNRECOGNIZED = "UNRECOGNIZED",
-}
-
-export function workflowFromJSON(object: any): Workflow {
-  switch (object) {
-    case 0:
-    case "WORKFLOW_UNSPECIFIED":
-      return Workflow.WORKFLOW_UNSPECIFIED;
-    case 1:
-    case "UI":
-      return Workflow.UI;
-    case 2:
-    case "VCS":
-      return Workflow.VCS;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Workflow.UNRECOGNIZED;
-  }
-}
-
-export function workflowToJSON(object: Workflow): string {
-  switch (object) {
-    case Workflow.WORKFLOW_UNSPECIFIED:
-      return "WORKFLOW_UNSPECIFIED";
-    case Workflow.UI:
-      return "UI";
-    case Workflow.VCS:
-      return "VCS";
-    case Workflow.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export function workflowToNumber(object: Workflow): number {
-  switch (object) {
-    case Workflow.WORKFLOW_UNSPECIFIED:
-      return 0;
-    case Workflow.UI:
-      return 1;
-    case Workflow.VCS:
-      return 2;
-    case Workflow.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
 export enum OperatorType {
   /** OPERATOR_TYPE_UNSPECIFIED - The operator is not specified. */
   OPERATOR_TYPE_UNSPECIFIED = "OPERATOR_TYPE_UNSPECIFIED",
@@ -271,7 +218,6 @@ export interface Project {
   state: State;
   /** The title or name of a project. It's not unique within the workspace. */
   title: string;
-  workflow: Workflow;
   webhooks: Webhook[];
   dataClassificationConfigId: string;
   issueLabels: Label[];
@@ -1821,7 +1767,6 @@ function createBaseProject(): Project {
     name: "",
     state: State.STATE_UNSPECIFIED,
     title: "",
-    workflow: Workflow.WORKFLOW_UNSPECIFIED,
     webhooks: [],
     dataClassificationConfigId: "",
     issueLabels: [],
@@ -1846,9 +1791,6 @@ export const Project: MessageFns<Project> = {
     }
     if (message.title !== "") {
       writer.uint32(34).string(message.title);
-    }
-    if (message.workflow !== Workflow.WORKFLOW_UNSPECIFIED) {
-      writer.uint32(48).int32(workflowToNumber(message.workflow));
     }
     for (const v of message.webhooks) {
       Webhook.encode(v!, writer.uint32(90).fork()).join();
@@ -1915,14 +1857,6 @@ export const Project: MessageFns<Project> = {
           }
 
           message.title = reader.string();
-          continue;
-        }
-        case 6: {
-          if (tag !== 48) {
-            break;
-          }
-
-          message.workflow = workflowFromJSON(reader.int32());
           continue;
         }
         case 11: {
@@ -2027,7 +1961,6 @@ export const Project: MessageFns<Project> = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
-      workflow: isSet(object.workflow) ? workflowFromJSON(object.workflow) : Workflow.WORKFLOW_UNSPECIFIED,
       webhooks: globalThis.Array.isArray(object?.webhooks) ? object.webhooks.map((e: any) => Webhook.fromJSON(e)) : [],
       dataClassificationConfigId: isSet(object.dataClassificationConfigId)
         ? globalThis.String(object.dataClassificationConfigId)
@@ -2060,9 +1993,6 @@ export const Project: MessageFns<Project> = {
     }
     if (message.title !== "") {
       obj.title = message.title;
-    }
-    if (message.workflow !== Workflow.WORKFLOW_UNSPECIFIED) {
-      obj.workflow = workflowToJSON(message.workflow);
     }
     if (message.webhooks?.length) {
       obj.webhooks = message.webhooks.map((e) => Webhook.toJSON(e));
@@ -2108,7 +2038,6 @@ export const Project: MessageFns<Project> = {
     message.name = object.name ?? "";
     message.state = object.state ?? State.STATE_UNSPECIFIED;
     message.title = object.title ?? "";
-    message.workflow = object.workflow ?? Workflow.WORKFLOW_UNSPECIFIED;
     message.webhooks = object.webhooks?.map((e) => Webhook.fromPartial(e)) || [];
     message.dataClassificationConfigId = object.dataClassificationConfigId ?? "";
     message.issueLabels = object.issueLabels?.map((e) => Label.fromPartial(e)) || [];
