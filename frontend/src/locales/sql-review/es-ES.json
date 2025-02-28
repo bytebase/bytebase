@@ -366,7 +366,7 @@
     },
     "column-default-disallow-volatile": {
       "title": "No permitir establecer valores predeterminados volátiles en las columnas",
-      "description": "Las funciones volátiles (por ejemplo, clock_timestamp()) actualizan cada fila con el valor en el momento de la ejecución de ALTER TABLE, lo que puede causar actualizaciones prolongadas."
+      "description": "Las funciones volátiles (por ejemplo, clock_timestamp()) actualizan cada fila con el valor en el momento de la ejecución de ALTER TABLE ADD COLUMN, lo que puede causar actualizaciones prolongadas."
     },
     "column-require-charset": {
       "title": "Requerir juego de caracteres para columnas de texto",

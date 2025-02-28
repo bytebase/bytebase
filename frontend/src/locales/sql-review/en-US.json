@@ -366,7 +366,7 @@
     },
     "column-default-disallow-volatile": {
       "title": "Disallow setting volatile default value on columns",
-      "description": "Volatile functions (e.g., clock_timestamp()) update each row with the value at the time of ALTER TABLE execution, potentially causing lengthy updates."
+      "description": "Volatile functions (e.g., clock_timestamp()) update each row with the value at the time of ALTER TABLE ADD COLUMN execution, potentially causing lengthy updates."
     },
     "column-require-charset": {
       "title": "Require charset for text columns",
