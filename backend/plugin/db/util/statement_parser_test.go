@@ -439,9 +439,6 @@ CREATE INDEX bytebase_idx_migration_history_namespace_created ON migration_histo
     sequence INT64 NOT NULL,
     CONSTRAINT sequence_is_non_negative CHECK (sequence >= 0),
     
-    
-    source STRING(MAX) NOT NULL,
-    
     type STRING(MAX) NOT NULL,
     
     
