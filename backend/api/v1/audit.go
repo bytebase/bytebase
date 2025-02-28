@@ -284,27 +284,6 @@ func getRequestString(request any) (string, error) {
 		case *v1pb.UpdateSecretRequest:
 			r.Secret = redactSecret(r.Secret)
 			return r
-		case *v1pb.CreateVCSProviderRequest:
-			return &v1pb.CreateVCSProviderRequest{
-				VcsProvider: &v1pb.VCSProvider{
-					Name:        r.VcsProvider.Name,
-					Title:       r.VcsProvider.Title,
-					Type:        r.VcsProvider.Type,
-					Url:         r.VcsProvider.Url,
-					AccessToken: maskedString,
-				},
-			}
-		case *v1pb.UpdateVCSProviderRequest:
-			return &v1pb.UpdateVCSProviderRequest{
-				VcsProvider: &v1pb.VCSProvider{
-					Name:        r.VcsProvider.Name,
-					Title:       r.VcsProvider.Title,
-					Type:        r.VcsProvider.Type,
-					Url:         r.VcsProvider.Url,
-					AccessToken: maskedString,
-				},
-				UpdateMask: r.UpdateMask,
-			}
 		default:
 			if p, ok := r.(protoreflect.ProtoMessage); ok {
 				return p

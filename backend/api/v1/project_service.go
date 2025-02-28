@@ -1228,10 +1228,6 @@ func convertToStoreIamPolicyMember(ctx context.Context, stores *store.Store, mem
 }
 
 func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
-	workflow := v1pb.Workflow_UI
-	if projectMessage.VCSConnectorsCount > 0 {
-		workflow = v1pb.Workflow_VCS
-	}
 	var projectWebhooks []*v1pb.Webhook
 	for _, webhook := range projectMessage.Webhooks {
 		projectWebhooks = append(projectWebhooks, &v1pb.Webhook{
@@ -1257,7 +1253,6 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		Name:                       common.FormatProject(projectMessage.ResourceID),
 		State:                      convertDeletedToState(projectMessage.Deleted),
 		Title:                      projectMessage.Title,
-		Workflow:                   workflow,
 		Webhooks:                   projectWebhooks,
 		DataClassificationConfigId: projectMessage.DataClassificationConfigID,
 		IssueLabels:                issueLabels,

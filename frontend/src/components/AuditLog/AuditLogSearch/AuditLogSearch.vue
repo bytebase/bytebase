@@ -26,7 +26,6 @@ import type {
   ScopeOption,
   ValueOption,
 } from "@/components/AdvancedSearch/types";
-import GitIcon from "@/components/GitIcon.vue";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
 import { ProjectV1Name } from "@/components/v2";
@@ -34,7 +33,6 @@ import { ALL_METHODS_WITH_AUDIT } from "@/grpcweb/methods";
 import { useCurrentUserV1, useProjectV1List, useUserStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { AuditLog_Severity } from "@/types/proto/v1/audit_log_service";
-import { Workflow } from "@/types/proto/v1/project_service";
 import {
   extractProjectResourceName,
   type SearchParams,
@@ -107,9 +105,6 @@ const scopeOptions = computed((): ScopeOption[] => {
           ],
           render: () => {
             const children = [<ProjectV1Name project={project} link={false} />];
-            if (project.workflow === Workflow.VCS) {
-              children.push(<GitIcon class="h-4" />);
-            }
             return <div class="flex items-center gap-x-2">{children}</div>;
           },
         };

@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 
-	"github.com/bytebase/bytebase/backend/tests/fake"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -129,8 +128,7 @@ func TestCreateDatabaseGroup(t *testing.T) {
 			ctl := &controller{}
 			ctx := context.Background()
 			ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-				dataDir:            t.TempDir(),
-				vcsProviderCreator: fake.NewGitLab,
+				dataDir: t.TempDir(),
 			})
 			a.NoError(err)
 			defer func() {

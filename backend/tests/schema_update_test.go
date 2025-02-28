@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
-	"github.com/bytebase/bytebase/backend/tests/fake"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -23,8 +22,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir: dataDir,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
@@ -255,8 +253,7 @@ CREATE TABLE "public"."book" (
 	ctx := context.Background()
 	ctl := &controller{}
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            t.TempDir(),
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir: t.TempDir(),
 	})
 	a.NoError(err)
 	defer func() {
@@ -370,8 +367,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir: dataDir,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)

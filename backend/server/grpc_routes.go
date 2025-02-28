@@ -78,7 +78,6 @@ func configureGrpcRouters(
 	v1pb.RegisterAnomalyServiceServer(grpcServer, apiv1.NewAnomalyService(stores))
 	sqlService := apiv1.NewSQLService(stores, sheetManager, schemaSyncer, dbFactory, licenseService, profile, iamManager)
 	v1pb.RegisterSQLServiceServer(grpcServer, sqlService)
-	v1pb.RegisterVCSProviderServiceServer(grpcServer, apiv1.NewVCSProviderService(stores))
 	v1pb.RegisterRiskServiceServer(grpcServer, apiv1.NewRiskService(stores, licenseService))
 	releaseService := apiv1.NewReleaseService(stores, sheetManager, schemaSyncer, dbFactory)
 	v1pb.RegisterReleaseServiceServer(grpcServer, releaseService)
@@ -94,7 +93,6 @@ func configureGrpcRouters(
 	v1pb.RegisterCelServiceServer(grpcServer, apiv1.NewCelService())
 	v1pb.RegisterDatabaseGroupServiceServer(grpcServer, apiv1.NewDatabaseGroupService(stores, profile, iamManager, licenseService))
 	v1pb.RegisterChangelistServiceServer(grpcServer, apiv1.NewChangelistService(stores, profile, iamManager))
-	v1pb.RegisterVCSConnectorServiceServer(grpcServer, apiv1.NewVCSConnectorService(stores))
 	v1pb.RegisterGroupServiceServer(grpcServer, apiv1.NewGroupService(stores, iamManager, licenseService))
 	v1pb.RegisterReviewConfigServiceServer(grpcServer, apiv1.NewReviewConfigService(stores, licenseService))
 
@@ -191,12 +189,6 @@ func configureGrpcRouters(
 		return nil, nil, nil, nil, nil, err
 	}
 	if err := v1pb.RegisterSubscriptionServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, nil, nil, nil, err
-	}
-	if err := v1pb.RegisterVCSConnectorServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, nil, nil, nil, err
-	}
-	if err := v1pb.RegisterVCSProviderServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
 	if err := v1pb.RegisterWorksheetServiceHandler(ctx, mux, grpcConn); err != nil {

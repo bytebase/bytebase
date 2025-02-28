@@ -10,7 +10,6 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/bytebase/bytebase/backend/tests/fake"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -129,8 +128,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir: dataDir,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)

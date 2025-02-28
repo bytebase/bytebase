@@ -22,7 +22,6 @@ type ProjectMessage struct {
 	Webhooks                   []*ProjectWebhookMessage
 	DataClassificationConfigID string
 	Setting                    *storepb.Project
-	VCSConnectorsCount         int
 	Deleted                    bool
 }
 
@@ -251,7 +250,6 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			resource_id,
 			name,
 			data_classification_config_id,
-			(SELECT COUNT(1) FROM vcs_connector WHERE project.resource_id = vcs_connector.project) AS connectors,
 			setting,
 			deleted
 		FROM project
@@ -271,7 +269,6 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			&projectMessage.ResourceID,
 			&projectMessage.Title,
 			&projectMessage.DataClassificationConfigID,
-			&projectMessage.VCSConnectorsCount,
 			&payload,
 			&projectMessage.Deleted,
 		); err != nil {

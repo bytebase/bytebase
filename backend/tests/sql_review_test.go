@@ -24,7 +24,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/tests/fake"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -83,8 +82,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	tests, err := readTestData(filepath)
 	a.NoError(err)
 	ctx, err = ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir: dataDir,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
@@ -259,8 +257,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 	dataDir := t.TempDir()
 	ctx, err = ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir: dataDir,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
