@@ -55,6 +55,8 @@ type DataSourceMessage struct {
 	MasterName               string
 	MasterUsername           string
 	MasterObfuscatedPassword string
+	// Extra connection parameters
+	ExtraConnectionParameters map[string]string
 }
 
 // FindDataSourceMessage is the message for finding a database.
@@ -101,6 +103,7 @@ func (m *DataSourceMessage) Copy() *DataSourceMessage {
 		MasterName:                         m.MasterName,
 		MasterUsername:                     m.MasterUsername,
 		MasterObfuscatedPassword:           m.MasterObfuscatedPassword,
+		ExtraConnectionParameters:          m.ExtraConnectionParameters,
 	}
 }
 
@@ -235,6 +238,7 @@ func (*Store) listInstanceDataSourceMap(ctx context.Context, tx *Tx, find *FindD
 		dataSourceMessage.MasterName = dataSourceOptions.MasterName
 		dataSourceMessage.MasterObfuscatedPassword = dataSourceOptions.MasterObfuscatedPassword
 		dataSourceMessage.MasterUsername = dataSourceOptions.MasterUsername
+		dataSourceMessage.ExtraConnectionParameters = dataSourceOptions.ExtraConnectionParameters
 		instanceDataSourcesMap[instanceID] = append(instanceDataSourcesMap[instanceID], &dataSourceMessage)
 	}
 	if err := rows.Err(); err != nil {
@@ -506,6 +510,7 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 		MasterName:                         dataSource.MasterName,
 		MasterUsername:                     dataSource.MasterName,
 		MasterObfuscatedPassword:           dataSource.MasterObfuscatedPassword,
+		ExtraConnectionParameters:          dataSource.ExtraConnectionParameters,
 	}
 	protoBytes, err := protojson.Marshal(&dataSourceOptions)
 	if err != nil {

@@ -143,6 +143,10 @@ message DataSourceOptions {
 
   // Cluster is the cluster name for the data source. Used by CockroachDB.
   string cluster = 25;
+
+  // Extra connection parameters for the database connection.
+  // For PostgreSQL HA, this can be used to set target_session_attrs=read-write
+  map<string, string> extra_connection_parameters = 27;
 }
 
 message SASLConfig {

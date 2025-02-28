@@ -424,6 +424,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.DataSourceOptions.ExtraConnectionParametersEntry"><span class="badge">M</span>DataSourceOptions.ExtraConnectionParametersEntry</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.KerberosConfig"><span class="badge">M</span>KerberosConfig</a>
                 </li>
               
@@ -3600,6 +3604,14 @@ Used for authentication when connecting to the data source. </p></td>
                   <td><p>Cluster is the cluster name for the data source. Used by CockroachDB. </p></td>
                 </tr>
               
+                <tr>
+                  <td>extra_connection_parameters</td>
+                  <td><a href="#bytebase.store.DataSourceOptions.ExtraConnectionParametersEntry">DataSourceOptions.ExtraConnectionParametersEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>Extra connection parameters for the database connection.
+For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -3664,6 +3676,37 @@ Used for authentication when connecting to the data source. </p></td>
               
                 <tr>
                   <td>client_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.DataSourceOptions.ExtraConnectionParametersEntry">DataSourceOptions.ExtraConnectionParametersEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
