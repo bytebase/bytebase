@@ -366,7 +366,7 @@
     },
     "column-default-disallow-volatile": {
       "title": "列に対して揮発性のあるデフォルト値の設定を禁止します",
-      "description": "ボラタイル関数（例: clock_timestamp()）は、ALTER TABLE 実行時の値で各行を更新し、更新が長引く可能性があります。"
+      "description": "ボラタイル関数（例: clock_timestamp()）は、ALTER TABLE ADD COLUMN 実行時の値で各行を更新し、更新が長引く可能性があります。"
     },
     "column-require-charset": {
       "title": "テキスト列に文字セットを要求する",
