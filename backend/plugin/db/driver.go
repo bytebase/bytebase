@@ -84,18 +84,6 @@ type DriverConfig struct {
 
 type driverFunc func(DriverConfig) Driver
 
-// MigrationSource is the migration engine.
-type MigrationSource string
-
-const (
-	// UI is the migration source type for UI.
-	UI MigrationSource = "UI"
-	// VCS is the migration source type for VCS.
-	VCS MigrationSource = "VCS"
-	// LIBRARY is the migration source type for LIBRARY.
-	LIBRARY MigrationSource = "LIBRARY"
-)
-
 // MigrationType is the type of a migration.
 type MigrationType string
 

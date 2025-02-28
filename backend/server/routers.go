@@ -15,7 +15,6 @@ import (
 	"google.golang.org/grpc"
 
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
-	"github.com/bytebase/bytebase/backend/api/gitops"
 	"github.com/bytebase/bytebase/backend/api/lsp"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -25,7 +24,6 @@ func configureEchoRouters(
 	e *echo.Echo,
 	grpcServer *grpc.Server,
 	lspServer *lsp.Server,
-	gitOpsServer *gitops.Service,
 	directorySyncServer *directorysync.Service,
 	mux *grpcruntime.ServeMux,
 	profile *config.Profile,
@@ -96,11 +94,8 @@ func configureEchoRouters(
 	// LSP server.
 	e.GET(lspAPI, lspServer.Router)
 
-	// GitOps Webhook server.
-	webhookGroup := e.Group(webhookAPIPrefix)
-	gitOpsServer.RegisterWebhookRoutes(webhookGroup)
-
-	scimGroup := webhookGroup.Group(scimAPIPrefix)
+	hookGroup := e.Group(webhookAPIPrefix)
+	scimGroup := hookGroup.Group(scimAPIPrefix)
 	directorySyncServer.RegisterDirectorySyncRoutes(scimGroup)
 }
 

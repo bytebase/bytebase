@@ -19,8 +19,7 @@ func TestDataSource(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir: dataDir,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)
@@ -136,8 +135,7 @@ func TestExternalSecretManager(t *testing.T) {
 	ctl := &controller{}
 	dataDir := t.TempDir()
 	ctx, err := ctl.StartServerWithExternalPg(ctx, &config{
-		dataDir:            dataDir,
-		vcsProviderCreator: fake.NewGitLab,
+		dataDir: dataDir,
 	})
 	a.NoError(err)
 	defer ctl.Close(ctx)

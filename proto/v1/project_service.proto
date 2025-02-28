@@ -294,8 +294,6 @@ message Project {
   // The title or name of a project. It's not unique within the workspace.
   string title = 4;
 
-  Workflow workflow = 6;
-
   repeated Webhook webhooks = 11;
 
   string data_classification_config_id = 12;
@@ -323,12 +321,6 @@ message Project {
 
   // Whether to allow the issue creator to self-approve the issue.
   bool allow_self_approval = 21;
-}
-
-enum Workflow {
-  WORKFLOW_UNSPECIFIED = 0;
-  UI = 1;
-  VCS = 2;
 }
 
 message AddWebhookRequest {

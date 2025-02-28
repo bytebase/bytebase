@@ -23,7 +23,6 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
   PROJECT_V1_ROUTE_SLOW_QUERIES,
   PROJECT_V1_ROUTE_ANOMALIES,
-  PROJECT_V1_ROUTE_GITOPS,
   PROJECT_V1_ROUTE_MEMBERS,
   PROJECT_V1_ROUTE_SETTINGS,
   PROJECT_V1_ROUTE_WEBHOOKS,
@@ -212,11 +211,6 @@ export const useProjectSidebar = (
           databaseChangeMode.value === DatabaseChangeMode.EDITOR,
         expand: true,
         children: [
-          {
-            title: t("common.gitops"),
-            path: PROJECT_V1_ROUTE_GITOPS,
-            type: "div",
-          },
           {
             title: t("common.webhooks"),
             path: PROJECT_V1_ROUTE_WEBHOOKS,

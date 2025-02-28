@@ -33,7 +33,6 @@ import {
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
-import { Workflow } from "@/types/proto/v1/project_service";
 import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import ResourceSelect from "./ResourceSelect.vue";
 
@@ -43,7 +42,6 @@ const props = withDefaults(
     projectName?: string | undefined | null; // UNKNOWN_PROJECT_NAME to "ALL"
     projectNames?: string[] | undefined | null;
     allowedProjectRoleList?: string[]; // Empty array([]) to "ALL"
-    allowedProjectWorkflowTypeList?: Workflow[];
     includeAll?: boolean;
     includeDefaultProject?: boolean;
     includeArchived?: boolean;
@@ -57,7 +55,6 @@ const props = withDefaults(
     projectName: undefined,
     projectNames: undefined,
     allowedProjectRoleList: () => [],
-    allowedProjectWorkflowTypeList: () => [Workflow.UI, Workflow.VCS],
     includeAll: false,
     includeDefaultProject: false,
     includeArchived: false,
@@ -86,7 +83,7 @@ const rawProjectList = computed(() => {
     if (project.name === DEFAULT_PROJECT_NAME) {
       return false;
     }
-    return props.allowedProjectWorkflowTypeList.includes(project.workflow);
+    return true;
   });
 });
 

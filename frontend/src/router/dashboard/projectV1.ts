@@ -23,9 +23,6 @@ export const PROJECT_V1_ROUTE_SYNC_SCHEMA = `${PROJECT_V1_ROUTE_DASHBOARD}.sync-
 export const PROJECT_V1_ROUTE_SLOW_QUERIES = `${PROJECT_V1_ROUTE_DASHBOARD}.slow-queries`;
 export const PROJECT_V1_ROUTE_ANOMALIES = `${PROJECT_V1_ROUTE_DASHBOARD}.anomalies`;
 export const PROJECT_V1_ROUTE_AUDIT_LOGS = `${PROJECT_V1_ROUTE_DASHBOARD}.audit-logs`;
-export const PROJECT_V1_ROUTE_GITOPS = `${PROJECT_V1_ROUTE_DASHBOARD}.gitops`;
-export const PROJECT_V1_ROUTE_GITOPS_CREATE = `${PROJECT_V1_ROUTE_GITOPS}.create`;
-export const PROJECT_V1_ROUTE_GITOPS_DETAIL = `${PROJECT_V1_ROUTE_GITOPS}.detail`;
 export const PROJECT_V1_ROUTE_WEBHOOKS = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook`;
 export const PROJECT_V1_ROUTE_WEBHOOK_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook.create`;
 export const PROJECT_V1_ROUTE_WEBHOOK_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook.detail`;
@@ -270,54 +267,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         },
         component: () => import("@/views/project/ProjectAuditLogDashboard.vue"),
         props: true,
-      },
-      {
-        path: "gitops",
-        meta: {
-          overrideTitle: true,
-        },
-        props: true,
-        children: [
-          {
-            path: "",
-            name: PROJECT_V1_ROUTE_GITOPS,
-            meta: {
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
-                "bb.vcsConnectors.list",
-              ],
-            },
-            component: () =>
-              import("@/views/project/ProjectVersionControlPanel.vue"),
-            props: true,
-          },
-          {
-            path: "new",
-            name: PROJECT_V1_ROUTE_GITOPS_CREATE,
-            meta: {
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
-                "bb.vcsConnectors.create",
-              ],
-            },
-            component: () =>
-              import("@/views/project/ProjectVersionControlCreate.vue"),
-            props: true,
-          },
-          {
-            path: ":vcsConnectorId",
-            name: PROJECT_V1_ROUTE_GITOPS_DETAIL,
-            meta: {
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
-                "bb.vcsConnectors.get",
-              ],
-            },
-            component: () =>
-              import("@/views/project/ProjectVersionControlDetail.vue"),
-            props: true,
-          },
-        ],
       },
       {
         path: "webhooks",
