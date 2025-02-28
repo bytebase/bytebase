@@ -101,8 +101,7 @@ func (checker *columnDefaultDisallowVolatileChecker) addColumn(schema string, ta
 }
 
 func (checker *columnDefaultDisallowVolatileChecker) Visit(in ast.Node) ast.Visitor {
-	switch node := in.(type) {
-	case *ast.AlterTableStmt:
+	if node, ok := in.(*ast.AlterTableStmt); ok {
 		for _, item := range node.AlterItemList {
 			if addColumn, ok := item.(*ast.AddColumnListStmt); ok {
 				for _, column := range addColumn.ColumnList {
@@ -113,7 +112,6 @@ func (checker *columnDefaultDisallowVolatileChecker) Visit(in ast.Node) ast.Visi
 			}
 		}
 	}
-
 	return checker
 }
 
