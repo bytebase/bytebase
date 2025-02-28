@@ -136,6 +136,8 @@ func hasVolatile(column *ast.ColumnDef) bool {
 			continue
 		case *ast.StringDef:
 			continue
+		case *ast.BoolDef:
+			continue
 		}
 	}
 	return false
