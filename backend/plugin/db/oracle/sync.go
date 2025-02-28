@@ -229,6 +229,7 @@ func getTables(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*stor
 		SELECT OWNER, TABLE_NAME, NUM_ROWS 
 		FROM all_tables
 		WHERE OWNER NOT IN (%s) AND OWNER NOT LIKE 'APEX_%%'
+		
 		ORDER BY OWNER, TABLE_NAME`, systemSchema)
 	} else {
 		query = fmt.Sprintf(`
