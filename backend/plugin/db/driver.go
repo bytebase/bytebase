@@ -222,6 +222,7 @@ type ConnectionContext struct {
 	EngineVersion string
 	// UseDatabaseOwner is used by Postgres for using role of database owner.
 	UseDatabaseOwner bool
+	AppSuffix        string
 }
 
 // QueryContext is the context to query.
