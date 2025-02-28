@@ -1,4 +1,4 @@
-- statement: CREATE TABLE t(a serial primary key, b int default 1)
+- statement: CREATE TABLE t(a serial primary key, b int default 1, c boolean default true)
   changeType: 0
 - statement: CREATE TABLE t(a serial primary key, b int default current_user)
   changeType: 0
