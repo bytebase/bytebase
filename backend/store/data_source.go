@@ -8,6 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -331,6 +333,42 @@ func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceID string, dataS
 	return nil
 }
 
+func getDataSourceOption(ctx context.Context, tx *Tx, find *FindDataSourceMessage) (*storepb.DataSourceOptions, error) {
+	where, args := []string{"TRUE"}, []any{}
+	if find.ID != nil {
+		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *find.ID)
+	}
+	if find.Name != nil {
+		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *find.Name)
+	}
+	if find.InstanceID != nil {
+		where, args = append(where, fmt.Sprintf("instance = $%d", len(args)+1)), append(args, *find.InstanceID)
+	}
+	if find.Type != nil {
+		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *find.Type)
+	}
+	row := tx.QueryRowContext(ctx, `
+		SELECT
+			options
+		FROM data_source
+		WHERE `+strings.Join(where, " AND "),
+		args...,
+	)
+	if row.Err() != nil {
+		return nil, row.Err()
+	}
+	var protoBytes []byte
+	if err := row.Scan(&protoBytes); err != nil {
+		return nil, err
+	}
+	var dataSourceOptions storepb.DataSourceOptions
+	if err := common.ProtojsonUnmarshaler.Unmarshal(protoBytes, &dataSourceOptions); err != nil {
+		return nil, err
+	}
+
+	return &dataSourceOptions, nil
+}
+
 // UpdateDataSourceV2 updates a data source and returns the instance.
 func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceMessage) error {
 	set, args := []string{}, []any{}
@@ -360,106 +398,101 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 		set, args = append(set, fmt.Sprintf("database = $%d", len(args)+1)), append(args, *v)
 	}
 
-	// Use jsonb_build_object to build the jsonb object to update some fields in jsonb instead of whole column.
-	// To view the json tag, please refer to the struct definition of storepb.DataSourceOptions.
-	var optionSet []string
-	if v := patch.SRV; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('srv', $%d::BOOLEAN)", len(args)+1)), append(args, *v)
-	}
-	if v := patch.AuthenticationDatabase; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('authenticationDatabase', $%d::TEXT)", len(args)+1)), append(args, *v)
-	}
-	if v := patch.SID; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('sid', $%d::TEXT)", len(args)+1)), append(args, *v)
-	}
-	if v := patch.ServiceName; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('serviceName', $%d::TEXT)", len(args)+1)), append(args, *v)
-	}
-	if v := patch.SSHHost; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('sshHost', $%d::TEXT)", len(args)+1)), append(args, *v)
-	}
-	if v := patch.SSHPort; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('sshPort', $%d::TEXT)", len(args)+1)), append(args, *v)
-	}
-	if v := patch.SSHUser; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('sshUser', $%d::TEXT)", len(args)+1)), append(args, *v)
-	}
-	if v := patch.SSHObfuscatedPassword; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('sshObfuscatedPassword', $%d::TEXT)", len(args)+1)), append(args, *v)
-	}
-	if v := patch.SSHObfuscatedPrivateKey; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('sshObfuscatedPrivateKey', $%d::TEXT)", len(args)+1)), append(args, *v)
-	}
-	if v := patch.AuthenticationPrivateKeyObfuscated; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('authenticationPrivateKeyObfuscated', $%d::TEXT)", len(args)+1)), append(args, *v)
-	}
-	if v := patch.AuthenticationType; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('authenticationType', $%d::TEXT)", len(args)+1)), append(args, *v)
-	}
-	if v := patch.ExternalSecret; v != nil {
-		protoBytes, err := protojson.Marshal(v)
-		if err != nil {
-			return errors.Wrap(err, "failed to marshal external secret")
-		}
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('externalSecret', $%d::JSONB)", len(args)+1)), append(args, protoBytes)
-	} else if patch.RemoveExternalSecret {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('externalSecret', $%d::JSONB)", len(args)+1)), append(args, nil)
-	}
-	if v := patch.SASLConfig; v != nil {
-		protoBytes, err := protojson.Marshal(v)
-		if err != nil {
-			return errors.Wrap(err, "failed to marshal sasl config")
-		}
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('saslConfig', $%d::JSONB)", len(args)+1)), append(args, protoBytes)
-	} else if patch.RemoveSASLConfig {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('saslConfig', $%d::JSONB)", len(args)+1)), append(args, nil)
-	}
-	if v := patch.AdditionalAddress; v != nil {
-		partialDataSourceOptions := &storepb.DataSourceOptions{
-			AdditionalAddresses: *v,
-		}
-		protoBytes, err := protojson.Marshal(partialDataSourceOptions)
-		if err != nil {
-			return errors.Wrap(err, "failed to marshal additional address")
-		}
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('additionalAddresses', ($%d::JSONB)->'additionalAddresses')", len(args)+1)), append(args, protoBytes)
-	}
-	if v := patch.ReplicaSet; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('replicaSet', $%d::TEXT)", len(args)+1)), append(args, *v)
-	}
-	if v := patch.DirectConnection; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('directConnection', $%d::BOOLEAN)", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Region; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('region', $%d::TEXT)", len(args)+1)), append(args, *v)
-	}
-	if v := patch.WarehouseID; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('warehouseId', $%d::TEXT)", len(args)+1)), append(args, *v)
-	}
-	if v := patch.UseSSL; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('useSsl', $%d::BOOLEAN)", len(args)+1)), append(args, *v)
-	}
-	if v := patch.RedisType; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('redisType', $%d::TEXT)", len(args)+1)), append(args, *v)
-	}
-	if v := patch.MasterName; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('masterName', $%d::TEXT)", len(args)+1)), append(args, *v)
-	}
-	if v := patch.MasterUsername; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('masterUsername', $%d::TEXT)", len(args)+1)), append(args, *v)
-	}
-	if v := patch.MasterObfuscatedPassword; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('masterObfuscatedPassword', $%d::TEXT)", len(args)+1)), append(args, *v)
-	}
-	if len(optionSet) != 0 {
-		set = append(set, fmt.Sprintf(`options = options || %s`, strings.Join(optionSet, "||")))
-	}
-
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return errors.New("Failed to begin transaction")
+		return errors.New("failed to begin transaction")
 	}
 	defer tx.Rollback()
+
+	dataSource, err := getDataSourceOption(ctx, tx, &FindDataSourceMessage{
+		InstanceID: &patch.InstanceID,
+		Name:       &patch.DataSourceID,
+	})
+	if err != nil {
+		return err
+	}
+	if dataSource == nil {
+		return status.Errorf(codes.NotFound, "data source not found: %s", patch.DataSourceID)
+	}
+
+	if v := patch.SRV; v != nil {
+		dataSource.Srv = *v
+	}
+	if v := patch.AuthenticationDatabase; v != nil {
+		dataSource.AuthenticationDatabase = *v
+	}
+	if v := patch.SID; v != nil {
+		dataSource.Sid = *v
+	}
+	if v := patch.ServiceName; v != nil {
+		dataSource.ServiceName = *v
+	}
+	if v := patch.SSHHost; v != nil {
+		dataSource.SshHost = *v
+	}
+	if v := patch.SSHPort; v != nil {
+		dataSource.SshPort = *v
+	}
+	if v := patch.SSHUser; v != nil {
+		dataSource.SshUser = *v
+	}
+	if v := patch.SSHObfuscatedPassword; v != nil {
+		dataSource.SshObfuscatedPassword = *v
+	}
+	if v := patch.SSHObfuscatedPrivateKey; v != nil {
+		dataSource.SshObfuscatedPrivateKey = *v
+	}
+	if v := patch.AuthenticationPrivateKeyObfuscated; v != nil {
+		dataSource.AuthenticationPrivateKeyObfuscated = *v
+	}
+	if v := patch.AuthenticationType; v != nil {
+		dataSource.AuthenticationType = *v
+	}
+	if v := patch.ExternalSecret; v != nil {
+		dataSource.ExternalSecret = v
+	} else if patch.RemoveExternalSecret {
+		dataSource.ExternalSecret = nil
+	}
+	if v := patch.SASLConfig; v != nil {
+		dataSource.SaslConfig = v
+	} else if patch.RemoveSASLConfig {
+		dataSource.SaslConfig = nil
+	}
+	if v := patch.AdditionalAddress; v != nil {
+		dataSource.AdditionalAddresses = *v
+	}
+	if v := patch.ReplicaSet; v != nil {
+		dataSource.ReplicaSet = *v
+	}
+	if v := patch.DirectConnection; v != nil {
+		dataSource.DirectConnection = *v
+	}
+	if v := patch.Region; v != nil {
+		dataSource.Region = *v
+	}
+	if v := patch.WarehouseID; v != nil {
+		dataSource.WarehouseId = *v
+	}
+	if v := patch.UseSSL; v != nil {
+		dataSource.UseSsl = *v
+	}
+	if v := patch.RedisType; v != nil {
+		dataSource.RedisType = *v
+	}
+	if v := patch.MasterName; v != nil {
+		dataSource.MasterName = *v
+	}
+	if v := patch.MasterUsername; v != nil {
+		dataSource.MasterUsername = *v
+	}
+	if v := patch.MasterObfuscatedPassword; v != nil {
+		dataSource.MasterObfuscatedPassword = *v
+	}
+	protoBytes, err := protojson.Marshal(dataSource)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal data source options")
+	}
+	set, args = append(set, fmt.Sprintf("options = $%d", len(args)+1)), append(args, protoBytes)
 
 	query := fmt.Sprintf(`UPDATE data_source SET %s WHERE instance = $%d AND name = $%d`, strings.Join(set, ", "), len(args)+1, len(args)+2)
 	args = append(args, patch.InstanceID, patch.DataSourceID)

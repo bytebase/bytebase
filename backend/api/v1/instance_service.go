@@ -825,10 +825,13 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			patch.AdditionalAddress = &additionalAddresses
 		case "replica_set":
 			dataSource.ReplicaSet = request.DataSource.ReplicaSet
+			patch.ReplicaSet = &request.DataSource.ReplicaSet
 		case "direct_connection":
 			dataSource.DirectConnection = request.DataSource.DirectConnection
+			patch.DirectConnection = &request.DataSource.DirectConnection
 		case "region":
 			dataSource.Region = request.DataSource.Region
+			patch.Region = &request.DataSource.Region
 		case "warehouse_id":
 			dataSource.WarehouseID = request.DataSource.WarehouseId
 			patch.WarehouseID = &request.DataSource.WarehouseId
@@ -1170,6 +1173,8 @@ func convertToV1DataSources(dataSources []*store.DataSourceMessage) ([]*v1pb.Dat
 			authenticationType = v1pb.DataSource_GOOGLE_CLOUD_SQL_IAM
 		case storepb.DataSourceOptions_AWS_RDS_IAM:
 			authenticationType = v1pb.DataSource_AWS_RDS_IAM
+		case storepb.DataSourceOptions_AZURE_IAM:
+			authenticationType = v1pb.DataSource_AZURE_IAM
 		}
 
 		dataSourceList = append(dataSourceList, &v1pb.DataSource{
@@ -1324,6 +1329,8 @@ func convertToAuthenticationType(authType v1pb.DataSource_AuthenticationType) st
 		authenticationType = storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM
 	case v1pb.DataSource_AWS_RDS_IAM:
 		authenticationType = storepb.DataSourceOptions_AWS_RDS_IAM
+	case v1pb.DataSource_AZURE_IAM:
+		authenticationType = storepb.DataSourceOptions_AZURE_IAM
 	}
 	return authenticationType
 }
