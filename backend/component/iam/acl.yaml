@@ -492,6 +492,7 @@ roles:
       - bb.rollouts.get
       - bb.rollouts.list
       - bb.sheets.get
+      - bb.taskRuns.create
       - bb.taskRuns.list
   - name: roles/projectViewer
     title: Project viewer

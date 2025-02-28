@@ -138,32 +138,6 @@ func (s *SchedulerV2) scheduleAutoRolloutTasks(ctx context.Context) error {
 	return nil
 }
 
-func (s *SchedulerV2) canTaskAutoRollout(ctx context.Context, rolloutPolicy *storepb.RolloutPolicy, task *store.TaskMessage) (bool, error) {
-	if rolloutPolicy.Automatic {
-		return true, nil
-	}
-
-	if s.licenseService.IsFeatureEnabled(api.FeatureRolloutPolicy) != nil {
-		// nolint:nilerr
-		return true, nil
-	}
-
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
-	if err != nil {
-		return false, err
-	}
-	if instance == nil || instance.Deleted {
-		return false, nil
-	}
-
-	if s.licenseService.IsFeatureEnabledForInstance(api.FeatureRolloutPolicy, instance) != nil {
-		// nolint:nilerr
-		return true, nil
-	}
-
-	return false, nil
-}
-
 func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, rolloutPolicy *storepb.RolloutPolicy, taskUID int) error {
 	task, err := s.store.GetTaskV2ByID(ctx, taskUID)
 	if err != nil {
@@ -173,11 +147,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, rolloutPolicy
 		return nil
 	}
 
-	canAutoRollout, err := s.canTaskAutoRollout(ctx, rolloutPolicy, task)
-	if err != nil {
-		return err
-	}
-	if !canAutoRollout {
+	if !rolloutPolicy.Automatic {
 		return nil
 	}
 
