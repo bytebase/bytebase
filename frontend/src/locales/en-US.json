@@ -510,11 +510,6 @@
           "self": "External URL",
           "description": "The external URL where user visits Bytebase, must start with http:// or https://."
         },
-        "gitops-webhook-url": {
-          "self": "GitOps Webhook URL",
-          "description": "The URL used for sending GitOps webhooks to the Bytebase instance.",
-          "default-to-external-url": "Default to External URL"
-        },
         "sign-in-frequency": {
           "self": "Sign-in frequency",
           "description": "Sign-in frequency defines how often users must reauthenticate. Configuration updates require users to sign in again for changes to take effect.",

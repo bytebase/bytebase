@@ -218,15 +218,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				oldSetting.Require_2Fa = payload.Require_2Fa
 			case "value.workspace_profile_setting_value.outbound_ip_list":
 				// We're not support update outbound_ip_list via api.
-			case "value.workspace_profile_setting_value.gitops_webhook_url":
-				if payload.GitopsWebhookUrl != "" {
-					gitopsWebhookURL, err := common.NormalizeExternalURL(payload.GitopsWebhookUrl)
-					if err != nil {
-						return nil, status.Errorf(codes.InvalidArgument, "invalid GitOps webhook URL: %v", err)
-					}
-					payload.GitopsWebhookUrl = gitopsWebhookURL
-				}
-				oldSetting.GitopsWebhookUrl = payload.GitopsWebhookUrl
 			case "value.workspace_profile_setting_value.token_duration":
 				if err := s.licenseService.IsFeatureEnabled(api.FeatureSecureToken); err != nil {
 					return nil, status.Error(codes.PermissionDenied, err.Error())

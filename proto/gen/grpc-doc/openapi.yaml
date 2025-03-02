@@ -1497,7 +1497,7 @@ paths:
                      syntax. Support filter by type, source or table. For example: table =
                      "tableExists('{database}', '{schema}', '{table}')" table =
                      "tableExists('db', 'public', 'table1') || tableExists('db', 'public',
-                     'table2')" type = "MIGRATE | DATA" source = "UI" source = "VCS"
+                     'table2')"
 
                      The table filter follow the CEL syntax.
                      currently, we have one function for CEL:
@@ -7779,22 +7779,9 @@ components:
                     readOnly: true
                     type: string
                     description: workspace_id is the identifier for the workspace.
-                gitopsWebhookUrl:
-                    readOnly: true
-                    type: string
-                    description: gitops_webhook_url is the webhook URL for GitOps.
                 debug:
                     type: boolean
                     description: debug flag means if the debug mode is enabled.
-                lsp:
-                    type: boolean
-                    description: lsp is the enablement of lsp in SQL Editor.
-                preUpdateBackup:
-                    type: boolean
-                    description: pre_update_backup is the enablement of data backup prior to data update.
-                iamGuard:
-                    type: boolean
-                    description: iam_guard is the enablement of IAM checks.
                 unlicensedFeatures:
                     type: array
                     items:
@@ -14194,12 +14181,7 @@ components:
             properties:
                 externalUrl:
                     type: string
-                    description: |-
-                        The URL user visits Bytebase.
-
-                         The external URL is used for:
-                         1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend.
-                         2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend.
+                    description: The external URL is used for sso authentication callback.
                 disallowSignup:
                     type: boolean
                     description: Disallow self-service signup, users can only be invited by the owner.
@@ -14211,9 +14193,6 @@ components:
                     items:
                         type: string
                     description: outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode.
-                gitopsWebhookUrl:
-                    type: string
-                    description: The webhook URL for the GitOps workflow.
                 tokenDuration:
                     pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
                     type: string
