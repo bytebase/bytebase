@@ -510,11 +510,6 @@
           "self": "外部URL",
           "description": "ユーザーまたはコールバックがアクセスできる Bytebase URL は、http:// または https:// で始まる必要があります。"
         },
-        "gitops-webhook-url": {
-          "self": "GitOps Webhook URL",
-          "description": "GitOps のサードパーティ サービスが Webhook を Bytebase に送信するために使用する URL。",
-          "default-to-external-url": "デフォルト値は外部 URL です。"
-        },
         "sign-in-frequency": {
           "self": "ログイン頻度",
           "description": "サインイン頻度は、ユーザーが再認証する必要がある間隔を定義します。設定の更新は、変更を反映させるためにユーザーが再度サインインする必要があります。",

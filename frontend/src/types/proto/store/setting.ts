@@ -75,15 +75,7 @@ export function databaseChangeModeToNumber(object: DatabaseChangeMode): number {
 }
 
 export interface WorkspaceProfileSetting {
-  /**
-   * The URL user visits Bytebase.
-   *
-   * The external URL is used for:
-   * 1. Constructing the correct callback URL when configuring the VCS provider.
-   * The callback URL points to the frontend.
-   * 2. Creating the correct webhook endpoint when configuring the project
-   * GitOps workflow. The webhook endpoint points to the backend.
-   */
+  /** The external URL is used for sso authentication callback. */
   externalUrl: string;
   /** Disallow self-service signup, users can only be invited by the owner. */
   disallowSignup: boolean;
@@ -91,8 +83,6 @@ export interface WorkspaceProfileSetting {
   require2fa: boolean;
   /** outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode. */
   outboundIpList: string[];
-  /** The webhook URL for the GitOps workflow. */
-  gitopsWebhookUrl: string;
   /** The duration for token. */
   tokenDuration:
     | Duration
@@ -609,7 +599,6 @@ function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
     disallowSignup: false,
     require2fa: false,
     outboundIpList: [],
-    gitopsWebhookUrl: "",
     tokenDuration: undefined,
     announcement: undefined,
     maximumRoleExpiration: undefined,
@@ -633,9 +622,6 @@ export const WorkspaceProfileSetting: MessageFns<WorkspaceProfileSetting> = {
     }
     for (const v of message.outboundIpList) {
       writer.uint32(34).string(v!);
-    }
-    if (message.gitopsWebhookUrl !== "") {
-      writer.uint32(42).string(message.gitopsWebhookUrl);
     }
     if (message.tokenDuration !== undefined) {
       Duration.encode(message.tokenDuration, writer.uint32(50).fork()).join();
@@ -698,14 +684,6 @@ export const WorkspaceProfileSetting: MessageFns<WorkspaceProfileSetting> = {
           }
 
           message.outboundIpList.push(reader.string());
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.gitopsWebhookUrl = reader.string();
           continue;
         }
         case 6: {
@@ -781,7 +759,6 @@ export const WorkspaceProfileSetting: MessageFns<WorkspaceProfileSetting> = {
       outboundIpList: globalThis.Array.isArray(object?.outboundIpList)
         ? object.outboundIpList.map((e: any) => globalThis.String(e))
         : [],
-      gitopsWebhookUrl: isSet(object.gitopsWebhookUrl) ? globalThis.String(object.gitopsWebhookUrl) : "",
       tokenDuration: isSet(object.tokenDuration) ? Duration.fromJSON(object.tokenDuration) : undefined,
       announcement: isSet(object.announcement) ? Announcement.fromJSON(object.announcement) : undefined,
       maximumRoleExpiration: isSet(object.maximumRoleExpiration)
@@ -813,9 +790,6 @@ export const WorkspaceProfileSetting: MessageFns<WorkspaceProfileSetting> = {
     }
     if (message.outboundIpList?.length) {
       obj.outboundIpList = message.outboundIpList;
-    }
-    if (message.gitopsWebhookUrl !== "") {
-      obj.gitopsWebhookUrl = message.gitopsWebhookUrl;
     }
     if (message.tokenDuration !== undefined) {
       obj.tokenDuration = Duration.toJSON(message.tokenDuration);
@@ -850,7 +824,6 @@ export const WorkspaceProfileSetting: MessageFns<WorkspaceProfileSetting> = {
     message.disallowSignup = object.disallowSignup ?? false;
     message.require2fa = object.require2fa ?? false;
     message.outboundIpList = object.outboundIpList?.map((e) => e) || [];
-    message.gitopsWebhookUrl = object.gitopsWebhookUrl ?? "";
     message.tokenDuration = (object.tokenDuration !== undefined && object.tokenDuration !== null)
       ? Duration.fromPartial(object.tokenDuration)
       : undefined;

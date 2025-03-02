@@ -510,11 +510,6 @@
           "self": "URL bên ngoài",
           "description": "URL bên ngoài mà người dùng truy cập Bytebase, phải bắt đầu bằng http:// hoặc https://."
         },
-        "gitops-webhook-url": {
-          "self": "URL Webhook GitOps",
-          "description": "URL được sử dụng để gửi webhook GitOps đến phiên bản Bytebase.",
-          "default-to-external-url": "Mặc định là URL bên ngoài"
-        },
         "sign-in-frequency": {
           "self": "Tần suất đăng nhập",
           "description": "Tần suất đăng nhập xác định tần suất người dùng phải xác thực lại. Cập nhật cấu hình yêu cầu người dùng đăng nhập lại để thay đổi có hiệu lực.",

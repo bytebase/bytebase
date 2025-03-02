@@ -7707,7 +7707,7 @@ follow the
 syntax. Support filter by type, source or table. For example: table =
 &#34;tableExists(&#39;{database}&#39;, &#39;{schema}&#39;, &#39;{table}&#39;)&#34; table =
 &#34;tableExists(&#39;db&#39;, &#39;public&#39;, &#39;table1&#39;) || tableExists(&#39;db&#39;, &#39;public&#39;,
-&#39;table2&#39;)&#34; type = &#34;MIGRATE | DATA&#34; source = &#34;UI&#34; source = &#34;VCS&#34;
+&#39;table2&#39;)&#34;
 
 The table filter follow the CEL syntax.
 currently, we have one function for CEL:
@@ -14150,11 +14150,7 @@ server would not persist the setting value if it is true. </p></td>
                   <td>external_url</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The URL user visits Bytebase.
-
-The external URL is used for:
-1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend.
-2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend. </p></td>
+                  <td><p>The external URL is used for sso authentication callback. </p></td>
                 </tr>
               
                 <tr>
@@ -14176,13 +14172,6 @@ The external URL is used for:
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p>outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>gitops_webhook_url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The webhook URL for the GitOps workflow. </p></td>
                 </tr>
               
                 <tr>
@@ -14667,38 +14656,10 @@ Default to this mode.</p></td>
                 </tr>
               
                 <tr>
-                  <td>gitops_webhook_url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>gitops_webhook_url is the webhook URL for GitOps. </p></td>
-                </tr>
-              
-                <tr>
                   <td>debug</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>debug flag means if the debug mode is enabled. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>lsp</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>lsp is the enablement of lsp in SQL Editor. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>pre_update_backup</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>pre_update_backup is the enablement of data backup prior to data update. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>iam_guard</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>iam_guard is the enablement of IAM checks. </p></td>
                 </tr>
               
                 <tr>
