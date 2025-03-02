@@ -74,12 +74,6 @@ export interface ActuatorInfo {
   workspaceId: string;
   /** debug flag means if the debug mode is enabled. */
   debug: boolean;
-  /** lsp is the enablement of lsp in SQL Editor. */
-  lsp: boolean;
-  /** pre_update_backup is the enablement of data backup prior to data update. */
-  preUpdateBackup: boolean;
-  /** iam_guard is the enablement of IAM checks. */
-  iamGuard: boolean;
   unlicensedFeatures: string[];
   /** disallow_password_signin is the flag to disallow user signin with email&password. (except workspace admins) */
   disallowPasswordSignin: boolean;
@@ -371,9 +365,6 @@ function createBaseActuatorInfo(): ActuatorInfo {
     require2fa: false,
     workspaceId: "",
     debug: false,
-    lsp: false,
-    preUpdateBackup: false,
-    iamGuard: false,
     unlicensedFeatures: [],
     disallowPasswordSignin: false,
     passwordRestriction: undefined,
@@ -424,15 +415,6 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
     }
     if (message.debug !== false) {
       writer.uint32(120).bool(message.debug);
-    }
-    if (message.lsp !== false) {
-      writer.uint32(128).bool(message.lsp);
-    }
-    if (message.preUpdateBackup !== false) {
-      writer.uint32(136).bool(message.preUpdateBackup);
-    }
-    if (message.iamGuard !== false) {
-      writer.uint32(144).bool(message.iamGuard);
     }
     for (const v of message.unlicensedFeatures) {
       writer.uint32(154).string(v!);
@@ -568,30 +550,6 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
           message.debug = reader.bool();
           continue;
         }
-        case 16: {
-          if (tag !== 128) {
-            break;
-          }
-
-          message.lsp = reader.bool();
-          continue;
-        }
-        case 17: {
-          if (tag !== 136) {
-            break;
-          }
-
-          message.preUpdateBackup = reader.bool();
-          continue;
-        }
-        case 18: {
-          if (tag !== 144) {
-            break;
-          }
-
-          message.iamGuard = reader.bool();
-          continue;
-        }
         case 19: {
           if (tag !== 154) {
             break;
@@ -649,9 +607,6 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
       require2fa: isSet(object.require2fa) ? globalThis.Boolean(object.require2fa) : false,
       workspaceId: isSet(object.workspaceId) ? globalThis.String(object.workspaceId) : "",
       debug: isSet(object.debug) ? globalThis.Boolean(object.debug) : false,
-      lsp: isSet(object.lsp) ? globalThis.Boolean(object.lsp) : false,
-      preUpdateBackup: isSet(object.preUpdateBackup) ? globalThis.Boolean(object.preUpdateBackup) : false,
-      iamGuard: isSet(object.iamGuard) ? globalThis.Boolean(object.iamGuard) : false,
       unlicensedFeatures: globalThis.Array.isArray(object?.unlicensedFeatures)
         ? object.unlicensedFeatures.map((e: any) => globalThis.String(e))
         : [],
@@ -709,15 +664,6 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
     if (message.debug !== false) {
       obj.debug = message.debug;
     }
-    if (message.lsp !== false) {
-      obj.lsp = message.lsp;
-    }
-    if (message.preUpdateBackup !== false) {
-      obj.preUpdateBackup = message.preUpdateBackup;
-    }
-    if (message.iamGuard !== false) {
-      obj.iamGuard = message.iamGuard;
-    }
     if (message.unlicensedFeatures?.length) {
       obj.unlicensedFeatures = message.unlicensedFeatures;
     }
@@ -754,9 +700,6 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
     message.require2fa = object.require2fa ?? false;
     message.workspaceId = object.workspaceId ?? "";
     message.debug = object.debug ?? false;
-    message.lsp = object.lsp ?? false;
-    message.preUpdateBackup = object.preUpdateBackup ?? false;
-    message.iamGuard = object.iamGuard ?? false;
     message.unlicensedFeatures = object.unlicensedFeatures?.map((e) => e) || [];
     message.disallowPasswordSignin = object.disallowPasswordSignin ?? false;
     message.passwordRestriction = (object.passwordRestriction !== undefined && object.passwordRestriction !== null)

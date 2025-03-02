@@ -5064,9 +5064,6 @@ Actuator concept is similar to the Spring Boot Actuator.
 | require_2fa | [bool](#bool) |  | require_2fa is the flag to require 2FA for all users. |
 | workspace_id | [string](#string) |  | workspace_id is the identifier for the workspace. |
 | debug | [bool](#bool) |  | debug flag means if the debug mode is enabled. |
-| lsp | [bool](#bool) |  | lsp is the enablement of lsp in SQL Editor. |
-| pre_update_backup | [bool](#bool) |  | pre_update_backup is the enablement of data backup prior to data update. |
-| iam_guard | [bool](#bool) |  | iam_guard is the enablement of IAM checks. |
 | unlicensed_features | [string](#string) | repeated |  |
 | disallow_password_signin | [bool](#bool) |  | disallow_password_signin is the flag to disallow user signin with email&amp;password. (except workspace admins) |
 | password_restriction | [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting) |  |  |

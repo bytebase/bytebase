@@ -108,15 +108,6 @@ message ActuatorInfo {
   // debug flag means if the debug mode is enabled.
   bool debug = 15;
 
-  // lsp is the enablement of lsp in SQL Editor.
-  bool lsp = 16;
-
-  // pre_update_backup is the enablement of data backup prior to data update.
-  bool pre_update_backup = 17;
-
-  // iam_guard is the enablement of IAM checks.
-  bool iam_guard = 18;
-
   repeated string unlicensed_features = 19;
 
   // disallow_password_signin is the flag to disallow user signin with email&password. (except workspace admins)

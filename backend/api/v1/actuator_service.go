@@ -131,8 +131,6 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		WorkspaceId:            workspaceID,
 		Debug:                  s.profile.RuntimeDebug.Load(),
 		Docker:                 s.profile.IsDocker,
-		Lsp:                    s.profile.Lsp,
-		PreUpdateBackup:        true,
 		UnlicensedFeatures:     unlicensedFeaturesString,
 		DisallowPasswordSignin: setting.DisallowPasswordSignin,
 		PasswordRestriction:    passwordSetting,

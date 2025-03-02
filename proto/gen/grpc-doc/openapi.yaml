@@ -7782,15 +7782,6 @@ components:
                 debug:
                     type: boolean
                     description: debug flag means if the debug mode is enabled.
-                lsp:
-                    type: boolean
-                    description: lsp is the enablement of lsp in SQL Editor.
-                preUpdateBackup:
-                    type: boolean
-                    description: pre_update_backup is the enablement of data backup prior to data update.
-                iamGuard:
-                    type: boolean
-                    description: iam_guard is the enablement of IAM checks.
                 unlicensedFeatures:
                     type: array
                     items:
