@@ -129,7 +129,6 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		Require_2Fa:            setting.Require_2Fa,
 		LastActiveTime:         timestamppb.New(time.Unix(s.profile.LastActiveTs, 0)),
 		WorkspaceId:            workspaceID,
-		GitopsWebhookUrl:       setting.GitopsWebhookUrl,
 		Debug:                  s.profile.RuntimeDebug.Load(),
 		Docker:                 s.profile.IsDocker,
 		Lsp:                    s.profile.Lsp,

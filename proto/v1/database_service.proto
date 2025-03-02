@@ -1502,7 +1502,7 @@ message ListChangelogsRequest {
   // syntax. Support filter by type, source or table. For example: table =
   // "tableExists('{database}', '{schema}', '{table}')" table =
   // "tableExists('db', 'public', 'table1') || tableExists('db', 'public',
-  // 'table2')" type = "MIGRATE | DATA" source = "UI" source = "VCS"
+  // 'table2')"
   //
   // The table filter follow the CEL syntax.
   // currently, we have one function for CEL:

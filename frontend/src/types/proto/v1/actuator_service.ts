@@ -72,8 +72,6 @@ export interface ActuatorInfo {
   require2fa: boolean;
   /** workspace_id is the identifier for the workspace. */
   workspaceId: string;
-  /** gitops_webhook_url is the webhook URL for GitOps. */
-  gitopsWebhookUrl: string;
   /** debug flag means if the debug mode is enabled. */
   debug: boolean;
   /** lsp is the enablement of lsp in SQL Editor. */
@@ -372,7 +370,6 @@ function createBaseActuatorInfo(): ActuatorInfo {
     lastActiveTime: undefined,
     require2fa: false,
     workspaceId: "",
-    gitopsWebhookUrl: "",
     debug: false,
     lsp: false,
     preUpdateBackup: false,
@@ -424,9 +421,6 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
     }
     if (message.workspaceId !== "") {
       writer.uint32(106).string(message.workspaceId);
-    }
-    if (message.gitopsWebhookUrl !== "") {
-      writer.uint32(114).string(message.gitopsWebhookUrl);
     }
     if (message.debug !== false) {
       writer.uint32(120).bool(message.debug);
@@ -566,14 +560,6 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
           message.workspaceId = reader.string();
           continue;
         }
-        case 14: {
-          if (tag !== 114) {
-            break;
-          }
-
-          message.gitopsWebhookUrl = reader.string();
-          continue;
-        }
         case 15: {
           if (tag !== 120) {
             break;
@@ -662,7 +648,6 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
       lastActiveTime: isSet(object.lastActiveTime) ? fromJsonTimestamp(object.lastActiveTime) : undefined,
       require2fa: isSet(object.require2fa) ? globalThis.Boolean(object.require2fa) : false,
       workspaceId: isSet(object.workspaceId) ? globalThis.String(object.workspaceId) : "",
-      gitopsWebhookUrl: isSet(object.gitopsWebhookUrl) ? globalThis.String(object.gitopsWebhookUrl) : "",
       debug: isSet(object.debug) ? globalThis.Boolean(object.debug) : false,
       lsp: isSet(object.lsp) ? globalThis.Boolean(object.lsp) : false,
       preUpdateBackup: isSet(object.preUpdateBackup) ? globalThis.Boolean(object.preUpdateBackup) : false,
@@ -721,9 +706,6 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
     if (message.workspaceId !== "") {
       obj.workspaceId = message.workspaceId;
     }
-    if (message.gitopsWebhookUrl !== "") {
-      obj.gitopsWebhookUrl = message.gitopsWebhookUrl;
-    }
     if (message.debug !== false) {
       obj.debug = message.debug;
     }
@@ -771,7 +753,6 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
       : undefined;
     message.require2fa = object.require2fa ?? false;
     message.workspaceId = object.workspaceId ?? "";
-    message.gitopsWebhookUrl = object.gitopsWebhookUrl ?? "";
     message.debug = object.debug ?? false;
     message.lsp = object.lsp ?? false;
     message.preUpdateBackup = object.preUpdateBackup ?? false;
