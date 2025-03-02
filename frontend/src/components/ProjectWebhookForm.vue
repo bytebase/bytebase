@@ -343,13 +343,13 @@ const imApp = computed(() => {
     return undefined;
   }
   switch (selectedWebhook.value.type) {
-    case Webhook_Type.TYPE_SLACK:
+    case Webhook_Type.SLACK:
       return imSetting.value?.slack;
-    case Webhook_Type.TYPE_FEISHU:
+    case Webhook_Type.FEISHU:
       return imSetting.value?.feishu;
-    case Webhook_Type.TYPE_LARK:
+    case Webhook_Type.LARK:
       return imSetting.value?.lark;
-    case Webhook_Type.TYPE_WECOM:
+    case Webhook_Type.WECOM:
       return imSetting.value?.wecom;
   }
   return undefined;

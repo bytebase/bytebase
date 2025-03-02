@@ -9,7 +9,7 @@ import {
 export const emptyProjectWebhook = () => {
   return Webhook.fromJSON({
     name: `projects/${EMPTY_ID}/webhooks/${EMPTY_ID}`,
-    type: Webhook_Type.TYPE_SLACK,
+    type: Webhook_Type.SLACK,
     title: "",
     url: "",
     notificationTypes: [Activity_Type.TYPE_ISSUE_STATUS_UPDATE],
@@ -28,7 +28,7 @@ type ProjectWebhookV1TypeItem = {
 export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
   return [
     {
-      type: Webhook_Type.TYPE_SLACK,
+      type: Webhook_Type.SLACK,
       name: t("common.slack"),
       urlPrefix: "https://hooks.slack.com/",
       urlPlaceholder: "https://hooks.slack.com/services/...",
@@ -36,7 +36,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       supportDirectMessage: true,
     },
     {
-      type: Webhook_Type.TYPE_DISCORD,
+      type: Webhook_Type.DISCORD,
       name: t("common.discord"),
       urlPrefix: "https://discord.com/api/webhooks",
       urlPlaceholder: "https://discord.com/api/webhooks/...",
@@ -45,7 +45,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       supportDirectMessage: false,
     },
     {
-      type: Webhook_Type.TYPE_TEAMS,
+      type: Webhook_Type.TEAMS,
       name: t("common.teams"),
       urlPrefix: "",
       urlPlaceholder: "https://acme123.webhook.office.com/webhookb2/...",
@@ -54,7 +54,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       supportDirectMessage: false,
     },
     {
-      type: Webhook_Type.TYPE_DINGTALK,
+      type: Webhook_Type.DINGTALK,
       name: t("common.dingtalk"),
       urlPrefix: "https://oapi.dingtalk.com",
       urlPlaceholder: "https://oapi.dingtalk.com/robot/...",
@@ -63,7 +63,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       supportDirectMessage: false,
     },
     {
-      type: Webhook_Type.TYPE_FEISHU,
+      type: Webhook_Type.FEISHU,
       name: t("common.feishu"),
       urlPrefix: "https://open.feishu.cn",
       urlPlaceholder: "https://open.feishu.cn/open-apis/bot/v2/hook/...",
@@ -72,7 +72,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       supportDirectMessage: true,
     },
     {
-      type: Webhook_Type.TYPE_LARK,
+      type: Webhook_Type.LARK,
       name: t("common.lark"),
       urlPrefix: "https://open.larksuite.com",
       urlPlaceholder: "https://open.larksuite.com/open-apis/bot/v2/hook/...",
@@ -81,22 +81,12 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       supportDirectMessage: true,
     },
     {
-      type: Webhook_Type.TYPE_WECOM,
+      type: Webhook_Type.WECOM,
       name: t("common.wecom"),
       urlPrefix: "https://qyapi.weixin.qq.com",
       urlPlaceholder: "https://qyapi.weixin.qq.com/cgi-bin/webhook/...",
       docUrl: "https://open.work.weixin.qq.com/help2/pc/14931",
       supportDirectMessage: true,
-    },
-    {
-      type: Webhook_Type.TYPE_CUSTOM,
-      name: t("common.custom"),
-      urlPrefix:
-        "https://bytebase.com/docs/change-database/webhook/?source=console#custom",
-      urlPlaceholder: "https://example.com/api/webhook/...",
-      docUrl:
-        "https://www.bytebase.com/docs/change-database/webhook/?source=console#custom",
-      supportDirectMessage: false,
     },
   ];
 };

@@ -999,21 +999,19 @@ func convertToAPIWebhookTypeString(tp v1pb.Webhook_Type) (string, error) {
 	case v1pb.Webhook_TYPE_UNSPECIFIED:
 		return "", common.Errorf(common.Invalid, "webhook type must not be unspecified")
 	// TODO(zp): find a better way to place the "bb.plugin.webhook.*".
-	case v1pb.Webhook_TYPE_SLACK:
+	case v1pb.Webhook_SLACK:
 		return "bb.plugin.webhook.slack", nil
-	case v1pb.Webhook_TYPE_DISCORD:
+	case v1pb.Webhook_DISCORD:
 		return "bb.plugin.webhook.discord", nil
-	case v1pb.Webhook_TYPE_TEAMS:
+	case v1pb.Webhook_TEAMS:
 		return "bb.plugin.webhook.teams", nil
-	case v1pb.Webhook_TYPE_DINGTALK:
+	case v1pb.Webhook_DINGTALK:
 		return "bb.plugin.webhook.dingtalk", nil
-	case v1pb.Webhook_TYPE_FEISHU:
+	case v1pb.Webhook_FEISHU:
 		return "bb.plugin.webhook.feishu", nil
-	case v1pb.Webhook_TYPE_WECOM:
+	case v1pb.Webhook_WECOM:
 		return "bb.plugin.webhook.wecom", nil
-	case v1pb.Webhook_TYPE_CUSTOM:
-		return "bb.plugin.webhook.custom", nil
-	case v1pb.Webhook_TYPE_LARK:
+	case v1pb.Webhook_LARK:
 		return "bb.plugin.webhook.lark", nil
 	default:
 		return "", common.Errorf(common.Invalid, "webhook type %q is not supported", tp)
@@ -1023,21 +1021,19 @@ func convertToAPIWebhookTypeString(tp v1pb.Webhook_Type) (string, error) {
 func convertWebhookTypeString(tp string) v1pb.Webhook_Type {
 	switch tp {
 	case "bb.plugin.webhook.slack":
-		return v1pb.Webhook_TYPE_SLACK
+		return v1pb.Webhook_SLACK
 	case "bb.plugin.webhook.discord":
-		return v1pb.Webhook_TYPE_DISCORD
+		return v1pb.Webhook_DISCORD
 	case "bb.plugin.webhook.teams":
-		return v1pb.Webhook_TYPE_TEAMS
+		return v1pb.Webhook_TEAMS
 	case "bb.plugin.webhook.dingtalk":
-		return v1pb.Webhook_TYPE_DINGTALK
+		return v1pb.Webhook_DINGTALK
 	case "bb.plugin.webhook.feishu":
-		return v1pb.Webhook_TYPE_FEISHU
+		return v1pb.Webhook_FEISHU
 	case "bb.plugin.webhook.wecom":
-		return v1pb.Webhook_TYPE_WECOM
-	case "bb.plugin.webhook.custom":
-		return v1pb.Webhook_TYPE_CUSTOM
+		return v1pb.Webhook_WECOM
 	case "bb.plugin.webhook.lark":
-		return v1pb.Webhook_TYPE_LARK
+		return v1pb.Webhook_LARK
 	default:
 		return v1pb.Webhook_TYPE_UNSPECIFIED
 	}
