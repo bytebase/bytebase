@@ -25,7 +25,7 @@
     "@soerenmartius/vue3-clipboard": "0.1.2",
     "@tanstack/vue-query": "^5.62.0",
     "@tanstack/vue-table": "8.20.5",
-    "@vueuse/core": "12.5.0",
+    "@vueuse/core": "12.7.0",
     "axios": "1.7.7",
     "bootstrap": "5.3.3",
     "canvas-confetti": "1.9.3",
