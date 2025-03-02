@@ -443,33 +443,6 @@ CREATE INDEX idx_query_history_creator_id_created_at_project_id ON query_history
 
 ALTER SEQUENCE query_history_id_seq RESTART WITH 101;
 
--- vcs table stores the version control provider config
-CREATE TABLE vcs (
-    id serial PRIMARY KEY,
-    resource_id text NOT NULL,
-    name text NOT NULL,
-    type text NOT NULL CHECK (type IN ('GITLAB', 'GITHUB', 'BITBUCKET', 'AZURE_DEVOPS')),
-    instance_url text NOT NULL CHECK ((instance_url LIKE 'http://%' OR instance_url LIKE 'https://%') AND instance_url = rtrim(instance_url, '/')),
-    access_token text NOT NULL DEFAULT ''
-);
-
-CREATE UNIQUE INDEX idx_vcs_unique_resource_id ON vcs(resource_id);
-
-ALTER SEQUENCE vcs_id_seq RESTART WITH 101;
-
--- vcs_connector table stores vcs connectors for a project
-CREATE TABLE vcs_connector (
-    id serial PRIMARY KEY,
-    vcs text NOT NULL REFERENCES vcs(resource_id),
-    project text NOT NULL REFERENCES project(resource_id),
-    resource_id text NOT NULL,
-    payload jsonb NOT NULL DEFAULT '{}'
-);
-
-CREATE UNIQUE INDEX idx_vcs_connector_unique_project_resource_id ON vcs_connector(project, resource_id);
-
-ALTER SEQUENCE vcs_connector_id_seq RESTART WITH 101;
-
 -- Anomaly
 -- anomaly stores various anomalies found by the scanner.
 -- For now, anomaly can be associated with a particular instance or database.

@@ -32,6 +32,6 @@ const icon = computed(() => {
   if (iconType === "") {
     return iconType;
   }
-  return new URL(`../../assets/${iconType}-logo.svg`, import.meta.url).href;
+  return new URL(`../../assets/git/${iconType}.svg`, import.meta.url).href;
 });
 </script>
