@@ -315,14 +315,13 @@ export interface Webhook {
 
 export enum Webhook_Type {
   TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
-  TYPE_SLACK = "TYPE_SLACK",
-  TYPE_DISCORD = "TYPE_DISCORD",
-  TYPE_TEAMS = "TYPE_TEAMS",
-  TYPE_DINGTALK = "TYPE_DINGTALK",
-  TYPE_FEISHU = "TYPE_FEISHU",
-  TYPE_WECOM = "TYPE_WECOM",
-  TYPE_CUSTOM = "TYPE_CUSTOM",
-  TYPE_LARK = "TYPE_LARK",
+  SLACK = "SLACK",
+  DISCORD = "DISCORD",
+  TEAMS = "TEAMS",
+  DINGTALK = "DINGTALK",
+  FEISHU = "FEISHU",
+  WECOM = "WECOM",
+  LARK = "LARK",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -332,29 +331,26 @@ export function webhook_TypeFromJSON(object: any): Webhook_Type {
     case "TYPE_UNSPECIFIED":
       return Webhook_Type.TYPE_UNSPECIFIED;
     case 1:
-    case "TYPE_SLACK":
-      return Webhook_Type.TYPE_SLACK;
+    case "SLACK":
+      return Webhook_Type.SLACK;
     case 2:
-    case "TYPE_DISCORD":
-      return Webhook_Type.TYPE_DISCORD;
+    case "DISCORD":
+      return Webhook_Type.DISCORD;
     case 3:
-    case "TYPE_TEAMS":
-      return Webhook_Type.TYPE_TEAMS;
+    case "TEAMS":
+      return Webhook_Type.TEAMS;
     case 4:
-    case "TYPE_DINGTALK":
-      return Webhook_Type.TYPE_DINGTALK;
+    case "DINGTALK":
+      return Webhook_Type.DINGTALK;
     case 5:
-    case "TYPE_FEISHU":
-      return Webhook_Type.TYPE_FEISHU;
+    case "FEISHU":
+      return Webhook_Type.FEISHU;
     case 6:
-    case "TYPE_WECOM":
-      return Webhook_Type.TYPE_WECOM;
-    case 7:
-    case "TYPE_CUSTOM":
-      return Webhook_Type.TYPE_CUSTOM;
+    case "WECOM":
+      return Webhook_Type.WECOM;
     case 8:
-    case "TYPE_LARK":
-      return Webhook_Type.TYPE_LARK;
+    case "LARK":
+      return Webhook_Type.LARK;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -366,22 +362,20 @@ export function webhook_TypeToJSON(object: Webhook_Type): string {
   switch (object) {
     case Webhook_Type.TYPE_UNSPECIFIED:
       return "TYPE_UNSPECIFIED";
-    case Webhook_Type.TYPE_SLACK:
-      return "TYPE_SLACK";
-    case Webhook_Type.TYPE_DISCORD:
-      return "TYPE_DISCORD";
-    case Webhook_Type.TYPE_TEAMS:
-      return "TYPE_TEAMS";
-    case Webhook_Type.TYPE_DINGTALK:
-      return "TYPE_DINGTALK";
-    case Webhook_Type.TYPE_FEISHU:
-      return "TYPE_FEISHU";
-    case Webhook_Type.TYPE_WECOM:
-      return "TYPE_WECOM";
-    case Webhook_Type.TYPE_CUSTOM:
-      return "TYPE_CUSTOM";
-    case Webhook_Type.TYPE_LARK:
-      return "TYPE_LARK";
+    case Webhook_Type.SLACK:
+      return "SLACK";
+    case Webhook_Type.DISCORD:
+      return "DISCORD";
+    case Webhook_Type.TEAMS:
+      return "TEAMS";
+    case Webhook_Type.DINGTALK:
+      return "DINGTALK";
+    case Webhook_Type.FEISHU:
+      return "FEISHU";
+    case Webhook_Type.WECOM:
+      return "WECOM";
+    case Webhook_Type.LARK:
+      return "LARK";
     case Webhook_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -392,21 +386,19 @@ export function webhook_TypeToNumber(object: Webhook_Type): number {
   switch (object) {
     case Webhook_Type.TYPE_UNSPECIFIED:
       return 0;
-    case Webhook_Type.TYPE_SLACK:
+    case Webhook_Type.SLACK:
       return 1;
-    case Webhook_Type.TYPE_DISCORD:
+    case Webhook_Type.DISCORD:
       return 2;
-    case Webhook_Type.TYPE_TEAMS:
+    case Webhook_Type.TEAMS:
       return 3;
-    case Webhook_Type.TYPE_DINGTALK:
+    case Webhook_Type.DINGTALK:
       return 4;
-    case Webhook_Type.TYPE_FEISHU:
+    case Webhook_Type.FEISHU:
       return 5;
-    case Webhook_Type.TYPE_WECOM:
+    case Webhook_Type.WECOM:
       return 6;
-    case Webhook_Type.TYPE_CUSTOM:
-      return 7;
-    case Webhook_Type.TYPE_LARK:
+    case Webhook_Type.LARK:
       return 8;
     case Webhook_Type.UNRECOGNIZED:
     default:

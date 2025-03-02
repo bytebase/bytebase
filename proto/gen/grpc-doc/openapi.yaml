@@ -14018,14 +14018,13 @@ components:
                 type:
                     enum:
                         - TYPE_UNSPECIFIED
-                        - TYPE_SLACK
-                        - TYPE_DISCORD
-                        - TYPE_TEAMS
-                        - TYPE_DINGTALK
-                        - TYPE_FEISHU
-                        - TYPE_WECOM
-                        - TYPE_CUSTOM
-                        - TYPE_LARK
+                        - SLACK
+                        - DISCORD
+                        - TEAMS
+                        - DINGTALK
+                        - FEISHU
+                        - WECOM
+                        - LARK
                     type: string
                     description: type is the type of the webhook.
                     format: enum

@@ -8024,14 +8024,13 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
-| TYPE_SLACK | 1 |  |
-| TYPE_DISCORD | 2 |  |
-| TYPE_TEAMS | 3 |  |
-| TYPE_DINGTALK | 4 |  |
-| TYPE_FEISHU | 5 |  |
-| TYPE_WECOM | 6 |  |
-| TYPE_CUSTOM | 7 |  |
-| TYPE_LARK | 8 |  |
+| SLACK | 1 |  |
+| DISCORD | 2 |  |
+| TEAMS | 3 |  |
+| DINGTALK | 4 |  |
+| FEISHU | 5 |  |
+| WECOM | 6 |  |
+| LARK | 8 |  |
 
 
  
