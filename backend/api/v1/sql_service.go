@@ -47,9 +47,6 @@ import (
 )
 
 const (
-	// defaultTimeout is the default timeout for query and admin execution.
-	defaultTimeout = 10 * time.Minute
-
 	backupDatabaseName       = "bbdataarchive"
 	oracleBackupDatabaseName = "BBDATAARCHIVE"
 )
@@ -638,24 +635,26 @@ func getSensitivePredicateColumnErrorMessages(sensitiveColumns []base.ColumnReso
 }
 
 func executeWithTimeout(ctx context.Context, stores *store.Store, licenseService enterprise.LicenseService, driver db.Driver, conn *sql.Conn, statement string, timeout *durationpb.Duration, queryContext db.QueryContext) ([]*v1pb.QueryResult, time.Duration, error) {
-	ctxTimeout := defaultTimeout
-	// Override the default timeout.
-	if timeout != nil {
-		ctxTimeout = timeout.AsDuration()
-	}
+	var ctxTimeout time.Duration
+	// For access control feature, we will use the timeout from request and query data policy.
+	// Otherwise, no timeout will be applied.
 	if licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
+		if timeout != nil {
+			ctxTimeout = timeout.AsDuration()
+		}
 		queryDataPolicy, err := stores.GetQueryDataPolicy(ctx)
 		if err != nil {
 			return nil, time.Duration(0), errors.Wrap(err, "failed to get query data policy")
 		}
 		// Override the timeout if the query data policy has a smaller timeout.
-		if queryDataPolicy.Timeout.GetSeconds() > 0 && queryDataPolicy.Timeout.AsDuration() < ctxTimeout {
+		if queryDataPolicy.Timeout.GetSeconds() > 0 && (ctxTimeout.Seconds() == 0 || queryDataPolicy.Timeout.AsDuration() < ctxTimeout) {
 			ctxTimeout = queryDataPolicy.Timeout.AsDuration()
 		}
+		timeoutCtx, cancelCtx := context.WithTimeout(ctx, ctxTimeout)
+		defer cancelCtx()
+		ctx = timeoutCtx
 	}
 	start := time.Now()
-	ctx, cancelCtx := context.WithTimeout(ctx, ctxTimeout)
-	defer cancelCtx()
 	result, err := driver.QueryConn(ctx, conn, statement, queryContext)
 	select {
 	case <-ctx.Done():
