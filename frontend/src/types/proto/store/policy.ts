@@ -7,6 +7,7 @@
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import Long from "long";
+import { Duration } from "../google/protobuf/duration";
 import { Expr } from "../google/type/expr";
 import { Engine, engineFromJSON, engineToJSON, engineToNumber } from "./common";
 
@@ -292,6 +293,12 @@ export interface DisableCopyDataPolicy {
 /** ExportDataPolicy is the policy configuration for export data. */
 export interface ExportDataPolicy {
   disable: boolean;
+}
+
+/** QueryDataPolicy is the policy configuration for querying data. */
+export interface QueryDataPolicy {
+  /** The query timeout duration. */
+  timeout: Duration | undefined;
 }
 
 /** RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restricting issue creation for SQL review. */
@@ -1464,6 +1471,66 @@ export const ExportDataPolicy: MessageFns<ExportDataPolicy> = {
   fromPartial(object: DeepPartial<ExportDataPolicy>): ExportDataPolicy {
     const message = createBaseExportDataPolicy();
     message.disable = object.disable ?? false;
+    return message;
+  },
+};
+
+function createBaseQueryDataPolicy(): QueryDataPolicy {
+  return { timeout: undefined };
+}
+
+export const QueryDataPolicy: MessageFns<QueryDataPolicy> = {
+  encode(message: QueryDataPolicy, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.timeout !== undefined) {
+      Duration.encode(message.timeout, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryDataPolicy {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryDataPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.timeout = Duration.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryDataPolicy {
+    return { timeout: isSet(object.timeout) ? Duration.fromJSON(object.timeout) : undefined };
+  },
+
+  toJSON(message: QueryDataPolicy): unknown {
+    const obj: any = {};
+    if (message.timeout !== undefined) {
+      obj.timeout = Duration.toJSON(message.timeout);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<QueryDataPolicy>): QueryDataPolicy {
+    return QueryDataPolicy.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<QueryDataPolicy>): QueryDataPolicy {
+    const message = createBaseQueryDataPolicy();
+    message.timeout = (object.timeout !== undefined && object.timeout !== null)
+      ? Duration.fromPartial(object.timeout)
+      : undefined;
     return message;
   },
 };

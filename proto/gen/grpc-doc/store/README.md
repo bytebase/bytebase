@@ -226,6 +226,7 @@
     - [MaskingExceptionPolicy.MaskingException](#bytebase-store-MaskingExceptionPolicy-MaskingException)
     - [MaskingRulePolicy](#bytebase-store-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
+    - [QueryDataPolicy](#bytebase-store-QueryDataPolicy)
     - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-store-RestrictIssueCreationForSQLReviewPolicy)
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
     - [SQLReviewRule](#bytebase-store-SQLReviewRule)
@@ -3643,6 +3644,21 @@ Format: users/{userUID} or groups/{group email} |
 | id | [string](#string) |  | A unique identifier for a node in UUID format. |
 | condition | [google.type.Expr](#google-type-Expr) |  |  |
 | semantic_type | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-QueryDataPolicy"></a>
+
+### QueryDataPolicy
+QueryDataPolicy is the policy configuration for querying data.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The query timeout duration. |
 
 
 
