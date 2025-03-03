@@ -1,4 +1,3 @@
-import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch, markRaw } from "vue";
 import { databaseServiceClient } from "@/grpcweb";
@@ -9,7 +8,6 @@ import {
   unknownEnvironment,
   unknownInstanceResource,
 } from "@/types";
-import { DEFAULT_PROJECT_NAME } from "@/types";
 import type {
   Database,
   UpdateDatabaseRequest,

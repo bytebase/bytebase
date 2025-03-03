@@ -20,7 +20,6 @@ import {
   shallowComposeIssue,
   type ComposeIssueConfig,
 } from "./experimental-issue";
-import { useProjectV1Store } from "./project";
 import { useWorkspaceV1Store } from "./workspace";
 
 export type ListIssueParams = {
