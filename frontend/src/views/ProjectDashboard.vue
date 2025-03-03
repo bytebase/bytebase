@@ -91,7 +91,7 @@ const fetchProjects = async ({
     showDeleted: false,
     pageToken,
     pageSize,
-    search: state.searchText,
+    query: state.searchText,
   });
   return {
     nextPageToken: nextPageToken ?? "",

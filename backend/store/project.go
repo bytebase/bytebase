@@ -35,7 +35,7 @@ type FindProjectMessage struct {
 	ShowDeleted bool
 	Limit       *int
 	Offset      *int
-	Search      *string
+	Query       *string
 }
 
 // UpdateProjectMessage is the message for updating a project.
@@ -242,7 +242,7 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
-	} else if v := find.Search; v != nil {
+	} else if v := find.Query; v != nil {
 		where = append(where, "(resource_id LIKE '%"+*v+"%' OR LOWER(name) LIKE '%"+strings.ToLower(*v)+"%')")
 	}
 	if !find.ShowDeleted {

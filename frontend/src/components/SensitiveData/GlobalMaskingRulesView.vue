@@ -360,7 +360,7 @@ const factorOptionsMap = computed((): Map<Factor, OptionConfig> => {
           options: getProjectIdOptions(projectStore.getProjectList()),
           search: async (keyword: string) => {
             return projectStore
-              .searchProjects({ search: keyword })
+              .searchProjects({ query: keyword })
               .then((projects) => getProjectIdOptions(projects));
           },
         });

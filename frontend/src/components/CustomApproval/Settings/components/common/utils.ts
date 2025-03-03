@@ -271,7 +271,7 @@ export const getOptionConfigMap = (source: Risk_Source) => {
           options: getProjectIdOptions(projectStore.getProjectList()),
           search: async (keyword: string) => {
             return projectStore
-              .searchProjects({ search: keyword })
+              .searchProjects({ query: keyword })
               .then((projects) => getProjectIdOptions(projects));
           },
         });

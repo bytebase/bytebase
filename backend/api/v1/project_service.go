@@ -110,8 +110,8 @@ func (s *ProjectService) SearchProjects(ctx context.Context, request *v1pb.Searc
 	find := &store.FindProjectMessage{
 		ShowDeleted: request.ShowDeleted,
 	}
-	if request.Search != "" {
-		find.Search = &request.Search
+	if request.Query != "" {
+		find.Query = &request.Query
 	}
 
 	projects, err := s.store.ListProjectV2(ctx, find)

@@ -7823,7 +7823,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | show_deleted | [bool](#bool) |  | Show deleted projects if specified. |
-| search | [string](#string) |  | The project title or resource id. |
+| query | [string](#string) |  | Filter the project title or resource id by query. |
 
 
 

@@ -163,7 +163,7 @@ watch(
     state.loading = true;
     try {
       const projects = await projectStore.searchProjects({
-        search: state.searchText,
+        query: state.searchText,
         showDeleted: false,
       });
       state.allProjects = [...projects];

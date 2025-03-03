@@ -12637,9 +12637,9 @@ components:
                 showDeleted:
                     type: boolean
                     description: Show deleted projects if specified.
-                search:
+                query:
                     type: string
-                    description: The project title or resource id.
+                    description: Filter the project title or resource id by query.
         SearchProjectsResponse:
             type: object
             properties:

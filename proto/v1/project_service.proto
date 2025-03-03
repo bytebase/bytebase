@@ -191,8 +191,8 @@ message SearchProjectsRequest {
   // Show deleted projects if specified.
   bool show_deleted = 1;
 
-  // The project title or resource id.
-  string search = 2;
+  // Filter the project title or resource id by query.
+  string query = 2;
 }
 
 message SearchProjectsResponse {

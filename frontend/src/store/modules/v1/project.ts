@@ -72,13 +72,13 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     showDeleted: boolean;
     pageSize: number;
     pageToken?: string;
-    search?: string;
+    query?: string;
   }): Promise<{
     projects: ComposedProject[];
     nextPageToken?: string;
   }> => {
     const request =
-      hasWorkspacePermissionV2("bb.projects.list") && !params.search
+      hasWorkspacePermissionV2("bb.projects.list") && !params.query
         ? projectServiceClient.listProjects
         : projectServiceClient.searchProjects;
     const response = await request(params);
@@ -91,17 +91,17 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   };
 
   const searchProjects = async ({
-    search,
+    query,
     silent = true,
     showDeleted = false,
   }: {
-    search: string;
+    query: string;
     silent?: boolean;
     showDeleted?: boolean;
   }) => {
     const { projects } = await projectServiceClient.searchProjects(
       {
-        search,
+        query,
         showDeleted,
       },
       { silent }

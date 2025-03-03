@@ -120,8 +120,8 @@ export interface ListProjectsResponse {
 export interface SearchProjectsRequest {
   /** Show deleted projects if specified. */
   showDeleted: boolean;
-  /** The project title or resource id. */
-  search: string;
+  /** Filter the project title or resource id by query. */
+  query: string;
 }
 
 export interface SearchProjectsResponse {
@@ -918,7 +918,7 @@ export const ListProjectsResponse: MessageFns<ListProjectsResponse> = {
 };
 
 function createBaseSearchProjectsRequest(): SearchProjectsRequest {
-  return { showDeleted: false, search: "" };
+  return { showDeleted: false, query: "" };
 }
 
 export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
@@ -926,8 +926,8 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
     if (message.showDeleted !== false) {
       writer.uint32(8).bool(message.showDeleted);
     }
-    if (message.search !== "") {
-      writer.uint32(18).string(message.search);
+    if (message.query !== "") {
+      writer.uint32(18).string(message.query);
     }
     return writer;
   },
@@ -952,7 +952,7 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
             break;
           }
 
-          message.search = reader.string();
+          message.query = reader.string();
           continue;
         }
       }
@@ -967,7 +967,7 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
   fromJSON(object: any): SearchProjectsRequest {
     return {
       showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
-      search: isSet(object.search) ? globalThis.String(object.search) : "",
+      query: isSet(object.query) ? globalThis.String(object.query) : "",
     };
   },
 
@@ -976,8 +976,8 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
     if (message.showDeleted !== false) {
       obj.showDeleted = message.showDeleted;
     }
-    if (message.search !== "") {
-      obj.search = message.search;
+    if (message.query !== "") {
+      obj.query = message.query;
     }
     return obj;
   },
@@ -988,7 +988,7 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
   fromPartial(object: DeepPartial<SearchProjectsRequest>): SearchProjectsRequest {
     const message = createBaseSearchProjectsRequest();
     message.showDeleted = object.showDeleted ?? false;
-    message.search = object.search ?? "";
+    message.query = object.query ?? "";
     return message;
   },
 };

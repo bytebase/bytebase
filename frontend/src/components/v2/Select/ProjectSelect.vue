@@ -189,7 +189,7 @@ const handleSearch = useDebounceFn(async (search: string) => {
   state.loading = true;
   try {
     const projects = await projectStore.searchProjects({
-      search,
+      query: search,
       showDeleted: props.includeArchived,
     });
     state.rawProjectList = projects;
@@ -198,20 +198,26 @@ const handleSearch = useDebounceFn(async (search: string) => {
   }
 }, 500);
 
-const options = computed(() => {
-  return combinedProjectList.value.map((project) => {
-    return {
-      resource: project,
-      value: project.name,
-      label:
-        project.name === DEFAULT_PROJECT_NAME
-          ? t("common.unassigned")
-          : project.name === UNKNOWN_PROJECT_NAME
-            ? t("project.all")
-            : project.title,
-    };
-  });
-});
+const options = computed(
+  (): {
+    resource: ComposedProject;
+    value: string;
+    label: string;
+  }[] => {
+    return combinedProjectList.value.map((project) => {
+      return {
+        resource: project,
+        value: project.name,
+        label:
+          project.name === DEFAULT_PROJECT_NAME
+            ? t("common.unassigned")
+            : project.name === UNKNOWN_PROJECT_NAME
+              ? t("project.all")
+              : project.title,
+      };
+    });
+  }
+);
 
 watchEffect(() => {
   if (!props.defaultSelectFirst || props.projectName || props.multiple) {
