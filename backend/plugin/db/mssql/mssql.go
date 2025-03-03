@@ -12,8 +12,10 @@ import (
 	"strings"
 
 	// Import MSSQL driver.
+
 	"github.com/golang-sql/sqlexp"
 	gomssqldb "github.com/microsoft/go-mssqldb"
+	"github.com/microsoft/go-mssqldb/azuread"
 
 	// Kerberos Active Directory authentication outside Windows.
 	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5"
@@ -99,14 +101,28 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 		query.Add("certificate", fName)
 	}
 	query.Add("TrustServerCertificate", trustServerCertificate)
+
+	driverName := "sqlserver"
+	password := config.Password
+	if config.AuthenticationType == storepb.DataSourceOptions_AZURE_IAM {
+		driverName = azuread.DriverName
+		if config.ClientSecretCredential != nil {
+			query.Add("fedauth", azuread.ActiveDirectoryServicePrincipal)
+			query.Add("user id", fmt.Sprintf("%s@%s", config.ClientSecretCredential.ClientId, config.ClientSecretCredential.TenantId))
+			query.Add("password", config.ClientSecretCredential.ClientSecret)
+			password = ""
+		} else {
+			query.Add("fedauth", azuread.ActiveDirectoryDefault)
+		}
+	}
 	u := &url.URL{
 		Scheme:   "sqlserver",
-		User:     url.UserPassword(config.Username, config.Password),
+		User:     url.UserPassword(config.Username, password),
 		Host:     fmt.Sprintf("%s:%s", config.Host, config.Port),
 		RawQuery: query.Encode(),
 	}
 	var db *sql.DB
-	db, err = sql.Open("sqlserver", u.String())
+	db, err = sql.Open(driverName, u.String())
 	if err != nil {
 		return nil, err
 	}

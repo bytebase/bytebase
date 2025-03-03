@@ -73,33 +73,28 @@
             v-if="needAdminSetup"
             class="w-full flex flex-row justify-start items-start"
           >
-            <NCheckbox
-              v-model:checked="state.acceptTermsAndPolicy"
-              class="mt-0.5"
-            />
-            <i18n-t
-              tag="span"
-              keypath="auth.sign-up.accept-terms-and-policy"
-              class="ml-1 select-none"
-              @click="
-                () => (state.acceptTermsAndPolicy = !state.acceptTermsAndPolicy)
-              "
-            >
-              <template #terms>
-                <a
-                  href="https://www.bytebase.com/terms?source=console"
-                  class="text-accent"
-                  >{{ $t("auth.sign-up.terms-of-service") }}</a
-                >
-              </template>
-              <template #policy>
-                <a
-                  href="https://www.bytebase.com/privacy?source=console"
-                  class="text-accent"
-                  >{{ $t("auth.sign-up.privacy-policy") }}</a
-                >
-              </template>
-            </i18n-t>
+            <NCheckbox v-model:checked="state.acceptTermsAndPolicy">
+              <i18n-t
+                tag="span"
+                keypath="auth.sign-up.accept-terms-and-policy"
+                class="select-none"
+              >
+                <template #terms>
+                  <a
+                    href="https://www.bytebase.com/terms?source=console"
+                    class="text-accent"
+                    >{{ $t("auth.sign-up.terms-of-service") }}</a
+                  >
+                </template>
+                <template #policy>
+                  <a
+                    href="https://www.bytebase.com/privacy?source=console"
+                    class="text-accent"
+                    >{{ $t("auth.sign-up.privacy-policy") }}</a
+                  >
+                </template>
+              </i18n-t>
+            </NCheckbox>
           </div>
 
           <div class="w-full">

@@ -444,6 +444,7 @@
     - [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-v1-Policy)
+    - [QueryDataPolicy](#bytebase-v1-QueryDataPolicy)
     - [RestrictIssueCreationForSQLReviewPolicy](#bytebase-v1-RestrictIssueCreationForSQLReviewPolicy)
     - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
     - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
@@ -7256,8 +7257,24 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | tag_policy | [TagPolicy](#bytebase-v1-TagPolicy) |  |  |
 | data_source_query_policy | [DataSourceQueryPolicy](#bytebase-v1-DataSourceQueryPolicy) |  |  |
 | export_data_policy | [ExportDataPolicy](#bytebase-v1-ExportDataPolicy) |  |  |
+| query_data_policy | [QueryDataPolicy](#bytebase-v1-QueryDataPolicy) |  |  |
 | enforce | [bool](#bool) |  |  |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryDataPolicy"></a>
+
+### QueryDataPolicy
+QueryDataPolicy is the policy configuration for querying data.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The query timeout duration. |
 
 
 
@@ -7441,6 +7458,7 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | TAG | 13 |  |
 | DATA_SOURCE_QUERY | 14 |  |
 | DATA_EXPORT | 15 |  |
+| DATA_QUERY | 16 |  |
 
 
 

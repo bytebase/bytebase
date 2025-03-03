@@ -7,6 +7,7 @@
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import Long from "long";
+import { Duration } from "../google/protobuf/duration";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Expr } from "../google/type/expr";
@@ -25,6 +26,7 @@ export enum PolicyType {
   TAG = "TAG",
   DATA_SOURCE_QUERY = "DATA_SOURCE_QUERY",
   DATA_EXPORT = "DATA_EXPORT",
+  DATA_QUERY = "DATA_QUERY",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -60,6 +62,9 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case 15:
     case "DATA_EXPORT":
       return PolicyType.DATA_EXPORT;
+    case 16:
+    case "DATA_QUERY":
+      return PolicyType.DATA_QUERY;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -89,6 +94,8 @@ export function policyTypeToJSON(object: PolicyType): string {
       return "DATA_SOURCE_QUERY";
     case PolicyType.DATA_EXPORT:
       return "DATA_EXPORT";
+    case PolicyType.DATA_QUERY:
+      return "DATA_QUERY";
     case PolicyType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -117,6 +124,8 @@ export function policyTypeToNumber(object: PolicyType): number {
       return 14;
     case PolicyType.DATA_EXPORT:
       return 15;
+    case PolicyType.DATA_QUERY:
+      return 16;
     case PolicyType.UNRECOGNIZED:
     default:
       return -1;
@@ -381,6 +390,7 @@ export interface Policy {
   tagPolicy?: TagPolicy | undefined;
   dataSourceQueryPolicy?: DataSourceQueryPolicy | undefined;
   exportDataPolicy?: ExportDataPolicy | undefined;
+  queryDataPolicy?: QueryDataPolicy | undefined;
   enforce: boolean;
   /** The resource type for the policy. */
   resourceType: PolicyResourceType;
@@ -406,6 +416,12 @@ export interface DisableCopyDataPolicy {
 
 export interface ExportDataPolicy {
   disable: boolean;
+}
+
+/** QueryDataPolicy is the policy configuration for querying data. */
+export interface QueryDataPolicy {
+  /** The query timeout duration. */
+  timeout: Duration | undefined;
 }
 
 export interface SQLReviewRule {
@@ -1104,6 +1120,7 @@ function createBasePolicy(): Policy {
     tagPolicy: undefined,
     dataSourceQueryPolicy: undefined,
     exportDataPolicy: undefined,
+    queryDataPolicy: undefined,
     enforce: false,
     resourceType: PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED,
   };
@@ -1149,6 +1166,9 @@ export const Policy: MessageFns<Policy> = {
     }
     if (message.exportDataPolicy !== undefined) {
       ExportDataPolicy.encode(message.exportDataPolicy, writer.uint32(186).fork()).join();
+    }
+    if (message.queryDataPolicy !== undefined) {
+      QueryDataPolicy.encode(message.queryDataPolicy, writer.uint32(194).fork()).join();
     }
     if (message.enforce !== false) {
       writer.uint32(104).bool(message.enforce);
@@ -1265,6 +1285,14 @@ export const Policy: MessageFns<Policy> = {
           message.exportDataPolicy = ExportDataPolicy.decode(reader, reader.uint32());
           continue;
         }
+        case 24: {
+          if (tag !== 194) {
+            break;
+          }
+
+          message.queryDataPolicy = QueryDataPolicy.decode(reader, reader.uint32());
+          continue;
+        }
         case 13: {
           if (tag !== 104) {
             break;
@@ -1314,6 +1342,7 @@ export const Policy: MessageFns<Policy> = {
         ? DataSourceQueryPolicy.fromJSON(object.dataSourceQueryPolicy)
         : undefined,
       exportDataPolicy: isSet(object.exportDataPolicy) ? ExportDataPolicy.fromJSON(object.exportDataPolicy) : undefined,
+      queryDataPolicy: isSet(object.queryDataPolicy) ? QueryDataPolicy.fromJSON(object.queryDataPolicy) : undefined,
       enforce: isSet(object.enforce) ? globalThis.Boolean(object.enforce) : false,
       resourceType: isSet(object.resourceType)
         ? policyResourceTypeFromJSON(object.resourceType)
@@ -1360,6 +1389,9 @@ export const Policy: MessageFns<Policy> = {
     }
     if (message.exportDataPolicy !== undefined) {
       obj.exportDataPolicy = ExportDataPolicy.toJSON(message.exportDataPolicy);
+    }
+    if (message.queryDataPolicy !== undefined) {
+      obj.queryDataPolicy = QueryDataPolicy.toJSON(message.queryDataPolicy);
     }
     if (message.enforce !== false) {
       obj.enforce = message.enforce;
@@ -1409,6 +1441,9 @@ export const Policy: MessageFns<Policy> = {
         : undefined;
     message.exportDataPolicy = (object.exportDataPolicy !== undefined && object.exportDataPolicy !== null)
       ? ExportDataPolicy.fromPartial(object.exportDataPolicy)
+      : undefined;
+    message.queryDataPolicy = (object.queryDataPolicy !== undefined && object.queryDataPolicy !== null)
+      ? QueryDataPolicy.fromPartial(object.queryDataPolicy)
       : undefined;
     message.enforce = object.enforce ?? false;
     message.resourceType = object.resourceType ?? PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED;
@@ -1680,6 +1715,66 @@ export const ExportDataPolicy: MessageFns<ExportDataPolicy> = {
   fromPartial(object: DeepPartial<ExportDataPolicy>): ExportDataPolicy {
     const message = createBaseExportDataPolicy();
     message.disable = object.disable ?? false;
+    return message;
+  },
+};
+
+function createBaseQueryDataPolicy(): QueryDataPolicy {
+  return { timeout: undefined };
+}
+
+export const QueryDataPolicy: MessageFns<QueryDataPolicy> = {
+  encode(message: QueryDataPolicy, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.timeout !== undefined) {
+      Duration.encode(message.timeout, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryDataPolicy {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryDataPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.timeout = Duration.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryDataPolicy {
+    return { timeout: isSet(object.timeout) ? Duration.fromJSON(object.timeout) : undefined };
+  },
+
+  toJSON(message: QueryDataPolicy): unknown {
+    const obj: any = {};
+    if (message.timeout !== undefined) {
+      obj.timeout = Duration.toJSON(message.timeout);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<QueryDataPolicy>): QueryDataPolicy {
+    return QueryDataPolicy.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<QueryDataPolicy>): QueryDataPolicy {
+    const message = createBaseQueryDataPolicy();
+    message.timeout = (object.timeout !== undefined && object.timeout !== null)
+      ? Duration.fromPartial(object.timeout)
+      : undefined;
     return message;
   },
 };
