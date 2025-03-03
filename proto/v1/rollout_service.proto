@@ -393,9 +393,6 @@ message Task {
   }
   Type type = 6;
 
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-  repeated string depends_on_tasks = 7;
-
   // Format: instances/{instance} if the task is DatabaseCreate.
   // Format: instances/{instance}/databases/{database}
   string target = 8;

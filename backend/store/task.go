@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -34,7 +33,6 @@ type TaskMessage struct {
 	Type              api.TaskType
 	Payload           string
 	EarliestAllowedAt *time.Time
-	DependsOn         []int
 
 	LatestTaskRunStatus api.TaskRunStatus
 }
@@ -301,8 +299,7 @@ func (s *Store) ListTasks(ctx context.Context, find *TaskFind) ([]*TaskMessage, 
 			latest_task_run.status AS latest_task_run_status,
 			task.type,
 			task.payload,
-			task.earliest_allowed_at,
-			(SELECT ARRAY_AGG (task_dag.from_task_id) FROM task_dag WHERE task_dag.to_task_id = task.id) blocked_by
+			task.earliest_allowed_at
 		FROM task
 		LEFT JOIN LATERAL (
 			SELECT COALESCE(
@@ -328,7 +325,6 @@ func (s *Store) ListTasks(ctx context.Context, find *TaskFind) ([]*TaskMessage, 
 	for rows.Next() {
 		task := &TaskMessage{}
 		var earliestAllowedAt sql.NullTime
-		var dependsOn pgtype.Int4Array
 		if err := rows.Scan(
 			&task.ID,
 			&task.PipelineID,
@@ -340,11 +336,7 @@ func (s *Store) ListTasks(ctx context.Context, find *TaskFind) ([]*TaskMessage, 
 			&task.Type,
 			&task.Payload,
 			&earliestAllowedAt,
-			&dependsOn,
 		); err != nil {
-			return nil, err
-		}
-		if err := dependsOn.AssignTo(&task.DependsOn); err != nil {
 			return nil, err
 		}
 		if earliestAllowedAt.Valid {

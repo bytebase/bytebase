@@ -256,20 +256,6 @@ CREATE INDEX idx_task_status ON task(status);
 
 ALTER SEQUENCE task_id_seq RESTART WITH 101;
 
--- task_dag describes task dependency relationship
--- from_task_id blocks to_task_id
-CREATE TABLE task_dag (
-    id serial PRIMARY KEY,
-    from_task_id integer NOT NULL REFERENCES task(id),
-    to_task_id integer NOT NULL REFERENCES task(id)
-);
-
-CREATE INDEX idx_task_dag_from_task_id ON task_dag(from_task_id);
-
-CREATE INDEX idx_task_dag_to_task_id ON task_dag(to_task_id);
-
-ALTER SEQUENCE task_dag_id_seq RESTART WITH 101;
-
 -- task run table stores the task run
 CREATE TABLE task_run (
     id serial PRIMARY KEY,

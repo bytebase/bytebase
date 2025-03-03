@@ -201,31 +201,6 @@ func GetTaskSkipped(task *store.TaskMessage) (bool, error) {
 	return payload.Skipped, nil
 }
 
-// MergeTaskCreateLists merges a matrix of taskCreate and taskIndexDAG to a list of taskCreate and taskIndexDAG.
-// The index of returned taskIndexDAG list is set regarding the merged taskCreate.
-func MergeTaskCreateLists(taskCreateLists [][]*store.TaskMessage, taskIndexDAGLists [][]store.TaskIndexDAG) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
-	if len(taskCreateLists) != len(taskIndexDAGLists) {
-		return nil, nil, errors.Errorf("expect taskCreateLists and taskIndexDAGLists to have the same length, get %d, %d respectively", len(taskCreateLists), len(taskIndexDAGLists))
-	}
-	var resTaskCreateList []*store.TaskMessage
-	var resTaskIndexDAGList []store.TaskIndexDAG
-	offset := 0
-	for i := range taskCreateLists {
-		taskCreateList := taskCreateLists[i]
-		taskIndexDAGList := taskIndexDAGLists[i]
-
-		resTaskCreateList = append(resTaskCreateList, taskCreateList...)
-		for _, dag := range taskIndexDAGList {
-			resTaskIndexDAGList = append(resTaskIndexDAGList, store.TaskIndexDAG{
-				FromIndex: dag.FromIndex + offset,
-				ToIndex:   dag.ToIndex + offset,
-			})
-		}
-		offset += len(taskCreateList)
-	}
-	return resTaskCreateList, resTaskIndexDAGList, nil
-}
-
 // FindNextPendingStep finds the next pending step in the approval flow.
 func FindNextPendingStep(template *storepb.ApprovalTemplate, approvers []*storepb.IssuePayloadApproval_Approver) *storepb.ApprovalStep {
 	// We can do the finding like this for now because we are presuming that
