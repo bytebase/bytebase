@@ -124,7 +124,10 @@ export type Permission =
   | "bb.users.undelete"
   | "bb.users.update"
   | "bb.worksheets.get"
-  | "bb.worksheets.manage";
+  | "bb.worksheets.manage"
+  | "bb.workspaces.getIamPolicy"
+  | "bb.workspaces.setIamPolicy"
+  ;
 
 export type QueryPermission = PickLiteral<
   Permission,
