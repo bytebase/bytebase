@@ -326,3 +326,9 @@ message PasswordRestrictionSetting {
   // password_rotation requires users to reset their password after the duration.
   google.protobuf.Duration password_rotation = 7;
 }
+
+// QueryTimeoutSetting is the setting for query timeout.
+message QueryTimeoutSetting {
+  // The query timeout duration.
+  google.protobuf.Duration timeout_duration = 1;
+}
