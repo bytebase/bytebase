@@ -124,7 +124,7 @@
     "@vitejs/plugin-vue": "5.2.1",
     "@vitejs/plugin-vue-jsx": "4.1.1",
     "@vue/compiler-sfc": "3.4.31",
-    "@vue/eslint-config-prettier": "10.1.0",
+    "@vue/eslint-config-prettier": "10.2.0",
     "@vue/eslint-config-typescript": "^14.4.0",
     "@vue/test-utils": "2.4.6",
     "@vue/tsconfig": "0.7.0",
