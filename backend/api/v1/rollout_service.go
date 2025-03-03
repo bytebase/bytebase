@@ -82,9 +82,7 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.Previ
 	}
 	steps := convertPlanSteps(request.Plan.Steps)
 
-	serializeTasks := request.Plan.GetVcsSource() != nil
-
-	rollout, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, steps, nil /* snapshot */, project, serializeTasks)
+	rollout, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, steps, nil /* snapshot */, project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
@@ -228,9 +226,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.NotFound, "plan not found for id: %d", planID)
 	}
 
-	serializeTasks := plan.Config.GetVcsSource() != nil
-
-	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, plan.Config.GetSteps(), plan.Config.GetDeploymentSnapshot(), project, serializeTasks)
+	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, plan.Config.GetSteps(), plan.Config.GetDeploymentSnapshot(), project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
@@ -954,8 +950,7 @@ func isChangeDatabasePlan(steps []*storepb.PlanConfig_Step) bool {
 }
 
 // GetPipelineCreate gets a pipeline create message from a plan.
-// serializeTasks serialize tasks on the same database using taskDAG.
-func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, snapshot *storepb.PlanConfig_DeploymentSnapshot /* nullable */, project *store.ProjectMessage, serializeTasks bool) (*store.PipelineMessage, error) {
+func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, snapshot *storepb.PlanConfig_DeploymentSnapshot /* nullable */, project *store.ProjectMessage) (*store.PipelineMessage, error) {
 	// Flatten all specs from steps.
 	var specs []*storepb.PlanConfig_Spec
 	for _, step := range steps {
@@ -1078,27 +1073,13 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 			return nil
 		}
 
-		taskIndexesBySpecID := map[string][]int{}
 		for _, spec := range step.Specs {
-			taskCreates, taskIndexDAGCreates, err := getTaskCreatesFromSpec(ctx, s, sheetManager, licenseService, dbFactory, spec, project, registerEnvironmentID)
+			taskCreates, err := getTaskCreatesFromSpec(ctx, s, sheetManager, licenseService, dbFactory, spec, project, registerEnvironmentID)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to get task creates from spec")
 			}
-
-			offset := len(stageCreate.TaskList)
-			for i := range taskCreates {
-				taskIndexesBySpecID[spec.Id] = append(taskIndexesBySpecID[spec.Id], i+offset)
-			}
-			for i := range taskIndexDAGCreates {
-				taskIndexDAGCreates[i].FromIndex += offset
-				taskIndexDAGCreates[i].ToIndex += offset
-			}
 			stageCreate.TaskList = append(stageCreate.TaskList, taskCreates...)
-			stageCreate.TaskIndexDAGList = append(stageCreate.TaskIndexDAGList, taskIndexDAGCreates...)
 		}
-		stageCreate.TaskIndexDAGList = append(stageCreate.TaskIndexDAGList, getTaskIndexDAGs(step.Specs, func(specID string) []int {
-			return taskIndexesBySpecID[specID]
-		})...)
 
 		environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &stageEnvironmentID})
 		if err != nil {
@@ -1113,55 +1094,9 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 			stageCreate.Name = step.Title
 		}
 
-		if serializeTasks {
-			hasDAG := map[store.TaskIndexDAG]bool{}
-			databaseTaskIndexes := map[string][]int{}
-
-			for i, task := range stageCreate.TaskList {
-				if task.DatabaseName == nil {
-					continue
-				}
-				dbKey := fmt.Sprintf("%s/%s", task.InstanceID, *task.DatabaseName)
-				databaseTaskIndexes[dbKey] = append(databaseTaskIndexes[dbKey], i)
-			}
-
-			for _, dag := range stageCreate.TaskIndexDAGList {
-				hasDAG[dag] = true
-			}
-
-			for _, indexes := range databaseTaskIndexes {
-				for i := 1; i < len(indexes); i++ {
-					dag := store.TaskIndexDAG{
-						FromIndex: indexes[i-1],
-						ToIndex:   indexes[i],
-					}
-					if !hasDAG[dag] {
-						stageCreate.TaskIndexDAGList = append(stageCreate.TaskIndexDAGList, dag)
-					}
-				}
-			}
-		}
-
 		pipelineCreate.Stages = append(pipelineCreate.Stages, stageCreate)
 	}
 	return pipelineCreate, nil
-}
-
-func getTaskIndexDAGs(specs []*storepb.PlanConfig_Spec, getTaskIndexes func(specID string) []int) []store.TaskIndexDAG {
-	var taskIndexDAGs []store.TaskIndexDAG
-	for _, spec := range specs {
-		for _, dependsOnSpec := range spec.DependsOnSpecs {
-			for _, dependsOnTask := range getTaskIndexes(dependsOnSpec) {
-				for _, task := range getTaskIndexes(spec.Id) {
-					taskIndexDAGs = append(taskIndexDAGs, store.TaskIndexDAG{
-						FromIndex: dependsOnTask,
-						ToIndex:   task,
-					})
-				}
-			}
-		}
-	}
-	return taskIndexDAGs
 }
 
 // filter pipelineCreate.Stages using targetStageID.

@@ -230,9 +230,6 @@ message Plan {
     google.protobuf.Timestamp earliest_allowed_time = 4;
     // A UUID4 string that uniquely identifies the Spec.
     string id = 5;
-    // IDs of the specs that this spec depends on.
-    // Must be a subset of the specs in the same step.
-    repeated string depends_on_specs = 6;
 
     SpecReleaseSource spec_release_source = 8;
 
@@ -242,7 +239,6 @@ message Plan {
       ExportDataConfig export_data_config = 7;
     }
   }
-  VCSSource vcs_source = 7;
 
   // Format: users/hello@world.com
   string creator = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -315,7 +311,7 @@ message Plan {
       DATA = 6;
     }
     Type type = 3;
-    // schema_version is parsed from VCS file name.
+    // schema_version is parsed from file name.
     // It is automatically generated in the UI workflow.
     string schema_version = 4;
 
@@ -342,15 +338,6 @@ message Plan {
     // The zip password provide by users.
     // Leave it empty if no needs to encrypt the zip file.
     optional string password = 4;
-  }
-
-  message VCSSource {
-    VCSType vcs_type = 1;
-    // Optional.
-    // If present, we will update the pull request for rollout status.
-    // Format: projects/{project-ID}/vcsConnectors/{vcs-connector}
-    string vcs_connector = 2;
-    string pull_request_url = 3;
   }
 
   message ReleaseSource {

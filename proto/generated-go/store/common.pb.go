@@ -146,15 +146,10 @@ type VCSType int32
 
 const (
 	VCSType_VCS_TYPE_UNSPECIFIED VCSType = 0
-	// GitHub type. Using for GitHub community edition(ce).
-	VCSType_GITHUB VCSType = 1
-	// GitLab type. Using for GitLab community edition(ce) and enterprise
-	// edition(ee).
-	VCSType_GITLAB VCSType = 2
-	// BitBucket type. Using for BitBucket cloud or BitBucket server.
-	VCSType_BITBUCKET VCSType = 3
-	// Azure DevOps. Using for Azure DevOps GitOps workflow.
-	VCSType_AZURE_DEVOPS VCSType = 4
+	VCSType_GITHUB               VCSType = 1
+	VCSType_GITLAB               VCSType = 2
+	VCSType_BITBUCKET            VCSType = 3
+	VCSType_AZURE_DEVOPS         VCSType = 4
 )
 
 // Enum value maps for VCSType.

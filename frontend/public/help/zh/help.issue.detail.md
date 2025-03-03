@@ -8,4 +8,3 @@ title: 什么是「工单」 ?
 
 - [您的一个数据库变更](https://www.bytebase.com/docs/get-started/step-by-step/change-schema)
 - [批量变更](https://www.bytebase.com/docs/change-database/batch-change/)
-- [GitOps 工作流](https://www.bytebase.com/docs/get-started/step-by-step/change-schema)

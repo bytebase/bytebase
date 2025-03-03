@@ -257,16 +257,9 @@ export function engineToNumber(object: Engine): number {
 
 export enum VCSType {
   VCS_TYPE_UNSPECIFIED = "VCS_TYPE_UNSPECIFIED",
-  /** GITHUB - GitHub type. Using for GitHub community edition(ce). */
   GITHUB = "GITHUB",
-  /**
-   * GITLAB - GitLab type. Using for GitLab community edition(ce) and enterprise
-   * edition(ee).
-   */
   GITLAB = "GITLAB",
-  /** BITBUCKET - BitBucket type. Using for BitBucket cloud or BitBucket server. */
   BITBUCKET = "BITBUCKET",
-  /** AZURE_DEVOPS - Azure DevOps. Using for Azure DevOps GitOps workflow. */
   AZURE_DEVOPS = "AZURE_DEVOPS",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
