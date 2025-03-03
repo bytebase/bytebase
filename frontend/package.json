@@ -144,7 +144,7 @@
     "protobufjs": "^7.4.0",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
-    "rollup": "4.28.0",
+    "rollup": "4.34.9",
     "tailwindcss": "3.4.17",
     "ts-node": "^10.9.2",
     "typescript": "5.6.3",
