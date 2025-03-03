@@ -518,7 +518,6 @@
     - [Plan.Spec](#bytebase-v1-Plan-Spec)
     - [Plan.SpecReleaseSource](#bytebase-v1-Plan-SpecReleaseSource)
     - [Plan.Step](#bytebase-v1-Plan-Step)
-    - [Plan.VCSSource](#bytebase-v1-Plan-VCSSource)
     - [PlanCheckRun](#bytebase-v1-PlanCheckRun)
     - [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result)
     - [PlanCheckRun.Result.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-SqlReviewReport)
@@ -8214,7 +8213,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
 | steps | [Plan.Step](#bytebase-v1-Plan-Step) | repeated |  |
-| vcs_source | [Plan.VCSSource](#bytebase-v1-Plan-VCSSource) |  |  |
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
@@ -8238,7 +8236,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | target | [string](#string) |  | The resource name of the target. Format: instances/{instance-id}/databases/{database-name}. Format: projects/{project}/databaseGroups/{databaseGroup}. |
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | type | [Plan.ChangeDatabaseConfig.Type](#bytebase-v1-Plan-ChangeDatabaseConfig-Type) |  |  |
-| schema_version | [string](#string) |  | schema_version is parsed from VCS file name. It is automatically generated in the UI workflow. |
+| schema_version | [string](#string) |  | schema_version is parsed from file name. It is automatically generated in the UI workflow. |
 | ghost_flags | [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
 | pre_update_backup_detail | [Plan.ChangeDatabaseConfig.PreUpdateBackupDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-PreUpdateBackupDetail) | optional | If set, a backup of the modified data will be created automatically before any changes are applied. |
 
@@ -8412,23 +8410,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | ----- | ---- | ----- | ----------- |
 | title | [string](#string) |  |  |
 | specs | [Plan.Spec](#bytebase-v1-Plan-Spec) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-VCSSource"></a>
-
-### Plan.VCSSource
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| vcs_type | [VCSType](#bytebase-v1-VCSType) |  |  |
-| vcs_connector | [string](#string) |  | Optional. If present, we will update the pull request for rollout status. Format: projects/{project-ID}/vcsConnectors/{vcs-connector} |
-| pull_request_url | [string](#string) |  |  |
 
 
 

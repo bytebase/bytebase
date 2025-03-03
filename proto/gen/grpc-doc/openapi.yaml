@@ -10934,8 +10934,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Plan_Step'
-                vcsSource:
-                    $ref: '#/components/schemas/Plan_VCSSource'
                 creator:
                     readOnly: true
                     type: string
@@ -11060,7 +11058,7 @@ components:
                 schemaVersion:
                     type: string
                     description: |-
-                        schema_version is parsed from VCS file name.
+                        schema_version is parsed from file name.
                          It is automatically generated in the UI workflow.
                 ghostFlags:
                     type: object
@@ -11189,26 +11187,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Plan_Spec'
-        Plan_VCSSource:
-            type: object
-            properties:
-                vcsType:
-                    enum:
-                        - VCS_TYPE_UNSPECIFIED
-                        - GITHUB
-                        - GITLAB
-                        - BITBUCKET
-                        - AZURE_DEVOPS
-                    type: string
-                    format: enum
-                vcsConnector:
-                    type: string
-                    description: |-
-                        Optional.
-                         If present, we will update the pull request for rollout status.
-                         Format: projects/{project-ID}/vcsConnectors/{vcs-connector}
-                pullRequestUrl:
-                    type: string
         Policy:
             type: object
             properties:

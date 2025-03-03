@@ -38,11 +38,6 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 		Title:       plan.Name,
 		Description: plan.Description,
 		Steps:       convertToPlanSteps(plan.Config.Steps),
-		VcsSource: &v1pb.Plan_VCSSource{
-			VcsType:        v1pb.VCSType(plan.Config.GetVcsSource().GetVcsType()),
-			VcsConnector:   plan.Config.GetVcsSource().GetVcsConnector(),
-			PullRequestUrl: plan.Config.GetVcsSource().GetPullRequestUrl(),
-		},
 		ReleaseSource: &v1pb.Plan_ReleaseSource{
 			Release: plan.Config.GetReleaseSource().GetRelease(),
 		},
@@ -183,20 +178,8 @@ func convertPlan(plan *v1pb.Plan) *storepb.PlanConfig {
 	}
 	return &storepb.PlanConfig{
 		Steps:              convertPlanSteps(plan.Steps),
-		VcsSource:          convertPlanVcsSource(plan.VcsSource),
 		ReleaseSource:      convertPlanReleaseSource(plan.ReleaseSource),
 		DeploymentSnapshot: nil,
-	}
-}
-
-func convertPlanVcsSource(s *v1pb.Plan_VCSSource) *storepb.PlanConfig_VCSSource {
-	if s == nil {
-		return nil
-	}
-	return &storepb.PlanConfig_VCSSource{
-		VcsType:        storepb.VCSType(s.VcsType),
-		VcsConnector:   s.VcsConnector,
-		PullRequestUrl: s.PullRequestUrl,
 	}
 }
 
@@ -684,15 +667,6 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 		}
 
 		rolloutV1.Stages = append(rolloutV1.Stages, rolloutStage)
-	}
-
-	for i, rolloutStage := range rolloutV1.Stages {
-		for j, rolloutTask := range rolloutStage.Tasks {
-			task := rollout.Stages[i].TaskList[j]
-			for _, blockingTask := range task.DependsOn {
-				rolloutTask.DependsOnTasks = append(rolloutTask.DependsOnTasks, taskIDToName[blockingTask])
-			}
-		}
 	}
 
 	return rolloutV1, nil

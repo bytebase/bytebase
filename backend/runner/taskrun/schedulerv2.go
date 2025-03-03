@@ -279,26 +279,6 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 	if task.EarliestAllowedAt != nil && time.Now().Before(*task.EarliestAllowedAt) {
 		return nil
 	}
-	for _, blockingTaskUID := range task.DependsOn {
-		blockingTask, err := s.store.GetTaskV2ByID(ctx, blockingTaskUID)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get blocking task %v", blockingTaskUID)
-		}
-
-		skipped := struct {
-			Skipped bool `json:"skipped"`
-		}{}
-		if err := json.Unmarshal([]byte(blockingTask.Payload), &skipped); err != nil {
-			return errors.Wrapf(err, "failed to unmarshal payload")
-		}
-		if skipped.Skipped {
-			continue
-		}
-
-		if blockingTask.LatestTaskRunStatus != api.TaskRunDone {
-			return nil
-		}
-	}
 
 	doSchedule, err := func() (bool, error) {
 		if task.DatabaseName == nil {

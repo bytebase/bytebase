@@ -91,19 +91,8 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 			c.StageID = stage.ID
 			taskCreateList = append(taskCreateList, c)
 		}
-		tasks, err := s.createTasks(ctx, tx, taskCreateList...)
-		if err != nil {
+		if _, err := s.createTasks(ctx, tx, taskCreateList...); err != nil {
 			return 0, errors.Wrap(err, "failed to create tasks")
-		}
-
-		// TODO(p0ny): create task dags in batch.
-		for _, indexDAG := range stage.TaskIndexDAGList {
-			if err := s.createTaskDAG(ctx, tx, &TaskDAGMessage{
-				FromTaskID: tasks[indexDAG.FromIndex].ID,
-				ToTaskID:   tasks[indexDAG.ToIndex].ID,
-			}); err != nil {
-				return 0, errors.Wrap(err, "failed to create task DAG")
-			}
 		}
 	}
 
