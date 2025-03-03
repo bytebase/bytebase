@@ -448,6 +448,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -515,6 +516,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -1711,6 +1713,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -1784,6 +1787,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -2507,6 +2511,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -2574,6 +2579,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -3112,6 +3118,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -3183,6 +3190,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -4905,6 +4913,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -4972,6 +4981,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -11206,6 +11216,7 @@ components:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
                 rolloutPolicy:
@@ -11226,6 +11237,8 @@ components:
                     $ref: '#/components/schemas/DataSourceQueryPolicy'
                 exportDataPolicy:
                     $ref: '#/components/schemas/ExportDataPolicy'
+                queryDataPolicy:
+                    $ref: '#/components/schemas/QueryDataPolicy'
                 enforce:
                     type: boolean
                 resourceType:
@@ -11474,6 +11487,14 @@ components:
                 allowSelfApproval:
                     type: boolean
                     description: Whether to allow the issue creator to self-approve the issue.
+        QueryDataPolicy:
+            type: object
+            properties:
+                timeout:
+                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
+                    type: string
+                    description: The query timeout duration.
+            description: QueryDataPolicy is the policy configuration for querying data.
         QueryHistory:
             type: object
             properties:
