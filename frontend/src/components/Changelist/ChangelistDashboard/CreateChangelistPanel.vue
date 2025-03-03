@@ -234,7 +234,9 @@ const validateResourceId = async (
   }
 
   if (!projectName.value) return [];
-  const project = useProjectV1Store().getProjectByName(projectName.value);
+  const project = await useProjectV1Store().getOrFetchProjectByName(
+    projectName.value
+  );
 
   try {
     const name = `${project.name}/changelists/${resourceId}`;
@@ -303,8 +305,9 @@ const doCreate = async () => {
 
   isLoading.value = true;
   try {
-    const project = useProjectV1Store().getProjectByName(projectName.value!);
-
+    const project = await useProjectV1Store().getOrFetchProjectByName(
+      projectName.value!
+    );
     const createdSheets = await Promise.all(
       files.value.map(async (f) => {
         const { name, arrayBuffer } = f;

@@ -1,5 +1,6 @@
 import { uniq } from "lodash-es";
 import type { SelectOption } from "naive-ui";
+import { type OptionConfig } from "@/components/ExprEditor/context";
 import type { Factor } from "@/plugins/cel";
 import { useEnvironmentV1Store } from "@/store";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
@@ -20,7 +21,7 @@ export const factorSupportDropdown: Factor[] = [
   "resource.instance_id",
 ];
 
-export const DatabaseGroupFactorOptionsMap = (project: ComposedProject) => {
+export const getDatabaseGroupOptionConfigMap = (project: ComposedProject) => {
   return FactorList.reduce((map, factor) => {
     let options: SelectOption[] = [];
     switch (factor) {
@@ -31,9 +32,12 @@ export const DatabaseGroupFactorOptionsMap = (project: ComposedProject) => {
         options = getInstanceIdOptions(project);
         break;
     }
-    map.set(factor, options);
+    map.set(factor, {
+      remote: false,
+      options,
+    });
     return map;
-  }, new Map<Factor, SelectOption[]>());
+  }, new Map<Factor, OptionConfig>());
 };
 
 const getEnvironmentOptions = () => {

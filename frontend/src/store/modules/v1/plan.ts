@@ -119,12 +119,9 @@ export const usePlanStore = defineStore("plan", () => {
       pageToken,
     });
 
-    const projectStore = useProjectV1Store();
     const plans = resp.plans.filter((plan) => {
       const proj = extractProjectResourceName(plan.name);
-      return isValidProjectName(
-        projectStore.getProjectByName(`projects/${proj}`).name
-      );
+      return isValidProjectName(`projects/${proj}`);
     });
 
     const composedPlans = await Promise.all(

@@ -1,3 +1,4 @@
+import { computedAsync } from "@vueuse/core";
 import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide, watchEffect } from "vue";
 import { useRoute } from "vue-router";
@@ -26,14 +27,16 @@ export const provideReleaseDetailContext = () => {
   const projectV1Store = useProjectV1Store();
   const releaseStore = useReleaseStore();
 
-  const project = computed(() => {
+  const project = computedAsync(async () => {
     const projectId = route.params.projectId as string;
     if (!projectId) {
       return unknownProject();
     }
 
-    return projectV1Store.getProjectByName(`${projectNamePrefix}${projectId}`);
-  });
+    return await projectV1Store.getOrFetchProjectByName(
+      `${projectNamePrefix}${projectId}`
+    );
+  }, unknownProject());
 
   const name = computed(() => {
     return `${project.value.name}/releases/${route.params.releaseId}`;

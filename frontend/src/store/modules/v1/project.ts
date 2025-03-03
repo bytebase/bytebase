@@ -1,4 +1,4 @@
-import { orderBy } from "lodash-es";
+import { orderBy, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watchEffect } from "vue";
 import { projectServiceClient } from "@/grpcweb";
@@ -10,9 +10,13 @@ import {
   defaultProject,
   UNKNOWN_PROJECT_NAME,
   DEFAULT_PROJECT_NAME,
+  isValidProjectName,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import type { Project } from "@/types/proto/v1/project_service";
+import type {
+  Project,
+  ListProjectsResponse,
+} from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { useListCache } from "./cache";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
@@ -63,10 +67,55 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     await upsertProjectMap([project]);
     return project as ComposedProject;
   };
+
+  const fetchProjectList = async (params: {
+    showDeleted: boolean;
+    pageSize: number;
+    pageToken?: string;
+    query?: string;
+  }): Promise<{
+    projects: ComposedProject[];
+    nextPageToken?: string;
+  }> => {
+    const request =
+      hasWorkspacePermissionV2("bb.projects.list") && !params.query
+        ? projectServiceClient.listProjects
+        : projectServiceClient.searchProjects;
+    const response = await request(params);
+    const composedProjects = await upsertProjectMap(response.projects);
+
+    return {
+      projects: composedProjects,
+      nextPageToken: (response as ListProjectsResponse).nextPageToken,
+    };
+  };
+
+  const searchProjects = async ({
+    query,
+    silent = true,
+    showDeleted = false,
+  }: {
+    query: string;
+    silent?: boolean;
+    showDeleted?: boolean;
+  }) => {
+    const { projects } = await projectServiceClient.searchProjects(
+      {
+        query,
+        showDeleted,
+      },
+      { silent }
+    );
+    return await upsertProjectMap(projects);
+  };
+
   const getOrFetchProjectByName = async (name: string, silent = false) => {
-    const cachedData = projectMapByName.get(name);
-    if (cachedData) {
+    const cachedData = getProjectByName(name);
+    if (cachedData && cachedData.name !== UNKNOWN_PROJECT_NAME) {
       return cachedData;
+    }
+    if (!isValidProjectName(name)) {
+      return unknownProject();
     }
     return fetchProjectByName(name, silent);
   };
@@ -75,16 +124,16 @@ export const useProjectV1Store = defineStore("project_v1", () => {
       project,
       projectId: resourceId,
     });
-    await upsertProjectMap([created]);
-    return created;
+    const composed = await upsertProjectMap([created]);
+    return composed[0];
   };
   const updateProject = async (project: Project, updateMask: string[]) => {
     const updated = await projectServiceClient.updateProject({
       project,
       updateMask,
     });
-    await upsertProjectMap([updated]);
-    return updated;
+    const composed = await upsertProjectMap([updated]);
+    return composed[0];
   };
   const archiveProject = async (project: Project, force = false) => {
     await projectServiceClient.deleteProject({
@@ -104,7 +153,6 @@ export const useProjectV1Store = defineStore("project_v1", () => {
 
   return {
     reset,
-    projectList,
     upsertProjectMap,
     getProjectList,
     getProjectByName,
@@ -114,6 +162,8 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     archiveProject,
     restoreProject,
     updateProjectCache,
+    searchProjects,
+    fetchProjectList,
   };
 });
 
@@ -134,10 +184,10 @@ export const useProjectV1List = (showDeleted: boolean = false) => {
       timestamp: Date.now(),
       isFetching: true,
     });
-    const request = hasWorkspacePermissionV2("bb.projects.list")
-      ? projectServiceClient.listProjects
-      : projectServiceClient.searchProjects;
-    const { projects } = await request({ showDeleted });
+    const { projects } = await store.fetchProjectList({
+      showDeleted,
+      pageSize: 100,
+    });
     await store.upsertProjectMap(projects);
     listCache.cacheMap.set(cacheKey, {
       timestamp: Date.now(),
@@ -181,4 +231,22 @@ const batchComposeProjectIamPolicy = async (projectList: Project[]) => {
     composedProject.iamPolicy = policy;
     return composedProject;
   });
+};
+
+export const batchGetOrFetchProjects = async (projectNames: string[]) => {
+  const store = useProjectV1Store();
+
+  const distinctProjectList = uniq(projectNames);
+  await Promise.all(
+    distinctProjectList.map((projectName) => {
+      if (
+        !projectName ||
+        !isValidProjectName(projectName) ||
+        projectName === DEFAULT_PROJECT_NAME
+      ) {
+        return;
+      }
+      return store.getOrFetchProjectByName(projectName, true /* silent */);
+    })
+  );
 };

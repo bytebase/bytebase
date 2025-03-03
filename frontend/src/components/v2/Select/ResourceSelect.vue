@@ -15,6 +15,7 @@
     :size="size"
     :consistent-menu-width="consistentMenuWidth"
     class="bb-user-select"
+    @search="handleSearch"
     @update:value="handleValueUpdated"
   >
     <template v-if="$slots.empty" #empty>
@@ -69,6 +70,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (event: "update:value", value: string | undefined): void;
   (event: "update:values", value: string[]): void;
+  (event: "search", value: string): void;
 }>();
 
 const selected = computed(() => {
@@ -78,6 +80,10 @@ const selected = computed(() => {
     return props.value;
   }
 });
+
+const handleSearch = (search: string) => {
+  emit("search", search.trim().toLowerCase());
+};
 
 const renderLabel = (option: SelectOption, selected: boolean) => {
   const { resource, label } = option as ResourceSelectOption;

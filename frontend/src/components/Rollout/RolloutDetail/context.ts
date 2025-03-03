@@ -1,3 +1,4 @@
+import { computedAsync } from "@vueuse/core";
 import Emittery from "emittery";
 import type { ComputedRef, InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref } from "vue";
@@ -22,7 +23,7 @@ export type RolloutDetailContext = {
   rolloutPreview: Ref<Rollout>;
   issue: Ref<ComposedIssue | undefined>;
 
-  project: ComputedRef<ComposedProject>;
+  project: Ref<ComposedProject>;
   tasks: ComputedRef<Task[]>;
 
   // The events emmiter.
@@ -47,13 +48,15 @@ export const provideRolloutDetailContext = (rolloutName: string) => {
   const rolloutPreview = ref<Rollout>(Rollout.fromPartial({}));
   const issue = ref<ComposedIssue | undefined>(undefined);
 
-  const project = computed(() => {
+  const project = computedAsync(async () => {
     const projectId = route.params.projectId as string;
     if (!projectId) {
       return unknownProject();
     }
-    return projectV1Store.getProjectByName(`${projectNamePrefix}${projectId}`);
-  });
+    return await projectV1Store.getOrFetchProjectByName(
+      `${projectNamePrefix}${projectId}`
+    );
+  }, unknownProject());
 
   const tasks = computed(() => flattenTaskV1List(rollout.value));
 

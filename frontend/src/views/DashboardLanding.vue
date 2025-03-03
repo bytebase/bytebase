@@ -130,6 +130,7 @@
 </template>
 
 <script lang="tsx" setup>
+import { computedAsync } from "@vueuse/core";
 import { Volume2Icon } from "lucide-vue-next";
 import { SettingsIcon, GripVerticalIcon } from "lucide-vue-next";
 import { NButton, NCheckbox, NDivider } from "naive-ui";
@@ -164,12 +165,12 @@ const actuatorStore = useActuatorV1Store();
 const { lastVisitProjectPath } = useRecentVisit();
 const router = useRouter();
 
-const lastProject = computed(() => {
+const lastProject = computedAsync(async () => {
   if (!lastVisitProjectPath.value) {
     return;
   }
   const projectName = `${projectNamePrefix}${extractProjectResourceName(lastVisitProjectPath.value)}`;
-  const project = projectStore.getProjectByName(projectName);
+  const project = await projectStore.getOrFetchProjectByName(projectName);
   if (project.name === UNKNOWN_PROJECT_NAME) {
     return;
   }

@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <slot name="table" :list="dataList" :loading="state.loading" />
 
-    <div class="flex items-center justify-end space-x-2">
+    <div :class="['flex items-center justify-end space-x-2', footerClass]">
       <div class="flex items-center space-x-2">
         <div class="textinfolabel">
           {{ $t("common.rows-per-page") }}
@@ -57,13 +57,15 @@ const props = withDefaults(
     // A unique key to identify the session state.
     sessionKey: string;
     hideLoadMore?: boolean;
+    footerClass?: string;
     fetchList: (params: {
       pageSize: number;
       pageToken: string;
-    }) => Promise<{ nextPageToken: string; list: T[] }>;
+    }) => Promise<{ nextPageToken?: string; list: T[] }>;
   }>(),
   {
     hideLoadMore: false,
+    footerClass: "",
   }
 );
 
@@ -138,7 +140,7 @@ const fetchData = async (refresh = false) => {
     }
 
     sessionState.value.updatedTs = Date.now();
-    state.paginationToken = nextPageToken;
+    state.paginationToken = nextPageToken ?? "";
   } catch (e) {
     console.error(e);
   } finally {
@@ -154,10 +156,10 @@ const resetSession = () => {
   };
 };
 
-const refresh = () => {
+const refresh = async () => {
   state.paginationToken = "";
   resetSession();
-  fetchData(true);
+  await fetchData(true);
 };
 
 const fetchNextPage = () => {

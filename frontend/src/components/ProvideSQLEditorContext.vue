@@ -57,6 +57,7 @@ import {
   UNKNOWN_USER_NAME,
   isValidDatabaseName,
   isValidInstanceName,
+  isValidProjectName,
 } from "@/types";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
 import {
@@ -101,6 +102,19 @@ const {
 } = useSQLEditorContext();
 const hideProjects = useAppFeature("bb.feature.sql-editor.hide-projects");
 
+const fallbackToFirstProject = async () => {
+  const { projectList, ready } = useProjectV1List();
+  await wrapRefAsPromise(ready, true);
+  const projectListWithoutDefaultProject = projectList.value.filter(
+    (proj) => proj.name !== DEFAULT_PROJECT_NAME
+  );
+  return (
+    head(projectListWithoutDefaultProject)?.name ??
+    head(projectList.value)?.name ??
+    ""
+  );
+};
+
 const initializeProjects = async () => {
   const initProject = async (project: string) => {
     try {
@@ -135,22 +149,18 @@ const initializeProjects = async () => {
       editorStore.strictProject = false;
       initializeSuccess = await initProject(DEFAULT_PROJECT_NAME);
     } else {
-      const { projectList, ready } = useProjectV1List();
-      await wrapRefAsPromise(ready, true);
       const lastView = editorStore.storedLastViewedProject;
-      if (
-        lastView &&
-        projectList.value.findIndex((proj) => proj.name === lastView) >= 0
-      ) {
-        editorStore.project = lastView;
+      if (lastView) {
+        const project = await projectStore.getOrFetchProjectByName(lastView);
+        if (isValidProjectName(project.name)) {
+          editorStore.project = lastView;
+        } else {
+          const project = await fallbackToFirstProject();
+          editorStore.project = project;
+        }
       } else {
-        const projectListWithoutDefaultProject = projectList.value.filter(
-          (proj) => proj.name !== DEFAULT_PROJECT_NAME
-        );
-        editorStore.project =
-          head(projectListWithoutDefaultProject)?.name ??
-          head(projectList.value)?.name ??
-          "";
+        const project = await fallbackToFirstProject();
+        editorStore.project = project;
       }
       editorStore.strictProject = false;
       if (editorStore.project) {

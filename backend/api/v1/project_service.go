@@ -65,11 +65,35 @@ func (s *ProjectService) GetProject(ctx context.Context, request *v1pb.GetProjec
 
 // ListProjects lists all projects.
 func (s *ProjectService) ListProjects(ctx context.Context, request *v1pb.ListProjectsRequest) (*v1pb.ListProjectsResponse, error) {
-	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{ShowDeleted: request.ShowDeleted})
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := offset.limit + 1
+	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{
+		ShowDeleted: request.ShowDeleted,
+		Limit:       &limitPlusOne,
+		Offset:      &offset.offset,
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	response := &v1pb.ListProjectsResponse{}
+
+	nextPageToken := ""
+	if len(projects) == limitPlusOne {
+		projects = projects[:offset.limit]
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
+		}
+	}
+
+	response := &v1pb.ListProjectsResponse{
+		NextPageToken: nextPageToken,
+	}
 	for _, project := range projects {
 		response.Projects = append(response.Projects, convertToProject(project))
 	}
@@ -83,7 +107,14 @@ func (s *ProjectService) SearchProjects(ctx context.Context, request *v1pb.Searc
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
-	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{ShowDeleted: request.ShowDeleted})
+	find := &store.FindProjectMessage{
+		ShowDeleted: request.ShowDeleted,
+	}
+	if request.Query != "" {
+		find.Query = &request.Query
+	}
+
+	projects, err := s.store.ListProjectV2(ctx, find)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

@@ -35,7 +35,7 @@ export const useCommonSearchScopeOptions = (
   const databaseV1Store = useDatabaseV1Store();
   const environmentStore = useEnvironmentV1Store();
   const environmentList = useEnvironmentV1List();
-  const projectList = useProjectV1Store().projectList;
+  const projectList = useProjectV1Store().getProjectList(false);
 
   const project = computed(() => {
     const { projectId } = route?.params ?? {};
@@ -66,6 +66,7 @@ export const useCommonSearchScopeOptions = (
         id: "project",
         title: t("issue.advanced-search.scope.project.title"),
         description: t("issue.advanced-search.scope.project.description"),
+        // TODO(ed): We need to support search projects asynchronous.
         options: projectList.map<ValueOption>((project) => {
           const name = extractProjectResourceName(project.name);
           return {
