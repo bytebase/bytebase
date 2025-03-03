@@ -11,7 +11,7 @@ require (
 	cloud.google.com/go/cloudsqlconn v1.15.0
 	cloud.google.com/go/secretmanager v1.14.5
 	cloud.google.com/go/spanner v1.76.1
-	gitee.com/chunanyong/dm v1.8.17
+	gitee.com/chunanyong/dm v1.8.18
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.2
 	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos v1.3.0
