@@ -26,7 +26,7 @@ func getMySQLContainer(ctx context.Context) (*Container, error) {
 		ExposedPorts: []string{"3306/tcp"},
 		WaitingFor: wait.
 			ForLog("port: 3306  MySQL Community Server").
-			WithStartupTimeout(20 * time.Second),
+			WithStartupTimeout(60 * time.Second),
 	}
 
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
