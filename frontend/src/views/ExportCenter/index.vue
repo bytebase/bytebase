@@ -72,7 +72,7 @@ import { Drawer } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import {
   useCurrentUserV1,
-  useProjectV1Store,
+  useProjectByName,
   useIssueV1Store,
   useRefreshIssueList,
 } from "@/store";
@@ -98,11 +98,9 @@ interface LocalState {
   params: SearchParams;
 }
 
-const specificProject = computed(() => {
-  return projectV1Store.getProjectByName(
-    `${projectNamePrefix}${props.projectId}`
-  );
-});
+const { project: specificProject } = useProjectByName(
+  `${projectNamePrefix}${props.projectId}`
+);
 
 const readonlyScopes = computed((): SearchScope[] => {
   return [
@@ -122,7 +120,6 @@ const defaultSearchParams = () => {
 };
 
 const currentUser = useCurrentUserV1();
-const projectV1Store = useProjectV1Store();
 const state = reactive<LocalState>({
   showRequestExportPanel: false,
   params: defaultSearchParams(),
@@ -200,8 +197,6 @@ const allowExportData = computed(() => {
     return hasPermissionToCreateDataExportIssueInProject(specificProject.value);
   }
 
-  return projectV1Store.projectList.some((project) =>
-    hasPermissionToCreateDataExportIssueInProject(project)
-  );
+  return hasPermissionToCreateDataExportIssueInProject(specificProject.value);
 });
 </script>

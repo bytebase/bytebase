@@ -76,7 +76,9 @@ const getProjectsBindingGroup = async (group: Group) => {
   }
   const response: ProjectGroupResource[] = [];
 
-  for (const project of projectStore.projectList) {
+  // TODO(ed): Do we need a API to get IAM permission by user?
+  // Or we can just don't need to be so strict, it's okay to keep this way.
+  for (const project of projectStore.getProjectList()) {
     let resource: ProjectGroupResource | undefined;
     for (const binding of project.iamPolicy.bindings) {
       if (binding.members.includes(member)) {

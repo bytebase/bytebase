@@ -75,6 +75,7 @@ import {
   hasFeature,
   useAppFeature,
   useProjectV1Store,
+  useProjectByName,
   pushNotification,
   usePermissionStore,
 } from "@/store";
@@ -142,12 +143,13 @@ watchEffect(async () => {
   }
 });
 
-const project = computed(() =>
-  projectStore.getProjectByName(projectName.value)
-);
+const { project, ready } = useProjectByName(projectName.value);
 
 const initialized = computed(
-  () => project.value.name !== UNKNOWN_PROJECT_NAME && databaseListReady.value
+  () =>
+    ready &&
+    project.value.name !== UNKNOWN_PROJECT_NAME &&
+    databaseListReady.value
 );
 
 const isDefaultProject = computed((): boolean => {

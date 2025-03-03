@@ -72,7 +72,7 @@
             :enable-raw-expression="true"
             :factor-list="FactorList"
             :factor-support-dropdown="factorSupportDropdown"
-            :factor-options-map="DatabaseGroupFactorOptionsMap(project)"
+            :option-config-map="getDatabaseGroupOptionConfigMap(project)"
           />
         </div>
         <div class="col-span-2">
@@ -103,7 +103,7 @@ import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.
 import { FactorList } from "@/components/DatabaseGroup/utils";
 import {
   factorSupportDropdown,
-  DatabaseGroupFactorOptionsMap,
+  getDatabaseGroupOptionConfigMap,
 } from "@/components/DatabaseGroup/utils";
 import ExprEditor from "@/components/ExprEditor";
 import { FeatureAttentionForInstanceLicense } from "@/components/FeatureGuard";

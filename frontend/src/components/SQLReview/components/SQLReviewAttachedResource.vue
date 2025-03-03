@@ -6,6 +6,7 @@
 </template>
 
 <script setup lang="tsx">
+import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import { EnvironmentV1Name, RichDatabaseName } from "@/components/v2";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
@@ -35,7 +36,7 @@ const { resourceType, resourcePrefix } = useReviewConfigAttachedResource(
   computed(() => props.resource)
 );
 
-const reviewPolicyResourceComponent = computed(() => {
+const reviewPolicyResourceComponent = computedAsync(async () => {
   switch (resourceType.value) {
     case "environment": {
       const environment = environmentV1Store.getEnvironmentByName(
@@ -60,7 +61,10 @@ const reviewPolicyResourceComponent = computed(() => {
       );
     }
     case "project": {
-      const project = projectStore.getProjectByName(props.resource);
+      const project = await projectStore.getOrFetchProjectByName(
+        props.resource,
+        true /* silent */
+      );
       if (!isValidProjectName(project.name)) {
         return <div>{props.resource}</div>;
       }

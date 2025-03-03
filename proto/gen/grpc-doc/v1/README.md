@@ -7730,8 +7730,8 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | Not used. The maximum number of projects to return. The service may return fewer than this value. If unspecified, at most 10 projects will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListProjects` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | The maximum number of projects to return. The service may return fewer than this value. If unspecified, at most 10 projects will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListProjects` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListProjects` must match the call that provided the page token. |
 | show_deleted | [bool](#bool) |  | Show deleted projects if specified. |
@@ -7841,6 +7841,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | show_deleted | [bool](#bool) |  | Show deleted projects if specified. |
+| query | [string](#string) |  | Filter the project title or resource id by query. |
 
 
 

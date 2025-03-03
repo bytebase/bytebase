@@ -1,4 +1,5 @@
-import { type Ref, computed } from "vue";
+import type { Ref, ComputedRef } from "vue";
+import { computed } from "vue";
 import type { ConditionExpr } from "@/plugins/cel";
 import {
   getOperatorListByFactor as getRawOperatorListByFactor,
@@ -6,15 +7,17 @@ import {
   type Operator,
 } from "@/plugins/cel";
 import { t, te } from "@/plugins/i18n";
-import { useExprEditorContext } from "../context";
+import { useExprEditorContext, type OptionConfig } from "../context";
 
-export const useSelectOptions = (expr: Ref<ConditionExpr>) => {
+export const useSelectOptions = (
+  expr: Ref<ConditionExpr>
+): ComputedRef<OptionConfig> => {
   const context = useExprEditorContext();
-  const { factorOptionsMap } = context;
+  const { optionConfigMap } = context;
 
   const options = computed(() => {
     const factor = expr.value.args[0];
-    return factorOptionsMap.value.get(factor) || [];
+    return optionConfigMap.value.get(factor) || { remote: false, options: [] };
   });
 
   return options;
