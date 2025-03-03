@@ -129,3 +129,5 @@ permissions:
   - bb.users.update
   - bb.worksheets.get
   - bb.worksheets.manage
+  - bb.workspaces.getIamPolicy
+  - bb.workspaces.setIamPolicy
