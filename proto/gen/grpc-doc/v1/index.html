@@ -1866,6 +1866,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.QueryDataPolicy"><span class="badge">M</span>QueryDataPolicy</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.RestrictIssueCreationForSQLReviewPolicy"><span class="badge">M</span>RestrictIssueCreationForSQLReviewPolicy</a>
                 </li>
               
@@ -20129,6 +20133,13 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                 </tr>
               
                 <tr>
+                  <td>query_data_policy</td>
+                  <td><a href="#bytebase.v1.QueryDataPolicy">QueryDataPolicy</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>enforce</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
@@ -20140,6 +20151,30 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                   <td><a href="#bytebase.v1.PolicyResourceType">PolicyResourceType</a></td>
                   <td></td>
                   <td><p>The resource type for the policy. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.QueryDataPolicy">QueryDataPolicy</h3>
+        <p>QueryDataPolicy is the policy configuration for querying data.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>timeout</td>
+                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
+                  <td></td>
+                  <td><p>The query timeout duration. </p></td>
                 </tr>
               
             </tbody>
@@ -20562,6 +20597,12 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>DATA_EXPORT</td>
                 <td>15</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DATA_QUERY</td>
+                <td>16</td>
                 <td><p></p></td>
               </tr>
             
