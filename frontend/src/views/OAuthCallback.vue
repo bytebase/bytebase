@@ -75,7 +75,6 @@ const triggerAuthCallback = async () => {
   }
 
   const eventName = oAuthState.event;
-  const eventType = eventName.slice(0, eventName.lastIndexOf("."));
   if (eventName.startsWith("bb.oauth.signin")) {
     if (oAuthState.popup) {
       window.opener.dispatchEvent(
@@ -98,16 +97,6 @@ const triggerAuthCallback = async () => {
         oAuthState.redirect
       );
     }
-  } else if (
-    eventName.startsWith("bb.oauth.register-vcs") ||
-    eventName.startsWith("bb.oauth.link-vcs-repository")
-  ) {
-    window.opener.dispatchEvent(
-      new CustomEvent(eventType, {
-        detail: state.payload,
-      })
-    );
-    window.close();
   } else {
     window.opener.dispatchEvent(
       new CustomEvent("bb.oauth.unknown", {

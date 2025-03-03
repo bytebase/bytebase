@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -273,110 +272,6 @@ func TestGetDatabaseMatrixFromDeploymentSchedule(t *testing.T) {
 	for _, test := range tests {
 		matrix, _ := GetDatabaseMatrixFromDeploymentSchedule(test.schedule, test.databaseList)
 		assert.Equal(t, matrix, test.want, test.name)
-	}
-}
-
-func TestMergeTaskCreateLists(t *testing.T) {
-	tests := []struct {
-		name               string
-		taskCreateLists    [][]*store.TaskMessage
-		taskIndexDAGLists  [][]store.TaskIndexDAG
-		wantTaskCreateList []*store.TaskMessage
-		wantTaskDAGList    []store.TaskIndexDAG
-	}{
-		{
-			name: "simple, len=1",
-			taskCreateLists: [][]*store.TaskMessage{
-				{
-					{}, {},
-				},
-			},
-			taskIndexDAGLists: [][]store.TaskIndexDAG{
-				{
-					{FromIndex: 0, ToIndex: 1},
-				},
-			},
-			wantTaskCreateList: []*store.TaskMessage{
-				{}, {},
-			},
-			wantTaskDAGList: []store.TaskIndexDAG{
-				{FromIndex: 0, ToIndex: 1},
-			},
-		},
-		{
-			name: "len=2",
-			taskCreateLists: [][]*store.TaskMessage{
-				{
-					{}, {}, {}, {},
-				},
-				{
-					{}, {}, {}, {},
-				},
-			},
-			taskIndexDAGLists: [][]store.TaskIndexDAG{
-				{
-					{FromIndex: 0, ToIndex: 1},
-					{FromIndex: 1, ToIndex: 3},
-				},
-				{
-					{FromIndex: 1, ToIndex: 2},
-				},
-			},
-			wantTaskCreateList: []*store.TaskMessage{
-				{}, {}, {}, {}, {}, {}, {}, {},
-			},
-			wantTaskDAGList: []store.TaskIndexDAG{
-				{FromIndex: 0, ToIndex: 1},
-				{FromIndex: 1, ToIndex: 3},
-				{FromIndex: 5, ToIndex: 6},
-			},
-		},
-		{
-			name: "len=3",
-			taskCreateLists: [][]*store.TaskMessage{
-				{
-					{}, {}, {}, {},
-				},
-				{
-					{}, {}, {}, {},
-				},
-				{
-					{}, {}, {}, {},
-				},
-			},
-			taskIndexDAGLists: [][]store.TaskIndexDAG{
-				{
-					{FromIndex: 0, ToIndex: 1},
-					{FromIndex: 1, ToIndex: 3},
-				},
-				{
-					{FromIndex: 1, ToIndex: 2},
-				},
-				{
-					{FromIndex: 1, ToIndex: 2},
-				},
-			},
-			wantTaskCreateList: []*store.TaskMessage{
-				{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
-			},
-			wantTaskDAGList: []store.TaskIndexDAG{
-				{FromIndex: 0, ToIndex: 1},
-				{FromIndex: 1, ToIndex: 3},
-				{FromIndex: 5, ToIndex: 6},
-				{FromIndex: 9, ToIndex: 10},
-			},
-		},
-	}
-
-	for i := range tests {
-		test := tests[i]
-		t.Run(test.name, func(t *testing.T) {
-			a := require.New(t)
-			taskCreateList, taskIndexDAGList, err := MergeTaskCreateLists(test.taskCreateLists, test.taskIndexDAGLists)
-			a.NoError(err)
-			a.Equal(test.wantTaskCreateList, taskCreateList)
-			a.Equal(test.wantTaskDAGList, taskIndexDAGList)
-		})
 	}
 }
 

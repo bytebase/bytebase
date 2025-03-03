@@ -97,8 +97,6 @@ router.beforeEach((to, from, next) => {
   // SSO callback routes are relayes to handle the IdP callback and dispatch the subsequent events.
   // They are called in the following scenarios:
   // - Login via OAuth / OIDC
-  // - Setup VCS provider
-  // - Setup GitOps workflow in a project
   if (
     to.name === AUTH_OAUTH_CALLBACK_MODULE ||
     to.name === AUTH_OIDC_CALLBACK_MODULE
