@@ -23,7 +23,7 @@ jobs:
           echo "BUILD_USER=$(id -u -n)" >> $GITHUB_ENV
       - uses: pnpm/action-setup@v4
         with:
-          version: 10.2.0
+          version: 10.5.2
       - uses: actions/setup-node@v4
         with:
           node-version: "22.13.0"
