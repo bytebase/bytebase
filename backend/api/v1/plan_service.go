@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"sort"
 	"strings"
 	"time"
 
@@ -260,9 +259,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRe
 	}
 	planMessage.Config.DeploymentSnapshot = snapshot
 
-	serializeTasks := request.GetPlan().GetVcsSource() != nil
-
-	if _, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, planMessage.Config.GetSteps(), snapshot, project, serializeTasks); err != nil {
+	if _, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, planMessage.Config.GetSteps(), snapshot, project); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
 	}
 	plan, err := s.store.CreatePlan(ctx, planMessage, principalID)
@@ -357,8 +354,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 			convertedRequestSteps := convertPlanSteps(request.GetPlan().GetSteps())
 			planUpdate.Steps = &convertedRequestSteps
 
-			serializeTasks := oldPlan.Config.GetVcsSource() != nil
-
 			if _, err := GetPipelineCreate(ctx,
 				s.store,
 				s.sheetManager,
@@ -366,8 +361,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				s.dbFactory,
 				convertedRequestSteps,
 				oldPlan.Config.GetDeploymentSnapshot(),
-				project,
-				serializeTasks); err != nil {
+				project); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
 			}
 
@@ -403,10 +397,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 			tasksMap := map[int]*store.TaskMessage{}
 			var taskPatchList []*store.TaskPatch
 			var issueCommentCreates []*store.IssueCommentMessage
-			var taskDAGRebuildList []struct {
-				fromTaskIDs []int
-				toTaskID    int
-			}
 
 			if oldPlan.PipelineUID != nil {
 				tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: oldPlan.PipelineUID})
@@ -701,42 +691,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						return nil, err
 					}
 
-					// task dag
-					if err := func() error {
-						oldSpec, ok := oldSpecsByID[taskSpecID.SpecID]
-						if !ok {
-							return nil
-						}
-
-						sort.Slice(oldSpec.DependsOnSpecs, func(i, j int) bool {
-							return oldSpec.DependsOnSpecs[i] < oldSpec.DependsOnSpecs[j]
-						})
-						sort.Slice(spec.DependsOnSpecs, func(i, j int) bool {
-							return spec.DependsOnSpecs[i] < spec.DependsOnSpecs[j]
-						})
-						if slices.Equal(oldSpec.GetDependsOnSpecs(), spec.GetDependsOnSpecs()) {
-							return nil
-						}
-
-						// rebuild the task dag
-						var fromTaskIDs []int
-						for _, dependsOnSpec := range spec.GetDependsOnSpecs() {
-							for _, dependsOnTask := range tasksBySpecID[dependsOnSpec] {
-								fromTaskIDs = append(fromTaskIDs, dependsOnTask.ID)
-							}
-						}
-						taskDAGRebuildList = append(taskDAGRebuildList, struct {
-							fromTaskIDs []int
-							toTaskID    int
-						}{
-							fromTaskIDs: fromTaskIDs,
-							toTaskID:    task.ID,
-						})
-						return nil
-					}(); err != nil {
-						return nil, err
-					}
-
 					if !doUpdate {
 						continue
 					}
@@ -808,12 +762,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				task := tasksMap[taskPatch.ID]
 				if _, err := s.store.UpdateTaskV2(ctx, taskPatch); err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to update task %q: %v", task.Name, err)
-				}
-			}
-
-			for _, taskDAGRebuild := range taskDAGRebuildList {
-				if err := s.store.RebuildTaskDAG(ctx, taskDAGRebuild.fromTaskIDs, taskDAGRebuild.toTaskID); err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to rebuild task dag: %v", err)
 				}
 			}
 
@@ -1359,16 +1307,6 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 				configTypeCount["ExportDataConfig"]++
 			default:
 				return errors.Errorf("unexpected config type %T", spec.Config)
-			}
-		}
-		for _, spec := range step.Specs {
-			for _, dependOnSpec := range spec.DependsOnSpecs {
-				if !seenIDInStep[dependOnSpec] {
-					return errors.Errorf("spec %q depends on spec %q, but spec %q is not found in the step", spec.Id, dependOnSpec, dependOnSpec)
-				}
-				if dependOnSpec == spec.Id {
-					return errors.Errorf("spec %q depends on itself", spec.Id)
-				}
 			}
 		}
 	}

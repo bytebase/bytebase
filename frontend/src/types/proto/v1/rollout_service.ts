@@ -245,8 +245,6 @@ export interface Task {
   status: Task_Status;
   skippedReason: string;
   type: Task_Type;
-  /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} */
-  dependsOnTasks: string[];
   /**
    * Format: instances/{instance} if the task is DatabaseCreate.
    * Format: instances/{instance}/databases/{database}
@@ -2418,7 +2416,6 @@ function createBaseTask(): Task {
     status: Task_Status.STATUS_UNSPECIFIED,
     skippedReason: "",
     type: Task_Type.TYPE_UNSPECIFIED,
-    dependsOnTasks: [],
     target: "",
     databaseCreate: undefined,
     databaseSchemaBaseline: undefined,
@@ -2447,9 +2444,6 @@ export const Task: MessageFns<Task> = {
     }
     if (message.type !== Task_Type.TYPE_UNSPECIFIED) {
       writer.uint32(48).int32(task_TypeToNumber(message.type));
-    }
-    for (const v of message.dependsOnTasks) {
-      writer.uint32(58).string(v!);
     }
     if (message.target !== "") {
       writer.uint32(66).string(message.target);
@@ -2527,14 +2521,6 @@ export const Task: MessageFns<Task> = {
           message.type = task_TypeFromJSON(reader.int32());
           continue;
         }
-        case 7: {
-          if (tag !== 58) {
-            break;
-          }
-
-          message.dependsOnTasks.push(reader.string());
-          continue;
-        }
         case 8: {
           if (tag !== 66) {
             break;
@@ -2600,9 +2586,6 @@ export const Task: MessageFns<Task> = {
       status: isSet(object.status) ? task_StatusFromJSON(object.status) : Task_Status.STATUS_UNSPECIFIED,
       skippedReason: isSet(object.skippedReason) ? globalThis.String(object.skippedReason) : "",
       type: isSet(object.type) ? task_TypeFromJSON(object.type) : Task_Type.TYPE_UNSPECIFIED,
-      dependsOnTasks: globalThis.Array.isArray(object?.dependsOnTasks)
-        ? object.dependsOnTasks.map((e: any) => globalThis.String(e))
-        : [],
       target: isSet(object.target) ? globalThis.String(object.target) : "",
       databaseCreate: isSet(object.databaseCreate) ? Task_DatabaseCreate.fromJSON(object.databaseCreate) : undefined,
       databaseSchemaBaseline: isSet(object.databaseSchemaBaseline)
@@ -2640,9 +2623,6 @@ export const Task: MessageFns<Task> = {
     if (message.type !== Task_Type.TYPE_UNSPECIFIED) {
       obj.type = task_TypeToJSON(message.type);
     }
-    if (message.dependsOnTasks?.length) {
-      obj.dependsOnTasks = message.dependsOnTasks;
-    }
     if (message.target !== "") {
       obj.target = message.target;
     }
@@ -2675,7 +2655,6 @@ export const Task: MessageFns<Task> = {
     message.status = object.status ?? Task_Status.STATUS_UNSPECIFIED;
     message.skippedReason = object.skippedReason ?? "";
     message.type = object.type ?? Task_Type.TYPE_UNSPECIFIED;
-    message.dependsOnTasks = object.dependsOnTasks?.map((e) => e) || [];
     message.target = object.target ?? "";
     message.databaseCreate = (object.databaseCreate !== undefined && object.databaseCreate !== null)
       ? Task_DatabaseCreate.fromPartial(object.databaseCreate)

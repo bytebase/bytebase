@@ -123,18 +123,6 @@ export type Permission =
   | "bb.users.delete"
   | "bb.users.undelete"
   | "bb.users.update"
-  | "bb.vcsConnectors.create"
-  | "bb.vcsConnectors.delete"
-  | "bb.vcsConnectors.get"
-  | "bb.vcsConnectors.list"
-  | "bb.vcsConnectors.update"
-  | "bb.vcsProviders.create"
-  | "bb.vcsProviders.delete"
-  | "bb.vcsProviders.get"
-  | "bb.vcsProviders.list"
-  | "bb.vcsProviders.listProjects"
-  | "bb.vcsProviders.searchProjects"
-  | "bb.vcsProviders.update"
   | "bb.worksheets.get"
   | "bb.worksheets.manage";
 

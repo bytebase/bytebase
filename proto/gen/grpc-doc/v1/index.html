@@ -2152,10 +2152,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Plan.VCSSource"><span class="badge">M</span>Plan.VCSSource</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.PlanCheckRun"><span class="badge">M</span>PlanCheckRun</a>
                 </li>
               
@@ -22725,13 +22721,6 @@ Format: projects/{project}/issues/{issue} </p></td>
                 </tr>
               
                 <tr>
-                  <td>vcs_source</td>
-                  <td><a href="#bytebase.v1.Plan.VCSSource">Plan.VCSSource</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>creator</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -22823,7 +22812,7 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td>schema_version</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>schema_version is parsed from VCS file name.
+                  <td><p>schema_version is parsed from file name.
 It is automatically generated in the UI workflow. </p></td>
                 </tr>
               
@@ -23147,14 +23136,6 @@ Format: projects/{project}/releases/{release} </p></td>
                 </tr>
               
                 <tr>
-                  <td>depends_on_specs</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>IDs of the specs that this spec depends on.
-Must be a subset of the specs in the same step. </p></td>
-                </tr>
-              
-                <tr>
                   <td>spec_release_source</td>
                   <td><a href="#bytebase.v1.Plan.SpecReleaseSource">Plan.SpecReleaseSource</a></td>
                   <td></td>
@@ -23235,46 +23216,6 @@ Must be a subset of the specs in the same step. </p></td>
                   <td>specs</td>
                   <td><a href="#bytebase.v1.Plan.Spec">Plan.Spec</a></td>
                   <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan.VCSSource">Plan.VCSSource</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>vcs_type</td>
-                  <td><a href="#bytebase.v1.VCSType">VCSType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>vcs_connector</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Optional.
-If present, we will update the pull request for rollout status.
-Format: projects/{project-ID}/vcsConnectors/{vcs-connector} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>pull_request_url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
                   <td><p> </p></td>
                 </tr>
               
@@ -28470,13 +28411,6 @@ Could be empty if the rollout of the task does not have an associating plan. </p
                   <td><a href="#bytebase.v1.Task.Type">Task.Type</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>depends_on_tasks</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} </p></td>
                 </tr>
               
                 <tr>
