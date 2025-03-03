@@ -90,7 +90,6 @@ func convertToPlanSpec(spec *storepb.PlanConfig_Spec) *v1pb.Plan_Spec {
 	v1Spec := &v1pb.Plan_Spec{
 		EarliestAllowedTime: spec.EarliestAllowedTime,
 		Id:                  spec.Id,
-		DependsOnSpecs:      spec.DependsOnSpecs,
 		SpecReleaseSource: &v1pb.Plan_SpecReleaseSource{
 			File: spec.SpecReleaseSource.GetFile(),
 		},
@@ -229,7 +228,6 @@ func convertPlanSpec(spec *v1pb.Plan_Spec) *storepb.PlanConfig_Spec {
 	storeSpec := &storepb.PlanConfig_Spec{
 		EarliestAllowedTime: spec.EarliestAllowedTime,
 		Id:                  spec.Id,
-		DependsOnSpecs:      spec.DependsOnSpecs,
 		SpecReleaseSource: &storepb.PlanConfig_SpecReleaseSource{
 			File: spec.SpecReleaseSource.GetFile(),
 		},
@@ -722,14 +720,13 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 		return nil, errors.Wrapf(err, "failed to convert database labels %v", payload.Labels)
 	}
 	v1pbTask := &v1pb.Task{
-		Name:           common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		Title:          task.Name,
-		SpecId:         payload.SpecId,
-		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
-		SkippedReason:  payload.SkippedReason,
-		DependsOnTasks: nil,
-		Target:         common.FormatInstance(instance.ResourceID),
+		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
+		Title:         task.Name,
+		SpecId:        payload.SpecId,
+		Type:          convertToTaskType(task.Type),
+		Status:        convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason: payload.SkippedReason,
+		Target:        common.FormatInstance(instance.ResourceID),
 		Payload: &v1pb.Task_DatabaseCreate_{
 			DatabaseCreate: &v1pb.Task_DatabaseCreate{
 				Project:      "",
@@ -763,14 +760,13 @@ func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, projec
 		return nil, errors.Errorf("database not found")
 	}
 	v1pbTask := &v1pb.Task{
-		Name:           common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		Title:          task.Name,
-		SpecId:         payload.SpecId,
-		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
-		SkippedReason:  payload.SkippedReason,
-		DependsOnTasks: nil,
-		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
+		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
+		Title:         task.Name,
+		SpecId:        payload.SpecId,
+		Type:          convertToTaskType(task.Type),
+		Status:        convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason: payload.SkippedReason,
+		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaBaseline_{
 			DatabaseSchemaBaseline: &v1pb.Task_DatabaseSchemaBaseline{
 				SchemaVersion: payload.SchemaVersion,
@@ -797,14 +793,13 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 	}
 
 	v1pbTask := &v1pb.Task{
-		Name:           common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		Title:          task.Name,
-		SpecId:         payload.SpecId,
-		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
-		SkippedReason:  payload.SkippedReason,
-		DependsOnTasks: nil,
-		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
+		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
+		Title:         task.Name,
+		SpecId:        payload.SpecId,
+		Type:          convertToTaskType(task.Type),
+		Status:        convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason: payload.SkippedReason,
+		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaUpdate_{
 			DatabaseSchemaUpdate: &v1pb.Task_DatabaseSchemaUpdate{
 				Sheet:         common.FormatSheet(project.ResourceID, int(payload.SheetId)),
@@ -832,15 +827,14 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	}
 
 	v1pbTask := &v1pb.Task{
-		Name:           common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		Title:          task.Name,
-		SpecId:         payload.SpecId,
-		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
-		SkippedReason:  payload.SkippedReason,
-		DependsOnTasks: nil,
-		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
-		Payload:        nil,
+		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
+		Title:         task.Name,
+		SpecId:        payload.SpecId,
+		Type:          convertToTaskType(task.Type),
+		Status:        convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason: payload.SkippedReason,
+		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
+		Payload:       nil,
 	}
 	v1pbTaskPayload := &v1pb.Task_DatabaseDataUpdate_{
 		DatabaseDataUpdate: &v1pb.Task_DatabaseDataUpdate{

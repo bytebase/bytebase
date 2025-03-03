@@ -168,11 +168,6 @@ export interface Plan_Spec {
     | undefined;
   /** A UUID4 string that uniquely identifies the Spec. */
   id: string;
-  /**
-   * IDs of the specs that this spec depends on.
-   * Must be a subset of the specs in the same step.
-   */
-  dependsOnSpecs: string[];
   specReleaseSource: Plan_SpecReleaseSource | undefined;
   createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
   changeDatabaseConfig?: Plan_ChangeDatabaseConfig | undefined;
@@ -1633,7 +1628,6 @@ function createBasePlan_Spec(): Plan_Spec {
   return {
     earliestAllowedTime: undefined,
     id: "",
-    dependsOnSpecs: [],
     specReleaseSource: undefined,
     createDatabaseConfig: undefined,
     changeDatabaseConfig: undefined,
@@ -1648,9 +1642,6 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
     }
     if (message.id !== "") {
       writer.uint32(42).string(message.id);
-    }
-    for (const v of message.dependsOnSpecs) {
-      writer.uint32(50).string(v!);
     }
     if (message.specReleaseSource !== undefined) {
       Plan_SpecReleaseSource.encode(message.specReleaseSource, writer.uint32(66).fork()).join();
@@ -1688,14 +1679,6 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
           }
 
           message.id = reader.string();
-          continue;
-        }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.dependsOnSpecs.push(reader.string());
           continue;
         }
         case 8: {
@@ -1745,9 +1728,6 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
         ? fromJsonTimestamp(object.earliestAllowedTime)
         : undefined,
       id: isSet(object.id) ? globalThis.String(object.id) : "",
-      dependsOnSpecs: globalThis.Array.isArray(object?.dependsOnSpecs)
-        ? object.dependsOnSpecs.map((e: any) => globalThis.String(e))
-        : [],
       specReleaseSource: isSet(object.specReleaseSource)
         ? Plan_SpecReleaseSource.fromJSON(object.specReleaseSource)
         : undefined,
@@ -1770,9 +1750,6 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
     }
     if (message.id !== "") {
       obj.id = message.id;
-    }
-    if (message.dependsOnSpecs?.length) {
-      obj.dependsOnSpecs = message.dependsOnSpecs;
     }
     if (message.specReleaseSource !== undefined) {
       obj.specReleaseSource = Plan_SpecReleaseSource.toJSON(message.specReleaseSource);
@@ -1798,7 +1775,6 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
       ? Timestamp.fromPartial(object.earliestAllowedTime)
       : undefined;
     message.id = object.id ?? "";
-    message.dependsOnSpecs = object.dependsOnSpecs?.map((e) => e) || [];
     message.specReleaseSource = (object.specReleaseSource !== undefined && object.specReleaseSource !== null)
       ? Plan_SpecReleaseSource.fromPartial(object.specReleaseSource)
       : undefined;

@@ -269,8 +269,7 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 	// here, we move pending taskruns to running taskruns which means they are ready to be executed.
 	// pending taskruns remain pending if
 	// 1. earliestAllowedTs not met.
-	// 2. blocked by other tasks via TaskDAG
-	// 3. for versioned tasks, there are other versioned tasks on the same database with
+	// 2. for versioned tasks, there are other versioned tasks on the same database with
 	// a smaller version not finished yet. we need to wait for those first.
 	task, err := s.store.GetTaskV2ByID(ctx, taskRun.TaskUID)
 	if err != nil {

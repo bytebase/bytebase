@@ -20,17 +20,6 @@ type StageMessage struct {
 	// Output only.
 	ID     int
 	Active bool
-
-	// TODO(d): this is used to create the tasks.
-	TaskIndexDAGList []TaskIndexDAG
-}
-
-// TaskIndexDAG describes task dependency relationship using array index to represent task.
-// It is needed because we don't know task id before insertion, so we describe the dependency
-// using the in-memory representation, i.e, the array index.
-type TaskIndexDAG struct {
-	FromIndex int
-	ToIndex   int
 }
 
 func (*Store) createStages(ctx context.Context, tx *Tx, stagesCreate []*StageMessage, pipelineUID int) ([]*StageMessage, error) {
