@@ -21,7 +21,7 @@ jobs:
           echo "GIT_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
           echo "BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_ENV
           echo "BUILD_USER=$(id -u -n)" >> $GITHUB_ENV
-      - uses: pnpm/action-setup@v4.0.0
+      - uses: pnpm/action-setup@v4
         with:
           version: 10.2.0
       - uses: actions/setup-node@v4
