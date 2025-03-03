@@ -10934,8 +10934,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Plan_Step'
-                vcsSource:
-                    $ref: '#/components/schemas/Plan_VCSSource'
                 creator:
                     readOnly: true
                     type: string
@@ -11060,7 +11058,7 @@ components:
                 schemaVersion:
                     type: string
                     description: |-
-                        schema_version is parsed from VCS file name.
+                        schema_version is parsed from file name.
                          It is automatically generated in the UI workflow.
                 ghostFlags:
                     type: object
@@ -11157,13 +11155,6 @@ components:
                 id:
                     type: string
                     description: A UUID4 string that uniquely identifies the Spec.
-                dependsOnSpecs:
-                    type: array
-                    items:
-                        type: string
-                    description: |-
-                        IDs of the specs that this spec depends on.
-                         Must be a subset of the specs in the same step.
                 specReleaseSource:
                     $ref: '#/components/schemas/Plan_SpecReleaseSource'
                 createDatabaseConfig:
@@ -11189,26 +11180,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Plan_Spec'
-        Plan_VCSSource:
-            type: object
-            properties:
-                vcsType:
-                    enum:
-                        - VCS_TYPE_UNSPECIFIED
-                        - GITHUB
-                        - GITLAB
-                        - BITBUCKET
-                        - AZURE_DEVOPS
-                    type: string
-                    format: enum
-                vcsConnector:
-                    type: string
-                    description: |-
-                        Optional.
-                         If present, we will update the pull request for rollout status.
-                         Format: projects/{project-ID}/vcsConnectors/{vcs-connector}
-                pullRequestUrl:
-                    type: string
         Policy:
             type: object
             properties:
@@ -13420,11 +13391,6 @@ components:
                         - DATABASE_DATA_EXPORT
                     type: string
                     format: enum
-                dependsOnTasks:
-                    type: array
-                    items:
-                        type: string
-                    description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}'
                 target:
                     type: string
                     description: |-

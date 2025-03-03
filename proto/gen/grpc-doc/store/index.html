@@ -1022,10 +1022,6 @@
                   <a href="#bytebase.store.PlanConfig.Step"><span class="badge">M</span>PlanConfig.Step</a>
                 </li>
               
-                <li>
-                  <a href="#bytebase.store.PlanConfig.VCSSource"><span class="badge">M</span>PlanConfig.VCSSource</a>
-                </li>
-              
               
                 <li>
                   <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.Type"><span class="badge">E</span>PlanConfig.ChangeDatabaseConfig.Type</a>
@@ -8651,13 +8647,6 @@ Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
-                  <td>vcs_source</td>
-                  <td><a href="#bytebase.store.PlanConfig.VCSSource">PlanConfig.VCSSource</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>release_source</td>
                   <td><a href="#bytebase.store.PlanConfig.ReleaseSource">PlanConfig.ReleaseSource</a></td>
                   <td></td>
@@ -8716,7 +8705,7 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td>schema_version</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>schema_version is parsed from VCS file name.
+                  <td><p>schema_version is parsed from file name.
 It is automatically generated in the UI workflow. </p></td>
                 </tr>
               
@@ -9092,14 +9081,6 @@ Format: projects/{project}/releases/{release} </p></td>
                 </tr>
               
                 <tr>
-                  <td>depends_on_specs</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>IDs of the specs that this spec depends on.
-Must be a subset of the specs in the same step. </p></td>
-                </tr>
-              
-                <tr>
                   <td>spec_release_source</td>
                   <td><a href="#bytebase.store.PlanConfig.SpecReleaseSource">PlanConfig.SpecReleaseSource</a></td>
                   <td></td>
@@ -9180,46 +9161,6 @@ Use a generated title if empty. </p></td>
                   <td>specs</td>
                   <td><a href="#bytebase.store.PlanConfig.Spec">PlanConfig.Spec</a></td>
                   <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanConfig.VCSSource">PlanConfig.VCSSource</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>vcs_type</td>
-                  <td><a href="#bytebase.store.VCSType">VCSType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>vcs_connector</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Optional.
-If present, we will update the pull request for rollout status.
-Format: projects/{project-ID}/vcsConnectors/{vcs-connector} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>pull_request_url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
                   <td><p> </p></td>
                 </tr>
               
