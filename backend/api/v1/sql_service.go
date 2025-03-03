@@ -148,7 +148,7 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 		if request.Schema != nil {
 			queryContext.Schema = *request.Schema
 		}
-		result, duration, queryErr := executeWithTimeout(ctx, driver, conn, request.Statement, request.Timeout, queryContext)
+		result, duration, queryErr := executeWithTimeout(ctx, s.store, s.licenseService, driver, conn, request.Statement, request.Timeout, queryContext)
 
 		if err := s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, request.Statement, user.ID, duration, queryErr); err != nil {
 			slog.Error("failed to post admin execute activity", log.BBError(err))
@@ -446,7 +446,7 @@ func queryRetry(
 		}
 	}
 
-	results, duration, queryErr := executeWithTimeout(ctx, driver, conn, statement, timeout, queryContext)
+	results, duration, queryErr := executeWithTimeout(ctx, stores, licenseService, driver, conn, statement, timeout, queryContext)
 	if queryErr != nil {
 		return nil, nil, duration, queryErr
 	}
@@ -637,10 +637,21 @@ func getSensitivePredicateColumnErrorMessages(sensitiveColumns []base.ColumnReso
 	return buf.String()
 }
 
-func executeWithTimeout(ctx context.Context, driver db.Driver, conn *sql.Conn, statement string, timeout *durationpb.Duration, queryContext db.QueryContext) ([]*v1pb.QueryResult, time.Duration, error) {
+func executeWithTimeout(ctx context.Context, stores *store.Store, licenseService enterprise.LicenseService, driver db.Driver, conn *sql.Conn, statement string, timeout *durationpb.Duration, queryContext db.QueryContext) ([]*v1pb.QueryResult, time.Duration, error) {
 	ctxTimeout := defaultTimeout
+	// Override the default timeout.
 	if timeout != nil {
 		ctxTimeout = timeout.AsDuration()
+	}
+	if licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
+		queryDataPolicy, err := stores.GetQueryDataPolicy(ctx)
+		if err != nil {
+			return nil, time.Duration(0), errors.Wrap(err, "failed to get query data policy")
+		}
+		// Override the timeout if the query data policy has a smaller timeout.
+		if queryDataPolicy.Timeout.GetSeconds() > 0 && queryDataPolicy.Timeout.AsDuration() < ctxTimeout {
+			ctxTimeout = queryDataPolicy.Timeout.AsDuration()
+		}
 	}
 	start := time.Now()
 	ctx, cancelCtx := context.WithTimeout(ctx, ctxTimeout)
@@ -665,7 +676,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	}
 
 	// Check if data export is allowed.
-	exportDataPolicy, err := s.store.GetDataExportPolicy(ctx)
+	exportDataPolicy, err := s.store.GetExportDataPolicy(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get data export policy: %v", err)
 	}
