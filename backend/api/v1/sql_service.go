@@ -145,7 +145,7 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 		if request.Schema != nil {
 			queryContext.Schema = *request.Schema
 		}
-		result, duration, queryErr := executeWithTimeout(ctx, s.store, s.licenseService, driver, conn, request.Statement, request.Timeout, queryContext)
+		result, duration, queryErr := executeWithTimeout(ctx, s.store, s.licenseService, driver, conn, request.Statement, queryContext)
 
 		if err := s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, request.Statement, user.ID, duration, queryErr); err != nil {
 			slog.Error("failed to post admin execute activity", log.BBError(err))
@@ -219,7 +219,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
-	results, spans, duration, queryErr := queryRetry(ctx, s.store, user, instance, database, driver, conn, statement, request.Timeout, queryContext, false, s.licenseService, s.accessCheck, s.schemaSyncer, storepb.MaskingExceptionPolicy_MaskingException_QUERY)
+	results, spans, duration, queryErr := queryRetry(ctx, s.store, user, instance, database, driver, conn, statement, queryContext, false, s.licenseService, s.accessCheck, s.schemaSyncer, storepb.MaskingExceptionPolicy_MaskingException_QUERY)
 
 	// Update activity.
 	if err = s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, statement, user.ID, duration, queryErr); err != nil {
@@ -395,7 +395,6 @@ func queryRetry(
 	driver db.Driver,
 	conn *sql.Conn,
 	statement string,
-	timeout *durationpb.Duration,
 	queryContext db.QueryContext,
 	isExport bool,
 	licenseService enterprise.LicenseService,
@@ -443,7 +442,7 @@ func queryRetry(
 		}
 	}
 
-	results, duration, queryErr := executeWithTimeout(ctx, stores, licenseService, driver, conn, statement, timeout, queryContext)
+	results, duration, queryErr := executeWithTimeout(ctx, stores, licenseService, driver, conn, statement, queryContext)
 	if queryErr != nil {
 		return nil, nil, duration, queryErr
 	}
@@ -634,32 +633,30 @@ func getSensitivePredicateColumnErrorMessages(sensitiveColumns []base.ColumnReso
 	return buf.String()
 }
 
-func executeWithTimeout(ctx context.Context, stores *store.Store, licenseService enterprise.LicenseService, driver db.Driver, conn *sql.Conn, statement string, timeout *durationpb.Duration, queryContext db.QueryContext) ([]*v1pb.QueryResult, time.Duration, error) {
-	var ctxTimeout time.Duration
+func executeWithTimeout(ctx context.Context, stores *store.Store, licenseService enterprise.LicenseService, driver db.Driver, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, time.Duration, error) {
+	queryCtx := ctx
+	var timeout time.Duration
 	// For access control feature, we will use the timeout from request and query data policy.
 	// Otherwise, no timeout will be applied.
 	if licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
-		if timeout != nil {
-			ctxTimeout = timeout.AsDuration()
-		}
 		queryDataPolicy, err := stores.GetQueryDataPolicy(ctx)
 		if err != nil {
 			return nil, time.Duration(0), errors.Wrap(err, "failed to get query data policy")
 		}
 		// Override the timeout if the query data policy has a smaller timeout.
-		if queryDataPolicy.Timeout.GetSeconds() > 0 && (ctxTimeout.Seconds() == 0 || queryDataPolicy.Timeout.AsDuration() < ctxTimeout) {
-			ctxTimeout = queryDataPolicy.Timeout.AsDuration()
+		if queryDataPolicy.Timeout.GetSeconds() > 0 || queryDataPolicy.Timeout.GetNanos() > 0 {
+			timeout = queryDataPolicy.Timeout.AsDuration()
+			newCtx, cancelCtx := context.WithTimeout(ctx, timeout)
+			defer cancelCtx()
+			queryCtx = newCtx
 		}
-		timeoutCtx, cancelCtx := context.WithTimeout(ctx, ctxTimeout)
-		defer cancelCtx()
-		ctx = timeoutCtx
 	}
 	start := time.Now()
-	result, err := driver.QueryConn(ctx, conn, statement, queryContext)
+	result, err := driver.QueryConn(queryCtx, conn, statement, queryContext)
 	select {
-	case <-ctx.Done():
+	case <-queryCtx.Done():
 		// canceled or timed out
-		return nil, time.Since(start), errors.Errorf("timeout reached: %v", ctxTimeout)
+		return nil, time.Since(start), errors.Errorf("timeout reached: %v", timeout)
 	default:
 		// So the select will not block
 	}
@@ -816,7 +813,7 @@ func DoExport(
 		Limit:         int(request.Limit),
 		OperatorEmail: user.Email,
 	}
-	results, spans, duration, queryErr := queryRetry(ctx, storeInstance, user, instance, database, driver, conn, request.Statement, nil /* timeDuration */, queryContext, true, licenseService, optionalAccessCheck, schemaSyncer, storepb.MaskingExceptionPolicy_MaskingException_EXPORT)
+	results, spans, duration, queryErr := queryRetry(ctx, storeInstance, user, instance, database, driver, conn, request.Statement, queryContext, true, licenseService, optionalAccessCheck, schemaSyncer, storepb.MaskingExceptionPolicy_MaskingException_EXPORT)
 	if queryErr != nil {
 		return nil, duration, err
 	}
