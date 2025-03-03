@@ -133,6 +133,8 @@ const (
 	PermissionUsersUpdate               Permission = "bb.users.update"
 	PermissionWorksheetsGet             Permission = "bb.worksheets.get"
 	PermissionWorksheetsManage          Permission = "bb.worksheets.manage"
+	PermissionWorkspacesGetIamPolicy    Permission = "bb.workspaces.getIamPolicy"
+	PermissionWorkspacesSetIamPolicy    Permission = "bb.workspaces.setIamPolicy"
 )
 
 var allPermissions = []Permission{
@@ -266,6 +268,8 @@ var allPermissions = []Permission{
 	PermissionUsersUpdate,
 	PermissionWorksheetsGet,
 	PermissionWorksheetsManage,
+	PermissionWorkspacesGetIamPolicy,
+	PermissionWorkspacesSetIamPolicy,
 }
 
 var allPermissionsMap = func() map[Permission]bool {

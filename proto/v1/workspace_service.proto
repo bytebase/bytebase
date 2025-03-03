@@ -11,7 +11,7 @@ option go_package = "generated-go/v1";
 service WorkspaceService {
   rpc GetIamPolicy(GetIamPolicyRequest) returns (IamPolicy) {
     option (google.api.http) = {get: "/v1/{resource=workspaces/*}:getIamPolicy"};
-    option (bytebase.v1.permission) = "bb.policies.get";
+    option (bytebase.v1.permission) = "bb.workspaces.getIamPolicy";
     option (bytebase.v1.auth_method) = IAM;
   }
 
@@ -20,7 +20,7 @@ service WorkspaceService {
       post: "/v1/{resource=workspaces/*}:setIamPolicy"
       body: "*"
     };
-    option (bytebase.v1.permission) = "bb.policies.update";
+    option (bytebase.v1.permission) = "bb.workspaces.setIamPolicy";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }
