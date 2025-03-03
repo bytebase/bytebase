@@ -11,7 +11,7 @@
       <div
         v-for="template in reviewPolicyTemplateList"
         :key="template.id"
-        class="relative border border-gray-300 hover:bg-gray-100 rounded-lg p-6 transition-all w-full h-full sm:max-w-xs"
+        class="relative border border-gray-300 hover:bg-gray-100 rounded-lg px-6 py-4 transition-all w-full h-full sm:max-w-xs"
         :class="
           isSelectedTemplate(template)
             ? 'bg-gray-100'
@@ -19,8 +19,8 @@
         "
         @click="$emit('select-template', template)"
       >
-        <div class="ml-6 text-left space-y-2">
-          <span class="text-base mt-4 font-medium">
+        <div class="text-left space-y-2">
+          <span class="text-base font-medium">
             {{ template.review.name }}
           </span>
           <div class="space-y-2">
@@ -42,12 +42,12 @@
         </div>
         <heroicons-solid:check-circle
           v-if="isSelectedTemplate(template)"
-          class="w-7 h-7 text-gray-500 absolute top-3 left-3"
+          class="w-7 h-7 text-accent absolute top-3 right-3"
         />
       </div>
     </div>
 
-    <hr />
+    <NDivider />
 
     <div
       class="flex flex-col sm:flex-row sm:flex-wrap justify-start items-stretch gap-x-10 gap-y-4"
@@ -55,7 +55,7 @@
       <div
         v-for="template in builtInTemplateList"
         :key="template.id"
-        class="relative border border-gray-300 hover:bg-gray-100 rounded-lg p-6 transition-all flex flex-col justify-center items-center w-full sm:max-w-xs"
+        class="relative border border-gray-300 hover:bg-gray-100 rounded-lg px-6 py-4 transition-all flex flex-col justify-center items-center w-full sm:max-w-xs"
         :class="
           isSelectedTemplate(template)
             ? 'bg-gray-100'
@@ -64,14 +64,13 @@
         @click="$emit('select-template', template)"
       >
         <div class="flex justify-center items-center space-x-1">
-          <img class="w-24" :src="getTemplateImage(template.id)" alt="" />
           <div class="text-left">
-            <span class="text-base mt-4 font-medium">
+            <span class="text-base font-medium">
               {{
                 $t(`sql-review.template.${template.id.split(".").join("-")}`)
               }}
             </span>
-            <p class="mt-2 text-xs">
+            <p class="mt-1 text-sm text-gray-500">
               {{
                 $t(
                   `sql-review.template.${template.id.split(".").join("-")}-desc`
@@ -87,7 +86,7 @@
         </div>
         <heroicons-solid:check-circle
           v-if="isSelectedTemplate(template)"
-          class="w-7 h-7 text-gray-500 absolute top-3 left-3"
+          class="w-7 h-7 text-accent absolute top-3 right-3"
         />
       </div>
     </div>
@@ -95,6 +94,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NDivider } from "naive-ui";
 import { computed } from "vue";
 import { BBBadge } from "@/bbkit";
 import { useSQLReviewPolicyList } from "@/store";
@@ -135,9 +135,5 @@ const enabledRuleCount = (template: SQLReviewPolicyTemplateV2) => {
   return template.ruleList.filter(
     (rule) => rule.level !== SQLReviewRuleLevel.DISABLED
   ).length;
-};
-
-const getTemplateImage = (id: string) => {
-  return new URL(`../../../assets/${id}.webp`, import.meta.url).href;
 };
 </script>
