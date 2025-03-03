@@ -134,7 +134,6 @@ message Value {
     MaximumSQLResultSizeSetting maximum_sql_result_size_setting = 13;
     SCIMSetting scim_setting = 14;
     PasswordRestrictionSetting password_restriction_setting = 15;
-    QueryTimeoutSetting query_timeout_setting = 16;
   }
 }
 
@@ -469,10 +468,4 @@ message PasswordRestrictionSetting {
   bool require_reset_password_for_first_login = 6;
   // password_rotation requires users to reset their password after the duration.
   google.protobuf.Duration password_rotation = 7;
-}
-
-// QueryTimeoutSetting is the setting for query timeout.
-message QueryTimeoutSetting {
-  // The query timeout duration.
-  google.protobuf.Duration timeout_duration = 1;
 }
