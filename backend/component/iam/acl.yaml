@@ -132,6 +132,8 @@ roles:
       - bb.users.update
       - bb.worksheets.get
       - bb.worksheets.manage
+      - bb.workspaces.getIamPolicy
+      - bb.workspaces.setIamPolicy
   - name: roles/workspaceDBA
     title: Workspace DBA
     permissions:
@@ -258,6 +260,7 @@ roles:
       - bb.groups.list
       - bb.worksheets.get
       - bb.worksheets.manage
+      - bb.workspaces.getIamPolicy
   - name: roles/workspaceMember
     title: Workspace member
     permissions:
@@ -277,6 +280,7 @@ roles:
       - bb.groups.create
       - bb.groups.get
       - bb.groups.list
+      - bb.workspaces.getIamPolicy
   - name: roles/projectOwner
     title: Project owner
     permissions:
