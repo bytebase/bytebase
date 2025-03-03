@@ -7695,13 +7695,6 @@ paths:
                   schema:
                     type: integer
                     format: int32
-                - name: timeout
-                  in: query
-                  description: The timeout for the request.
-                  schema:
-                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
-                    type: string
-                    description: Represents a a duration between -315,576,000,000s and 315,576,000,000s (around 10000 years). Precision is in nanoseconds. 1 nanosecond is represented as 0.000000001s
                 - name: schema
                   in: query
                   description: |-
@@ -11559,10 +11552,6 @@ components:
                     type: integer
                     description: The maximum number of rows to return.
                     format: int32
-                timeout:
-                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
-                    type: string
-                    description: The timeout for the request.
                 dataSourceId:
                     type: string
                     description: |-
