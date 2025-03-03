@@ -12,4 +12,3 @@ title: 「プロジェクト」とは何か？
 
 - [プロジェクトの作成](https://www.bytebase.com/docs/get-started/step-by-step/create-a-project)
 - [UI ワークフロー](https://www.bytebase.com/docs/change-database/change-workflow)
-- [GitOps ワークフロー](https://www.bytebase.com/docs/vcs-integration/overview/)

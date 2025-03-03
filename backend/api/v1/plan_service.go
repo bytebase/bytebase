@@ -260,9 +260,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRe
 	}
 	planMessage.Config.DeploymentSnapshot = snapshot
 
-	serializeTasks := request.GetPlan().GetVcsSource() != nil
-
-	if _, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, planMessage.Config.GetSteps(), snapshot, project, serializeTasks); err != nil {
+	if _, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, planMessage.Config.GetSteps(), snapshot, project); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
 	}
 	plan, err := s.store.CreatePlan(ctx, planMessage, principalID)
@@ -357,8 +355,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 			convertedRequestSteps := convertPlanSteps(request.GetPlan().GetSteps())
 			planUpdate.Steps = &convertedRequestSteps
 
-			serializeTasks := oldPlan.Config.GetVcsSource() != nil
-
 			if _, err := GetPipelineCreate(ctx,
 				s.store,
 				s.sheetManager,
@@ -366,8 +362,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				s.dbFactory,
 				convertedRequestSteps,
 				oldPlan.Config.GetDeploymentSnapshot(),
-				project,
-				serializeTasks); err != nil {
+				project); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
 			}
 

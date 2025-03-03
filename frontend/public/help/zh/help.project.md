@@ -12,4 +12,3 @@ title: 什么是「项目」 ?
 
 - [建立一个项目](https://www.bytebase.com/docs/get-started/step-by-step/create-a-project)
 - [UI 工作流](https://www.bytebase.com/docs/change-database/change-workflow)
-- [GitOps 工作流](https://www.bytebase.com/docs/vcs-integration/overview/)
