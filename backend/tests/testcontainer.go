@@ -24,7 +24,7 @@ func getMySQLContainer(ctx context.Context) (*Container, error) {
 			"MYSQL_ROOT_PASSWORD": "root-password",
 		},
 		ExposedPorts: []string{"3306/tcp"},
-		WaitingFor:   wait.ForLog("port: 3306  MySQL Community Server"),
+		WaitingFor:   wait.ForLog("port: 3306  MySQL Community Server").WithStartupTimeout(10 * time.Second),
 	}
 
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -72,7 +72,7 @@ func getPgContainer(ctx context.Context) (*Container, error) {
 		ExposedPorts: []string{"5432/tcp"},
 		WaitingFor: wait.ForLog("database system is ready to accept connections").
 			WithOccurrence(2).
-			WithStartupTimeout(5 * time.Second),
+			WithStartupTimeout(10 * time.Second),
 	}
 
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
