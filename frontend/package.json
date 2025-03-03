@@ -153,7 +153,7 @@
     "unplugin-vue-components": "28.4.1",
     "vite": "6.0.9",
     "vite-bundle-visualizer": "^1.0.1",
-    "vitest": "3.0.5",
+    "vitest": "3.0.7",
     "vue-component-type-helpers": "^2.2.0",
     "vue-i18n": "10.0.5",
     "vue-router": "4.5.0",
