@@ -26,6 +26,7 @@ export enum PolicyType {
   TAG = "TAG",
   DATA_SOURCE_QUERY = "DATA_SOURCE_QUERY",
   DATA_EXPORT = "DATA_EXPORT",
+  DATA_QUERY = "DATA_QUERY",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -61,6 +62,9 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case 15:
     case "DATA_EXPORT":
       return PolicyType.DATA_EXPORT;
+    case 16:
+    case "DATA_QUERY":
+      return PolicyType.DATA_QUERY;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -90,6 +94,8 @@ export function policyTypeToJSON(object: PolicyType): string {
       return "DATA_SOURCE_QUERY";
     case PolicyType.DATA_EXPORT:
       return "DATA_EXPORT";
+    case PolicyType.DATA_QUERY:
+      return "DATA_QUERY";
     case PolicyType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -118,6 +124,8 @@ export function policyTypeToNumber(object: PolicyType): number {
       return 14;
     case PolicyType.DATA_EXPORT:
       return 15;
+    case PolicyType.DATA_QUERY:
+      return 16;
     case PolicyType.UNRECOGNIZED:
     default:
       return -1;

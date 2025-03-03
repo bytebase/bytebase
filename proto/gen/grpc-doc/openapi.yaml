@@ -448,6 +448,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -515,6 +516,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -1711,6 +1713,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -1784,6 +1787,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -2507,6 +2511,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -2574,6 +2579,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -3112,6 +3118,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -3183,6 +3190,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -4905,6 +4913,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -4972,6 +4981,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -11206,6 +11216,7 @@ components:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
                 rolloutPolicy:

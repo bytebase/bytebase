@@ -7458,6 +7458,7 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | TAG | 13 |  |
 | DATA_SOURCE_QUERY | 14 |  |
 | DATA_EXPORT | 15 |  |
+| DATA_QUERY | 16 |  |
 
 
 
