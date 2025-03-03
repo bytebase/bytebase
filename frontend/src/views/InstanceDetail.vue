@@ -123,7 +123,6 @@ import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import {
   instanceV1HasCreateDatabase,
   instanceV1Name,
-  hasWorkspaceLevelProjectPermissionInAnyProject,
   wrapRefAsPromise,
   autoDatabaseRoute,
   CommonFilterScopeIdList,
@@ -281,7 +280,6 @@ const allowCreateDatabase = computed(() => {
   return (
     databaseChangeMode.value === DatabaseChangeMode.PIPELINE &&
     instance.value.state === State.ACTIVE &&
-    hasWorkspaceLevelProjectPermissionInAnyProject("bb.issues.create") &&
     instanceV1HasCreateDatabase(instance.value)
   );
 });

@@ -1,15 +1,14 @@
-import { head, uniq } from "lodash-es";
+import { head } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch } from "vue";
 import { rolloutServiceClient } from "@/grpcweb";
 import type { MaybeRef, Pagination, ComposedRollout } from "@/types";
 import { isValidRolloutName, unknownRollout, unknownUser } from "@/types";
-import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { Rollout } from "@/types/proto/v1/rollout_service";
 import { extractUserResourceName } from "@/utils";
 import { DEFAULT_PAGE_SIZE } from "./common";
 import { useUserStore } from "./user";
-import { useProjectV1Store } from "./v1";
+import { useProjectV1Store, batchGetOrFetchProjects } from "./v1";
 import { getProjectNameRolloutId, projectNamePrefix } from "./v1/common";
 
 export const useRolloutStore = defineStore("rollout", () => {
@@ -99,19 +98,11 @@ export const batchComposeRollout = async (rolloutList: Rollout[]) => {
       unknownUser();
     return composed;
   });
-  const distinctProjectList = uniq(
+  await batchGetOrFetchProjects(
     composedRolloutList.map((rollout) => rollout.project)
   );
 
   const projectV1Store = useProjectV1Store();
-  await Promise.all(
-    distinctProjectList.map((project) => {
-      if (project === DEFAULT_PROJECT_NAME) {
-        return;
-      }
-      return projectV1Store.getOrFetchProjectByName(project);
-    })
-  );
   return composedRolloutList.map((rollout) => {
     rollout.projectEntity = projectV1Store.getProjectByName(rollout.project);
     return rollout;

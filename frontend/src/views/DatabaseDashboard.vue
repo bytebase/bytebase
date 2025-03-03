@@ -11,7 +11,7 @@
       />
       <DatabaseLabelFilter
         v-model:selected="state.selectedLabels"
-        :database-list="databaseV1List"
+        :database-list="rawDatabaseList"
         :placement="'left-start'"
       />
       <NButton
@@ -66,12 +66,7 @@ import DatabaseV1Table, {
   DatabaseLabelFilter,
   DatabaseOperations,
 } from "@/components/v2/Model/DatabaseV1Table";
-import {
-  useAppFeature,
-  useDatabaseV1Store,
-  useProjectV1List,
-  useUIStateStore,
-} from "@/store";
+import { useAppFeature, useDatabaseV1Store, useUIStateStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedDatabase } from "@/types";
@@ -110,7 +105,6 @@ const emit = defineEmits<{
 const route = useRoute();
 const router = useRouter();
 const uiStateStore = useUIStateStore();
-const { projectList } = useProjectV1List();
 const hideUnassignedDatabases = useAppFeature(
   "bb.feature.databases.hide-unassigned"
 );
@@ -200,15 +194,12 @@ watch(
   }
 );
 
-const databaseV1List = computed(() => {
-  const projects = new Set(projectList.value.map((project) => project.name));
-  return sortDatabaseV1List(useDatabaseV1Store().databaseList).filter((db) =>
-    projects.has(db.project)
-  );
+const rawDatabaseList = computed(() => {
+  return useDatabaseV1Store().databaseList;
 });
 
 const filteredDatabaseList = computed(() => {
-  let list = databaseV1List.value;
+  let list = rawDatabaseList.value;
   if (selectedEnvironment.value) {
     list = list.filter(
       (db) =>
@@ -246,7 +237,7 @@ const filteredDatabaseList = computed(() => {
       ])
     );
   }
-  return list;
+  return sortDatabaseV1List(list);
 });
 
 const selectedDatabases = computed((): ComposedDatabase[] => {

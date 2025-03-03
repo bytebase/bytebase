@@ -4,7 +4,7 @@
     :allow-admin="false"
     :factor-list="getFactorList(source)"
     :factor-support-dropdown="factorSupportDropdown"
-    :factor-options-map="getFactorOptionsMap(source)"
+    :option-config-map="getOptionConfigMap(source)"
   />
 </template>
 
@@ -14,7 +14,7 @@ import ExprEditor from "@/components/ExprEditor";
 import { Risk_Source } from "@/types/proto/v1/risk_service";
 import {
   getFactorList,
-  getFactorOptionsMap,
+  getOptionConfigMap,
   factorSupportDropdown,
 } from "../../common/utils";
 import { type RuleTemplate } from "./template";

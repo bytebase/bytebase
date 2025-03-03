@@ -50,11 +50,17 @@ import DataExportButton from "@/components/DataExportButton.vue";
 import { FeatureAttention } from "@/components/FeatureGuard";
 import NoDataPlaceholder from "@/components/misc/NoDataPlaceholder.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { featureToRef, useAuditLogStore, pushNotification } from "@/store";
-import type { SearchAuditLogsParams } from "@/types";
+import {
+  featureToRef,
+  useAuditLogStore,
+  batchGetOrFetchProjects,
+  pushNotification,
+} from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
+import { type SearchAuditLogsParams } from "@/types";
 import type { AuditLog } from "@/types/proto/v1/audit_log_service";
 import { ExportFormat } from "@/types/proto/v1/common";
-import { type SearchParams } from "@/utils";
+import { type SearchParams, extractProjectResourceName } from "@/utils";
 
 interface LocalState {
   params: SearchParams;
@@ -95,6 +101,15 @@ const fetchAuditLog = async ({
     pageToken,
     pageSize,
   });
+  await batchGetOrFetchProjects(
+    auditLogs.map((auditLog) => {
+      const projectResourceId = extractProjectResourceName(auditLog.name);
+      if (!projectResourceId) {
+        return "";
+      }
+      return `${projectNamePrefix}${projectResourceId}`;
+    })
+  );
   return { nextPageToken, list: auditLogs };
 };
 

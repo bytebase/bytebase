@@ -378,7 +378,7 @@ export const generateRolloutFromPlan = async (
   plan: Plan,
   params: CreateIssueParams
 ) => {
-  const project = useProjectV1Store().getProjectByName(
+  const project = await useProjectV1Store().getOrFetchProjectByName(
     `projects/${extractProjectResourceName(plan.name)}`
   );
   let rollout: Rollout = Rollout.fromPartial({});

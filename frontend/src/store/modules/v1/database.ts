@@ -19,7 +19,7 @@ import type {
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
 import { useEnvironmentV1Store } from "./environment";
-import { useProjectV1Store } from "./project";
+import { batchGetOrFetchProjects, useProjectV1Store } from "./project";
 
 export const useDatabaseV1Store = defineStore("database_v1", () => {
   const databaseMapByName = reactive(new Map<string, ComposedDatabase>());
@@ -123,10 +123,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     const [composed] = await upsertDatabaseMap([updated]);
     return composed;
   };
-  const fetchDatabaseSchema = async (
-    name: string,
-    sdlFormat = false
-  ) => {
+  const fetchDatabaseSchema = async (name: string, sdlFormat = false) => {
     const schema = await databaseServiceClient.getDatabaseSchema({
       name,
       sdlFormat,
@@ -207,19 +204,11 @@ export const useDatabaseV1ByName = (name: MaybeRef<string>) => {
 };
 
 export const batchComposeDatabase = async (databaseList: Database[]) => {
-  const projectV1Store = useProjectV1Store();
   const environmentV1Store = useEnvironmentV1Store();
+  const projectV1Store = useProjectV1Store();
 
-  const distinctProjectList = uniq(databaseList.map((db) => db.project));
+  await batchGetOrFetchProjects(databaseList.map((db) => db.project));
 
-  await Promise.all(
-    distinctProjectList.map((project) => {
-      if (project === DEFAULT_PROJECT_NAME) {
-        return;
-      }
-      return projectV1Store.getOrFetchProjectByName(project);
-    })
-  );
   return databaseList.map((db) => {
     const composed = db as ComposedDatabase;
     const { databaseName, instance } = extractDatabaseResourceName(db.name);

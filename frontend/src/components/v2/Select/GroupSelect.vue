@@ -13,6 +13,7 @@
 </template>
 
 <script lang="tsx" setup>
+import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import {
   getMemberBindingsByRole,
@@ -53,8 +54,13 @@ const groupStore = useGroupStore();
 const projectV1Store = useProjectV1Store();
 const workspaceStore = useWorkspaceV1Store();
 
-const getGroupListFromProject = (projectName: string) => {
-  const project = projectV1Store.getProjectByName(projectName);
+const groupList = computedAsync(async () => {
+  if (!props.projectName) {
+    return groupStore.groupList;
+  }
+  const project = await projectV1Store.getOrFetchProjectByName(
+    props.projectName
+  );
   const memberMap = getMemberBindingsByRole({
     policies: [
       {
@@ -73,13 +79,7 @@ const getGroupListFromProject = (projectName: string) => {
   return getMemberBindings(memberMap)
     .map((binding) => binding.group)
     .filter((g) => g) as Group[];
-};
-
-const groupList = computed(() =>
-  props.projectName
-    ? getGroupListFromProject(props.projectName)
-    : groupStore.groupList
-);
+}, []);
 
 const options = computed(() => {
   return groupList.value.map((group) => ({

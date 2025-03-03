@@ -3,7 +3,7 @@
     :title="$t('quick-action.create-project')"
     class="max-w-[100vw]"
   >
-    <form class="w-96 space-y-6 divide-y divide-block-border">
+    <div class="w-96 space-y-6 divide-y divide-block-border">
       <div class="grid gap-y-6 gap-x-4 grid-cols-1">
         <div class="col-span-1">
           <label
@@ -30,7 +30,7 @@
           />
         </div>
       </div>
-    </form>
+    </div>
 
     <div
       v-if="state.isCreating"
@@ -54,12 +54,6 @@
       </div>
     </template>
   </DrawerContent>
-
-  <FeatureModal
-    feature="bb.feature.multi-tenancy"
-    :open="state.showFeatureModal"
-    @cancel="state.showFeatureModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -75,23 +69,21 @@ import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { pushNotification, useUIStateStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useProjectV1Store } from "@/store/modules/v1/project";
-import type { ResourceId, ValidatedMessage } from "@/types";
+import type { ResourceId, ValidatedMessage, ComposedProject } from "@/types";
 import { emptyProject } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
-import { FeatureModal } from "../FeatureGuard";
 
 interface LocalState {
   project: Project;
   resourceId: string;
-  showFeatureModal: boolean;
   isCreating: boolean;
 }
 
 const props = defineProps<{
   simple?: boolean;
-  onCreated?: (project: Project) => void;
+  onCreated?: (project: ComposedProject) => void;
 }>();
 
 const emit = defineEmits<{
@@ -111,7 +103,6 @@ const state = reactive<LocalState>({
     autoResolveIssue: true,
   },
   resourceId: "",
-  showFeatureModal: false,
   isCreating: false,
 });
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();

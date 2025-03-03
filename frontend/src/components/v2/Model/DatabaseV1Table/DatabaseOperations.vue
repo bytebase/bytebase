@@ -88,6 +88,7 @@
 </template>
 
 <script lang="ts" setup>
+import { computedAsync } from "@vueuse/core";
 import {
   UnlinkIcon,
   RefreshCcwIcon,
@@ -205,8 +206,7 @@ const selectedProjectName = computed(() => {
   if (selectedProjectNames.value.size !== 1) {
     return "";
   }
-  const project = [...selectedProjectNames.value][0];
-  return projectStore.getProjectByName(project).name;
+  return [...selectedProjectNames.value][0];
 });
 
 const databaseSupportAlterSchema = computed(() => {
@@ -235,8 +235,8 @@ const allowTransferOutProject = computed(() => {
   );
 });
 
-const allowTransferInProject = computed(() => {
-  const project = projectStore.getProjectByName(props.projectName);
+const allowTransferInProject = computedAsync(async () => {
+  const project = await projectStore.getOrFetchProjectByName(props.projectName);
   return hasProjectPermissionV2(project, "bb.projects.update");
 });
 

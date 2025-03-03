@@ -52,7 +52,7 @@ export const useCurrentProject = (
 
   const project = computedAsync(async () => {
     if (unref(params).projectId) {
-      return useProjectV1Store().getProjectByName(
+      return await useProjectV1Store().getOrFetchProjectByName(
         `${projectNamePrefix}${unref(params).projectId}`
       );
     } else if (unref(params).databaseName || unref(params).changelogId) {

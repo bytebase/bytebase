@@ -37,7 +37,7 @@
               :enable-raw-expression="true"
               :factor-list="FactorList"
               :factor-support-dropdown="factorSupportDropdown"
-              :factor-options-map="DatabaseGroupFactorOptionsMap(project)"
+              :option-config-map="getDatabaseGroupOptionConfigMap(project)"
             />
             <p
               v-if="matchingError"
@@ -144,7 +144,10 @@ import { getErrorCode } from "@/utils/grpcweb";
 import { FeatureAttentionForInstanceLicense } from "../FeatureGuard";
 import { ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
-import { factorSupportDropdown, DatabaseGroupFactorOptionsMap } from "./utils";
+import {
+  factorSupportDropdown,
+  getDatabaseGroupOptionConfigMap,
+} from "./utils";
 import { FactorList } from "./utils";
 
 const props = defineProps<{

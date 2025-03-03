@@ -5,11 +5,10 @@
 </template>
 
 <script lang="ts" setup>
-import type { SelectOption } from "naive-ui";
 import { toRef } from "vue";
 import type { ConditionGroupExpr, Factor, Operator } from "@/plugins/cel";
 import ConditionGroup from "./ConditionGroup.vue";
-import { provideExprEditorContext } from "./context";
+import { provideExprEditorContext, type OptionConfig } from "./context";
 
 const props = withDefaults(
   defineProps<{
@@ -18,7 +17,7 @@ const props = withDefaults(
     enableRawExpression?: boolean;
     factorList: Factor[];
     factorSupportDropdown?: Factor[];
-    factorOptionsMap?: Map<Factor, SelectOption[]>;
+    optionConfigMap?: Map<Factor, OptionConfig>;
     factorOperatorOverrideMap?: Map<Factor, Operator[]>;
   }>(),
   {
@@ -26,7 +25,7 @@ const props = withDefaults(
     enableRawExpression: false,
     factorOperatorOverrideMap: undefined,
     factorSupportDropdown: () => [],
-    factorOptionsMap: () => new Map(),
+    optionConfigMap: () => new Map(),
   }
 );
 
@@ -39,7 +38,7 @@ provideExprEditorContext({
   enableRawExpression: toRef(props, "enableRawExpression"),
   factorList: toRef(props, "factorList"),
   factorSupportDropdown: toRef(props, "factorSupportDropdown"),
-  factorOptionsMap: toRef(props, "factorOptionsMap"),
+  optionConfigMap: toRef(props, "optionConfigMap"),
   factorOperatorOverrideMap: toRef(props, "factorOperatorOverrideMap"),
 });
 </script>
