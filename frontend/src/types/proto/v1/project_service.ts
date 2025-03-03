@@ -89,7 +89,6 @@ export interface GetProjectRequest {
 
 export interface ListProjectsRequest {
   /**
-   * Not used.
    * The maximum number of projects to return. The service may return fewer than
    * this value.
    * If unspecified, at most 10 projects will be returned.
@@ -97,7 +96,6 @@ export interface ListProjectsRequest {
    */
   pageSize: number;
   /**
-   * Not used.
    * A page token, received from a previous `ListProjects` call.
    * Provide this to retrieve the subsequent page.
    *
@@ -122,6 +120,8 @@ export interface ListProjectsResponse {
 export interface SearchProjectsRequest {
   /** Show deleted projects if specified. */
   showDeleted: boolean;
+  /** Filter the project title or resource id by query. */
+  query: string;
 }
 
 export interface SearchProjectsResponse {
@@ -918,13 +918,16 @@ export const ListProjectsResponse: MessageFns<ListProjectsResponse> = {
 };
 
 function createBaseSearchProjectsRequest(): SearchProjectsRequest {
-  return { showDeleted: false };
+  return { showDeleted: false, query: "" };
 }
 
 export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
   encode(message: SearchProjectsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.showDeleted !== false) {
       writer.uint32(8).bool(message.showDeleted);
+    }
+    if (message.query !== "") {
+      writer.uint32(18).string(message.query);
     }
     return writer;
   },
@@ -944,6 +947,14 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
           message.showDeleted = reader.bool();
           continue;
         }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.query = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -954,13 +965,19 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
   },
 
   fromJSON(object: any): SearchProjectsRequest {
-    return { showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false };
+    return {
+      showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
+      query: isSet(object.query) ? globalThis.String(object.query) : "",
+    };
   },
 
   toJSON(message: SearchProjectsRequest): unknown {
     const obj: any = {};
     if (message.showDeleted !== false) {
       obj.showDeleted = message.showDeleted;
+    }
+    if (message.query !== "") {
+      obj.query = message.query;
     }
     return obj;
   },
@@ -971,6 +988,7 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
   fromPartial(object: DeepPartial<SearchProjectsRequest>): SearchProjectsRequest {
     const message = createBaseSearchProjectsRequest();
     message.showDeleted = object.showDeleted ?? false;
+    message.query = object.query ?? "";
     return message;
   },
 };

@@ -102,7 +102,7 @@ import DatabaseResourceForm from "./DatabaseResourceForm/index.vue";
 import MaxRowCountSelect from "./MaxRowCountSelect.vue";
 
 interface LocalState {
-  databaseResources: DatabaseResource[];
+  databaseResources?: DatabaseResource[];
   expirationTimestampInMS?: number;
   description: string;
   maxRowCount: number;
@@ -135,7 +135,7 @@ const extractDatabaseResourcesFromProps = (): Pick<
     !isValidDatabaseName(databaseResource.databaseFullName)
   ) {
     return {
-      databaseResources: [],
+      databaseResources: undefined,
     };
   }
   return {

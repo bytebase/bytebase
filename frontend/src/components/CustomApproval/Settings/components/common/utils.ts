@@ -2,13 +2,15 @@ import { uniq, without } from "lodash-es";
 import { CheckIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
 import { h, type VNode } from "vue";
+import { type OptionConfig } from "@/components/ExprEditor/context";
 import { type Factor, SQLTypeList } from "@/plugins/cel";
 import { t } from "@/plugins/i18n";
-import { useEnvironmentV1Store, useProjectV1List } from "@/store";
+import { useEnvironmentV1Store, useProjectV1Store } from "@/store";
 import {
   PresetRiskLevelList,
   DEFAULT_PROJECT_NAME,
   useSupportedSourceList,
+  type ComposedProject,
 } from "@/types";
 import type { Risk } from "@/types/proto/v1/risk_service";
 import { Risk_Source, risk_SourceToJSON } from "@/types/proto/v1/risk_service";
@@ -203,9 +205,8 @@ export const getEnvironmentIdOptions = () => {
   });
 };
 
-export const getProjectIdOptions = () => {
-  const { projectList } = useProjectV1List();
-  return projectList.value
+export const getProjectIdOptions = (projects: ComposedProject[]) => {
+  return projects
     .filter((proj) => proj.name != DEFAULT_PROJECT_NAME)
     .map<SelectOption>((proj) => {
       const projectId = extractProjectResourceName(proj.name);
@@ -255,7 +256,7 @@ const getSQLTypeOptions = (source: Risk_Source) => {
   return [];
 };
 
-export const getFactorOptionsMap = (source: Risk_Source) => {
+export const getOptionConfigMap = (source: Risk_Source) => {
   const factorList = getFactorList(source);
   return factorList.reduce((map, factor) => {
     let options: SelectOption[] = [];
@@ -264,8 +265,17 @@ export const getFactorOptionsMap = (source: Risk_Source) => {
         options = getEnvironmentIdOptions();
         break;
       case "project_id":
-        options = getProjectIdOptions();
-        break;
+        const projectStore = useProjectV1Store();
+        map.set(factor, {
+          remote: true,
+          options: getProjectIdOptions(projectStore.getProjectList()),
+          search: async (keyword: string) => {
+            return projectStore
+              .searchProjects({ query: keyword })
+              .then((projects) => getProjectIdOptions(projects));
+          },
+        });
+        return map;
       case "db_engine":
         options = getDBEndingOptions();
         break;
@@ -279,9 +289,12 @@ export const getFactorOptionsMap = (source: Risk_Source) => {
         options = getSQLTypeOptions(source);
         break;
     }
-    map.set(factor, options);
+    map.set(factor, {
+      remote: false,
+      options,
+    });
     return map;
-  }, new Map<Factor, SelectOption[]>());
+  }, new Map<Factor, OptionConfig>());
 };
 
 export const factorSupportDropdown: Factor[] = [

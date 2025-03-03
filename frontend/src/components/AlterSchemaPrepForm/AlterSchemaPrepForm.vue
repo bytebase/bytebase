@@ -129,7 +129,7 @@ import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
 } from "@/router/dashboard/projectV1";
-import { useDatabaseV1Store, useProjectV1Store, useAppFeature } from "@/store";
+import { useDatabaseV1Store, useProjectByName, useAppFeature } from "@/store";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedDatabase, FeatureType } from "@/types";
 import { UNKNOWN_ID, DEFAULT_PROJECT_NAME } from "@/types";
@@ -182,7 +182,6 @@ const props = defineProps({
 const emit = defineEmits(["dismiss"]);
 
 const router = useRouter();
-const projectV1Store = useProjectV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const disableSchemaEditor = useAppFeature(
   "bb.feature.issue.disable-schema-editor"
@@ -216,9 +215,7 @@ const scopeOptions = useCommonSearchScopeOptions(
   computed(() => ["project", "instance", "environment"])
 );
 
-const selectedProject = computed(() => {
-  return projectV1Store.getProjectByName(props.projectName);
-});
+const { project: selectedProject } = useProjectByName(props.projectName);
 
 const selectedInstance = computed(() => {
   return (

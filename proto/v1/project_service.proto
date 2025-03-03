@@ -161,14 +161,12 @@ message GetProjectRequest {
 }
 
 message ListProjectsRequest {
-  // Not used.
   // The maximum number of projects to return. The service may return fewer than
   // this value.
   // If unspecified, at most 10 projects will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 1;
 
-  // Not used.
   // A page token, received from a previous `ListProjects` call.
   // Provide this to retrieve the subsequent page.
   //
@@ -192,6 +190,9 @@ message ListProjectsResponse {
 message SearchProjectsRequest {
   // Show deleted projects if specified.
   bool show_deleted = 1;
+
+  // Filter the project title or resource id by query.
+  string query = 2;
 }
 
 message SearchProjectsResponse {

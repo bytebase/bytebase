@@ -136,7 +136,7 @@
             <UserPassword
               v-if="state.editingUser"
               ref="userPasswordRef"
-              v-model:password="state.editingUser.password"
+              v-model:password="state.editingUser!.password"
               v-model:password-confirm="state.passwordConfirm"
               :password-restriction="passwordRestrictionSetting"
             />
@@ -259,12 +259,12 @@ import {
   SYSTEM_BOT_USER_NAME,
   ALL_USERS_USER_EMAIL,
 } from "@/types";
+import { State } from "@/types/proto/v1/common";
 import {
   UpdateUserRequest,
   UserType,
   type User,
 } from "@/types/proto/v1/user_service";
-import { State } from "@/types/proto/v1/common";
 import { displayRoleTitle, hasWorkspacePermissionV2, sortRoles } from "@/utils";
 
 interface LocalState {

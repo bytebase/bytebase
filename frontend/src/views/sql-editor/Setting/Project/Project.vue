@@ -17,11 +17,22 @@
       </NButton>
     </div>
 
-    <ProjectV1Table
-      :project-list="filteredProjectList"
-      :prevent-default="true"
-      @row-click="showProjectDetail"
-    />
+    <PagedTable
+      ref="projectPagedTable"
+      session-key="bb.sql-editor.project-table"
+      :fetch-list="fetchProjects"
+      :footer-class="'mx-4'"
+    >
+      <template #table="{ list, loading }">
+        <ProjectV1Table
+          :bordered="false"
+          :loading="loading"
+          :project-list="list"
+          :prevent-default="true"
+          @row-click="showProjectDetail"
+        />
+      </template>
+    </PagedTable>
 
     <Drawer
       :show="state.detail.show"
@@ -49,10 +60,12 @@
 </template>
 
 <script setup lang="ts">
+import { useDebounceFn } from "@vueuse/core";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, NEllipsis } from "naive-ui";
-import { computed, onMounted, reactive, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { reactive, watch, ref } from "vue";
+import type { ComponentExposed } from "vue-component-type-helpers";
+import { useRouter } from "vue-router";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import {
   Drawer,
@@ -60,10 +73,9 @@ import {
   ProjectV1Table,
   SearchBox,
 } from "@/components/v2";
-import { useProjectV1List, useProjectV1Store } from "@/store";
+import PagedTable from "@/components/v2/Model/PagedTable.vue";
+import { useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
-import type { Project } from "@/types/proto/v1/project_service";
-import { filterProjectV1ListByKeyword, wrapRefAsPromise } from "@/utils";
 import Detail from "./Detail.vue";
 
 interface LocalState {
@@ -74,8 +86,10 @@ interface LocalState {
   };
 }
 
-const route = useRoute();
 const router = useRouter();
+const projectStore = useProjectV1Store();
+const projectPagedTable =
+  ref<ComponentExposed<typeof PagedTable<ComposedProject>>>();
 
 const state = reactive<LocalState>({
   keyword: "",
@@ -84,11 +98,29 @@ const state = reactive<LocalState>({
     project: undefined,
   },
 });
-const { projectList, ready } = useProjectV1List();
 
-const filteredProjectList = computed(() => {
-  return filterProjectV1ListByKeyword(projectList.value, state.keyword);
-});
+watch(
+  () => state.keyword,
+  useDebounceFn(async () => {
+    await projectPagedTable.value?.refresh();
+  }, 500)
+);
+
+const fetchProjects = async ({
+  pageToken,
+  pageSize,
+}: {
+  pageToken: string;
+  pageSize: number;
+}) => {
+  const { nextPageToken, projects } = await projectStore.fetchProjectList({
+    showDeleted: false,
+    pageToken,
+    pageSize,
+    query: state.keyword,
+  });
+  return { nextPageToken, list: projects };
+};
 
 const handleClickNewProject = () => {
   state.detail.show = true;
@@ -104,42 +136,20 @@ const hideDrawer = () => {
   state.detail.show = false;
 };
 
-const handleCreated = async (project: Project) => {
-  const composed = await useProjectV1Store().getOrFetchProjectByName(
-    project.name
-  );
-  state.detail.project = composed;
+const handleCreated = async (project: ComposedProject) => {
+  state.detail.project = project;
 };
 
-onMounted(() => {
-  if (route.hash === "#add") {
-    state.detail.show = true;
-    state.detail.project = undefined;
-  }
-  wrapRefAsPromise(ready, true).then(() => {
-    const maybeProjectName = route.hash.replace(/^#*/g, "");
-    if (maybeProjectName) {
-      const project = projectList.value.find(
-        (proj) => proj.name === maybeProjectName
-      );
-      if (project) {
-        state.detail.show = true;
-        state.detail.project = project;
-      }
+watch(
+  [() => state.detail.show, () => state.detail.project?.name],
+  ([show, projectName]) => {
+    if (show) {
+      router.replace({ hash: projectName ? `#${projectName}` : "#add" });
+    } else {
+      router.replace({ hash: "" });
     }
-
-    watch(
-      [() => state.detail.show, () => state.detail.project?.name],
-      ([show, projectName]) => {
-        if (show) {
-          router.replace({ hash: projectName ? `#${projectName}` : "#add" });
-        } else {
-          router.replace({ hash: "" });
-        }
-      }
-    );
-  });
-});
+  }
+);
 </script>
 
 <style scoped lang="postcss">

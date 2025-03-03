@@ -1,7 +1,11 @@
 <template>
   <div class="flex flex-col space-y-4">
     <div class="flex justify-between items-end">
-      <TabFilter v-model:value="state.selectedTab" :items="tabItemList" />
+      <TabFilter
+        :value="state.selectedTab"
+        :items="tabItemList"
+        @update:value="(val) => (state.selectedTab = val as LocalTabType)"
+      />
 
       <SearchBox
         v-model:value="state.searchText"
@@ -62,8 +66,10 @@ import {
   hasWorkspacePermissionV2,
 } from "@/utils";
 
+type LocalTabType = "PROJECT" | "INSTANCE" | "ENVIRONMENT" | "SSO";
+
 interface LocalState {
-  selectedTab: "PROJECT" | "INSTANCE" | "ENVIRONMENT" | "SSO";
+  selectedTab: LocalTabType;
   searchText: string;
 }
 
@@ -95,6 +101,7 @@ const instanceList = computed(() => {
 });
 
 const projectList = computed(() => {
+  // TODO(ed): support pagination.
   return useProjectV1List(true /** showDeleted */).projectList.value.filter(
     (project) => project.state === State.DELETED
   );
@@ -105,7 +112,9 @@ const deletedSSOList = computed(() => {
 });
 
 const tabItemList = computed(() => {
-  const list = [{ value: "PROJECT", label: t("common.project") }];
+  const list: { value: LocalTabType; label: string }[] = [
+    { value: "PROJECT", label: t("common.project") },
+  ];
 
   if (hasWorkspacePermissionV2("bb.instances.undelete")) {
     list.push({ value: "INSTANCE", label: t("common.instance") });
@@ -123,10 +132,7 @@ const tabItemList = computed(() => {
 });
 
 const filteredProjectList = computed(() => {
-  const list = projectList.value.filter(
-    (project) => project.state === State.DELETED
-  );
-  return filterProjectV1ListByKeyword(list, state.searchText);
+  return filterProjectV1ListByKeyword(projectList.value, state.searchText);
 });
 
 const filteredInstanceList = computed(() => {

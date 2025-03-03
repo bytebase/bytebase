@@ -1,5 +1,6 @@
+import { computedAsync } from "@vueuse/core";
 import type { InjectionKey, Ref } from "vue";
-import { computed, inject, provide, ref } from "vue";
+import { inject, provide, ref } from "vue";
 import { useRoute } from "vue-router";
 import { useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -40,14 +41,16 @@ export const provideReleaseCreateContext = () => {
   const title = ref("");
   const files = ref<FileToCreate[]>([]);
 
-  const project = computed(() => {
+  const project = computedAsync(async () => {
     const projectId = route.params.projectId as string;
     if (!projectId) {
       return unknownProject();
     }
 
-    return projectV1Store.getProjectByName(`${projectNamePrefix}${projectId}`);
-  });
+    return await projectV1Store.getOrFetchProjectByName(
+      `${projectNamePrefix}${projectId}`
+    );
+  }, unknownProject());
 
   const context: ReleaseCreateContext = {
     title,

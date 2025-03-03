@@ -6,7 +6,6 @@ import { ref, watch } from "vue";
 import { issueServiceClient } from "@/grpcweb";
 import type { ComposedIssue, IssueFilter } from "@/types";
 import { isValidProjectName, PresetRoleType } from "@/types";
-import { UserType } from "@/types/proto/v1/user_service";
 import { State } from "@/types/proto/v1/common";
 import type { ApprovalStep } from "@/types/proto/v1/issue_service";
 import {
@@ -14,13 +13,13 @@ import {
   ApprovalNode_Type,
   ApprovalNode_GroupValue,
 } from "@/types/proto/v1/issue_service";
+import { UserType } from "@/types/proto/v1/user_service";
 import { extractProjectResourceName, memberListInProjectIAM } from "@/utils";
 import { extractUserEmail, useUserStore } from "../user";
 import {
   shallowComposeIssue,
   type ComposeIssueConfig,
 } from "./experimental-issue";
-import { useProjectV1Store } from "./project";
 import { useWorkspaceV1Store } from "./workspace";
 
 export type ListIssueParams = {
@@ -101,12 +100,9 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
       pageToken,
     });
 
-    const projectStore = useProjectV1Store();
     const issues = resp.issues.filter((issue) => {
       const proj = extractProjectResourceName(issue.name);
-      return isValidProjectName(
-        projectStore.getProjectByName(`projects/${proj}`).name
-      );
+      return isValidProjectName(`projects/${proj}`);
     });
 
     const composedIssues = await Promise.all(

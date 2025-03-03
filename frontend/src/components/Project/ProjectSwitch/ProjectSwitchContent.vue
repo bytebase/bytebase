@@ -50,7 +50,7 @@
           :current-project="
             isValidProjectName(project.name) ? project : undefined
           "
-          :pagination="false"
+          :loading="tab.id === 'all' && state.loading"
           :keyword="state.searchText"
           @row-click="onProjectSelect"
         />
@@ -60,6 +60,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useDebounceFn } from "@vueuse/core";
 import { ChevronLeftIcon, PlusIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs, NTooltip } from "naive-ui";
 import { computed, reactive, onMounted, watch } from "vue";
@@ -71,7 +72,7 @@ import { SearchBox, ProjectV1Table } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
-import { useProjectV1List } from "@/store";
+import { useProjectV1List, useProjectV1Store } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
 import { isValidProjectName, DEFAULT_PROJECT_NAME } from "@/types";
@@ -80,10 +81,14 @@ import {
   hasWorkspacePermissionV2,
 } from "@/utils";
 
+type LocalTabType = "recent" | "all";
+
 interface LocalState {
   showPopover: boolean;
   searchText: string;
-  selectedTab: "recent" | "all";
+  loading: boolean;
+  selectedTab: LocalTabType;
+  allProjects: ComposedProject[];
 }
 
 defineEmits<{
@@ -95,11 +100,24 @@ const state = reactive<LocalState>({
   showPopover: false,
   searchText: "",
   selectedTab: "all",
+  loading: false,
+  allProjects: [],
 });
-const { projectList } = useProjectV1List();
+const projectStore = useProjectV1Store();
+const { projectList, ready } = useProjectV1List();
 const { recentViewProjects } = useRecentProjects();
 const router = useRouter();
 const { record } = useRecentVisit();
+
+watch(
+  () => ready.value,
+  () => {
+    if (ready.value) {
+      state.allProjects = [...projectList.value];
+    }
+  },
+  { immediate: true }
+);
 
 const params = computed(() => {
   const route = router.currentRoute.value;
@@ -130,26 +148,47 @@ const getFilteredProjectList = (
 const filteredRecentProjectList = computed(() => {
   return getFilteredProjectList(recentViewProjects.value);
 });
-const filteredAllProjectList = computed(() => {
-  return getFilteredProjectList(projectList.value);
-});
 
 const allowToCreateProject = computed(() =>
   hasWorkspacePermissionV2("bb.projects.create")
 );
 
-const tabList = computed(() => [
-  {
-    title: t("common.recent"),
-    id: "recent",
-    list: filteredRecentProjectList.value,
-  },
-  {
-    title: t("common.all"),
-    id: "all",
-    list: filteredAllProjectList.value,
-  },
-]);
+watch(
+  () => state.searchText,
+  useDebounceFn(async () => {
+    if (!state.searchText) {
+      state.allProjects = [...projectList.value];
+      return;
+    }
+    state.loading = true;
+    try {
+      const projects = await projectStore.searchProjects({
+        query: state.searchText,
+        showDeleted: false,
+      });
+      state.allProjects = [...projects];
+    } finally {
+      state.loading = false;
+    }
+  }, 500)
+);
+
+const tabList = computed(
+  (): { title: string; id: LocalTabType; list: ComposedProject[] }[] => [
+    {
+      title: t("common.recent"),
+      id: "recent",
+      list: filteredRecentProjectList.value,
+    },
+    {
+      title: t("common.all"),
+      id: "all",
+      list: state.allProjects.filter(
+        (project) => project.name !== DEFAULT_PROJECT_NAME
+      ),
+    },
+  ]
+);
 
 const actualSelectedTab = computed((): LocalState["selectedTab"] => {
   if (

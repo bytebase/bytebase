@@ -24,7 +24,7 @@
           :allow-admin="!readonly"
           :factor-list="factorList"
           :factor-support-dropdown="factorSupportDropdown"
-          :factor-options-map="factorOptionsMap"
+          :option-config-map="optionConfigMap"
           :factor-operator-override-map="factorOperatorOverrideMap"
           @update="state.dirty = true"
         />
@@ -90,6 +90,7 @@ import { NSelect, NPopconfirm, NInput, NButton } from "naive-ui";
 import { computed, reactive, onMounted, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import ExprEditor from "@/components/ExprEditor";
+import { type OptionConfig } from "@/components/ExprEditor/context";
 import type { ConditionGroupExpr, Factor, SimpleExpr } from "@/plugins/cel";
 import {
   resolveCELExpr,
@@ -119,7 +120,7 @@ const props = defineProps<{
   disabled: boolean;
   allowDelete: boolean;
   factorList: Factor[];
-  factorOptionsMap: Map<Factor, SelectOption[]>;
+  optionConfigMap: Map<Factor, OptionConfig>;
   maskingRule: MaskingRulePolicy_MaskingRule;
 }>();
 

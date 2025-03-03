@@ -29,7 +29,7 @@ export function filterProjectV1ListByKeyword<T extends Project>(
   return projectList.filter((project) => {
     return (
       project.title.toLowerCase().includes(keyword) ||
-      extractProjectResourceName(project.name).toLowerCase().includes(keyword)
+      project.name.toLowerCase().includes(keyword)
     );
   });
 }

@@ -55,7 +55,7 @@
             :allow-admin="allowAdmin"
             :factor-list="getFactorList(state.risk.source)"
             :factor-support-dropdown="factorSupportDropdown"
-            :factor-options-map="getFactorOptionsMap(state.risk.source)"
+            :option-config-map="getOptionConfigMap(state.risk.source)"
             @update="$emit('update')"
           />
         </div>
@@ -115,7 +115,7 @@ import {
 } from "@/utils";
 import {
   getFactorList,
-  getFactorOptionsMap,
+  getOptionConfigMap,
   factorSupportDropdown,
   RiskSourceFactorMap,
 } from "../../common/utils";

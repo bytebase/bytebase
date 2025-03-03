@@ -16,6 +16,7 @@
 </template>
 
 <script lang="tsx" setup>
+import { computedAsync } from "@vueuse/core";
 import { computed, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import UserIcon from "~icons/heroicons-outline/user";
@@ -99,8 +100,8 @@ const prepare = () => {
 };
 watchEffect(prepare);
 
-const getUserListFromProject = (projectName: string) => {
-  const project = projectV1Store.getProjectByName(projectName);
+const getUserListFromProject = async (projectName: string) => {
+  const project = await projectV1Store.getOrFetchProjectByName(projectName);
   const memberMap = getMemberBindingsByRole({
     policies: [
       {
@@ -138,11 +139,13 @@ const getUserListFromWorkspace = () => {
     });
 };
 
-const rawUserList = computed(() => {
-  const list =
-    props.projectName && isValidProjectName(props.projectName)
-      ? getUserListFromProject(props.projectName)
-      : getUserListFromWorkspace();
+const rawUserList = computedAsync(async () => {
+  let list = [];
+  if (props.projectName && isValidProjectName(props.projectName)) {
+    list = await getUserListFromProject(props.projectName);
+  } else {
+    list = getUserListFromWorkspace();
+  }
 
   return list.filter((user) => {
     if (
@@ -158,7 +161,7 @@ const rawUserList = computed(() => {
 
     return true;
   });
-});
+}, []);
 
 const combinedUserList = computed(() => {
   let list = [...rawUserList.value];
