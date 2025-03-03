@@ -501,10 +501,10 @@ Used internally for obfuscating the page token.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | VCS_TYPE_UNSPECIFIED | 0 |  |
-| GITHUB | 1 | GitHub type. Using for GitHub community edition(ce). |
-| GITLAB | 2 | GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). |
-| BITBUCKET | 3 | BitBucket type. Using for BitBucket cloud or BitBucket server. |
-| AZURE_DEVOPS | 4 | Azure DevOps. Using for Azure DevOps GitOps workflow. |
+| GITHUB | 1 |  |
+| GITLAB | 2 |  |
+| BITBUCKET | 3 |  |
+| AZURE_DEVOPS | 4 |  |
 
 
  
