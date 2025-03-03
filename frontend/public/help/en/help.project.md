@@ -6,8 +6,6 @@ title: What is 'project' ?
 
 - Each project has its own set of members, and every issue and database is always associated with a single project.
 
-- A project can also be configured to associate with a code repository to enable GitOps workflows.
-
 #### Learn more
 
 - [Create a Project](https://www.bytebase.com/docs/get-started/step-by-step/create-a-project)
