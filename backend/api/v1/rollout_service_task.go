@@ -189,7 +189,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		}
 
 		// Get admin data source username.
-		adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
+		adminDataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)
 		if adminDataSource == nil {
 			return nil, common.Errorf(common.Internal, "admin data source not found for instance %q", instance.Title)
 		}
@@ -220,7 +220,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			}
 		}
 
-		statement, err := getCreateDatabaseStatement(instance.Engine, c, databaseName, adminDataSource.Username)
+		statement, err := getCreateDatabaseStatement(instance.Engine, c, databaseName, adminDataSource.Options.GetUsername())
 		if err != nil {
 			return nil, err
 		}

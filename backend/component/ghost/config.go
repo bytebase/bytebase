@@ -193,11 +193,11 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 
 // NewMigrationContext is the context for gh-ost migration.
 func NewMigrationContext(ctx context.Context, taskID int, database *store.DatabaseMessage, dataSource *store.DataSourceMessage, secret string, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*base.MigrationContext, error) {
-	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, secret)
+	password, err := common.Unobfuscate(dataSource.Options.GetObfuscatedPassword(), secret)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get password")
 	}
-	updatedPassword, err := secretcomp.ReplaceExternalSecret(ctx, password, dataSource.ExternalSecret)
+	updatedPassword, err := secretcomp.ReplaceExternalSecret(ctx, password, dataSource.Options.GetExternalSecret())
 	if err != nil {
 		return nil, err
 	}
@@ -205,27 +205,27 @@ func NewMigrationContext(ctx context.Context, taskID int, database *store.Databa
 
 	migrationContext := base.NewMigrationContext()
 	migrationContext.Log = newGhostLogger()
-	migrationContext.InspectorConnectionConfig.Key.Hostname = dataSource.Host
+	migrationContext.InspectorConnectionConfig.Key.Hostname = dataSource.Options.GetHost()
 	port := 3306
-	if dataSource.Port != "" {
-		dsPort, err := strconv.Atoi(dataSource.Port)
+	if dataSource.Options.GetPort() != "" {
+		dsPort, err := strconv.Atoi(dataSource.Options.GetPort())
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to convert port from string to int")
 		}
 		port = dsPort
 	}
-	if dataSource.UseSSL {
-		ca, err := common.Unobfuscate(dataSource.ObfuscatedSslCa, secret)
+	if dataSource.Options.GetUseSsl() {
+		ca, err := common.Unobfuscate(dataSource.Options.GetObfuscatedSslCa(), secret)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get ssl ca")
 		}
 
-		cert, err := common.Unobfuscate(dataSource.ObfuscatedSslCert, secret)
+		cert, err := common.Unobfuscate(dataSource.Options.GetObfuscatedSslCert(), secret)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get ssl cert")
 		}
 
-		key, err := common.Unobfuscate(dataSource.ObfuscatedSslKey, secret)
+		key, err := common.Unobfuscate(dataSource.Options.GetObfuscatedSslKey(), secret)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get ssl key")
 		}
@@ -240,7 +240,7 @@ func NewMigrationContext(ctx context.Context, taskID int, database *store.Databa
 		}
 	}
 	migrationContext.InspectorConnectionConfig.Key.Port = port
-	migrationContext.CliUser = dataSource.Username
+	migrationContext.CliUser = dataSource.Options.GetUsername()
 	migrationContext.CliPassword = password
 	// GhostDatabaseName is our homemade parameter to allow creating temporary tables under another database.
 	migrationContext.GhostDatabaseName = "bbdataarchive"
