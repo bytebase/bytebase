@@ -9,6 +9,7 @@ import {
   type RowValue_TimestampTZ,
 } from "@/types/proto/v1/sql_service";
 import { isNullOrUndefined } from "../util";
+import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 
 // extractSQLRowValuePlain extracts a plain value from a RowValue.
 export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
@@ -29,11 +30,38 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
   }
   if (value.bytesValue) {
     const byteArray = Array.from(value.bytesValue);
-    const binaryString = byteArray
-      .map((byte) => byte.toString(2).padStart(8, "0"))
-      .join("")
-      .replace(/^0+/g, "");
-    return binaryString.length === 0 ? "0" : binaryString;
+    
+    // We only need special handling for PostgreSQL BIT/VARBIT types
+    // Get database connection information, but handle case where it's not available
+    try {
+      // Check if we're in a context with access to the engine
+      const { database } = useConnectionOfCurrentSQLEditorTab();
+      const engine = database.value?.instanceResource?.engine;
+      
+      // For PostgreSQL, BIT/VARBIT values are represented as ASCII '0's and '1's
+      if (engine === Engine.POSTGRES) {
+        // We need to check if this looks like a bit string (all bytes are ASCII '0' or '1')
+        // AND has a reasonable length for a bit representation (not thousands of characters)
+        const isPgBitString = 
+          byteArray.length < 1000 && // reasonable size check
+          byteArray.every(byte => byte === 48 || byte === 49); // only '0' and '1' chars
+        
+        if (isPgBitString) {
+          // Convert from ASCII codes to actual string
+          return String.fromCharCode(...byteArray);
+        }
+      }
+    } catch (e) {
+      // If we can't access the connection info, fall back to default behavior
+      console.debug("Could not determine database engine for bytes handling", e);
+    }
+    
+    // Display binary data as hexadecimal with 0x prefix for better readability
+    // Most database UIs display binary data in hex format with uppercase letters
+    const hexString = byteArray
+      .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
+      .join("");
+    return hexString.length === 0 ? "0x00" : `0x${hexString}`;
   }
   if (value.timestampValue && value.timestampValue.googleTimestamp) {
     return formatTimestamp(value.timestampValue);
