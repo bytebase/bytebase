@@ -12,5 +12,7 @@ export const getBBTheme = (): Editor.IStandaloneThemeData => ({
       "--color-control-placeholder"
     ),
     "editorLineNumber.activeForeground": callCssVariable("--color-main"),
+    "editor.wordHighlightBackground": "#00000000",
+    "editor.wordHighlightStrongBackground": "#00000000",
   },
 });
