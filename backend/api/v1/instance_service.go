@@ -9,6 +9,7 @@ import (
 	"go.uber.org/multierr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -262,8 +263,13 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance.Name)
 	}
 
+	metadata, ok := proto.Clone(instance.Metadata).(*storepb.InstanceMetadata)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "failed to convert instance metadata type")
+	}
 	patch := &store.UpdateInstanceMessage{
 		ResourceID: instance.ResourceID,
+		Metadata:   metadata,
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
@@ -307,26 +313,17 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureCustomInstanceSynchronization, instance); err != nil {
 				return nil, status.Error(codes.PermissionDenied, err.Error())
 			}
-			if patch.OptionsUpsert == nil {
-				patch.OptionsUpsert = instance.Options
-			}
-			patch.OptionsUpsert.SyncInterval = request.Instance.GetSyncInterval()
+			patch.Metadata.SyncInterval = request.Instance.SyncInterval
 		case "maximum_connections":
 			if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureCustomInstanceSynchronization, instance); err != nil {
 				return nil, status.Error(codes.PermissionDenied, err.Error())
 			}
-			if patch.OptionsUpsert == nil {
-				patch.OptionsUpsert = instance.Options
-			}
-			patch.OptionsUpsert.MaximumConnections = request.Instance.GetMaximumConnections()
+			patch.Metadata.MaximumConnections = request.Instance.MaximumConnections
 		case "sync_databases":
 			if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureCustomInstanceSynchronization, instance); err != nil {
 				return nil, status.Error(codes.PermissionDenied, err.Error())
 			}
-			if patch.OptionsUpsert == nil {
-				patch.OptionsUpsert = instance.Options
-			}
-			patch.OptionsUpsert.SyncDatabases = request.Instance.GetSyncDatabases()
+			patch.Metadata.SyncDatabases = request.Instance.SyncDatabases
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupported update_mask "%s"`, path)
 		}
@@ -1034,9 +1031,9 @@ func convertToInstance(instance *store.InstanceMessage) (*v1pb.Instance, error) 
 		State:              convertDeletedToState(instance.Deleted),
 		Environment:        buildEnvironmentName(instance.EnvironmentID),
 		Activation:         instance.Activation,
-		SyncInterval:       instance.Options.GetSyncInterval(),
-		MaximumConnections: instance.Options.GetMaximumConnections(),
-		SyncDatabases:      instance.Options.GetSyncDatabases(),
+		SyncInterval:       instance.Metadata.GetSyncInterval(),
+		MaximumConnections: instance.Metadata.GetMaximumConnections(),
+		SyncDatabases:      instance.Metadata.GetSyncDatabases(),
 		Roles:              convertToInstanceRoles(instance, instance.Metadata.GetRoles()),
 	}, nil
 }
@@ -1087,7 +1084,7 @@ func (s *InstanceService) convertToInstanceMessage(instanceID string, instance *
 		DataSources:   datasources,
 		EnvironmentID: environmentID,
 		Activation:    instance.Activation,
-		Options: &storepb.InstanceOptions{
+		Metadata: &storepb.InstanceMetadata{
 			SyncInterval:       instance.GetSyncInterval(),
 			MaximumConnections: instance.GetMaximumConnections(),
 			SyncDatabases:      instance.GetSyncDatabases(),
