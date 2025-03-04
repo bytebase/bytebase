@@ -296,24 +296,26 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 		case "labels":
 			patch.Metadata.Labels = request.Database.Labels
 		case "environment":
-			environmentID, err := common.GetEnvironmentID(request.Database.Environment)
-			if err != nil {
-				return nil, status.Error(codes.InvalidArgument, err.Error())
+			if request.Database.Environment != "" {
+				environmentID, err := common.GetEnvironmentID(request.Database.Environment)
+				if err != nil {
+					return nil, status.Error(codes.InvalidArgument, err.Error())
+				}
+				environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+					ResourceID:  &environmentID,
+					ShowDeleted: true,
+				})
+				if err != nil {
+					return nil, status.Error(codes.Internal, err.Error())
+				}
+				if environment == nil {
+					return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
+				}
+				if environment.Deleted {
+					return nil, status.Errorf(codes.FailedPrecondition, "environment %q is deleted", environmentID)
+				}
 			}
-			environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
-				ResourceID:  &environmentID,
-				ShowDeleted: true,
-			})
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			if environment == nil {
-				return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
-			}
-			if environment.Deleted {
-				return nil, status.Errorf(codes.FailedPrecondition, "environment %q is deleted", environmentID)
-			}
-			patch.EnvironmentID = &environment.ResourceID
+			patch.EnvironmentID = &request.Database.Environment
 		}
 	}
 

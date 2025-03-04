@@ -37,8 +37,9 @@ type UpdateDatabaseMessage struct {
 	InstanceID   string
 	DatabaseName string
 
-	ProjectID     *string
-	Deleted       *bool
+	ProjectID *string
+	Deleted   *bool
+	// Empty string will unset the environment.
 	EnvironmentID *string
 	Metadata      *storepb.DatabaseMetadata
 }
@@ -228,7 +229,11 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		set, args = append(set, fmt.Sprintf("project = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.EnvironmentID; v != nil {
-		set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
+		if *v == "" {
+			set = append(set, "environment = NULL")
+		} else {
+			set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
+		}
 	}
 	if v := patch.Deleted; v != nil {
 		set, args = append(set, fmt.Sprintf("deleted = $%d", len(args)+1)), append(args, *v)
