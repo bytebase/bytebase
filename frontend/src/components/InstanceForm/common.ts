@@ -10,7 +10,6 @@ import { Engine, State } from "@/types/proto/v1/common";
 import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
 import {
   DataSourceType,
-  InstanceOptions,
 } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { calcUpdateMask } from "@/utils";
@@ -74,9 +73,10 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
       ? instance.activation
       : subscriptionStore.currentPlan !== PlanType.FREE &&
         availableLicenseCount > 0,
-    options: instance?.options
-      ? cloneDeep(instance.options)
-      : InstanceOptions.fromPartial({}),
+
+    syncInterval: instance?.syncInterval,
+    maximumConnections: instance?.maximumConnections ?? 0,
+    syncDatabases: instance?.syncDatabases ?? [],
     roles: instance ? instance?.roles : [],
   };
 };
