@@ -1888,7 +1888,7 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 
 		dataSource, err := storeInstance.GetDataSource(ctx, &store.FindDataSourceMessage{
 			InstanceID: &database.InstanceID,
-			Name:       &dataSourceID,
+			ID:         &dataSourceID,
 		})
 		if err != nil {
 			return nil, status.Newf(codes.Internal, "failed to get data source: %v", err)

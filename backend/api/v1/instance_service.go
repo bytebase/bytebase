@@ -734,9 +734,9 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.Internal, "failed to convert options type")
 	}
 	patch := &store.UpdateDataSourceMessage{
-		InstanceID:   instance.ResourceID,
-		DataSourceID: request.DataSource.Id,
-		Options:      options,
+		InstanceID: instance.ResourceID,
+		ID:         request.DataSource.Id,
+		Options:    options,
 	}
 
 	hasSSH := false
