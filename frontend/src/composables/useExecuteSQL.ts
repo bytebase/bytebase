@@ -2,7 +2,6 @@ import Emittery from "emittery";
 import { head, isEmpty } from "lodash-es";
 import { Status } from "nice-grpc-common";
 import { markRaw, reactive } from "vue";
-import { parseSQL } from "@/components/MonacoEditor/sqlParser";
 import { sqlServiceClient } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
 import {
@@ -198,13 +197,6 @@ const useExecuteSQL = () => {
 
     const queryContext = tab.queryContext!;
     const batchQueryContext = tab.batchQueryContext;
-    const { data } = await parseSQL(params.statement);
-
-    if (data === undefined) {
-      notify("CRITICAL", t("sql-editor.notify-invalid-sql-statement"));
-      return cleanup();
-    }
-
     const selectedDatabase = useDatabaseV1Store().getDatabaseByName(
       params.connection.database
     );

@@ -1727,7 +1727,6 @@
     "to-enable-admin-mode": "để bật chế độ quản trị",
     "notify-empty-statement": "Vui lòng nhập câu lệnh SQL của bạn vào trình soạn thảo",
     "goto-edit-schema-hint": "Vui lòng chọn một kết nối cơ sở dữ liệu từ đầu trình soạn thảo",
-    "notify-invalid-sql-statement": "Câu lệnh SQL không hợp lệ.",
     "can-not-execute-query": "Không thể thực hiện truy vấn khi đang tải dữ liệu.",
     "rows": "dòng | dòng",
     "vertical-display": "Hiển thị dọc",

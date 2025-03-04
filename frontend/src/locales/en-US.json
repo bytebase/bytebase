@@ -1727,7 +1727,6 @@
     "to-enable-admin-mode": "to enable the admin mode",
     "notify-empty-statement": "Please input your SQL statements in the editor",
     "goto-edit-schema-hint": "Please select a database connection from the top of the editor",
-    "notify-invalid-sql-statement": "Invalid SQL statement.",
     "can-not-execute-query": "Cannot execute query when loading data.",
     "rows": "row | rows",
     "vertical-display": "Vertical display",
