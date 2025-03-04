@@ -530,7 +530,7 @@
           "timeout": {
             "self": "Thời gian truy vấn tối đa",
             "description": "Thời gian tối đa được phép chạy truy vấn trong SQL Editor.",
-            "no-time-limit": "Không giới hạn thời gian cho truy vấn khi đặt thành 0 hoặc nhỏ hơn."
+            "no-time-limit": "Không giới hạn thời gian cho truy vấn khi đặt thành 0."
           }
         },
         "domain-restriction": {

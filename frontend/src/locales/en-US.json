@@ -530,7 +530,7 @@
           "timeout": {
             "self": "Maximum query time",
             "description": "The maximum time allowed for a query to run in SQL Editor.",
-            "no-time-limit": "No time limit for queries when set to 0 or less."
+            "no-time-limit": "No time limit for queries when set to 0."
           }
         },
         "domain-restriction": {

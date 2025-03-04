@@ -530,7 +530,7 @@
           "timeout": {
             "self": "最大クエリ時間",
             "description": "SQL エディターでクエリを実行するために許可される最大時間。",
-            "no-time-limit": "0 以下に設定すると、クエリに時間制限はありません。"
+            "no-time-limit": "0 に設定すると、クエリに時間制限はありません。"
           }
         },
         "domain-restriction": {

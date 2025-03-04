@@ -16,7 +16,7 @@
         :value="seconds"
         :disabled="!allowEdit"
         class="w-60"
-        :min="-1"
+        :min="0"
         :precision="0"
         @update:value="handleInput"
       >
@@ -65,7 +65,7 @@ const allowEdit = computed(
 
 const initialState = () => {
   return (
-    queryDataPolicy.value?.queryDataPolicy?.timeout?.seconds.toNumber() ?? -1
+    queryDataPolicy.value?.queryDataPolicy?.timeout?.seconds.toNumber() ?? 0
   );
 };
 
