@@ -36,7 +36,7 @@ export const databaseForSpec = (plan: ComposedPlan, spec: Plan_Spec) => {
       db.effectiveEnvironmentEntity =
         useEnvironmentV1Store().getEnvironmentByName(ir.environment) ??
         unknownEnvironment();
-      db.syncState = State.DELETED;
+      db.state = State.DELETED;
     }
     return db;
   }

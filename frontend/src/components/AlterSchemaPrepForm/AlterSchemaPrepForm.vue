@@ -246,7 +246,7 @@ const rawDatabaseList = computed(() => {
     list = databaseV1Store.databaseListByUser;
   }
   list = list.filter(
-    (db) => db.syncState == State.ACTIVE && db.project !== DEFAULT_PROJECT_NAME
+    (db) => db.state == State.ACTIVE && db.project !== DEFAULT_PROJECT_NAME
   );
   return list;
 });

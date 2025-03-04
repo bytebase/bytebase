@@ -152,7 +152,7 @@ func GetDatabaseMatrixFromDeploymentSchedule(schedule *storepb.Schedule, databas
 				continue
 			}
 			// Skip if the database is not found.
-			if database.SyncState == api.NotFound {
+			if database.Deleted {
 				continue
 			}
 

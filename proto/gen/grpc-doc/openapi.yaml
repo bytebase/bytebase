@@ -9067,14 +9067,14 @@ components:
                         The name of the database.
                          Format: instances/{instance}/databases/{database}
                          {database} is the database name in the instance.
-                syncState:
+                state:
                     readOnly: true
                     enum:
                         - STATE_UNSPECIFIED
                         - ACTIVE
                         - DELETED
                     type: string
-                    description: The existence of a database on latest sync.
+                    description: The existence of a database.
                     format: enum
                 successfulSyncTime:
                     readOnly: true

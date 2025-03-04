@@ -15,7 +15,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/store"
@@ -145,7 +144,7 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 
 	var enabledDatabase *store.DatabaseMessage
 	for _, database := range databases {
-		if database.SyncState != api.OK {
+		if database.Deleted {
 			continue
 		}
 		if pgparser.IsSystemDatabase(database.DatabaseName) {
