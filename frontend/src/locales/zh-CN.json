@@ -526,6 +526,13 @@
           "self": "SQL 输出大小限制",
           "description": "限制输出 SQL 查询结果的大小。"
         },
+        "query-data-policy": {
+          "timeout": {
+            "self": "最大查询时间",
+            "description": "SQL 编辑器中允许运行查询的最长时间。",
+            "no-time-limit": "设置为 0 时，查询将没有时间限制。"
+          }
+        },
         "domain-restriction": {
           "self": "工作空间域名",
           "description": "用于指定成员电子邮箱的域名。",

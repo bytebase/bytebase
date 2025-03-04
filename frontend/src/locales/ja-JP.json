@@ -526,6 +526,13 @@
           "self": "SQL出力サイズ制限",
           "description": "出力される SQL クエリ結果のサイズを制限します。"
         },
+        "query-data-policy": {
+          "timeout": {
+            "self": "最大クエリ時間",
+            "description": "SQL エディターでクエリを実行するために許可される最大時間。",
+            "no-time-limit": "0 に設定すると、クエリに時間制限はありません。"
+          }
+        },
         "domain-restriction": {
           "self": "ワークスペースドメイン",
           "description": "ワークスペース メンバーの電子メール ドメインとして使用できるドメインを指定します。",
