@@ -6,7 +6,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/secret"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -38,7 +37,7 @@ func New(store *store.Store, mysqlBinDir, mongoBinDir, pgBinDir, dataDir, secret
 // GetAdminDatabaseDriver gets the admin database driver using the instance's admin data source.
 // Upon successful return, caller must call driver.Close(). Otherwise, it will leak the database connection.
 func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, connectionContext db.ConnectionContext) (db.Driver, error) {
-	dataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
+	dataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)
 	if dataSource == nil {
 		return nil, common.Errorf(common.Internal, "admin data source not found for instance %q", instance.Title)
 	}
@@ -67,21 +66,21 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 	}
 
 	if databaseName == "" {
-		databaseName = dataSource.Database
+		databaseName = dataSource.Options.GetDatabase()
 	}
-	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, d.secret)
+	password, err := common.Unobfuscate(dataSource.Options.GetObfuscatedPassword(), d.secret)
 	if err != nil {
 		return nil, err
 	}
-	sslCA, err := common.Unobfuscate(dataSource.ObfuscatedSslCa, d.secret)
+	sslCA, err := common.Unobfuscate(dataSource.Options.GetObfuscatedSslCa(), d.secret)
 	if err != nil {
 		return nil, err
 	}
-	sslCert, err := common.Unobfuscate(dataSource.ObfuscatedSslCert, d.secret)
+	sslCert, err := common.Unobfuscate(dataSource.Options.GetObfuscatedSslCert(), d.secret)
 	if err != nil {
 		return nil, err
 	}
-	sslKey, err := common.Unobfuscate(dataSource.ObfuscatedSslKey, d.secret)
+	sslKey, err := common.Unobfuscate(dataSource.Options.GetObfuscatedSslKey(), d.secret)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +141,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			DbBinDir: dbBinDir,
 		},
 		db.ConnectionConfig{
-			Username: dataSource.Username,
+			Username: dataSource.Options.GetUsername(),
 			Password: password,
 			TLSConfig: db.TLSConfig{
 				UseSSL:  dataSource.Options.GetUseSsl(),
@@ -150,8 +149,8 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 				SslCert: sslCert,
 				SslKey:  sslKey,
 			},
-			Host:                      dataSource.Host,
-			Port:                      dataSource.Port,
+			Host:                      dataSource.Options.GetHost(),
+			Port:                      dataSource.Options.GetPort(),
 			Database:                  databaseName,
 			DataShare:                 datashare,
 			SRV:                       dataSource.Options.GetSrv(),
