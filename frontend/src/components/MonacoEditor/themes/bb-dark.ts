@@ -17,5 +17,7 @@ export const getBBDarkTheme = (): Editor.IStandaloneThemeData => ({
     "editorLineNumber.activeForeground": callCssVariable(
       "--color-matrix-green-hover"
     ),
+    "editor.wordHighlightBackground": "#00000000",
+    "editor.wordHighlightStrongBackground": "#00000000",
   },
 });
