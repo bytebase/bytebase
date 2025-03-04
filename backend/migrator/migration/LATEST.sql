@@ -139,12 +139,6 @@ CREATE TABLE db (
     instance text NOT NULL REFERENCES instance(resource_id),
     name text NOT NULL,
     environment text REFERENCES environment(resource_id),
-    sync_at timestamptz NOT NULL DEFAULT now(),
-    schema_version text NOT NULL,
-    secrets jsonb NOT NULL DEFAULT '{}',
-    datashare boolean NOT NULL DEFAULT FALSE,
-    -- service_name is the Oracle specific field.
-    service_name text NOT NULL DEFAULT '',
     metadata jsonb NOT NULL DEFAULT '{}'
 );
 

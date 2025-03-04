@@ -10,12 +10,12 @@ import (
 
 func TestIsSecretValid(t *testing.T) {
 	testCases := []struct {
-		item    *storepb.SecretItem
+		item    *storepb.Secret
 		wantErr bool
 	}{
 		// Disallow empty name.
 		{
-			item: &storepb.SecretItem{
+			item: &storepb.Secret{
 				Name:        "",
 				Value:       "pwd",
 				Description: "",
@@ -24,7 +24,7 @@ func TestIsSecretValid(t *testing.T) {
 		},
 		// Disallow empty value.
 		{
-			item: &storepb.SecretItem{
+			item: &storepb.Secret{
 				Name:        "NAME",
 				Value:       "",
 				Description: "",
@@ -33,7 +33,7 @@ func TestIsSecretValid(t *testing.T) {
 		},
 		// Name cannot start with a number.
 		{
-			item: &storepb.SecretItem{
+			item: &storepb.Secret{
 				Name:        "1NAME",
 				Value:       "pwd",
 				Description: "",
@@ -42,7 +42,7 @@ func TestIsSecretValid(t *testing.T) {
 		},
 		// Name cannot start with the 'BYTEBASE_' prefix.
 		{
-			item: &storepb.SecretItem{
+			item: &storepb.Secret{
 				Name:        "BYTEBASE_NAME",
 				Value:       "pwd",
 				Description: "",
@@ -51,7 +51,7 @@ func TestIsSecretValid(t *testing.T) {
 		},
 		// Names can only contain alphanumeric characters ([A-Z], [0-9]) or underscores (_). Spaces are not allowed.
 		{
-			item: &storepb.SecretItem{
+			item: &storepb.Secret{
 				Name:        "NAME WITH SPACE",
 				Value:       "pwd",
 				Description: "",
@@ -59,7 +59,7 @@ func TestIsSecretValid(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			item: &storepb.SecretItem{
+			item: &storepb.Secret{
 				Name:        "NAME-WITH-DASH",
 				Value:       "pwd",
 				Description: "",
@@ -67,7 +67,7 @@ func TestIsSecretValid(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			item: &storepb.SecretItem{
+			item: &storepb.Secret{
 				Name:        "NAME_WITH_SPECIAL_CHARACTER_©",
 				Value:       "pwd",
 				Description: "",
@@ -75,7 +75,7 @@ func TestIsSecretValid(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			item: &storepb.SecretItem{
+			item: &storepb.Secret{
 				Name:        "NAME_WITH_SPECIAL_CHARACTER_ç",
 				Value:       "pwd",
 				Description: "",
@@ -83,7 +83,7 @@ func TestIsSecretValid(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			item: &storepb.SecretItem{
+			item: &storepb.Secret{
 				Name:        "NAME_WITH_SPECIAL_CHARACTER_Ⅷ",
 				Value:       "pwd",
 				Description: "",
@@ -91,7 +91,7 @@ func TestIsSecretValid(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			item: &storepb.SecretItem{
+			item: &storepb.Secret{
 				Name:        "NAME_WITH_LOWER_CASE_a",
 				Value:       "pwd",
 				Description: "",
@@ -99,7 +99,7 @@ func TestIsSecretValid(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			item: &storepb.SecretItem{
+			item: &storepb.Secret{
 				Name:        "NORMAL_NAME",
 				Value:       "pwd",
 				Description: "",

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -124,7 +123,6 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		DatabaseName:  payload.DatabaseName,
 		EnvironmentID: payload.EnvironmentId,
 		Deleted:       true,
-		SyncAt:        time.Now(),
 		Metadata: &storepb.DatabaseMetadata{
 			Labels: labels,
 		},

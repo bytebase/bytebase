@@ -9179,6 +9179,12 @@ components:
                     format: date-time
                 backupAvailable:
                     type: boolean
+                datashare:
+                    type: boolean
+                secrets:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Secret'
             description: DatabaseMetadata is the metadata for databases.
         DatabaseSchema:
             type: object
@@ -12746,34 +12752,17 @@ components:
                         Not used. A token, which can be sent as `page_token` to retrieve the next page.
                          If this field is omitted, there are no subsequent pages.
         Secret:
-            required:
-                - name
             type: object
             properties:
                 name:
                     type: string
-                    description: |-
-                        name is the unique name of the secret, which is specified by the client.
-                         Format:
-                         instances/{instance}/databases/{database}/secrets/{secret}
-                createdTime:
-                    readOnly: true
-                    type: string
-                    description: Not used. The timestamp when the secret resource was created initially.
-                    format: date-time
-                updatedTime:
-                    readOnly: true
-                    type: string
-                    description: Not used. The timestamp when the secret resource was updated.
-                    format: date-time
+                    description: The name is the name of the secret.
                 value:
-                    writeOnly: true
                     type: string
-                    description: The value of the secret.
+                    description: The value is the value of the secret.
                 description:
                     type: string
-                    description: The description of the secret.
-            description: Secret is the secret of the database now.
+                    description: The description is the description of the secret.
         SemanticTypeSetting:
             type: object
             properties:

@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/conc/pool"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -319,8 +320,6 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 			newDatabase, err := s.store.CreateDatabaseDefault(ctx, &store.DatabaseMessage{
 				InstanceID:   instance.ResourceID,
 				DatabaseName: databaseMetadata.Name,
-				DataShare:    databaseMetadata.Datashare,
-				ServiceName:  databaseMetadata.ServiceName,
 				ProjectID:    api.DefaultProjectID,
 			})
 			if err != nil {
@@ -411,16 +410,18 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 	}
 
 	d := false
-	ts := time.Now()
+	metadata, ok := proto.Clone(database.Metadata).(*storepb.DatabaseMetadata)
+	if !ok {
+		return 0, errors.Errorf("failed to convert database metadata type")
+	}
+	metadata.LastSyncTime = timestamppb.New(time.Now())
+	metadata.BackupAvailable = s.hasBackupSchema(ctx, instance, databaseMetadata)
+	metadata.Datashare = databaseMetadata.Datashare
 	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 		Deleted:      &d,
-		SyncAt:       &ts,
-		MetadataUpsert: &storepb.DatabaseMetadata{
-			LastSyncTime:    timestamppb.New(ts),
-			BackupAvailable: s.hasBackupSchema(ctx, instance, databaseMetadata),
-		},
+		Metadata:     metadata,
 	}); err != nil {
 		return 0, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
@@ -517,16 +518,18 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	}
 
 	d := false
-	ts := time.Now()
+	metadata, ok := proto.Clone(database.Metadata).(*storepb.DatabaseMetadata)
+	if !ok {
+		return errors.Errorf("failed to convert database metadata type")
+	}
+	metadata.LastSyncTime = timestamppb.New(time.Now())
+	metadata.BackupAvailable = s.hasBackupSchema(ctx, instance, databaseMetadata)
+	metadata.Datashare = databaseMetadata.Datashare
 	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 		Deleted:      &d,
-		SyncAt:       &ts,
-		MetadataUpsert: &storepb.DatabaseMetadata{
-			LastSyncTime:    timestamppb.New(ts),
-			BackupAvailable: s.hasBackupSchema(ctx, instance, databaseMetadata),
-		},
+		Metadata:     metadata,
 	}); err != nil {
 		return errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}

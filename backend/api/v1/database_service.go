@@ -17,8 +17,8 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -270,6 +270,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 	patch := &store.UpdateDatabaseMessage{
 		InstanceID:   instanceID,
 		DatabaseName: databaseName,
+		Metadata:     proto.Clone(databaseMessage.Metadata).(*storepb.DatabaseMetadata),
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
@@ -293,15 +294,8 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 			}
 			patch.ProjectID = &project.ResourceID
 		case "labels":
-			labels := request.Database.Labels
-			if labels == nil {
-				labels = map[string]string{}
-			}
-			patch.MetadataUpsert = &storepb.DatabaseMetadata{
-				Labels: labels,
-			}
+			patch.Metadata.Labels = request.Database.Labels
 		case "environment":
-			patch.UpdateEnvironmentID = true
 			if request.Database.Environment != "" {
 				environmentID, err := common.GetEnvironmentID(request.Database.Environment)
 				if err != nil {
@@ -320,7 +314,10 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 				if environment.Deleted {
 					return nil, status.Errorf(codes.FailedPrecondition, "environment %q is deleted", environmentID)
 				}
-				patch.EnvironmentID = environment.ResourceID
+				patch.EnvironmentID = &environmentID
+			} else {
+				unsetEnvironment := ""
+				patch.EnvironmentID = &unsetEnvironment
 			}
 		}
 	}
@@ -757,7 +754,7 @@ func (s *DatabaseService) ListSecrets(ctx context.Context, request *v1pb.ListSec
 	}
 
 	return &v1pb.ListSecretsResponse{
-		Secrets: stripeAndConvertToServiceSecrets(database.Secrets, database.InstanceID, database.DatabaseName),
+		Secrets: convertToV1Secrets(database.Metadata.GetSecrets(), database.InstanceID, database.DatabaseName),
 	}, nil
 }
 
@@ -800,17 +797,12 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 
-	// We retrieve the secret from the database, convert secrets to map, upsert the new secret and store it back.
-	// But if two processes are doing this at the same time, the second one will override the first one.
-	// It is not a big deal for now because it's not a common case and users can find that secret he set is not existed or not correct.
-	secretsMap := make(map[string]*storepb.SecretItem)
-	if database.Secrets != nil {
-		for _, secret := range database.Secrets.Items {
-			secretsMap[secret.Name] = secret
-		}
+	secretsMap := make(map[string]*storepb.Secret)
+	for _, secret := range database.Metadata.GetSecrets() {
+		secretsMap[secret.Name] = secret
 	}
 
-	var newSecret storepb.SecretItem
+	newSecret := &storepb.Secret{}
 	if _, ok := secretsMap[updateSecretName]; !ok {
 		// If the secret is not existed and allow_missing is false, we will not create it.
 		if !request.AllowMissing {
@@ -836,34 +828,30 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 			}
 		}
 	}
-	if err := isSecretValid(&newSecret); err != nil {
+	if err := isSecretValid(newSecret); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+	secretsMap[updateSecretName] = newSecret
 
-	secretsMap[updateSecretName] = &newSecret
-	// Flatten the map to a slice.
-	var secretItems []*storepb.SecretItem
+	var secrets []*storepb.Secret
 	for _, secret := range secretsMap {
-		secretItems = append(secretItems, secret)
+		secrets = append(secrets, secret)
 	}
-	var updateDatabaseMessage store.UpdateDatabaseMessage
-	updateDatabaseMessage.Secrets = &storepb.Secrets{
-		Items: secretItems,
+
+	metadata, ok := proto.Clone(database.Metadata).(*storepb.DatabaseMetadata)
+	if !ok {
+		return nil, errors.Errorf("failed to convert database metadata type")
 	}
-	updateDatabaseMessage.InstanceID = database.InstanceID
-	updateDatabaseMessage.DatabaseName = database.DatabaseName
-	updatedDatabase, err := s.store.UpdateDatabase(ctx, &updateDatabaseMessage)
-	if err != nil {
+	metadata.Secrets = secrets
+	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+		Metadata:     metadata,
+	}); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Get the secret from the updated database.
-	for _, secret := range updatedDatabase.Secrets.Items {
-		if secret.Name == updateSecretName {
-			return stripeAndConvertToServiceSecret(secret, updatedDatabase.InstanceID, updatedDatabase.DatabaseName), nil
-		}
-	}
-	return &v1pb.Secret{}, nil
+	return convertToV1Secret(newSecret, database.InstanceID, database.DatabaseName), nil
 }
 
 // DeleteSecret deletes a secret of a database.
@@ -899,29 +887,26 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 
-	// We retrieve the secret from the database, convert secrets to map, upsert the new secret and store it back.
-	// But if two processes are doing this at the same time, the second one will override the first one.
-	// It is not a big deal for now because it's not a common case and users can find that secret he set is not existed or not correct.
-	secretsMap := make(map[string]*storepb.SecretItem)
-	if database.Secrets != nil {
-		for _, secret := range database.Secrets.Items {
-			secretsMap[secret.Name] = secret
-		}
+	secretsMap := make(map[string]*storepb.Secret)
+	for _, secret := range database.Metadata.GetSecrets() {
+		secretsMap[secret.Name] = secret
 	}
 	delete(secretsMap, secretName)
-
-	// Flatten the map to a slice.
-	var secretItems []*storepb.SecretItem
+	var secrets []*storepb.Secret
 	for _, secret := range secretsMap {
-		secretItems = append(secretItems, secret)
+		secrets = append(secrets, secret)
 	}
-	var updateDatabaseMessage store.UpdateDatabaseMessage
-	updateDatabaseMessage.Secrets = &storepb.Secrets{
-		Items: secretItems,
+
+	metadata, ok := proto.Clone(database.Metadata).(*storepb.DatabaseMetadata)
+	if !ok {
+		return nil, errors.Errorf("failed to convert database metadata type")
 	}
-	updateDatabaseMessage.InstanceID = database.InstanceID
-	updateDatabaseMessage.DatabaseName = database.DatabaseName
-	if _, err := s.store.UpdateDatabase(ctx, &updateDatabaseMessage); err != nil {
+	metadata.Secrets = secrets
+	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+		Metadata:     metadata,
+	}); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -1234,7 +1219,7 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 	return &v1pb.Database{
 		Name:                 common.FormatDatabase(database.InstanceID, database.DatabaseName),
 		State:                convertDeletedToState(database.Deleted),
-		SuccessfulSyncTime:   timestamppb.New(database.SyncAt),
+		SuccessfulSyncTime:   database.Metadata.GetLastSyncTime(),
 		Project:              common.FormatProject(database.ProjectID),
 		Environment:          environment,
 		EffectiveEnvironment: effectiveEnvironment,
@@ -1250,26 +1235,22 @@ type metadataFilter struct {
 	table  string
 }
 
-func stripeAndConvertToServiceSecrets(secrets *storepb.Secrets, instanceID, databaseName string) []*v1pb.Secret {
-	var serviceSecrets []*v1pb.Secret
-	if secrets == nil || len(secrets.Items) == 0 {
-		return serviceSecrets
+func convertToV1Secrets(secrets []*storepb.Secret, instanceID, databaseName string) []*v1pb.Secret {
+	var v1Secrets []*v1pb.Secret
+	for _, secret := range secrets {
+		v1Secrets = append(v1Secrets, convertToV1Secret(secret, instanceID, databaseName))
 	}
-	for _, secret := range secrets.Items {
-		serviceSecrets = append(serviceSecrets, stripeAndConvertToServiceSecret(secret, instanceID, databaseName))
-	}
-	return serviceSecrets
+	return v1Secrets
 }
 
-func stripeAndConvertToServiceSecret(secretEntry *storepb.SecretItem, instanceID, databaseName string) *v1pb.Secret {
+func convertToV1Secret(secret *storepb.Secret, instanceID, databaseName string) *v1pb.Secret {
 	return &v1pb.Secret{
-		Name:        fmt.Sprintf("%s%s/%s%s/%s%s", common.InstanceNamePrefix, instanceID, common.DatabaseIDPrefix, databaseName, common.SecretNamePrefix, secretEntry.Name),
+		Name:        fmt.Sprintf("%s%s/%s%s/%s%s", common.InstanceNamePrefix, instanceID, common.DatabaseIDPrefix, databaseName, common.SecretNamePrefix, secret.Name),
 		Value:       "", /* stripped */
-		Description: secretEntry.Description,
+		Description: secret.Description,
 	}
 }
-
-func isSecretValid(secret *storepb.SecretItem) error {
+func isSecretValid(secret *storepb.Secret) error {
 	// Names can not be empty.
 	if secret.Name == "" {
 		return errors.Errorf("invalid secret name: %s, name can not be empty", secret.Name)

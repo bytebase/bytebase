@@ -47,7 +47,7 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 		databaseName = database.DatabaseName
 	}
 	datashare := false
-	if database != nil && database.DataShare {
+	if database != nil && database.Metadata.GetDatashare() {
 		datashare = true
 	}
 	return d.GetDataSourceDriver(ctx, instance, dataSource, databaseName, datashare, false /* readOnly */, connectionContext)
