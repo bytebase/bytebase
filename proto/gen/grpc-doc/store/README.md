@@ -105,8 +105,7 @@
     - [ProcedureMetadata](#bytebase-store-ProcedureMetadata)
     - [SchemaCatalog](#bytebase-store-SchemaCatalog)
     - [SchemaMetadata](#bytebase-store-SchemaMetadata)
-    - [SecretItem](#bytebase-store-SecretItem)
-    - [Secrets](#bytebase-store-Secrets)
+    - [Secret](#bytebase-store-Secret)
     - [SequenceMetadata](#bytebase-store-SequenceMetadata)
     - [StreamMetadata](#bytebase-store-StreamMetadata)
     - [TableCatalog](#bytebase-store-TableCatalog)
@@ -1467,6 +1466,8 @@ DatabaseMetadata is the metadata for databases.
 | labels | [DatabaseMetadata.LabelsEntry](#bytebase-store-DatabaseMetadata-LabelsEntry) | repeated |  |
 | last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | backup_available | [bool](#bool) |  |  |
+| datashare | [bool](#bool) |  |  |
+| secrets | [Secret](#bytebase-store-Secret) | repeated |  |
 
 
 
@@ -1911,9 +1912,9 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 
 
 
-<a name="bytebase-store-SecretItem"></a>
+<a name="bytebase-store-Secret"></a>
 
-### SecretItem
+### Secret
 
 
 
@@ -1922,21 +1923,6 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | name | [string](#string) |  | The name is the name of the secret. |
 | value | [string](#string) |  | The value is the value of the secret. |
 | description | [string](#string) |  | The description is the description of the secret. |
-
-
-
-
-
-
-<a name="bytebase-store-Secrets"></a>
-
-### Secrets
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| items | [SecretItem](#bytebase-store-SecretItem) | repeated | The list of secrets. |
 
 
 
