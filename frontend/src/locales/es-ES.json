@@ -1727,7 +1727,6 @@
     "to-enable-admin-mode": "para habilitar el modo administrador",
     "notify-empty-statement": "Ingrese sus declaraciones SQL en el editor",
     "goto-edit-schema-hint": "Seleccione una conexión de base de datos desde la parte superior del editor",
-    "notify-invalid-sql-statement": "Declaración SQL inválida.",
     "can-not-execute-query": "No se puede ejecutar la consulta al cargar datos.",
     "rows": "fila | filas",
     "vertical-display": "Pantalla vertical",
