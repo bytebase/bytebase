@@ -18,6 +18,8 @@ export interface DatabaseMetadata {
   labels: { [key: string]: string };
   lastSyncTime: Timestamp | undefined;
   backupAvailable: boolean;
+  datashare: boolean;
+  secrets: Secret[];
 }
 
 export interface DatabaseMetadata_LabelsEntry {
@@ -932,12 +934,7 @@ export interface InstanceRoleMetadata {
   grant: string;
 }
 
-export interface Secrets {
-  /** The list of secrets. */
-  items: SecretItem[];
-}
-
-export interface SecretItem {
+export interface Secret {
   /** The name is the name of the secret. */
   name: string;
   /** The value is the value of the secret. */
@@ -1092,7 +1089,7 @@ export interface ObjectSchema_ArrayKind {
 }
 
 function createBaseDatabaseMetadata(): DatabaseMetadata {
-  return { labels: {}, lastSyncTime: undefined, backupAvailable: false };
+  return { labels: {}, lastSyncTime: undefined, backupAvailable: false, datashare: false, secrets: [] };
 }
 
 export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
@@ -1105,6 +1102,12 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
     }
     if (message.backupAvailable !== false) {
       writer.uint32(24).bool(message.backupAvailable);
+    }
+    if (message.datashare !== false) {
+      writer.uint32(32).bool(message.datashare);
+    }
+    for (const v of message.secrets) {
+      Secret.encode(v!, writer.uint32(42).fork()).join();
     }
     return writer;
   },
@@ -1143,6 +1146,22 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
           message.backupAvailable = reader.bool();
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.datashare = reader.bool();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.secrets.push(Secret.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1162,6 +1181,8 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
         : {},
       lastSyncTime: isSet(object.lastSyncTime) ? fromJsonTimestamp(object.lastSyncTime) : undefined,
       backupAvailable: isSet(object.backupAvailable) ? globalThis.Boolean(object.backupAvailable) : false,
+      datashare: isSet(object.datashare) ? globalThis.Boolean(object.datashare) : false,
+      secrets: globalThis.Array.isArray(object?.secrets) ? object.secrets.map((e: any) => Secret.fromJSON(e)) : [],
     };
   },
 
@@ -1182,6 +1203,12 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
     if (message.backupAvailable !== false) {
       obj.backupAvailable = message.backupAvailable;
     }
+    if (message.datashare !== false) {
+      obj.datashare = message.datashare;
+    }
+    if (message.secrets?.length) {
+      obj.secrets = message.secrets.map((e) => Secret.toJSON(e));
+    }
     return obj;
   },
 
@@ -1200,6 +1227,8 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
       ? Timestamp.fromPartial(object.lastSyncTime)
       : undefined;
     message.backupAvailable = object.backupAvailable ?? false;
+    message.datashare = object.datashare ?? false;
+    message.secrets = object.secrets?.map((e) => Secret.fromPartial(e)) || [];
     return message;
   },
 };
@@ -5777,72 +5806,12 @@ export const InstanceRoleMetadata: MessageFns<InstanceRoleMetadata> = {
   },
 };
 
-function createBaseSecrets(): Secrets {
-  return { items: [] };
-}
-
-export const Secrets: MessageFns<Secrets> = {
-  encode(message: Secrets, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.items) {
-      SecretItem.encode(v!, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Secrets {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSecrets();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.items.push(SecretItem.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Secrets {
-    return {
-      items: globalThis.Array.isArray(object?.items) ? object.items.map((e: any) => SecretItem.fromJSON(e)) : [],
-    };
-  },
-
-  toJSON(message: Secrets): unknown {
-    const obj: any = {};
-    if (message.items?.length) {
-      obj.items = message.items.map((e) => SecretItem.toJSON(e));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Secrets>): Secrets {
-    return Secrets.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Secrets>): Secrets {
-    const message = createBaseSecrets();
-    message.items = object.items?.map((e) => SecretItem.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseSecretItem(): SecretItem {
+function createBaseSecret(): Secret {
   return { name: "", value: "", description: "" };
 }
 
-export const SecretItem: MessageFns<SecretItem> = {
-  encode(message: SecretItem, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Secret: MessageFns<Secret> = {
+  encode(message: Secret, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
@@ -5855,10 +5824,10 @@ export const SecretItem: MessageFns<SecretItem> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): SecretItem {
+  decode(input: BinaryReader | Uint8Array, length?: number): Secret {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSecretItem();
+    const message = createBaseSecret();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -5895,7 +5864,7 @@ export const SecretItem: MessageFns<SecretItem> = {
     return message;
   },
 
-  fromJSON(object: any): SecretItem {
+  fromJSON(object: any): Secret {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       value: isSet(object.value) ? globalThis.String(object.value) : "",
@@ -5903,7 +5872,7 @@ export const SecretItem: MessageFns<SecretItem> = {
     };
   },
 
-  toJSON(message: SecretItem): unknown {
+  toJSON(message: Secret): unknown {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
@@ -5917,11 +5886,11 @@ export const SecretItem: MessageFns<SecretItem> = {
     return obj;
   },
 
-  create(base?: DeepPartial<SecretItem>): SecretItem {
-    return SecretItem.fromPartial(base ?? {});
+  create(base?: DeepPartial<Secret>): Secret {
+    return Secret.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<SecretItem>): SecretItem {
-    const message = createBaseSecretItem();
+  fromPartial(object: DeepPartial<Secret>): Secret {
+    const message = createBaseSecret();
     message.name = object.name ?? "";
     message.value = object.value ?? "";
     message.description = object.description ?? "";
