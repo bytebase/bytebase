@@ -74,6 +74,7 @@
     - [DataSourceExternalSecret.SecretType](#bytebase-store-DataSourceExternalSecret-SecretType)
     - [DataSourceOptions.AuthenticationType](#bytebase-store-DataSourceOptions-AuthenticationType)
     - [DataSourceOptions.RedisType](#bytebase-store-DataSourceOptions-RedisType)
+    - [DataSourceType](#bytebase-store-DataSourceType)
   
 - [store/database.proto](#store_database-proto)
     - [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata)
@@ -1154,6 +1155,16 @@ Metadata about the request.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| type | [DataSourceType](#bytebase-store-DataSourceType) |  |  |
+| host | [string](#string) |  |  |
+| port | [string](#string) |  |  |
+| username | [string](#string) |  |  |
+| obfuscated_password | [string](#string) |  |  |
+| database | [string](#string) |  |  |
+| obfuscated_ssl_key | [string](#string) |  |  |
+| obfuscated_ssl_cert | [string](#string) |  |  |
+| obfuscated_ssl_ca | [string](#string) |  |  |
 | srv | [bool](#bool) |  | srv is a boolean flag that indicates whether the host is a DNS SRV record. |
 | authentication_database | [string](#string) |  | authentication_database is the database name to authenticate against, which stores the user credentials. |
 | sid | [string](#string) |  | sid and service_name are used for Oracle. |
@@ -1339,6 +1350,19 @@ Metadata about the request.
 | STANDALONE | 1 |  |
 | SENTINEL | 2 |  |
 | CLUSTER | 3 |  |
+
+
+
+<a name="bytebase-store-DataSourceType"></a>
+
+### DataSourceType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DATA_SOURCE_UNSPECIFIED | 0 |  |
+| ADMIN | 1 |  |
+| READ_ONLY | 2 |  |
 
 
  

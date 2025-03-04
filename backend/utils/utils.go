@@ -31,9 +31,9 @@ import (
 )
 
 // DataSourceFromInstanceWithType gets a typed data source from an instance.
-func DataSourceFromInstanceWithType(instance *store.InstanceMessage, dataSourceType api.DataSourceType) *store.DataSourceMessage {
+func DataSourceFromInstanceWithType(instance *store.InstanceMessage, dataSourceType storepb.DataSourceType) *store.DataSourceMessage {
 	for _, dataSource := range instance.DataSources {
-		if dataSource.Type == dataSourceType {
+		if dataSource.Options.GetType() == dataSourceType {
 			return dataSource
 		}
 	}

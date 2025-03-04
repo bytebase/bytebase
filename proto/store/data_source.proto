@@ -4,6 +4,132 @@ package bytebase.store;
 
 option go_package = "generated-go/store";
 
+message DataSourceOptions {
+  string id = 1;
+  DataSourceType type = 2;
+  string host = 3;
+  string port = 4;
+  string username = 5;
+  string obfuscated_password = 6;
+  string database = 7;
+  string obfuscated_ssl_key = 8;
+  string obfuscated_ssl_cert = 9;
+  string obfuscated_ssl_ca = 10;
+
+  // srv is a boolean flag that indicates whether the host is a DNS SRV record.
+  bool srv = 11;
+
+  // authentication_database is the database name to authenticate against, which stores the user credentials.
+  string authentication_database = 12;
+
+  // sid and service_name are used for Oracle.
+  string sid = 13;
+  string service_name = 14;
+  // SSH related
+  // The hostname of the SSH server agent.
+  string ssh_host = 15;
+  // The port of the SSH server agent. It's 22 typically.
+  string ssh_port = 16;
+  // The user to login the server.
+  string ssh_user = 17;
+  // The password to login the server. If it's empty string, no password is required.
+  string ssh_obfuscated_password = 18;
+  // The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK").
+  string ssh_obfuscated_private_key = 19;
+
+  // PKCS#8 private key in PEM format. If it's empty string, no private key is required.
+  // Used for authentication when connecting to the data source.
+  string authentication_private_key_obfuscated = 20;
+
+  DataSourceExternalSecret external_secret = 21;
+
+  enum AuthenticationType {
+    AUTHENTICATION_UNSPECIFIED = 0;
+    PASSWORD = 1;
+    GOOGLE_CLOUD_SQL_IAM = 2;
+    AWS_RDS_IAM = 3;
+    AZURE_IAM = 4;
+  }
+
+  AuthenticationType authentication_type = 22;
+
+  message ClientSecretCredential {
+    string tenant_id = 1;
+    string client_id = 2;
+    string client_secret = 3;
+  }
+  oneof iam_extension {
+    ClientSecretCredential client_secret_credential = 23;
+  }
+
+  SASLConfig sasl_config = 24;
+
+  message Address {
+    string host = 1;
+    string port = 2;
+  }
+  // additional_addresses is used for MongoDB replica set.
+  repeated Address additional_addresses = 25;
+  // replica_set is used for MongoDB replica set.
+  string replica_set = 26;
+
+  // direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.
+  bool direct_connection = 27;
+
+  // region is the location of where the DB is, works for AWS RDS. For example, us-east-1.
+  string region = 28;
+
+  // warehouse_id is used by Databricks.
+  string warehouse_id = 29;
+
+  // master_name is the master name used by connecting redis-master via redis sentinel.
+  string master_name = 30;
+
+  // master_username and master_obfuscated_password are master credentials used by redis sentinel mode.
+  string master_username = 31;
+  string master_obfuscated_password = 32;
+
+  enum RedisType {
+    REDIS_TYPE_UNSPECIFIED = 0;
+    STANDALONE = 1;
+    SENTINEL = 2;
+    CLUSTER = 3;
+  }
+  RedisType redis_type = 33;
+
+  // Use SSL to connect to the data source. By default, we use system default SSL configuration.
+  bool use_ssl = 34;
+
+  // Cluster is the cluster name for the data source. Used by CockroachDB.
+  string cluster = 35;
+
+  // Extra connection parameters for the database connection.
+  // For PostgreSQL HA, this can be used to set target_session_attrs=read-write
+  map<string, string> extra_connection_parameters = 36;
+}
+
+message SASLConfig {
+  oneof mechanism {
+    KerberosConfig krb_config = 1;
+  }
+}
+
+message KerberosConfig {
+  string primary = 1;
+  string instance = 2;
+  string realm = 3;
+  bytes keytab = 4;
+  string kdc_host = 5;
+  string kdc_port = 6;
+  string kdc_transport_protocol = 7;
+}
+
+enum DataSourceType {
+  DATA_SOURCE_UNSPECIFIED = 0;
+  ADMIN = 1;
+  READ_ONLY = 2;
+}
+
 message DataSourceExternalSecret {
   enum SecretType {
     SAECRET_TYPE_UNSPECIFIED = 0;
@@ -54,113 +180,4 @@ message DataSourceExternalSecret {
   string secret_name = 7;
   // the key name for the password.
   string password_key_name = 8;
-}
-
-message DataSourceOptions {
-  // srv is a boolean flag that indicates whether the host is a DNS SRV record.
-  bool srv = 1;
-
-  // authentication_database is the database name to authenticate against, which stores the user credentials.
-  string authentication_database = 2;
-
-  // sid and service_name are used for Oracle.
-  string sid = 3;
-  string service_name = 4;
-  // SSH related
-  // The hostname of the SSH server agent.
-  string ssh_host = 5;
-  // The port of the SSH server agent. It's 22 typically.
-  string ssh_port = 6;
-  // The user to login the server.
-  string ssh_user = 7;
-  // The password to login the server. If it's empty string, no password is required.
-  string ssh_obfuscated_password = 8;
-  // The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK").
-  string ssh_obfuscated_private_key = 9;
-
-  // PKCS#8 private key in PEM format. If it's empty string, no private key is required.
-  // Used for authentication when connecting to the data source.
-  string authentication_private_key_obfuscated = 10;
-
-  DataSourceExternalSecret external_secret = 11;
-
-  enum AuthenticationType {
-    AUTHENTICATION_UNSPECIFIED = 0;
-    PASSWORD = 1;
-    GOOGLE_CLOUD_SQL_IAM = 2;
-    AWS_RDS_IAM = 3;
-    AZURE_IAM = 4;
-  }
-
-  AuthenticationType authentication_type = 12;
-
-  message ClientSecretCredential {
-    string tenant_id = 1;
-    string client_id = 2;
-    string client_secret = 3;
-  }
-  oneof iam_extension {
-    ClientSecretCredential client_secret_credential = 26;
-  }
-
-  SASLConfig sasl_config = 13;
-
-  message Address {
-    string host = 1;
-    string port = 2;
-  }
-  // additional_addresses is used for MongoDB replica set.
-  repeated Address additional_addresses = 14;
-  // replica_set is used for MongoDB replica set.
-  string replica_set = 15;
-
-  // direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.
-  bool direct_connection = 16;
-
-  // region is the location of where the DB is, works for AWS RDS. For example, us-east-1.
-  string region = 17;
-
-  // warehouse_id is used by Databricks.
-  string warehouse_id = 19;
-
-  // master_name is the master name used by connecting redis-master via redis sentinel.
-  string master_name = 20;
-
-  // master_username and master_obfuscated_password are master credentials used by redis sentinel mode.
-  string master_username = 21;
-  string master_obfuscated_password = 22;
-
-  enum RedisType {
-    REDIS_TYPE_UNSPECIFIED = 0;
-    STANDALONE = 1;
-    SENTINEL = 2;
-    CLUSTER = 3;
-  }
-  RedisType redis_type = 23;
-
-  // Use SSL to connect to the data source. By default, we use system default SSL configuration.
-  bool use_ssl = 24;
-
-  // Cluster is the cluster name for the data source. Used by CockroachDB.
-  string cluster = 25;
-
-  // Extra connection parameters for the database connection.
-  // For PostgreSQL HA, this can be used to set target_session_attrs=read-write
-  map<string, string> extra_connection_parameters = 27;
-}
-
-message SASLConfig {
-  oneof mechanism {
-    KerberosConfig krb_config = 1;
-  }
-}
-
-message KerberosConfig {
-  string primary = 1;
-  string instance = 2;
-  string realm = 3;
-  bytes keytab = 4;
-  string kdc_host = 5;
-  string kdc_port = 6;
-  string kdc_transport_protocol = 7;
 }

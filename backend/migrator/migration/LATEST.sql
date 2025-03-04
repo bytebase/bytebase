@@ -166,20 +166,8 @@ ALTER SEQUENCE db_schema_id_seq RESTART WITH 101;
 CREATE TABLE data_source (
     id serial PRIMARY KEY,
     instance text NOT NULL REFERENCES instance(resource_id),
-    name text NOT NULL,
-    type text NOT NULL CHECK (type IN ('ADMIN', 'RW', 'RO')),
-    username text NOT NULL,
-    password text NOT NULL,
-    ssl_key text NOT NULL DEFAULT '',
-    ssl_cert text NOT NULL DEFAULT '',
-    ssl_ca text NOT NULL DEFAULT '',
-    host text NOT NULL DEFAULT '',
-    port text NOT NULL DEFAULT '',
-    options jsonb NOT NULL DEFAULT '{}',
-    database text NOT NULL DEFAULT ''
+    options jsonb NOT NULL DEFAULT '{}'
 );
-
-CREATE UNIQUE INDEX idx_data_source_unique_instance_name ON data_source(instance, name);
 
 ALTER SEQUENCE data_source_id_seq RESTART WITH 101;
 
