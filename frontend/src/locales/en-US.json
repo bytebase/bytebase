@@ -526,6 +526,13 @@
           "self": "Maximum SQL result size",
           "description": "Limit the output SQL query result size."
         },
+        "query-data-policy": {
+          "timeout": {
+            "self": "Maximum query time",
+            "description": "The maximum time allowed for a query to run in SQL Editor.",
+            "no-time-limit": "No time limit for queries when set to 0."
+          }
+        },
         "domain-restriction": {
           "self": "Workspace Domain",
           "description": "Specify the domain that could be used as the email domain for workspace members.",

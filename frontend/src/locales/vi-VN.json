@@ -526,6 +526,13 @@
           "self": "Kích thước kết quả SQL tối đa",
           "description": "Giới hạn kích thước kết quả truy vấn SQL đầu ra."
         },
+        "query-data-policy": {
+          "timeout": {
+            "self": "Thời gian truy vấn tối đa",
+            "description": "Thời gian tối đa được phép chạy truy vấn trong SQL Editor.",
+            "no-time-limit": "Không giới hạn thời gian cho truy vấn khi đặt thành 0."
+          }
+        },
         "domain-restriction": {
           "self": "Tên miền không gian làm việc",
           "description": "Chỉ định tên miền có thể được sử dụng làm miền email cho các thành viên không gian làm việc.",
