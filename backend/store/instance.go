@@ -43,10 +43,9 @@ type UpdateInstanceMessage struct {
 	EngineVersion *string
 	Activation    *bool
 	// OptionsUpsert upserts the top-level messages of the instance options.
-	OptionsUpsert       *storepb.InstanceOptions
-	Metadata            *storepb.InstanceMetadata
-	UpdateEnvironmentID bool
-	EnvironmentID       string
+	OptionsUpsert *storepb.InstanceOptions
+	Metadata      *storepb.InstanceMetadata
+	EnvironmentID *string
 }
 
 // FindInstanceMessage is the message for finding instances.
@@ -217,12 +216,8 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
 	}
-	if patch.UpdateEnvironmentID {
-		var environment *string
-		if patch.EnvironmentID != "" {
-			environment = &patch.EnvironmentID
-		}
-		set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, environment)
+	if v := patch.EnvironmentID; v != nil {
+		set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.ExternalLink; v != nil {
 		set, args = append(set, fmt.Sprintf("external_link = $%d", len(args)+1)), append(args, *v)
