@@ -18,7 +18,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/ghost"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -90,7 +89,7 @@ func (exec *SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, driverCtx co
 			return err
 		}
 
-		adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
+		adminDataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)
 		if adminDataSource == nil {
 			return common.Errorf(common.Internal, "admin data source not found for instance %s", instance.ResourceID)
 		}

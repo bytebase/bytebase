@@ -17,7 +17,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -458,8 +457,8 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 
 		return result, nil
 	case storepb.Engine_SNOWFLAKE:
-		dataSource := utils.DataSourceFromInstanceWithType(instance, api.RO)
-		adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
+		dataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_READ_ONLY)
+		adminDataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)
 		// If there are no read-only data source, fall back to admin data source.
 		if dataSource == nil {
 			dataSource = adminDataSource
@@ -526,8 +525,8 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 		}
 		return result, nil
 	case storepb.Engine_MSSQL:
-		dataSource := utils.DataSourceFromInstanceWithType(instance, api.RO)
-		adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
+		dataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_READ_ONLY)
+		adminDataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)
 		// If there are no read-only data source, fall back to admin data source.
 		if dataSource == nil {
 			dataSource = adminDataSource

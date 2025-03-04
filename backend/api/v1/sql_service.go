@@ -193,7 +193,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	if err != nil {
 		return nil, err
 	}
-	driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, database.DatabaseName, database.Metadata.GetDatashare(), dataSource.Type == api.RO /* readOnly */, db.ConnectionContext{})
+	driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, database.DatabaseName, database.Metadata.GetDatashare(), dataSource.Options.GetType() == storepb.DataSourceType_READ_ONLY, db.ConnectionContext{})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get database driver: %v", err)
 	}
@@ -1087,7 +1087,7 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine store
 			}
 			if instanceMeta != nil {
 				for _, dataSource := range instanceMeta.DataSources {
-					if strings.Contains(linkedMeta.GetHost(), dataSource.Host) {
+					if strings.Contains(linkedMeta.GetHost(), dataSource.Options.GetHost()) {
 						linkedDatabase = database
 						break
 					}
@@ -1874,12 +1874,12 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 				return nil, status.Newf(codes.Internal, "failed to list data sources: %v", err)
 			}
 			for _, ds := range dataSources {
-				if ds.Type == api.RO {
+				if ds.Options.GetType() == storepb.DataSourceType_READ_ONLY {
 					return ds, nil
 				}
 			}
 			for _, ds := range dataSources {
-				if ds.Type == api.Admin {
+				if ds.Options.GetType() == storepb.DataSourceType_ADMIN {
 					return ds, nil
 				}
 			}
@@ -1888,7 +1888,7 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 
 		dataSource, err := storeInstance.GetDataSource(ctx, &store.FindDataSourceMessage{
 			InstanceID: &database.InstanceID,
-			Name:       &dataSourceID,
+			ID:         &dataSourceID,
 		})
 		if err != nil {
 			return nil, status.Newf(codes.Internal, "failed to get data source: %v", err)
@@ -1903,7 +1903,7 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 	}
 
 	// Always allow non-admin data source.
-	if dataSource.Type != api.Admin {
+	if dataSource.Options.GetType() != storepb.DataSourceType_ADMIN {
 		return dataSource, nil
 	}
 
@@ -1956,17 +1956,17 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 	if envAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_DISALLOW || projectAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_DISALLOW {
 		return nil, status.Errorf(codes.PermissionDenied, "data source %q is not queryable", dataSourceID)
 	} else if envAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_FALLBACK || projectAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_FALLBACK {
-		readOnlyDataSourceType := api.RO
-		readOnlyDataSources, err := storeInstance.ListDataSourcesV2(ctx, &store.FindDataSourceMessage{
+		dataSources, err := storeInstance.ListDataSourcesV2(ctx, &store.FindDataSourceMessage{
 			InstanceID: &database.InstanceID,
-			Type:       &readOnlyDataSourceType,
 		})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to list read-only data sources")
 		}
 		// If there is any read-only data source, then return false.
-		if len(readOnlyDataSources) > 0 {
-			return nil, status.Errorf(codes.PermissionDenied, "data source %q is not queryable", dataSourceID)
+		for _, ds := range dataSources {
+			if ds.Options.Type == storepb.DataSourceType_READ_ONLY {
+				return nil, status.Errorf(codes.PermissionDenied, "data source %q is not queryable", dataSourceID)
+			}
 		}
 	}
 

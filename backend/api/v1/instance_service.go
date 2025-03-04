@@ -142,13 +142,13 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	if request.ValidateOnly {
 		for _, ds := range instanceMessage.DataSources {
 			err := func() error {
-				driver, err := s.dbFactory.GetDataSourceDriver(ctx, instanceMessage, ds, "", false /* datashare */, ds.Type == api.RO, db.ConnectionContext{})
+				driver, err := s.dbFactory.GetDataSourceDriver(ctx, instanceMessage, ds, "", false /* datashare */, ds.Options.GetType() == storepb.DataSourceType_READ_ONLY, db.ConnectionContext{})
 				if err != nil {
 					return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
 				}
 				defer driver.Close(ctx)
 				if err := driver.Ping(ctx); err != nil {
-					return status.Errorf(codes.InvalidArgument, "invalid datasource %s, error %s", ds.Type, err)
+					return status.Errorf(codes.InvalidArgument, "invalid datasource %s, error %s", ds.Options.GetType(), err)
 				}
 				return nil
 			}()
@@ -214,27 +214,27 @@ func (s *InstanceService) checkInstanceDataSources(instance *store.InstanceMessa
 		if err := s.checkDataSource(instance, ds); err != nil {
 			return err
 		}
-		if dsIDMap[ds.ID] {
-			return status.Errorf(codes.InvalidArgument, `duplicate data source id "%s"`, ds.ID)
+		if dsIDMap[ds.Options.GetId()] {
+			return status.Errorf(codes.InvalidArgument, `duplicate data source id "%s"`, ds.Options.GetId())
 		}
-		dsIDMap[ds.ID] = true
+		dsIDMap[ds.Options.GetId()] = true
 	}
 
 	return nil
 }
 
 func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataSource *store.DataSourceMessage) error {
-	if dataSource.ID == "" {
+	if dataSource.Options.GetId() == "" {
 		return status.Errorf(codes.InvalidArgument, "data source id is required")
 	}
-	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, s.secret)
+	password, err := common.Unobfuscate(dataSource.Options.GetObfuscatedPassword(), s.secret)
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}
 
 	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureExternalSecretManager, instance); err != nil {
 		missingFeatureError := status.Error(codes.PermissionDenied, err.Error())
-		if dataSource.ExternalSecret != nil {
+		if dataSource.Options.GetExternalSecret() != nil {
 			return missingFeatureError
 		}
 		if ok, _ := secret.GetExternalSecretURL(password); !ok {
@@ -648,7 +648,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
 	}
 	for _, ds := range instance.DataSources {
-		if ds.ID == request.DataSource.Id {
+		if ds.Options.GetId() == request.DataSource.Id {
 			return nil, status.Errorf(codes.NotFound, "data source already exists with the same name")
 		}
 	}
@@ -659,13 +659,13 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	// Test connection.
 	if request.ValidateOnly {
 		err := func() error {
-			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, "", false /* datashare */, dataSource.Type == api.RO, db.ConnectionContext{})
+			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, "", false /* datashare */, dataSource.Options.GetType() == storepb.DataSourceType_READ_ONLY, db.ConnectionContext{})
 			if err != nil {
 				return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
 			}
 			defer driver.Close(ctx)
 			if err := driver.Ping(ctx); err != nil {
-				return status.Errorf(codes.InvalidArgument, "invalid datasource %s, error %s", dataSource.Type, err)
+				return status.Errorf(codes.InvalidArgument, "invalid datasource %s, error %s", dataSource.Options.GetType(), err)
 			}
 			return nil
 		}()
@@ -713,7 +713,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	var dataSource store.DataSourceMessage
 	found := false
 	for _, ds := range instance.DataSources {
-		if ds.ID == request.DataSource.Id {
+		if ds.Options.GetId() == request.DataSource.Id {
 			dataSource = *ds
 			found = true
 			break
@@ -723,135 +723,103 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.NotFound, `cannot found data source "%s"`, request.DataSource.Id)
 	}
 
-	if dataSource.Type == api.RO {
+	if dataSource.Options.GetType() == storepb.DataSourceType_READ_ONLY {
 		if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureReadReplicaConnection, instance); err != nil {
 			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 	}
 
+	options, ok := proto.Clone(dataSource.Options).(*storepb.DataSourceOptions)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "failed to convert options type")
+	}
 	patch := &store.UpdateDataSourceMessage{
-		InstanceID:   instance.ResourceID,
-		DataSourceID: request.DataSource.Id,
+		InstanceID: instance.ResourceID,
+		ID:         request.DataSource.Id,
+		Options:    options,
 	}
 
+	hasSSH := false
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "username":
-			patch.Username = &request.DataSource.Username
-			dataSource.Username = *patch.Username
+			patch.Options.Username = request.DataSource.Username
 		case "password":
-			obfuscated := common.Obfuscate(request.DataSource.Password, s.secret)
-			patch.ObfuscatedPassword = &obfuscated
-			dataSource.ObfuscatedPassword = obfuscated
+			patch.Options.ObfuscatedPassword = common.Obfuscate(request.DataSource.Password, s.secret)
 		case "ssl_ca":
-			obfuscated := common.Obfuscate(request.DataSource.SslCa, s.secret)
-			patch.ObfuscatedSslCa = &obfuscated
-			dataSource.ObfuscatedSslCa = obfuscated
+			patch.Options.ObfuscatedSslCa = common.Obfuscate(request.DataSource.SslCa, s.secret)
 		case "ssl_cert":
-			obfuscated := common.Obfuscate(request.DataSource.SslCert, s.secret)
-			patch.ObfuscatedSslCert = &obfuscated
-			dataSource.ObfuscatedSslCert = obfuscated
+			patch.Options.ObfuscatedSslCert = common.Obfuscate(request.DataSource.SslCert, s.secret)
 		case "ssl_key":
-			obfuscated := common.Obfuscate(request.DataSource.SslKey, s.secret)
-			patch.ObfuscatedSslKey = &obfuscated
-			dataSource.ObfuscatedSslKey = obfuscated
+			patch.Options.ObfuscatedSslKey = common.Obfuscate(request.DataSource.SslKey, s.secret)
 		case "host":
-			patch.Host = &request.DataSource.Host
-			dataSource.Host = request.DataSource.Host
+			patch.Options.Host = request.DataSource.Host
 		case "port":
-			patch.Port = &request.DataSource.Port
-			dataSource.Port = request.DataSource.Port
+			patch.Options.Port = request.DataSource.Port
 		case "database":
-			patch.Database = &request.DataSource.Database
-			dataSource.Database = request.DataSource.Database
+			patch.Options.Database = request.DataSource.Database
 		case "srv":
-			patch.SRV = &request.DataSource.Srv
-			dataSource.SRV = request.DataSource.Srv
+			patch.Options.Srv = request.DataSource.Srv
 		case "authentication_database":
-			patch.AuthenticationDatabase = &request.DataSource.AuthenticationDatabase
-			dataSource.AuthenticationDatabase = request.DataSource.AuthenticationDatabase
+			patch.Options.AuthenticationDatabase = request.DataSource.AuthenticationDatabase
 		case "sid":
-			patch.SID = &request.DataSource.Sid
-			dataSource.SID = request.DataSource.Sid
+			patch.Options.Sid = request.DataSource.Sid
 		case "service_name":
-			patch.ServiceName = &request.DataSource.ServiceName
-			dataSource.ServiceName = request.DataSource.ServiceName
+			patch.Options.ServiceName = request.DataSource.ServiceName
 		case "ssh_host":
-			patch.SSHHost = &request.DataSource.SshHost
-			dataSource.SSHHost = request.DataSource.SshHost
+			patch.Options.SshHost = request.DataSource.SshHost
+			hasSSH = true
 		case "ssh_port":
-			patch.SSHPort = &request.DataSource.SshPort
-			dataSource.SSHPort = request.DataSource.SshPort
+			patch.Options.SshPort = request.DataSource.SshPort
+			hasSSH = true
 		case "ssh_user":
-			patch.SSHUser = &request.DataSource.SshUser
-			dataSource.SSHUser = request.DataSource.SshUser
+			patch.Options.SshUser = request.DataSource.SshUser
+			hasSSH = true
 		case "ssh_password":
-			obfuscated := common.Obfuscate(request.DataSource.SshPassword, s.secret)
-			patch.SSHObfuscatedPassword = &obfuscated
-			dataSource.SSHObfuscatedPassword = obfuscated
+			patch.Options.SshObfuscatedPassword = common.Obfuscate(request.DataSource.SshPassword, s.secret)
+			hasSSH = true
 		case "ssh_private_key":
-			obfuscated := common.Obfuscate(request.DataSource.SshPrivateKey, s.secret)
-			patch.SSHObfuscatedPrivateKey = &obfuscated
-			dataSource.SSHObfuscatedPrivateKey = obfuscated
+			patch.Options.SshObfuscatedPrivateKey = common.Obfuscate(request.DataSource.SshPrivateKey, s.secret)
+			hasSSH = true
 		case "authentication_private_key":
-			obfuscated := common.Obfuscate(request.DataSource.AuthenticationPrivateKey, s.secret)
-			patch.AuthenticationPrivateKeyObfuscated = &obfuscated
-			dataSource.AuthenticationPrivateKeyObfuscated = obfuscated
+			patch.Options.AuthenticationPrivateKeyObfuscated = common.Obfuscate(request.DataSource.AuthenticationPrivateKey, s.secret)
 		case "external_secret":
 			externalSecret, err := convertToStoreDataSourceExternalSecret(request.DataSource.ExternalSecret)
 			if err != nil {
 				return nil, err
 			}
-			dataSource.ExternalSecret = externalSecret
-			patch.ExternalSecret = externalSecret
-			patch.RemoveExternalSecret = externalSecret == nil
+			dataSource.Options.ExternalSecret = externalSecret
 		case "sasl_config":
-			dataSource.SASLConfig = convertToStoreDataSourceSaslConfig(request.DataSource.SaslConfig)
-			patch.SASLConfig = dataSource.SASLConfig
-			patch.RemoveSASLConfig = dataSource.SASLConfig == nil
+			patch.Options.SaslConfig = convertToStoreDataSourceSaslConfig(request.DataSource.SaslConfig)
 		case "authentication_type":
-			authType := convertToAuthenticationType(request.DataSource.AuthenticationType)
-			dataSource.AuthenticationType = authType
-			patch.AuthenticationType = &authType
+			dataSource.Options.AuthenticationType = convertToAuthenticationType(request.DataSource.AuthenticationType)
 		case "additional_addresses":
-			additionalAddresses := convertToStoreAdditionalAddresses(request.DataSource.AdditionalAddresses)
-			dataSource.AdditionalAddresses = additionalAddresses
-			patch.AdditionalAddress = &additionalAddresses
+			dataSource.Options.AdditionalAddresses = convertToStoreAdditionalAddresses(request.DataSource.AdditionalAddresses)
 		case "replica_set":
-			dataSource.ReplicaSet = request.DataSource.ReplicaSet
-			patch.ReplicaSet = &request.DataSource.ReplicaSet
+			dataSource.Options.ReplicaSet = request.DataSource.ReplicaSet
 		case "direct_connection":
-			dataSource.DirectConnection = request.DataSource.DirectConnection
-			patch.DirectConnection = &request.DataSource.DirectConnection
+			dataSource.Options.DirectConnection = request.DataSource.DirectConnection
 		case "region":
-			dataSource.Region = request.DataSource.Region
-			patch.Region = &request.DataSource.Region
+			dataSource.Options.Region = request.DataSource.Region
 		case "warehouse_id":
-			dataSource.WarehouseID = request.DataSource.WarehouseId
-			patch.WarehouseID = &request.DataSource.WarehouseId
+			dataSource.Options.WarehouseId = request.DataSource.WarehouseId
 		case "use_ssl":
-			dataSource.UseSSL = request.DataSource.UseSsl
-			patch.UseSSL = &request.DataSource.UseSsl
+			dataSource.Options.UseSsl = request.DataSource.UseSsl
 		case "redis_type":
-			redisType := convertToStoreRedisType(request.DataSource.RedisType)
-			dataSource.RedisType = redisType
-			patch.RedisType = &redisType
+			dataSource.Options.RedisType = convertToStoreRedisType(request.DataSource.RedisType)
 		case "master_name":
-			dataSource.MasterName = request.DataSource.MasterName
-			patch.MasterName = &request.DataSource.MasterName
+			dataSource.Options.MasterName = request.DataSource.MasterName
 		case "master_username":
-			dataSource.MasterUsername = request.DataSource.MasterUsername
-			patch.MasterUsername = &request.DataSource.MasterUsername
+			dataSource.Options.MasterUsername = request.DataSource.MasterUsername
 		case "master_password":
-			obfuscated := common.Obfuscate(request.DataSource.MasterPassword, s.secret)
-			dataSource.MasterObfuscatedPassword = obfuscated
-			patch.MasterObfuscatedPassword = &obfuscated
+			dataSource.Options.MasterObfuscatedPassword = common.Obfuscate(request.DataSource.MasterPassword, s.secret)
 		case "iam_extension":
 			if v := request.DataSource.IamExtension; v != nil {
 				switch v := v.(type) {
 				case *v1pb.DataSource_ClientSecretCredential_:
-					dataSource.ClientSecretCredential = convertToStoreClientSecretCredential(v.ClientSecretCredential)
-					patch.ClientSecretCredential = dataSource.ClientSecretCredential
+					patch.Options.IamExtension = &storepb.DataSourceOptions_ClientSecretCredential_{
+						ClientSecretCredential: convertToStoreClientSecretCredential(v.ClientSecretCredential),
+					}
 				default:
 				}
 			}
@@ -864,7 +832,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		return nil, err
 	}
 
-	if patch.SSHHost != nil || patch.SSHPort != nil || patch.SSHUser != nil || patch.SSHObfuscatedPassword != nil || patch.SSHObfuscatedPrivateKey != nil {
+	if hasSSH {
 		if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureInstanceSSHConnection, instance); err != nil {
 			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
@@ -873,13 +841,13 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	// Test connection.
 	if request.ValidateOnly {
 		err := func() error {
-			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, &dataSource, "", false /* datashare */, dataSource.Type == api.RO, db.ConnectionContext{})
+			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, &dataSource, "", false /* datashare */, dataSource.Options.GetType() == storepb.DataSourceType_READ_ONLY, db.ConnectionContext{})
 			if err != nil {
 				return status.Errorf(codes.Internal, "failed to get database driver with error: %v", err.Error())
 			}
 			defer driver.Close(ctx)
 			if err := driver.Ping(ctx); err != nil {
-				return status.Errorf(codes.InvalidArgument, "invalid datasource %s, error %s", dataSource.Type, err)
+				return status.Errorf(codes.InvalidArgument, "invalid datasource %s, error %s", dataSource.Options.GetType(), err)
 			}
 			return nil
 		}()
@@ -921,7 +889,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 	var dataSource store.DataSourceMessage
 	found := false
 	for _, ds := range instance.DataSources {
-		if ds.ID == request.DataSource.Id {
+		if ds.Options.GetId() == request.DataSource.Id {
 			dataSource = *ds
 			found = true
 			break
@@ -932,11 +900,11 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 	}
 
 	// We only support remove RO type datasource to instance now, see more details in instance_service.proto.
-	if dataSource.Type != api.RO {
+	if dataSource.Options.GetType() != storepb.DataSourceType_READ_ONLY {
 		return nil, status.Errorf(codes.InvalidArgument, "only support remove read-only data source")
 	}
 
-	if err := s.store.RemoveDataSourceV2(ctx, instance.ResourceID, dataSource.ID); err != nil {
+	if err := s.store.RemoveDataSourceV2(ctx, instance.ResourceID, dataSource.Options.GetId()); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -1161,21 +1129,21 @@ func convertToV1DataSourceExternalSecret(externalSecret *storepb.DataSourceExter
 func convertToV1DataSources(dataSources []*store.DataSourceMessage) ([]*v1pb.DataSource, error) {
 	dataSourceList := []*v1pb.DataSource{}
 	for _, ds := range dataSources {
-		externalSecret, err := convertToV1DataSourceExternalSecret(ds.ExternalSecret)
+		externalSecret, err := convertToV1DataSourceExternalSecret(ds.Options.GetExternalSecret())
 		if err != nil {
 			return nil, err
 		}
 
 		dataSourceType := v1pb.DataSourceType_DATA_SOURCE_UNSPECIFIED
-		switch ds.Type {
-		case api.Admin:
+		switch ds.Options.GetType() {
+		case storepb.DataSourceType_ADMIN:
 			dataSourceType = v1pb.DataSourceType_ADMIN
-		case api.RO:
+		case storepb.DataSourceType_READ_ONLY:
 			dataSourceType = v1pb.DataSourceType_READ_ONLY
 		}
 
 		authenticationType := v1pb.DataSource_AUTHENTICATION_UNSPECIFIED
-		switch ds.AuthenticationType {
+		switch ds.Options.GetAuthenticationType() {
 		case storepb.DataSourceOptions_AUTHENTICATION_UNSPECIFIED, storepb.DataSourceOptions_PASSWORD:
 			authenticationType = v1pb.DataSource_PASSWORD
 		case storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM:
@@ -1187,31 +1155,31 @@ func convertToV1DataSources(dataSources []*store.DataSourceMessage) ([]*v1pb.Dat
 		}
 
 		dataSource := &v1pb.DataSource{
-			Id:       ds.ID,
+			Id:       ds.Options.GetId(),
 			Type:     dataSourceType,
-			Username: ds.Username,
+			Username: ds.Options.GetUsername(),
 			// We don't return the password and SSLs on reads.
-			Host:                   ds.Host,
-			Port:                   ds.Port,
-			Database:               ds.Database,
-			Srv:                    ds.SRV,
-			AuthenticationDatabase: ds.AuthenticationDatabase,
-			Sid:                    ds.SID,
-			ServiceName:            ds.ServiceName,
+			Host:                   ds.Options.GetHost(),
+			Port:                   ds.Options.GetPort(),
+			Database:               ds.Options.GetDatabase(),
+			Srv:                    ds.Options.GetSrv(),
+			AuthenticationDatabase: ds.Options.GetAuthenticationDatabase(),
+			Sid:                    ds.Options.GetSid(),
+			ServiceName:            ds.Options.GetServiceName(),
 			ExternalSecret:         externalSecret,
 			AuthenticationType:     authenticationType,
-			SaslConfig:             convertToV1DataSourceSaslConfig(ds.SASLConfig),
-			AdditionalAddresses:    convertToV1DataSourceAddresses(ds.AdditionalAddresses),
-			ReplicaSet:             ds.ReplicaSet,
-			DirectConnection:       ds.DirectConnection,
-			Region:                 ds.Region,
-			WarehouseId:            ds.WarehouseID,
-			UseSsl:                 ds.UseSSL,
-			RedisType:              convertToV1RedisType(ds.RedisType),
-			MasterName:             ds.MasterName,
-			MasterUsername:         ds.MasterUsername,
+			SaslConfig:             convertToV1DataSourceSaslConfig(ds.Options.GetSaslConfig()),
+			AdditionalAddresses:    convertToV1DataSourceAddresses(ds.Options.GetAdditionalAddresses()),
+			ReplicaSet:             ds.Options.GetReplicaSet(),
+			DirectConnection:       ds.Options.GetDirectConnection(),
+			Region:                 ds.Options.GetRegion(),
+			WarehouseId:            ds.Options.GetWarehouseId(),
+			UseSsl:                 ds.Options.GetUseSsl(),
+			RedisType:              convertToV1RedisType(ds.Options.GetRedisType()),
+			MasterName:             ds.Options.GetMasterName(),
+			MasterUsername:         ds.Options.GetMasterUsername(),
 		}
-		if clientSecretCredential := convertToV1ClientSecretCredential(ds.ClientSecretCredential); clientSecretCredential != nil {
+		if clientSecretCredential := convertToV1ClientSecretCredential(ds.Options.GetClientSecretCredential()); clientSecretCredential != nil {
 			dataSource.IamExtension = &v1pb.DataSource_ClientSecretCredential_{
 				ClientSecretCredential: clientSecretCredential,
 			}
@@ -1401,40 +1369,42 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 	clientSecretCredential := convertToStoreClientSecretCredential(dataSource.GetClientSecretCredential())
 
 	return &store.DataSourceMessage{
-		ID:                                 dataSource.Id,
-		Type:                               dsType,
-		Username:                           dataSource.Username,
-		ObfuscatedPassword:                 common.Obfuscate(dataSource.Password, s.secret),
-		ObfuscatedSslCa:                    common.Obfuscate(dataSource.SslCa, s.secret),
-		ObfuscatedSslCert:                  common.Obfuscate(dataSource.SslCert, s.secret),
-		ObfuscatedSslKey:                   common.Obfuscate(dataSource.SslKey, s.secret),
-		Host:                               dataSource.Host,
-		Port:                               dataSource.Port,
-		Database:                           dataSource.Database,
-		SRV:                                dataSource.Srv,
-		AuthenticationDatabase:             dataSource.AuthenticationDatabase,
-		SID:                                dataSource.Sid,
-		ServiceName:                        dataSource.ServiceName,
-		SSHHost:                            dataSource.SshHost,
-		SSHPort:                            dataSource.SshPort,
-		SSHUser:                            dataSource.SshUser,
-		SSHObfuscatedPassword:              common.Obfuscate(dataSource.SshPassword, s.secret),
-		SSHObfuscatedPrivateKey:            common.Obfuscate(dataSource.SshPrivateKey, s.secret),
-		AuthenticationPrivateKeyObfuscated: common.Obfuscate(dataSource.AuthenticationPrivateKey, s.secret),
-		ExternalSecret:                     externalSecret,
-		SASLConfig:                         saslConfig,
-		AuthenticationType:                 convertToAuthenticationType(dataSource.AuthenticationType),
-		AdditionalAddresses:                convertToStoreAdditionalAddresses(dataSource.AdditionalAddresses),
-		ReplicaSet:                         dataSource.ReplicaSet,
-		DirectConnection:                   dataSource.DirectConnection,
-		Region:                             dataSource.Region,
-		WarehouseID:                        dataSource.WarehouseId,
-		UseSSL:                             dataSource.UseSsl,
-		RedisType:                          convertToStoreRedisType(dataSource.RedisType),
-		MasterName:                         dataSource.MasterName,
-		MasterUsername:                     dataSource.MasterUsername,
-		MasterObfuscatedPassword:           common.Obfuscate(dataSource.MasterPassword, s.secret),
-		ClientSecretCredential:             clientSecretCredential,
+		Options: &storepb.DataSourceOptions{
+			Id:                                 dataSource.Id,
+			Type:                               dsType,
+			Username:                           dataSource.Username,
+			ObfuscatedPassword:                 common.Obfuscate(dataSource.Password, s.secret),
+			ObfuscatedSslCa:                    common.Obfuscate(dataSource.SslCa, s.secret),
+			ObfuscatedSslCert:                  common.Obfuscate(dataSource.SslCert, s.secret),
+			ObfuscatedSslKey:                   common.Obfuscate(dataSource.SslKey, s.secret),
+			Host:                               dataSource.Host,
+			Port:                               dataSource.Port,
+			Database:                           dataSource.Database,
+			Srv:                                dataSource.Srv,
+			AuthenticationDatabase:             dataSource.AuthenticationDatabase,
+			Sid:                                dataSource.Sid,
+			ServiceName:                        dataSource.ServiceName,
+			SshHost:                            dataSource.SshHost,
+			SshPort:                            dataSource.SshPort,
+			SshUser:                            dataSource.SshUser,
+			SshObfuscatedPassword:              common.Obfuscate(dataSource.SshPassword, s.secret),
+			SshObfuscatedPrivateKey:            common.Obfuscate(dataSource.SshPrivateKey, s.secret),
+			AuthenticationPrivateKeyObfuscated: common.Obfuscate(dataSource.AuthenticationPrivateKey, s.secret),
+			ExternalSecret:                     externalSecret,
+			SaslConfig:                         saslConfig,
+			AuthenticationType:                 convertToAuthenticationType(dataSource.AuthenticationType),
+			AdditionalAddresses:                convertToStoreAdditionalAddresses(dataSource.AdditionalAddresses),
+			ReplicaSet:                         dataSource.ReplicaSet,
+			DirectConnection:                   dataSource.DirectConnection,
+			Region:                             dataSource.Region,
+			WarehouseId:                        dataSource.WarehouseId,
+			UseSsl:                             dataSource.UseSsl,
+			RedisType:                          convertToStoreRedisType(dataSource.RedisType),
+			MasterName:                         dataSource.MasterName,
+			MasterUsername:                     dataSource.MasterUsername,
+			MasterObfuscatedPassword:           common.Obfuscate(dataSource.MasterPassword, s.secret),
+			IamExtension:                       &storepb.DataSourceOptions_ClientSecretCredential_{ClientSecretCredential: clientSecretCredential},
+		},
 	}, nil
 }
 
@@ -1463,15 +1433,13 @@ func (s *InstanceService) instanceCountGuard(ctx context.Context) error {
 	return nil
 }
 
-func convertDataSourceTp(tp v1pb.DataSourceType) (api.DataSourceType, error) {
-	var dsType api.DataSourceType
+func convertDataSourceTp(tp v1pb.DataSourceType) (storepb.DataSourceType, error) {
 	switch tp {
 	case v1pb.DataSourceType_READ_ONLY:
-		dsType = api.RO
+		return storepb.DataSourceType_READ_ONLY, nil
 	case v1pb.DataSourceType_ADMIN:
-		dsType = api.Admin
+		return storepb.DataSourceType_ADMIN, nil
 	default:
-		return "", errors.Errorf("invalid data source type %v", tp)
+		return storepb.DataSourceType_DATA_SOURCE_UNSPECIFIED, errors.Errorf("invalid data source type %v", tp)
 	}
-	return dsType, nil
 }

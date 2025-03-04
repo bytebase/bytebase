@@ -13,7 +13,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -436,11 +435,11 @@ func validateDataSourceList(dataSources []*DataSourceMessage) error {
 	dataSourceMap := map[string]bool{}
 	adminCount := 0
 	for _, dataSource := range dataSources {
-		if dataSourceMap[dataSource.ID] {
-			return status.Errorf(codes.InvalidArgument, "duplicate data source ID %s", dataSource.ID)
+		if dataSourceMap[dataSource.Options.GetId()] {
+			return status.Errorf(codes.InvalidArgument, "duplicate data source ID %s", dataSource.Options.GetId())
 		}
-		dataSourceMap[dataSource.ID] = true
-		if dataSource.Type == api.Admin {
+		dataSourceMap[dataSource.Options.GetId()] = true
+		if dataSource.Options.GetType() == storepb.DataSourceType_ADMIN {
 			adminCount++
 		}
 	}
