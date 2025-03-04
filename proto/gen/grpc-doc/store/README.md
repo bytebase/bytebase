@@ -162,7 +162,6 @@
   
 - [store/instance.proto](#store_instance-proto)
     - [InstanceMetadata](#bytebase-store-InstanceMetadata)
-    - [InstanceOptions](#bytebase-store-InstanceOptions)
     - [InstanceRole](#bytebase-store-InstanceRole)
   
 - [store/instance_change_history.proto](#store_instance_change_history-proto)
@@ -2721,20 +2720,6 @@ InstanceMetadata is the metadata for instances.
 | mysql_lower_case_table_names | [int32](#int32) |  | The lower_case_table_names config for MySQL instances. It is used to determine whether the table names and database names are case sensitive. |
 | last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | roles | [InstanceRole](#bytebase-store-InstanceRole) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-InstanceOptions"></a>
-
-### InstanceOptions
-InstanceOptions is the option for instances.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
 | sync_interval | [google.protobuf.Duration](#google-protobuf-Duration) |  | How often the instance is synced. |
 | maximum_connections | [int32](#int32) |  | The maximum number of connections. The default is 10 if the value is unset or zero. |
 | sync_databases | [string](#string) | repeated | Enable sync for following databases. Default empty, means sync all schemas &amp; databases. |

@@ -122,7 +122,6 @@ CREATE TABLE instance (
     resource_id text NOT NULL,
     -- activation should set to be TRUE if users assign license to this instance.
     activation boolean NOT NULL DEFAULT false,
-    options jsonb NOT NULL DEFAULT '{}',
     metadata jsonb NOT NULL DEFAULT '{}'
 );
 
