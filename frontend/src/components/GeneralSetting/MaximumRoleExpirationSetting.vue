@@ -11,7 +11,7 @@
     <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
       <NInputNumber
         v-model:value="state.inputValue"
-        class="w-40"
+        class="w-60"
         :disabled="!allowEdit || state.neverExpire"
         :min="1"
         :precision="0"
