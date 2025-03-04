@@ -10,210 +10,70 @@ import Long from "long";
 
 export const protobufPackage = "bytebase.store";
 
-export interface DataSourceExternalSecret {
-  secretType: DataSourceExternalSecret_SecretType;
-  url: string;
-  authType: DataSourceExternalSecret_AuthType;
-  appRole?: DataSourceExternalSecret_AppRoleAuthOption | undefined;
-  token?:
-    | string
-    | undefined;
-  /** engine name is the name for secret engine. */
-  engineName: string;
-  /** the secret name in the engine to store the password. */
-  secretName: string;
-  /** the key name for the password. */
-  passwordKeyName: string;
-}
-
-export enum DataSourceExternalSecret_SecretType {
-  SAECRET_TYPE_UNSPECIFIED = "SAECRET_TYPE_UNSPECIFIED",
-  /** VAULT_KV_V2 - ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2 */
-  VAULT_KV_V2 = "VAULT_KV_V2",
-  /** AWS_SECRETS_MANAGER - ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html */
-  AWS_SECRETS_MANAGER = "AWS_SECRETS_MANAGER",
-  /** GCP_SECRET_MANAGER - ref: https://cloud.google.com/secret-manager/docs */
-  GCP_SECRET_MANAGER = "GCP_SECRET_MANAGER",
+export enum DataSourceType {
+  DATA_SOURCE_UNSPECIFIED = "DATA_SOURCE_UNSPECIFIED",
+  ADMIN = "ADMIN",
+  READ_ONLY = "READ_ONLY",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
-export function dataSourceExternalSecret_SecretTypeFromJSON(object: any): DataSourceExternalSecret_SecretType {
+export function dataSourceTypeFromJSON(object: any): DataSourceType {
   switch (object) {
     case 0:
-    case "SAECRET_TYPE_UNSPECIFIED":
-      return DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED;
+    case "DATA_SOURCE_UNSPECIFIED":
+      return DataSourceType.DATA_SOURCE_UNSPECIFIED;
     case 1:
-    case "VAULT_KV_V2":
-      return DataSourceExternalSecret_SecretType.VAULT_KV_V2;
+    case "ADMIN":
+      return DataSourceType.ADMIN;
     case 2:
-    case "AWS_SECRETS_MANAGER":
-      return DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER;
-    case 3:
-    case "GCP_SECRET_MANAGER":
-      return DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER;
+    case "READ_ONLY":
+      return DataSourceType.READ_ONLY;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return DataSourceExternalSecret_SecretType.UNRECOGNIZED;
+      return DataSourceType.UNRECOGNIZED;
   }
 }
 
-export function dataSourceExternalSecret_SecretTypeToJSON(object: DataSourceExternalSecret_SecretType): string {
+export function dataSourceTypeToJSON(object: DataSourceType): string {
   switch (object) {
-    case DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED:
-      return "SAECRET_TYPE_UNSPECIFIED";
-    case DataSourceExternalSecret_SecretType.VAULT_KV_V2:
-      return "VAULT_KV_V2";
-    case DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER:
-      return "AWS_SECRETS_MANAGER";
-    case DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER:
-      return "GCP_SECRET_MANAGER";
-    case DataSourceExternalSecret_SecretType.UNRECOGNIZED:
+    case DataSourceType.DATA_SOURCE_UNSPECIFIED:
+      return "DATA_SOURCE_UNSPECIFIED";
+    case DataSourceType.ADMIN:
+      return "ADMIN";
+    case DataSourceType.READ_ONLY:
+      return "READ_ONLY";
+    case DataSourceType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
 }
 
-export function dataSourceExternalSecret_SecretTypeToNumber(object: DataSourceExternalSecret_SecretType): number {
+export function dataSourceTypeToNumber(object: DataSourceType): number {
   switch (object) {
-    case DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED:
+    case DataSourceType.DATA_SOURCE_UNSPECIFIED:
       return 0;
-    case DataSourceExternalSecret_SecretType.VAULT_KV_V2:
+    case DataSourceType.ADMIN:
       return 1;
-    case DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER:
+    case DataSourceType.READ_ONLY:
       return 2;
-    case DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER:
-      return 3;
-    case DataSourceExternalSecret_SecretType.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
-export enum DataSourceExternalSecret_AuthType {
-  AUTH_TYPE_UNSPECIFIED = "AUTH_TYPE_UNSPECIFIED",
-  /** TOKEN - ref: https://developer.hashicorp.com/vault/docs/auth/token */
-  TOKEN = "TOKEN",
-  /** VAULT_APP_ROLE - ref: https://developer.hashicorp.com/vault/docs/auth/approle */
-  VAULT_APP_ROLE = "VAULT_APP_ROLE",
-  UNRECOGNIZED = "UNRECOGNIZED",
-}
-
-export function dataSourceExternalSecret_AuthTypeFromJSON(object: any): DataSourceExternalSecret_AuthType {
-  switch (object) {
-    case 0:
-    case "AUTH_TYPE_UNSPECIFIED":
-      return DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED;
-    case 1:
-    case "TOKEN":
-      return DataSourceExternalSecret_AuthType.TOKEN;
-    case 2:
-    case "VAULT_APP_ROLE":
-      return DataSourceExternalSecret_AuthType.VAULT_APP_ROLE;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return DataSourceExternalSecret_AuthType.UNRECOGNIZED;
-  }
-}
-
-export function dataSourceExternalSecret_AuthTypeToJSON(object: DataSourceExternalSecret_AuthType): string {
-  switch (object) {
-    case DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED:
-      return "AUTH_TYPE_UNSPECIFIED";
-    case DataSourceExternalSecret_AuthType.TOKEN:
-      return "TOKEN";
-    case DataSourceExternalSecret_AuthType.VAULT_APP_ROLE:
-      return "VAULT_APP_ROLE";
-    case DataSourceExternalSecret_AuthType.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export function dataSourceExternalSecret_AuthTypeToNumber(object: DataSourceExternalSecret_AuthType): number {
-  switch (object) {
-    case DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED:
-      return 0;
-    case DataSourceExternalSecret_AuthType.TOKEN:
-      return 1;
-    case DataSourceExternalSecret_AuthType.VAULT_APP_ROLE:
-      return 2;
-    case DataSourceExternalSecret_AuthType.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
-export interface DataSourceExternalSecret_AppRoleAuthOption {
-  roleId: string;
-  /** the secret id for the role without ttl. */
-  secretId: string;
-  type: DataSourceExternalSecret_AppRoleAuthOption_SecretType;
-  /** The path where the approle auth method is mounted. */
-  mountPath: string;
-}
-
-export enum DataSourceExternalSecret_AppRoleAuthOption_SecretType {
-  SECRET_TYPE_UNSPECIFIED = "SECRET_TYPE_UNSPECIFIED",
-  PLAIN = "PLAIN",
-  ENVIRONMENT = "ENVIRONMENT",
-  UNRECOGNIZED = "UNRECOGNIZED",
-}
-
-export function dataSourceExternalSecret_AppRoleAuthOption_SecretTypeFromJSON(
-  object: any,
-): DataSourceExternalSecret_AppRoleAuthOption_SecretType {
-  switch (object) {
-    case 0:
-    case "SECRET_TYPE_UNSPECIFIED":
-      return DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED;
-    case 1:
-    case "PLAIN":
-      return DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN;
-    case 2:
-    case "ENVIRONMENT":
-      return DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return DataSourceExternalSecret_AppRoleAuthOption_SecretType.UNRECOGNIZED;
-  }
-}
-
-export function dataSourceExternalSecret_AppRoleAuthOption_SecretTypeToJSON(
-  object: DataSourceExternalSecret_AppRoleAuthOption_SecretType,
-): string {
-  switch (object) {
-    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED:
-      return "SECRET_TYPE_UNSPECIFIED";
-    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN:
-      return "PLAIN";
-    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT:
-      return "ENVIRONMENT";
-    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export function dataSourceExternalSecret_AppRoleAuthOption_SecretTypeToNumber(
-  object: DataSourceExternalSecret_AppRoleAuthOption_SecretType,
-): number {
-  switch (object) {
-    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED:
-      return 0;
-    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN:
-      return 1;
-    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT:
-      return 2;
-    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.UNRECOGNIZED:
+    case DataSourceType.UNRECOGNIZED:
     default:
       return -1;
   }
 }
 
 export interface DataSourceOptions {
+  id: string;
+  type: DataSourceType;
+  host: string;
+  port: string;
+  username: string;
+  obfuscatedPassword: string;
+  database: string;
+  obfuscatedSslKey: string;
+  obfuscatedSslCert: string;
+  obfuscatedSslCa: string;
   /** srv is a boolean flag that indicates whether the host is a DNS SRV record. */
   srv: boolean;
   /** authentication_database is the database name to authenticate against, which stores the user credentials. */
@@ -432,312 +292,221 @@ export interface KerberosConfig {
   kdcTransportProtocol: string;
 }
 
-function createBaseDataSourceExternalSecret(): DataSourceExternalSecret {
-  return {
-    secretType: DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED,
-    url: "",
-    authType: DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED,
-    appRole: undefined,
-    token: undefined,
-    engineName: "",
-    secretName: "",
-    passwordKeyName: "",
-  };
+export interface DataSourceExternalSecret {
+  secretType: DataSourceExternalSecret_SecretType;
+  url: string;
+  authType: DataSourceExternalSecret_AuthType;
+  appRole?: DataSourceExternalSecret_AppRoleAuthOption | undefined;
+  token?:
+    | string
+    | undefined;
+  /** engine name is the name for secret engine. */
+  engineName: string;
+  /** the secret name in the engine to store the password. */
+  secretName: string;
+  /** the key name for the password. */
+  passwordKeyName: string;
 }
 
-export const DataSourceExternalSecret: MessageFns<DataSourceExternalSecret> = {
-  encode(message: DataSourceExternalSecret, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.secretType !== DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED) {
-      writer.uint32(8).int32(dataSourceExternalSecret_SecretTypeToNumber(message.secretType));
-    }
-    if (message.url !== "") {
-      writer.uint32(18).string(message.url);
-    }
-    if (message.authType !== DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED) {
-      writer.uint32(24).int32(dataSourceExternalSecret_AuthTypeToNumber(message.authType));
-    }
-    if (message.appRole !== undefined) {
-      DataSourceExternalSecret_AppRoleAuthOption.encode(message.appRole, writer.uint32(34).fork()).join();
-    }
-    if (message.token !== undefined) {
-      writer.uint32(42).string(message.token);
-    }
-    if (message.engineName !== "") {
-      writer.uint32(50).string(message.engineName);
-    }
-    if (message.secretName !== "") {
-      writer.uint32(58).string(message.secretName);
-    }
-    if (message.passwordKeyName !== "") {
-      writer.uint32(66).string(message.passwordKeyName);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): DataSourceExternalSecret {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDataSourceExternalSecret();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.secretType = dataSourceExternalSecret_SecretTypeFromJSON(reader.int32());
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.url = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.authType = dataSourceExternalSecret_AuthTypeFromJSON(reader.int32());
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.appRole = DataSourceExternalSecret_AppRoleAuthOption.decode(reader, reader.uint32());
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.token = reader.string();
-          continue;
-        }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.engineName = reader.string();
-          continue;
-        }
-        case 7: {
-          if (tag !== 58) {
-            break;
-          }
-
-          message.secretName = reader.string();
-          continue;
-        }
-        case 8: {
-          if (tag !== 66) {
-            break;
-          }
-
-          message.passwordKeyName = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): DataSourceExternalSecret {
-    return {
-      secretType: isSet(object.secretType)
-        ? dataSourceExternalSecret_SecretTypeFromJSON(object.secretType)
-        : DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED,
-      url: isSet(object.url) ? globalThis.String(object.url) : "",
-      authType: isSet(object.authType)
-        ? dataSourceExternalSecret_AuthTypeFromJSON(object.authType)
-        : DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED,
-      appRole: isSet(object.appRole) ? DataSourceExternalSecret_AppRoleAuthOption.fromJSON(object.appRole) : undefined,
-      token: isSet(object.token) ? globalThis.String(object.token) : undefined,
-      engineName: isSet(object.engineName) ? globalThis.String(object.engineName) : "",
-      secretName: isSet(object.secretName) ? globalThis.String(object.secretName) : "",
-      passwordKeyName: isSet(object.passwordKeyName) ? globalThis.String(object.passwordKeyName) : "",
-    };
-  },
-
-  toJSON(message: DataSourceExternalSecret): unknown {
-    const obj: any = {};
-    if (message.secretType !== DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED) {
-      obj.secretType = dataSourceExternalSecret_SecretTypeToJSON(message.secretType);
-    }
-    if (message.url !== "") {
-      obj.url = message.url;
-    }
-    if (message.authType !== DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED) {
-      obj.authType = dataSourceExternalSecret_AuthTypeToJSON(message.authType);
-    }
-    if (message.appRole !== undefined) {
-      obj.appRole = DataSourceExternalSecret_AppRoleAuthOption.toJSON(message.appRole);
-    }
-    if (message.token !== undefined) {
-      obj.token = message.token;
-    }
-    if (message.engineName !== "") {
-      obj.engineName = message.engineName;
-    }
-    if (message.secretName !== "") {
-      obj.secretName = message.secretName;
-    }
-    if (message.passwordKeyName !== "") {
-      obj.passwordKeyName = message.passwordKeyName;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<DataSourceExternalSecret>): DataSourceExternalSecret {
-    return DataSourceExternalSecret.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<DataSourceExternalSecret>): DataSourceExternalSecret {
-    const message = createBaseDataSourceExternalSecret();
-    message.secretType = object.secretType ?? DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED;
-    message.url = object.url ?? "";
-    message.authType = object.authType ?? DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED;
-    message.appRole = (object.appRole !== undefined && object.appRole !== null)
-      ? DataSourceExternalSecret_AppRoleAuthOption.fromPartial(object.appRole)
-      : undefined;
-    message.token = object.token ?? undefined;
-    message.engineName = object.engineName ?? "";
-    message.secretName = object.secretName ?? "";
-    message.passwordKeyName = object.passwordKeyName ?? "";
-    return message;
-  },
-};
-
-function createBaseDataSourceExternalSecret_AppRoleAuthOption(): DataSourceExternalSecret_AppRoleAuthOption {
-  return {
-    roleId: "",
-    secretId: "",
-    type: DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED,
-    mountPath: "",
-  };
+export enum DataSourceExternalSecret_SecretType {
+  SAECRET_TYPE_UNSPECIFIED = "SAECRET_TYPE_UNSPECIFIED",
+  /** VAULT_KV_V2 - ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2 */
+  VAULT_KV_V2 = "VAULT_KV_V2",
+  /** AWS_SECRETS_MANAGER - ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html */
+  AWS_SECRETS_MANAGER = "AWS_SECRETS_MANAGER",
+  /** GCP_SECRET_MANAGER - ref: https://cloud.google.com/secret-manager/docs */
+  GCP_SECRET_MANAGER = "GCP_SECRET_MANAGER",
+  UNRECOGNIZED = "UNRECOGNIZED",
 }
 
-export const DataSourceExternalSecret_AppRoleAuthOption: MessageFns<DataSourceExternalSecret_AppRoleAuthOption> = {
-  encode(message: DataSourceExternalSecret_AppRoleAuthOption, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.roleId !== "") {
-      writer.uint32(10).string(message.roleId);
-    }
-    if (message.secretId !== "") {
-      writer.uint32(18).string(message.secretId);
-    }
-    if (message.type !== DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED) {
-      writer.uint32(24).int32(dataSourceExternalSecret_AppRoleAuthOption_SecretTypeToNumber(message.type));
-    }
-    if (message.mountPath !== "") {
-      writer.uint32(34).string(message.mountPath);
-    }
-    return writer;
-  },
+export function dataSourceExternalSecret_SecretTypeFromJSON(object: any): DataSourceExternalSecret_SecretType {
+  switch (object) {
+    case 0:
+    case "SAECRET_TYPE_UNSPECIFIED":
+      return DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED;
+    case 1:
+    case "VAULT_KV_V2":
+      return DataSourceExternalSecret_SecretType.VAULT_KV_V2;
+    case 2:
+    case "AWS_SECRETS_MANAGER":
+      return DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER;
+    case 3:
+    case "GCP_SECRET_MANAGER":
+      return DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return DataSourceExternalSecret_SecretType.UNRECOGNIZED;
+  }
+}
 
-  decode(input: BinaryReader | Uint8Array, length?: number): DataSourceExternalSecret_AppRoleAuthOption {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDataSourceExternalSecret_AppRoleAuthOption();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
+export function dataSourceExternalSecret_SecretTypeToJSON(object: DataSourceExternalSecret_SecretType): string {
+  switch (object) {
+    case DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED:
+      return "SAECRET_TYPE_UNSPECIFIED";
+    case DataSourceExternalSecret_SecretType.VAULT_KV_V2:
+      return "VAULT_KV_V2";
+    case DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER:
+      return "AWS_SECRETS_MANAGER";
+    case DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER:
+      return "GCP_SECRET_MANAGER";
+    case DataSourceExternalSecret_SecretType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
 
-          message.roleId = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
+export function dataSourceExternalSecret_SecretTypeToNumber(object: DataSourceExternalSecret_SecretType): number {
+  switch (object) {
+    case DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED:
+      return 0;
+    case DataSourceExternalSecret_SecretType.VAULT_KV_V2:
+      return 1;
+    case DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER:
+      return 2;
+    case DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER:
+      return 3;
+    case DataSourceExternalSecret_SecretType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
 
-          message.secretId = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
+export enum DataSourceExternalSecret_AuthType {
+  AUTH_TYPE_UNSPECIFIED = "AUTH_TYPE_UNSPECIFIED",
+  /** TOKEN - ref: https://developer.hashicorp.com/vault/docs/auth/token */
+  TOKEN = "TOKEN",
+  /** VAULT_APP_ROLE - ref: https://developer.hashicorp.com/vault/docs/auth/approle */
+  VAULT_APP_ROLE = "VAULT_APP_ROLE",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
 
-          message.type = dataSourceExternalSecret_AppRoleAuthOption_SecretTypeFromJSON(reader.int32());
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
+export function dataSourceExternalSecret_AuthTypeFromJSON(object: any): DataSourceExternalSecret_AuthType {
+  switch (object) {
+    case 0:
+    case "AUTH_TYPE_UNSPECIFIED":
+      return DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED;
+    case 1:
+    case "TOKEN":
+      return DataSourceExternalSecret_AuthType.TOKEN;
+    case 2:
+    case "VAULT_APP_ROLE":
+      return DataSourceExternalSecret_AuthType.VAULT_APP_ROLE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return DataSourceExternalSecret_AuthType.UNRECOGNIZED;
+  }
+}
 
-          message.mountPath = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
+export function dataSourceExternalSecret_AuthTypeToJSON(object: DataSourceExternalSecret_AuthType): string {
+  switch (object) {
+    case DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED:
+      return "AUTH_TYPE_UNSPECIFIED";
+    case DataSourceExternalSecret_AuthType.TOKEN:
+      return "TOKEN";
+    case DataSourceExternalSecret_AuthType.VAULT_APP_ROLE:
+      return "VAULT_APP_ROLE";
+    case DataSourceExternalSecret_AuthType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
 
-  fromJSON(object: any): DataSourceExternalSecret_AppRoleAuthOption {
-    return {
-      roleId: isSet(object.roleId) ? globalThis.String(object.roleId) : "",
-      secretId: isSet(object.secretId) ? globalThis.String(object.secretId) : "",
-      type: isSet(object.type)
-        ? dataSourceExternalSecret_AppRoleAuthOption_SecretTypeFromJSON(object.type)
-        : DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED,
-      mountPath: isSet(object.mountPath) ? globalThis.String(object.mountPath) : "",
-    };
-  },
+export function dataSourceExternalSecret_AuthTypeToNumber(object: DataSourceExternalSecret_AuthType): number {
+  switch (object) {
+    case DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED:
+      return 0;
+    case DataSourceExternalSecret_AuthType.TOKEN:
+      return 1;
+    case DataSourceExternalSecret_AuthType.VAULT_APP_ROLE:
+      return 2;
+    case DataSourceExternalSecret_AuthType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
 
-  toJSON(message: DataSourceExternalSecret_AppRoleAuthOption): unknown {
-    const obj: any = {};
-    if (message.roleId !== "") {
-      obj.roleId = message.roleId;
-    }
-    if (message.secretId !== "") {
-      obj.secretId = message.secretId;
-    }
-    if (message.type !== DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED) {
-      obj.type = dataSourceExternalSecret_AppRoleAuthOption_SecretTypeToJSON(message.type);
-    }
-    if (message.mountPath !== "") {
-      obj.mountPath = message.mountPath;
-    }
-    return obj;
-  },
+export interface DataSourceExternalSecret_AppRoleAuthOption {
+  roleId: string;
+  /** the secret id for the role without ttl. */
+  secretId: string;
+  type: DataSourceExternalSecret_AppRoleAuthOption_SecretType;
+  /** The path where the approle auth method is mounted. */
+  mountPath: string;
+}
 
-  create(base?: DeepPartial<DataSourceExternalSecret_AppRoleAuthOption>): DataSourceExternalSecret_AppRoleAuthOption {
-    return DataSourceExternalSecret_AppRoleAuthOption.fromPartial(base ?? {});
-  },
-  fromPartial(
-    object: DeepPartial<DataSourceExternalSecret_AppRoleAuthOption>,
-  ): DataSourceExternalSecret_AppRoleAuthOption {
-    const message = createBaseDataSourceExternalSecret_AppRoleAuthOption();
-    message.roleId = object.roleId ?? "";
-    message.secretId = object.secretId ?? "";
-    message.type = object.type ?? DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED;
-    message.mountPath = object.mountPath ?? "";
-    return message;
-  },
-};
+export enum DataSourceExternalSecret_AppRoleAuthOption_SecretType {
+  SECRET_TYPE_UNSPECIFIED = "SECRET_TYPE_UNSPECIFIED",
+  PLAIN = "PLAIN",
+  ENVIRONMENT = "ENVIRONMENT",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function dataSourceExternalSecret_AppRoleAuthOption_SecretTypeFromJSON(
+  object: any,
+): DataSourceExternalSecret_AppRoleAuthOption_SecretType {
+  switch (object) {
+    case 0:
+    case "SECRET_TYPE_UNSPECIFIED":
+      return DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED;
+    case 1:
+    case "PLAIN":
+      return DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN;
+    case 2:
+    case "ENVIRONMENT":
+      return DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return DataSourceExternalSecret_AppRoleAuthOption_SecretType.UNRECOGNIZED;
+  }
+}
+
+export function dataSourceExternalSecret_AppRoleAuthOption_SecretTypeToJSON(
+  object: DataSourceExternalSecret_AppRoleAuthOption_SecretType,
+): string {
+  switch (object) {
+    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED:
+      return "SECRET_TYPE_UNSPECIFIED";
+    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN:
+      return "PLAIN";
+    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT:
+      return "ENVIRONMENT";
+    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function dataSourceExternalSecret_AppRoleAuthOption_SecretTypeToNumber(
+  object: DataSourceExternalSecret_AppRoleAuthOption_SecretType,
+): number {
+  switch (object) {
+    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED:
+      return 0;
+    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN:
+      return 1;
+    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT:
+      return 2;
+    case DataSourceExternalSecret_AppRoleAuthOption_SecretType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
 
 function createBaseDataSourceOptions(): DataSourceOptions {
   return {
+    id: "",
+    type: DataSourceType.DATA_SOURCE_UNSPECIFIED,
+    host: "",
+    port: "",
+    username: "",
+    obfuscatedPassword: "",
+    database: "",
+    obfuscatedSslKey: "",
+    obfuscatedSslCert: "",
+    obfuscatedSslCa: "",
     srv: false,
     authenticationDatabase: "",
     sid: "",
@@ -769,83 +538,113 @@ function createBaseDataSourceOptions(): DataSourceOptions {
 
 export const DataSourceOptions: MessageFns<DataSourceOptions> = {
   encode(message: DataSourceOptions, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.type !== DataSourceType.DATA_SOURCE_UNSPECIFIED) {
+      writer.uint32(16).int32(dataSourceTypeToNumber(message.type));
+    }
+    if (message.host !== "") {
+      writer.uint32(26).string(message.host);
+    }
+    if (message.port !== "") {
+      writer.uint32(34).string(message.port);
+    }
+    if (message.username !== "") {
+      writer.uint32(42).string(message.username);
+    }
+    if (message.obfuscatedPassword !== "") {
+      writer.uint32(50).string(message.obfuscatedPassword);
+    }
+    if (message.database !== "") {
+      writer.uint32(58).string(message.database);
+    }
+    if (message.obfuscatedSslKey !== "") {
+      writer.uint32(66).string(message.obfuscatedSslKey);
+    }
+    if (message.obfuscatedSslCert !== "") {
+      writer.uint32(74).string(message.obfuscatedSslCert);
+    }
+    if (message.obfuscatedSslCa !== "") {
+      writer.uint32(82).string(message.obfuscatedSslCa);
+    }
     if (message.srv !== false) {
-      writer.uint32(8).bool(message.srv);
+      writer.uint32(88).bool(message.srv);
     }
     if (message.authenticationDatabase !== "") {
-      writer.uint32(18).string(message.authenticationDatabase);
+      writer.uint32(98).string(message.authenticationDatabase);
     }
     if (message.sid !== "") {
-      writer.uint32(26).string(message.sid);
+      writer.uint32(106).string(message.sid);
     }
     if (message.serviceName !== "") {
-      writer.uint32(34).string(message.serviceName);
+      writer.uint32(114).string(message.serviceName);
     }
     if (message.sshHost !== "") {
-      writer.uint32(42).string(message.sshHost);
+      writer.uint32(122).string(message.sshHost);
     }
     if (message.sshPort !== "") {
-      writer.uint32(50).string(message.sshPort);
+      writer.uint32(130).string(message.sshPort);
     }
     if (message.sshUser !== "") {
-      writer.uint32(58).string(message.sshUser);
+      writer.uint32(138).string(message.sshUser);
     }
     if (message.sshObfuscatedPassword !== "") {
-      writer.uint32(66).string(message.sshObfuscatedPassword);
+      writer.uint32(146).string(message.sshObfuscatedPassword);
     }
     if (message.sshObfuscatedPrivateKey !== "") {
-      writer.uint32(74).string(message.sshObfuscatedPrivateKey);
+      writer.uint32(154).string(message.sshObfuscatedPrivateKey);
     }
     if (message.authenticationPrivateKeyObfuscated !== "") {
-      writer.uint32(82).string(message.authenticationPrivateKeyObfuscated);
+      writer.uint32(162).string(message.authenticationPrivateKeyObfuscated);
     }
     if (message.externalSecret !== undefined) {
-      DataSourceExternalSecret.encode(message.externalSecret, writer.uint32(90).fork()).join();
+      DataSourceExternalSecret.encode(message.externalSecret, writer.uint32(170).fork()).join();
     }
     if (message.authenticationType !== DataSourceOptions_AuthenticationType.AUTHENTICATION_UNSPECIFIED) {
-      writer.uint32(96).int32(dataSourceOptions_AuthenticationTypeToNumber(message.authenticationType));
+      writer.uint32(176).int32(dataSourceOptions_AuthenticationTypeToNumber(message.authenticationType));
     }
     if (message.clientSecretCredential !== undefined) {
-      DataSourceOptions_ClientSecretCredential.encode(message.clientSecretCredential, writer.uint32(210).fork()).join();
+      DataSourceOptions_ClientSecretCredential.encode(message.clientSecretCredential, writer.uint32(186).fork()).join();
     }
     if (message.saslConfig !== undefined) {
-      SASLConfig.encode(message.saslConfig, writer.uint32(106).fork()).join();
+      SASLConfig.encode(message.saslConfig, writer.uint32(194).fork()).join();
     }
     for (const v of message.additionalAddresses) {
-      DataSourceOptions_Address.encode(v!, writer.uint32(114).fork()).join();
+      DataSourceOptions_Address.encode(v!, writer.uint32(202).fork()).join();
     }
     if (message.replicaSet !== "") {
-      writer.uint32(122).string(message.replicaSet);
+      writer.uint32(210).string(message.replicaSet);
     }
     if (message.directConnection !== false) {
-      writer.uint32(128).bool(message.directConnection);
+      writer.uint32(216).bool(message.directConnection);
     }
     if (message.region !== "") {
-      writer.uint32(138).string(message.region);
+      writer.uint32(226).string(message.region);
     }
     if (message.warehouseId !== "") {
-      writer.uint32(154).string(message.warehouseId);
+      writer.uint32(234).string(message.warehouseId);
     }
     if (message.masterName !== "") {
-      writer.uint32(162).string(message.masterName);
+      writer.uint32(242).string(message.masterName);
     }
     if (message.masterUsername !== "") {
-      writer.uint32(170).string(message.masterUsername);
+      writer.uint32(250).string(message.masterUsername);
     }
     if (message.masterObfuscatedPassword !== "") {
-      writer.uint32(178).string(message.masterObfuscatedPassword);
+      writer.uint32(258).string(message.masterObfuscatedPassword);
     }
     if (message.redisType !== DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED) {
-      writer.uint32(184).int32(dataSourceOptions_RedisTypeToNumber(message.redisType));
+      writer.uint32(264).int32(dataSourceOptions_RedisTypeToNumber(message.redisType));
     }
     if (message.useSsl !== false) {
-      writer.uint32(192).bool(message.useSsl);
+      writer.uint32(272).bool(message.useSsl);
     }
     if (message.cluster !== "") {
-      writer.uint32(202).string(message.cluster);
+      writer.uint32(282).string(message.cluster);
     }
     Object.entries(message.extraConnectionParameters).forEach(([key, value]) => {
-      DataSourceOptions_ExtraConnectionParametersEntry.encode({ key: key as any, value }, writer.uint32(218).fork())
+      DataSourceOptions_ExtraConnectionParametersEntry.encode({ key: key as any, value }, writer.uint32(290).fork())
         .join();
     });
     return writer;
@@ -859,19 +658,19 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1: {
-          if (tag !== 8) {
+          if (tag !== 10) {
             break;
           }
 
-          message.srv = reader.bool();
+          message.id = reader.string();
           continue;
         }
         case 2: {
-          if (tag !== 18) {
+          if (tag !== 16) {
             break;
           }
 
-          message.authenticationDatabase = reader.string();
+          message.type = dataSourceTypeFromJSON(reader.int32());
           continue;
         }
         case 3: {
@@ -879,7 +678,7 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
             break;
           }
 
-          message.sid = reader.string();
+          message.host = reader.string();
           continue;
         }
         case 4: {
@@ -887,7 +686,7 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
             break;
           }
 
-          message.serviceName = reader.string();
+          message.port = reader.string();
           continue;
         }
         case 5: {
@@ -895,7 +694,7 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
             break;
           }
 
-          message.sshHost = reader.string();
+          message.username = reader.string();
           continue;
         }
         case 6: {
@@ -903,7 +702,7 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
             break;
           }
 
-          message.sshPort = reader.string();
+          message.obfuscatedPassword = reader.string();
           continue;
         }
         case 7: {
@@ -911,7 +710,7 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
             break;
           }
 
-          message.sshUser = reader.string();
+          message.database = reader.string();
           continue;
         }
         case 8: {
@@ -919,7 +718,7 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
             break;
           }
 
-          message.sshObfuscatedPassword = reader.string();
+          message.obfuscatedSslKey = reader.string();
           continue;
         }
         case 9: {
@@ -927,7 +726,7 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
             break;
           }
 
-          message.sshObfuscatedPrivateKey = reader.string();
+          message.obfuscatedSslCert = reader.string();
           continue;
         }
         case 10: {
@@ -935,31 +734,23 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
             break;
           }
 
-          message.authenticationPrivateKeyObfuscated = reader.string();
+          message.obfuscatedSslCa = reader.string();
           continue;
         }
         case 11: {
-          if (tag !== 90) {
+          if (tag !== 88) {
             break;
           }
 
-          message.externalSecret = DataSourceExternalSecret.decode(reader, reader.uint32());
+          message.srv = reader.bool();
           continue;
         }
         case 12: {
-          if (tag !== 96) {
+          if (tag !== 98) {
             break;
           }
 
-          message.authenticationType = dataSourceOptions_AuthenticationTypeFromJSON(reader.int32());
-          continue;
-        }
-        case 26: {
-          if (tag !== 210) {
-            break;
-          }
-
-          message.clientSecretCredential = DataSourceOptions_ClientSecretCredential.decode(reader, reader.uint32());
+          message.authenticationDatabase = reader.string();
           continue;
         }
         case 13: {
@@ -967,7 +758,7 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
             break;
           }
 
-          message.saslConfig = SASLConfig.decode(reader, reader.uint32());
+          message.sid = reader.string();
           continue;
         }
         case 14: {
@@ -975,7 +766,7 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
             break;
           }
 
-          message.additionalAddresses.push(DataSourceOptions_Address.decode(reader, reader.uint32()));
+          message.serviceName = reader.string();
           continue;
         }
         case 15: {
@@ -983,15 +774,15 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
             break;
           }
 
-          message.replicaSet = reader.string();
+          message.sshHost = reader.string();
           continue;
         }
         case 16: {
-          if (tag !== 128) {
+          if (tag !== 130) {
             break;
           }
 
-          message.directConnection = reader.bool();
+          message.sshPort = reader.string();
           continue;
         }
         case 17: {
@@ -999,7 +790,15 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
             break;
           }
 
-          message.region = reader.string();
+          message.sshUser = reader.string();
+          continue;
+        }
+        case 18: {
+          if (tag !== 146) {
+            break;
+          }
+
+          message.sshObfuscatedPassword = reader.string();
           continue;
         }
         case 19: {
@@ -1007,7 +806,7 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
             break;
           }
 
-          message.warehouseId = reader.string();
+          message.sshObfuscatedPrivateKey = reader.string();
           continue;
         }
         case 20: {
@@ -1015,7 +814,7 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
             break;
           }
 
-          message.masterName = reader.string();
+          message.authenticationPrivateKeyObfuscated = reader.string();
           continue;
         }
         case 21: {
@@ -1023,31 +822,31 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
             break;
           }
 
-          message.masterUsername = reader.string();
+          message.externalSecret = DataSourceExternalSecret.decode(reader, reader.uint32());
           continue;
         }
         case 22: {
-          if (tag !== 178) {
+          if (tag !== 176) {
             break;
           }
 
-          message.masterObfuscatedPassword = reader.string();
+          message.authenticationType = dataSourceOptions_AuthenticationTypeFromJSON(reader.int32());
           continue;
         }
         case 23: {
-          if (tag !== 184) {
+          if (tag !== 186) {
             break;
           }
 
-          message.redisType = dataSourceOptions_RedisTypeFromJSON(reader.int32());
+          message.clientSecretCredential = DataSourceOptions_ClientSecretCredential.decode(reader, reader.uint32());
           continue;
         }
         case 24: {
-          if (tag !== 192) {
+          if (tag !== 194) {
             break;
           }
 
-          message.useSsl = reader.bool();
+          message.saslConfig = SASLConfig.decode(reader, reader.uint32());
           continue;
         }
         case 25: {
@@ -1055,17 +854,97 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
             break;
           }
 
-          message.cluster = reader.string();
+          message.additionalAddresses.push(DataSourceOptions_Address.decode(reader, reader.uint32()));
           continue;
         }
-        case 27: {
-          if (tag !== 218) {
+        case 26: {
+          if (tag !== 210) {
             break;
           }
 
-          const entry27 = DataSourceOptions_ExtraConnectionParametersEntry.decode(reader, reader.uint32());
-          if (entry27.value !== undefined) {
-            message.extraConnectionParameters[entry27.key] = entry27.value;
+          message.replicaSet = reader.string();
+          continue;
+        }
+        case 27: {
+          if (tag !== 216) {
+            break;
+          }
+
+          message.directConnection = reader.bool();
+          continue;
+        }
+        case 28: {
+          if (tag !== 226) {
+            break;
+          }
+
+          message.region = reader.string();
+          continue;
+        }
+        case 29: {
+          if (tag !== 234) {
+            break;
+          }
+
+          message.warehouseId = reader.string();
+          continue;
+        }
+        case 30: {
+          if (tag !== 242) {
+            break;
+          }
+
+          message.masterName = reader.string();
+          continue;
+        }
+        case 31: {
+          if (tag !== 250) {
+            break;
+          }
+
+          message.masterUsername = reader.string();
+          continue;
+        }
+        case 32: {
+          if (tag !== 258) {
+            break;
+          }
+
+          message.masterObfuscatedPassword = reader.string();
+          continue;
+        }
+        case 33: {
+          if (tag !== 264) {
+            break;
+          }
+
+          message.redisType = dataSourceOptions_RedisTypeFromJSON(reader.int32());
+          continue;
+        }
+        case 34: {
+          if (tag !== 272) {
+            break;
+          }
+
+          message.useSsl = reader.bool();
+          continue;
+        }
+        case 35: {
+          if (tag !== 282) {
+            break;
+          }
+
+          message.cluster = reader.string();
+          continue;
+        }
+        case 36: {
+          if (tag !== 290) {
+            break;
+          }
+
+          const entry36 = DataSourceOptions_ExtraConnectionParametersEntry.decode(reader, reader.uint32());
+          if (entry36.value !== undefined) {
+            message.extraConnectionParameters[entry36.key] = entry36.value;
           }
           continue;
         }
@@ -1080,6 +959,16 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
 
   fromJSON(object: any): DataSourceOptions {
     return {
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      type: isSet(object.type) ? dataSourceTypeFromJSON(object.type) : DataSourceType.DATA_SOURCE_UNSPECIFIED,
+      host: isSet(object.host) ? globalThis.String(object.host) : "",
+      port: isSet(object.port) ? globalThis.String(object.port) : "",
+      username: isSet(object.username) ? globalThis.String(object.username) : "",
+      obfuscatedPassword: isSet(object.obfuscatedPassword) ? globalThis.String(object.obfuscatedPassword) : "",
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
+      obfuscatedSslKey: isSet(object.obfuscatedSslKey) ? globalThis.String(object.obfuscatedSslKey) : "",
+      obfuscatedSslCert: isSet(object.obfuscatedSslCert) ? globalThis.String(object.obfuscatedSslCert) : "",
+      obfuscatedSslCa: isSet(object.obfuscatedSslCa) ? globalThis.String(object.obfuscatedSslCa) : "",
       srv: isSet(object.srv) ? globalThis.Boolean(object.srv) : false,
       authenticationDatabase: isSet(object.authenticationDatabase)
         ? globalThis.String(object.authenticationDatabase)
@@ -1134,6 +1023,36 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
 
   toJSON(message: DataSourceOptions): unknown {
     const obj: any = {};
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.type !== DataSourceType.DATA_SOURCE_UNSPECIFIED) {
+      obj.type = dataSourceTypeToJSON(message.type);
+    }
+    if (message.host !== "") {
+      obj.host = message.host;
+    }
+    if (message.port !== "") {
+      obj.port = message.port;
+    }
+    if (message.username !== "") {
+      obj.username = message.username;
+    }
+    if (message.obfuscatedPassword !== "") {
+      obj.obfuscatedPassword = message.obfuscatedPassword;
+    }
+    if (message.database !== "") {
+      obj.database = message.database;
+    }
+    if (message.obfuscatedSslKey !== "") {
+      obj.obfuscatedSslKey = message.obfuscatedSslKey;
+    }
+    if (message.obfuscatedSslCert !== "") {
+      obj.obfuscatedSslCert = message.obfuscatedSslCert;
+    }
+    if (message.obfuscatedSslCa !== "") {
+      obj.obfuscatedSslCa = message.obfuscatedSslCa;
+    }
     if (message.srv !== false) {
       obj.srv = message.srv;
     }
@@ -1226,6 +1145,16 @@ export const DataSourceOptions: MessageFns<DataSourceOptions> = {
   },
   fromPartial(object: DeepPartial<DataSourceOptions>): DataSourceOptions {
     const message = createBaseDataSourceOptions();
+    message.id = object.id ?? "";
+    message.type = object.type ?? DataSourceType.DATA_SOURCE_UNSPECIFIED;
+    message.host = object.host ?? "";
+    message.port = object.port ?? "";
+    message.username = object.username ?? "";
+    message.obfuscatedPassword = object.obfuscatedPassword ?? "";
+    message.database = object.database ?? "";
+    message.obfuscatedSslKey = object.obfuscatedSslKey ?? "";
+    message.obfuscatedSslCert = object.obfuscatedSslCert ?? "";
+    message.obfuscatedSslCa = object.obfuscatedSslCa ?? "";
     message.srv = object.srv ?? false;
     message.authenticationDatabase = object.authenticationDatabase ?? "";
     message.sid = object.sid ?? "";
@@ -1745,6 +1674,310 @@ export const KerberosConfig: MessageFns<KerberosConfig> = {
     message.kdcHost = object.kdcHost ?? "";
     message.kdcPort = object.kdcPort ?? "";
     message.kdcTransportProtocol = object.kdcTransportProtocol ?? "";
+    return message;
+  },
+};
+
+function createBaseDataSourceExternalSecret(): DataSourceExternalSecret {
+  return {
+    secretType: DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED,
+    url: "",
+    authType: DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED,
+    appRole: undefined,
+    token: undefined,
+    engineName: "",
+    secretName: "",
+    passwordKeyName: "",
+  };
+}
+
+export const DataSourceExternalSecret: MessageFns<DataSourceExternalSecret> = {
+  encode(message: DataSourceExternalSecret, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.secretType !== DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED) {
+      writer.uint32(8).int32(dataSourceExternalSecret_SecretTypeToNumber(message.secretType));
+    }
+    if (message.url !== "") {
+      writer.uint32(18).string(message.url);
+    }
+    if (message.authType !== DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED) {
+      writer.uint32(24).int32(dataSourceExternalSecret_AuthTypeToNumber(message.authType));
+    }
+    if (message.appRole !== undefined) {
+      DataSourceExternalSecret_AppRoleAuthOption.encode(message.appRole, writer.uint32(34).fork()).join();
+    }
+    if (message.token !== undefined) {
+      writer.uint32(42).string(message.token);
+    }
+    if (message.engineName !== "") {
+      writer.uint32(50).string(message.engineName);
+    }
+    if (message.secretName !== "") {
+      writer.uint32(58).string(message.secretName);
+    }
+    if (message.passwordKeyName !== "") {
+      writer.uint32(66).string(message.passwordKeyName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DataSourceExternalSecret {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataSourceExternalSecret();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.secretType = dataSourceExternalSecret_SecretTypeFromJSON(reader.int32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.url = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.authType = dataSourceExternalSecret_AuthTypeFromJSON(reader.int32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.appRole = DataSourceExternalSecret_AppRoleAuthOption.decode(reader, reader.uint32());
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.token = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.engineName = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.secretName = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.passwordKeyName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataSourceExternalSecret {
+    return {
+      secretType: isSet(object.secretType)
+        ? dataSourceExternalSecret_SecretTypeFromJSON(object.secretType)
+        : DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED,
+      url: isSet(object.url) ? globalThis.String(object.url) : "",
+      authType: isSet(object.authType)
+        ? dataSourceExternalSecret_AuthTypeFromJSON(object.authType)
+        : DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED,
+      appRole: isSet(object.appRole) ? DataSourceExternalSecret_AppRoleAuthOption.fromJSON(object.appRole) : undefined,
+      token: isSet(object.token) ? globalThis.String(object.token) : undefined,
+      engineName: isSet(object.engineName) ? globalThis.String(object.engineName) : "",
+      secretName: isSet(object.secretName) ? globalThis.String(object.secretName) : "",
+      passwordKeyName: isSet(object.passwordKeyName) ? globalThis.String(object.passwordKeyName) : "",
+    };
+  },
+
+  toJSON(message: DataSourceExternalSecret): unknown {
+    const obj: any = {};
+    if (message.secretType !== DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED) {
+      obj.secretType = dataSourceExternalSecret_SecretTypeToJSON(message.secretType);
+    }
+    if (message.url !== "") {
+      obj.url = message.url;
+    }
+    if (message.authType !== DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED) {
+      obj.authType = dataSourceExternalSecret_AuthTypeToJSON(message.authType);
+    }
+    if (message.appRole !== undefined) {
+      obj.appRole = DataSourceExternalSecret_AppRoleAuthOption.toJSON(message.appRole);
+    }
+    if (message.token !== undefined) {
+      obj.token = message.token;
+    }
+    if (message.engineName !== "") {
+      obj.engineName = message.engineName;
+    }
+    if (message.secretName !== "") {
+      obj.secretName = message.secretName;
+    }
+    if (message.passwordKeyName !== "") {
+      obj.passwordKeyName = message.passwordKeyName;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DataSourceExternalSecret>): DataSourceExternalSecret {
+    return DataSourceExternalSecret.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DataSourceExternalSecret>): DataSourceExternalSecret {
+    const message = createBaseDataSourceExternalSecret();
+    message.secretType = object.secretType ?? DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED;
+    message.url = object.url ?? "";
+    message.authType = object.authType ?? DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED;
+    message.appRole = (object.appRole !== undefined && object.appRole !== null)
+      ? DataSourceExternalSecret_AppRoleAuthOption.fromPartial(object.appRole)
+      : undefined;
+    message.token = object.token ?? undefined;
+    message.engineName = object.engineName ?? "";
+    message.secretName = object.secretName ?? "";
+    message.passwordKeyName = object.passwordKeyName ?? "";
+    return message;
+  },
+};
+
+function createBaseDataSourceExternalSecret_AppRoleAuthOption(): DataSourceExternalSecret_AppRoleAuthOption {
+  return {
+    roleId: "",
+    secretId: "",
+    type: DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED,
+    mountPath: "",
+  };
+}
+
+export const DataSourceExternalSecret_AppRoleAuthOption: MessageFns<DataSourceExternalSecret_AppRoleAuthOption> = {
+  encode(message: DataSourceExternalSecret_AppRoleAuthOption, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.roleId !== "") {
+      writer.uint32(10).string(message.roleId);
+    }
+    if (message.secretId !== "") {
+      writer.uint32(18).string(message.secretId);
+    }
+    if (message.type !== DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED) {
+      writer.uint32(24).int32(dataSourceExternalSecret_AppRoleAuthOption_SecretTypeToNumber(message.type));
+    }
+    if (message.mountPath !== "") {
+      writer.uint32(34).string(message.mountPath);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DataSourceExternalSecret_AppRoleAuthOption {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataSourceExternalSecret_AppRoleAuthOption();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.roleId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.secretId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.type = dataSourceExternalSecret_AppRoleAuthOption_SecretTypeFromJSON(reader.int32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.mountPath = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataSourceExternalSecret_AppRoleAuthOption {
+    return {
+      roleId: isSet(object.roleId) ? globalThis.String(object.roleId) : "",
+      secretId: isSet(object.secretId) ? globalThis.String(object.secretId) : "",
+      type: isSet(object.type)
+        ? dataSourceExternalSecret_AppRoleAuthOption_SecretTypeFromJSON(object.type)
+        : DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED,
+      mountPath: isSet(object.mountPath) ? globalThis.String(object.mountPath) : "",
+    };
+  },
+
+  toJSON(message: DataSourceExternalSecret_AppRoleAuthOption): unknown {
+    const obj: any = {};
+    if (message.roleId !== "") {
+      obj.roleId = message.roleId;
+    }
+    if (message.secretId !== "") {
+      obj.secretId = message.secretId;
+    }
+    if (message.type !== DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED) {
+      obj.type = dataSourceExternalSecret_AppRoleAuthOption_SecretTypeToJSON(message.type);
+    }
+    if (message.mountPath !== "") {
+      obj.mountPath = message.mountPath;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DataSourceExternalSecret_AppRoleAuthOption>): DataSourceExternalSecret_AppRoleAuthOption {
+    return DataSourceExternalSecret_AppRoleAuthOption.fromPartial(base ?? {});
+  },
+  fromPartial(
+    object: DeepPartial<DataSourceExternalSecret_AppRoleAuthOption>,
+  ): DataSourceExternalSecret_AppRoleAuthOption {
+    const message = createBaseDataSourceExternalSecret_AppRoleAuthOption();
+    message.roleId = object.roleId ?? "";
+    message.secretId = object.secretId ?? "";
+    message.type = object.type ?? DataSourceExternalSecret_AppRoleAuthOption_SecretType.SECRET_TYPE_UNSPECIFIED;
+    message.mountPath = object.mountPath ?? "";
     return message;
   },
 };
