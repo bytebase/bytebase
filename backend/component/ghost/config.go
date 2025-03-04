@@ -197,7 +197,7 @@ func NewMigrationContext(ctx context.Context, taskID int, database *store.Databa
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get password")
 	}
-	updatedPassword, err := secretcomp.ReplaceExternalSecret(ctx, password, dataSource.ExternalSecret)
+	updatedPassword, err := secretcomp.ReplaceExternalSecret(ctx, password, dataSource.Options.GetExternalSecret())
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +214,7 @@ func NewMigrationContext(ctx context.Context, taskID int, database *store.Databa
 		}
 		port = dsPort
 	}
-	if dataSource.UseSSL {
+	if dataSource.Options.GetUseSsl() {
 		ca, err := common.Unobfuscate(dataSource.ObfuscatedSslCa, secret)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get ssl ca")

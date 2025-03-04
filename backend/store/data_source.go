@@ -3,13 +3,10 @@ package store
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -19,8 +16,9 @@ import (
 
 // DataSourceMessage is the message for data source.
 type DataSourceMessage struct {
-	ID                 string
-	Type               api.DataSourceType
+	ID   string
+	Type api.DataSourceType
+
 	Username           string
 	ObfuscatedPassword string
 	ObfuscatedSslCa    string
@@ -29,37 +27,8 @@ type DataSourceMessage struct {
 	Host               string
 	Port               string
 	Database           string
-	// Flatten data source options.
-	SRV                    bool
-	AuthenticationDatabase string
-	SID                    string
-	ServiceName            string
-	// SSH related.
-	SSHHost                 string
-	SSHPort                 string
-	SSHUser                 string
-	SSHObfuscatedPassword   string
-	SSHObfuscatedPrivateKey string
-	// SASL.
-	SASLConfig *storepb.SASLConfig
-	// Authentication
-	AuthenticationPrivateKeyObfuscated string
-	// external secret
-	ExternalSecret           *storepb.DataSourceExternalSecret
-	AuthenticationType       storepb.DataSourceOptions_AuthenticationType
-	AdditionalAddresses      []*storepb.DataSourceOptions_Address
-	ReplicaSet               string
-	DirectConnection         bool
-	Region                   string
-	WarehouseID              string
-	UseSSL                   bool
-	RedisType                storepb.DataSourceOptions_RedisType
-	MasterName               string
-	MasterUsername           string
-	MasterObfuscatedPassword string
-	// Extra connection parameters
-	ExtraConnectionParameters map[string]string
-	ClientSecretCredential    *storepb.DataSourceOptions_ClientSecretCredential
+
+	Options *storepb.DataSourceOptions
 }
 
 // FindDataSourceMessage is the message for finding a database.
@@ -68,47 +37,6 @@ type FindDataSourceMessage struct {
 	Name       *string
 	InstanceID *string
 	Type       *api.DataSourceType
-}
-
-// Copy returns a copy of the data source message.
-func (m *DataSourceMessage) Copy() *DataSourceMessage {
-	deepCopyAdditionalAddresses := slices.Clone[[]*storepb.DataSourceOptions_Address](m.AdditionalAddresses)
-	return &DataSourceMessage{
-		ID:                                 m.ID,
-		Type:                               m.Type,
-		Username:                           m.Username,
-		ObfuscatedPassword:                 m.ObfuscatedPassword,
-		ObfuscatedSslCa:                    m.ObfuscatedSslCa,
-		ObfuscatedSslCert:                  m.ObfuscatedSslCert,
-		ObfuscatedSslKey:                   m.ObfuscatedSslKey,
-		Host:                               m.Host,
-		Port:                               m.Port,
-		Database:                           m.Database,
-		SRV:                                m.SRV,
-		AuthenticationDatabase:             m.AuthenticationDatabase,
-		SID:                                m.SID,
-		ServiceName:                        m.ServiceName,
-		SSHHost:                            m.SSHHost,
-		SSHPort:                            m.SSHPort,
-		SSHUser:                            m.SSHUser,
-		SSHObfuscatedPassword:              m.SSHObfuscatedPassword,
-		SSHObfuscatedPrivateKey:            m.SSHObfuscatedPrivateKey,
-		AuthenticationPrivateKeyObfuscated: m.AuthenticationPrivateKeyObfuscated,
-		ExternalSecret:                     m.ExternalSecret,
-		AuthenticationType:                 m.AuthenticationType,
-		SASLConfig:                         m.SASLConfig,
-		AdditionalAddresses:                deepCopyAdditionalAddresses,
-		ReplicaSet:                         m.ReplicaSet,
-		DirectConnection:                   m.DirectConnection,
-		Region:                             m.Region,
-		UseSSL:                             m.UseSSL,
-		RedisType:                          m.RedisType,
-		MasterName:                         m.MasterName,
-		MasterUsername:                     m.MasterUsername,
-		MasterObfuscatedPassword:           m.MasterObfuscatedPassword,
-		ExtraConnectionParameters:          m.ExtraConnectionParameters,
-		ClientSecretCredential:             m.ClientSecretCredential,
-	}
 }
 
 // UpdateDataSourceMessage is the message for the data source.
@@ -124,39 +52,7 @@ type UpdateDataSourceMessage struct {
 	Host               *string
 	Port               *string
 	Database           *string
-	// Flatten data source options.
-	SRV                    *bool
-	AuthenticationDatabase *string
-	SID                    *string
-	ServiceName            *string
-	// SSH related.
-	SSHHost                 *string
-	SSHPort                 *string
-	SSHUser                 *string
-	SSHObfuscatedPassword   *string
-	SSHObfuscatedPrivateKey *string
-	// Authentication
-	AuthenticationPrivateKeyObfuscated *string
-	// external secret
-	ExternalSecret       *storepb.DataSourceExternalSecret
-	RemoveExternalSecret bool
-	AuthenticationType   *storepb.DataSourceOptions_AuthenticationType
-	// SASLConfig.
-	SASLConfig        *storepb.SASLConfig
-	AdditionalAddress *[]*storepb.DataSourceOptions_Address
-	ReplicaSet        *string
-	RemoveSASLConfig  bool
-	DirectConnection  *bool
-	Region            *string
-	WarehouseID       *string
-	UseSSL            *bool
-
-	RedisType                *storepb.DataSourceOptions_RedisType
-	MasterName               *string
-	MasterUsername           *string
-	MasterObfuscatedPassword *string
-
-	ClientSecretCredential *storepb.DataSourceOptions_ClientSecretCredential
+	Options            *storepb.DataSourceOptions
 }
 
 func (*Store) listInstanceDataSourceMap(ctx context.Context, tx *Tx, find *FindDataSourceMessage) (map[string][]*DataSourceMessage, error) {
@@ -217,37 +113,11 @@ func (*Store) listInstanceDataSourceMap(ctx context.Context, tx *Tx, find *FindD
 		); err != nil {
 			return nil, err
 		}
-		var dataSourceOptions storepb.DataSourceOptions
-		if err := common.ProtojsonUnmarshaler.Unmarshal(protoBytes, &dataSourceOptions); err != nil {
+		dataSourceOptions := &storepb.DataSourceOptions{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal(protoBytes, dataSourceOptions); err != nil {
 			return nil, err
 		}
-		dataSourceMessage.SRV = dataSourceOptions.Srv
-		dataSourceMessage.AuthenticationDatabase = dataSourceOptions.AuthenticationDatabase
-		dataSourceMessage.SID = dataSourceOptions.Sid
-		dataSourceMessage.ServiceName = dataSourceOptions.ServiceName
-		dataSourceMessage.SSHHost = dataSourceOptions.SshHost
-		dataSourceMessage.SSHPort = dataSourceOptions.SshPort
-		dataSourceMessage.SSHUser = dataSourceOptions.SshUser
-		dataSourceMessage.SSHObfuscatedPassword = dataSourceOptions.SshObfuscatedPassword
-		dataSourceMessage.SSHObfuscatedPrivateKey = dataSourceOptions.SshObfuscatedPrivateKey
-		dataSourceMessage.AuthenticationPrivateKeyObfuscated = dataSourceOptions.AuthenticationPrivateKeyObfuscated
-		dataSourceMessage.ExternalSecret = dataSourceOptions.ExternalSecret
-		dataSourceMessage.SASLConfig = dataSourceOptions.SaslConfig
-		dataSourceMessage.AuthenticationType = dataSourceOptions.AuthenticationType
-		dataSourceMessage.AdditionalAddresses = dataSourceOptions.AdditionalAddresses
-		dataSourceMessage.ReplicaSet = dataSourceOptions.ReplicaSet
-		dataSourceMessage.DirectConnection = dataSourceOptions.DirectConnection
-		dataSourceMessage.Region = dataSourceOptions.Region
-		dataSourceMessage.WarehouseID = dataSourceOptions.WarehouseId
-		dataSourceMessage.UseSSL = dataSourceOptions.UseSsl
-		dataSourceMessage.RedisType = dataSourceOptions.RedisType
-		dataSourceMessage.MasterName = dataSourceOptions.MasterName
-		dataSourceMessage.MasterObfuscatedPassword = dataSourceOptions.MasterObfuscatedPassword
-		dataSourceMessage.MasterUsername = dataSourceOptions.MasterUsername
-		dataSourceMessage.ExtraConnectionParameters = dataSourceOptions.ExtraConnectionParameters
-		if dataSourceOptions.GetClientSecretCredential() != nil {
-			dataSourceMessage.ClientSecretCredential = dataSourceOptions.GetClientSecretCredential()
-		}
+		dataSourceMessage.Options = dataSourceOptions
 		instanceDataSourcesMap[instanceID] = append(instanceDataSourcesMap[instanceID], &dataSourceMessage)
 	}
 	if err := rows.Err(); err != nil {
@@ -404,107 +274,19 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	if v := patch.Database; v != nil {
 		set, args = append(set, fmt.Sprintf("database = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.Options; v != nil {
+		o, err := protojson.Marshal(v)
+		if err != nil {
+			return err
+		}
+		set, args = append(set, fmt.Sprintf("options = $%d", len(args)+1)), append(args, o)
+	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.New("failed to begin transaction")
 	}
 	defer tx.Rollback()
-
-	dataSource, err := getDataSourceOption(ctx, tx, &FindDataSourceMessage{
-		InstanceID: &patch.InstanceID,
-		Name:       &patch.DataSourceID,
-	})
-	if err != nil {
-		return err
-	}
-	if dataSource == nil {
-		return status.Errorf(codes.NotFound, "data source not found: %s", patch.DataSourceID)
-	}
-
-	if v := patch.SRV; v != nil {
-		dataSource.Srv = *v
-	}
-	if v := patch.AuthenticationDatabase; v != nil {
-		dataSource.AuthenticationDatabase = *v
-	}
-	if v := patch.SID; v != nil {
-		dataSource.Sid = *v
-	}
-	if v := patch.ServiceName; v != nil {
-		dataSource.ServiceName = *v
-	}
-	if v := patch.SSHHost; v != nil {
-		dataSource.SshHost = *v
-	}
-	if v := patch.SSHPort; v != nil {
-		dataSource.SshPort = *v
-	}
-	if v := patch.SSHUser; v != nil {
-		dataSource.SshUser = *v
-	}
-	if v := patch.SSHObfuscatedPassword; v != nil {
-		dataSource.SshObfuscatedPassword = *v
-	}
-	if v := patch.SSHObfuscatedPrivateKey; v != nil {
-		dataSource.SshObfuscatedPrivateKey = *v
-	}
-	if v := patch.AuthenticationPrivateKeyObfuscated; v != nil {
-		dataSource.AuthenticationPrivateKeyObfuscated = *v
-	}
-	if v := patch.AuthenticationType; v != nil {
-		dataSource.AuthenticationType = *v
-	}
-	if v := patch.ExternalSecret; v != nil {
-		dataSource.ExternalSecret = v
-	} else if patch.RemoveExternalSecret {
-		dataSource.ExternalSecret = nil
-	}
-	if v := patch.SASLConfig; v != nil {
-		dataSource.SaslConfig = v
-	} else if patch.RemoveSASLConfig {
-		dataSource.SaslConfig = nil
-	}
-	if v := patch.AdditionalAddress; v != nil {
-		dataSource.AdditionalAddresses = *v
-	}
-	if v := patch.ReplicaSet; v != nil {
-		dataSource.ReplicaSet = *v
-	}
-	if v := patch.DirectConnection; v != nil {
-		dataSource.DirectConnection = *v
-	}
-	if v := patch.Region; v != nil {
-		dataSource.Region = *v
-	}
-	if v := patch.WarehouseID; v != nil {
-		dataSource.WarehouseId = *v
-	}
-	if v := patch.UseSSL; v != nil {
-		dataSource.UseSsl = *v
-	}
-	if v := patch.RedisType; v != nil {
-		dataSource.RedisType = *v
-	}
-	if v := patch.MasterName; v != nil {
-		dataSource.MasterName = *v
-	}
-	if v := patch.MasterUsername; v != nil {
-		dataSource.MasterUsername = *v
-	}
-	if v := patch.MasterObfuscatedPassword; v != nil {
-		dataSource.MasterObfuscatedPassword = *v
-	}
-	if v := patch.ClientSecretCredential; v != nil {
-		dataSource.IamExtension = &storepb.DataSourceOptions_ClientSecretCredential_{
-			ClientSecretCredential: v,
-		}
-	}
-	protoBytes, err := protojson.Marshal(dataSource)
-	if err != nil {
-		return errors.Wrap(err, "failed to marshal data source options")
-	}
-	set, args = append(set, fmt.Sprintf("options = $%d", len(args)+1)), append(args, protoBytes)
 
 	query := fmt.Sprintf(`UPDATE data_source SET %s WHERE instance = $%d AND name = $%d`, strings.Join(set, ", "), len(args)+1, len(args)+2)
 	args = append(args, patch.InstanceID, patch.DataSourceID)
@@ -530,39 +312,7 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 }
 
 func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanceID string, dataSource *DataSourceMessage) error {
-	// We flatten the data source fields in DataSourceMessage, so we need to compose them in store layer before INSERT.
-	dataSourceOptions := storepb.DataSourceOptions{
-		Srv:                                dataSource.SRV,
-		AuthenticationDatabase:             dataSource.AuthenticationDatabase,
-		Sid:                                dataSource.SID,
-		ServiceName:                        dataSource.ServiceName,
-		SshHost:                            dataSource.SSHHost,
-		SshPort:                            dataSource.SSHPort,
-		SshUser:                            dataSource.SSHUser,
-		SshObfuscatedPassword:              dataSource.SSHObfuscatedPassword,
-		SshObfuscatedPrivateKey:            dataSource.SSHObfuscatedPrivateKey,
-		AuthenticationPrivateKeyObfuscated: dataSource.AuthenticationPrivateKeyObfuscated,
-		ExternalSecret:                     dataSource.ExternalSecret,
-		AuthenticationType:                 dataSource.AuthenticationType,
-		SaslConfig:                         dataSource.SASLConfig,
-		AdditionalAddresses:                dataSource.AdditionalAddresses,
-		ReplicaSet:                         dataSource.ReplicaSet,
-		DirectConnection:                   dataSource.DirectConnection,
-		Region:                             dataSource.Region,
-		WarehouseId:                        dataSource.WarehouseID,
-		UseSsl:                             dataSource.UseSSL,
-		RedisType:                          dataSource.RedisType,
-		MasterName:                         dataSource.MasterName,
-		MasterUsername:                     dataSource.MasterName,
-		MasterObfuscatedPassword:           dataSource.MasterObfuscatedPassword,
-		ExtraConnectionParameters:          dataSource.ExtraConnectionParameters,
-	}
-	if dataSource.ClientSecretCredential != nil {
-		dataSourceOptions.IamExtension = &storepb.DataSourceOptions_ClientSecretCredential_{
-			ClientSecretCredential: dataSource.ClientSecretCredential,
-		}
-	}
-	protoBytes, err := protojson.Marshal(&dataSourceOptions)
+	protoBytes, err := protojson.Marshal(dataSource.Options)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal data source options")
 	}
