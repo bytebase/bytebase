@@ -210,42 +210,6 @@ func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceID string, dataS
 	return nil
 }
 
-func getDataSourceOption(ctx context.Context, tx *Tx, find *FindDataSourceMessage) (*storepb.DataSourceOptions, error) {
-	where, args := []string{"TRUE"}, []any{}
-	if find.ID != nil {
-		where, args = append(where, fmt.Sprintf("id = $%d", len(args)+1)), append(args, *find.ID)
-	}
-	if find.Name != nil {
-		where, args = append(where, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *find.Name)
-	}
-	if find.InstanceID != nil {
-		where, args = append(where, fmt.Sprintf("instance = $%d", len(args)+1)), append(args, *find.InstanceID)
-	}
-	if find.Type != nil {
-		where, args = append(where, fmt.Sprintf("type = $%d", len(args)+1)), append(args, *find.Type)
-	}
-	row := tx.QueryRowContext(ctx, `
-		SELECT
-			options
-		FROM data_source
-		WHERE `+strings.Join(where, " AND "),
-		args...,
-	)
-	if row.Err() != nil {
-		return nil, row.Err()
-	}
-	var protoBytes []byte
-	if err := row.Scan(&protoBytes); err != nil {
-		return nil, err
-	}
-	var dataSourceOptions storepb.DataSourceOptions
-	if err := common.ProtojsonUnmarshaler.Unmarshal(protoBytes, &dataSourceOptions); err != nil {
-		return nil, err
-	}
-
-	return &dataSourceOptions, nil
-}
-
 // UpdateDataSourceV2 updates a data source and returns the instance.
 func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceMessage) error {
 	set, args := []string{}, []any{}
