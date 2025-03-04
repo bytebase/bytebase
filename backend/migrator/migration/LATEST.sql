@@ -145,8 +145,7 @@ CREATE TABLE db (
     datashare boolean NOT NULL DEFAULT FALSE,
     -- service_name is the Oracle specific field.
     service_name text NOT NULL DEFAULT '',
-    metadata jsonb NOT NULL DEFAULT '{}',
-    sync jsonb NOT NULL DEFAULT '{}'
+    metadata jsonb NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_db_project ON db(project);
