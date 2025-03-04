@@ -198,7 +198,7 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 	}
 	for _, database := range databases {
 		database := database
-		if database.SyncState != api.OK {
+		if database.Deleted {
 			continue
 		}
 		instance, ok := instancesMap[database.InstanceID]
@@ -236,7 +236,7 @@ func (s *Syncer) SyncAllDatabases(ctx context.Context, instance *store.InstanceM
 
 	for _, database := range databases {
 		// Skip deleted databases.
-		if database.SyncState != api.OK {
+		if database.Deleted {
 			continue
 		}
 		s.databaseSyncMap.Store(database.String(), database)
@@ -246,7 +246,7 @@ func (s *Syncer) SyncAllDatabases(ctx context.Context, instance *store.InstanceM
 func (s *Syncer) SyncDatabasesAsync(databases []*store.DatabaseMessage) {
 	for _, database := range databases {
 		// Skip deleted databases.
-		if database.SyncState != api.OK {
+		if database.Deleted {
 			continue
 		}
 		s.databaseSyncMap.Store(database.String(), database)
@@ -335,11 +335,11 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	for _, database := range databases {
 		idx := slices.IndexFunc(filteredDatabaseMetadatas, func(db *storepb.DatabaseSchemaMetadata) bool { return db.Name == database.DatabaseName })
 		if idx < 0 {
-			syncStatus := api.NotFound
+			d := true
 			if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 				InstanceID:   instance.ResourceID,
 				DatabaseName: database.DatabaseName,
-				SyncState:    &syncStatus,
+				Deleted:      &d,
 			}); err != nil {
 				return nil, nil, nil, errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, instance.ResourceID)
 			}
@@ -410,12 +410,12 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 		setClassificationAndUserCommentFromComment(databaseMetadata, dbModelConfig, classificationConfig)
 	}
 
-	syncStatus := api.OK
+	d := false
 	ts := time.Now()
 	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
-		SyncState:    &syncStatus,
+		Deleted:      &d,
 		SyncAt:       &ts,
 		MetadataUpsert: &storepb.DatabaseMetadata{
 			LastSyncTime:    timestamppb.New(ts),
@@ -516,12 +516,12 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		setClassificationAndUserCommentFromComment(databaseMetadata, dbModelConfig, classificationConfig)
 	}
 
-	syncStatus := api.OK
+	d := false
 	ts := time.Now()
 	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
-		SyncState:    &syncStatus,
+		Deleted:      &d,
 		SyncAt:       &ts,
 		MetadataUpsert: &storepb.DatabaseMetadata{
 			LastSyncTime:    timestamppb.New(ts),

@@ -69,7 +69,7 @@
           <label
             class="border-control-border relative border p-3 flex flex-col gap-y-2 md:flex-row md:pl-4 md:pr-6"
             :class="
-              database.syncState === State.ACTIVE
+              database.state === State.ACTIVE
                 ? 'cursor-pointer'
                 : 'cursor-not-allowed'
             "
@@ -93,7 +93,7 @@
               />
               <span
                 class="font-medium ml-2 text-main"
-                :class="database.syncState !== State.ACTIVE && 'opacity-40'"
+                :class="database.state !== State.ACTIVE && 'opacity-40'"
                 >{{ database.databaseName }}</span
               >
             </div>

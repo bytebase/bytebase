@@ -356,7 +356,7 @@ const createMigration = async (
 ) => {
   if (type === "bb.issue.database.schema.update") {
     if (
-      database.value.syncState === State.ACTIVE &&
+      database.value.state === State.ACTIVE &&
       allowUsingSchemaEditor([database.value]) &&
       !disableSchemaEditor.value
     ) {

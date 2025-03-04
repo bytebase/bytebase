@@ -12,7 +12,7 @@
     <!-- eslint-disable-next-line vue/no-v-html -->
     <span v-html="renderedDatabaseName" />
     <span
-      v-if="showNotFound && database.syncState === State.DELETED"
+      v-if="showNotFound && database.state === State.DELETED"
       class="text-control-placeholder"
     >
       (NOT_FOUND)
@@ -46,7 +46,7 @@ const props = withDefaults(
 
 const router = useRouter();
 const shouldShowLink = computed(() => {
-  return props.link && props.database.syncState === State.ACTIVE;
+  return props.link && props.database.state === State.ACTIVE;
 });
 
 const bindings = computed(() => {

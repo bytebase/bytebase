@@ -1220,13 +1220,6 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 		return nil, errors.Wrap(err, "failed to find instance")
 	}
 
-	syncState := v1pb.State_STATE_UNSPECIFIED
-	switch database.SyncState {
-	case api.OK:
-		syncState = v1pb.State_ACTIVE
-	case api.NotFound:
-		syncState = v1pb.State_DELETED
-	}
 	environment, effectiveEnvironment := "", ""
 	if database.EnvironmentID != "" {
 		environment = common.FormatEnvironment(database.EnvironmentID)
@@ -1240,7 +1233,7 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 	}
 	return &v1pb.Database{
 		Name:                 common.FormatDatabase(database.InstanceID, database.DatabaseName),
-		SyncState:            syncState,
+		State:                convertDeletedToState(database.Deleted),
 		SuccessfulSyncTime:   timestamppb.New(database.SyncAt),
 		Project:              common.FormatProject(database.ProjectID),
 		Environment:          environment,
