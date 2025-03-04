@@ -320,8 +320,8 @@ export interface Database {
    * {database} is the database name in the instance.
    */
   name: string;
-  /** The existence of a database on latest sync. */
-  syncState: State;
+  /** The existence of a database. */
+  state: State;
   /** The latest synchronization time. */
   successfulSyncTime:
     | Timestamp
@@ -2930,7 +2930,7 @@ export const DiffSchemaResponse: MessageFns<DiffSchemaResponse> = {
 function createBaseDatabase(): Database {
   return {
     name: "",
-    syncState: State.STATE_UNSPECIFIED,
+    state: State.STATE_UNSPECIFIED,
     successfulSyncTime: undefined,
     project: "",
     schemaVersion: "",
@@ -2947,8 +2947,8 @@ export const Database: MessageFns<Database> = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.syncState !== State.STATE_UNSPECIFIED) {
-      writer.uint32(24).int32(stateToNumber(message.syncState));
+    if (message.state !== State.STATE_UNSPECIFIED) {
+      writer.uint32(24).int32(stateToNumber(message.state));
     }
     if (message.successfulSyncTime !== undefined) {
       Timestamp.encode(message.successfulSyncTime, writer.uint32(34).fork()).join();
@@ -2997,7 +2997,7 @@ export const Database: MessageFns<Database> = {
             break;
           }
 
-          message.syncState = stateFromJSON(reader.int32());
+          message.state = stateFromJSON(reader.int32());
           continue;
         }
         case 4: {
@@ -3079,7 +3079,7 @@ export const Database: MessageFns<Database> = {
   fromJSON(object: any): Database {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      syncState: isSet(object.syncState) ? stateFromJSON(object.syncState) : State.STATE_UNSPECIFIED,
+      state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
       successfulSyncTime: isSet(object.successfulSyncTime) ? fromJsonTimestamp(object.successfulSyncTime) : undefined,
       project: isSet(object.project) ? globalThis.String(object.project) : "",
       schemaVersion: isSet(object.schemaVersion) ? globalThis.String(object.schemaVersion) : "",
@@ -3101,8 +3101,8 @@ export const Database: MessageFns<Database> = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.syncState !== State.STATE_UNSPECIFIED) {
-      obj.syncState = stateToJSON(message.syncState);
+    if (message.state !== State.STATE_UNSPECIFIED) {
+      obj.state = stateToJSON(message.state);
     }
     if (message.successfulSyncTime !== undefined) {
       obj.successfulSyncTime = fromTimestamp(message.successfulSyncTime).toISOString();
@@ -3143,7 +3143,7 @@ export const Database: MessageFns<Database> = {
   fromPartial(object: DeepPartial<Database>): Database {
     const message = createBaseDatabase();
     message.name = object.name ?? "";
-    message.syncState = object.syncState ?? State.STATE_UNSPECIFIED;
+    message.state = object.state ?? State.STATE_UNSPECIFIED;
     message.successfulSyncTime = (object.successfulSyncTime !== undefined && object.successfulSyncTime !== null)
       ? Timestamp.fromPartial(object.successfulSyncTime)
       : undefined;

@@ -11,7 +11,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -24,7 +23,7 @@ type DatabaseMessage struct {
 	EnvironmentID          string
 	EffectiveEnvironmentID string
 
-	SyncState api.SyncStatus
+	Deleted   bool
 	SyncAt    time.Time
 	Secrets   *storepb.Secrets
 	DataShare bool
@@ -45,7 +44,7 @@ type UpdateDatabaseMessage struct {
 	DatabaseName string
 
 	ProjectID           *string
-	SyncState           *api.SyncStatus
+	Deleted             *bool
 	SyncAt              *time.Time
 	SourceBackupID      *int
 	Secrets             *storepb.Secrets
@@ -166,7 +165,7 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectID, 
 			instance,
 			project,
 			name,
-			sync_status,
+			deleted,
 			schema_version,
 			secrets,
 			datashare,
@@ -175,7 +174,7 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectID, 
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT (instance, name) DO UPDATE SET
 			project = EXCLUDED.project,
-			sync_status = EXCLUDED.sync_status,
+			deleted = EXCLUDED.deleted,
 			datashare = EXCLUDED.datashare,
 			service_name = EXCLUDED.service_name
 		RETURNING id`
@@ -184,7 +183,7 @@ func (*Store) createDatabaseDefaultImpl(ctx context.Context, tx *Tx, projectID, 
 		instanceID,
 		projectID,
 		create.DatabaseName,
-		api.OK,
+		false,
 		"",            /* schema_version */
 		secretsString, /* secrets */
 		create.DataShare,
@@ -224,7 +223,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 			project,
 			environment,
 			name,
-			sync_status,
+			deleted,
 			sync_at,
 			schema_version,
 			secrets,
@@ -246,7 +245,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		create.ProjectID,
 		environment,
 		create.DatabaseName,
-		create.SyncState,
+		create.Deleted,
 		create.SyncAt,
 		secretsString,
 		create.DataShare,
@@ -279,8 +278,8 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		}
 		set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, environment)
 	}
-	if v := patch.SyncState; v != nil {
-		set, args = append(set, fmt.Sprintf("sync_status = $%d", len(args)+1)), append(args, *v)
+	if v := patch.Deleted; v != nil {
+		set, args = append(set, fmt.Sprintf("deleted = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := patch.SyncAt; v != nil {
 		set, args = append(set, fmt.Sprintf("sync_at = $%d", len(args)+1)), append(args, *v)
@@ -418,7 +417,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 
 		where, args = append(where, fmt.Sprintf("instance.deleted = $%d", len(args)+1)), append(args, false)
 		// We don't show databases that are deleted by users already.
-		where, args = append(where, fmt.Sprintf("db.sync_status = $%d", len(args)+1)), append(args, api.OK)
+		where, args = append(where, fmt.Sprintf("db.deleted = $%d", len(args)+1)), append(args, false)
 	}
 
 	query := fmt.Sprintf(`
@@ -431,7 +430,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			(SELECT environment.resource_id FROM environment WHERE environment.resource_id = db.environment),
 			db.instance,
 			db.name,
-			db.sync_status,
+			db.deleted,
 			db.sync_at,
 			COALESCE(
 				(
@@ -476,7 +475,7 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 			&environment,
 			&databaseMessage.InstanceID,
 			&databaseMessage.DatabaseName,
-			&databaseMessage.SyncState,
+			&databaseMessage.Deleted,
 			&databaseMessage.SyncAt,
 			&databaseMessage.SchemaVersion,
 			&secretsString,
