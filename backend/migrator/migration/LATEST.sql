@@ -169,8 +169,6 @@ CREATE TABLE data_source (
     options jsonb NOT NULL DEFAULT '{}'
 );
 
-CREATE UNIQUE INDEX idx_data_source_unique_instance_name ON data_source(instance, name);
-
 ALTER SEQUENCE data_source_id_seq RESTART WITH 101;
 
 CREATE TABLE sheet_blob (
