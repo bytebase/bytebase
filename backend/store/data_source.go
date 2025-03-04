@@ -35,7 +35,7 @@ type UpdateDataSourceMessage struct {
 func (*Store) listInstanceDataSourceMap(ctx context.Context, tx *Tx, find *FindDataSourceMessage) (map[string][]*DataSourceMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if find.ID != nil {
-		where, args = append(where, fmt.Sprintf("options->'id' = $%d", len(args)+1)), append(args, *find.ID)
+		where, args = append(where, fmt.Sprintf("options->>'id' = $%d", len(args)+1)), append(args, *find.ID)
 	}
 	if find.InstanceID != nil {
 		where, args = append(where, fmt.Sprintf("instance = $%d", len(args)+1)), append(args, *find.InstanceID)
@@ -139,7 +139,7 @@ func (s *Store) RemoveDataSourceV2(ctx context.Context, instanceID string, dataS
 	defer tx.Rollback()
 
 	if _, err := tx.ExecContext(ctx, `
-		DELETE FROM data_source WHERE instance = $1 AND options->'id' = $2;
+		DELETE FROM data_source WHERE instance = $1 AND options->>'id' = $2;
 	`, instanceID, dataSourceID); err != nil {
 		return err
 	}
@@ -170,7 +170,7 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	}
 	defer tx.Rollback()
 
-	query := fmt.Sprintf(`UPDATE data_source SET %s WHERE instance = $%d AND options->'id' = $%d`, strings.Join(set, ", "), len(args)+1, len(args)+2)
+	query := fmt.Sprintf(`UPDATE data_source SET %s WHERE instance = $%d AND options->>'id' = $%d`, strings.Join(set, ", "), len(args)+1, len(args)+2)
 	args = append(args, patch.InstanceID, patch.ID)
 	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return err
