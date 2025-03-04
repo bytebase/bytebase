@@ -11,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -152,7 +153,7 @@ func (s *Store) GetRolloutPolicy(ctx context.Context, environment string) (*stor
 	return p, nil
 }
 
-func (s *Store) GetDataExportPolicy(ctx context.Context) (*storepb.ExportDataPolicy, error) {
+func (s *Store) GetExportDataPolicy(ctx context.Context) (*storepb.ExportDataPolicy, error) {
 	resourceType := api.PolicyResourceTypeWorkspace
 	resource := ""
 	pType := api.PolicyTypeExportData
@@ -172,9 +173,34 @@ func (s *Store) GetDataExportPolicy(ctx context.Context) (*storepb.ExportDataPol
 
 	p := &storepb.ExportDataPolicy{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal data export policy")
+		return nil, errors.Wrapf(err, "failed to unmarshal export data policy")
 	}
 
+	return p, nil
+}
+
+func (s *Store) GetQueryDataPolicy(ctx context.Context) (*storepb.QueryDataPolicy, error) {
+	resourceType := api.PolicyResourceTypeWorkspace
+	resource := ""
+	pType := api.PolicyTypeQueryData
+	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
+		ResourceType: &resourceType,
+		Resource:     &resource,
+		Type:         &pType,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get policy")
+	}
+	if policy == nil {
+		return &storepb.QueryDataPolicy{
+			Timeout: &durationpb.Duration{},
+		}, nil
+	}
+
+	p := &storepb.QueryDataPolicy{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal query data policy")
+	}
 	return p, nil
 }
 

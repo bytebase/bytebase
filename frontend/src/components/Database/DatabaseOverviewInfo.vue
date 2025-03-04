@@ -39,7 +39,7 @@
       </dt>
       <dd class="mt-1 text-sm text-main">
         <span>
-          {{ database.syncState === State.ACTIVE ? "OK" : "NOT_FOUND" }}
+          {{ database.state === State.ACTIVE ? "OK" : "NOT_FOUND" }}
         </span>
       </dd>
     </div>

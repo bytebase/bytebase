@@ -6597,10 +6597,10 @@ Format: instances/{instance}/databases/{database}
                 </tr>
               
                 <tr>
-                  <td>sync_state</td>
+                  <td>state</td>
                   <td><a href="#bytebase.v1.State">State</a></td>
                   <td></td>
-                  <td><p>The existence of a database on latest sync. </p></td>
+                  <td><p>The existence of a database. </p></td>
                 </tr>
               
                 <tr>
@@ -24161,13 +24161,6 @@ Format: instances/{instance}/databases/{databaseName} </p></td>
                 </tr>
               
                 <tr>
-                  <td>timeout</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td></td>
-                  <td><p>The timeout for the request. </p></td>
-                </tr>
-              
-                <tr>
                   <td>schema</td>
                   <td><a href="#string">string</a></td>
                   <td>optional</td>
@@ -24786,13 +24779,6 @@ Format: instances/{instance}/databases/{databaseName} </p></td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p>The maximum number of rows to return. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>timeout</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td>optional</td>
-                  <td><p>The timeout for the request. </p></td>
                 </tr>
               
                 <tr>

@@ -57,6 +57,7 @@
         ref="maximumRoleExpirationSettingRef"
         :allow-edit="allowEdit"
       />
+      <QueryDataPolicySetting ref="queryDataPolicySettingRef" />
       <DomainRestrictionSetting
         ref="domainRestrictionSettingRef"
         :allow-edit="allowEdit"
@@ -90,6 +91,7 @@ import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 import DomainRestrictionSetting from "./DomainRestrictionSetting.vue";
 import MaximumRoleExpirationSetting from "./MaximumRoleExpirationSetting.vue";
 import MaximumSQLResultSizeSetting from "./MaximumSQLResultSizeSetting.vue";
+import QueryDataPolicySetting from "./QueryDataPolicySetting.vue";
 import RestrictIssueCreationConfigure from "./RestrictIssueCreationConfigure.vue";
 
 interface LocalState {
@@ -116,12 +118,15 @@ const maximumSQLResultSizeSettingRef =
   ref<InstanceType<typeof MaximumSQLResultSizeSetting>>();
 const restrictIssueCreationConfigureRef =
   ref<InstanceType<typeof RestrictIssueCreationConfigure>>();
+const queryDataPolicySettingRef =
+  ref<InstanceType<typeof QueryDataPolicySetting>>();
 
 const settingRefList = computed(() => [
   domainRestrictionSettingRef,
   maximumRoleExpirationSettingRef,
   maximumSQLResultSizeSettingRef,
   restrictIssueCreationConfigureRef,
+  queryDataPolicySettingRef,
 ]);
 
 const { policy: exportDataPolicy } = usePolicyByParentAndType(

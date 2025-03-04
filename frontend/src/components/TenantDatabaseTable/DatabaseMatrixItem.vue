@@ -11,7 +11,7 @@
       <div class="flex items-center select-none space-x-1">
         <div class="sync-status">
           <heroicons-solid:check-circle
-            v-if="database.syncState === State.ACTIVE"
+            v-if="database.state === State.ACTIVE"
             class="w-6 h-6 text-success"
           />
           <heroicons-solid:exclamation v-else class="w-6 h-6 text-warning" />
@@ -38,13 +38,13 @@
       <div class="px-4 py-2 flex items-center whitespace-nowrap space-x-1">
         <span>
           <heroicons-solid:check
-            v-if="database.syncState === State.ACTIVE"
+            v-if="database.state === State.ACTIVE"
             class="w-4 h-4 text-success"
           />
           <heroicons-outline:exclamation v-else class="w-4 h-4 text-warning" />
         </span>
         <span class="flex-1">
-          {{ database.syncState === State.ACTIVE ? "OK" : "NOT_FOUND" }}
+          {{ database.state === State.ACTIVE ? "OK" : "NOT_FOUND" }}
         </span>
       </div>
       <div class="px-4 py-2 flex items-center whitespace-pre-wrap space-x-1">
