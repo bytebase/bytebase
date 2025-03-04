@@ -1727,7 +1727,6 @@
     "to-enable-admin-mode": "管理者モードを有効にするには",
     "notify-empty-statement": "エディターに SQL ステートメントを入力してください",
     "goto-edit-schema-hint": "エディタの上部からデータベース接続を選択してください",
-    "notify-invalid-sql-statement": "SQL ステートメントを確認してください。",
     "can-not-execute-query": "データのロード中にクエリを実行できません",
     "rows": "記録",
     "vertical-display": "縦型表示",
