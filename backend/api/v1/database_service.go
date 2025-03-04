@@ -314,8 +314,11 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 				if environment.Deleted {
 					return nil, status.Errorf(codes.FailedPrecondition, "environment %q is deleted", environmentID)
 				}
+				patch.EnvironmentID = &environmentID
+			} else {
+				unsetEnvironment := ""
+				patch.EnvironmentID = &unsetEnvironment
 			}
-			patch.EnvironmentID = &request.Database.Environment
 		}
 	}
 
