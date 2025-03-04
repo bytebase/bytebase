@@ -25,7 +25,6 @@ type InstanceMessage struct {
 	ExternalLink  string
 	DataSources   []*DataSourceMessage
 	Activation    bool
-	Options       *storepb.InstanceOptions
 	EnvironmentID string
 	Deleted       bool
 	EngineVersion string
@@ -42,8 +41,6 @@ type UpdateInstanceMessage struct {
 	DataSources   *[]*DataSourceMessage
 	EngineVersion *string
 	Activation    *bool
-	// OptionsUpsert upserts the top-level messages of the instance options.
-	OptionsUpsert *storepb.InstanceOptions
 	Metadata      *storepb.InstanceMetadata
 	EnvironmentID *string
 }
@@ -130,11 +127,6 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		where = fmt.Sprintf("WHERE (%s) < %d", countActivateInstanceQuery, maximumActivation)
 	}
 
-	optionBytes, err := protojson.Marshal(instanceCreate.Options)
-	if err != nil {
-		return nil, err
-	}
-
 	metadataBytes, err := protojson.Marshal(instanceCreate.Metadata)
 	if err != nil {
 		return nil, err
@@ -153,10 +145,9 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 				engine,
 				external_link,
 				activation,
-				options,
 				metadata
 			)
-			SELECT $1, $2, $3, $4, $5, $6, $7, $8
+			SELECT $1, $2, $3, $4, $5, $6, $7
 			%s
 			RETURNING id
 		`, where),
@@ -166,7 +157,6 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		instanceCreate.Engine.String(),
 		instanceCreate.ExternalLink,
 		instanceCreate.Activation,
-		optionBytes,
 		metadataBytes,
 	).Scan(&instanceID); err != nil {
 		return nil, err
@@ -197,7 +187,6 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		ExternalLink:  instanceCreate.ExternalLink,
 		DataSources:   instanceDataSourcesMap[instanceCreate.ResourceID],
 		Activation:    instanceCreate.Activation,
-		Options:       instanceCreate.Options,
 		Metadata:      instanceCreate.Metadata,
 	}
 	s.instanceCache.Add(getInstanceCacheKey(instance.ResourceID), instance)
@@ -240,13 +229,6 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		}
 		set, args = append(set, fmt.Sprintf(`deleted = $%d`, len(args)+1)), append(args, *v)
 	}
-	if v := patch.OptionsUpsert; v != nil {
-		options, err := protojson.Marshal(v)
-		if err != nil {
-			return nil, err
-		}
-		set, args = append(set, fmt.Sprintf("options = $%d", len(args)+1)), append(args, options)
-	}
 	if v := patch.Metadata; v != nil {
 		metadata, err := protojson.Marshal(v)
 		if err != nil {
@@ -279,11 +261,10 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 				external_link,
 				activation,
 				deleted,
-				options,
 				metadata
 		`, strings.Join(where, " AND "))
 		var environment sql.NullString
-		var options, metadata []byte
+		var metadata []byte
 		if err := tx.QueryRowContext(ctx, query, args...).Scan(
 			&instance.ResourceID,
 			&environment,
@@ -293,7 +274,6 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 			&instance.ExternalLink,
 			&instance.Activation,
 			&instance.Deleted,
-			&options,
 			&metadata,
 		); err != nil {
 			return nil, err
@@ -306,12 +286,6 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 			return nil, errors.Errorf("invalid engine %s", engine)
 		}
 		instance.Engine = storepb.Engine(engineTypeValue)
-
-		var instanceOptions storepb.InstanceOptions
-		if err := common.ProtojsonUnmarshaler.Unmarshal(options, &instanceOptions); err != nil {
-			return nil, err
-		}
-		instance.Options = &instanceOptions
 
 		var instanceMetadata storepb.InstanceMetadata
 		if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, &instanceMetadata); err != nil {
@@ -379,7 +353,6 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 			external_link,
 			activation,
 			deleted,
-			options,
 			metadata
 		FROM instance
 		WHERE %s
@@ -394,7 +367,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 		var instanceMessage InstanceMessage
 		var environment sql.NullString
 		var engine string
-		var options, metadata []byte
+		var metadata []byte
 		if err := rows.Scan(
 			&instanceMessage.ResourceID,
 			&instanceMessage.Title,
@@ -404,7 +377,6 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 			&instanceMessage.ExternalLink,
 			&instanceMessage.Activation,
 			&instanceMessage.Deleted,
-			&options,
 			&metadata,
 		); err != nil {
 			return nil, err
@@ -418,11 +390,6 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 		}
 		instanceMessage.Engine = storepb.Engine(engineTypeValue)
 
-		var instanceOptions storepb.InstanceOptions
-		if err := common.ProtojsonUnmarshaler.Unmarshal(options, &instanceOptions); err != nil {
-			return nil, err
-		}
-		instanceMessage.Options = &instanceOptions
 		var instanceMetadata storepb.InstanceMetadata
 		if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, &instanceMetadata); err != nil {
 			return nil, err

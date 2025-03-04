@@ -111,7 +111,7 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.Pla
 		return
 	}
 
-	maximumConnections := int(instance.Options.GetMaximumConnections())
+	maximumConnections := int(instance.Metadata.GetMaximumConnections())
 	if s.stateCfg.InstanceOutstandingConnections.Increment(instance.ResourceID, maximumConnections) {
 		return
 	}
