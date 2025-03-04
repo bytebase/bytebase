@@ -44,7 +44,7 @@ export const databaseForTask = (project: ComposedProject, task: Task) => {
         db.effectiveEnvironmentEntity =
           useEnvironmentV1Store().getEnvironmentByName(ir.environment) ??
           unknownEnvironment();
-        db.syncState = State.DELETED;
+        db.state = State.DELETED;
       }
       return db;
     }

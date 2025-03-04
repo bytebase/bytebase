@@ -377,8 +377,8 @@ message Database {
   // {database} is the database name in the instance.
   string name = 1;
 
-  // The existence of a database on latest sync.
-  State sync_state = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The existence of a database.
+  State state = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The latest synchronization time.
   google.protobuf.Timestamp successful_sync_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];

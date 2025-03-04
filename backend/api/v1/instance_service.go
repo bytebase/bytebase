@@ -408,7 +408,7 @@ func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *stor
 
 		enabled := false
 		for _, database := range databases {
-			if database.SyncState != api.OK {
+			if database.Deleted {
 				continue
 			}
 			if pgparser.IsSystemDatabase(database.DatabaseName) {
