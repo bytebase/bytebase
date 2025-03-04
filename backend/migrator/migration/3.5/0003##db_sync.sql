@@ -1,3 +1,2 @@
-ALTER TABLE db ADD COLUMN sync jsonb NOT NULL DEFAULT '{}';
 ALTER TABLE db ADD COLUMN deleted boolean NOT NULL DEFAULT FALSE;
 UPDATE db SET deleted = TRUE WHERE sync_status = 'NOT_FOUND';
