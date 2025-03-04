@@ -9827,16 +9827,11 @@ components:
                          Format: environments/prod where prod is the environment resource ID.
                 activation:
                     type: boolean
-                options:
-                    $ref: '#/components/schemas/InstanceOptions'
                 roles:
                     readOnly: true
                     type: array
                     items:
                         $ref: '#/components/schemas/InstanceRole'
-        InstanceOptions:
-            type: object
-            properties:
                 syncInterval:
                     pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
                     type: string
@@ -9854,7 +9849,6 @@ components:
                     description: |-
                         Enable sync for following databases.
                          Default empty, means sync all schemas & databases.
-            description: InstanceOptions is the option for instances.
         InstanceResource:
             type: object
             properties:

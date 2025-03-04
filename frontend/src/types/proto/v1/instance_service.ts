@@ -267,24 +267,6 @@ export interface SyncSlowQueriesRequest {
   parent: string;
 }
 
-/** InstanceOptions is the option for instances. */
-export interface InstanceOptions {
-  /** How often the instance is synced. */
-  syncInterval:
-    | Duration
-    | undefined;
-  /**
-   * The maximum number of connections.
-   * The default is 10 if the value is unset or zero.
-   */
-  maximumConnections: number;
-  /**
-   * Enable sync for following databases.
-   * Default empty, means sync all schemas & databases.
-   */
-  syncDatabases: string[];
-}
-
 export interface Instance {
   /**
    * The name of the instance.
@@ -303,8 +285,21 @@ export interface Instance {
    */
   environment: string;
   activation: boolean;
-  options: InstanceOptions | undefined;
   roles: InstanceRole[];
+  /** How often the instance is synced. */
+  syncInterval:
+    | Duration
+    | undefined;
+  /**
+   * The maximum number of connections.
+   * The default is 10 if the value is unset or zero.
+   */
+  maximumConnections: number;
+  /**
+   * Enable sync for following databases.
+   * Default empty, means sync all schemas & databases.
+   */
+  syncDatabases: string[];
 }
 
 export interface DataSourceExternalSecret {
@@ -2010,102 +2005,6 @@ export const SyncSlowQueriesRequest: MessageFns<SyncSlowQueriesRequest> = {
   },
 };
 
-function createBaseInstanceOptions(): InstanceOptions {
-  return { syncInterval: undefined, maximumConnections: 0, syncDatabases: [] };
-}
-
-export const InstanceOptions: MessageFns<InstanceOptions> = {
-  encode(message: InstanceOptions, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.syncInterval !== undefined) {
-      Duration.encode(message.syncInterval, writer.uint32(18).fork()).join();
-    }
-    if (message.maximumConnections !== 0) {
-      writer.uint32(24).int32(message.maximumConnections);
-    }
-    for (const v of message.syncDatabases) {
-      writer.uint32(34).string(v!);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): InstanceOptions {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseInstanceOptions();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.syncInterval = Duration.decode(reader, reader.uint32());
-          continue;
-        }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.maximumConnections = reader.int32();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.syncDatabases.push(reader.string());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): InstanceOptions {
-    return {
-      syncInterval: isSet(object.syncInterval) ? Duration.fromJSON(object.syncInterval) : undefined,
-      maximumConnections: isSet(object.maximumConnections) ? globalThis.Number(object.maximumConnections) : 0,
-      syncDatabases: globalThis.Array.isArray(object?.syncDatabases)
-        ? object.syncDatabases.map((e: any) => globalThis.String(e))
-        : [],
-    };
-  },
-
-  toJSON(message: InstanceOptions): unknown {
-    const obj: any = {};
-    if (message.syncInterval !== undefined) {
-      obj.syncInterval = Duration.toJSON(message.syncInterval);
-    }
-    if (message.maximumConnections !== 0) {
-      obj.maximumConnections = Math.round(message.maximumConnections);
-    }
-    if (message.syncDatabases?.length) {
-      obj.syncDatabases = message.syncDatabases;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<InstanceOptions>): InstanceOptions {
-    return InstanceOptions.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<InstanceOptions>): InstanceOptions {
-    const message = createBaseInstanceOptions();
-    message.syncInterval = (object.syncInterval !== undefined && object.syncInterval !== null)
-      ? Duration.fromPartial(object.syncInterval)
-      : undefined;
-    message.maximumConnections = object.maximumConnections ?? 0;
-    message.syncDatabases = object.syncDatabases?.map((e) => e) || [];
-    return message;
-  },
-};
-
 function createBaseInstance(): Instance {
   return {
     name: "",
@@ -2117,8 +2016,10 @@ function createBaseInstance(): Instance {
     dataSources: [],
     environment: "",
     activation: false,
-    options: undefined,
     roles: [],
+    syncInterval: undefined,
+    maximumConnections: 0,
+    syncDatabases: [],
   };
 }
 
@@ -2151,11 +2052,17 @@ export const Instance: MessageFns<Instance> = {
     if (message.activation !== false) {
       writer.uint32(80).bool(message.activation);
     }
-    if (message.options !== undefined) {
-      InstanceOptions.encode(message.options, writer.uint32(90).fork()).join();
-    }
     for (const v of message.roles) {
       InstanceRole.encode(v!, writer.uint32(98).fork()).join();
+    }
+    if (message.syncInterval !== undefined) {
+      Duration.encode(message.syncInterval, writer.uint32(106).fork()).join();
+    }
+    if (message.maximumConnections !== 0) {
+      writer.uint32(112).int32(message.maximumConnections);
+    }
+    for (const v of message.syncDatabases) {
+      writer.uint32(122).string(v!);
     }
     return writer;
   },
@@ -2239,20 +2146,36 @@ export const Instance: MessageFns<Instance> = {
           message.activation = reader.bool();
           continue;
         }
-        case 11: {
-          if (tag !== 90) {
-            break;
-          }
-
-          message.options = InstanceOptions.decode(reader, reader.uint32());
-          continue;
-        }
         case 12: {
           if (tag !== 98) {
             break;
           }
 
           message.roles.push(InstanceRole.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.syncInterval = Duration.decode(reader, reader.uint32());
+          continue;
+        }
+        case 14: {
+          if (tag !== 112) {
+            break;
+          }
+
+          message.maximumConnections = reader.int32();
+          continue;
+        }
+        case 15: {
+          if (tag !== 122) {
+            break;
+          }
+
+          message.syncDatabases.push(reader.string());
           continue;
         }
       }
@@ -2277,8 +2200,12 @@ export const Instance: MessageFns<Instance> = {
         : [],
       environment: isSet(object.environment) ? globalThis.String(object.environment) : "",
       activation: isSet(object.activation) ? globalThis.Boolean(object.activation) : false,
-      options: isSet(object.options) ? InstanceOptions.fromJSON(object.options) : undefined,
       roles: globalThis.Array.isArray(object?.roles) ? object.roles.map((e: any) => InstanceRole.fromJSON(e)) : [],
+      syncInterval: isSet(object.syncInterval) ? Duration.fromJSON(object.syncInterval) : undefined,
+      maximumConnections: isSet(object.maximumConnections) ? globalThis.Number(object.maximumConnections) : 0,
+      syncDatabases: globalThis.Array.isArray(object?.syncDatabases)
+        ? object.syncDatabases.map((e: any) => globalThis.String(e))
+        : [],
     };
   },
 
@@ -2311,11 +2238,17 @@ export const Instance: MessageFns<Instance> = {
     if (message.activation !== false) {
       obj.activation = message.activation;
     }
-    if (message.options !== undefined) {
-      obj.options = InstanceOptions.toJSON(message.options);
-    }
     if (message.roles?.length) {
       obj.roles = message.roles.map((e) => InstanceRole.toJSON(e));
+    }
+    if (message.syncInterval !== undefined) {
+      obj.syncInterval = Duration.toJSON(message.syncInterval);
+    }
+    if (message.maximumConnections !== 0) {
+      obj.maximumConnections = Math.round(message.maximumConnections);
+    }
+    if (message.syncDatabases?.length) {
+      obj.syncDatabases = message.syncDatabases;
     }
     return obj;
   },
@@ -2334,10 +2267,12 @@ export const Instance: MessageFns<Instance> = {
     message.dataSources = object.dataSources?.map((e) => DataSource.fromPartial(e)) || [];
     message.environment = object.environment ?? "";
     message.activation = object.activation ?? false;
-    message.options = (object.options !== undefined && object.options !== null)
-      ? InstanceOptions.fromPartial(object.options)
-      : undefined;
     message.roles = object.roles?.map((e) => InstanceRole.fromPartial(e)) || [];
+    message.syncInterval = (object.syncInterval !== undefined && object.syncInterval !== null)
+      ? Duration.fromPartial(object.syncInterval)
+      : undefined;
+    message.maximumConnections = object.maximumConnections ?? 0;
+    message.syncDatabases = object.syncDatabases?.map((e) => e) || [];
     return message;
   },
 };
