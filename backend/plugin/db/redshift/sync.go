@@ -48,7 +48,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	return &db.InstanceMetadata{
 		Version:   version,
 		Databases: filteredDatabases,
-		Metadata: &storepb.InstanceMetadata{
+		Metadata: &storepb.Instance{
 			Roles: instanceRoles,
 		},
 	}, nil

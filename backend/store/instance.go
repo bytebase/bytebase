@@ -26,7 +26,7 @@ type InstanceMessage struct {
 	EnvironmentID string
 	Deleted       bool
 	EngineVersion string
-	Metadata      *storepb.InstanceMetadata
+	Metadata      *storepb.Instance
 }
 
 // UpdateInstanceMessage is the message for updating an instance.
@@ -38,7 +38,7 @@ type UpdateInstanceMessage struct {
 	Deleted       *bool
 	EngineVersion *string
 	Activation    *bool
-	Metadata      *storepb.InstanceMetadata
+	Metadata      *storepb.Instance
 	EnvironmentID *string
 }
 
@@ -254,7 +254,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		}
 		instance.Engine = storepb.Engine(engineTypeValue)
 
-		var instanceMetadata storepb.InstanceMetadata
+		var instanceMetadata storepb.Instance
 		if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, &instanceMetadata); err != nil {
 			return nil, err
 		}
@@ -337,7 +337,7 @@ func listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstanceMessage) 
 		}
 		instanceMessage.Engine = storepb.Engine(engineTypeValue)
 
-		var instanceMetadata storepb.InstanceMetadata
+		var instanceMetadata storepb.Instance
 		if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, &instanceMetadata); err != nil {
 			return nil, err
 		}
@@ -366,7 +366,7 @@ func (s *Store) CheckActivationLimit(ctx context.Context, maximumActivation int)
 	return nil
 }
 
-func validateDataSources(metadata *storepb.InstanceMetadata) error {
+func validateDataSources(metadata *storepb.Instance) error {
 	dataSourceMap := map[string]bool{}
 	adminCount := 0
 	for _, dataSource := range metadata.GetDataSources() {

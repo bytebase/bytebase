@@ -41,6 +41,7 @@ func request_DatabaseCatalogService_GetDatabaseCatalog_0(ctx context.Context, ma
 		metadata runtime.ServerMetadata
 		err      error
 	)
+	io.Copy(io.Discard, req.Body)
 	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
