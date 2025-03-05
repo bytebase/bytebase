@@ -46,13 +46,13 @@ func ComputeDatabaseSchemaDiff(ctx context.Context, instance *store.InstanceMess
 	}
 
 	var engine storepb.Engine
-	switch instance.Engine {
+	switch instance.Metadata.GetEngine() {
 	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
 		engine = storepb.Engine_POSTGRES
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		engine = storepb.Engine_MYSQL
 	default:
-		return "", errors.Errorf("unsupported database engine %q", instance.Engine)
+		return "", errors.Errorf("unsupported database engine %q", instance.Metadata.GetEngine())
 	}
 
 	sdlFormat, err := transform.SchemaTransform(engine, schema.String())

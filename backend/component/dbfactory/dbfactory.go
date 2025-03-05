@@ -39,7 +39,7 @@ func New(store *store.Store, mysqlBinDir, mongoBinDir, pgBinDir, dataDir, secret
 func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, connectionContext db.ConnectionContext) (db.Driver, error) {
 	dataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)
 	if dataSource == nil {
-		return nil, common.Errorf(common.Internal, "admin data source not found for instance %q", instance.Title)
+		return nil, common.Errorf(common.Internal, "admin data source not found for instance %q", instance.ResourceID)
 	}
 	databaseName := ""
 	if database != nil {
@@ -55,9 +55,8 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 // GetDataSourceDriver returns the database driver for a data source.
 func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.InstanceMessage, dataSource *storepb.DataSource, databaseName string, datashare, readOnly bool, connectionContext db.ConnectionContext) (db.Driver, error) {
 	dbBinDir := ""
-	switch instance.Engine {
+	switch instance.Metadata.GetEngine() {
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		// TODO(d): use maria mysqlbinlog for MariaDB.
 		dbBinDir = d.mysqlBinDir
 	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
 		dbBinDir = d.pgBinDir
@@ -131,12 +130,12 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 		dbSaslConfig = nil
 	}
 	connectionContext.InstanceID = instance.ResourceID
-	connectionContext.EngineVersion = instance.EngineVersion
+	connectionContext.EngineVersion = instance.Metadata.GetVersion()
 
 	maximumSQLResultSize := d.store.GetMaximumSQLResultLimit(ctx)
 	driver, err := db.Open(
 		ctx,
-		instance.Engine,
+		instance.Metadata.GetEngine(),
 		db.DriverConfig{
 			DbBinDir: dbBinDir,
 		},

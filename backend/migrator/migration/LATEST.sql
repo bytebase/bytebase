@@ -115,13 +115,7 @@ CREATE TABLE instance (
     id serial PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
     environment text REFERENCES environment(resource_id),
-    name text NOT NULL,
-    engine text NOT NULL,
-    engine_version text NOT NULL DEFAULT '',
-    external_link text NOT NULL DEFAULT '',
     resource_id text NOT NULL,
-    -- activation should set to be TRUE if users assign license to this instance.
-    activation boolean NOT NULL DEFAULT false,
     metadata jsonb NOT NULL DEFAULT '{}'
 );
 

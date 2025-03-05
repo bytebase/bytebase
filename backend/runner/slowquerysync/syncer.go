@@ -115,13 +115,13 @@ func (s *Syncer) syncInstanceSlowQuery(ctx context.Context, instance *store.Inst
 		return nil
 	}
 
-	switch instance.Engine {
+	switch instance.Metadata.GetEngine() {
 	case storepb.Engine_MYSQL:
 		return s.syncMySQLSlowQuery(ctx, instance)
 	case storepb.Engine_POSTGRES:
 		return s.syncPostgreSQLSlowQuery(ctx, instance)
 	default:
-		return errors.Errorf("unsupported database engine: %s", instance.Engine)
+		return errors.Errorf("unsupported database engine: %s", instance.Metadata.GetEngine())
 	}
 }
 

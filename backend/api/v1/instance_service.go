@@ -161,12 +161,13 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	}
 
 	instanceCountLimit := s.licenseService.GetInstanceLicenseCount(ctx)
-	if instanceMessage.Activation {
-		if err := s.store.CheckActivationLimit(ctx, instanceCountLimit); err != nil {
-			if common.ErrorCode(err) == common.Invalid {
-				return nil, status.Error(codes.ResourceExhausted, err.Error())
-			}
+	if instanceMessage.Metadata.GetActivation() {
+		count, err := s.store.GetActivatedInstanceCount(ctx)
+		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if count >= instanceCountLimit {
+			return nil, status.Errorf(codes.ResourceExhausted, instanceExceededError, instanceCountLimit)
 		}
 	}
 
@@ -174,10 +175,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		return nil, err
 	}
 
-	instance, err := s.store.CreateInstanceV2(ctx,
-		instanceMessage,
-		instanceCountLimit,
-	)
+	instance, err := s.store.CreateInstanceV2(ctx, instanceMessage)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -201,7 +199,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		Name:  metricapi.InstanceCreateMetricName,
 		Value: 1,
 		Labels: map[string]any{
-			"engine": instance.Engine,
+			"engine": instance.Metadata.GetEngine(),
 		},
 	})
 
@@ -222,6 +220,8 @@ func (s *InstanceService) checkInstanceDataSources(instance *store.InstanceMessa
 
 	return nil
 }
+
+var instanceExceededError = "activation instance count has reached the limit (%v)"
 
 func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataSource *storepb.DataSource) error {
 	if dataSource.GetId() == "" {
@@ -271,10 +271,11 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		ResourceID: instance.ResourceID,
 		Metadata:   metadata,
 	}
+	updateActivation := false
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "title":
-			patch.Title = &request.Instance.Title
+			patch.Metadata.Title = request.Instance.Title
 		case "environment":
 			environmentID, err := common.GetEnvironmentID(request.Instance.Environment)
 			if err != nil {
@@ -295,7 +296,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			}
 			patch.EnvironmentID = &environment.ResourceID
 		case "external_link":
-			patch.ExternalLink = &request.Instance.ExternalLink
+			patch.Metadata.ExternalLink = request.Instance.ExternalLink
 		case "data_sources":
 			dataSources, err := s.convertV1DataSources(request.Instance.DataSources)
 			if err != nil {
@@ -306,9 +307,10 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			}
 			patch.Metadata.DataSources = dataSources
 		case "activation":
-			if request.Instance.Activation != instance.Activation {
-				patch.Activation = &request.Instance.Activation
+			if !instance.Metadata.GetActivation() && request.Instance.Activation {
+				updateActivation = true
 			}
+			patch.Metadata.Activation = request.Instance.Activation
 		case "sync_interval":
 			if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureCustomInstanceSynchronization, instance); err != nil {
 				return nil, status.Error(codes.PermissionDenied, err.Error())
@@ -330,16 +332,17 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 	}
 
 	instanceCountLimit := s.licenseService.GetInstanceLicenseCount(ctx)
-	if v := patch.Activation; v != nil && *v {
-		if err := s.store.CheckActivationLimit(ctx, instanceCountLimit); err != nil {
-			if common.ErrorCode(err) == common.Invalid {
-				return nil, status.Error(codes.ResourceExhausted, err.Error())
-			}
+	if updateActivation {
+		count, err := s.store.GetActivatedInstanceCount(ctx)
+		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if count >= instanceCountLimit {
+			return nil, status.Errorf(codes.ResourceExhausted, instanceExceededError, instanceCountLimit)
 		}
 	}
 
-	ins, err := s.store.UpdateInstanceV2(ctx, patch, instanceCountLimit)
+	ins, err := s.store.UpdateInstanceV2(ctx, patch)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -371,7 +374,7 @@ func (s *InstanceService) syncSlowQueriesForInstance(ctx context.Context, instan
 }
 
 func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *store.ProjectMessage, instance *store.InstanceMessage) error {
-	switch instance.Engine {
+	switch instance.Metadata.GetEngine() {
 	case storepb.Engine_MYSQL:
 		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 		if err != nil {
@@ -437,7 +440,7 @@ func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *stor
 		}
 		s.stateCfg.InstanceSlowQuerySyncChan <- message
 	default:
-		return status.Errorf(codes.InvalidArgument, "unsupported engine %q", instance.Engine)
+		return status.Errorf(codes.InvalidArgument, "unsupported engine %q", instance.Metadata.GetEngine())
 	}
 	return nil
 }
@@ -463,7 +466,7 @@ func (s *InstanceService) syncSlowQueriesForProject(ctx context.Context, project
 			return nil, status.Errorf(codes.Internal, "failed to get instance %q: %s", database.InstanceID, err.Error())
 		}
 
-		switch instance.Engine {
+		switch instance.Metadata.GetEngine() {
 		case storepb.Engine_MYSQL, storepb.Engine_POSTGRES:
 			if instance.Deleted {
 				continue
@@ -540,10 +543,16 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 		}
 	}
 
+	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "failed to convert instance metadata type")
+	}
+	metadata.Activation = false
 	if _, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
 		ResourceID: instance.ResourceID,
 		Deleted:    &deletePatch,
-	}, -1 /* don't need to pass the instance limition */); err != nil {
+		Metadata:   metadata,
+	}); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -563,7 +572,7 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 	ins, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
 		ResourceID: instance.ResourceID,
 		Deleted:    &undeletePatch,
-	}, -1 /* don't need to pass the instance limition */)
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -687,7 +696,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, status.Error(codes.Internal, "failed to convert instance metadata type")
 	}
 	metadata.DataSources = append(metadata.DataSources, dataSource)
-	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{ResourceID: instance.ResourceID, Metadata: metadata}, -1)
+	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{ResourceID: instance.ResourceID, Metadata: metadata})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -849,7 +858,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		return convertInstanceMessage(instance)
 	}
 
-	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{ResourceID: instance.ResourceID, Metadata: metadata}, -1)
+	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{ResourceID: instance.ResourceID, Metadata: metadata})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -893,7 +902,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 	}
 
 	metadata.DataSources = updatedDataSources
-	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{ResourceID: instance.ResourceID, Metadata: metadata}, -1)
+	instance, err = s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{ResourceID: instance.ResourceID, Metadata: metadata})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -966,7 +975,7 @@ func buildEnvironmentName(environmentID string) string {
 }
 
 func convertInstanceMessage(instance *store.InstanceMessage) (*v1pb.Instance, error) {
-	engine := convertToEngine(instance.Engine)
+	engine := convertToEngine(instance.Metadata.GetEngine())
 	dataSources, err := convertDataSources(instance.Metadata.GetDataSources())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert data source with error: %v", err.Error())
@@ -974,14 +983,14 @@ func convertInstanceMessage(instance *store.InstanceMessage) (*v1pb.Instance, er
 
 	return &v1pb.Instance{
 		Name:               buildInstanceName(instance.ResourceID),
-		Title:              instance.Title,
+		Title:              instance.Metadata.GetTitle(),
 		Engine:             engine,
-		EngineVersion:      instance.EngineVersion,
-		ExternalLink:       instance.ExternalLink,
+		EngineVersion:      instance.Metadata.GetVersion(),
+		ExternalLink:       instance.Metadata.GetExternalLink(),
 		DataSources:        dataSources,
 		State:              convertDeletedToState(instance.Deleted),
 		Environment:        buildEnvironmentName(instance.EnvironmentID),
-		Activation:         instance.Activation,
+		Activation:         instance.Metadata.GetActivation(),
 		SyncInterval:       instance.Metadata.GetSyncInterval(),
 		MaximumConnections: instance.Metadata.GetMaximumConnections(),
 		SyncDatabases:      instance.Metadata.GetSyncDatabases(),
@@ -1029,12 +1038,12 @@ func (s *InstanceService) convertInstanceToInstanceMessage(instanceID string, in
 
 	return &store.InstanceMessage{
 		ResourceID:    instanceID,
-		Title:         instance.Title,
-		Engine:        convertEngine(instance.Engine),
-		ExternalLink:  instance.ExternalLink,
 		EnvironmentID: environmentID,
-		Activation:    instance.Activation,
 		Metadata: &storepb.Instance{
+			Title:              instance.GetTitle(),
+			Engine:             convertEngine(instance.Engine),
+			ExternalLink:       instance.GetExternalLink(),
+			Activation:         instance.GetActivation(),
 			DataSources:        datasources,
 			SyncInterval:       instance.GetSyncInterval(),
 			MaximumConnections: instance.GetMaximumConnections(),
