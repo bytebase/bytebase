@@ -22,7 +22,7 @@ var (
 	prodInstanceName = "testInstanceProd"
 )
 
-func TestTenant(t *testing.T) {
+func TestDatabaseGroup(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
