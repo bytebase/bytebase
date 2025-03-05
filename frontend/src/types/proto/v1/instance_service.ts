@@ -518,9 +518,15 @@ export interface DataSource {
   host: string;
   port: string;
   database: string;
-  /** srv, authentication_database and replica_set are used for MongoDB. */
+  /**
+   * srv, authentication_database and replica_set are used for MongoDB.
+   * srv is a boolean flag that indicates whether the host is a DNS SRV record.
+   */
   srv: boolean;
+  /** authentication_database is the database name to authenticate against, which stores the user credentials. */
   authenticationDatabase: string;
+  /** replica_set is used for MongoDB replica set. */
+  replicaSet: string;
   /** sid and service_name are used for Oracle. */
   sid: string;
   serviceName: string;
@@ -550,15 +556,13 @@ export interface DataSource {
    */
   authenticationPrivateKey: string;
   externalSecret: DataSourceExternalSecret | undefined;
-  clientSecretCredential?: DataSource_ClientSecretCredential | undefined;
   authenticationType: DataSource_AuthenticationType;
+  clientSecretCredential?: DataSource_ClientSecretCredential | undefined;
   saslConfig:
     | SASLConfig
     | undefined;
   /** additional_addresses is used for MongoDB replica set. */
   additionalAddresses: DataSource_Address[];
-  /** replica_set is used for MongoDB replica set. */
-  replicaSet: string;
   /** direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. */
   directConnection: boolean;
   /** region is the location of where the DB is, works for AWS RDS. For example, us-east-1. */
@@ -573,6 +577,11 @@ export interface DataSource {
   redisType: DataSource_RedisType;
   /** Cluster is the cluster name for the data source. Used by CockroachDB. */
   cluster: string;
+  /**
+   * Extra connection parameters for the database connection.
+   * For PostgreSQL HA, this can be used to set target_session_attrs=read-write
+   */
+  extraConnectionParameters: { [key: string]: string };
 }
 
 export enum DataSource_AuthenticationType {
@@ -714,6 +723,11 @@ export interface DataSource_ClientSecretCredential {
 export interface DataSource_Address {
   host: string;
   port: string;
+}
+
+export interface DataSource_ExtraConnectionParametersEntry {
+  key: string;
+  value: string;
 }
 
 export interface InstanceResource {
@@ -2596,6 +2610,7 @@ function createBaseDataSource(): DataSource {
     database: "",
     srv: false,
     authenticationDatabase: "",
+    replicaSet: "",
     sid: "",
     serviceName: "",
     sshHost: "",
@@ -2605,11 +2620,10 @@ function createBaseDataSource(): DataSource {
     sshPrivateKey: "",
     authenticationPrivateKey: "",
     externalSecret: undefined,
-    clientSecretCredential: undefined,
     authenticationType: DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED,
+    clientSecretCredential: undefined,
     saslConfig: undefined,
     additionalAddresses: [],
-    replicaSet: "",
     directConnection: false,
     region: "",
     warehouseId: "",
@@ -2618,6 +2632,7 @@ function createBaseDataSource(): DataSource {
     masterPassword: "",
     redisType: DataSource_RedisType.REDIS_TYPE_UNSPECIFIED,
     cluster: "",
+    extraConnectionParameters: {},
   };
 }
 
@@ -2662,6 +2677,9 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.authenticationDatabase !== "") {
       writer.uint32(98).string(message.authenticationDatabase);
     }
+    if (message.replicaSet !== "") {
+      writer.uint32(202).string(message.replicaSet);
+    }
     if (message.sid !== "") {
       writer.uint32(106).string(message.sid);
     }
@@ -2689,26 +2707,23 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.externalSecret !== undefined) {
       DataSourceExternalSecret.encode(message.externalSecret, writer.uint32(170).fork()).join();
     }
-    if (message.clientSecretCredential !== undefined) {
-      DataSource_ClientSecretCredential.encode(message.clientSecretCredential, writer.uint32(290).fork()).join();
-    }
     if (message.authenticationType !== DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED) {
       writer.uint32(176).int32(dataSource_AuthenticationTypeToNumber(message.authenticationType));
     }
+    if (message.clientSecretCredential !== undefined) {
+      DataSource_ClientSecretCredential.encode(message.clientSecretCredential, writer.uint32(186).fork()).join();
+    }
     if (message.saslConfig !== undefined) {
-      SASLConfig.encode(message.saslConfig, writer.uint32(186).fork()).join();
+      SASLConfig.encode(message.saslConfig, writer.uint32(194).fork()).join();
     }
     for (const v of message.additionalAddresses) {
-      DataSource_Address.encode(v!, writer.uint32(194).fork()).join();
-    }
-    if (message.replicaSet !== "") {
-      writer.uint32(202).string(message.replicaSet);
+      DataSource_Address.encode(v!, writer.uint32(210).fork()).join();
     }
     if (message.directConnection !== false) {
-      writer.uint32(208).bool(message.directConnection);
+      writer.uint32(216).bool(message.directConnection);
     }
     if (message.region !== "") {
-      writer.uint32(218).string(message.region);
+      writer.uint32(226).string(message.region);
     }
     if (message.warehouseId !== "") {
       writer.uint32(234).string(message.warehouseId);
@@ -2728,6 +2743,9 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.cluster !== "") {
       writer.uint32(282).string(message.cluster);
     }
+    Object.entries(message.extraConnectionParameters).forEach(([key, value]) => {
+      DataSource_ExtraConnectionParametersEntry.encode({ key: key as any, value }, writer.uint32(290).fork()).join();
+    });
     return writer;
   },
 
@@ -2842,6 +2860,14 @@ export const DataSource: MessageFns<DataSource> = {
           message.authenticationDatabase = reader.string();
           continue;
         }
+        case 25: {
+          if (tag !== 202) {
+            break;
+          }
+
+          message.replicaSet = reader.string();
+          continue;
+        }
         case 13: {
           if (tag !== 106) {
             break;
@@ -2914,14 +2940,6 @@ export const DataSource: MessageFns<DataSource> = {
           message.externalSecret = DataSourceExternalSecret.decode(reader, reader.uint32());
           continue;
         }
-        case 36: {
-          if (tag !== 290) {
-            break;
-          }
-
-          message.clientSecretCredential = DataSource_ClientSecretCredential.decode(reader, reader.uint32());
-          continue;
-        }
         case 22: {
           if (tag !== 176) {
             break;
@@ -2935,7 +2953,7 @@ export const DataSource: MessageFns<DataSource> = {
             break;
           }
 
-          message.saslConfig = SASLConfig.decode(reader, reader.uint32());
+          message.clientSecretCredential = DataSource_ClientSecretCredential.decode(reader, reader.uint32());
           continue;
         }
         case 24: {
@@ -2943,27 +2961,27 @@ export const DataSource: MessageFns<DataSource> = {
             break;
           }
 
-          message.additionalAddresses.push(DataSource_Address.decode(reader, reader.uint32()));
-          continue;
-        }
-        case 25: {
-          if (tag !== 202) {
-            break;
-          }
-
-          message.replicaSet = reader.string();
+          message.saslConfig = SASLConfig.decode(reader, reader.uint32());
           continue;
         }
         case 26: {
-          if (tag !== 208) {
+          if (tag !== 210) {
+            break;
+          }
+
+          message.additionalAddresses.push(DataSource_Address.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 27: {
+          if (tag !== 216) {
             break;
           }
 
           message.directConnection = reader.bool();
           continue;
         }
-        case 27: {
-          if (tag !== 218) {
+        case 28: {
+          if (tag !== 226) {
             break;
           }
 
@@ -3018,6 +3036,17 @@ export const DataSource: MessageFns<DataSource> = {
           message.cluster = reader.string();
           continue;
         }
+        case 36: {
+          if (tag !== 290) {
+            break;
+          }
+
+          const entry36 = DataSource_ExtraConnectionParametersEntry.decode(reader, reader.uint32());
+          if (entry36.value !== undefined) {
+            message.extraConnectionParameters[entry36.key] = entry36.value;
+          }
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3044,6 +3073,7 @@ export const DataSource: MessageFns<DataSource> = {
       authenticationDatabase: isSet(object.authenticationDatabase)
         ? globalThis.String(object.authenticationDatabase)
         : "",
+      replicaSet: isSet(object.replicaSet) ? globalThis.String(object.replicaSet) : "",
       sid: isSet(object.sid) ? globalThis.String(object.sid) : "",
       serviceName: isSet(object.serviceName) ? globalThis.String(object.serviceName) : "",
       sshHost: isSet(object.sshHost) ? globalThis.String(object.sshHost) : "",
@@ -3057,17 +3087,16 @@ export const DataSource: MessageFns<DataSource> = {
       externalSecret: isSet(object.externalSecret)
         ? DataSourceExternalSecret.fromJSON(object.externalSecret)
         : undefined,
-      clientSecretCredential: isSet(object.clientSecretCredential)
-        ? DataSource_ClientSecretCredential.fromJSON(object.clientSecretCredential)
-        : undefined,
       authenticationType: isSet(object.authenticationType)
         ? dataSource_AuthenticationTypeFromJSON(object.authenticationType)
         : DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED,
+      clientSecretCredential: isSet(object.clientSecretCredential)
+        ? DataSource_ClientSecretCredential.fromJSON(object.clientSecretCredential)
+        : undefined,
       saslConfig: isSet(object.saslConfig) ? SASLConfig.fromJSON(object.saslConfig) : undefined,
       additionalAddresses: globalThis.Array.isArray(object?.additionalAddresses)
         ? object.additionalAddresses.map((e: any) => DataSource_Address.fromJSON(e))
         : [],
-      replicaSet: isSet(object.replicaSet) ? globalThis.String(object.replicaSet) : "",
       directConnection: isSet(object.directConnection) ? globalThis.Boolean(object.directConnection) : false,
       region: isSet(object.region) ? globalThis.String(object.region) : "",
       warehouseId: isSet(object.warehouseId) ? globalThis.String(object.warehouseId) : "",
@@ -3078,6 +3107,12 @@ export const DataSource: MessageFns<DataSource> = {
         ? dataSource_RedisTypeFromJSON(object.redisType)
         : DataSource_RedisType.REDIS_TYPE_UNSPECIFIED,
       cluster: isSet(object.cluster) ? globalThis.String(object.cluster) : "",
+      extraConnectionParameters: isObject(object.extraConnectionParameters)
+        ? Object.entries(object.extraConnectionParameters).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
     };
   },
 
@@ -3122,6 +3157,9 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.authenticationDatabase !== "") {
       obj.authenticationDatabase = message.authenticationDatabase;
     }
+    if (message.replicaSet !== "") {
+      obj.replicaSet = message.replicaSet;
+    }
     if (message.sid !== "") {
       obj.sid = message.sid;
     }
@@ -3149,20 +3187,17 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.externalSecret !== undefined) {
       obj.externalSecret = DataSourceExternalSecret.toJSON(message.externalSecret);
     }
-    if (message.clientSecretCredential !== undefined) {
-      obj.clientSecretCredential = DataSource_ClientSecretCredential.toJSON(message.clientSecretCredential);
-    }
     if (message.authenticationType !== DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED) {
       obj.authenticationType = dataSource_AuthenticationTypeToJSON(message.authenticationType);
+    }
+    if (message.clientSecretCredential !== undefined) {
+      obj.clientSecretCredential = DataSource_ClientSecretCredential.toJSON(message.clientSecretCredential);
     }
     if (message.saslConfig !== undefined) {
       obj.saslConfig = SASLConfig.toJSON(message.saslConfig);
     }
     if (message.additionalAddresses?.length) {
       obj.additionalAddresses = message.additionalAddresses.map((e) => DataSource_Address.toJSON(e));
-    }
-    if (message.replicaSet !== "") {
-      obj.replicaSet = message.replicaSet;
     }
     if (message.directConnection !== false) {
       obj.directConnection = message.directConnection;
@@ -3188,6 +3223,15 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.cluster !== "") {
       obj.cluster = message.cluster;
     }
+    if (message.extraConnectionParameters) {
+      const entries = Object.entries(message.extraConnectionParameters);
+      if (entries.length > 0) {
+        obj.extraConnectionParameters = {};
+        entries.forEach(([k, v]) => {
+          obj.extraConnectionParameters[k] = v;
+        });
+      }
+    }
     return obj;
   },
 
@@ -3209,6 +3253,7 @@ export const DataSource: MessageFns<DataSource> = {
     message.database = object.database ?? "";
     message.srv = object.srv ?? false;
     message.authenticationDatabase = object.authenticationDatabase ?? "";
+    message.replicaSet = object.replicaSet ?? "";
     message.sid = object.sid ?? "";
     message.serviceName = object.serviceName ?? "";
     message.sshHost = object.sshHost ?? "";
@@ -3220,16 +3265,15 @@ export const DataSource: MessageFns<DataSource> = {
     message.externalSecret = (object.externalSecret !== undefined && object.externalSecret !== null)
       ? DataSourceExternalSecret.fromPartial(object.externalSecret)
       : undefined;
+    message.authenticationType = object.authenticationType ?? DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED;
     message.clientSecretCredential =
       (object.clientSecretCredential !== undefined && object.clientSecretCredential !== null)
         ? DataSource_ClientSecretCredential.fromPartial(object.clientSecretCredential)
         : undefined;
-    message.authenticationType = object.authenticationType ?? DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED;
     message.saslConfig = (object.saslConfig !== undefined && object.saslConfig !== null)
       ? SASLConfig.fromPartial(object.saslConfig)
       : undefined;
     message.additionalAddresses = object.additionalAddresses?.map((e) => DataSource_Address.fromPartial(e)) || [];
-    message.replicaSet = object.replicaSet ?? "";
     message.directConnection = object.directConnection ?? false;
     message.region = object.region ?? "";
     message.warehouseId = object.warehouseId ?? "";
@@ -3238,6 +3282,14 @@ export const DataSource: MessageFns<DataSource> = {
     message.masterPassword = object.masterPassword ?? "";
     message.redisType = object.redisType ?? DataSource_RedisType.REDIS_TYPE_UNSPECIFIED;
     message.cluster = object.cluster ?? "";
+    message.extraConnectionParameters = Object.entries(object.extraConnectionParameters ?? {}).reduce<
+      { [key: string]: string }
+    >((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = globalThis.String(value);
+      }
+      return acc;
+    }, {});
     return message;
   },
 };
@@ -3406,6 +3458,84 @@ export const DataSource_Address: MessageFns<DataSource_Address> = {
     const message = createBaseDataSource_Address();
     message.host = object.host ?? "";
     message.port = object.port ?? "";
+    return message;
+  },
+};
+
+function createBaseDataSource_ExtraConnectionParametersEntry(): DataSource_ExtraConnectionParametersEntry {
+  return { key: "", value: "" };
+}
+
+export const DataSource_ExtraConnectionParametersEntry: MessageFns<DataSource_ExtraConnectionParametersEntry> = {
+  encode(message: DataSource_ExtraConnectionParametersEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DataSource_ExtraConnectionParametersEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDataSource_ExtraConnectionParametersEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DataSource_ExtraConnectionParametersEntry {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
+  },
+
+  toJSON(message: DataSource_ExtraConnectionParametersEntry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DataSource_ExtraConnectionParametersEntry>): DataSource_ExtraConnectionParametersEntry {
+    return DataSource_ExtraConnectionParametersEntry.fromPartial(base ?? {});
+  },
+  fromPartial(
+    object: DeepPartial<DataSource_ExtraConnectionParametersEntry>,
+  ): DataSource_ExtraConnectionParametersEntry {
+    const message = createBaseDataSource_ExtraConnectionParametersEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };
@@ -4709,6 +4839,10 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

@@ -436,8 +436,13 @@ message DataSource {
   string port = 9;
   string database = 10;
   // srv, authentication_database and replica_set are used for MongoDB.
+  // srv is a boolean flag that indicates whether the host is a DNS SRV record.
   bool srv = 11;
+  // authentication_database is the database name to authenticate against, which stores the user credentials.
   string authentication_database = 12;
+  // replica_set is used for MongoDB replica set.
+  string replica_set = 25;
+
   // sid and service_name are used for Oracle.
   string sid = 13;
   string service_name = 14;
@@ -468,6 +473,7 @@ message DataSource {
     AWS_RDS_IAM = 3;
     AZURE_IAM = 4;
   }
+  AuthenticationType authentication_type = 22;
 
   message ClientSecretCredential {
     string tenant_id = 1;
@@ -475,27 +481,23 @@ message DataSource {
     string client_secret = 3;
   }
   oneof iam_extension {
-    ClientSecretCredential client_secret_credential = 36;
+    ClientSecretCredential client_secret_credential = 23;
   }
 
-  AuthenticationType authentication_type = 22;
-
-  SASLConfig sasl_config = 23;
+  SASLConfig sasl_config = 24;
 
   message Address {
     string host = 1;
     string port = 2;
   }
   // additional_addresses is used for MongoDB replica set.
-  repeated Address additional_addresses = 24 [(google.api.field_behavior) = OPTIONAL];
-  // replica_set is used for MongoDB replica set.
-  string replica_set = 25;
+  repeated Address additional_addresses = 26 [(google.api.field_behavior) = OPTIONAL];
 
   // direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.
-  bool direct_connection = 26;
+  bool direct_connection = 27;
 
   // region is the location of where the DB is, works for AWS RDS. For example, us-east-1.
-  string region = 27;
+  string region = 28;
 
   // warehouse_id is used by Databricks.
   string warehouse_id = 29;
@@ -517,6 +519,10 @@ message DataSource {
 
   // Cluster is the cluster name for the data source. Used by CockroachDB.
   string cluster = 35;
+
+  // Extra connection parameters for the database connection.
+  // For PostgreSQL HA, this can be used to set target_session_attrs=read-write
+  map<string, string> extra_connection_parameters = 36;
 }
 
 enum DataSourceType {

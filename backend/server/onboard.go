@@ -41,7 +41,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		Title:        "Test Sample Instance",
 		Engine:       storepb.Engine_POSTGRES,
 		ExternalLink: "",
-		Metadata: &storepb.InstanceMetadata{
+		Metadata: &storepb.Instance{
 			DataSources: []*storepb.DataSource{
 				{
 					Id:                 "admin",
@@ -102,7 +102,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		Title:        "Prod Sample Instance",
 		Engine:       storepb.Engine_POSTGRES,
 		ExternalLink: "",
-		Metadata: &storepb.InstanceMetadata{
+		Metadata: &storepb.Instance{
 			DataSources: []*storepb.DataSource{
 				{
 					Id:                 "admin",

@@ -784,7 +784,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.InstanceMetadata"><span class="badge">M</span>InstanceMetadata</a>
+                  <a href="#bytebase.store.Instance"><span class="badge">M</span>Instance</a>
                 </li>
               
                 <li>
@@ -6815,20 +6815,6 @@ This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.</p></t
                 </tr>
               
                 <tr>
-                  <td>host</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>port</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>username</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -6843,14 +6829,14 @@ This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.</p></t
                 </tr>
               
                 <tr>
-                  <td>database</td>
-                  <td><a href="#string">string</a></td>
+                  <td>use_ssl</td>
+                  <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Use SSL to connect to the data source. By default, we use system default SSL configuration. </p></td>
                 </tr>
               
                 <tr>
-                  <td>obfuscated_ssl_key</td>
+                  <td>obfuscated_ssl_ca</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -6864,7 +6850,28 @@ This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.</p></t
                 </tr>
               
                 <tr>
-                  <td>obfuscated_ssl_ca</td>
+                  <td>obfuscated_ssl_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>host</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>port</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -6874,7 +6881,8 @@ This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.</p></t
                   <td>srv</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>srv is a boolean flag that indicates whether the host is a DNS SRV record. </p></td>
+                  <td><p>srv, authentication_database and replica_set are used for MongoDB.
+srv is a boolean flag that indicates whether the host is a DNS SRV record. </p></td>
                 </tr>
               
                 <tr>
@@ -6882,6 +6890,13 @@ This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.</p></t
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>authentication_database is the database name to authenticate against, which stores the user credentials. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>replica_set</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>replica_set is used for MongoDB replica set. </p></td>
                 </tr>
               
                 <tr>
@@ -6978,13 +6993,6 @@ Used for authentication when connecting to the data source. </p></td>
                 </tr>
               
                 <tr>
-                  <td>replica_set</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>replica_set is used for MongoDB replica set. </p></td>
-                </tr>
-              
-                <tr>
                   <td>direct_connection</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
@@ -7031,13 +7039,6 @@ Used for authentication when connecting to the data source. </p></td>
                   <td><a href="#bytebase.store.DataSource.RedisType">DataSource.RedisType</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>use_ssl</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Use SSL to connect to the data source. By default, we use system default SSL configuration. </p></td>
                 </tr>
               
                 <tr>
@@ -7280,8 +7281,8 @@ For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p><
 
         
       
-        <h3 id="bytebase.store.InstanceMetadata">InstanceMetadata</h3>
-        <p>InstanceMetadata is the metadata for instances.</p>
+        <h3 id="bytebase.store.Instance">Instance</h3>
+        <p>Instance is the proto for instances.</p>
 
         
           <table class="field-table">
