@@ -263,7 +263,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Instance.Name)
 	}
 
-	metadata, ok := proto.Clone(instance.Metadata).(*storepb.InstanceMetadata)
+	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "failed to convert instance metadata type")
 	}
@@ -682,7 +682,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 
-	metadata, ok := proto.Clone(instance.Metadata).(*storepb.InstanceMetadata)
+	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
 	if !ok {
 		return nil, status.Error(codes.Internal, "failed to convert instance metadata type")
 	}
@@ -711,7 +711,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	if instance.Deleted {
 		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
 	}
-	metadata, ok := proto.Clone(instance.Metadata).(*storepb.InstanceMetadata)
+	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
 	if !ok {
 		return nil, status.Error(codes.Internal, "failed to convert instance metadata type")
 	}
@@ -870,7 +870,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
 	}
 
-	metadata, ok := proto.Clone(instance.Metadata).(*storepb.InstanceMetadata)
+	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
 	if !ok {
 		return nil, status.Error(codes.Internal, "failed to convert instance metadata type")
 	}
@@ -1034,7 +1034,7 @@ func (s *InstanceService) convertInstanceToInstanceMessage(instanceID string, in
 		ExternalLink:  instance.ExternalLink,
 		EnvironmentID: environmentID,
 		Activation:    instance.Activation,
-		Metadata: &storepb.InstanceMetadata{
+		Metadata: &storepb.Instance{
 			DataSources:        datasources,
 			SyncInterval:       instance.GetSyncInterval(),
 			MaximumConnections: instance.GetMaximumConnections(),

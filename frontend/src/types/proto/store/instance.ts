@@ -65,8 +65,8 @@ export function dataSourceTypeToNumber(object: DataSourceType): number {
   }
 }
 
-/** InstanceMetadata is the metadata for instances. */
-export interface InstanceMetadata {
+/** Instance is the proto for instances. */
+export interface Instance {
   /**
    * The lower_case_table_names config for MySQL instances.
    * It is used to determine whether the table names and database names are case sensitive.
@@ -114,18 +114,25 @@ export interface InstanceRole {
 export interface DataSource {
   id: string;
   type: DataSourceType;
-  host: string;
-  port: string;
   username: string;
   obfuscatedPassword: string;
-  database: string;
-  obfuscatedSslKey: string;
-  obfuscatedSslCert: string;
+  /** Use SSL to connect to the data source. By default, we use system default SSL configuration. */
+  useSsl: boolean;
   obfuscatedSslCa: string;
-  /** srv is a boolean flag that indicates whether the host is a DNS SRV record. */
+  obfuscatedSslCert: string;
+  obfuscatedSslKey: string;
+  host: string;
+  port: string;
+  database: string;
+  /**
+   * srv, authentication_database and replica_set are used for MongoDB.
+   * srv is a boolean flag that indicates whether the host is a DNS SRV record.
+   */
   srv: boolean;
   /** authentication_database is the database name to authenticate against, which stores the user credentials. */
   authenticationDatabase: string;
+  /** replica_set is used for MongoDB replica set. */
+  replicaSet: string;
   /** sid and service_name are used for Oracle. */
   sid: string;
   serviceName: string;
@@ -155,8 +162,6 @@ export interface DataSource {
     | undefined;
   /** additional_addresses is used for MongoDB replica set. */
   additionalAddresses: DataSource_Address[];
-  /** replica_set is used for MongoDB replica set. */
-  replicaSet: string;
   /** direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. */
   directConnection: boolean;
   /** region is the location of where the DB is, works for AWS RDS. For example, us-east-1. */
@@ -169,8 +174,6 @@ export interface DataSource {
   masterUsername: string;
   masterObfuscatedPassword: string;
   redisType: DataSource_RedisType;
-  /** Use SSL to connect to the data source. By default, we use system default SSL configuration. */
-  useSsl: boolean;
   /** Cluster is the cluster name for the data source. Used by CockroachDB. */
   cluster: string;
   /**
@@ -543,7 +546,7 @@ export function dataSourceExternalSecret_AppRoleAuthOption_SecretTypeToNumber(
   }
 }
 
-function createBaseInstanceMetadata(): InstanceMetadata {
+function createBaseInstance(): Instance {
   return {
     mysqlLowerCaseTableNames: 0,
     lastSyncTime: undefined,
@@ -555,8 +558,8 @@ function createBaseInstanceMetadata(): InstanceMetadata {
   };
 }
 
-export const InstanceMetadata: MessageFns<InstanceMetadata> = {
-  encode(message: InstanceMetadata, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Instance: MessageFns<Instance> = {
+  encode(message: Instance, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.mysqlLowerCaseTableNames !== 0) {
       writer.uint32(8).int32(message.mysqlLowerCaseTableNames);
     }
@@ -581,10 +584,10 @@ export const InstanceMetadata: MessageFns<InstanceMetadata> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): InstanceMetadata {
+  decode(input: BinaryReader | Uint8Array, length?: number): Instance {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseInstanceMetadata();
+    const message = createBaseInstance();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -653,7 +656,7 @@ export const InstanceMetadata: MessageFns<InstanceMetadata> = {
     return message;
   },
 
-  fromJSON(object: any): InstanceMetadata {
+  fromJSON(object: any): Instance {
     return {
       mysqlLowerCaseTableNames: isSet(object.mysqlLowerCaseTableNames)
         ? globalThis.Number(object.mysqlLowerCaseTableNames)
@@ -671,7 +674,7 @@ export const InstanceMetadata: MessageFns<InstanceMetadata> = {
     };
   },
 
-  toJSON(message: InstanceMetadata): unknown {
+  toJSON(message: Instance): unknown {
     const obj: any = {};
     if (message.mysqlLowerCaseTableNames !== 0) {
       obj.mysqlLowerCaseTableNames = Math.round(message.mysqlLowerCaseTableNames);
@@ -697,11 +700,11 @@ export const InstanceMetadata: MessageFns<InstanceMetadata> = {
     return obj;
   },
 
-  create(base?: DeepPartial<InstanceMetadata>): InstanceMetadata {
-    return InstanceMetadata.fromPartial(base ?? {});
+  create(base?: DeepPartial<Instance>): Instance {
+    return Instance.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<InstanceMetadata>): InstanceMetadata {
-    const message = createBaseInstanceMetadata();
+  fromPartial(object: DeepPartial<Instance>): Instance {
+    const message = createBaseInstance();
     message.mysqlLowerCaseTableNames = object.mysqlLowerCaseTableNames ?? 0;
     message.lastSyncTime = (object.lastSyncTime !== undefined && object.lastSyncTime !== null)
       ? Timestamp.fromPartial(object.lastSyncTime)
@@ -829,16 +832,18 @@ function createBaseDataSource(): DataSource {
   return {
     id: "",
     type: DataSourceType.DATA_SOURCE_UNSPECIFIED,
-    host: "",
-    port: "",
     username: "",
     obfuscatedPassword: "",
-    database: "",
-    obfuscatedSslKey: "",
-    obfuscatedSslCert: "",
+    useSsl: false,
     obfuscatedSslCa: "",
+    obfuscatedSslCert: "",
+    obfuscatedSslKey: "",
+    host: "",
+    port: "",
+    database: "",
     srv: false,
     authenticationDatabase: "",
+    replicaSet: "",
     sid: "",
     serviceName: "",
     sshHost: "",
@@ -852,7 +857,6 @@ function createBaseDataSource(): DataSource {
     clientSecretCredential: undefined,
     saslConfig: undefined,
     additionalAddresses: [],
-    replicaSet: "",
     directConnection: false,
     region: "",
     warehouseId: "",
@@ -860,7 +864,6 @@ function createBaseDataSource(): DataSource {
     masterUsername: "",
     masterObfuscatedPassword: "",
     redisType: DataSource_RedisType.REDIS_TYPE_UNSPECIFIED,
-    useSsl: false,
     cluster: "",
     extraConnectionParameters: {},
   };
@@ -874,35 +877,41 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.type !== DataSourceType.DATA_SOURCE_UNSPECIFIED) {
       writer.uint32(16).int32(dataSourceTypeToNumber(message.type));
     }
-    if (message.host !== "") {
-      writer.uint32(26).string(message.host);
-    }
-    if (message.port !== "") {
-      writer.uint32(34).string(message.port);
-    }
     if (message.username !== "") {
-      writer.uint32(42).string(message.username);
+      writer.uint32(26).string(message.username);
     }
     if (message.obfuscatedPassword !== "") {
-      writer.uint32(50).string(message.obfuscatedPassword);
+      writer.uint32(34).string(message.obfuscatedPassword);
     }
-    if (message.database !== "") {
-      writer.uint32(58).string(message.database);
-    }
-    if (message.obfuscatedSslKey !== "") {
-      writer.uint32(66).string(message.obfuscatedSslKey);
-    }
-    if (message.obfuscatedSslCert !== "") {
-      writer.uint32(74).string(message.obfuscatedSslCert);
+    if (message.useSsl !== false) {
+      writer.uint32(240).bool(message.useSsl);
     }
     if (message.obfuscatedSslCa !== "") {
-      writer.uint32(82).string(message.obfuscatedSslCa);
+      writer.uint32(42).string(message.obfuscatedSslCa);
+    }
+    if (message.obfuscatedSslCert !== "") {
+      writer.uint32(50).string(message.obfuscatedSslCert);
+    }
+    if (message.obfuscatedSslKey !== "") {
+      writer.uint32(58).string(message.obfuscatedSslKey);
+    }
+    if (message.host !== "") {
+      writer.uint32(66).string(message.host);
+    }
+    if (message.port !== "") {
+      writer.uint32(74).string(message.port);
+    }
+    if (message.database !== "") {
+      writer.uint32(82).string(message.database);
     }
     if (message.srv !== false) {
       writer.uint32(88).bool(message.srv);
     }
     if (message.authenticationDatabase !== "") {
       writer.uint32(98).string(message.authenticationDatabase);
+    }
+    if (message.replicaSet !== "") {
+      writer.uint32(202).string(message.replicaSet);
     }
     if (message.sid !== "") {
       writer.uint32(106).string(message.sid);
@@ -941,10 +950,7 @@ export const DataSource: MessageFns<DataSource> = {
       SASLConfig.encode(message.saslConfig, writer.uint32(194).fork()).join();
     }
     for (const v of message.additionalAddresses) {
-      DataSource_Address.encode(v!, writer.uint32(202).fork()).join();
-    }
-    if (message.replicaSet !== "") {
-      writer.uint32(210).string(message.replicaSet);
+      DataSource_Address.encode(v!, writer.uint32(210).fork()).join();
     }
     if (message.directConnection !== false) {
       writer.uint32(216).bool(message.directConnection);
@@ -956,19 +962,16 @@ export const DataSource: MessageFns<DataSource> = {
       writer.uint32(234).string(message.warehouseId);
     }
     if (message.masterName !== "") {
-      writer.uint32(242).string(message.masterName);
+      writer.uint32(250).string(message.masterName);
     }
     if (message.masterUsername !== "") {
-      writer.uint32(250).string(message.masterUsername);
+      writer.uint32(258).string(message.masterUsername);
     }
     if (message.masterObfuscatedPassword !== "") {
-      writer.uint32(258).string(message.masterObfuscatedPassword);
+      writer.uint32(266).string(message.masterObfuscatedPassword);
     }
     if (message.redisType !== DataSource_RedisType.REDIS_TYPE_UNSPECIFIED) {
-      writer.uint32(264).int32(dataSource_RedisTypeToNumber(message.redisType));
-    }
-    if (message.useSsl !== false) {
-      writer.uint32(272).bool(message.useSsl);
+      writer.uint32(272).int32(dataSource_RedisTypeToNumber(message.redisType));
     }
     if (message.cluster !== "") {
       writer.uint32(282).string(message.cluster);
@@ -1007,7 +1010,7 @@ export const DataSource: MessageFns<DataSource> = {
             break;
           }
 
-          message.host = reader.string();
+          message.username = reader.string();
           continue;
         }
         case 4: {
@@ -1015,7 +1018,15 @@ export const DataSource: MessageFns<DataSource> = {
             break;
           }
 
-          message.port = reader.string();
+          message.obfuscatedPassword = reader.string();
+          continue;
+        }
+        case 30: {
+          if (tag !== 240) {
+            break;
+          }
+
+          message.useSsl = reader.bool();
           continue;
         }
         case 5: {
@@ -1023,7 +1034,7 @@ export const DataSource: MessageFns<DataSource> = {
             break;
           }
 
-          message.username = reader.string();
+          message.obfuscatedSslCa = reader.string();
           continue;
         }
         case 6: {
@@ -1031,7 +1042,7 @@ export const DataSource: MessageFns<DataSource> = {
             break;
           }
 
-          message.obfuscatedPassword = reader.string();
+          message.obfuscatedSslCert = reader.string();
           continue;
         }
         case 7: {
@@ -1039,7 +1050,7 @@ export const DataSource: MessageFns<DataSource> = {
             break;
           }
 
-          message.database = reader.string();
+          message.obfuscatedSslKey = reader.string();
           continue;
         }
         case 8: {
@@ -1047,7 +1058,7 @@ export const DataSource: MessageFns<DataSource> = {
             break;
           }
 
-          message.obfuscatedSslKey = reader.string();
+          message.host = reader.string();
           continue;
         }
         case 9: {
@@ -1055,7 +1066,7 @@ export const DataSource: MessageFns<DataSource> = {
             break;
           }
 
-          message.obfuscatedSslCert = reader.string();
+          message.port = reader.string();
           continue;
         }
         case 10: {
@@ -1063,7 +1074,7 @@ export const DataSource: MessageFns<DataSource> = {
             break;
           }
 
-          message.obfuscatedSslCa = reader.string();
+          message.database = reader.string();
           continue;
         }
         case 11: {
@@ -1080,6 +1091,14 @@ export const DataSource: MessageFns<DataSource> = {
           }
 
           message.authenticationDatabase = reader.string();
+          continue;
+        }
+        case 25: {
+          if (tag !== 202) {
+            break;
+          }
+
+          message.replicaSet = reader.string();
           continue;
         }
         case 13: {
@@ -1178,20 +1197,12 @@ export const DataSource: MessageFns<DataSource> = {
           message.saslConfig = SASLConfig.decode(reader, reader.uint32());
           continue;
         }
-        case 25: {
-          if (tag !== 202) {
-            break;
-          }
-
-          message.additionalAddresses.push(DataSource_Address.decode(reader, reader.uint32()));
-          continue;
-        }
         case 26: {
           if (tag !== 210) {
             break;
           }
 
-          message.replicaSet = reader.string();
+          message.additionalAddresses.push(DataSource_Address.decode(reader, reader.uint32()));
           continue;
         }
         case 27: {
@@ -1218,20 +1229,12 @@ export const DataSource: MessageFns<DataSource> = {
           message.warehouseId = reader.string();
           continue;
         }
-        case 30: {
-          if (tag !== 242) {
-            break;
-          }
-
-          message.masterName = reader.string();
-          continue;
-        }
         case 31: {
           if (tag !== 250) {
             break;
           }
 
-          message.masterUsername = reader.string();
+          message.masterName = reader.string();
           continue;
         }
         case 32: {
@@ -1239,15 +1242,15 @@ export const DataSource: MessageFns<DataSource> = {
             break;
           }
 
-          message.masterObfuscatedPassword = reader.string();
+          message.masterUsername = reader.string();
           continue;
         }
         case 33: {
-          if (tag !== 264) {
+          if (tag !== 266) {
             break;
           }
 
-          message.redisType = dataSource_RedisTypeFromJSON(reader.int32());
+          message.masterObfuscatedPassword = reader.string();
           continue;
         }
         case 34: {
@@ -1255,7 +1258,7 @@ export const DataSource: MessageFns<DataSource> = {
             break;
           }
 
-          message.useSsl = reader.bool();
+          message.redisType = dataSource_RedisTypeFromJSON(reader.int32());
           continue;
         }
         case 35: {
@@ -1290,18 +1293,20 @@ export const DataSource: MessageFns<DataSource> = {
     return {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       type: isSet(object.type) ? dataSourceTypeFromJSON(object.type) : DataSourceType.DATA_SOURCE_UNSPECIFIED,
-      host: isSet(object.host) ? globalThis.String(object.host) : "",
-      port: isSet(object.port) ? globalThis.String(object.port) : "",
       username: isSet(object.username) ? globalThis.String(object.username) : "",
       obfuscatedPassword: isSet(object.obfuscatedPassword) ? globalThis.String(object.obfuscatedPassword) : "",
-      database: isSet(object.database) ? globalThis.String(object.database) : "",
-      obfuscatedSslKey: isSet(object.obfuscatedSslKey) ? globalThis.String(object.obfuscatedSslKey) : "",
-      obfuscatedSslCert: isSet(object.obfuscatedSslCert) ? globalThis.String(object.obfuscatedSslCert) : "",
+      useSsl: isSet(object.useSsl) ? globalThis.Boolean(object.useSsl) : false,
       obfuscatedSslCa: isSet(object.obfuscatedSslCa) ? globalThis.String(object.obfuscatedSslCa) : "",
+      obfuscatedSslCert: isSet(object.obfuscatedSslCert) ? globalThis.String(object.obfuscatedSslCert) : "",
+      obfuscatedSslKey: isSet(object.obfuscatedSslKey) ? globalThis.String(object.obfuscatedSslKey) : "",
+      host: isSet(object.host) ? globalThis.String(object.host) : "",
+      port: isSet(object.port) ? globalThis.String(object.port) : "",
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
       srv: isSet(object.srv) ? globalThis.Boolean(object.srv) : false,
       authenticationDatabase: isSet(object.authenticationDatabase)
         ? globalThis.String(object.authenticationDatabase)
         : "",
+      replicaSet: isSet(object.replicaSet) ? globalThis.String(object.replicaSet) : "",
       sid: isSet(object.sid) ? globalThis.String(object.sid) : "",
       serviceName: isSet(object.serviceName) ? globalThis.String(object.serviceName) : "",
       sshHost: isSet(object.sshHost) ? globalThis.String(object.sshHost) : "",
@@ -1327,7 +1332,6 @@ export const DataSource: MessageFns<DataSource> = {
       additionalAddresses: globalThis.Array.isArray(object?.additionalAddresses)
         ? object.additionalAddresses.map((e: any) => DataSource_Address.fromJSON(e))
         : [],
-      replicaSet: isSet(object.replicaSet) ? globalThis.String(object.replicaSet) : "",
       directConnection: isSet(object.directConnection) ? globalThis.Boolean(object.directConnection) : false,
       region: isSet(object.region) ? globalThis.String(object.region) : "",
       warehouseId: isSet(object.warehouseId) ? globalThis.String(object.warehouseId) : "",
@@ -1339,7 +1343,6 @@ export const DataSource: MessageFns<DataSource> = {
       redisType: isSet(object.redisType)
         ? dataSource_RedisTypeFromJSON(object.redisType)
         : DataSource_RedisType.REDIS_TYPE_UNSPECIFIED,
-      useSsl: isSet(object.useSsl) ? globalThis.Boolean(object.useSsl) : false,
       cluster: isSet(object.cluster) ? globalThis.String(object.cluster) : "",
       extraConnectionParameters: isObject(object.extraConnectionParameters)
         ? Object.entries(object.extraConnectionParameters).reduce<{ [key: string]: string }>((acc, [key, value]) => {
@@ -1358,35 +1361,41 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.type !== DataSourceType.DATA_SOURCE_UNSPECIFIED) {
       obj.type = dataSourceTypeToJSON(message.type);
     }
-    if (message.host !== "") {
-      obj.host = message.host;
-    }
-    if (message.port !== "") {
-      obj.port = message.port;
-    }
     if (message.username !== "") {
       obj.username = message.username;
     }
     if (message.obfuscatedPassword !== "") {
       obj.obfuscatedPassword = message.obfuscatedPassword;
     }
-    if (message.database !== "") {
-      obj.database = message.database;
+    if (message.useSsl !== false) {
+      obj.useSsl = message.useSsl;
     }
-    if (message.obfuscatedSslKey !== "") {
-      obj.obfuscatedSslKey = message.obfuscatedSslKey;
+    if (message.obfuscatedSslCa !== "") {
+      obj.obfuscatedSslCa = message.obfuscatedSslCa;
     }
     if (message.obfuscatedSslCert !== "") {
       obj.obfuscatedSslCert = message.obfuscatedSslCert;
     }
-    if (message.obfuscatedSslCa !== "") {
-      obj.obfuscatedSslCa = message.obfuscatedSslCa;
+    if (message.obfuscatedSslKey !== "") {
+      obj.obfuscatedSslKey = message.obfuscatedSslKey;
+    }
+    if (message.host !== "") {
+      obj.host = message.host;
+    }
+    if (message.port !== "") {
+      obj.port = message.port;
+    }
+    if (message.database !== "") {
+      obj.database = message.database;
     }
     if (message.srv !== false) {
       obj.srv = message.srv;
     }
     if (message.authenticationDatabase !== "") {
       obj.authenticationDatabase = message.authenticationDatabase;
+    }
+    if (message.replicaSet !== "") {
+      obj.replicaSet = message.replicaSet;
     }
     if (message.sid !== "") {
       obj.sid = message.sid;
@@ -1427,9 +1436,6 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.additionalAddresses?.length) {
       obj.additionalAddresses = message.additionalAddresses.map((e) => DataSource_Address.toJSON(e));
     }
-    if (message.replicaSet !== "") {
-      obj.replicaSet = message.replicaSet;
-    }
     if (message.directConnection !== false) {
       obj.directConnection = message.directConnection;
     }
@@ -1450,9 +1456,6 @@ export const DataSource: MessageFns<DataSource> = {
     }
     if (message.redisType !== DataSource_RedisType.REDIS_TYPE_UNSPECIFIED) {
       obj.redisType = dataSource_RedisTypeToJSON(message.redisType);
-    }
-    if (message.useSsl !== false) {
-      obj.useSsl = message.useSsl;
     }
     if (message.cluster !== "") {
       obj.cluster = message.cluster;
@@ -1476,16 +1479,18 @@ export const DataSource: MessageFns<DataSource> = {
     const message = createBaseDataSource();
     message.id = object.id ?? "";
     message.type = object.type ?? DataSourceType.DATA_SOURCE_UNSPECIFIED;
-    message.host = object.host ?? "";
-    message.port = object.port ?? "";
     message.username = object.username ?? "";
     message.obfuscatedPassword = object.obfuscatedPassword ?? "";
-    message.database = object.database ?? "";
-    message.obfuscatedSslKey = object.obfuscatedSslKey ?? "";
-    message.obfuscatedSslCert = object.obfuscatedSslCert ?? "";
+    message.useSsl = object.useSsl ?? false;
     message.obfuscatedSslCa = object.obfuscatedSslCa ?? "";
+    message.obfuscatedSslCert = object.obfuscatedSslCert ?? "";
+    message.obfuscatedSslKey = object.obfuscatedSslKey ?? "";
+    message.host = object.host ?? "";
+    message.port = object.port ?? "";
+    message.database = object.database ?? "";
     message.srv = object.srv ?? false;
     message.authenticationDatabase = object.authenticationDatabase ?? "";
+    message.replicaSet = object.replicaSet ?? "";
     message.sid = object.sid ?? "";
     message.serviceName = object.serviceName ?? "";
     message.sshHost = object.sshHost ?? "";
@@ -1506,7 +1511,6 @@ export const DataSource: MessageFns<DataSource> = {
       ? SASLConfig.fromPartial(object.saslConfig)
       : undefined;
     message.additionalAddresses = object.additionalAddresses?.map((e) => DataSource_Address.fromPartial(e)) || [];
-    message.replicaSet = object.replicaSet ?? "";
     message.directConnection = object.directConnection ?? false;
     message.region = object.region ?? "";
     message.warehouseId = object.warehouseId ?? "";
@@ -1514,7 +1518,6 @@ export const DataSource: MessageFns<DataSource> = {
     message.masterUsername = object.masterUsername ?? "";
     message.masterObfuscatedPassword = object.masterObfuscatedPassword ?? "";
     message.redisType = object.redisType ?? DataSource_RedisType.REDIS_TYPE_UNSPECIFIED;
-    message.useSsl = object.useSsl ?? false;
     message.cluster = object.cluster ?? "";
     message.extraConnectionParameters = Object.entries(object.extraConnectionParameters ?? {}).reduce<
       { [key: string]: string }

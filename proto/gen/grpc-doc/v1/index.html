@@ -371,6 +371,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.DataSource.ExtraConnectionParametersEntry"><span class="badge">M</span>DataSource.ExtraConnectionParametersEntry</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DataSourceExternalSecret"><span class="badge">M</span>DataSourceExternalSecret</a>
                 </li>
               
@@ -4356,14 +4360,22 @@ are /[a-z][0-9]-/. </p></td>
                   <td>srv</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>srv, authentication_database and replica_set are used for MongoDB. </p></td>
+                  <td><p>srv, authentication_database and replica_set are used for MongoDB.
+srv is a boolean flag that indicates whether the host is a DNS SRV record. </p></td>
                 </tr>
               
                 <tr>
                   <td>authentication_database</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>authentication_database is the database name to authenticate against, which stores the user credentials. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>replica_set</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>replica_set is used for MongoDB replica set. </p></td>
                 </tr>
               
                 <tr>
@@ -4435,15 +4447,15 @@ Used for authentication when connecting to the data source. </p></td>
                 </tr>
               
                 <tr>
-                  <td>client_secret_credential</td>
-                  <td><a href="#bytebase.v1.DataSource.ClientSecretCredential">DataSource.ClientSecretCredential</a></td>
+                  <td>authentication_type</td>
+                  <td><a href="#bytebase.v1.DataSource.AuthenticationType">DataSource.AuthenticationType</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
               
                 <tr>
-                  <td>authentication_type</td>
-                  <td><a href="#bytebase.v1.DataSource.AuthenticationType">DataSource.AuthenticationType</a></td>
+                  <td>client_secret_credential</td>
+                  <td><a href="#bytebase.v1.DataSource.ClientSecretCredential">DataSource.ClientSecretCredential</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -4460,13 +4472,6 @@ Used for authentication when connecting to the data source. </p></td>
                   <td><a href="#bytebase.v1.DataSource.Address">DataSource.Address</a></td>
                   <td>repeated</td>
                   <td><p>additional_addresses is used for MongoDB replica set. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>replica_set</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>replica_set is used for MongoDB replica set. </p></td>
                 </tr>
               
                 <tr>
@@ -4523,6 +4528,14 @@ Used for authentication when connecting to the data source. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Cluster is the cluster name for the data source. Used by CockroachDB. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>extra_connection_parameters</td>
+                  <td><a href="#bytebase.v1.DataSource.ExtraConnectionParametersEntry">DataSource.ExtraConnectionParametersEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>Extra connection parameters for the database connection.
+For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p></td>
                 </tr>
               
             </tbody>
@@ -4589,6 +4602,37 @@ Used for authentication when connecting to the data source. </p></td>
               
                 <tr>
                   <td>client_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DataSource.ExtraConnectionParametersEntry">DataSource.ExtraConnectionParametersEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
