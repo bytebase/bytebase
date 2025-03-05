@@ -119,7 +119,6 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		InstanceID:    instance.ResourceID,
 		DatabaseName:  payload.DatabaseName,
 		EnvironmentID: payload.EnvironmentId,
-		Deleted:       true,
 		Metadata: &storepb.DatabaseMetadata{
 			Labels: labels,
 		},
@@ -145,17 +144,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		}
 	}
 	defer defaultDBDriver.Close(ctx)
-
 	if _, err := defaultDBDriver.Execute(driverCtx, statement, db.ExecuteOptions{CreateDatabase: true}); err != nil {
-		return true, nil, err
-	}
-
-	d := false
-	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		InstanceID:   instance.ResourceID,
-		DatabaseName: payload.DatabaseName,
-		Deleted:      &d,
-	}); err != nil {
 		return true, nil, err
 	}
 
