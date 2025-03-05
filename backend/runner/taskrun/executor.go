@@ -227,7 +227,7 @@ func getCreateTaskRunLog(ctx context.Context, taskRunUID int, s *store.Store, pr
 }
 
 func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage) (bool, error) {
-	if instance.Engine != storepb.Engine_POSTGRES {
+	if instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
 		return false, nil
 	}
 
@@ -289,7 +289,7 @@ func doMigrationWithFunc(
 	if stateCfg != nil {
 		switch mc.task.Type {
 		case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate:
-			switch instance.Engine {
+			switch instance.Metadata.GetEngine() {
 			case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_OCEANBASE,
 				storepb.Engine_STARROCKS, storepb.Engine_DORIS, storepb.Engine_POSTGRES,
 				storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE, storepb.Engine_ORACLE,

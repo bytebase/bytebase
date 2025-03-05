@@ -4,31 +4,38 @@ package bytebase.store;
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
+import "store/common.proto";
 
 option go_package = "generated-go/store";
 
 // Instance is the proto for instances.
 message Instance {
-  // The lower_case_table_names config for MySQL instances.
-  // It is used to determine whether the table names and database names are case sensitive.
-  int32 mysql_lower_case_table_names = 1;
+  string title = 1;
+  Engine engine = 2;
+  bool activation = 3;
+  string version = 4;
+  string external_link = 5;
 
-  google.protobuf.Timestamp last_sync_time = 2;
-
-  repeated InstanceRole roles = 3;
+  repeated DataSource data_sources = 6;
 
   // How often the instance is synced.
-  google.protobuf.Duration sync_interval = 4;
+  google.protobuf.Duration sync_interval = 7;
 
   // The maximum number of connections.
   // The default is 10 if the value is unset or zero.
-  int32 maximum_connections = 5;
+  int32 maximum_connections = 8;
 
   // Enable sync for following databases.
   // Default empty, means sync all schemas & databases.
-  repeated string sync_databases = 6;
+  repeated string sync_databases = 9;
 
-  repeated DataSource data_sources = 7;
+  // The lower_case_table_names config for MySQL instances.
+  // It is used to determine whether the table names and database names are case sensitive.
+  int32 mysql_lower_case_table_names = 10;
+
+  google.protobuf.Timestamp last_sync_time = 11;
+
+  repeated InstanceRole roles = 12;
 }
 
 // InstanceRole is the API message for instance role.

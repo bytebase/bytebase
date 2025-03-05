@@ -90,7 +90,7 @@ func (s *LicenseService) IsFeatureEnabledForInstance(feature api.FeatureType, in
 		// If the feature not exists in the limit map, we just need to check the feature for current plan.
 		return nil
 	}
-	if !instance.Activation {
+	if !instance.Metadata.GetActivation() {
 		return errors.Errorf(`feature "%s" is not available for instance %s, please assign license to the instance to enable it`, feature.Name(), instance.ResourceID)
 	}
 	return nil

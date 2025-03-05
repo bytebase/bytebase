@@ -76,12 +76,12 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 	if instance == nil {
 		return nil, errors.Errorf("instance %s not found", config.InstanceId)
 	}
-	if !common.StatementReportEngines[instance.Engine] {
+	if !common.StatementReportEngines[instance.Metadata.GetEngine()] {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
 				Code:    common.Ok.Int32(),
-				Title:   fmt.Sprintf("Statement report is not supported for %s", instance.Engine),
+				Title:   fmt.Sprintf("Statement report is not supported for %s", instance.Metadata.GetEngine()),
 				Content: "",
 			},
 		}, nil
@@ -96,7 +96,7 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 	}
 
 	// Check statement syntax error.
-	_, syntaxAdvices := e.sheetManager.GetASTsForChecks(instance.Engine, statement)
+	_, syntaxAdvices := e.sheetManager.GetASTsForChecks(instance.Metadata.GetEngine(), statement)
 	if len(syntaxAdvices) > 0 {
 		advice := syntaxAdvices[0]
 		return []*storepb.PlanCheckRunResult_Result{
@@ -154,7 +154,7 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 		return nil, errors.Errorf("instance not found: %s", database.InstanceID)
 	}
 
-	asts, syntaxAdvices := sheetManager.GetASTsForChecks(instance.Engine, statement)
+	asts, syntaxAdvices := sheetManager.GetASTsForChecks(instance.Metadata.GetEngine(), statement)
 	if len(syntaxAdvices) > 0 {
 		// Return nil as it should already be checked before running this function.
 		return nil, nil
@@ -175,7 +175,7 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 	}
 	defer driver.Close(ctx)
 
-	switch instance.Engine {
+	switch instance.Metadata.GetEngine() {
 	case storepb.Engine_POSTGRES:
 		pd, ok := driver.(*pgdriver.Driver)
 		if !ok {
@@ -208,7 +208,7 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 		}
 		explainCalculator = md.CountAffectedRows
 
-		if instance.Engine != storepb.Engine_OCEANBASE {
+		if instance.Metadata.GetEngine() != storepb.Engine_OCEANBASE {
 			sqlTypes, err = mysqlparser.GetStatementTypes(asts)
 			if err != nil {
 				return nil, err
@@ -235,7 +235,7 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 		}
 		explainCalculator = od.CountAffectedRows
 
-		if instance.Engine != storepb.Engine_OCEANBASE_ORACLE {
+		if instance.Metadata.GetEngine() != storepb.Engine_OCEANBASE_ORACLE {
 			sqlTypes, err = plsql.GetStatementTypes(asts)
 			if err != nil {
 				return nil, err
@@ -262,7 +262,7 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 	materials := utils.GetSecretMapFromDatabaseMessage(database)
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := utils.RenderStatement(statement, materials)
-	changeSummary, err := base.ExtractChangedResources(instance.Engine, database.DatabaseName, defaultSchema, databaseSchema, asts, renderedStatement)
+	changeSummary, err := base.ExtractChangedResources(instance.Metadata.GetEngine(), database.DatabaseName, defaultSchema, databaseSchema, asts, renderedStatement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract changed resources")
 	}
@@ -276,7 +276,7 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 }
 
 func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage) (bool, error) {
-	if instance.Engine != storepb.Engine_POSTGRES {
+	if instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
 		return false, nil
 	}
 

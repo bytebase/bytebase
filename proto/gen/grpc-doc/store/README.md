@@ -2622,13 +2622,18 @@ Instance is the proto for instances.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| mysql_lower_case_table_names | [int32](#int32) |  | The lower_case_table_names config for MySQL instances. It is used to determine whether the table names and database names are case sensitive. |
-| last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| roles | [InstanceRole](#bytebase-store-InstanceRole) | repeated |  |
+| title | [string](#string) |  |  |
+| engine | [Engine](#bytebase-store-Engine) |  |  |
+| activation | [bool](#bool) |  |  |
+| version | [string](#string) |  |  |
+| external_link | [string](#string) |  |  |
+| data_sources | [DataSource](#bytebase-store-DataSource) | repeated |  |
 | sync_interval | [google.protobuf.Duration](#google-protobuf-Duration) |  | How often the instance is synced. |
 | maximum_connections | [int32](#int32) |  | The maximum number of connections. The default is 10 if the value is unset or zero. |
 | sync_databases | [string](#string) | repeated | Enable sync for following databases. Default empty, means sync all schemas &amp; databases. |
-| data_sources | [DataSource](#bytebase-store-DataSource) | repeated |  |
+| mysql_lower_case_table_names | [int32](#int32) |  | The lower_case_table_names config for MySQL instances. It is used to determine whether the table names and database names are case sensitive. |
+| last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| roles | [InstanceRole](#bytebase-store-InstanceRole) | repeated |  |
 
 
 

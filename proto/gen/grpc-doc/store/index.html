@@ -7292,23 +7292,43 @@ For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p><
             <tbody>
               
                 <tr>
-                  <td>mysql_lower_case_table_names</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The lower_case_table_names config for MySQL instances.
-It is used to determine whether the table names and database names are case sensitive. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>last_sync_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
               
                 <tr>
-                  <td>roles</td>
-                  <td><a href="#bytebase.store.InstanceRole">InstanceRole</a></td>
+                  <td>engine</td>
+                  <td><a href="#bytebase.store.Engine">Engine</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>activation</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>external_link</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>data_sources</td>
+                  <td><a href="#bytebase.store.DataSource">DataSource</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
@@ -7337,8 +7357,23 @@ Default empty, means sync all schemas &amp; databases. </p></td>
                 </tr>
               
                 <tr>
-                  <td>data_sources</td>
-                  <td><a href="#bytebase.store.DataSource">DataSource</a></td>
+                  <td>mysql_lower_case_table_names</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The lower_case_table_names config for MySQL instances.
+It is used to determine whether the table names and database names are case sensitive. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>last_sync_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>roles</td>
+                  <td><a href="#bytebase.store.InstanceRole">InstanceRole</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
                 </tr>

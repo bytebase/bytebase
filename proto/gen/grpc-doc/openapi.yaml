@@ -9764,19 +9764,49 @@ components:
         Instance:
             type: object
             properties:
-                mysqlLowerCaseTableNames:
-                    type: integer
-                    description: |-
-                        The lower_case_table_names config for MySQL instances.
-                         It is used to determine whether the table names and database names are case sensitive.
-                    format: int32
-                lastSyncTime:
+                title:
                     type: string
-                    format: date-time
-                roles:
+                engine:
+                    enum:
+                        - ENGINE_UNSPECIFIED
+                        - CLICKHOUSE
+                        - MYSQL
+                        - POSTGRES
+                        - SNOWFLAKE
+                        - SQLITE
+                        - TIDB
+                        - MONGODB
+                        - REDIS
+                        - ORACLE
+                        - SPANNER
+                        - MSSQL
+                        - REDSHIFT
+                        - MARIADB
+                        - OCEANBASE
+                        - DM
+                        - RISINGWAVE
+                        - OCEANBASE_ORACLE
+                        - STARROCKS
+                        - DORIS
+                        - HIVE
+                        - ELASTICSEARCH
+                        - BIGQUERY
+                        - DYNAMODB
+                        - DATABRICKS
+                        - COCKROACHDB
+                        - COSMOSDB
+                    type: string
+                    format: enum
+                activation:
+                    type: boolean
+                version:
+                    type: string
+                externalLink:
+                    type: string
+                dataSources:
                     type: array
                     items:
-                        $ref: '#/components/schemas/InstanceRole'
+                        $ref: '#/components/schemas/DataSource'
                 syncInterval:
                     pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
                     type: string
@@ -9794,10 +9824,19 @@ components:
                     description: |-
                         Enable sync for following databases.
                          Default empty, means sync all schemas & databases.
-                dataSources:
+                mysqlLowerCaseTableNames:
+                    type: integer
+                    description: |-
+                        The lower_case_table_names config for MySQL instances.
+                         It is used to determine whether the table names and database names are case sensitive.
+                    format: int32
+                lastSyncTime:
+                    type: string
+                    format: date-time
+                roles:
                     type: array
                     items:
-                        $ref: '#/components/schemas/DataSource'
+                        $ref: '#/components/schemas/InstanceRole'
             description: Instance is the proto for instances.
         InstanceResource:
             type: object

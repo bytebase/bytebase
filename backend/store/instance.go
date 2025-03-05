@@ -19,13 +19,8 @@ import (
 // InstanceMessage is the message for instance.
 type InstanceMessage struct {
 	ResourceID    string
-	Title         string
-	Engine        storepb.Engine
-	ExternalLink  string
-	Activation    bool
 	EnvironmentID string
 	Deleted       bool
-	EngineVersion string
 	Metadata      *storepb.Instance
 }
 
@@ -33,13 +28,9 @@ type InstanceMessage struct {
 type UpdateInstanceMessage struct {
 	ResourceID string
 
-	Title         *string
-	ExternalLink  *string
 	Deleted       *bool
-	EngineVersion *string
-	Activation    *bool
-	Metadata      *storepb.Instance
 	EnvironmentID *string
+	Metadata      *storepb.Instance
 }
 
 // FindInstanceMessage is the message for finding instances.
@@ -100,7 +91,7 @@ func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) 
 }
 
 // CreateInstanceV2 creates the instance.
-func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMessage, maximumActivation int) (*InstanceMessage, error) {
+func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMessage) (*InstanceMessage, error) {
 	if err := validateDataSources(instanceCreate.Metadata); err != nil {
 		return nil, err
 	}
@@ -111,11 +102,6 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 	}
 	defer tx.Rollback()
 
-	where := ""
-	if instanceCreate.Activation {
-		where = fmt.Sprintf("WHERE (%s) < %d", countActivateInstanceQuery, maximumActivation)
-	}
-
 	metadataBytes, err := protojson.Marshal(instanceCreate.Metadata)
 	if err != nil {
 		return nil, err
@@ -125,25 +111,15 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 	if instanceCreate.EnvironmentID != "" {
 		environment = &instanceCreate.EnvironmentID
 	}
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
+	if _, err := tx.ExecContext(ctx, `
 			INSERT INTO instance (
 				resource_id,
 				environment,
-				name,
-				engine,
-				external_link,
-				activation,
 				metadata
-			)
-			SELECT $1, $2, $3, $4, $5, $6, $7
-			%s
-		`, where),
+			) VALUES ($1, $2, $3)
+		`,
 		instanceCreate.ResourceID,
 		environment,
-		instanceCreate.Title,
-		instanceCreate.Engine.String(),
-		instanceCreate.ExternalLink,
-		instanceCreate.Activation,
 		metadataBytes,
 	); err != nil {
 		return nil, err
@@ -156,10 +132,6 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 	instance := &InstanceMessage{
 		EnvironmentID: instanceCreate.EnvironmentID,
 		ResourceID:    instanceCreate.ResourceID,
-		Title:         instanceCreate.Title,
-		Engine:        instanceCreate.Engine,
-		ExternalLink:  instanceCreate.ExternalLink,
-		Activation:    instanceCreate.Activation,
 		Metadata:      instanceCreate.Metadata,
 	}
 	s.instanceCache.Add(getInstanceCacheKey(instance.ResourceID), instance)
@@ -167,33 +139,12 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 }
 
 // UpdateInstanceV2 updates an instance.
-func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessage, maximumActivation int) (*InstanceMessage, error) {
+func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessage) (*InstanceMessage, error) {
 	set, args, where := []string{}, []any{}, []string{}
-	if v := patch.Title; v != nil {
-		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := patch.EnvironmentID; v != nil {
 		set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.ExternalLink; v != nil {
-		set, args = append(set, fmt.Sprintf("external_link = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.EngineVersion; v != nil {
-		set, args = append(set, fmt.Sprintf("engine_version = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := patch.Activation; v != nil {
-		set, args = append(set, fmt.Sprintf("activation = $%d", len(args)+1)), append(args, *v)
-		if *v {
-			where = append(where, fmt.Sprintf("(%s) < %d", countActivateInstanceQuery, maximumActivation))
-		}
-	}
 	if v := patch.Deleted; v != nil {
-		if patch.Activation != nil {
-			return nil, errors.Errorf(`cannot set "activation" and "deleted" at the same time`)
-		}
-		if *patch.Deleted {
-			set, args = append(set, fmt.Sprintf("activation = $%d", len(args)+1)), append(args, false)
-		}
 		set, args = append(set, fmt.Sprintf(`deleted = $%d`, len(args)+1)), append(args, *v)
 	}
 	if v := patch.Metadata; v != nil {
@@ -214,7 +165,6 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 
 	instance := &InstanceMessage{}
 	if len(set) > 0 {
-		var engine string
 		query := fmt.Sprintf(`
 			UPDATE instance
 			SET `+strings.Join(set, ", ")+`
@@ -222,11 +172,6 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 			RETURNING
 				resource_id,
 				environment,
-				name,
-				engine,
-				engine_version,
-				external_link,
-				activation,
 				deleted,
 				metadata
 		`, strings.Join(where, " AND "))
@@ -235,11 +180,6 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		if err := tx.QueryRowContext(ctx, query, args...).Scan(
 			&instance.ResourceID,
 			&environment,
-			&instance.Title,
-			&engine,
-			&instance.EngineVersion,
-			&instance.ExternalLink,
-			&instance.Activation,
 			&instance.Deleted,
 			&metadata,
 		); err != nil {
@@ -248,11 +188,6 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		if environment.Valid {
 			instance.EnvironmentID = environment.String
 		}
-		engineTypeValue, ok := storepb.Engine_value[engine]
-		if !ok {
-			return nil, errors.Errorf("invalid engine %s", engine)
-		}
-		instance.Engine = storepb.Engine(engineTypeValue)
 
 		var instanceMetadata storepb.Instance
 		if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, &instanceMetadata); err != nil {
@@ -293,12 +228,7 @@ func listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstanceMessage) 
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			resource_id,
-			name,
 			environment,
-			engine,
-			engine_version,
-			external_link,
-			activation,
 			deleted,
 			metadata
 		FROM instance
@@ -313,16 +243,10 @@ func listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstanceMessage) 
 	for rows.Next() {
 		var instanceMessage InstanceMessage
 		var environment sql.NullString
-		var engine string
 		var metadata []byte
 		if err := rows.Scan(
 			&instanceMessage.ResourceID,
-			&instanceMessage.Title,
 			&environment,
-			&engine,
-			&instanceMessage.EngineVersion,
-			&instanceMessage.ExternalLink,
-			&instanceMessage.Activation,
 			&instanceMessage.Deleted,
 			&metadata,
 		); err != nil {
@@ -331,11 +255,6 @@ func listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstanceMessage) 
 		if environment.Valid {
 			instanceMessage.EnvironmentID = environment.String
 		}
-		engineTypeValue, ok := storepb.Engine_value[engine]
-		if !ok {
-			return nil, errors.Errorf("invalid engine %s", engine)
-		}
-		instanceMessage.Engine = storepb.Engine(engineTypeValue)
 
 		var instanceMetadata storepb.Instance
 		if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, &instanceMetadata); err != nil {
@@ -351,19 +270,15 @@ func listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstanceMessage) 
 	return instanceMessages, nil
 }
 
-var countActivateInstanceQuery = "SELECT COUNT(*) FROM instance WHERE activation = TRUE AND deleted = FALSE"
+var countActivateInstanceQuery = "SELECT COUNT(1) FROM instance WHERE (metadata ? 'activation') AND (metadata->>'activation')::boolean = TRUE AND deleted = FALSE"
 
-// CheckActivationLimit checks if activation instance count reaches the limit.
-func (s *Store) CheckActivationLimit(ctx context.Context, maximumActivation int) error {
-	count := 0
+// GetActivatedInstanceCount gets the number of activated instances.
+func (s *Store) GetActivatedInstanceCount(ctx context.Context) (int, error) {
+	var count int
 	if err := s.db.db.QueryRowContext(ctx, countActivateInstanceQuery).Scan(&count); err != nil {
-		return err
+		return 0, err
 	}
-
-	if count >= maximumActivation {
-		return common.Errorf(common.Invalid, "activation instance count has reached the limit (%v)", count)
-	}
-	return nil
+	return count, nil
 }
 
 func validateDataSources(metadata *storepb.Instance) error {
@@ -386,7 +301,7 @@ func validateDataSources(metadata *storepb.Instance) error {
 
 // IsObjectCaseSensitive returns true if the engine ignores database and table case sensitive.
 func IsObjectCaseSensitive(instance *InstanceMessage) bool {
-	switch instance.Engine {
+	switch instance.Metadata.GetEngine() {
 	case storepb.Engine_TIDB:
 		return false
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
