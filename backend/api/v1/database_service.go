@@ -1212,7 +1212,7 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 	if database.EffectiveEnvironmentID != "" {
 		effectiveEnvironment = common.FormatEnvironment(database.EffectiveEnvironmentID)
 	}
-	instanceResource, err := convertToInstanceResource(instance)
+	instanceResource, err := convertInstanceMessageToInstanceResource(instance)
 	if err != nil {
 		return nil, err
 	}

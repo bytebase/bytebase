@@ -162,7 +162,7 @@ CREATE UNIQUE INDEX idx_db_schema_unique_instance_db_name ON db_schema(instance,
 
 ALTER SEQUENCE db_schema_id_seq RESTART WITH 101;
 
--- data_source table stores the data source for a particular database
+-- Deprecated. To be deleted later.
 CREATE TABLE data_source (
     id serial PRIMARY KEY,
     instance text NOT NULL REFERENCES instance(resource_id),

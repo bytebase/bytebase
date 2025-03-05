@@ -403,62 +403,6 @@
             <a href="#store%2fdata_source.proto">store/data_source.proto</a>
             <ul>
               
-                <li>
-                  <a href="#bytebase.store.DataSourceExternalSecret"><span class="badge">M</span>DataSourceExternalSecret</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.DataSourceExternalSecret.AppRoleAuthOption"><span class="badge">M</span>DataSourceExternalSecret.AppRoleAuthOption</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.DataSourceOptions"><span class="badge">M</span>DataSourceOptions</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.DataSourceOptions.Address"><span class="badge">M</span>DataSourceOptions.Address</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.DataSourceOptions.ClientSecretCredential"><span class="badge">M</span>DataSourceOptions.ClientSecretCredential</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.DataSourceOptions.ExtraConnectionParametersEntry"><span class="badge">M</span>DataSourceOptions.ExtraConnectionParametersEntry</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.KerberosConfig"><span class="badge">M</span>KerberosConfig</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.SASLConfig"><span class="badge">M</span>SASLConfig</a>
-                </li>
-              
-              
-                <li>
-                  <a href="#bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType"><span class="badge">E</span>DataSourceExternalSecret.AppRoleAuthOption.SecretType</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.DataSourceExternalSecret.AuthType"><span class="badge">E</span>DataSourceExternalSecret.AuthType</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.DataSourceExternalSecret.SecretType"><span class="badge">E</span>DataSourceExternalSecret.SecretType</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.DataSourceOptions.AuthenticationType"><span class="badge">E</span>DataSourceOptions.AuthenticationType</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.DataSourceOptions.RedisType"><span class="badge">E</span>DataSourceOptions.RedisType</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.DataSourceType"><span class="badge">E</span>DataSourceType</a>
-                </li>
               
               
               
@@ -816,6 +760,30 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.store.DataSource"><span class="badge">M</span>DataSource</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.DataSource.Address"><span class="badge">M</span>DataSource.Address</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.DataSource.ClientSecretCredential"><span class="badge">M</span>DataSource.ClientSecretCredential</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.DataSource.ExtraConnectionParametersEntry"><span class="badge">M</span>DataSource.ExtraConnectionParametersEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.DataSourceExternalSecret"><span class="badge">M</span>DataSourceExternalSecret</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.DataSourceExternalSecret.AppRoleAuthOption"><span class="badge">M</span>DataSourceExternalSecret.AppRoleAuthOption</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.InstanceMetadata"><span class="badge">M</span>InstanceMetadata</a>
                 </li>
               
@@ -823,6 +791,38 @@
                   <a href="#bytebase.store.InstanceRole"><span class="badge">M</span>InstanceRole</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.KerberosConfig"><span class="badge">M</span>KerberosConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.SASLConfig"><span class="badge">M</span>SASLConfig</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.DataSource.AuthenticationType"><span class="badge">E</span>DataSource.AuthenticationType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.DataSource.RedisType"><span class="badge">E</span>DataSource.RedisType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType"><span class="badge">E</span>DataSourceExternalSecret.AppRoleAuthOption.SecretType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.DataSourceExternalSecret.AuthType"><span class="badge">E</span>DataSourceExternalSecret.AuthType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.DataSourceExternalSecret.SecretType"><span class="badge">E</span>DataSourceExternalSecret.SecretType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.DataSourceType"><span class="badge">E</span>DataSourceType</a>
+                </li>
               
               
               
@@ -3279,785 +3279,7 @@ Format: projects/{project}/sheets/{sheet} </p></td>
       <p></p>
 
       
-        <h3 id="bytebase.store.DataSourceExternalSecret">DataSourceExternalSecret</h3>
-        <p></p>
 
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>secret_type</td>
-                  <td><a href="#bytebase.store.DataSourceExternalSecret.SecretType">DataSourceExternalSecret.SecretType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>auth_type</td>
-                  <td><a href="#bytebase.store.DataSourceExternalSecret.AuthType">DataSourceExternalSecret.AuthType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>app_role</td>
-                  <td><a href="#bytebase.store.DataSourceExternalSecret.AppRoleAuthOption">DataSourceExternalSecret.AppRoleAuthOption</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>engine_name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>engine name is the name for secret engine. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>secret_name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>the secret name in the engine to store the password. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>password_key_name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>the key name for the password. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.DataSourceExternalSecret.AppRoleAuthOption">DataSourceExternalSecret.AppRoleAuthOption</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>role_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>secret_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>the secret id for the role without ttl. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType">DataSourceExternalSecret.AppRoleAuthOption.SecretType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>mount_path</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The path where the approle auth method is mounted. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.DataSourceOptions">DataSourceOptions</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.store.DataSourceType">DataSourceType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>host</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>port</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>username</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>obfuscated_password</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>obfuscated_ssl_key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>obfuscated_ssl_cert</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>obfuscated_ssl_ca</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>srv</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>srv is a boolean flag that indicates whether the host is a DNS SRV record. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>authentication_database</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>authentication_database is the database name to authenticate against, which stores the user credentials. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sid</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>sid and service_name are used for Oracle. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>service_name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>ssh_host</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>SSH related
-The hostname of the SSH server agent. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>ssh_port</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The port of the SSH server agent. It&#39;s 22 typically. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>ssh_user</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The user to login the server. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>ssh_obfuscated_password</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The password to login the server. If it&#39;s empty string, no password is required. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>ssh_obfuscated_private_key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). </p></td>
-                </tr>
-              
-                <tr>
-                  <td>authentication_private_key_obfuscated</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required.
-Used for authentication when connecting to the data source. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>external_secret</td>
-                  <td><a href="#bytebase.store.DataSourceExternalSecret">DataSourceExternalSecret</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>authentication_type</td>
-                  <td><a href="#bytebase.store.DataSourceOptions.AuthenticationType">DataSourceOptions.AuthenticationType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>client_secret_credential</td>
-                  <td><a href="#bytebase.store.DataSourceOptions.ClientSecretCredential">DataSourceOptions.ClientSecretCredential</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sasl_config</td>
-                  <td><a href="#bytebase.store.SASLConfig">SASLConfig</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>additional_addresses</td>
-                  <td><a href="#bytebase.store.DataSourceOptions.Address">DataSourceOptions.Address</a></td>
-                  <td>repeated</td>
-                  <td><p>additional_addresses is used for MongoDB replica set. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>replica_set</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>replica_set is used for MongoDB replica set. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>direct_connection</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>region</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>region is the location of where the DB is, works for AWS RDS. For example, us-east-1. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>warehouse_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>warehouse_id is used by Databricks. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>master_name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>master_name is the master name used by connecting redis-master via redis sentinel. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>master_username</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>master_username and master_obfuscated_password are master credentials used by redis sentinel mode. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>master_obfuscated_password</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>redis_type</td>
-                  <td><a href="#bytebase.store.DataSourceOptions.RedisType">DataSourceOptions.RedisType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>use_ssl</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Use SSL to connect to the data source. By default, we use system default SSL configuration. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>cluster</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Cluster is the cluster name for the data source. Used by CockroachDB. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>extra_connection_parameters</td>
-                  <td><a href="#bytebase.store.DataSourceOptions.ExtraConnectionParametersEntry">DataSourceOptions.ExtraConnectionParametersEntry</a></td>
-                  <td>repeated</td>
-                  <td><p>Extra connection parameters for the database connection.
-For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.DataSourceOptions.Address">DataSourceOptions.Address</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>host</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>port</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.DataSourceOptions.ClientSecretCredential">DataSourceOptions.ClientSecretCredential</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>tenant_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>client_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>client_secret</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.DataSourceOptions.ExtraConnectionParametersEntry">DataSourceOptions.ExtraConnectionParametersEntry</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.KerberosConfig">KerberosConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>primary</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>instance</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>realm</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>keytab</td>
-                  <td><a href="#bytes">bytes</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>kdc_host</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>kdc_port</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>kdc_transport_protocol</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.SASLConfig">SASLConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>krb_config</td>
-                  <td><a href="#bytebase.store.KerberosConfig">KerberosConfig</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-        <h3 id="bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType">DataSourceExternalSecret.AppRoleAuthOption.SecretType</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>SECRET_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PLAIN</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ENVIRONMENT</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.DataSourceExternalSecret.AuthType">DataSourceExternalSecret.AuthType</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>AUTH_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>TOKEN</td>
-                <td>1</td>
-                <td><p>ref: https://developer.hashicorp.com/vault/docs/auth/token</p></td>
-              </tr>
-            
-              <tr>
-                <td>VAULT_APP_ROLE</td>
-                <td>2</td>
-                <td><p>ref: https://developer.hashicorp.com/vault/docs/auth/approle</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.DataSourceExternalSecret.SecretType">DataSourceExternalSecret.SecretType</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>SAECRET_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>VAULT_KV_V2</td>
-                <td>1</td>
-                <td><p>ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2</p></td>
-              </tr>
-            
-              <tr>
-                <td>AWS_SECRETS_MANAGER</td>
-                <td>2</td>
-                <td><p>ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html</p></td>
-              </tr>
-            
-              <tr>
-                <td>GCP_SECRET_MANAGER</td>
-                <td>3</td>
-                <td><p>ref: https://cloud.google.com/secret-manager/docs</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.DataSourceOptions.AuthenticationType">DataSourceOptions.AuthenticationType</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>AUTHENTICATION_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PASSWORD</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>GOOGLE_CLOUD_SQL_IAM</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>AWS_RDS_IAM</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>AZURE_IAM</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.DataSourceOptions.RedisType">DataSourceOptions.RedisType</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>REDIS_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>STANDALONE</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SENTINEL</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>CLUSTER</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.DataSourceType">DataSourceType</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>DATA_SOURCE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ADMIN</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>READ_ONLY</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
 
       
@@ -7568,6 +6790,496 @@ This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.</p></t
       <p></p>
 
       
+        <h3 id="bytebase.store.DataSource">DataSource</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.DataSourceType">DataSourceType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>host</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>port</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>username</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>obfuscated_password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>obfuscated_ssl_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>obfuscated_ssl_cert</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>obfuscated_ssl_ca</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>srv</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>srv is a boolean flag that indicates whether the host is a DNS SRV record. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>authentication_database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>authentication_database is the database name to authenticate against, which stores the user credentials. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sid</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>sid and service_name are used for Oracle. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>service_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ssh_host</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>SSH related
+The hostname of the SSH server agent. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ssh_port</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The port of the SSH server agent. It&#39;s 22 typically. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ssh_user</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The user to login the server. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ssh_obfuscated_password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The password to login the server. If it&#39;s empty string, no password is required. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ssh_obfuscated_private_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>authentication_private_key_obfuscated</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required.
+Used for authentication when connecting to the data source. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>external_secret</td>
+                  <td><a href="#bytebase.store.DataSourceExternalSecret">DataSourceExternalSecret</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>authentication_type</td>
+                  <td><a href="#bytebase.store.DataSource.AuthenticationType">DataSource.AuthenticationType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_secret_credential</td>
+                  <td><a href="#bytebase.store.DataSource.ClientSecretCredential">DataSource.ClientSecretCredential</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sasl_config</td>
+                  <td><a href="#bytebase.store.SASLConfig">SASLConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>additional_addresses</td>
+                  <td><a href="#bytebase.store.DataSource.Address">DataSource.Address</a></td>
+                  <td>repeated</td>
+                  <td><p>additional_addresses is used for MongoDB replica set. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>replica_set</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>replica_set is used for MongoDB replica set. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>direct_connection</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>region</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>region is the location of where the DB is, works for AWS RDS. For example, us-east-1. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>warehouse_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>warehouse_id is used by Databricks. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>master_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>master_name is the master name used by connecting redis-master via redis sentinel. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>master_username</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>master_username and master_obfuscated_password are master credentials used by redis sentinel mode. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>master_obfuscated_password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>redis_type</td>
+                  <td><a href="#bytebase.store.DataSource.RedisType">DataSource.RedisType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>use_ssl</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Use SSL to connect to the data source. By default, we use system default SSL configuration. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>cluster</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Cluster is the cluster name for the data source. Used by CockroachDB. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>extra_connection_parameters</td>
+                  <td><a href="#bytebase.store.DataSource.ExtraConnectionParametersEntry">DataSource.ExtraConnectionParametersEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>Extra connection parameters for the database connection.
+For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.DataSource.Address">DataSource.Address</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>host</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>port</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.DataSource.ClientSecretCredential">DataSource.ClientSecretCredential</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>tenant_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.DataSource.ExtraConnectionParametersEntry">DataSource.ExtraConnectionParametersEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.DataSourceExternalSecret">DataSourceExternalSecret</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>secret_type</td>
+                  <td><a href="#bytebase.store.DataSourceExternalSecret.SecretType">DataSourceExternalSecret.SecretType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>auth_type</td>
+                  <td><a href="#bytebase.store.DataSourceExternalSecret.AuthType">DataSourceExternalSecret.AuthType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>app_role</td>
+                  <td><a href="#bytebase.store.DataSourceExternalSecret.AppRoleAuthOption">DataSourceExternalSecret.AppRoleAuthOption</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>engine_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>engine name is the name for secret engine. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>secret_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>the secret name in the engine to store the password. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password_key_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>the key name for the password. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.DataSourceExternalSecret.AppRoleAuthOption">DataSourceExternalSecret.AppRoleAuthOption</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>role_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>secret_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>the secret id for the role without ttl. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType">DataSourceExternalSecret.AppRoleAuthOption.SecretType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>mount_path</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The path where the approle auth method is mounted. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.InstanceMetadata">InstanceMetadata</h3>
         <p>InstanceMetadata is the metadata for instances.</p>
 
@@ -7621,6 +7333,13 @@ The default is 10 if the value is unset or zero. </p></td>
                   <td>repeated</td>
                   <td><p>Enable sync for following databases.
 Default empty, means sync all schemas &amp; databases. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>data_sources</td>
+                  <td><a href="#bytebase.store.DataSource">DataSource</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -7677,7 +7396,295 @@ For MySQL, it&#39;s the global privileges as GRANT statements, which means it on
 
         
       
+        <h3 id="bytebase.store.KerberosConfig">KerberosConfig</h3>
+        <p></p>
 
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>primary</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>instance</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>realm</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>keytab</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>kdc_host</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>kdc_port</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>kdc_transport_protocol</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.SASLConfig">SASLConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>krb_config</td>
+                  <td><a href="#bytebase.store.KerberosConfig">KerberosConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.store.DataSource.AuthenticationType">DataSource.AuthenticationType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>AUTHENTICATION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PASSWORD</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GOOGLE_CLOUD_SQL_IAM</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>AWS_RDS_IAM</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>AZURE_IAM</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.DataSource.RedisType">DataSource.RedisType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>REDIS_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>STANDALONE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SENTINEL</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CLUSTER</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.DataSourceExternalSecret.AppRoleAuthOption.SecretType">DataSourceExternalSecret.AppRoleAuthOption.SecretType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SECRET_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PLAIN</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ENVIRONMENT</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.DataSourceExternalSecret.AuthType">DataSourceExternalSecret.AuthType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>AUTH_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TOKEN</td>
+                <td>1</td>
+                <td><p>ref: https://developer.hashicorp.com/vault/docs/auth/token</p></td>
+              </tr>
+            
+              <tr>
+                <td>VAULT_APP_ROLE</td>
+                <td>2</td>
+                <td><p>ref: https://developer.hashicorp.com/vault/docs/auth/approle</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.DataSourceExternalSecret.SecretType">DataSourceExternalSecret.SecretType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SAECRET_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>VAULT_KV_V2</td>
+                <td>1</td>
+                <td><p>ref: https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2</p></td>
+              </tr>
+            
+              <tr>
+                <td>AWS_SECRETS_MANAGER</td>
+                <td>2</td>
+                <td><p>ref: https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html</p></td>
+              </tr>
+            
+              <tr>
+                <td>GCP_SECRET_MANAGER</td>
+                <td>3</td>
+                <td><p>ref: https://cloud.google.com/secret-manager/docs</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.DataSourceType">DataSourceType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>DATA_SOURCE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ADMIN</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>READ_ONLY</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
 
       
