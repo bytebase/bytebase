@@ -4,7 +4,6 @@
 ## Table of Contents
 
 - [store/common.proto](#store_common-proto)
-    - [DatabaseLabel](#bytebase-store-DatabaseLabel)
     - [PageToken](#bytebase-store-PageToken)
     - [Position](#bytebase-store-Position)
     - [Range](#bytebase-store-Range)
@@ -201,7 +200,6 @@
     - [PlanConfig.ChangeDatabaseConfig](#bytebase-store-PlanConfig-ChangeDatabaseConfig)
     - [PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-store-PlanConfig-ChangeDatabaseConfig-GhostFlagsEntry)
     - [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig)
-    - [PlanConfig.CreateDatabaseConfig.LabelsEntry](#bytebase-store-PlanConfig-CreateDatabaseConfig-LabelsEntry)
     - [PlanConfig.DeploymentSnapshot](#bytebase-store-PlanConfig-DeploymentSnapshot)
     - [PlanConfig.DeploymentSnapshot.DatabaseGroupSnapshot](#bytebase-store-PlanConfig-DeploymentSnapshot-DatabaseGroupSnapshot)
     - [PlanConfig.DeploymentSnapshot.DeploymentConfigSnapshot](#bytebase-store-PlanConfig-DeploymentSnapshot-DeploymentConfigSnapshot)
@@ -357,22 +355,6 @@
 <p align="right"><a href="#top">Top</a></p>
 
 ## store/common.proto
-
-
-
-<a name="bytebase-store-DatabaseLabel"></a>
-
-### DatabaseLabel
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
-
-
-
 
 
 
@@ -3301,23 +3283,6 @@ InstanceRole is the API message for instance role.
 | owner | [string](#string) |  | owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. |
 | backup | [string](#string) |  | backup is the resource name of the backup. Format: instances/{instance}/databases/{database}/backups/{backup-name} |
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
-| labels | [PlanConfig.CreateDatabaseConfig.LabelsEntry](#bytebase-store-PlanConfig-CreateDatabaseConfig-LabelsEntry) | repeated | labels of the database. |
-
-
-
-
-
-
-<a name="bytebase-store-PlanConfig-CreateDatabaseConfig-LabelsEntry"></a>
-
-### PlanConfig.CreateDatabaseConfig.LabelsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
 
 
 
