@@ -13642,10 +13642,6 @@ components:
                     type: string
                 environment:
                     type: string
-                labels:
-                    type: object
-                    additionalProperties:
-                        type: string
         Task_DatabaseDataExport:
             type: object
             properties:

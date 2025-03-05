@@ -182,11 +182,6 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		if instance.Metadata.GetEngine() == storepb.Engine_MONGODB && c.Table == "" {
 			return nil, common.Errorf(common.Invalid, "Failed to create issue, collection name missing for MongoDB")
 		}
-		// Validate the labels. Labels are set upon task completion.
-		labelsJSON, err := convertDatabaseLabels(c.Labels)
-		if err != nil {
-			return nil, errors.Wrapf(err, "invalid database label %q", c.Labels)
-		}
 
 		// Get admin data source username.
 		adminDataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)
@@ -243,7 +238,6 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			TableName:     c.Table,
 			Collation:     c.Collation,
 			EnvironmentId: dbEnvironmentID,
-			Labels:        labelsJSON,
 			DatabaseName:  databaseName,
 			SheetId:       int32(sheet.UID),
 		}
