@@ -41,9 +41,9 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		Title:        "Test Sample Instance",
 		Engine:       storepb.Engine_POSTGRES,
 		ExternalLink: "",
-		DataSources: []*store.DataSourceMessage{
-			{
-				Options: &storepb.DataSourceOptions{
+		Metadata: &storepb.InstanceMetadata{
+			DataSources: []*storepb.DataSource{
+				{
 					Id:                 "admin",
 					Type:               storepb.DataSourceType_ADMIN,
 					Username:           postgres.SampleUser,
@@ -102,9 +102,9 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		Title:        "Prod Sample Instance",
 		Engine:       storepb.Engine_POSTGRES,
 		ExternalLink: "",
-		DataSources: []*store.DataSourceMessage{
-			{
-				Options: &storepb.DataSourceOptions{
+		Metadata: &storepb.InstanceMetadata{
+			DataSources: []*storepb.DataSource{
+				{
 					Id:                 "admin",
 					Type:               storepb.DataSourceType_ADMIN,
 					Username:           postgres.SampleUser,

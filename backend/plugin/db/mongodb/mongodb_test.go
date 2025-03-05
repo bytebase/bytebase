@@ -96,7 +96,7 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 				Database:               "sampleDB",
 				AuthenticationDatabase: "admin",
 				SRV:                    false,
-				AdditionalAddresses: []*storepb.DataSourceOptions_Address{
+				AdditionalAddresses: []*storepb.DataSource_Address{
 					{Host: "node2.cluster0.sample.mongodb.net", Port: "27017"},
 					{Host: "node3.cluster0.sample.mongodb.net", Port: "27017"},
 				},
