@@ -493,7 +493,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 						"project_id":     issue.Project.ResourceID,
 						"database_name":  databaseName,
 						// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
-						"db_engine":     instance.Engine.String(),
+						"db_engine":     instance.Metadata.GetEngine().String(),
 						"sql_statement": taskStatement,
 					}
 
@@ -653,7 +653,7 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 						"environment_id": environmentID,
 						"project_id":     issue.Project.ResourceID,
 						"database_name":  databaseName,
-						"db_engine":      instance.Engine.String(),
+						"db_engine":      instance.Metadata.GetEngine().String(),
 					}
 
 					vars, err := e.PartialVars(args)
@@ -801,7 +801,7 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 				"project_id":     issue.Project.ResourceID,
 				"database_name":  database.DatabaseName,
 				// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
-				"db_engine":       instance.Engine.String(),
+				"db_engine":       instance.Metadata.GetEngine().String(),
 				"expiration_days": expirationDays,
 			}
 			if riskSource == store.RiskRequestExport {

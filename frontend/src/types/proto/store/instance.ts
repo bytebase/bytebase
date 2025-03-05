@@ -9,6 +9,7 @@ import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import Long from "long";
 import { Duration } from "../google/protobuf/duration";
 import { Timestamp } from "../google/protobuf/timestamp";
+import { Engine, engineFromJSON, engineToJSON, engineToNumber } from "./common";
 
 export const protobufPackage = "bytebase.store";
 
@@ -67,13 +68,12 @@ export function dataSourceTypeToNumber(object: DataSourceType): number {
 
 /** Instance is the proto for instances. */
 export interface Instance {
-  /**
-   * The lower_case_table_names config for MySQL instances.
-   * It is used to determine whether the table names and database names are case sensitive.
-   */
-  mysqlLowerCaseTableNames: number;
-  lastSyncTime: Timestamp | undefined;
-  roles: InstanceRole[];
+  title: string;
+  engine: Engine;
+  activation: boolean;
+  version: string;
+  externalLink: string;
+  dataSources: DataSource[];
   /** How often the instance is synced. */
   syncInterval:
     | Duration
@@ -88,7 +88,13 @@ export interface Instance {
    * Default empty, means sync all schemas & databases.
    */
   syncDatabases: string[];
-  dataSources: DataSource[];
+  /**
+   * The lower_case_table_names config for MySQL instances.
+   * It is used to determine whether the table names and database names are case sensitive.
+   */
+  mysqlLowerCaseTableNames: number;
+  lastSyncTime: Timestamp | undefined;
+  roles: InstanceRole[];
 }
 
 /** InstanceRole is the API message for instance role. */
@@ -548,38 +554,58 @@ export function dataSourceExternalSecret_AppRoleAuthOption_SecretTypeToNumber(
 
 function createBaseInstance(): Instance {
   return {
-    mysqlLowerCaseTableNames: 0,
-    lastSyncTime: undefined,
-    roles: [],
+    title: "",
+    engine: Engine.ENGINE_UNSPECIFIED,
+    activation: false,
+    version: "",
+    externalLink: "",
+    dataSources: [],
     syncInterval: undefined,
     maximumConnections: 0,
     syncDatabases: [],
-    dataSources: [],
+    mysqlLowerCaseTableNames: 0,
+    lastSyncTime: undefined,
+    roles: [],
   };
 }
 
 export const Instance: MessageFns<Instance> = {
   encode(message: Instance, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.mysqlLowerCaseTableNames !== 0) {
-      writer.uint32(8).int32(message.mysqlLowerCaseTableNames);
+    if (message.title !== "") {
+      writer.uint32(10).string(message.title);
     }
-    if (message.lastSyncTime !== undefined) {
-      Timestamp.encode(message.lastSyncTime, writer.uint32(18).fork()).join();
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
+      writer.uint32(16).int32(engineToNumber(message.engine));
     }
-    for (const v of message.roles) {
-      InstanceRole.encode(v!, writer.uint32(26).fork()).join();
+    if (message.activation !== false) {
+      writer.uint32(24).bool(message.activation);
     }
-    if (message.syncInterval !== undefined) {
-      Duration.encode(message.syncInterval, writer.uint32(34).fork()).join();
+    if (message.version !== "") {
+      writer.uint32(34).string(message.version);
     }
-    if (message.maximumConnections !== 0) {
-      writer.uint32(40).int32(message.maximumConnections);
-    }
-    for (const v of message.syncDatabases) {
-      writer.uint32(50).string(v!);
+    if (message.externalLink !== "") {
+      writer.uint32(42).string(message.externalLink);
     }
     for (const v of message.dataSources) {
-      DataSource.encode(v!, writer.uint32(58).fork()).join();
+      DataSource.encode(v!, writer.uint32(50).fork()).join();
+    }
+    if (message.syncInterval !== undefined) {
+      Duration.encode(message.syncInterval, writer.uint32(58).fork()).join();
+    }
+    if (message.maximumConnections !== 0) {
+      writer.uint32(64).int32(message.maximumConnections);
+    }
+    for (const v of message.syncDatabases) {
+      writer.uint32(74).string(v!);
+    }
+    if (message.mysqlLowerCaseTableNames !== 0) {
+      writer.uint32(80).int32(message.mysqlLowerCaseTableNames);
+    }
+    if (message.lastSyncTime !== undefined) {
+      Timestamp.encode(message.lastSyncTime, writer.uint32(90).fork()).join();
+    }
+    for (const v of message.roles) {
+      InstanceRole.encode(v!, writer.uint32(98).fork()).join();
     }
     return writer;
   },
@@ -592,27 +618,27 @@ export const Instance: MessageFns<Instance> = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1: {
-          if (tag !== 8) {
+          if (tag !== 10) {
             break;
           }
 
-          message.mysqlLowerCaseTableNames = reader.int32();
+          message.title = reader.string();
           continue;
         }
         case 2: {
-          if (tag !== 18) {
+          if (tag !== 16) {
             break;
           }
 
-          message.lastSyncTime = Timestamp.decode(reader, reader.uint32());
+          message.engine = engineFromJSON(reader.int32());
           continue;
         }
         case 3: {
-          if (tag !== 26) {
+          if (tag !== 24) {
             break;
           }
 
-          message.roles.push(InstanceRole.decode(reader, reader.uint32()));
+          message.activation = reader.bool();
           continue;
         }
         case 4: {
@@ -620,15 +646,15 @@ export const Instance: MessageFns<Instance> = {
             break;
           }
 
-          message.syncInterval = Duration.decode(reader, reader.uint32());
+          message.version = reader.string();
           continue;
         }
         case 5: {
-          if (tag !== 40) {
+          if (tag !== 42) {
             break;
           }
 
-          message.maximumConnections = reader.int32();
+          message.externalLink = reader.string();
           continue;
         }
         case 6: {
@@ -636,7 +662,7 @@ export const Instance: MessageFns<Instance> = {
             break;
           }
 
-          message.syncDatabases.push(reader.string());
+          message.dataSources.push(DataSource.decode(reader, reader.uint32()));
           continue;
         }
         case 7: {
@@ -644,7 +670,47 @@ export const Instance: MessageFns<Instance> = {
             break;
           }
 
-          message.dataSources.push(DataSource.decode(reader, reader.uint32()));
+          message.syncInterval = Duration.decode(reader, reader.uint32());
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.maximumConnections = reader.int32();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.syncDatabases.push(reader.string());
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.mysqlLowerCaseTableNames = reader.int32();
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.lastSyncTime = Timestamp.decode(reader, reader.uint32());
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.roles.push(InstanceRole.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -658,32 +724,46 @@ export const Instance: MessageFns<Instance> = {
 
   fromJSON(object: any): Instance {
     return {
-      mysqlLowerCaseTableNames: isSet(object.mysqlLowerCaseTableNames)
-        ? globalThis.Number(object.mysqlLowerCaseTableNames)
-        : 0,
-      lastSyncTime: isSet(object.lastSyncTime) ? fromJsonTimestamp(object.lastSyncTime) : undefined,
-      roles: globalThis.Array.isArray(object?.roles) ? object.roles.map((e: any) => InstanceRole.fromJSON(e)) : [],
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
+      activation: isSet(object.activation) ? globalThis.Boolean(object.activation) : false,
+      version: isSet(object.version) ? globalThis.String(object.version) : "",
+      externalLink: isSet(object.externalLink) ? globalThis.String(object.externalLink) : "",
+      dataSources: globalThis.Array.isArray(object?.dataSources)
+        ? object.dataSources.map((e: any) => DataSource.fromJSON(e))
+        : [],
       syncInterval: isSet(object.syncInterval) ? Duration.fromJSON(object.syncInterval) : undefined,
       maximumConnections: isSet(object.maximumConnections) ? globalThis.Number(object.maximumConnections) : 0,
       syncDatabases: globalThis.Array.isArray(object?.syncDatabases)
         ? object.syncDatabases.map((e: any) => globalThis.String(e))
         : [],
-      dataSources: globalThis.Array.isArray(object?.dataSources)
-        ? object.dataSources.map((e: any) => DataSource.fromJSON(e))
-        : [],
+      mysqlLowerCaseTableNames: isSet(object.mysqlLowerCaseTableNames)
+        ? globalThis.Number(object.mysqlLowerCaseTableNames)
+        : 0,
+      lastSyncTime: isSet(object.lastSyncTime) ? fromJsonTimestamp(object.lastSyncTime) : undefined,
+      roles: globalThis.Array.isArray(object?.roles) ? object.roles.map((e: any) => InstanceRole.fromJSON(e)) : [],
     };
   },
 
   toJSON(message: Instance): unknown {
     const obj: any = {};
-    if (message.mysqlLowerCaseTableNames !== 0) {
-      obj.mysqlLowerCaseTableNames = Math.round(message.mysqlLowerCaseTableNames);
+    if (message.title !== "") {
+      obj.title = message.title;
     }
-    if (message.lastSyncTime !== undefined) {
-      obj.lastSyncTime = fromTimestamp(message.lastSyncTime).toISOString();
+    if (message.engine !== Engine.ENGINE_UNSPECIFIED) {
+      obj.engine = engineToJSON(message.engine);
     }
-    if (message.roles?.length) {
-      obj.roles = message.roles.map((e) => InstanceRole.toJSON(e));
+    if (message.activation !== false) {
+      obj.activation = message.activation;
+    }
+    if (message.version !== "") {
+      obj.version = message.version;
+    }
+    if (message.externalLink !== "") {
+      obj.externalLink = message.externalLink;
+    }
+    if (message.dataSources?.length) {
+      obj.dataSources = message.dataSources.map((e) => DataSource.toJSON(e));
     }
     if (message.syncInterval !== undefined) {
       obj.syncInterval = Duration.toJSON(message.syncInterval);
@@ -694,8 +774,14 @@ export const Instance: MessageFns<Instance> = {
     if (message.syncDatabases?.length) {
       obj.syncDatabases = message.syncDatabases;
     }
-    if (message.dataSources?.length) {
-      obj.dataSources = message.dataSources.map((e) => DataSource.toJSON(e));
+    if (message.mysqlLowerCaseTableNames !== 0) {
+      obj.mysqlLowerCaseTableNames = Math.round(message.mysqlLowerCaseTableNames);
+    }
+    if (message.lastSyncTime !== undefined) {
+      obj.lastSyncTime = fromTimestamp(message.lastSyncTime).toISOString();
+    }
+    if (message.roles?.length) {
+      obj.roles = message.roles.map((e) => InstanceRole.toJSON(e));
     }
     return obj;
   },
@@ -705,17 +791,22 @@ export const Instance: MessageFns<Instance> = {
   },
   fromPartial(object: DeepPartial<Instance>): Instance {
     const message = createBaseInstance();
-    message.mysqlLowerCaseTableNames = object.mysqlLowerCaseTableNames ?? 0;
-    message.lastSyncTime = (object.lastSyncTime !== undefined && object.lastSyncTime !== null)
-      ? Timestamp.fromPartial(object.lastSyncTime)
-      : undefined;
-    message.roles = object.roles?.map((e) => InstanceRole.fromPartial(e)) || [];
+    message.title = object.title ?? "";
+    message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
+    message.activation = object.activation ?? false;
+    message.version = object.version ?? "";
+    message.externalLink = object.externalLink ?? "";
+    message.dataSources = object.dataSources?.map((e) => DataSource.fromPartial(e)) || [];
     message.syncInterval = (object.syncInterval !== undefined && object.syncInterval !== null)
       ? Duration.fromPartial(object.syncInterval)
       : undefined;
     message.maximumConnections = object.maximumConnections ?? 0;
     message.syncDatabases = object.syncDatabases?.map((e) => e) || [];
-    message.dataSources = object.dataSources?.map((e) => DataSource.fromPartial(e)) || [];
+    message.mysqlLowerCaseTableNames = object.mysqlLowerCaseTableNames ?? 0;
+    message.lastSyncTime = (object.lastSyncTime !== undefined && object.lastSyncTime !== null)
+      ? Timestamp.fromPartial(object.lastSyncTime)
+      : undefined;
+    message.roles = object.roles?.map((e) => InstanceRole.fromPartial(e)) || [];
     return message;
   },
 };

@@ -327,8 +327,8 @@ func (s *SlowQueryWeeklyMailSender) generateWeeklyEmailForProject(ctx context.Co
 
 		hasSlowQuery := false
 		sort.Slice(databases, func(i, j int) bool {
-			lEngine := engineOrder(instanceMap[databases[i].InstanceID].Engine)
-			rEngine := engineOrder(instanceMap[databases[j].InstanceID].Engine)
+			lEngine := engineOrder(instanceMap[databases[i].InstanceID].Metadata.GetEngine())
+			rEngine := engineOrder(instanceMap[databases[j].InstanceID].Metadata.GetEngine())
 			if lEngine != rEngine {
 				return lEngine < rEngine
 			}
@@ -381,7 +381,7 @@ func (s *SlowQueryWeeklyMailSender) generateWeeklyEmailForProject(ctx context.Co
 			for i, log := range logs {
 				var item string
 				if i == 0 {
-					item = strings.ReplaceAll(string(tableItem), "{{DB_TYPE}}", engineTypeString(instance.Engine))
+					item = strings.ReplaceAll(string(tableItem), "{{DB_TYPE}}", engineTypeString(instance.Metadata.GetEngine()))
 					item = strings.ReplaceAll(item, "{{DB_NAME}}", database.DatabaseName)
 				} else {
 					item = strings.ReplaceAll(string(tableItem), "{{DB_TYPE}}", "")
@@ -608,7 +608,7 @@ func (s *SlowQueryWeeklyMailSender) generateEnvironmentContent(
 	}
 
 	sort.Slice(instances, func(i, j int) bool {
-		return engineOrder(instances[i].Engine) < engineOrder(instances[j].Engine)
+		return engineOrder(instances[i].Metadata.GetEngine()) < engineOrder(instances[j].Metadata.GetEngine())
 	})
 
 	hasSlowQueryInEnvironment := false
@@ -646,7 +646,7 @@ func (s *SlowQueryWeeklyMailSender) generateEnvironmentContent(
 				endUnix := endDate.Truncate(24 * time.Hour).Add(-1 * time.Second).UTC().Unix()
 				instanceURL := fmt.Sprintf("%s/slow-query?instance=%s&fromTime=%d&toTime=%d", strings.TrimSuffix(visitURL, "/"), instance.ResourceID, beginUnix, endUnix)
 				instanceHeaderString := strings.ReplaceAll(string(instanceHeader), "{{INSTANCE_LINK}}", instanceURL)
-				instanceHeaderString = strings.ReplaceAll(instanceHeaderString, "{{INSTANCE_NAME}}", instance.Title)
+				instanceHeaderString = strings.ReplaceAll(instanceHeaderString, "{{INSTANCE_NAME}}", instance.Metadata.GetTitle())
 				if _, err := buf.WriteString(instanceHeaderString); err != nil {
 					return err
 				}

@@ -142,7 +142,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 	if err != nil {
 		return nil, err
 	}
-	if instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_OCEANBASE_ORACLE {
+	if instance.Metadata.GetEngine() == storepb.Engine_ORACLE || instance.Metadata.GetEngine() == storepb.Engine_OCEANBASE_ORACLE {
 		return nil, errors.Errorf("creating Oracle database is not supported")
 	}
 
@@ -164,22 +164,22 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		return nil, err
 	}
 
-	if instance.Engine == storepb.Engine_MONGODB && c.Table == "" {
+	if instance.Metadata.GetEngine() == storepb.Engine_MONGODB && c.Table == "" {
 		return nil, errors.Errorf("collection name is required for MongoDB")
 	}
 
 	taskCreates, err := func() ([]*store.TaskMessage, error) {
-		if err := checkCharacterSetCollationOwner(instance.Engine, c.CharacterSet, c.Collation, c.Owner); err != nil {
+		if err := checkCharacterSetCollationOwner(instance.Metadata.GetEngine(), c.CharacterSet, c.Collation, c.Owner); err != nil {
 			return nil, err
 		}
 		if c.Database == "" {
 			return nil, errors.Errorf("database name is required")
 		}
-		if instance.Engine == storepb.Engine_SNOWFLAKE {
+		if instance.Metadata.GetEngine() == storepb.Engine_SNOWFLAKE {
 			// Snowflake needs to use upper case of DatabaseName.
 			c.Database = strings.ToUpper(c.Database)
 		}
-		if instance.Engine == storepb.Engine_MONGODB && c.Table == "" {
+		if instance.Metadata.GetEngine() == storepb.Engine_MONGODB && c.Table == "" {
 			return nil, common.Errorf(common.Invalid, "Failed to create issue, collection name missing for MongoDB")
 		}
 		// Validate the labels. Labels are set upon task completion.
@@ -191,10 +191,10 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		// Get admin data source username.
 		adminDataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)
 		if adminDataSource == nil {
-			return nil, common.Errorf(common.Internal, "admin data source not found for instance %q", instance.Title)
+			return nil, common.Errorf(common.Internal, "admin data source not found for instance %q", instance.ResourceID)
 		}
 		databaseName := c.Database
-		switch instance.Engine {
+		switch instance.Metadata.GetEngine() {
 		case storepb.Engine_SNOWFLAKE:
 			// Snowflake needs to use upper case of DatabaseName.
 			databaseName = strings.ToUpper(databaseName)
@@ -204,7 +204,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			// And also, meet an error in here is not a big deal, we will just use the original DatabaseName.
 			driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 			if err != nil {
-				slog.Warn("failed to get admin database driver for instance %q, please check the connection for admin data source", log.BBError(err), slog.String("instance", instance.Title))
+				slog.Warn("failed to get admin database driver for instance %q, please check the connection for admin data source", log.BBError(err), slog.String("instance", instance.ResourceID))
 				break
 			}
 			defer driver.Close(ctx)
@@ -212,7 +212,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			var unused any
 			db := driver.GetDB()
 			if err := db.QueryRowContext(ctx, "SHOW VARIABLES LIKE 'lower_case_table_names'").Scan(&unused, &lowerCaseTableNames); err != nil {
-				slog.Warn("failed to get lower_case_table_names for instance %q", log.BBError(err), slog.String("instance", instance.Title))
+				slog.Warn("failed to get lower_case_table_names for instance %q", log.BBError(err), slog.String("instance", instance.ResourceID))
 				break
 			}
 			if lowerCaseTableNames == 1 {
@@ -220,7 +220,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			}
 		}
 
-		statement, err := getCreateDatabaseStatement(instance.Engine, c, databaseName, adminDataSource.GetUsername())
+		statement, err := getCreateDatabaseStatement(instance.Metadata.GetEngine(), c, databaseName, adminDataSource.GetUsername())
 		if err != nil {
 			return nil, err
 		}
@@ -230,7 +230,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			Title:     fmt.Sprintf("Sheet for creating database %v", databaseName),
 			Statement: statement,
 			Payload: &storepb.SheetPayload{
-				Engine: instance.Engine,
+				Engine: instance.Metadata.GetEngine(),
 			},
 		})
 		if err != nil {

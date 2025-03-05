@@ -300,10 +300,10 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 		ResourceID: instance.ResourceID,
 		Metadata:   metadata,
 	}
-	if instanceMeta.Version != instance.EngineVersion {
-		updateInstance.EngineVersion = &instanceMeta.Version
+	if instanceMeta.Version != instance.Metadata.GetVersion() {
+		metadata.Version = instanceMeta.Version
 	}
-	updatedInstance, err := s.store.UpdateInstanceV2(ctx, updateInstance, -1)
+	updatedInstance, err := s.store.UpdateInstanceV2(ctx, updateInstance)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -404,7 +404,7 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 		return 0, errors.Wrapf(err, `failed to get classification config by id "%s"`, project.DataClassificationConfigID)
 	}
 
-	if instance.Engine != storepb.Engine_MYSQL && instance.Engine != storepb.Engine_POSTGRES {
+	if instance.Metadata.GetEngine() != storepb.Engine_MYSQL && instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
 		// Force to disable classification from comment if the engine is not MYSQL or PG.
 		classificationConfig.ClassificationFromConfig = true
 	}
@@ -512,7 +512,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		return errors.Wrapf(err, `failed to get classification config by id "%s"`, project.DataClassificationConfigID)
 	}
 
-	if instance.Engine != storepb.Engine_MYSQL && instance.Engine != storepb.Engine_POSTGRES {
+	if instance.Metadata.GetEngine() != storepb.Engine_MYSQL && instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
 		// Force to disable classification from comment if the engine is not MYSQL or PG.
 		classificationConfig.ClassificationFromConfig = true
 	}
@@ -563,7 +563,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	if s.licenseService.IsFeatureEnabledForInstance(api.FeatureSchemaDrift, instance) == nil {
 		if err := func() error {
 			// Redis and MongoDB are schemaless.
-			if disableSchemaDriftAnomalyCheck(instance.Engine) {
+			if disableSchemaDriftAnomalyCheck(instance.Metadata.GetEngine()) {
 				return nil
 			}
 			limit := 1
@@ -619,7 +619,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 }
 
 func (s *Syncer) hasBackupSchema(ctx context.Context, instance *store.InstanceMessage, dbSchema *storepb.DatabaseSchemaMetadata) bool {
-	switch instance.Engine {
+	switch instance.Metadata.GetEngine() {
 	case storepb.Engine_POSTGRES:
 		if dbSchema == nil {
 			return false
@@ -737,7 +737,7 @@ func setUserCommentFromComment(dbSchema *storepb.DatabaseSchemaMetadata) {
 }
 
 func getOrDefaultSyncInterval(instance *store.InstanceMessage) time.Duration {
-	if !instance.Activation {
+	if !instance.Metadata.GetActivation() {
 		return defaultSyncInterval
 	}
 	if !instance.Metadata.GetSyncInterval().IsValid() {
