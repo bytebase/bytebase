@@ -121,7 +121,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	return &db.InstanceMetadata{
 		Version:   version,
 		Databases: databases,
-		Metadata: &storepb.InstanceMetadata{
+		Metadata: &storepb.Instance{
 			MysqlLowerCaseTableNames: int32(lowerCaseTableNames),
 			Roles:                    instanceRoles,
 		},

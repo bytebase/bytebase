@@ -37,7 +37,7 @@ type InstanceMetadata struct {
 	Version string
 	// Simplified database metadata.
 	Databases []*storepb.DatabaseSchemaMetadata
-	Metadata  *storepb.InstanceMetadata
+	Metadata  *storepb.Instance
 }
 
 // TableKey is the map key for table metadata.

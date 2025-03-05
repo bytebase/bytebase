@@ -8860,20 +8860,16 @@ components:
                     format: enum
                 username:
                     type: string
-                password:
-                    writeOnly: true
+                obfuscatedPassword:
                     type: string
                 useSsl:
                     type: boolean
                     description: Use SSL to connect to the data source. By default, we use system default SSL configuration.
-                sslCa:
-                    writeOnly: true
+                obfuscatedSslCa:
                     type: string
-                sslCert:
-                    writeOnly: true
+                obfuscatedSslCert:
                     type: string
-                sslKey:
-                    writeOnly: true
+                obfuscatedSslKey:
                     type: string
                 host:
                     type: string
@@ -8883,9 +8879,15 @@ components:
                     type: string
                 srv:
                     type: boolean
-                    description: srv, authentication_database and replica_set are used for MongoDB.
+                    description: |-
+                        srv, authentication_database and replica_set are used for MongoDB.
+                         srv is a boolean flag that indicates whether the host is a DNS SRV record.
                 authenticationDatabase:
                     type: string
+                    description: authentication_database is the database name to authenticate against, which stores the user credentials.
+                replicaSet:
+                    type: string
+                    description: replica_set is used for MongoDB replica set.
                 sid:
                     type: string
                     description: sid and service_name are used for Oracle.
@@ -8894,37 +8896,27 @@ components:
                 sshHost:
                     type: string
                     description: |-
-                        Connection over SSH.
+                        SSH related
                          The hostname of the SSH server agent.
-                         Required.
                 sshPort:
                     type: string
-                    description: |-
-                        The port of the SSH server agent. It's 22 typically.
-                         Required.
+                    description: The port of the SSH server agent. It's 22 typically.
                 sshUser:
                     type: string
-                    description: |-
-                        The user to login the server.
-                         Required.
-                sshPassword:
-                    writeOnly: true
+                    description: The user to login the server.
+                sshObfuscatedPassword:
                     type: string
                     description: The password to login the server. If it's empty string, no password is required.
-                sshPrivateKey:
-                    writeOnly: true
+                sshObfuscatedPrivateKey:
                     type: string
                     description: The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK").
-                authenticationPrivateKey:
-                    writeOnly: true
+                authenticationPrivateKeyObfuscated:
                     type: string
                     description: |-
                         PKCS#8 private key in PEM format. If it's empty string, no private key is required.
                          Used for authentication when connecting to the data source.
                 externalSecret:
                     $ref: '#/components/schemas/DataSourceExternalSecret'
-                clientSecretCredential:
-                    $ref: '#/components/schemas/DataSource_ClientSecretCredential'
                 authenticationType:
                     enum:
                         - AUTHENTICATION_UNSPECIFIED
@@ -8934,6 +8926,8 @@ components:
                         - AZURE_IAM
                     type: string
                     format: enum
+                clientSecretCredential:
+                    $ref: '#/components/schemas/DataSource_ClientSecretCredential'
                 saslConfig:
                     $ref: '#/components/schemas/SASLConfig'
                 additionalAddresses:
@@ -8941,9 +8935,6 @@ components:
                     items:
                         $ref: '#/components/schemas/DataSource_Address'
                     description: additional_addresses is used for MongoDB replica set.
-                replicaSet:
-                    type: string
-                    description: replica_set is used for MongoDB replica set.
                 directConnection:
                     type: boolean
                     description: direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.
@@ -8958,8 +8949,8 @@ components:
                     description: master_name is the master name used by connecting redis-master via redis sentinel.
                 masterUsername:
                     type: string
-                    description: master_username and master_password are master credentials used by redis sentinel mode.
-                masterPassword:
+                    description: master_username and master_obfuscated_password are master credentials used by redis sentinel mode.
+                masterObfuscatedPassword:
                     type: string
                 redisType:
                     enum:
@@ -8972,6 +8963,13 @@ components:
                 cluster:
                     type: string
                     description: Cluster is the cluster name for the data source. Used by CockroachDB.
+                extraConnectionParameters:
+                    type: object
+                    additionalProperties:
+                        type: string
+                    description: |-
+                        Extra connection parameters for the database connection.
+                         For PostgreSQL HA, this can be used to set target_session_attrs=read-write
         DataSourceExternalSecret:
             type: object
             properties:
@@ -9766,69 +9764,16 @@ components:
         Instance:
             type: object
             properties:
-                name:
-                    type: string
+                mysqlLowerCaseTableNames:
+                    type: integer
                     description: |-
-                        The name of the instance.
-                         Format: instances/{instance}
-                state:
-                    enum:
-                        - STATE_UNSPECIFIED
-                        - ACTIVE
-                        - DELETED
+                        The lower_case_table_names config for MySQL instances.
+                         It is used to determine whether the table names and database names are case sensitive.
+                    format: int32
+                lastSyncTime:
                     type: string
-                    format: enum
-                title:
-                    type: string
-                engine:
-                    enum:
-                        - ENGINE_UNSPECIFIED
-                        - CLICKHOUSE
-                        - MYSQL
-                        - POSTGRES
-                        - SNOWFLAKE
-                        - SQLITE
-                        - TIDB
-                        - MONGODB
-                        - REDIS
-                        - ORACLE
-                        - SPANNER
-                        - MSSQL
-                        - REDSHIFT
-                        - MARIADB
-                        - OCEANBASE
-                        - DM
-                        - RISINGWAVE
-                        - OCEANBASE_ORACLE
-                        - STARROCKS
-                        - DORIS
-                        - HIVE
-                        - ELASTICSEARCH
-                        - BIGQUERY
-                        - DYNAMODB
-                        - DATABRICKS
-                        - COCKROACHDB
-                        - COSMOSDB
-                    type: string
-                    format: enum
-                engineVersion:
-                    readOnly: true
-                    type: string
-                externalLink:
-                    type: string
-                dataSources:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/DataSource'
-                environment:
-                    type: string
-                    description: |-
-                        The environment resource.
-                         Format: environments/prod where prod is the environment resource ID.
-                activation:
-                    type: boolean
+                    format: date-time
                 roles:
-                    readOnly: true
                     type: array
                     items:
                         $ref: '#/components/schemas/InstanceRole'
@@ -9849,6 +9794,11 @@ components:
                     description: |-
                         Enable sync for following databases.
                          Default empty, means sync all schemas & databases.
+                dataSources:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/DataSource'
+            description: Instance is the proto for instances.
         InstanceResource:
             type: object
             properties:

@@ -7,8 +7,8 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "generated-go/store";
 
-// InstanceMetadata is the metadata for instances.
-message InstanceMetadata {
+// Instance is the proto for instances.
+message Instance {
   // The lower_case_table_names config for MySQL instances.
   // It is used to determine whether the table names and database names are case sensitive.
   int32 mysql_lower_case_table_names = 1;
@@ -51,20 +51,24 @@ message InstanceRole {
 message DataSource {
   string id = 1;
   DataSourceType type = 2;
-  string host = 3;
-  string port = 4;
-  string username = 5;
-  string obfuscated_password = 6;
-  string database = 7;
-  string obfuscated_ssl_key = 8;
-  string obfuscated_ssl_cert = 9;
-  string obfuscated_ssl_ca = 10;
+  string username = 3;
+  string obfuscated_password = 4;
+  // Use SSL to connect to the data source. By default, we use system default SSL configuration.
+  bool use_ssl = 30;
+  string obfuscated_ssl_ca = 5;
+  string obfuscated_ssl_cert = 6;
+  string obfuscated_ssl_key = 7;
+  string host = 8;
+  string port = 9;
+  string database = 10;
 
+  // srv, authentication_database and replica_set are used for MongoDB.
   // srv is a boolean flag that indicates whether the host is a DNS SRV record.
   bool srv = 11;
-
   // authentication_database is the database name to authenticate against, which stores the user credentials.
   string authentication_database = 12;
+  // replica_set is used for MongoDB replica set.
+  string replica_set = 25;
 
   // sid and service_name are used for Oracle.
   string sid = 13;
@@ -80,7 +84,6 @@ message DataSource {
   string ssh_obfuscated_password = 18;
   // The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK").
   string ssh_obfuscated_private_key = 19;
-
   // PKCS#8 private key in PEM format. If it's empty string, no private key is required.
   // Used for authentication when connecting to the data source.
   string authentication_private_key_obfuscated = 20;
@@ -94,7 +97,6 @@ message DataSource {
     AWS_RDS_IAM = 3;
     AZURE_IAM = 4;
   }
-
   AuthenticationType authentication_type = 22;
 
   message ClientSecretCredential {
@@ -113,9 +115,7 @@ message DataSource {
     string port = 2;
   }
   // additional_addresses is used for MongoDB replica set.
-  repeated Address additional_addresses = 25;
-  // replica_set is used for MongoDB replica set.
-  string replica_set = 26;
+  repeated Address additional_addresses = 26;
 
   // direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.
   bool direct_connection = 27;
@@ -127,11 +127,11 @@ message DataSource {
   string warehouse_id = 29;
 
   // master_name is the master name used by connecting redis-master via redis sentinel.
-  string master_name = 30;
+  string master_name = 31;
 
   // master_username and master_obfuscated_password are master credentials used by redis sentinel mode.
-  string master_username = 31;
-  string master_obfuscated_password = 32;
+  string master_username = 32;
+  string master_obfuscated_password = 33;
 
   enum RedisType {
     REDIS_TYPE_UNSPECIFIED = 0;
@@ -139,11 +139,7 @@ message DataSource {
     SENTINEL = 2;
     CLUSTER = 3;
   }
-  RedisType redis_type = 33;
-
-  // Use SSL to connect to the data source. By default, we use system default SSL configuration.
-  bool use_ssl = 34;
-
+  RedisType redis_type = 34;
   // Cluster is the cluster name for the data source. Used by CockroachDB.
   string cluster = 35;
 

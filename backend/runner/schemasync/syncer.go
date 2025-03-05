@@ -270,7 +270,7 @@ func (s *Syncer) GetInstanceMeta(ctx context.Context, instance *store.InstanceMe
 	}
 
 	if instanceMeta.Metadata == nil {
-		instanceMeta.Metadata = &storepb.InstanceMetadata{}
+		instanceMeta.Metadata = &storepb.Instance{}
 	}
 
 	instanceMeta.Metadata.LastSyncTime = timestamppb.Now()
@@ -288,7 +288,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	metadata, ok := proto.Clone(instance.Metadata).(*storepb.InstanceMetadata)
+	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
 	if !ok {
 		return nil, nil, nil, errors.Errorf("failed to convert instance metadata type")
 	}

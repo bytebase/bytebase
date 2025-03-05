@@ -152,7 +152,7 @@
     - [DataSource.ExtraConnectionParametersEntry](#bytebase-store-DataSource-ExtraConnectionParametersEntry)
     - [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret)
     - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption)
-    - [InstanceMetadata](#bytebase-store-InstanceMetadata)
+    - [Instance](#bytebase-store-Instance)
     - [InstanceRole](#bytebase-store-InstanceRole)
     - [KerberosConfig](#bytebase-store-KerberosConfig)
     - [SASLConfig](#bytebase-store-SASLConfig)
@@ -2485,16 +2485,18 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  |  |
 | type | [DataSourceType](#bytebase-store-DataSourceType) |  |  |
-| host | [string](#string) |  |  |
-| port | [string](#string) |  |  |
 | username | [string](#string) |  |  |
 | obfuscated_password | [string](#string) |  |  |
-| database | [string](#string) |  |  |
-| obfuscated_ssl_key | [string](#string) |  |  |
-| obfuscated_ssl_cert | [string](#string) |  |  |
+| use_ssl | [bool](#bool) |  | Use SSL to connect to the data source. By default, we use system default SSL configuration. |
 | obfuscated_ssl_ca | [string](#string) |  |  |
-| srv | [bool](#bool) |  | srv is a boolean flag that indicates whether the host is a DNS SRV record. |
+| obfuscated_ssl_cert | [string](#string) |  |  |
+| obfuscated_ssl_key | [string](#string) |  |  |
+| host | [string](#string) |  |  |
+| port | [string](#string) |  |  |
+| database | [string](#string) |  |  |
+| srv | [bool](#bool) |  | srv, authentication_database and replica_set are used for MongoDB. srv is a boolean flag that indicates whether the host is a DNS SRV record. |
 | authentication_database | [string](#string) |  | authentication_database is the database name to authenticate against, which stores the user credentials. |
+| replica_set | [string](#string) |  | replica_set is used for MongoDB replica set. |
 | sid | [string](#string) |  | sid and service_name are used for Oracle. |
 | service_name | [string](#string) |  |  |
 | ssh_host | [string](#string) |  | SSH related The hostname of the SSH server agent. |
@@ -2508,7 +2510,6 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | client_secret_credential | [DataSource.ClientSecretCredential](#bytebase-store-DataSource-ClientSecretCredential) |  |  |
 | sasl_config | [SASLConfig](#bytebase-store-SASLConfig) |  |  |
 | additional_addresses | [DataSource.Address](#bytebase-store-DataSource-Address) | repeated | additional_addresses is used for MongoDB replica set. |
-| replica_set | [string](#string) |  | replica_set is used for MongoDB replica set. |
 | direct_connection | [bool](#bool) |  | direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. |
 | region | [string](#string) |  | region is the location of where the DB is, works for AWS RDS. For example, us-east-1. |
 | warehouse_id | [string](#string) |  | warehouse_id is used by Databricks. |
@@ -2516,7 +2517,6 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | master_username | [string](#string) |  | master_username and master_obfuscated_password are master credentials used by redis sentinel mode. |
 | master_obfuscated_password | [string](#string) |  |  |
 | redis_type | [DataSource.RedisType](#bytebase-store-DataSource-RedisType) |  |  |
-| use_ssl | [bool](#bool) |  | Use SSL to connect to the data source. By default, we use system default SSL configuration. |
 | cluster | [string](#string) |  | Cluster is the cluster name for the data source. Used by CockroachDB. |
 | extra_connection_parameters | [DataSource.ExtraConnectionParametersEntry](#bytebase-store-DataSource-ExtraConnectionParametersEntry) | repeated | Extra connection parameters for the database connection. For PostgreSQL HA, this can be used to set target_session_attrs=read-write |
 
@@ -2614,10 +2614,10 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 
 
 
-<a name="bytebase-store-InstanceMetadata"></a>
+<a name="bytebase-store-Instance"></a>
 
-### InstanceMetadata
-InstanceMetadata is the metadata for instances.
+### Instance
+Instance is the proto for instances.
 
 
 | Field | Type | Label | Description |
