@@ -335,8 +335,6 @@ CREATE INDEX idx_issue_pipeline_id ON issue(pipeline_id);
 
 CREATE INDEX idx_issue_creator_id ON issue(creator_id);
 
-CREATE INDEX idx_issue_assignee_id ON issue(assignee_id);
-
 CREATE INDEX idx_issue_ts_vector ON issue USING GIN(ts_vector);
 
 ALTER SEQUENCE issue_id_seq RESTART WITH 101;
