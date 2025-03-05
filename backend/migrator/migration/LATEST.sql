@@ -323,8 +323,6 @@ CREATE TABLE issue (
     status text NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
     type text NOT NULL CHECK (type LIKE 'bb.issue.%'),
     description text NOT NULL DEFAULT '',
-    assignee_id integer REFERENCES principal(id),
-    assignee_need_attention boolean NOT NULL DEFAULT FALSE, 
     payload jsonb NOT NULL DEFAULT '{}',
     ts_vector tsvector
 );
@@ -336,8 +334,6 @@ CREATE INDEX idx_issue_plan_id ON issue(plan_id);
 CREATE INDEX idx_issue_pipeline_id ON issue(pipeline_id);
 
 CREATE INDEX idx_issue_creator_id ON issue(creator_id);
-
-CREATE INDEX idx_issue_assignee_id ON issue(assignee_id);
 
 CREATE INDEX idx_issue_ts_vector ON issue USING GIN(ts_vector);
 
