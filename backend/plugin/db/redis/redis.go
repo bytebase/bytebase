@@ -62,7 +62,7 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	}
 	d.databaseName = fmt.Sprintf("%d", db)
 	switch config.RedisType {
-	case storepb.DataSourceOptions_REDIS_TYPE_UNSPECIFIED, storepb.DataSourceOptions_STANDALONE:
+	case storepb.DataSource_REDIS_TYPE_UNSPECIFIED, storepb.DataSource_STANDALONE:
 		options := &redis.Options{
 			Addr:      fmt.Sprintf("%s:%s", config.Host, config.Port),
 			Username:  config.Username,
@@ -88,7 +88,7 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 		client := redis.NewClient(options)
 		d.databaseName = fmt.Sprintf("%d", db)
 		d.rdb = client
-	case storepb.DataSourceOptions_SENTINEL:
+	case storepb.DataSource_SENTINEL:
 		sentinelAddrs := make([]string, 0, 1+len(config.AdditionalAddresses))
 		sentinelAddrs = append(sentinelAddrs, fmt.Sprintf("%s:%s", config.Host, config.Port))
 		for _, sentinelAddr := range config.AdditionalAddresses {
@@ -122,7 +122,7 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 		d.databaseName = fmt.Sprintf("%d", db)
 		client := redis.NewFailoverClient(options)
 		d.rdb = client
-	case storepb.DataSourceOptions_CLUSTER:
+	case storepb.DataSource_CLUSTER:
 		addrs := make([]string, 0, 1+len(config.AdditionalAddresses))
 		addrs = append(addrs, fmt.Sprintf("%s:%s", config.Host, config.Port))
 		for _, addr := range config.AdditionalAddresses {

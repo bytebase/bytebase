@@ -53,7 +53,7 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 }
 
 // GetDataSourceDriver returns the database driver for a data source.
-func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.InstanceMessage, dataSource *store.DataSourceMessage, databaseName string, datashare, readOnly bool, connectionContext db.ConnectionContext) (db.Driver, error) {
+func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.InstanceMessage, dataSource *storepb.DataSource, databaseName string, datashare, readOnly bool, connectionContext db.ConnectionContext) (db.Driver, error) {
 	dbBinDir := ""
 	switch instance.Engine {
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
@@ -66,55 +66,55 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 	}
 
 	if databaseName == "" {
-		databaseName = dataSource.Options.GetDatabase()
+		databaseName = dataSource.GetDatabase()
 	}
-	password, err := common.Unobfuscate(dataSource.Options.GetObfuscatedPassword(), d.secret)
+	password, err := common.Unobfuscate(dataSource.GetObfuscatedPassword(), d.secret)
 	if err != nil {
 		return nil, err
 	}
-	sslCA, err := common.Unobfuscate(dataSource.Options.GetObfuscatedSslCa(), d.secret)
+	sslCA, err := common.Unobfuscate(dataSource.GetObfuscatedSslCa(), d.secret)
 	if err != nil {
 		return nil, err
 	}
-	sslCert, err := common.Unobfuscate(dataSource.Options.GetObfuscatedSslCert(), d.secret)
+	sslCert, err := common.Unobfuscate(dataSource.GetObfuscatedSslCert(), d.secret)
 	if err != nil {
 		return nil, err
 	}
-	sslKey, err := common.Unobfuscate(dataSource.Options.GetObfuscatedSslKey(), d.secret)
+	sslKey, err := common.Unobfuscate(dataSource.GetObfuscatedSslKey(), d.secret)
 	if err != nil {
 		return nil, err
 	}
-	sshPassword, err := common.Unobfuscate(dataSource.Options.GetSshObfuscatedPassword(), d.secret)
+	sshPassword, err := common.Unobfuscate(dataSource.GetSshObfuscatedPassword(), d.secret)
 	if err != nil {
 		return nil, err
 	}
-	sshPrivateKey, err := common.Unobfuscate(dataSource.Options.GetSshObfuscatedPrivateKey(), d.secret)
+	sshPrivateKey, err := common.Unobfuscate(dataSource.GetSshObfuscatedPrivateKey(), d.secret)
 	if err != nil {
 		return nil, err
 	}
-	authenticationPrivateKey, err := common.Unobfuscate(dataSource.Options.GetAuthenticationPrivateKeyObfuscated(), d.secret)
+	authenticationPrivateKey, err := common.Unobfuscate(dataSource.GetAuthenticationPrivateKeyObfuscated(), d.secret)
 	if err != nil {
 		return nil, err
 	}
-	masterPassword, err := common.Unobfuscate(dataSource.Options.GetMasterObfuscatedPassword(), d.secret)
+	masterPassword, err := common.Unobfuscate(dataSource.GetMasterObfuscatedPassword(), d.secret)
 	if err != nil {
 		return nil, err
 	}
 
-	updatedPassword, err := secret.ReplaceExternalSecret(ctx, password, dataSource.Options.GetExternalSecret())
+	updatedPassword, err := secret.ReplaceExternalSecret(ctx, password, dataSource.GetExternalSecret())
 	if err != nil {
 		return nil, err
 	}
 	password = updatedPassword
 	sshConfig := db.SSHConfig{
-		Host:       dataSource.Options.GetSshHost(),
-		Port:       dataSource.Options.GetSshPort(),
-		User:       dataSource.Options.GetSshUser(),
+		Host:       dataSource.GetSshHost(),
+		Port:       dataSource.GetSshPort(),
+		User:       dataSource.GetSshUser(),
 		Password:   sshPassword,
 		PrivateKey: sshPrivateKey,
 	}
 	var dbSaslConfig db.SASLConfig
-	switch t := dataSource.Options.GetSaslConfig().GetMechanism().(type) {
+	switch t := dataSource.GetSaslConfig().GetMechanism().(type) {
 	case *storepb.SASLConfig_KrbConfig:
 		dbSaslConfig = &db.KerberosConfig{
 			Primary:  t.KrbConfig.Primary,
@@ -141,40 +141,40 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			DbBinDir: dbBinDir,
 		},
 		db.ConnectionConfig{
-			Username: dataSource.Options.GetUsername(),
+			Username: dataSource.GetUsername(),
 			Password: password,
 			TLSConfig: db.TLSConfig{
-				UseSSL:  dataSource.Options.GetUseSsl(),
+				UseSSL:  dataSource.GetUseSsl(),
 				SslCA:   sslCA,
 				SslCert: sslCert,
 				SslKey:  sslKey,
 			},
-			Host:                      dataSource.Options.GetHost(),
-			Port:                      dataSource.Options.GetPort(),
+			Host:                      dataSource.GetHost(),
+			Port:                      dataSource.GetPort(),
 			Database:                  databaseName,
 			DataShare:                 datashare,
-			SRV:                       dataSource.Options.GetSrv(),
-			AuthenticationDatabase:    dataSource.Options.GetAuthenticationDatabase(),
-			SID:                       dataSource.Options.GetSid(),
-			ServiceName:               dataSource.Options.ServiceName,
+			SRV:                       dataSource.GetSrv(),
+			AuthenticationDatabase:    dataSource.GetAuthenticationDatabase(),
+			SID:                       dataSource.GetSid(),
+			ServiceName:               dataSource.ServiceName,
 			SSHConfig:                 sshConfig,
 			ReadOnly:                  readOnly,
 			ConnectionContext:         connectionContext,
 			AuthenticationPrivateKey:  authenticationPrivateKey,
-			AuthenticationType:        dataSource.Options.GetAuthenticationType(),
+			AuthenticationType:        dataSource.GetAuthenticationType(),
 			SASLConfig:                dbSaslConfig,
-			AdditionalAddresses:       dataSource.Options.GetAdditionalAddresses(),
-			ReplicaSet:                dataSource.Options.GetReplicaSet(),
-			DirectConnection:          dataSource.Options.GetDirectConnection(),
-			Region:                    dataSource.Options.GetRegion(),
-			WarehouseID:               dataSource.Options.GetWarehouseId(),
-			RedisType:                 dataSource.Options.GetRedisType(),
-			MasterName:                dataSource.Options.GetMasterName(),
-			MasterUsername:            dataSource.Options.GetMasterUsername(),
+			AdditionalAddresses:       dataSource.GetAdditionalAddresses(),
+			ReplicaSet:                dataSource.GetReplicaSet(),
+			DirectConnection:          dataSource.GetDirectConnection(),
+			Region:                    dataSource.GetRegion(),
+			WarehouseID:               dataSource.GetWarehouseId(),
+			RedisType:                 dataSource.GetRedisType(),
+			MasterName:                dataSource.GetMasterName(),
+			MasterUsername:            dataSource.GetMasterUsername(),
 			MasterPassword:            masterPassword,
-			ExtraConnectionParameters: dataSource.Options.GetExtraConnectionParameters(),
+			ExtraConnectionParameters: dataSource.GetExtraConnectionParameters(),
 			MaximumSQLResultSize:      maximumSQLResultSize,
-			ClientSecretCredential:    dataSource.Options.GetClientSecretCredential(),
+			ClientSecretCredential:    dataSource.GetClientSecretCredential(),
 		},
 	)
 	if err != nil {

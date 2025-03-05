@@ -220,7 +220,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			}
 		}
 
-		statement, err := getCreateDatabaseStatement(instance.Engine, c, databaseName, adminDataSource.Options.GetUsername())
+		statement, err := getCreateDatabaseStatement(instance.Engine, c, databaseName, adminDataSource.GetUsername())
 		if err != nil {
 			return nil, err
 		}
