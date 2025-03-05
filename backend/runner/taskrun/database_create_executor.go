@@ -1,7 +1,6 @@
 package taskrun
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -15,11 +14,9 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -51,7 +48,7 @@ var cannotCreateDatabase = map[storepb.Engine]bool{
 }
 
 // RunOnce will run the database create task executor once.
-func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error) {
+func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, _ int) (terminated bool, result *storepb.TaskRunResult, err error) {
 	payload := &storepb.TaskDatabaseCreatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid create database payload")
@@ -122,7 +119,6 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		InstanceID:    instance.ResourceID,
 		DatabaseName:  payload.DatabaseName,
 		EnvironmentID: payload.EnvironmentId,
-		Deleted:       true,
 		Metadata: &storepb.DatabaseMetadata{
 			Labels: labels,
 		},
@@ -148,60 +144,9 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		}
 	}
 	defer defaultDBDriver.Close(ctx)
-
 	if _, err := defaultDBDriver.Execute(driverCtx, statement, db.ExecuteOptions{CreateDatabase: true}); err != nil {
 		return true, nil, err
 	}
-
-	// We will use schema from existing tenant databases for creating a database in a tenant mode project if possible.
-	peerDatabase, peerSchema, err := exec.createInitialSchema(ctx, driverCtx, instance, project, task, taskRunUID, database)
-	if err != nil {
-		return true, nil, err
-	}
-
-	d := false
-	if _, err := exec.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		InstanceID:   instance.ResourceID,
-		DatabaseName: payload.DatabaseName,
-		Deleted:      &d,
-	}); err != nil {
-		return true, nil, err
-	}
-
-	// After the task related database entry created successfully,
-	// we need to update task's database_id and statement with the newly created database immediately.
-	// Here is the main reason:
-	// The task database_id represents its related database entry both for creating and patching,
-	// so we should sync its value right here when the related database entry created.
-	// The new statement should include the schema from peer tenant database.
-	taskDatabaseIDPatch := &store.TaskPatch{
-		ID:           task.ID,
-		UpdaterID:    api.SystemBotID,
-		DatabaseName: &database.DatabaseName,
-	}
-	sheetPatch := &store.PatchSheetMessage{
-		UID:       sheet.UID,
-		UpdaterID: api.SystemBotID,
-	}
-
-	if peerSchema != "" {
-		// Better displaying schema in the task.
-		connectionStmt, err := getConnectionStatement(instance.Metadata.GetEngine(), payload.DatabaseName)
-		if err != nil {
-			return true, nil, err
-		}
-		fullSchema := fmt.Sprintf("%s\n%s\n%s", statement, connectionStmt, peerSchema)
-
-		sheetPatch.Statement = &fullSchema
-	}
-	if _, err := exec.store.UpdateTaskV2(ctx, taskDatabaseIDPatch); err != nil {
-		return true, nil, err
-	}
-	if _, err := exec.store.PatchSheet(ctx, sheetPatch); err != nil {
-		return true, nil, errors.Wrapf(err, "failed to update sheet %d after executing the task", sheet.UID)
-	}
-
-	exec.reconcilePlan(ctx, project, database, peerDatabase)
 
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
 		slog.Error("failed to sync database schema",
@@ -214,350 +159,4 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 	return true, &storepb.TaskRunResult{
 		Detail: fmt.Sprintf("Created database %q", payload.DatabaseName),
 	}, nil
-}
-
-// reconcilePlan adds the created database to other plans,
-// if the project has tenant mode enabled
-// if the issue is open
-// if the plan uses a deploymentConfig
-// if peer database task is not done
-// if the peer database task type is schemaUpdate.
-func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *store.ProjectMessage, createdDatabase *store.DatabaseMessage, peerDatabase *store.DatabaseMessage) {
-	if peerDatabase == nil {
-		return
-	}
-
-	issues, err := exec.store.ListIssueV2(ctx, &store.FindIssueMessage{
-		ProjectID:    &project.ResourceID,
-		InstanceID:   &peerDatabase.InstanceID,
-		DatabaseName: &peerDatabase.DatabaseName,
-		StatusList:   []api.IssueStatus{api.IssueOpen},
-		TaskTypes:    &[]api.TaskType{api.TaskDatabaseSchemaUpdate},
-	})
-	if err != nil {
-		slog.Debug("failed to list issues", log.BBError(err))
-		return
-	}
-	for _, issue := range issues {
-		err := func() error {
-			plan, err := exec.store.GetPlan(ctx, &store.FindPlanMessage{PipelineID: issue.PipelineUID})
-			if err != nil {
-				return errors.Wrapf(err, "failed to get plan for issue %d, pipeline %d", issue.UID, issue.PipelineUID)
-			}
-			if plan == nil {
-				return errors.Wrapf(err, "plan not found for issue %d, pipeline %d", issue.UID, issue.PipelineUID)
-			}
-			if len(plan.Config.GetSteps()) != 1 {
-				return nil
-			}
-			if len(plan.Config.Steps[0].GetSpecs()) != 1 {
-				return nil
-			}
-			spec := plan.Config.Steps[0].Specs[0]
-			c := spec.GetChangeDatabaseConfig()
-			if c == nil {
-				return nil
-			}
-			_, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(c.Target)
-			if err != nil {
-				// continue because this is not a plan that uses database group.
-				//nolint:nilerr
-				return nil
-			}
-			databaseGroup, err := exec.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ResourceID: &databaseGroupID})
-			if err != nil {
-				//nolint:nilerr
-				return nil
-			}
-			if databaseGroup == nil || !databaseGroup.Payload.Multitenancy {
-				return nil
-			}
-			isMatched, err := utils.CheckDatabaseGroupMatch(ctx, databaseGroup.Expression.Expression, createdDatabase)
-			if err != nil || !isMatched {
-				// continue if current database is not matched.
-				//nolint:nilerr
-				return nil
-			}
-
-			// We somehow reconciled the plan before, so we just return.
-			tasks, err := exec.store.ListTasks(ctx, &store.TaskFind{
-				PipelineID:   issue.PipelineUID,
-				InstanceID:   &createdDatabase.InstanceID,
-				DatabaseName: &createdDatabase.DatabaseName,
-			})
-			if err != nil {
-				return errors.Wrapf(err, "failed to list tasks for created database %q", createdDatabase.DatabaseName)
-			}
-			if len(tasks) > 0 {
-				return nil
-			}
-
-			tasks, err = exec.store.ListTasks(ctx, &store.TaskFind{
-				PipelineID:   issue.PipelineUID,
-				InstanceID:   &peerDatabase.InstanceID,
-				DatabaseName: &peerDatabase.DatabaseName,
-			})
-			if err != nil {
-				return errors.Wrapf(err, "failed to list tasks for peer database %q", peerDatabase.DatabaseName)
-			}
-
-			var creates []*store.TaskMessage
-			for _, task := range tasks {
-				if task.LatestTaskRunStatus == api.TaskRunDone {
-					continue
-				}
-				switch task.Type {
-				case api.TaskDatabaseSchemaUpdate:
-				default:
-					continue
-				}
-				taskCreate := &store.TaskMessage{
-					PipelineID:        task.PipelineID,
-					StageID:           task.StageID,
-					Name:              fmt.Sprintf("Copied task for database %q from %q", createdDatabase.DatabaseName, peerDatabase.DatabaseName),
-					InstanceID:        task.InstanceID,
-					DatabaseName:      &createdDatabase.DatabaseName,
-					Type:              task.Type,
-					EarliestAllowedAt: task.EarliestAllowedAt,
-					Payload:           task.Payload,
-				}
-				creates = append(creates, taskCreate)
-			}
-			if _, err := exec.store.CreateTasksV2(ctx, creates...); err != nil {
-				return errors.Wrapf(err, "failed to create tasks")
-			}
-			return nil
-		}()
-		if err != nil {
-			slog.Error("failed to reconcile plan", log.BBError(err))
-		}
-	}
-}
-
-func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, driverCtx context.Context, instance *store.InstanceMessage, project *store.ProjectMessage, task *store.TaskMessage, taskRunUID int, database *store.DatabaseMessage) (*store.DatabaseMessage, string, error) {
-	peerDatabase, schema, err := exec.getSchemaFromPeerTenantDatabase(ctx, instance, project, database)
-	if err != nil {
-		return nil, "", err
-	}
-	if schema == "" {
-		return nil, "", nil
-	}
-
-	useDBOwner, err := getUseDatabaseOwner(ctx, exec.store, instance, database)
-	if err != nil {
-		return nil, "", errors.Wrapf(err, "failed to check if we should use database owner")
-	}
-	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
-		UseDatabaseOwner: useDBOwner,
-	})
-	if err != nil {
-		return nil, "", err
-	}
-	defer driver.Close(ctx)
-
-	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
-	if err != nil {
-		// If somehow we unable to find the issue, we just emit the error since it's not
-		// critical enough to fail the entire operation.
-		slog.Error("Failed to fetch containing issue for composing the migration info",
-			slog.Int("task_id", task.ID),
-			log.BBError(err),
-		)
-	}
-
-	// TODO(p0ny): check here
-	mc := &migrateContext{
-		syncer:    exec.schemaSyncer,
-		profile:   exec.profile,
-		dbFactory: exec.dbFactory,
-
-		instance:    instance,
-		database:    database,
-		sheet:       nil,
-		task:        task,
-		taskRunUID:  taskRunUID,
-		taskRunName: common.FormatTaskRun(project.ResourceID, task.PipelineID, task.StageID, task.ID, taskRunUID),
-		version:     "",
-		migrateType: db.Migrate,
-	}
-
-	if issue != nil {
-		mc.issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
-	}
-
-	opts := db.ExecuteOptions{}
-	execFunc := func(ctx context.Context, execStatement string) error {
-		if _, err := driver.Execute(ctx, execStatement, opts); err != nil {
-			return err
-		}
-		return nil
-	}
-	if _, err := executeMigrationWithFunc(ctx, driverCtx, exec.store, mc, schema, execFunc, opts); err != nil {
-		return nil, "", err
-	}
-	return peerDatabase, schema, nil
-}
-
-func getConnectionStatement(dbType storepb.Engine, databaseName string) (string, error) {
-	switch dbType {
-	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
-	case storepb.Engine_MSSQL:
-		return fmt.Sprintf(`USE "%s";\n`, databaseName), nil
-	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
-		return fmt.Sprintf("\\connect \"%s\";\n", databaseName), nil
-	case storepb.Engine_CLICKHOUSE:
-		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
-	case storepb.Engine_SNOWFLAKE:
-		return fmt.Sprintf("USE DATABASE %s;\n", databaseName), nil
-	case storepb.Engine_SQLITE:
-		return fmt.Sprintf("USE `%s`;\n", databaseName), nil
-	case storepb.Engine_MONGODB:
-		// We embed mongosh to execute the mongodb statement, and `use` statement is not effective in mongosh.
-		// We will connect to the specified database by specifying the database name in the connection string.
-		return "", nil
-	case storepb.Engine_REDSHIFT:
-		return fmt.Sprintf("\\connect \"%s\";\n", databaseName), nil
-	case storepb.Engine_SPANNER:
-		return "", nil
-	}
-
-	return "", errors.Errorf("unsupported database type %s", dbType)
-}
-
-// getSchemaFromPeerTenantDatabase gets the schema version and schema from a peer tenant database.
-// It's used for creating a database in a tenant mode project.
-// When a peer tenant database doesn't exist, we will return an error if there are databases in the project with the same name.
-// Otherwise, we will create a blank database without schema.
-func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Context, instance *store.InstanceMessage, project *store.ProjectMessage, database *store.DatabaseMessage) (*store.DatabaseMessage, string, error) {
-	// Try to find a peer tenant database from database groups.
-	matchedDatabases, err := exec.getPeerTenantDatabasesFromDatabaseGroup(ctx, instance, project, database)
-	if err != nil {
-		return nil, "", errors.Wrapf(err, "Failed to fetch database groups in project ID: %s", project.ResourceID)
-	}
-
-	// Filter out the database itself.
-	var databases []*store.DatabaseMessage
-	for _, d := range matchedDatabases {
-		if d.String() != database.String() {
-			databases = append(databases, d)
-		}
-	}
-	matchedDatabases = databases
-	if len(matchedDatabases) == 0 {
-		return nil, "", nil
-	}
-
-	// Then we will try to find a peer tenant database from deployment schedule with the matched databases.
-	deploymentConfig, err := exec.store.GetDeploymentConfigV2(ctx, project.ResourceID)
-	if err != nil {
-		return nil, "", errors.Wrapf(err, "Failed to fetch deployment config for project %s", project.ResourceID)
-	}
-	if err := utils.ValidateDeploymentSchedule(deploymentConfig.Config.GetSchedule()); err != nil {
-		return nil, "", errors.Errorf("Failed to get deployment schedule")
-	}
-	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.Config.GetSchedule(), matchedDatabases)
-	if err != nil {
-		return nil, "", errors.Errorf("Failed to create deployment pipeline")
-	}
-	similarDB := getPeerTenantDatabase(matrix, instance.EnvironmentID)
-	if similarDB == nil {
-		return nil, "", nil
-	}
-	similarDBInstance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &similarDB.InstanceID})
-	if err != nil {
-		return nil, "", err
-	}
-
-	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, similarDBInstance, similarDB, db.ConnectionContext{})
-	if err != nil {
-		return nil, "", err
-	}
-	defer driver.Close(ctx)
-
-	dbSchema := (*storepb.DatabaseSchemaMetadata)(nil)
-	if similarDBInstance.Metadata.GetEngine() == storepb.Engine_MYSQL || similarDBInstance.Metadata.GetEngine() == storepb.Engine_POSTGRES {
-		// Use new driver to sync the schema to avoid the session state change, such as SET ROLE in PostgreSQL.
-		syncDriver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, similarDBInstance, similarDB, db.ConnectionContext{})
-		if err != nil {
-			return nil, "", errors.Wrapf(err, "failed to get driver for instance %q", similarDBInstance.Metadata.GetTitle())
-		}
-		defer syncDriver.Close(ctx)
-		dbSchema, err = syncDriver.SyncDBSchema(ctx)
-		if err != nil {
-			return nil, "", errors.Wrapf(err, "failed to get schema for database %q", similarDB.DatabaseName)
-		}
-	}
-
-	var schemaBuf bytes.Buffer
-	if err := driver.Dump(ctx, &schemaBuf, dbSchema); err != nil {
-		return nil, "", err
-	}
-	return similarDB, schemaBuf.String(), nil
-}
-
-func (exec *DatabaseCreateExecutor) getPeerTenantDatabasesFromDatabaseGroup(ctx context.Context, instance *store.InstanceMessage, project *store.ProjectMessage, database *store.DatabaseMessage) ([]*store.DatabaseMessage, error) {
-	dbGroups, err := exec.store.ListDatabaseGroups(ctx, &store.FindDatabaseGroupMessage{ProjectID: &project.ResourceID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to fetch database groups in project %s", project.ResourceID)
-	}
-	allDatabases, err := exec.store.ListDatabases(ctx, &store.FindDatabaseMessage{
-		ProjectID: &project.ResourceID,
-		Engine:    &instance.Metadata.Engine,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to fetch databases in project %s", project.ResourceID)
-	}
-
-	var matchedDatabases []*store.DatabaseMessage
-	for _, dbGroup := range dbGroups {
-		// TODO(steven): move this filter into FindDatabaseGroupMessage.
-		if !dbGroup.Payload.Multitenancy {
-			continue
-		}
-
-		isMatched, err := utils.CheckDatabaseGroupMatch(ctx, dbGroup.Expression.Expression, database)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to get matched and unmatched databases in database group %q", dbGroup.Placeholder)
-		}
-		// If current database is not matched, continue to the next database group.
-		if !isMatched {
-			continue
-		}
-
-		matchedDb, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, dbGroup, allDatabases)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to get matched and unmatched databases in database group %q", dbGroup.Placeholder)
-		}
-		if len(matchedDb) > 0 {
-			matchedDatabases = matchedDb
-		}
-	}
-	return matchedDatabases, nil
-}
-
-func getPeerTenantDatabase(databaseMatrix [][]*store.DatabaseMessage, environmentID string) *store.DatabaseMessage {
-	var similarDB *store.DatabaseMessage
-	// We try to use an existing tenant with the same environment, if possible.
-	for _, databaseList := range databaseMatrix {
-		for _, db := range databaseList {
-			if db.EffectiveEnvironmentID == environmentID {
-				similarDB = db
-				break
-			}
-		}
-		if similarDB != nil {
-			break
-		}
-	}
-	if similarDB == nil {
-		for _, stage := range databaseMatrix {
-			if len(stage) > 0 {
-				similarDB = stage[0]
-				break
-			}
-		}
-	}
-
-	return similarDB
 }
