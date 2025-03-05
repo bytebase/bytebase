@@ -11,7 +11,6 @@ import (
 	"google.golang.org/genproto/googleapis/type/expr"
 
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -104,12 +103,12 @@ func TestDatabaseGroup(t *testing.T) {
 
 	// Create issues that create databases.
 	databaseName := "testTenantSchemaUpdate"
-	for i, testInstance := range testInstances {
-		err := ctl.createDatabaseV2(ctx, project, testInstance, nil, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+	for _, testInstance := range testInstances {
+		err := ctl.createDatabaseV2(ctx, project, testInstance, nil, databaseName, "")
 		a.NoError(err)
 	}
-	for i, prodInstance := range prodInstances {
-		err := ctl.createDatabaseV2(ctx, project, prodInstance, nil, databaseName, "", map[string]string{api.TenantLabelKey: fmt.Sprintf("tenant%d", i)})
+	for _, prodInstance := range prodInstances {
+		err := ctl.createDatabaseV2(ctx, project, prodInstance, nil, databaseName, "")
 		a.NoError(err)
 	}
 
