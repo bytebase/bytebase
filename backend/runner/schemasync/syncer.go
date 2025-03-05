@@ -303,7 +303,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	if instanceMeta.Version != instance.Metadata.GetVersion() {
 		metadata.Version = instanceMeta.Version
 	}
-	updatedInstance, err := s.store.UpdateInstanceV2(ctx, updateInstance, -1)
+	updatedInstance, err := s.store.UpdateInstanceV2(ctx, updateInstance)
 	if err != nil {
 		return nil, nil, nil, err
 	}

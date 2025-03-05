@@ -111,13 +111,13 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 	if instanceCreate.EnvironmentID != "" {
 		environment = &instanceCreate.EnvironmentID
 	}
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
+	if _, err := tx.ExecContext(ctx, `
 			INSERT INTO instance (
 				resource_id,
 				environment,
 				metadata
 			) VALUES ($1, $2, $3)
-		`),
+		`,
 		instanceCreate.ResourceID,
 		environment,
 		metadataBytes,
@@ -139,7 +139,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 }
 
 // UpdateInstanceV2 updates an instance.
-func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessage, maximumActivation int) (*InstanceMessage, error) {
+func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessage) (*InstanceMessage, error) {
 	set, args, where := []string{}, []any{}, []string{}
 	if v := patch.EnvironmentID; v != nil {
 		set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *v)
