@@ -270,7 +270,7 @@ func listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstanceMessage) 
 	return instanceMessages, nil
 }
 
-var countActivateInstanceQuery = "SELECT COUNT(1) FROM instance WHERE activation = TRUE AND deleted = FALSE"
+var countActivateInstanceQuery = "SELECT COUNT(1) FROM instance WHERE (metadata ? 'activation') AND (metadata->>'activation')::boolean = TRUE AND deleted = FALSE"
 
 // GetActivatedInstanceCount gets the number of activated instances.
 func (s *Store) GetActivatedInstanceCount(ctx context.Context) (int, error) {
