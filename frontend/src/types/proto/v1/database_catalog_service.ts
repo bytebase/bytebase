@@ -44,8 +44,12 @@ export interface SchemaCatalog {
 
 export interface TableCatalog {
   name: string;
-  columns?: TableCatalog_Columns | undefined;
-  objectSchema?: ObjectSchema | undefined;
+  kind?:
+    | //
+    { $case: "columns"; value: TableCatalog_Columns }
+    | //
+    { $case: "objectSchema"; value: ObjectSchema }
+    | undefined;
   classification: string;
 }
 
@@ -69,8 +73,12 @@ export interface ColumnCatalog_LabelsEntry {
 
 export interface ObjectSchema {
   type: ObjectSchema_Type;
-  structKind?: ObjectSchema_StructKind | undefined;
-  arrayKind?: ObjectSchema_ArrayKind | undefined;
+  kind?:
+    | //
+    { $case: "structKind"; value: ObjectSchema_StructKind }
+    | //
+    { $case: "arrayKind"; value: ObjectSchema_ArrayKind }
+    | undefined;
   semanticType: string;
 }
 
@@ -437,7 +445,7 @@ export const SchemaCatalog: MessageFns<SchemaCatalog> = {
 };
 
 function createBaseTableCatalog(): TableCatalog {
-  return { name: "", columns: undefined, objectSchema: undefined, classification: "" };
+  return { name: "", kind: undefined, classification: "" };
 }
 
 export const TableCatalog: MessageFns<TableCatalog> = {
@@ -445,11 +453,13 @@ export const TableCatalog: MessageFns<TableCatalog> = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.columns !== undefined) {
-      TableCatalog_Columns.encode(message.columns, writer.uint32(18).fork()).join();
-    }
-    if (message.objectSchema !== undefined) {
-      ObjectSchema.encode(message.objectSchema, writer.uint32(26).fork()).join();
+    switch (message.kind?.$case) {
+      case "columns":
+        TableCatalog_Columns.encode(message.kind.value, writer.uint32(18).fork()).join();
+        break;
+      case "objectSchema":
+        ObjectSchema.encode(message.kind.value, writer.uint32(26).fork()).join();
+        break;
     }
     if (message.classification !== "") {
       writer.uint32(34).string(message.classification);
@@ -477,7 +487,7 @@ export const TableCatalog: MessageFns<TableCatalog> = {
             break;
           }
 
-          message.columns = TableCatalog_Columns.decode(reader, reader.uint32());
+          message.kind = { $case: "columns", value: TableCatalog_Columns.decode(reader, reader.uint32()) };
           continue;
         }
         case 3: {
@@ -485,7 +495,7 @@ export const TableCatalog: MessageFns<TableCatalog> = {
             break;
           }
 
-          message.objectSchema = ObjectSchema.decode(reader, reader.uint32());
+          message.kind = { $case: "objectSchema", value: ObjectSchema.decode(reader, reader.uint32()) };
           continue;
         }
         case 4: {
@@ -508,8 +518,11 @@ export const TableCatalog: MessageFns<TableCatalog> = {
   fromJSON(object: any): TableCatalog {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      columns: isSet(object.columns) ? TableCatalog_Columns.fromJSON(object.columns) : undefined,
-      objectSchema: isSet(object.objectSchema) ? ObjectSchema.fromJSON(object.objectSchema) : undefined,
+      kind: isSet(object.columns)
+        ? { $case: "columns", value: TableCatalog_Columns.fromJSON(object.columns) }
+        : isSet(object.objectSchema)
+        ? { $case: "objectSchema", value: ObjectSchema.fromJSON(object.objectSchema) }
+        : undefined,
       classification: isSet(object.classification) ? globalThis.String(object.classification) : "",
     };
   },
@@ -519,11 +532,11 @@ export const TableCatalog: MessageFns<TableCatalog> = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.columns !== undefined) {
-      obj.columns = TableCatalog_Columns.toJSON(message.columns);
+    if (message.kind?.$case === "columns") {
+      obj.columns = TableCatalog_Columns.toJSON(message.kind.value);
     }
-    if (message.objectSchema !== undefined) {
-      obj.objectSchema = ObjectSchema.toJSON(message.objectSchema);
+    if (message.kind?.$case === "objectSchema") {
+      obj.objectSchema = ObjectSchema.toJSON(message.kind.value);
     }
     if (message.classification !== "") {
       obj.classification = message.classification;
@@ -537,12 +550,12 @@ export const TableCatalog: MessageFns<TableCatalog> = {
   fromPartial(object: DeepPartial<TableCatalog>): TableCatalog {
     const message = createBaseTableCatalog();
     message.name = object.name ?? "";
-    message.columns = (object.columns !== undefined && object.columns !== null)
-      ? TableCatalog_Columns.fromPartial(object.columns)
-      : undefined;
-    message.objectSchema = (object.objectSchema !== undefined && object.objectSchema !== null)
-      ? ObjectSchema.fromPartial(object.objectSchema)
-      : undefined;
+    if (object.kind?.$case === "columns" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "columns", value: TableCatalog_Columns.fromPartial(object.kind.value) };
+    }
+    if (object.kind?.$case === "objectSchema" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "objectSchema", value: ObjectSchema.fromPartial(object.kind.value) };
+    }
     message.classification = object.classification ?? "";
     return message;
   },
@@ -832,7 +845,7 @@ export const ColumnCatalog_LabelsEntry: MessageFns<ColumnCatalog_LabelsEntry> = 
 };
 
 function createBaseObjectSchema(): ObjectSchema {
-  return { type: ObjectSchema_Type.TYPE_UNSPECIFIED, structKind: undefined, arrayKind: undefined, semanticType: "" };
+  return { type: ObjectSchema_Type.TYPE_UNSPECIFIED, kind: undefined, semanticType: "" };
 }
 
 export const ObjectSchema: MessageFns<ObjectSchema> = {
@@ -840,11 +853,13 @@ export const ObjectSchema: MessageFns<ObjectSchema> = {
     if (message.type !== ObjectSchema_Type.TYPE_UNSPECIFIED) {
       writer.uint32(8).int32(objectSchema_TypeToNumber(message.type));
     }
-    if (message.structKind !== undefined) {
-      ObjectSchema_StructKind.encode(message.structKind, writer.uint32(18).fork()).join();
-    }
-    if (message.arrayKind !== undefined) {
-      ObjectSchema_ArrayKind.encode(message.arrayKind, writer.uint32(26).fork()).join();
+    switch (message.kind?.$case) {
+      case "structKind":
+        ObjectSchema_StructKind.encode(message.kind.value, writer.uint32(18).fork()).join();
+        break;
+      case "arrayKind":
+        ObjectSchema_ArrayKind.encode(message.kind.value, writer.uint32(26).fork()).join();
+        break;
     }
     if (message.semanticType !== "") {
       writer.uint32(34).string(message.semanticType);
@@ -872,7 +887,7 @@ export const ObjectSchema: MessageFns<ObjectSchema> = {
             break;
           }
 
-          message.structKind = ObjectSchema_StructKind.decode(reader, reader.uint32());
+          message.kind = { $case: "structKind", value: ObjectSchema_StructKind.decode(reader, reader.uint32()) };
           continue;
         }
         case 3: {
@@ -880,7 +895,7 @@ export const ObjectSchema: MessageFns<ObjectSchema> = {
             break;
           }
 
-          message.arrayKind = ObjectSchema_ArrayKind.decode(reader, reader.uint32());
+          message.kind = { $case: "arrayKind", value: ObjectSchema_ArrayKind.decode(reader, reader.uint32()) };
           continue;
         }
         case 4: {
@@ -903,8 +918,11 @@ export const ObjectSchema: MessageFns<ObjectSchema> = {
   fromJSON(object: any): ObjectSchema {
     return {
       type: isSet(object.type) ? objectSchema_TypeFromJSON(object.type) : ObjectSchema_Type.TYPE_UNSPECIFIED,
-      structKind: isSet(object.structKind) ? ObjectSchema_StructKind.fromJSON(object.structKind) : undefined,
-      arrayKind: isSet(object.arrayKind) ? ObjectSchema_ArrayKind.fromJSON(object.arrayKind) : undefined,
+      kind: isSet(object.structKind)
+        ? { $case: "structKind", value: ObjectSchema_StructKind.fromJSON(object.structKind) }
+        : isSet(object.arrayKind)
+        ? { $case: "arrayKind", value: ObjectSchema_ArrayKind.fromJSON(object.arrayKind) }
+        : undefined,
       semanticType: isSet(object.semanticType) ? globalThis.String(object.semanticType) : "",
     };
   },
@@ -914,11 +932,11 @@ export const ObjectSchema: MessageFns<ObjectSchema> = {
     if (message.type !== ObjectSchema_Type.TYPE_UNSPECIFIED) {
       obj.type = objectSchema_TypeToJSON(message.type);
     }
-    if (message.structKind !== undefined) {
-      obj.structKind = ObjectSchema_StructKind.toJSON(message.structKind);
+    if (message.kind?.$case === "structKind") {
+      obj.structKind = ObjectSchema_StructKind.toJSON(message.kind.value);
     }
-    if (message.arrayKind !== undefined) {
-      obj.arrayKind = ObjectSchema_ArrayKind.toJSON(message.arrayKind);
+    if (message.kind?.$case === "arrayKind") {
+      obj.arrayKind = ObjectSchema_ArrayKind.toJSON(message.kind.value);
     }
     if (message.semanticType !== "") {
       obj.semanticType = message.semanticType;
@@ -932,12 +950,12 @@ export const ObjectSchema: MessageFns<ObjectSchema> = {
   fromPartial(object: DeepPartial<ObjectSchema>): ObjectSchema {
     const message = createBaseObjectSchema();
     message.type = object.type ?? ObjectSchema_Type.TYPE_UNSPECIFIED;
-    message.structKind = (object.structKind !== undefined && object.structKind !== null)
-      ? ObjectSchema_StructKind.fromPartial(object.structKind)
-      : undefined;
-    message.arrayKind = (object.arrayKind !== undefined && object.arrayKind !== null)
-      ? ObjectSchema_ArrayKind.fromPartial(object.arrayKind)
-      : undefined;
+    if (object.kind?.$case === "structKind" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "structKind", value: ObjectSchema_StructKind.fromPartial(object.kind.value) };
+    }
+    if (object.kind?.$case === "arrayKind" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "arrayKind", value: ObjectSchema_ArrayKind.fromPartial(object.kind.value) };
+    }
     message.semanticType = object.semanticType ?? "";
     return message;
   },
@@ -1400,6 +1418,7 @@ type Builtin = Date | Function | Uint8Array | string | number | boolean | undefi
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string; value: unknown } ? { $case: T["$case"]; value?: DeepPartial<T["value"]> }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

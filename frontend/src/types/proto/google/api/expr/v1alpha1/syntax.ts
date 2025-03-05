@@ -47,32 +47,30 @@ export interface Expr {
    * attributes to a node in the parse tree.
    */
   id: Long;
-  /** A literal expression. */
-  constExpr?:
-    | Constant
+  /** Required. Variants of expressions. */
+  exprKind?:
+    | //
+    /** A literal expression. */
+    { $case: "constExpr"; value: Constant }
+    | //
+    /** An identifier expression. */
+    { $case: "identExpr"; value: Expr_Ident }
+    | //
+    /** A field selection expression, e.g. `request.auth`. */
+    { $case: "selectExpr"; value: Expr_Select }
+    | //
+    /** A call expression, including calls to predefined functions and operators. */
+    { $case: "callExpr"; value: Expr_Call }
+    | //
+    /** A list creation expression. */
+    { $case: "listExpr"; value: Expr_CreateList }
+    | //
+    /** A map or message creation expression. */
+    { $case: "structExpr"; value: Expr_CreateStruct }
+    | //
+    /** A comprehension expression. */
+    { $case: "comprehensionExpr"; value: Expr_Comprehension }
     | undefined;
-  /** An identifier expression. */
-  identExpr?:
-    | Expr_Ident
-    | undefined;
-  /** A field selection expression, e.g. `request.auth`. */
-  selectExpr?:
-    | Expr_Select
-    | undefined;
-  /** A call expression, including calls to predefined functions and operators. */
-  callExpr?:
-    | Expr_Call
-    | undefined;
-  /** A list creation expression. */
-  listExpr?:
-    | Expr_CreateList
-    | undefined;
-  /** A map or message creation expression. */
-  structExpr?:
-    | Expr_CreateStruct
-    | undefined;
-  /** A comprehension expression. */
-  comprehensionExpr?: Expr_Comprehension | undefined;
 }
 
 /** An identifier expression. e.g. `request`. */
@@ -176,13 +174,14 @@ export interface Expr_CreateStruct_Entry {
    * information and other attributes to the node.
    */
   id: Long;
-  /** The field key for a message creator statement. */
-  fieldKey?:
-    | string
-    | undefined;
-  /** The key expression for a map creation statement. */
-  mapKey?:
-    | Expr
+  /** The `Entry` key kinds. */
+  keyKind?:
+    | //
+    /** The field key for a message creator statement. */
+    { $case: "fieldKey"; value: string }
+    | //
+    /** The key expression for a map creation statement. */
+    { $case: "mapKey"; value: Expr }
     | undefined;
   /**
    * Required. The value assigned to the key.
@@ -280,52 +279,44 @@ export interface Expr_Comprehension {
  * `true`, `null`.
  */
 export interface Constant {
-  /** null value. */
-  nullValue?:
-    | NullValue
+  /** Required. The valid constant kinds. */
+  constantKind?:
+    | //
+    /** null value. */
+    { $case: "nullValue"; value: NullValue }
+    | //
+    /** boolean value. */
+    { $case: "boolValue"; value: boolean }
+    | //
+    /** int64 value. */
+    { $case: "int64Value"; value: Long }
+    | //
+    /** uint64 value. */
+    { $case: "uint64Value"; value: Long }
+    | //
+    /** double value. */
+    { $case: "doubleValue"; value: number }
+    | //
+    /** string value. */
+    { $case: "stringValue"; value: string }
+    | //
+    /** bytes value. */
+    { $case: "bytesValue"; value: Uint8Array }
+    | //
+    /**
+     * protobuf.Duration value.
+     *
+     * Deprecated: duration is no longer considered a builtin cel type.
+     */
+    { $case: "durationValue"; value: Duration }
+    | //
+    /**
+     * protobuf.Timestamp value.
+     *
+     * Deprecated: timestamp is no longer considered a builtin cel type.
+     */
+    { $case: "timestampValue"; value: Timestamp }
     | undefined;
-  /** boolean value. */
-  boolValue?:
-    | boolean
-    | undefined;
-  /** int64 value. */
-  int64Value?:
-    | Long
-    | undefined;
-  /** uint64 value. */
-  uint64Value?:
-    | Long
-    | undefined;
-  /** double value. */
-  doubleValue?:
-    | number
-    | undefined;
-  /** string value. */
-  stringValue?:
-    | string
-    | undefined;
-  /** bytes value. */
-  bytesValue?:
-    | Uint8Array
-    | undefined;
-  /**
-   * protobuf.Duration value.
-   *
-   * Deprecated: duration is no longer considered a builtin cel type.
-   *
-   * @deprecated
-   */
-  durationValue?:
-    | Duration
-    | undefined;
-  /**
-   * protobuf.Timestamp value.
-   *
-   * Deprecated: timestamp is no longer considered a builtin cel type.
-   *
-   * @deprecated
-   */
-  timestampValue?: Timestamp | undefined;
 }
 
 /** Source information collected at parse time. */
@@ -474,16 +465,7 @@ export const ParsedExpr: MessageFns<ParsedExpr> = {
 };
 
 function createBaseExpr(): Expr {
-  return {
-    id: Long.ZERO,
-    constExpr: undefined,
-    identExpr: undefined,
-    selectExpr: undefined,
-    callExpr: undefined,
-    listExpr: undefined,
-    structExpr: undefined,
-    comprehensionExpr: undefined,
-  };
+  return { id: Long.ZERO, exprKind: undefined };
 }
 
 export const Expr: MessageFns<Expr> = {
@@ -491,26 +473,28 @@ export const Expr: MessageFns<Expr> = {
     if (!message.id.equals(Long.ZERO)) {
       writer.uint32(16).int64(message.id.toString());
     }
-    if (message.constExpr !== undefined) {
-      Constant.encode(message.constExpr, writer.uint32(26).fork()).join();
-    }
-    if (message.identExpr !== undefined) {
-      Expr_Ident.encode(message.identExpr, writer.uint32(34).fork()).join();
-    }
-    if (message.selectExpr !== undefined) {
-      Expr_Select.encode(message.selectExpr, writer.uint32(42).fork()).join();
-    }
-    if (message.callExpr !== undefined) {
-      Expr_Call.encode(message.callExpr, writer.uint32(50).fork()).join();
-    }
-    if (message.listExpr !== undefined) {
-      Expr_CreateList.encode(message.listExpr, writer.uint32(58).fork()).join();
-    }
-    if (message.structExpr !== undefined) {
-      Expr_CreateStruct.encode(message.structExpr, writer.uint32(66).fork()).join();
-    }
-    if (message.comprehensionExpr !== undefined) {
-      Expr_Comprehension.encode(message.comprehensionExpr, writer.uint32(74).fork()).join();
+    switch (message.exprKind?.$case) {
+      case "constExpr":
+        Constant.encode(message.exprKind.value, writer.uint32(26).fork()).join();
+        break;
+      case "identExpr":
+        Expr_Ident.encode(message.exprKind.value, writer.uint32(34).fork()).join();
+        break;
+      case "selectExpr":
+        Expr_Select.encode(message.exprKind.value, writer.uint32(42).fork()).join();
+        break;
+      case "callExpr":
+        Expr_Call.encode(message.exprKind.value, writer.uint32(50).fork()).join();
+        break;
+      case "listExpr":
+        Expr_CreateList.encode(message.exprKind.value, writer.uint32(58).fork()).join();
+        break;
+      case "structExpr":
+        Expr_CreateStruct.encode(message.exprKind.value, writer.uint32(66).fork()).join();
+        break;
+      case "comprehensionExpr":
+        Expr_Comprehension.encode(message.exprKind.value, writer.uint32(74).fork()).join();
+        break;
     }
     return writer;
   },
@@ -535,7 +519,7 @@ export const Expr: MessageFns<Expr> = {
             break;
           }
 
-          message.constExpr = Constant.decode(reader, reader.uint32());
+          message.exprKind = { $case: "constExpr", value: Constant.decode(reader, reader.uint32()) };
           continue;
         }
         case 4: {
@@ -543,7 +527,7 @@ export const Expr: MessageFns<Expr> = {
             break;
           }
 
-          message.identExpr = Expr_Ident.decode(reader, reader.uint32());
+          message.exprKind = { $case: "identExpr", value: Expr_Ident.decode(reader, reader.uint32()) };
           continue;
         }
         case 5: {
@@ -551,7 +535,7 @@ export const Expr: MessageFns<Expr> = {
             break;
           }
 
-          message.selectExpr = Expr_Select.decode(reader, reader.uint32());
+          message.exprKind = { $case: "selectExpr", value: Expr_Select.decode(reader, reader.uint32()) };
           continue;
         }
         case 6: {
@@ -559,7 +543,7 @@ export const Expr: MessageFns<Expr> = {
             break;
           }
 
-          message.callExpr = Expr_Call.decode(reader, reader.uint32());
+          message.exprKind = { $case: "callExpr", value: Expr_Call.decode(reader, reader.uint32()) };
           continue;
         }
         case 7: {
@@ -567,7 +551,7 @@ export const Expr: MessageFns<Expr> = {
             break;
           }
 
-          message.listExpr = Expr_CreateList.decode(reader, reader.uint32());
+          message.exprKind = { $case: "listExpr", value: Expr_CreateList.decode(reader, reader.uint32()) };
           continue;
         }
         case 8: {
@@ -575,7 +559,7 @@ export const Expr: MessageFns<Expr> = {
             break;
           }
 
-          message.structExpr = Expr_CreateStruct.decode(reader, reader.uint32());
+          message.exprKind = { $case: "structExpr", value: Expr_CreateStruct.decode(reader, reader.uint32()) };
           continue;
         }
         case 9: {
@@ -583,7 +567,7 @@ export const Expr: MessageFns<Expr> = {
             break;
           }
 
-          message.comprehensionExpr = Expr_Comprehension.decode(reader, reader.uint32());
+          message.exprKind = { $case: "comprehensionExpr", value: Expr_Comprehension.decode(reader, reader.uint32()) };
           continue;
         }
       }
@@ -598,14 +582,20 @@ export const Expr: MessageFns<Expr> = {
   fromJSON(object: any): Expr {
     return {
       id: isSet(object.id) ? Long.fromValue(object.id) : Long.ZERO,
-      constExpr: isSet(object.constExpr) ? Constant.fromJSON(object.constExpr) : undefined,
-      identExpr: isSet(object.identExpr) ? Expr_Ident.fromJSON(object.identExpr) : undefined,
-      selectExpr: isSet(object.selectExpr) ? Expr_Select.fromJSON(object.selectExpr) : undefined,
-      callExpr: isSet(object.callExpr) ? Expr_Call.fromJSON(object.callExpr) : undefined,
-      listExpr: isSet(object.listExpr) ? Expr_CreateList.fromJSON(object.listExpr) : undefined,
-      structExpr: isSet(object.structExpr) ? Expr_CreateStruct.fromJSON(object.structExpr) : undefined,
-      comprehensionExpr: isSet(object.comprehensionExpr)
-        ? Expr_Comprehension.fromJSON(object.comprehensionExpr)
+      exprKind: isSet(object.constExpr)
+        ? { $case: "constExpr", value: Constant.fromJSON(object.constExpr) }
+        : isSet(object.identExpr)
+        ? { $case: "identExpr", value: Expr_Ident.fromJSON(object.identExpr) }
+        : isSet(object.selectExpr)
+        ? { $case: "selectExpr", value: Expr_Select.fromJSON(object.selectExpr) }
+        : isSet(object.callExpr)
+        ? { $case: "callExpr", value: Expr_Call.fromJSON(object.callExpr) }
+        : isSet(object.listExpr)
+        ? { $case: "listExpr", value: Expr_CreateList.fromJSON(object.listExpr) }
+        : isSet(object.structExpr)
+        ? { $case: "structExpr", value: Expr_CreateStruct.fromJSON(object.structExpr) }
+        : isSet(object.comprehensionExpr)
+        ? { $case: "comprehensionExpr", value: Expr_Comprehension.fromJSON(object.comprehensionExpr) }
         : undefined,
     };
   },
@@ -615,26 +605,26 @@ export const Expr: MessageFns<Expr> = {
     if (!message.id.equals(Long.ZERO)) {
       obj.id = (message.id || Long.ZERO).toString();
     }
-    if (message.constExpr !== undefined) {
-      obj.constExpr = Constant.toJSON(message.constExpr);
+    if (message.exprKind?.$case === "constExpr") {
+      obj.constExpr = Constant.toJSON(message.exprKind.value);
     }
-    if (message.identExpr !== undefined) {
-      obj.identExpr = Expr_Ident.toJSON(message.identExpr);
+    if (message.exprKind?.$case === "identExpr") {
+      obj.identExpr = Expr_Ident.toJSON(message.exprKind.value);
     }
-    if (message.selectExpr !== undefined) {
-      obj.selectExpr = Expr_Select.toJSON(message.selectExpr);
+    if (message.exprKind?.$case === "selectExpr") {
+      obj.selectExpr = Expr_Select.toJSON(message.exprKind.value);
     }
-    if (message.callExpr !== undefined) {
-      obj.callExpr = Expr_Call.toJSON(message.callExpr);
+    if (message.exprKind?.$case === "callExpr") {
+      obj.callExpr = Expr_Call.toJSON(message.exprKind.value);
     }
-    if (message.listExpr !== undefined) {
-      obj.listExpr = Expr_CreateList.toJSON(message.listExpr);
+    if (message.exprKind?.$case === "listExpr") {
+      obj.listExpr = Expr_CreateList.toJSON(message.exprKind.value);
     }
-    if (message.structExpr !== undefined) {
-      obj.structExpr = Expr_CreateStruct.toJSON(message.structExpr);
+    if (message.exprKind?.$case === "structExpr") {
+      obj.structExpr = Expr_CreateStruct.toJSON(message.exprKind.value);
     }
-    if (message.comprehensionExpr !== undefined) {
-      obj.comprehensionExpr = Expr_Comprehension.toJSON(message.comprehensionExpr);
+    if (message.exprKind?.$case === "comprehensionExpr") {
+      obj.comprehensionExpr = Expr_Comprehension.toJSON(message.exprKind.value);
     }
     return obj;
   },
@@ -645,27 +635,43 @@ export const Expr: MessageFns<Expr> = {
   fromPartial(object: DeepPartial<Expr>): Expr {
     const message = createBaseExpr();
     message.id = (object.id !== undefined && object.id !== null) ? Long.fromValue(object.id) : Long.ZERO;
-    message.constExpr = (object.constExpr !== undefined && object.constExpr !== null)
-      ? Constant.fromPartial(object.constExpr)
-      : undefined;
-    message.identExpr = (object.identExpr !== undefined && object.identExpr !== null)
-      ? Expr_Ident.fromPartial(object.identExpr)
-      : undefined;
-    message.selectExpr = (object.selectExpr !== undefined && object.selectExpr !== null)
-      ? Expr_Select.fromPartial(object.selectExpr)
-      : undefined;
-    message.callExpr = (object.callExpr !== undefined && object.callExpr !== null)
-      ? Expr_Call.fromPartial(object.callExpr)
-      : undefined;
-    message.listExpr = (object.listExpr !== undefined && object.listExpr !== null)
-      ? Expr_CreateList.fromPartial(object.listExpr)
-      : undefined;
-    message.structExpr = (object.structExpr !== undefined && object.structExpr !== null)
-      ? Expr_CreateStruct.fromPartial(object.structExpr)
-      : undefined;
-    message.comprehensionExpr = (object.comprehensionExpr !== undefined && object.comprehensionExpr !== null)
-      ? Expr_Comprehension.fromPartial(object.comprehensionExpr)
-      : undefined;
+    if (
+      object.exprKind?.$case === "constExpr" && object.exprKind?.value !== undefined && object.exprKind?.value !== null
+    ) {
+      message.exprKind = { $case: "constExpr", value: Constant.fromPartial(object.exprKind.value) };
+    }
+    if (
+      object.exprKind?.$case === "identExpr" && object.exprKind?.value !== undefined && object.exprKind?.value !== null
+    ) {
+      message.exprKind = { $case: "identExpr", value: Expr_Ident.fromPartial(object.exprKind.value) };
+    }
+    if (
+      object.exprKind?.$case === "selectExpr" && object.exprKind?.value !== undefined && object.exprKind?.value !== null
+    ) {
+      message.exprKind = { $case: "selectExpr", value: Expr_Select.fromPartial(object.exprKind.value) };
+    }
+    if (
+      object.exprKind?.$case === "callExpr" && object.exprKind?.value !== undefined && object.exprKind?.value !== null
+    ) {
+      message.exprKind = { $case: "callExpr", value: Expr_Call.fromPartial(object.exprKind.value) };
+    }
+    if (
+      object.exprKind?.$case === "listExpr" && object.exprKind?.value !== undefined && object.exprKind?.value !== null
+    ) {
+      message.exprKind = { $case: "listExpr", value: Expr_CreateList.fromPartial(object.exprKind.value) };
+    }
+    if (
+      object.exprKind?.$case === "structExpr" && object.exprKind?.value !== undefined && object.exprKind?.value !== null
+    ) {
+      message.exprKind = { $case: "structExpr", value: Expr_CreateStruct.fromPartial(object.exprKind.value) };
+    }
+    if (
+      object.exprKind?.$case === "comprehensionExpr" &&
+      object.exprKind?.value !== undefined &&
+      object.exprKind?.value !== null
+    ) {
+      message.exprKind = { $case: "comprehensionExpr", value: Expr_Comprehension.fromPartial(object.exprKind.value) };
+    }
     return message;
   },
 };
@@ -1085,7 +1091,7 @@ export const Expr_CreateStruct: MessageFns<Expr_CreateStruct> = {
 };
 
 function createBaseExpr_CreateStruct_Entry(): Expr_CreateStruct_Entry {
-  return { id: Long.ZERO, fieldKey: undefined, mapKey: undefined, value: undefined, optionalEntry: false };
+  return { id: Long.ZERO, keyKind: undefined, value: undefined, optionalEntry: false };
 }
 
 export const Expr_CreateStruct_Entry: MessageFns<Expr_CreateStruct_Entry> = {
@@ -1093,11 +1099,13 @@ export const Expr_CreateStruct_Entry: MessageFns<Expr_CreateStruct_Entry> = {
     if (!message.id.equals(Long.ZERO)) {
       writer.uint32(8).int64(message.id.toString());
     }
-    if (message.fieldKey !== undefined) {
-      writer.uint32(18).string(message.fieldKey);
-    }
-    if (message.mapKey !== undefined) {
-      Expr.encode(message.mapKey, writer.uint32(26).fork()).join();
+    switch (message.keyKind?.$case) {
+      case "fieldKey":
+        writer.uint32(18).string(message.keyKind.value);
+        break;
+      case "mapKey":
+        Expr.encode(message.keyKind.value, writer.uint32(26).fork()).join();
+        break;
     }
     if (message.value !== undefined) {
       Expr.encode(message.value, writer.uint32(34).fork()).join();
@@ -1128,7 +1136,7 @@ export const Expr_CreateStruct_Entry: MessageFns<Expr_CreateStruct_Entry> = {
             break;
           }
 
-          message.fieldKey = reader.string();
+          message.keyKind = { $case: "fieldKey", value: reader.string() };
           continue;
         }
         case 3: {
@@ -1136,7 +1144,7 @@ export const Expr_CreateStruct_Entry: MessageFns<Expr_CreateStruct_Entry> = {
             break;
           }
 
-          message.mapKey = Expr.decode(reader, reader.uint32());
+          message.keyKind = { $case: "mapKey", value: Expr.decode(reader, reader.uint32()) };
           continue;
         }
         case 4: {
@@ -1167,8 +1175,11 @@ export const Expr_CreateStruct_Entry: MessageFns<Expr_CreateStruct_Entry> = {
   fromJSON(object: any): Expr_CreateStruct_Entry {
     return {
       id: isSet(object.id) ? Long.fromValue(object.id) : Long.ZERO,
-      fieldKey: isSet(object.fieldKey) ? globalThis.String(object.fieldKey) : undefined,
-      mapKey: isSet(object.mapKey) ? Expr.fromJSON(object.mapKey) : undefined,
+      keyKind: isSet(object.fieldKey)
+        ? { $case: "fieldKey", value: globalThis.String(object.fieldKey) }
+        : isSet(object.mapKey)
+        ? { $case: "mapKey", value: Expr.fromJSON(object.mapKey) }
+        : undefined,
       value: isSet(object.value) ? Expr.fromJSON(object.value) : undefined,
       optionalEntry: isSet(object.optionalEntry) ? globalThis.Boolean(object.optionalEntry) : false,
     };
@@ -1179,11 +1190,11 @@ export const Expr_CreateStruct_Entry: MessageFns<Expr_CreateStruct_Entry> = {
     if (!message.id.equals(Long.ZERO)) {
       obj.id = (message.id || Long.ZERO).toString();
     }
-    if (message.fieldKey !== undefined) {
-      obj.fieldKey = message.fieldKey;
+    if (message.keyKind?.$case === "fieldKey") {
+      obj.fieldKey = message.keyKind.value;
     }
-    if (message.mapKey !== undefined) {
-      obj.mapKey = Expr.toJSON(message.mapKey);
+    if (message.keyKind?.$case === "mapKey") {
+      obj.mapKey = Expr.toJSON(message.keyKind.value);
     }
     if (message.value !== undefined) {
       obj.value = Expr.toJSON(message.value);
@@ -1200,10 +1211,12 @@ export const Expr_CreateStruct_Entry: MessageFns<Expr_CreateStruct_Entry> = {
   fromPartial(object: DeepPartial<Expr_CreateStruct_Entry>): Expr_CreateStruct_Entry {
     const message = createBaseExpr_CreateStruct_Entry();
     message.id = (object.id !== undefined && object.id !== null) ? Long.fromValue(object.id) : Long.ZERO;
-    message.fieldKey = object.fieldKey ?? undefined;
-    message.mapKey = (object.mapKey !== undefined && object.mapKey !== null)
-      ? Expr.fromPartial(object.mapKey)
-      : undefined;
+    if (object.keyKind?.$case === "fieldKey" && object.keyKind?.value !== undefined && object.keyKind?.value !== null) {
+      message.keyKind = { $case: "fieldKey", value: object.keyKind.value };
+    }
+    if (object.keyKind?.$case === "mapKey" && object.keyKind?.value !== undefined && object.keyKind?.value !== null) {
+      message.keyKind = { $case: "mapKey", value: Expr.fromPartial(object.keyKind.value) };
+    }
     message.value = (object.value !== undefined && object.value !== null) ? Expr.fromPartial(object.value) : undefined;
     message.optionalEntry = object.optionalEntry ?? false;
     return message;
@@ -1385,47 +1398,39 @@ export const Expr_Comprehension: MessageFns<Expr_Comprehension> = {
 };
 
 function createBaseConstant(): Constant {
-  return {
-    nullValue: undefined,
-    boolValue: undefined,
-    int64Value: undefined,
-    uint64Value: undefined,
-    doubleValue: undefined,
-    stringValue: undefined,
-    bytesValue: undefined,
-    durationValue: undefined,
-    timestampValue: undefined,
-  };
+  return { constantKind: undefined };
 }
 
 export const Constant: MessageFns<Constant> = {
   encode(message: Constant, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.nullValue !== undefined) {
-      writer.uint32(8).int32(nullValueToNumber(message.nullValue));
-    }
-    if (message.boolValue !== undefined) {
-      writer.uint32(16).bool(message.boolValue);
-    }
-    if (message.int64Value !== undefined) {
-      writer.uint32(24).int64(message.int64Value.toString());
-    }
-    if (message.uint64Value !== undefined) {
-      writer.uint32(32).uint64(message.uint64Value.toString());
-    }
-    if (message.doubleValue !== undefined) {
-      writer.uint32(41).double(message.doubleValue);
-    }
-    if (message.stringValue !== undefined) {
-      writer.uint32(50).string(message.stringValue);
-    }
-    if (message.bytesValue !== undefined) {
-      writer.uint32(58).bytes(message.bytesValue);
-    }
-    if (message.durationValue !== undefined) {
-      Duration.encode(message.durationValue, writer.uint32(66).fork()).join();
-    }
-    if (message.timestampValue !== undefined) {
-      Timestamp.encode(message.timestampValue, writer.uint32(74).fork()).join();
+    switch (message.constantKind?.$case) {
+      case "nullValue":
+        writer.uint32(8).int32(nullValueToNumber(message.constantKind.value));
+        break;
+      case "boolValue":
+        writer.uint32(16).bool(message.constantKind.value);
+        break;
+      case "int64Value":
+        writer.uint32(24).int64(message.constantKind.value.toString());
+        break;
+      case "uint64Value":
+        writer.uint32(32).uint64(message.constantKind.value.toString());
+        break;
+      case "doubleValue":
+        writer.uint32(41).double(message.constantKind.value);
+        break;
+      case "stringValue":
+        writer.uint32(50).string(message.constantKind.value);
+        break;
+      case "bytesValue":
+        writer.uint32(58).bytes(message.constantKind.value);
+        break;
+      case "durationValue":
+        Duration.encode(message.constantKind.value, writer.uint32(66).fork()).join();
+        break;
+      case "timestampValue":
+        Timestamp.encode(message.constantKind.value, writer.uint32(74).fork()).join();
+        break;
     }
     return writer;
   },
@@ -1442,7 +1447,7 @@ export const Constant: MessageFns<Constant> = {
             break;
           }
 
-          message.nullValue = nullValueFromJSON(reader.int32());
+          message.constantKind = { $case: "nullValue", value: nullValueFromJSON(reader.int32()) };
           continue;
         }
         case 2: {
@@ -1450,7 +1455,7 @@ export const Constant: MessageFns<Constant> = {
             break;
           }
 
-          message.boolValue = reader.bool();
+          message.constantKind = { $case: "boolValue", value: reader.bool() };
           continue;
         }
         case 3: {
@@ -1458,7 +1463,7 @@ export const Constant: MessageFns<Constant> = {
             break;
           }
 
-          message.int64Value = Long.fromString(reader.int64().toString());
+          message.constantKind = { $case: "int64Value", value: Long.fromString(reader.int64().toString()) };
           continue;
         }
         case 4: {
@@ -1466,7 +1471,7 @@ export const Constant: MessageFns<Constant> = {
             break;
           }
 
-          message.uint64Value = Long.fromString(reader.uint64().toString(), true);
+          message.constantKind = { $case: "uint64Value", value: Long.fromString(reader.uint64().toString(), true) };
           continue;
         }
         case 5: {
@@ -1474,7 +1479,7 @@ export const Constant: MessageFns<Constant> = {
             break;
           }
 
-          message.doubleValue = reader.double();
+          message.constantKind = { $case: "doubleValue", value: reader.double() };
           continue;
         }
         case 6: {
@@ -1482,7 +1487,7 @@ export const Constant: MessageFns<Constant> = {
             break;
           }
 
-          message.stringValue = reader.string();
+          message.constantKind = { $case: "stringValue", value: reader.string() };
           continue;
         }
         case 7: {
@@ -1490,7 +1495,7 @@ export const Constant: MessageFns<Constant> = {
             break;
           }
 
-          message.bytesValue = reader.bytes();
+          message.constantKind = { $case: "bytesValue", value: reader.bytes() };
           continue;
         }
         case 8: {
@@ -1498,7 +1503,7 @@ export const Constant: MessageFns<Constant> = {
             break;
           }
 
-          message.durationValue = Duration.decode(reader, reader.uint32());
+          message.constantKind = { $case: "durationValue", value: Duration.decode(reader, reader.uint32()) };
           continue;
         }
         case 9: {
@@ -1506,7 +1511,7 @@ export const Constant: MessageFns<Constant> = {
             break;
           }
 
-          message.timestampValue = Timestamp.decode(reader, reader.uint32());
+          message.constantKind = { $case: "timestampValue", value: Timestamp.decode(reader, reader.uint32()) };
           continue;
         }
       }
@@ -1520,46 +1525,56 @@ export const Constant: MessageFns<Constant> = {
 
   fromJSON(object: any): Constant {
     return {
-      nullValue: isSet(object.nullValue) ? nullValueFromJSON(object.nullValue) : undefined,
-      boolValue: isSet(object.boolValue) ? globalThis.Boolean(object.boolValue) : undefined,
-      int64Value: isSet(object.int64Value) ? Long.fromValue(object.int64Value) : undefined,
-      uint64Value: isSet(object.uint64Value) ? Long.fromValue(object.uint64Value) : undefined,
-      doubleValue: isSet(object.doubleValue) ? globalThis.Number(object.doubleValue) : undefined,
-      stringValue: isSet(object.stringValue) ? globalThis.String(object.stringValue) : undefined,
-      bytesValue: isSet(object.bytesValue) ? bytesFromBase64(object.bytesValue) : undefined,
-      durationValue: isSet(object.durationValue) ? Duration.fromJSON(object.durationValue) : undefined,
-      timestampValue: isSet(object.timestampValue) ? fromJsonTimestamp(object.timestampValue) : undefined,
+      constantKind: isSet(object.nullValue)
+        ? { $case: "nullValue", value: nullValueFromJSON(object.nullValue) }
+        : isSet(object.boolValue)
+        ? { $case: "boolValue", value: globalThis.Boolean(object.boolValue) }
+        : isSet(object.int64Value)
+        ? { $case: "int64Value", value: Long.fromValue(object.int64Value) }
+        : isSet(object.uint64Value)
+        ? { $case: "uint64Value", value: Long.fromValue(object.uint64Value) }
+        : isSet(object.doubleValue)
+        ? { $case: "doubleValue", value: globalThis.Number(object.doubleValue) }
+        : isSet(object.stringValue)
+        ? { $case: "stringValue", value: globalThis.String(object.stringValue) }
+        : isSet(object.bytesValue)
+        ? { $case: "bytesValue", value: bytesFromBase64(object.bytesValue) }
+        : isSet(object.durationValue)
+        ? { $case: "durationValue", value: Duration.fromJSON(object.durationValue) }
+        : isSet(object.timestampValue)
+        ? { $case: "timestampValue", value: fromJsonTimestamp(object.timestampValue) }
+        : undefined,
     };
   },
 
   toJSON(message: Constant): unknown {
     const obj: any = {};
-    if (message.nullValue !== undefined) {
-      obj.nullValue = nullValueToJSON(message.nullValue);
+    if (message.constantKind?.$case === "nullValue") {
+      obj.nullValue = nullValueToJSON(message.constantKind.value);
     }
-    if (message.boolValue !== undefined) {
-      obj.boolValue = message.boolValue;
+    if (message.constantKind?.$case === "boolValue") {
+      obj.boolValue = message.constantKind.value;
     }
-    if (message.int64Value !== undefined) {
-      obj.int64Value = (message.int64Value || Long.ZERO).toString();
+    if (message.constantKind?.$case === "int64Value") {
+      obj.int64Value = (message.constantKind.value || Long.ZERO).toString();
     }
-    if (message.uint64Value !== undefined) {
-      obj.uint64Value = (message.uint64Value || Long.UZERO).toString();
+    if (message.constantKind?.$case === "uint64Value") {
+      obj.uint64Value = (message.constantKind.value || Long.UZERO).toString();
     }
-    if (message.doubleValue !== undefined) {
-      obj.doubleValue = message.doubleValue;
+    if (message.constantKind?.$case === "doubleValue") {
+      obj.doubleValue = message.constantKind.value;
     }
-    if (message.stringValue !== undefined) {
-      obj.stringValue = message.stringValue;
+    if (message.constantKind?.$case === "stringValue") {
+      obj.stringValue = message.constantKind.value;
     }
-    if (message.bytesValue !== undefined) {
-      obj.bytesValue = base64FromBytes(message.bytesValue);
+    if (message.constantKind?.$case === "bytesValue") {
+      obj.bytesValue = base64FromBytes(message.constantKind.value);
     }
-    if (message.durationValue !== undefined) {
-      obj.durationValue = Duration.toJSON(message.durationValue);
+    if (message.constantKind?.$case === "durationValue") {
+      obj.durationValue = Duration.toJSON(message.constantKind.value);
     }
-    if (message.timestampValue !== undefined) {
-      obj.timestampValue = fromTimestamp(message.timestampValue).toISOString();
+    if (message.constantKind?.$case === "timestampValue") {
+      obj.timestampValue = fromTimestamp(message.constantKind.value).toISOString();
     }
     return obj;
   },
@@ -1569,23 +1584,69 @@ export const Constant: MessageFns<Constant> = {
   },
   fromPartial(object: DeepPartial<Constant>): Constant {
     const message = createBaseConstant();
-    message.nullValue = object.nullValue ?? undefined;
-    message.boolValue = object.boolValue ?? undefined;
-    message.int64Value = (object.int64Value !== undefined && object.int64Value !== null)
-      ? Long.fromValue(object.int64Value)
-      : undefined;
-    message.uint64Value = (object.uint64Value !== undefined && object.uint64Value !== null)
-      ? Long.fromValue(object.uint64Value)
-      : undefined;
-    message.doubleValue = object.doubleValue ?? undefined;
-    message.stringValue = object.stringValue ?? undefined;
-    message.bytesValue = object.bytesValue ?? undefined;
-    message.durationValue = (object.durationValue !== undefined && object.durationValue !== null)
-      ? Duration.fromPartial(object.durationValue)
-      : undefined;
-    message.timestampValue = (object.timestampValue !== undefined && object.timestampValue !== null)
-      ? Timestamp.fromPartial(object.timestampValue)
-      : undefined;
+    if (
+      object.constantKind?.$case === "nullValue" &&
+      object.constantKind?.value !== undefined &&
+      object.constantKind?.value !== null
+    ) {
+      message.constantKind = { $case: "nullValue", value: object.constantKind.value };
+    }
+    if (
+      object.constantKind?.$case === "boolValue" &&
+      object.constantKind?.value !== undefined &&
+      object.constantKind?.value !== null
+    ) {
+      message.constantKind = { $case: "boolValue", value: object.constantKind.value };
+    }
+    if (
+      object.constantKind?.$case === "int64Value" &&
+      object.constantKind?.value !== undefined &&
+      object.constantKind?.value !== null
+    ) {
+      message.constantKind = { $case: "int64Value", value: Long.fromValue(object.constantKind.value) };
+    }
+    if (
+      object.constantKind?.$case === "uint64Value" &&
+      object.constantKind?.value !== undefined &&
+      object.constantKind?.value !== null
+    ) {
+      message.constantKind = { $case: "uint64Value", value: Long.fromValue(object.constantKind.value) };
+    }
+    if (
+      object.constantKind?.$case === "doubleValue" &&
+      object.constantKind?.value !== undefined &&
+      object.constantKind?.value !== null
+    ) {
+      message.constantKind = { $case: "doubleValue", value: object.constantKind.value };
+    }
+    if (
+      object.constantKind?.$case === "stringValue" &&
+      object.constantKind?.value !== undefined &&
+      object.constantKind?.value !== null
+    ) {
+      message.constantKind = { $case: "stringValue", value: object.constantKind.value };
+    }
+    if (
+      object.constantKind?.$case === "bytesValue" &&
+      object.constantKind?.value !== undefined &&
+      object.constantKind?.value !== null
+    ) {
+      message.constantKind = { $case: "bytesValue", value: object.constantKind.value };
+    }
+    if (
+      object.constantKind?.$case === "durationValue" &&
+      object.constantKind?.value !== undefined &&
+      object.constantKind?.value !== null
+    ) {
+      message.constantKind = { $case: "durationValue", value: Duration.fromPartial(object.constantKind.value) };
+    }
+    if (
+      object.constantKind?.$case === "timestampValue" &&
+      object.constantKind?.value !== undefined &&
+      object.constantKind?.value !== null
+    ) {
+      message.constantKind = { $case: "timestampValue", value: Timestamp.fromPartial(object.constantKind.value) };
+    }
     return message;
   },
 };
@@ -2048,6 +2109,7 @@ type Builtin = Date | Function | Uint8Array | string | number | boolean | undefi
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string; value: unknown } ? { $case: T["$case"]; value?: DeepPartial<T["value"]> }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

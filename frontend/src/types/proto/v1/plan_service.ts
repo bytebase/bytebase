@@ -169,9 +169,14 @@ export interface Plan_Spec {
   /** A UUID4 string that uniquely identifies the Spec. */
   id: string;
   specReleaseSource: Plan_SpecReleaseSource | undefined;
-  createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
-  changeDatabaseConfig?: Plan_ChangeDatabaseConfig | undefined;
-  exportDataConfig?: Plan_ExportDataConfig | undefined;
+  config?:
+    | //
+    { $case: "createDatabaseConfig"; value: Plan_CreateDatabaseConfig }
+    | //
+    { $case: "changeDatabaseConfig"; value: Plan_ChangeDatabaseConfig }
+    | //
+    { $case: "exportDataConfig"; value: Plan_ExportDataConfig }
+    | undefined;
 }
 
 export interface Plan_PlanCheckRunStatusCountEntry {
@@ -639,8 +644,12 @@ export interface PlanCheckRun_Result {
   title: string;
   content: string;
   code: number;
-  sqlSummaryReport?: PlanCheckRun_Result_SqlSummaryReport | undefined;
-  sqlReviewReport?: PlanCheckRun_Result_SqlReviewReport | undefined;
+  report?:
+    | //
+    { $case: "sqlSummaryReport"; value: PlanCheckRun_Result_SqlSummaryReport }
+    | //
+    { $case: "sqlReviewReport"; value: PlanCheckRun_Result_SqlReviewReport }
+    | undefined;
 }
 
 export enum PlanCheckRun_Result_Status {
@@ -1625,14 +1634,7 @@ export const Plan_Step: MessageFns<Plan_Step> = {
 };
 
 function createBasePlan_Spec(): Plan_Spec {
-  return {
-    earliestAllowedTime: undefined,
-    id: "",
-    specReleaseSource: undefined,
-    createDatabaseConfig: undefined,
-    changeDatabaseConfig: undefined,
-    exportDataConfig: undefined,
-  };
+  return { earliestAllowedTime: undefined, id: "", specReleaseSource: undefined, config: undefined };
 }
 
 export const Plan_Spec: MessageFns<Plan_Spec> = {
@@ -1646,14 +1648,16 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
     if (message.specReleaseSource !== undefined) {
       Plan_SpecReleaseSource.encode(message.specReleaseSource, writer.uint32(66).fork()).join();
     }
-    if (message.createDatabaseConfig !== undefined) {
-      Plan_CreateDatabaseConfig.encode(message.createDatabaseConfig, writer.uint32(10).fork()).join();
-    }
-    if (message.changeDatabaseConfig !== undefined) {
-      Plan_ChangeDatabaseConfig.encode(message.changeDatabaseConfig, writer.uint32(18).fork()).join();
-    }
-    if (message.exportDataConfig !== undefined) {
-      Plan_ExportDataConfig.encode(message.exportDataConfig, writer.uint32(58).fork()).join();
+    switch (message.config?.$case) {
+      case "createDatabaseConfig":
+        Plan_CreateDatabaseConfig.encode(message.config.value, writer.uint32(10).fork()).join();
+        break;
+      case "changeDatabaseConfig":
+        Plan_ChangeDatabaseConfig.encode(message.config.value, writer.uint32(18).fork()).join();
+        break;
+      case "exportDataConfig":
+        Plan_ExportDataConfig.encode(message.config.value, writer.uint32(58).fork()).join();
+        break;
     }
     return writer;
   },
@@ -1694,7 +1698,10 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
             break;
           }
 
-          message.createDatabaseConfig = Plan_CreateDatabaseConfig.decode(reader, reader.uint32());
+          message.config = {
+            $case: "createDatabaseConfig",
+            value: Plan_CreateDatabaseConfig.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 2: {
@@ -1702,7 +1709,10 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
             break;
           }
 
-          message.changeDatabaseConfig = Plan_ChangeDatabaseConfig.decode(reader, reader.uint32());
+          message.config = {
+            $case: "changeDatabaseConfig",
+            value: Plan_ChangeDatabaseConfig.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 7: {
@@ -1710,7 +1720,7 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
             break;
           }
 
-          message.exportDataConfig = Plan_ExportDataConfig.decode(reader, reader.uint32());
+          message.config = { $case: "exportDataConfig", value: Plan_ExportDataConfig.decode(reader, reader.uint32()) };
           continue;
         }
       }
@@ -1731,14 +1741,12 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
       specReleaseSource: isSet(object.specReleaseSource)
         ? Plan_SpecReleaseSource.fromJSON(object.specReleaseSource)
         : undefined,
-      createDatabaseConfig: isSet(object.createDatabaseConfig)
-        ? Plan_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig)
-        : undefined,
-      changeDatabaseConfig: isSet(object.changeDatabaseConfig)
-        ? Plan_ChangeDatabaseConfig.fromJSON(object.changeDatabaseConfig)
-        : undefined,
-      exportDataConfig: isSet(object.exportDataConfig)
-        ? Plan_ExportDataConfig.fromJSON(object.exportDataConfig)
+      config: isSet(object.createDatabaseConfig)
+        ? { $case: "createDatabaseConfig", value: Plan_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig) }
+        : isSet(object.changeDatabaseConfig)
+        ? { $case: "changeDatabaseConfig", value: Plan_ChangeDatabaseConfig.fromJSON(object.changeDatabaseConfig) }
+        : isSet(object.exportDataConfig)
+        ? { $case: "exportDataConfig", value: Plan_ExportDataConfig.fromJSON(object.exportDataConfig) }
         : undefined,
     };
   },
@@ -1754,14 +1762,14 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
     if (message.specReleaseSource !== undefined) {
       obj.specReleaseSource = Plan_SpecReleaseSource.toJSON(message.specReleaseSource);
     }
-    if (message.createDatabaseConfig !== undefined) {
-      obj.createDatabaseConfig = Plan_CreateDatabaseConfig.toJSON(message.createDatabaseConfig);
+    if (message.config?.$case === "createDatabaseConfig") {
+      obj.createDatabaseConfig = Plan_CreateDatabaseConfig.toJSON(message.config.value);
     }
-    if (message.changeDatabaseConfig !== undefined) {
-      obj.changeDatabaseConfig = Plan_ChangeDatabaseConfig.toJSON(message.changeDatabaseConfig);
+    if (message.config?.$case === "changeDatabaseConfig") {
+      obj.changeDatabaseConfig = Plan_ChangeDatabaseConfig.toJSON(message.config.value);
     }
-    if (message.exportDataConfig !== undefined) {
-      obj.exportDataConfig = Plan_ExportDataConfig.toJSON(message.exportDataConfig);
+    if (message.config?.$case === "exportDataConfig") {
+      obj.exportDataConfig = Plan_ExportDataConfig.toJSON(message.config.value);
     }
     return obj;
   },
@@ -1778,15 +1786,31 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
     message.specReleaseSource = (object.specReleaseSource !== undefined && object.specReleaseSource !== null)
       ? Plan_SpecReleaseSource.fromPartial(object.specReleaseSource)
       : undefined;
-    message.createDatabaseConfig = (object.createDatabaseConfig !== undefined && object.createDatabaseConfig !== null)
-      ? Plan_CreateDatabaseConfig.fromPartial(object.createDatabaseConfig)
-      : undefined;
-    message.changeDatabaseConfig = (object.changeDatabaseConfig !== undefined && object.changeDatabaseConfig !== null)
-      ? Plan_ChangeDatabaseConfig.fromPartial(object.changeDatabaseConfig)
-      : undefined;
-    message.exportDataConfig = (object.exportDataConfig !== undefined && object.exportDataConfig !== null)
-      ? Plan_ExportDataConfig.fromPartial(object.exportDataConfig)
-      : undefined;
+    if (
+      object.config?.$case === "createDatabaseConfig" &&
+      object.config?.value !== undefined &&
+      object.config?.value !== null
+    ) {
+      message.config = {
+        $case: "createDatabaseConfig",
+        value: Plan_CreateDatabaseConfig.fromPartial(object.config.value),
+      };
+    }
+    if (
+      object.config?.$case === "changeDatabaseConfig" &&
+      object.config?.value !== undefined &&
+      object.config?.value !== null
+    ) {
+      message.config = {
+        $case: "changeDatabaseConfig",
+        value: Plan_ChangeDatabaseConfig.fromPartial(object.config.value),
+      };
+    }
+    if (
+      object.config?.$case === "exportDataConfig" && object.config?.value !== undefined && object.config?.value !== null
+    ) {
+      message.config = { $case: "exportDataConfig", value: Plan_ExportDataConfig.fromPartial(object.config.value) };
+    }
     return message;
   },
 };
@@ -3589,14 +3613,7 @@ export const PlanCheckRun: MessageFns<PlanCheckRun> = {
 };
 
 function createBasePlanCheckRun_Result(): PlanCheckRun_Result {
-  return {
-    status: PlanCheckRun_Result_Status.STATUS_UNSPECIFIED,
-    title: "",
-    content: "",
-    code: 0,
-    sqlSummaryReport: undefined,
-    sqlReviewReport: undefined,
-  };
+  return { status: PlanCheckRun_Result_Status.STATUS_UNSPECIFIED, title: "", content: "", code: 0, report: undefined };
 }
 
 export const PlanCheckRun_Result: MessageFns<PlanCheckRun_Result> = {
@@ -3613,11 +3630,13 @@ export const PlanCheckRun_Result: MessageFns<PlanCheckRun_Result> = {
     if (message.code !== 0) {
       writer.uint32(32).int32(message.code);
     }
-    if (message.sqlSummaryReport !== undefined) {
-      PlanCheckRun_Result_SqlSummaryReport.encode(message.sqlSummaryReport, writer.uint32(42).fork()).join();
-    }
-    if (message.sqlReviewReport !== undefined) {
-      PlanCheckRun_Result_SqlReviewReport.encode(message.sqlReviewReport, writer.uint32(50).fork()).join();
+    switch (message.report?.$case) {
+      case "sqlSummaryReport":
+        PlanCheckRun_Result_SqlSummaryReport.encode(message.report.value, writer.uint32(42).fork()).join();
+        break;
+      case "sqlReviewReport":
+        PlanCheckRun_Result_SqlReviewReport.encode(message.report.value, writer.uint32(50).fork()).join();
+        break;
     }
     return writer;
   },
@@ -3666,7 +3685,10 @@ export const PlanCheckRun_Result: MessageFns<PlanCheckRun_Result> = {
             break;
           }
 
-          message.sqlSummaryReport = PlanCheckRun_Result_SqlSummaryReport.decode(reader, reader.uint32());
+          message.report = {
+            $case: "sqlSummaryReport",
+            value: PlanCheckRun_Result_SqlSummaryReport.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 6: {
@@ -3674,7 +3696,10 @@ export const PlanCheckRun_Result: MessageFns<PlanCheckRun_Result> = {
             break;
           }
 
-          message.sqlReviewReport = PlanCheckRun_Result_SqlReviewReport.decode(reader, reader.uint32());
+          message.report = {
+            $case: "sqlReviewReport",
+            value: PlanCheckRun_Result_SqlReviewReport.decode(reader, reader.uint32()),
+          };
           continue;
         }
       }
@@ -3694,11 +3719,10 @@ export const PlanCheckRun_Result: MessageFns<PlanCheckRun_Result> = {
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       content: isSet(object.content) ? globalThis.String(object.content) : "",
       code: isSet(object.code) ? globalThis.Number(object.code) : 0,
-      sqlSummaryReport: isSet(object.sqlSummaryReport)
-        ? PlanCheckRun_Result_SqlSummaryReport.fromJSON(object.sqlSummaryReport)
-        : undefined,
-      sqlReviewReport: isSet(object.sqlReviewReport)
-        ? PlanCheckRun_Result_SqlReviewReport.fromJSON(object.sqlReviewReport)
+      report: isSet(object.sqlSummaryReport)
+        ? { $case: "sqlSummaryReport", value: PlanCheckRun_Result_SqlSummaryReport.fromJSON(object.sqlSummaryReport) }
+        : isSet(object.sqlReviewReport)
+        ? { $case: "sqlReviewReport", value: PlanCheckRun_Result_SqlReviewReport.fromJSON(object.sqlReviewReport) }
         : undefined,
     };
   },
@@ -3717,11 +3741,11 @@ export const PlanCheckRun_Result: MessageFns<PlanCheckRun_Result> = {
     if (message.code !== 0) {
       obj.code = Math.round(message.code);
     }
-    if (message.sqlSummaryReport !== undefined) {
-      obj.sqlSummaryReport = PlanCheckRun_Result_SqlSummaryReport.toJSON(message.sqlSummaryReport);
+    if (message.report?.$case === "sqlSummaryReport") {
+      obj.sqlSummaryReport = PlanCheckRun_Result_SqlSummaryReport.toJSON(message.report.value);
     }
-    if (message.sqlReviewReport !== undefined) {
-      obj.sqlReviewReport = PlanCheckRun_Result_SqlReviewReport.toJSON(message.sqlReviewReport);
+    if (message.report?.$case === "sqlReviewReport") {
+      obj.sqlReviewReport = PlanCheckRun_Result_SqlReviewReport.toJSON(message.report.value);
     }
     return obj;
   },
@@ -3735,12 +3759,22 @@ export const PlanCheckRun_Result: MessageFns<PlanCheckRun_Result> = {
     message.title = object.title ?? "";
     message.content = object.content ?? "";
     message.code = object.code ?? 0;
-    message.sqlSummaryReport = (object.sqlSummaryReport !== undefined && object.sqlSummaryReport !== null)
-      ? PlanCheckRun_Result_SqlSummaryReport.fromPartial(object.sqlSummaryReport)
-      : undefined;
-    message.sqlReviewReport = (object.sqlReviewReport !== undefined && object.sqlReviewReport !== null)
-      ? PlanCheckRun_Result_SqlReviewReport.fromPartial(object.sqlReviewReport)
-      : undefined;
+    if (
+      object.report?.$case === "sqlSummaryReport" && object.report?.value !== undefined && object.report?.value !== null
+    ) {
+      message.report = {
+        $case: "sqlSummaryReport",
+        value: PlanCheckRun_Result_SqlSummaryReport.fromPartial(object.report.value),
+      };
+    }
+    if (
+      object.report?.$case === "sqlReviewReport" && object.report?.value !== undefined && object.report?.value !== null
+    ) {
+      message.report = {
+        $case: "sqlReviewReport",
+        value: PlanCheckRun_Result_SqlReviewReport.fromPartial(object.report.value),
+      };
+    }
     return message;
   },
 };
@@ -4596,6 +4630,7 @@ type Builtin = Date | Function | Uint8Array | string | number | boolean | undefi
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string; value: unknown } ? { $case: T["$case"]; value?: DeepPartial<T["value"]> }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

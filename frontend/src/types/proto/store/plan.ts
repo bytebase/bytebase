@@ -37,9 +37,14 @@ export interface PlanConfig_Spec {
   /** A UUID4 string that uniquely identifies the Spec. */
   id: string;
   specReleaseSource: PlanConfig_SpecReleaseSource | undefined;
-  createDatabaseConfig?: PlanConfig_CreateDatabaseConfig | undefined;
-  changeDatabaseConfig?: PlanConfig_ChangeDatabaseConfig | undefined;
-  exportDataConfig?: PlanConfig_ExportDataConfig | undefined;
+  config?:
+    | //
+    { $case: "createDatabaseConfig"; value: PlanConfig_CreateDatabaseConfig }
+    | //
+    { $case: "changeDatabaseConfig"; value: PlanConfig_ChangeDatabaseConfig }
+    | //
+    { $case: "exportDataConfig"; value: PlanConfig_ExportDataConfig }
+    | undefined;
 }
 
 export interface PlanConfig_CreateDatabaseConfig {
@@ -425,14 +430,7 @@ export const PlanConfig_Step: MessageFns<PlanConfig_Step> = {
 };
 
 function createBasePlanConfig_Spec(): PlanConfig_Spec {
-  return {
-    earliestAllowedTime: undefined,
-    id: "",
-    specReleaseSource: undefined,
-    createDatabaseConfig: undefined,
-    changeDatabaseConfig: undefined,
-    exportDataConfig: undefined,
-  };
+  return { earliestAllowedTime: undefined, id: "", specReleaseSource: undefined, config: undefined };
 }
 
 export const PlanConfig_Spec: MessageFns<PlanConfig_Spec> = {
@@ -446,14 +444,16 @@ export const PlanConfig_Spec: MessageFns<PlanConfig_Spec> = {
     if (message.specReleaseSource !== undefined) {
       PlanConfig_SpecReleaseSource.encode(message.specReleaseSource, writer.uint32(66).fork()).join();
     }
-    if (message.createDatabaseConfig !== undefined) {
-      PlanConfig_CreateDatabaseConfig.encode(message.createDatabaseConfig, writer.uint32(10).fork()).join();
-    }
-    if (message.changeDatabaseConfig !== undefined) {
-      PlanConfig_ChangeDatabaseConfig.encode(message.changeDatabaseConfig, writer.uint32(18).fork()).join();
-    }
-    if (message.exportDataConfig !== undefined) {
-      PlanConfig_ExportDataConfig.encode(message.exportDataConfig, writer.uint32(58).fork()).join();
+    switch (message.config?.$case) {
+      case "createDatabaseConfig":
+        PlanConfig_CreateDatabaseConfig.encode(message.config.value, writer.uint32(10).fork()).join();
+        break;
+      case "changeDatabaseConfig":
+        PlanConfig_ChangeDatabaseConfig.encode(message.config.value, writer.uint32(18).fork()).join();
+        break;
+      case "exportDataConfig":
+        PlanConfig_ExportDataConfig.encode(message.config.value, writer.uint32(58).fork()).join();
+        break;
     }
     return writer;
   },
@@ -494,7 +494,10 @@ export const PlanConfig_Spec: MessageFns<PlanConfig_Spec> = {
             break;
           }
 
-          message.createDatabaseConfig = PlanConfig_CreateDatabaseConfig.decode(reader, reader.uint32());
+          message.config = {
+            $case: "createDatabaseConfig",
+            value: PlanConfig_CreateDatabaseConfig.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 2: {
@@ -502,7 +505,10 @@ export const PlanConfig_Spec: MessageFns<PlanConfig_Spec> = {
             break;
           }
 
-          message.changeDatabaseConfig = PlanConfig_ChangeDatabaseConfig.decode(reader, reader.uint32());
+          message.config = {
+            $case: "changeDatabaseConfig",
+            value: PlanConfig_ChangeDatabaseConfig.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 7: {
@@ -510,7 +516,10 @@ export const PlanConfig_Spec: MessageFns<PlanConfig_Spec> = {
             break;
           }
 
-          message.exportDataConfig = PlanConfig_ExportDataConfig.decode(reader, reader.uint32());
+          message.config = {
+            $case: "exportDataConfig",
+            value: PlanConfig_ExportDataConfig.decode(reader, reader.uint32()),
+          };
           continue;
         }
       }
@@ -531,14 +540,18 @@ export const PlanConfig_Spec: MessageFns<PlanConfig_Spec> = {
       specReleaseSource: isSet(object.specReleaseSource)
         ? PlanConfig_SpecReleaseSource.fromJSON(object.specReleaseSource)
         : undefined,
-      createDatabaseConfig: isSet(object.createDatabaseConfig)
-        ? PlanConfig_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig)
-        : undefined,
-      changeDatabaseConfig: isSet(object.changeDatabaseConfig)
-        ? PlanConfig_ChangeDatabaseConfig.fromJSON(object.changeDatabaseConfig)
-        : undefined,
-      exportDataConfig: isSet(object.exportDataConfig)
-        ? PlanConfig_ExportDataConfig.fromJSON(object.exportDataConfig)
+      config: isSet(object.createDatabaseConfig)
+        ? {
+          $case: "createDatabaseConfig",
+          value: PlanConfig_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig),
+        }
+        : isSet(object.changeDatabaseConfig)
+        ? {
+          $case: "changeDatabaseConfig",
+          value: PlanConfig_ChangeDatabaseConfig.fromJSON(object.changeDatabaseConfig),
+        }
+        : isSet(object.exportDataConfig)
+        ? { $case: "exportDataConfig", value: PlanConfig_ExportDataConfig.fromJSON(object.exportDataConfig) }
         : undefined,
     };
   },
@@ -554,14 +567,14 @@ export const PlanConfig_Spec: MessageFns<PlanConfig_Spec> = {
     if (message.specReleaseSource !== undefined) {
       obj.specReleaseSource = PlanConfig_SpecReleaseSource.toJSON(message.specReleaseSource);
     }
-    if (message.createDatabaseConfig !== undefined) {
-      obj.createDatabaseConfig = PlanConfig_CreateDatabaseConfig.toJSON(message.createDatabaseConfig);
+    if (message.config?.$case === "createDatabaseConfig") {
+      obj.createDatabaseConfig = PlanConfig_CreateDatabaseConfig.toJSON(message.config.value);
     }
-    if (message.changeDatabaseConfig !== undefined) {
-      obj.changeDatabaseConfig = PlanConfig_ChangeDatabaseConfig.toJSON(message.changeDatabaseConfig);
+    if (message.config?.$case === "changeDatabaseConfig") {
+      obj.changeDatabaseConfig = PlanConfig_ChangeDatabaseConfig.toJSON(message.config.value);
     }
-    if (message.exportDataConfig !== undefined) {
-      obj.exportDataConfig = PlanConfig_ExportDataConfig.toJSON(message.exportDataConfig);
+    if (message.config?.$case === "exportDataConfig") {
+      obj.exportDataConfig = PlanConfig_ExportDataConfig.toJSON(message.config.value);
     }
     return obj;
   },
@@ -578,15 +591,34 @@ export const PlanConfig_Spec: MessageFns<PlanConfig_Spec> = {
     message.specReleaseSource = (object.specReleaseSource !== undefined && object.specReleaseSource !== null)
       ? PlanConfig_SpecReleaseSource.fromPartial(object.specReleaseSource)
       : undefined;
-    message.createDatabaseConfig = (object.createDatabaseConfig !== undefined && object.createDatabaseConfig !== null)
-      ? PlanConfig_CreateDatabaseConfig.fromPartial(object.createDatabaseConfig)
-      : undefined;
-    message.changeDatabaseConfig = (object.changeDatabaseConfig !== undefined && object.changeDatabaseConfig !== null)
-      ? PlanConfig_ChangeDatabaseConfig.fromPartial(object.changeDatabaseConfig)
-      : undefined;
-    message.exportDataConfig = (object.exportDataConfig !== undefined && object.exportDataConfig !== null)
-      ? PlanConfig_ExportDataConfig.fromPartial(object.exportDataConfig)
-      : undefined;
+    if (
+      object.config?.$case === "createDatabaseConfig" &&
+      object.config?.value !== undefined &&
+      object.config?.value !== null
+    ) {
+      message.config = {
+        $case: "createDatabaseConfig",
+        value: PlanConfig_CreateDatabaseConfig.fromPartial(object.config.value),
+      };
+    }
+    if (
+      object.config?.$case === "changeDatabaseConfig" &&
+      object.config?.value !== undefined &&
+      object.config?.value !== null
+    ) {
+      message.config = {
+        $case: "changeDatabaseConfig",
+        value: PlanConfig_ChangeDatabaseConfig.fromPartial(object.config.value),
+      };
+    }
+    if (
+      object.config?.$case === "exportDataConfig" && object.config?.value !== undefined && object.config?.value !== null
+    ) {
+      message.config = {
+        $case: "exportDataConfig",
+        value: PlanConfig_ExportDataConfig.fromPartial(object.config.value),
+      };
+    }
     return message;
   },
 };
@@ -1684,6 +1716,7 @@ type Builtin = Date | Function | Uint8Array | string | number | boolean | undefi
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string; value: unknown } ? { $case: T["$case"]; value?: DeepPartial<T["value"]> }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

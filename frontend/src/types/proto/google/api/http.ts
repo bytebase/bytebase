@@ -315,36 +315,37 @@ export interface HttpRule {
    */
   selector: string;
   /**
-   * Maps to HTTP GET. Used for listing and getting information about
-   * resources.
+   * Determines the URL pattern is matched by this rules. This pattern can be
+   * used with any of the {get|put|post|delete|patch} methods. A custom method
+   * can be defined using the 'custom' field.
    */
-  get?:
-    | string
-    | undefined;
-  /** Maps to HTTP PUT. Used for replacing a resource. */
-  put?:
-    | string
-    | undefined;
-  /** Maps to HTTP POST. Used for creating a resource or performing an action. */
-  post?:
-    | string
-    | undefined;
-  /** Maps to HTTP DELETE. Used for deleting a resource. */
-  delete?:
-    | string
-    | undefined;
-  /** Maps to HTTP PATCH. Used for updating a resource. */
-  patch?:
-    | string
-    | undefined;
-  /**
-   * The custom pattern is used for specifying an HTTP method that is not
-   * included in the `pattern` field, such as HEAD, or "*" to leave the
-   * HTTP method unspecified for this rule. The wild-card rule is useful
-   * for services that provide content to Web (HTML) clients.
-   */
-  custom?:
-    | CustomHttpPattern
+  pattern?:
+    | //
+    /**
+     * Maps to HTTP GET. Used for listing and getting information about
+     * resources.
+     */
+    { $case: "get"; value: string }
+    | //
+    /** Maps to HTTP PUT. Used for replacing a resource. */
+    { $case: "put"; value: string }
+    | //
+    /** Maps to HTTP POST. Used for creating a resource or performing an action. */
+    { $case: "post"; value: string }
+    | //
+    /** Maps to HTTP DELETE. Used for deleting a resource. */
+    { $case: "delete"; value: string }
+    | //
+    /** Maps to HTTP PATCH. Used for updating a resource. */
+    { $case: "patch"; value: string }
+    | //
+    /**
+     * The custom pattern is used for specifying an HTTP method that is not
+     * included in the `pattern` field, such as HEAD, or "*" to leave the
+     * HTTP method unspecified for this rule. The wild-card rule is useful
+     * for services that provide content to Web (HTML) clients.
+     */
+    { $case: "custom"; value: CustomHttpPattern }
     | undefined;
   /**
    * The name of the request field whose value is mapped to the HTTP request
@@ -459,18 +460,7 @@ export const Http: MessageFns<Http> = {
 };
 
 function createBaseHttpRule(): HttpRule {
-  return {
-    selector: "",
-    get: undefined,
-    put: undefined,
-    post: undefined,
-    delete: undefined,
-    patch: undefined,
-    custom: undefined,
-    body: "",
-    responseBody: "",
-    additionalBindings: [],
-  };
+  return { selector: "", pattern: undefined, body: "", responseBody: "", additionalBindings: [] };
 }
 
 export const HttpRule: MessageFns<HttpRule> = {
@@ -478,23 +468,25 @@ export const HttpRule: MessageFns<HttpRule> = {
     if (message.selector !== "") {
       writer.uint32(10).string(message.selector);
     }
-    if (message.get !== undefined) {
-      writer.uint32(18).string(message.get);
-    }
-    if (message.put !== undefined) {
-      writer.uint32(26).string(message.put);
-    }
-    if (message.post !== undefined) {
-      writer.uint32(34).string(message.post);
-    }
-    if (message.delete !== undefined) {
-      writer.uint32(42).string(message.delete);
-    }
-    if (message.patch !== undefined) {
-      writer.uint32(50).string(message.patch);
-    }
-    if (message.custom !== undefined) {
-      CustomHttpPattern.encode(message.custom, writer.uint32(66).fork()).join();
+    switch (message.pattern?.$case) {
+      case "get":
+        writer.uint32(18).string(message.pattern.value);
+        break;
+      case "put":
+        writer.uint32(26).string(message.pattern.value);
+        break;
+      case "post":
+        writer.uint32(34).string(message.pattern.value);
+        break;
+      case "delete":
+        writer.uint32(42).string(message.pattern.value);
+        break;
+      case "patch":
+        writer.uint32(50).string(message.pattern.value);
+        break;
+      case "custom":
+        CustomHttpPattern.encode(message.pattern.value, writer.uint32(66).fork()).join();
+        break;
     }
     if (message.body !== "") {
       writer.uint32(58).string(message.body);
@@ -528,7 +520,7 @@ export const HttpRule: MessageFns<HttpRule> = {
             break;
           }
 
-          message.get = reader.string();
+          message.pattern = { $case: "get", value: reader.string() };
           continue;
         }
         case 3: {
@@ -536,7 +528,7 @@ export const HttpRule: MessageFns<HttpRule> = {
             break;
           }
 
-          message.put = reader.string();
+          message.pattern = { $case: "put", value: reader.string() };
           continue;
         }
         case 4: {
@@ -544,7 +536,7 @@ export const HttpRule: MessageFns<HttpRule> = {
             break;
           }
 
-          message.post = reader.string();
+          message.pattern = { $case: "post", value: reader.string() };
           continue;
         }
         case 5: {
@@ -552,7 +544,7 @@ export const HttpRule: MessageFns<HttpRule> = {
             break;
           }
 
-          message.delete = reader.string();
+          message.pattern = { $case: "delete", value: reader.string() };
           continue;
         }
         case 6: {
@@ -560,7 +552,7 @@ export const HttpRule: MessageFns<HttpRule> = {
             break;
           }
 
-          message.patch = reader.string();
+          message.pattern = { $case: "patch", value: reader.string() };
           continue;
         }
         case 8: {
@@ -568,7 +560,7 @@ export const HttpRule: MessageFns<HttpRule> = {
             break;
           }
 
-          message.custom = CustomHttpPattern.decode(reader, reader.uint32());
+          message.pattern = { $case: "custom", value: CustomHttpPattern.decode(reader, reader.uint32()) };
           continue;
         }
         case 7: {
@@ -607,12 +599,19 @@ export const HttpRule: MessageFns<HttpRule> = {
   fromJSON(object: any): HttpRule {
     return {
       selector: isSet(object.selector) ? globalThis.String(object.selector) : "",
-      get: isSet(object.get) ? globalThis.String(object.get) : undefined,
-      put: isSet(object.put) ? globalThis.String(object.put) : undefined,
-      post: isSet(object.post) ? globalThis.String(object.post) : undefined,
-      delete: isSet(object.delete) ? globalThis.String(object.delete) : undefined,
-      patch: isSet(object.patch) ? globalThis.String(object.patch) : undefined,
-      custom: isSet(object.custom) ? CustomHttpPattern.fromJSON(object.custom) : undefined,
+      pattern: isSet(object.get)
+        ? { $case: "get", value: globalThis.String(object.get) }
+        : isSet(object.put)
+        ? { $case: "put", value: globalThis.String(object.put) }
+        : isSet(object.post)
+        ? { $case: "post", value: globalThis.String(object.post) }
+        : isSet(object.delete)
+        ? { $case: "delete", value: globalThis.String(object.delete) }
+        : isSet(object.patch)
+        ? { $case: "patch", value: globalThis.String(object.patch) }
+        : isSet(object.custom)
+        ? { $case: "custom", value: CustomHttpPattern.fromJSON(object.custom) }
+        : undefined,
       body: isSet(object.body) ? globalThis.String(object.body) : "",
       responseBody: isSet(object.responseBody) ? globalThis.String(object.responseBody) : "",
       additionalBindings: globalThis.Array.isArray(object?.additionalBindings)
@@ -626,23 +625,23 @@ export const HttpRule: MessageFns<HttpRule> = {
     if (message.selector !== "") {
       obj.selector = message.selector;
     }
-    if (message.get !== undefined) {
-      obj.get = message.get;
+    if (message.pattern?.$case === "get") {
+      obj.get = message.pattern.value;
     }
-    if (message.put !== undefined) {
-      obj.put = message.put;
+    if (message.pattern?.$case === "put") {
+      obj.put = message.pattern.value;
     }
-    if (message.post !== undefined) {
-      obj.post = message.post;
+    if (message.pattern?.$case === "post") {
+      obj.post = message.pattern.value;
     }
-    if (message.delete !== undefined) {
-      obj.delete = message.delete;
+    if (message.pattern?.$case === "delete") {
+      obj.delete = message.pattern.value;
     }
-    if (message.patch !== undefined) {
-      obj.patch = message.patch;
+    if (message.pattern?.$case === "patch") {
+      obj.patch = message.pattern.value;
     }
-    if (message.custom !== undefined) {
-      obj.custom = CustomHttpPattern.toJSON(message.custom);
+    if (message.pattern?.$case === "custom") {
+      obj.custom = CustomHttpPattern.toJSON(message.pattern.value);
     }
     if (message.body !== "") {
       obj.body = message.body;
@@ -662,14 +661,24 @@ export const HttpRule: MessageFns<HttpRule> = {
   fromPartial(object: DeepPartial<HttpRule>): HttpRule {
     const message = createBaseHttpRule();
     message.selector = object.selector ?? "";
-    message.get = object.get ?? undefined;
-    message.put = object.put ?? undefined;
-    message.post = object.post ?? undefined;
-    message.delete = object.delete ?? undefined;
-    message.patch = object.patch ?? undefined;
-    message.custom = (object.custom !== undefined && object.custom !== null)
-      ? CustomHttpPattern.fromPartial(object.custom)
-      : undefined;
+    if (object.pattern?.$case === "get" && object.pattern?.value !== undefined && object.pattern?.value !== null) {
+      message.pattern = { $case: "get", value: object.pattern.value };
+    }
+    if (object.pattern?.$case === "put" && object.pattern?.value !== undefined && object.pattern?.value !== null) {
+      message.pattern = { $case: "put", value: object.pattern.value };
+    }
+    if (object.pattern?.$case === "post" && object.pattern?.value !== undefined && object.pattern?.value !== null) {
+      message.pattern = { $case: "post", value: object.pattern.value };
+    }
+    if (object.pattern?.$case === "delete" && object.pattern?.value !== undefined && object.pattern?.value !== null) {
+      message.pattern = { $case: "delete", value: object.pattern.value };
+    }
+    if (object.pattern?.$case === "patch" && object.pattern?.value !== undefined && object.pattern?.value !== null) {
+      message.pattern = { $case: "patch", value: object.pattern.value };
+    }
+    if (object.pattern?.$case === "custom" && object.pattern?.value !== undefined && object.pattern?.value !== null) {
+      message.pattern = { $case: "custom", value: CustomHttpPattern.fromPartial(object.pattern.value) };
+    }
     message.body = object.body ?? "";
     message.responseBody = object.responseBody ?? "";
     message.additionalBindings = object.additionalBindings?.map((e) => HttpRule.fromPartial(e)) || [];
@@ -758,6 +767,7 @@ type Builtin = Date | Function | Uint8Array | string | number | boolean | undefi
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string; value: unknown } ? { $case: T["$case"]; value?: DeepPartial<T["value"]> }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

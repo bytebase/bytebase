@@ -293,17 +293,17 @@ export interface DiffSchemaRequest {
    * changelog: instances/{instance}/databases/{database}/changelogs/{changelog}
    */
   name: string;
-  /** The target schema. */
-  schema?:
-    | string
-    | undefined;
-  /**
-   * The resource name of the changelog
-   * Format:
-   * instances/{instance}/databases/{database}/changelogs/{changelog}
-   */
-  changelog?:
-    | string
+  target?:
+    | //
+    /** The target schema. */
+    { $case: "schema"; value: string }
+    | //
+    /**
+     * The resource name of the changelog
+     * Format:
+     * instances/{instance}/databases/{database}/changelogs/{changelog}
+     */
+    { $case: "changelog"; value: string }
     | undefined;
   /** Format the schema dump into SDL format. */
   sdlFormat: boolean;
@@ -712,10 +712,14 @@ export interface ColumnMetadata {
   /** The position is the position in columns. */
   position: number;
   hasDefault: boolean;
-  defaultNull?: boolean | undefined;
-  defaultString?: string | undefined;
-  defaultExpression?:
-    | string
+  /** The default is the default value of a column. */
+  default?:
+    | //
+    { $case: "defaultNull"; value: boolean }
+    | //
+    { $case: "defaultString"; value: string }
+    | //
+    { $case: "defaultExpression"; value: string }
     | undefined;
   /**
    * The on_update is the on update action of a column.
@@ -2762,7 +2766,7 @@ export const GetDatabaseSchemaRequest: MessageFns<GetDatabaseSchemaRequest> = {
 };
 
 function createBaseDiffSchemaRequest(): DiffSchemaRequest {
-  return { name: "", schema: undefined, changelog: undefined, sdlFormat: false };
+  return { name: "", target: undefined, sdlFormat: false };
 }
 
 export const DiffSchemaRequest: MessageFns<DiffSchemaRequest> = {
@@ -2770,11 +2774,13 @@ export const DiffSchemaRequest: MessageFns<DiffSchemaRequest> = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.schema !== undefined) {
-      writer.uint32(18).string(message.schema);
-    }
-    if (message.changelog !== undefined) {
-      writer.uint32(26).string(message.changelog);
+    switch (message.target?.$case) {
+      case "schema":
+        writer.uint32(18).string(message.target.value);
+        break;
+      case "changelog":
+        writer.uint32(26).string(message.target.value);
+        break;
     }
     if (message.sdlFormat !== false) {
       writer.uint32(32).bool(message.sdlFormat);
@@ -2802,7 +2808,7 @@ export const DiffSchemaRequest: MessageFns<DiffSchemaRequest> = {
             break;
           }
 
-          message.schema = reader.string();
+          message.target = { $case: "schema", value: reader.string() };
           continue;
         }
         case 3: {
@@ -2810,7 +2816,7 @@ export const DiffSchemaRequest: MessageFns<DiffSchemaRequest> = {
             break;
           }
 
-          message.changelog = reader.string();
+          message.target = { $case: "changelog", value: reader.string() };
           continue;
         }
         case 4: {
@@ -2833,8 +2839,11 @@ export const DiffSchemaRequest: MessageFns<DiffSchemaRequest> = {
   fromJSON(object: any): DiffSchemaRequest {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      schema: isSet(object.schema) ? globalThis.String(object.schema) : undefined,
-      changelog: isSet(object.changelog) ? globalThis.String(object.changelog) : undefined,
+      target: isSet(object.schema)
+        ? { $case: "schema", value: globalThis.String(object.schema) }
+        : isSet(object.changelog)
+        ? { $case: "changelog", value: globalThis.String(object.changelog) }
+        : undefined,
       sdlFormat: isSet(object.sdlFormat) ? globalThis.Boolean(object.sdlFormat) : false,
     };
   },
@@ -2844,11 +2853,11 @@ export const DiffSchemaRequest: MessageFns<DiffSchemaRequest> = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.schema !== undefined) {
-      obj.schema = message.schema;
+    if (message.target?.$case === "schema") {
+      obj.schema = message.target.value;
     }
-    if (message.changelog !== undefined) {
-      obj.changelog = message.changelog;
+    if (message.target?.$case === "changelog") {
+      obj.changelog = message.target.value;
     }
     if (message.sdlFormat !== false) {
       obj.sdlFormat = message.sdlFormat;
@@ -2862,8 +2871,12 @@ export const DiffSchemaRequest: MessageFns<DiffSchemaRequest> = {
   fromPartial(object: DeepPartial<DiffSchemaRequest>): DiffSchemaRequest {
     const message = createBaseDiffSchemaRequest();
     message.name = object.name ?? "";
-    message.schema = object.schema ?? undefined;
-    message.changelog = object.changelog ?? undefined;
+    if (object.target?.$case === "schema" && object.target?.value !== undefined && object.target?.value !== null) {
+      message.target = { $case: "schema", value: object.target.value };
+    }
+    if (object.target?.$case === "changelog" && object.target?.value !== undefined && object.target?.value !== null) {
+      message.target = { $case: "changelog", value: object.target.value };
+    }
     message.sdlFormat = object.sdlFormat ?? false;
     return message;
   },
@@ -5181,9 +5194,7 @@ function createBaseColumnMetadata(): ColumnMetadata {
     name: "",
     position: 0,
     hasDefault: false,
-    defaultNull: undefined,
-    defaultString: undefined,
-    defaultExpression: undefined,
+    default: undefined,
     onUpdate: "",
     nullable: false,
     type: "",
@@ -5207,14 +5218,16 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     if (message.hasDefault !== false) {
       writer.uint32(24).bool(message.hasDefault);
     }
-    if (message.defaultNull !== undefined) {
-      writer.uint32(32).bool(message.defaultNull);
-    }
-    if (message.defaultString !== undefined) {
-      writer.uint32(42).string(message.defaultString);
-    }
-    if (message.defaultExpression !== undefined) {
-      writer.uint32(50).string(message.defaultExpression);
+    switch (message.default?.$case) {
+      case "defaultNull":
+        writer.uint32(32).bool(message.default.value);
+        break;
+      case "defaultString":
+        writer.uint32(42).string(message.default.value);
+        break;
+      case "defaultExpression":
+        writer.uint32(50).string(message.default.value);
+        break;
     }
     if (message.onUpdate !== "") {
       writer.uint32(122).string(message.onUpdate);
@@ -5282,7 +5295,7 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
             break;
           }
 
-          message.defaultNull = reader.bool();
+          message.default = { $case: "defaultNull", value: reader.bool() };
           continue;
         }
         case 5: {
@@ -5290,7 +5303,7 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
             break;
           }
 
-          message.defaultString = reader.string();
+          message.default = { $case: "defaultString", value: reader.string() };
           continue;
         }
         case 6: {
@@ -5298,7 +5311,7 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
             break;
           }
 
-          message.defaultExpression = reader.string();
+          message.default = { $case: "defaultExpression", value: reader.string() };
           continue;
         }
         case 15: {
@@ -5387,9 +5400,13 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       position: isSet(object.position) ? globalThis.Number(object.position) : 0,
       hasDefault: isSet(object.hasDefault) ? globalThis.Boolean(object.hasDefault) : false,
-      defaultNull: isSet(object.defaultNull) ? globalThis.Boolean(object.defaultNull) : undefined,
-      defaultString: isSet(object.defaultString) ? globalThis.String(object.defaultString) : undefined,
-      defaultExpression: isSet(object.defaultExpression) ? globalThis.String(object.defaultExpression) : undefined,
+      default: isSet(object.defaultNull)
+        ? { $case: "defaultNull", value: globalThis.Boolean(object.defaultNull) }
+        : isSet(object.defaultString)
+        ? { $case: "defaultString", value: globalThis.String(object.defaultString) }
+        : isSet(object.defaultExpression)
+        ? { $case: "defaultExpression", value: globalThis.String(object.defaultExpression) }
+        : undefined,
       onUpdate: isSet(object.onUpdate) ? globalThis.String(object.onUpdate) : "",
       nullable: isSet(object.nullable) ? globalThis.Boolean(object.nullable) : false,
       type: isSet(object.type) ? globalThis.String(object.type) : "",
@@ -5415,14 +5432,14 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     if (message.hasDefault !== false) {
       obj.hasDefault = message.hasDefault;
     }
-    if (message.defaultNull !== undefined) {
-      obj.defaultNull = message.defaultNull;
+    if (message.default?.$case === "defaultNull") {
+      obj.defaultNull = message.default.value;
     }
-    if (message.defaultString !== undefined) {
-      obj.defaultString = message.defaultString;
+    if (message.default?.$case === "defaultString") {
+      obj.defaultString = message.default.value;
     }
-    if (message.defaultExpression !== undefined) {
-      obj.defaultExpression = message.defaultExpression;
+    if (message.default?.$case === "defaultExpression") {
+      obj.defaultExpression = message.default.value;
     }
     if (message.onUpdate !== "") {
       obj.onUpdate = message.onUpdate;
@@ -5462,9 +5479,23 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     message.name = object.name ?? "";
     message.position = object.position ?? 0;
     message.hasDefault = object.hasDefault ?? false;
-    message.defaultNull = object.defaultNull ?? undefined;
-    message.defaultString = object.defaultString ?? undefined;
-    message.defaultExpression = object.defaultExpression ?? undefined;
+    if (
+      object.default?.$case === "defaultNull" && object.default?.value !== undefined && object.default?.value !== null
+    ) {
+      message.default = { $case: "defaultNull", value: object.default.value };
+    }
+    if (
+      object.default?.$case === "defaultString" && object.default?.value !== undefined && object.default?.value !== null
+    ) {
+      message.default = { $case: "defaultString", value: object.default.value };
+    }
+    if (
+      object.default?.$case === "defaultExpression" &&
+      object.default?.value !== undefined &&
+      object.default?.value !== null
+    ) {
+      message.default = { $case: "defaultExpression", value: object.default.value };
+    }
     message.onUpdate = object.onUpdate ?? "";
     message.nullable = object.nullable ?? false;
     message.type = object.type ?? "";
@@ -12414,6 +12445,7 @@ type Builtin = Date | Function | Uint8Array | string | number | boolean | undefi
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string; value: unknown } ? { $case: T["$case"]; value?: DeepPartial<T["value"]> }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

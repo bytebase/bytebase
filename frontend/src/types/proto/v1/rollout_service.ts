@@ -250,11 +250,18 @@ export interface Task {
    * Format: instances/{instance}/databases/{database}
    */
   target: string;
-  databaseCreate?: Task_DatabaseCreate | undefined;
-  databaseSchemaBaseline?: Task_DatabaseSchemaBaseline | undefined;
-  databaseSchemaUpdate?: Task_DatabaseSchemaUpdate | undefined;
-  databaseDataUpdate?: Task_DatabaseDataUpdate | undefined;
-  databaseDataExport?: Task_DatabaseDataExport | undefined;
+  payload?:
+    | //
+    { $case: "databaseCreate"; value: Task_DatabaseCreate }
+    | //
+    { $case: "databaseSchemaBaseline"; value: Task_DatabaseSchemaBaseline }
+    | //
+    { $case: "databaseSchemaUpdate"; value: Task_DatabaseSchemaUpdate }
+    | //
+    { $case: "databaseDataUpdate"; value: Task_DatabaseDataUpdate }
+    | //
+    { $case: "databaseDataExport"; value: Task_DatabaseDataExport }
+    | undefined;
 }
 
 export enum Task_Status {
@@ -706,8 +713,12 @@ export interface TaskRun_SchedulerInfo {
 }
 
 export interface TaskRun_SchedulerInfo_WaitingCause {
-  connectionLimit?: boolean | undefined;
-  task?: TaskRun_SchedulerInfo_WaitingCause_Task | undefined;
+  cause?:
+    | //
+    { $case: "connectionLimit"; value: boolean }
+    | //
+    { $case: "task"; value: TaskRun_SchedulerInfo_WaitingCause_Task }
+    | undefined;
 }
 
 export interface TaskRun_SchedulerInfo_WaitingCause_Task {
@@ -1000,7 +1011,10 @@ export interface GetTaskRunSessionRequest {
 export interface TaskRunSession {
   /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session */
   name: string;
-  postgres?: TaskRunSession_Postgres | undefined;
+  session?:
+    | //
+    { $case: "postgres"; value: TaskRunSession_Postgres }
+    | undefined;
 }
 
 export interface TaskRunSession_Postgres {
@@ -2417,11 +2431,7 @@ function createBaseTask(): Task {
     skippedReason: "",
     type: Task_Type.TYPE_UNSPECIFIED,
     target: "",
-    databaseCreate: undefined,
-    databaseSchemaBaseline: undefined,
-    databaseSchemaUpdate: undefined,
-    databaseDataUpdate: undefined,
-    databaseDataExport: undefined,
+    payload: undefined,
   };
 }
 
@@ -2448,20 +2458,22 @@ export const Task: MessageFns<Task> = {
     if (message.target !== "") {
       writer.uint32(66).string(message.target);
     }
-    if (message.databaseCreate !== undefined) {
-      Task_DatabaseCreate.encode(message.databaseCreate, writer.uint32(74).fork()).join();
-    }
-    if (message.databaseSchemaBaseline !== undefined) {
-      Task_DatabaseSchemaBaseline.encode(message.databaseSchemaBaseline, writer.uint32(82).fork()).join();
-    }
-    if (message.databaseSchemaUpdate !== undefined) {
-      Task_DatabaseSchemaUpdate.encode(message.databaseSchemaUpdate, writer.uint32(90).fork()).join();
-    }
-    if (message.databaseDataUpdate !== undefined) {
-      Task_DatabaseDataUpdate.encode(message.databaseDataUpdate, writer.uint32(98).fork()).join();
-    }
-    if (message.databaseDataExport !== undefined) {
-      Task_DatabaseDataExport.encode(message.databaseDataExport, writer.uint32(130).fork()).join();
+    switch (message.payload?.$case) {
+      case "databaseCreate":
+        Task_DatabaseCreate.encode(message.payload.value, writer.uint32(74).fork()).join();
+        break;
+      case "databaseSchemaBaseline":
+        Task_DatabaseSchemaBaseline.encode(message.payload.value, writer.uint32(82).fork()).join();
+        break;
+      case "databaseSchemaUpdate":
+        Task_DatabaseSchemaUpdate.encode(message.payload.value, writer.uint32(90).fork()).join();
+        break;
+      case "databaseDataUpdate":
+        Task_DatabaseDataUpdate.encode(message.payload.value, writer.uint32(98).fork()).join();
+        break;
+      case "databaseDataExport":
+        Task_DatabaseDataExport.encode(message.payload.value, writer.uint32(130).fork()).join();
+        break;
     }
     return writer;
   },
@@ -2534,7 +2546,7 @@ export const Task: MessageFns<Task> = {
             break;
           }
 
-          message.databaseCreate = Task_DatabaseCreate.decode(reader, reader.uint32());
+          message.payload = { $case: "databaseCreate", value: Task_DatabaseCreate.decode(reader, reader.uint32()) };
           continue;
         }
         case 10: {
@@ -2542,7 +2554,10 @@ export const Task: MessageFns<Task> = {
             break;
           }
 
-          message.databaseSchemaBaseline = Task_DatabaseSchemaBaseline.decode(reader, reader.uint32());
+          message.payload = {
+            $case: "databaseSchemaBaseline",
+            value: Task_DatabaseSchemaBaseline.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 11: {
@@ -2550,7 +2565,10 @@ export const Task: MessageFns<Task> = {
             break;
           }
 
-          message.databaseSchemaUpdate = Task_DatabaseSchemaUpdate.decode(reader, reader.uint32());
+          message.payload = {
+            $case: "databaseSchemaUpdate",
+            value: Task_DatabaseSchemaUpdate.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 12: {
@@ -2558,7 +2576,10 @@ export const Task: MessageFns<Task> = {
             break;
           }
 
-          message.databaseDataUpdate = Task_DatabaseDataUpdate.decode(reader, reader.uint32());
+          message.payload = {
+            $case: "databaseDataUpdate",
+            value: Task_DatabaseDataUpdate.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 16: {
@@ -2566,7 +2587,10 @@ export const Task: MessageFns<Task> = {
             break;
           }
 
-          message.databaseDataExport = Task_DatabaseDataExport.decode(reader, reader.uint32());
+          message.payload = {
+            $case: "databaseDataExport",
+            value: Task_DatabaseDataExport.decode(reader, reader.uint32()),
+          };
           continue;
         }
       }
@@ -2587,18 +2611,19 @@ export const Task: MessageFns<Task> = {
       skippedReason: isSet(object.skippedReason) ? globalThis.String(object.skippedReason) : "",
       type: isSet(object.type) ? task_TypeFromJSON(object.type) : Task_Type.TYPE_UNSPECIFIED,
       target: isSet(object.target) ? globalThis.String(object.target) : "",
-      databaseCreate: isSet(object.databaseCreate) ? Task_DatabaseCreate.fromJSON(object.databaseCreate) : undefined,
-      databaseSchemaBaseline: isSet(object.databaseSchemaBaseline)
-        ? Task_DatabaseSchemaBaseline.fromJSON(object.databaseSchemaBaseline)
-        : undefined,
-      databaseSchemaUpdate: isSet(object.databaseSchemaUpdate)
-        ? Task_DatabaseSchemaUpdate.fromJSON(object.databaseSchemaUpdate)
-        : undefined,
-      databaseDataUpdate: isSet(object.databaseDataUpdate)
-        ? Task_DatabaseDataUpdate.fromJSON(object.databaseDataUpdate)
-        : undefined,
-      databaseDataExport: isSet(object.databaseDataExport)
-        ? Task_DatabaseDataExport.fromJSON(object.databaseDataExport)
+      payload: isSet(object.databaseCreate)
+        ? { $case: "databaseCreate", value: Task_DatabaseCreate.fromJSON(object.databaseCreate) }
+        : isSet(object.databaseSchemaBaseline)
+        ? {
+          $case: "databaseSchemaBaseline",
+          value: Task_DatabaseSchemaBaseline.fromJSON(object.databaseSchemaBaseline),
+        }
+        : isSet(object.databaseSchemaUpdate)
+        ? { $case: "databaseSchemaUpdate", value: Task_DatabaseSchemaUpdate.fromJSON(object.databaseSchemaUpdate) }
+        : isSet(object.databaseDataUpdate)
+        ? { $case: "databaseDataUpdate", value: Task_DatabaseDataUpdate.fromJSON(object.databaseDataUpdate) }
+        : isSet(object.databaseDataExport)
+        ? { $case: "databaseDataExport", value: Task_DatabaseDataExport.fromJSON(object.databaseDataExport) }
         : undefined,
     };
   },
@@ -2626,20 +2651,20 @@ export const Task: MessageFns<Task> = {
     if (message.target !== "") {
       obj.target = message.target;
     }
-    if (message.databaseCreate !== undefined) {
-      obj.databaseCreate = Task_DatabaseCreate.toJSON(message.databaseCreate);
+    if (message.payload?.$case === "databaseCreate") {
+      obj.databaseCreate = Task_DatabaseCreate.toJSON(message.payload.value);
     }
-    if (message.databaseSchemaBaseline !== undefined) {
-      obj.databaseSchemaBaseline = Task_DatabaseSchemaBaseline.toJSON(message.databaseSchemaBaseline);
+    if (message.payload?.$case === "databaseSchemaBaseline") {
+      obj.databaseSchemaBaseline = Task_DatabaseSchemaBaseline.toJSON(message.payload.value);
     }
-    if (message.databaseSchemaUpdate !== undefined) {
-      obj.databaseSchemaUpdate = Task_DatabaseSchemaUpdate.toJSON(message.databaseSchemaUpdate);
+    if (message.payload?.$case === "databaseSchemaUpdate") {
+      obj.databaseSchemaUpdate = Task_DatabaseSchemaUpdate.toJSON(message.payload.value);
     }
-    if (message.databaseDataUpdate !== undefined) {
-      obj.databaseDataUpdate = Task_DatabaseDataUpdate.toJSON(message.databaseDataUpdate);
+    if (message.payload?.$case === "databaseDataUpdate") {
+      obj.databaseDataUpdate = Task_DatabaseDataUpdate.toJSON(message.payload.value);
     }
-    if (message.databaseDataExport !== undefined) {
-      obj.databaseDataExport = Task_DatabaseDataExport.toJSON(message.databaseDataExport);
+    if (message.payload?.$case === "databaseDataExport") {
+      obj.databaseDataExport = Task_DatabaseDataExport.toJSON(message.payload.value);
     }
     return obj;
   },
@@ -2656,22 +2681,53 @@ export const Task: MessageFns<Task> = {
     message.skippedReason = object.skippedReason ?? "";
     message.type = object.type ?? Task_Type.TYPE_UNSPECIFIED;
     message.target = object.target ?? "";
-    message.databaseCreate = (object.databaseCreate !== undefined && object.databaseCreate !== null)
-      ? Task_DatabaseCreate.fromPartial(object.databaseCreate)
-      : undefined;
-    message.databaseSchemaBaseline =
-      (object.databaseSchemaBaseline !== undefined && object.databaseSchemaBaseline !== null)
-        ? Task_DatabaseSchemaBaseline.fromPartial(object.databaseSchemaBaseline)
-        : undefined;
-    message.databaseSchemaUpdate = (object.databaseSchemaUpdate !== undefined && object.databaseSchemaUpdate !== null)
-      ? Task_DatabaseSchemaUpdate.fromPartial(object.databaseSchemaUpdate)
-      : undefined;
-    message.databaseDataUpdate = (object.databaseDataUpdate !== undefined && object.databaseDataUpdate !== null)
-      ? Task_DatabaseDataUpdate.fromPartial(object.databaseDataUpdate)
-      : undefined;
-    message.databaseDataExport = (object.databaseDataExport !== undefined && object.databaseDataExport !== null)
-      ? Task_DatabaseDataExport.fromPartial(object.databaseDataExport)
-      : undefined;
+    if (
+      object.payload?.$case === "databaseCreate" &&
+      object.payload?.value !== undefined &&
+      object.payload?.value !== null
+    ) {
+      message.payload = { $case: "databaseCreate", value: Task_DatabaseCreate.fromPartial(object.payload.value) };
+    }
+    if (
+      object.payload?.$case === "databaseSchemaBaseline" &&
+      object.payload?.value !== undefined &&
+      object.payload?.value !== null
+    ) {
+      message.payload = {
+        $case: "databaseSchemaBaseline",
+        value: Task_DatabaseSchemaBaseline.fromPartial(object.payload.value),
+      };
+    }
+    if (
+      object.payload?.$case === "databaseSchemaUpdate" &&
+      object.payload?.value !== undefined &&
+      object.payload?.value !== null
+    ) {
+      message.payload = {
+        $case: "databaseSchemaUpdate",
+        value: Task_DatabaseSchemaUpdate.fromPartial(object.payload.value),
+      };
+    }
+    if (
+      object.payload?.$case === "databaseDataUpdate" &&
+      object.payload?.value !== undefined &&
+      object.payload?.value !== null
+    ) {
+      message.payload = {
+        $case: "databaseDataUpdate",
+        value: Task_DatabaseDataUpdate.fromPartial(object.payload.value),
+      };
+    }
+    if (
+      object.payload?.$case === "databaseDataExport" &&
+      object.payload?.value !== undefined &&
+      object.payload?.value !== null
+    ) {
+      message.payload = {
+        $case: "databaseDataExport",
+        value: Task_DatabaseDataExport.fromPartial(object.payload.value),
+      };
+    }
     return message;
   },
 };
@@ -3925,16 +3981,18 @@ export const TaskRun_SchedulerInfo: MessageFns<TaskRun_SchedulerInfo> = {
 };
 
 function createBaseTaskRun_SchedulerInfo_WaitingCause(): TaskRun_SchedulerInfo_WaitingCause {
-  return { connectionLimit: undefined, task: undefined };
+  return { cause: undefined };
 }
 
 export const TaskRun_SchedulerInfo_WaitingCause: MessageFns<TaskRun_SchedulerInfo_WaitingCause> = {
   encode(message: TaskRun_SchedulerInfo_WaitingCause, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.connectionLimit !== undefined) {
-      writer.uint32(8).bool(message.connectionLimit);
-    }
-    if (message.task !== undefined) {
-      TaskRun_SchedulerInfo_WaitingCause_Task.encode(message.task, writer.uint32(18).fork()).join();
+    switch (message.cause?.$case) {
+      case "connectionLimit":
+        writer.uint32(8).bool(message.cause.value);
+        break;
+      case "task":
+        TaskRun_SchedulerInfo_WaitingCause_Task.encode(message.cause.value, writer.uint32(18).fork()).join();
+        break;
     }
     return writer;
   },
@@ -3951,7 +4009,7 @@ export const TaskRun_SchedulerInfo_WaitingCause: MessageFns<TaskRun_SchedulerInf
             break;
           }
 
-          message.connectionLimit = reader.bool();
+          message.cause = { $case: "connectionLimit", value: reader.bool() };
           continue;
         }
         case 2: {
@@ -3959,7 +4017,10 @@ export const TaskRun_SchedulerInfo_WaitingCause: MessageFns<TaskRun_SchedulerInf
             break;
           }
 
-          message.task = TaskRun_SchedulerInfo_WaitingCause_Task.decode(reader, reader.uint32());
+          message.cause = {
+            $case: "task",
+            value: TaskRun_SchedulerInfo_WaitingCause_Task.decode(reader, reader.uint32()),
+          };
           continue;
         }
       }
@@ -3973,18 +4034,21 @@ export const TaskRun_SchedulerInfo_WaitingCause: MessageFns<TaskRun_SchedulerInf
 
   fromJSON(object: any): TaskRun_SchedulerInfo_WaitingCause {
     return {
-      connectionLimit: isSet(object.connectionLimit) ? globalThis.Boolean(object.connectionLimit) : undefined,
-      task: isSet(object.task) ? TaskRun_SchedulerInfo_WaitingCause_Task.fromJSON(object.task) : undefined,
+      cause: isSet(object.connectionLimit)
+        ? { $case: "connectionLimit", value: globalThis.Boolean(object.connectionLimit) }
+        : isSet(object.task)
+        ? { $case: "task", value: TaskRun_SchedulerInfo_WaitingCause_Task.fromJSON(object.task) }
+        : undefined,
     };
   },
 
   toJSON(message: TaskRun_SchedulerInfo_WaitingCause): unknown {
     const obj: any = {};
-    if (message.connectionLimit !== undefined) {
-      obj.connectionLimit = message.connectionLimit;
+    if (message.cause?.$case === "connectionLimit") {
+      obj.connectionLimit = message.cause.value;
     }
-    if (message.task !== undefined) {
-      obj.task = TaskRun_SchedulerInfo_WaitingCause_Task.toJSON(message.task);
+    if (message.cause?.$case === "task") {
+      obj.task = TaskRun_SchedulerInfo_WaitingCause_Task.toJSON(message.cause.value);
     }
     return obj;
   },
@@ -3994,10 +4058,14 @@ export const TaskRun_SchedulerInfo_WaitingCause: MessageFns<TaskRun_SchedulerInf
   },
   fromPartial(object: DeepPartial<TaskRun_SchedulerInfo_WaitingCause>): TaskRun_SchedulerInfo_WaitingCause {
     const message = createBaseTaskRun_SchedulerInfo_WaitingCause();
-    message.connectionLimit = object.connectionLimit ?? undefined;
-    message.task = (object.task !== undefined && object.task !== null)
-      ? TaskRun_SchedulerInfo_WaitingCause_Task.fromPartial(object.task)
-      : undefined;
+    if (
+      object.cause?.$case === "connectionLimit" && object.cause?.value !== undefined && object.cause?.value !== null
+    ) {
+      message.cause = { $case: "connectionLimit", value: object.cause.value };
+    }
+    if (object.cause?.$case === "task" && object.cause?.value !== undefined && object.cause?.value !== null) {
+      message.cause = { $case: "task", value: TaskRun_SchedulerInfo_WaitingCause_Task.fromPartial(object.cause.value) };
+    }
     return message;
   },
 };
@@ -5126,7 +5194,7 @@ export const GetTaskRunSessionRequest: MessageFns<GetTaskRunSessionRequest> = {
 };
 
 function createBaseTaskRunSession(): TaskRunSession {
-  return { name: "", postgres: undefined };
+  return { name: "", session: undefined };
 }
 
 export const TaskRunSession: MessageFns<TaskRunSession> = {
@@ -5134,8 +5202,10 @@ export const TaskRunSession: MessageFns<TaskRunSession> = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.postgres !== undefined) {
-      TaskRunSession_Postgres.encode(message.postgres, writer.uint32(18).fork()).join();
+    switch (message.session?.$case) {
+      case "postgres":
+        TaskRunSession_Postgres.encode(message.session.value, writer.uint32(18).fork()).join();
+        break;
     }
     return writer;
   },
@@ -5160,7 +5230,7 @@ export const TaskRunSession: MessageFns<TaskRunSession> = {
             break;
           }
 
-          message.postgres = TaskRunSession_Postgres.decode(reader, reader.uint32());
+          message.session = { $case: "postgres", value: TaskRunSession_Postgres.decode(reader, reader.uint32()) };
           continue;
         }
       }
@@ -5175,7 +5245,9 @@ export const TaskRunSession: MessageFns<TaskRunSession> = {
   fromJSON(object: any): TaskRunSession {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      postgres: isSet(object.postgres) ? TaskRunSession_Postgres.fromJSON(object.postgres) : undefined,
+      session: isSet(object.postgres)
+        ? { $case: "postgres", value: TaskRunSession_Postgres.fromJSON(object.postgres) }
+        : undefined,
     };
   },
 
@@ -5184,8 +5256,8 @@ export const TaskRunSession: MessageFns<TaskRunSession> = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.postgres !== undefined) {
-      obj.postgres = TaskRunSession_Postgres.toJSON(message.postgres);
+    if (message.session?.$case === "postgres") {
+      obj.postgres = TaskRunSession_Postgres.toJSON(message.session.value);
     }
     return obj;
   },
@@ -5196,9 +5268,9 @@ export const TaskRunSession: MessageFns<TaskRunSession> = {
   fromPartial(object: DeepPartial<TaskRunSession>): TaskRunSession {
     const message = createBaseTaskRunSession();
     message.name = object.name ?? "";
-    message.postgres = (object.postgres !== undefined && object.postgres !== null)
-      ? TaskRunSession_Postgres.fromPartial(object.postgres)
-      : undefined;
+    if (object.session?.$case === "postgres" && object.session?.value !== undefined && object.session?.value !== null) {
+      message.session = { $case: "postgres", value: TaskRunSession_Postgres.fromPartial(object.session.value) };
+    }
     return message;
   },
 };
@@ -6692,6 +6764,7 @@ type Builtin = Date | Function | Uint8Array | string | number | boolean | undefi
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string; value: unknown } ? { $case: T["$case"]; value?: DeepPartial<T["value"]> }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

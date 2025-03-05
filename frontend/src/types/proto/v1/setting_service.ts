@@ -148,20 +148,36 @@ export interface Setting {
 
 /** The data in setting value. */
 export interface Value {
-  /** Defines this value as being a string value. */
-  stringValue?: string | undefined;
-  smtpMailDeliverySettingValue?: SMTPMailDeliverySettingValue | undefined;
-  appImSettingValue?: AppIMSetting | undefined;
-  agentPluginSettingValue?: AgentPluginSetting | undefined;
-  workspaceProfileSettingValue?: WorkspaceProfileSetting | undefined;
-  workspaceApprovalSettingValue?: WorkspaceApprovalSetting | undefined;
-  workspaceTrialSettingValue?: WorkspaceTrialSetting | undefined;
-  schemaTemplateSettingValue?: SchemaTemplateSetting | undefined;
-  dataClassificationSettingValue?: DataClassificationSetting | undefined;
-  semanticTypeSettingValue?: SemanticTypeSetting | undefined;
-  maximumSqlResultSizeSetting?: MaximumSQLResultSizeSetting | undefined;
-  scimSetting?: SCIMSetting | undefined;
-  passwordRestrictionSetting?: PasswordRestrictionSetting | undefined;
+  /** Value is a oneof field for setting value. */
+  value?:
+    | //
+    /** Defines this value as being a string value. */
+    { $case: "stringValue"; value: string }
+    | //
+    { $case: "smtpMailDeliverySettingValue"; value: SMTPMailDeliverySettingValue }
+    | //
+    { $case: "appImSettingValue"; value: AppIMSetting }
+    | //
+    { $case: "agentPluginSettingValue"; value: AgentPluginSetting }
+    | //
+    { $case: "workspaceProfileSettingValue"; value: WorkspaceProfileSetting }
+    | //
+    { $case: "workspaceApprovalSettingValue"; value: WorkspaceApprovalSetting }
+    | //
+    { $case: "workspaceTrialSettingValue"; value: WorkspaceTrialSetting }
+    | //
+    { $case: "schemaTemplateSettingValue"; value: SchemaTemplateSetting }
+    | //
+    { $case: "dataClassificationSettingValue"; value: DataClassificationSetting }
+    | //
+    { $case: "semanticTypeSettingValue"; value: SemanticTypeSetting }
+    | //
+    { $case: "maximumSqlResultSizeSetting"; value: MaximumSQLResultSizeSetting }
+    | //
+    { $case: "scimSetting"; value: SCIMSetting }
+    | //
+    { $case: "passwordRestrictionSetting"; value: PasswordRestrictionSetting }
+    | undefined;
 }
 
 export interface SMTPMailDeliverySettingValue {
@@ -576,10 +592,16 @@ export interface SemanticTypeSetting_SemanticType {
 }
 
 export interface Algorithm {
-  fullMask?: Algorithm_FullMask | undefined;
-  rangeMask?: Algorithm_RangeMask | undefined;
-  md5Mask?: Algorithm_MD5Mask | undefined;
-  innerOuterMask?: Algorithm_InnerOuterMask | undefined;
+  mask?:
+    | //
+    { $case: "fullMask"; value: Algorithm_FullMask }
+    | //
+    { $case: "rangeMask"; value: Algorithm_RangeMask }
+    | //
+    { $case: "md5Mask"; value: Algorithm_MD5Mask }
+    | //
+    { $case: "innerOuterMask"; value: Algorithm_InnerOuterMask }
+    | undefined;
 }
 
 export interface Algorithm_FullMask {
@@ -1158,63 +1180,51 @@ export const Setting: MessageFns<Setting> = {
 };
 
 function createBaseValue(): Value {
-  return {
-    stringValue: undefined,
-    smtpMailDeliverySettingValue: undefined,
-    appImSettingValue: undefined,
-    agentPluginSettingValue: undefined,
-    workspaceProfileSettingValue: undefined,
-    workspaceApprovalSettingValue: undefined,
-    workspaceTrialSettingValue: undefined,
-    schemaTemplateSettingValue: undefined,
-    dataClassificationSettingValue: undefined,
-    semanticTypeSettingValue: undefined,
-    maximumSqlResultSizeSetting: undefined,
-    scimSetting: undefined,
-    passwordRestrictionSetting: undefined,
-  };
+  return { value: undefined };
 }
 
 export const Value: MessageFns<Value> = {
   encode(message: Value, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.stringValue !== undefined) {
-      writer.uint32(10).string(message.stringValue);
-    }
-    if (message.smtpMailDeliverySettingValue !== undefined) {
-      SMTPMailDeliverySettingValue.encode(message.smtpMailDeliverySettingValue, writer.uint32(18).fork()).join();
-    }
-    if (message.appImSettingValue !== undefined) {
-      AppIMSetting.encode(message.appImSettingValue, writer.uint32(26).fork()).join();
-    }
-    if (message.agentPluginSettingValue !== undefined) {
-      AgentPluginSetting.encode(message.agentPluginSettingValue, writer.uint32(34).fork()).join();
-    }
-    if (message.workspaceProfileSettingValue !== undefined) {
-      WorkspaceProfileSetting.encode(message.workspaceProfileSettingValue, writer.uint32(42).fork()).join();
-    }
-    if (message.workspaceApprovalSettingValue !== undefined) {
-      WorkspaceApprovalSetting.encode(message.workspaceApprovalSettingValue, writer.uint32(50).fork()).join();
-    }
-    if (message.workspaceTrialSettingValue !== undefined) {
-      WorkspaceTrialSetting.encode(message.workspaceTrialSettingValue, writer.uint32(58).fork()).join();
-    }
-    if (message.schemaTemplateSettingValue !== undefined) {
-      SchemaTemplateSetting.encode(message.schemaTemplateSettingValue, writer.uint32(74).fork()).join();
-    }
-    if (message.dataClassificationSettingValue !== undefined) {
-      DataClassificationSetting.encode(message.dataClassificationSettingValue, writer.uint32(82).fork()).join();
-    }
-    if (message.semanticTypeSettingValue !== undefined) {
-      SemanticTypeSetting.encode(message.semanticTypeSettingValue, writer.uint32(90).fork()).join();
-    }
-    if (message.maximumSqlResultSizeSetting !== undefined) {
-      MaximumSQLResultSizeSetting.encode(message.maximumSqlResultSizeSetting, writer.uint32(106).fork()).join();
-    }
-    if (message.scimSetting !== undefined) {
-      SCIMSetting.encode(message.scimSetting, writer.uint32(114).fork()).join();
-    }
-    if (message.passwordRestrictionSetting !== undefined) {
-      PasswordRestrictionSetting.encode(message.passwordRestrictionSetting, writer.uint32(122).fork()).join();
+    switch (message.value?.$case) {
+      case "stringValue":
+        writer.uint32(10).string(message.value.value);
+        break;
+      case "smtpMailDeliverySettingValue":
+        SMTPMailDeliverySettingValue.encode(message.value.value, writer.uint32(18).fork()).join();
+        break;
+      case "appImSettingValue":
+        AppIMSetting.encode(message.value.value, writer.uint32(26).fork()).join();
+        break;
+      case "agentPluginSettingValue":
+        AgentPluginSetting.encode(message.value.value, writer.uint32(34).fork()).join();
+        break;
+      case "workspaceProfileSettingValue":
+        WorkspaceProfileSetting.encode(message.value.value, writer.uint32(42).fork()).join();
+        break;
+      case "workspaceApprovalSettingValue":
+        WorkspaceApprovalSetting.encode(message.value.value, writer.uint32(50).fork()).join();
+        break;
+      case "workspaceTrialSettingValue":
+        WorkspaceTrialSetting.encode(message.value.value, writer.uint32(58).fork()).join();
+        break;
+      case "schemaTemplateSettingValue":
+        SchemaTemplateSetting.encode(message.value.value, writer.uint32(74).fork()).join();
+        break;
+      case "dataClassificationSettingValue":
+        DataClassificationSetting.encode(message.value.value, writer.uint32(82).fork()).join();
+        break;
+      case "semanticTypeSettingValue":
+        SemanticTypeSetting.encode(message.value.value, writer.uint32(90).fork()).join();
+        break;
+      case "maximumSqlResultSizeSetting":
+        MaximumSQLResultSizeSetting.encode(message.value.value, writer.uint32(106).fork()).join();
+        break;
+      case "scimSetting":
+        SCIMSetting.encode(message.value.value, writer.uint32(114).fork()).join();
+        break;
+      case "passwordRestrictionSetting":
+        PasswordRestrictionSetting.encode(message.value.value, writer.uint32(122).fork()).join();
+        break;
     }
     return writer;
   },
@@ -1231,7 +1241,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.stringValue = reader.string();
+          message.value = { $case: "stringValue", value: reader.string() };
           continue;
         }
         case 2: {
@@ -1239,7 +1249,10 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.smtpMailDeliverySettingValue = SMTPMailDeliverySettingValue.decode(reader, reader.uint32());
+          message.value = {
+            $case: "smtpMailDeliverySettingValue",
+            value: SMTPMailDeliverySettingValue.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 3: {
@@ -1247,7 +1260,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.appImSettingValue = AppIMSetting.decode(reader, reader.uint32());
+          message.value = { $case: "appImSettingValue", value: AppIMSetting.decode(reader, reader.uint32()) };
           continue;
         }
         case 4: {
@@ -1255,7 +1268,10 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.agentPluginSettingValue = AgentPluginSetting.decode(reader, reader.uint32());
+          message.value = {
+            $case: "agentPluginSettingValue",
+            value: AgentPluginSetting.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 5: {
@@ -1263,7 +1279,10 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.workspaceProfileSettingValue = WorkspaceProfileSetting.decode(reader, reader.uint32());
+          message.value = {
+            $case: "workspaceProfileSettingValue",
+            value: WorkspaceProfileSetting.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 6: {
@@ -1271,7 +1290,10 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.workspaceApprovalSettingValue = WorkspaceApprovalSetting.decode(reader, reader.uint32());
+          message.value = {
+            $case: "workspaceApprovalSettingValue",
+            value: WorkspaceApprovalSetting.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 7: {
@@ -1279,7 +1301,10 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.workspaceTrialSettingValue = WorkspaceTrialSetting.decode(reader, reader.uint32());
+          message.value = {
+            $case: "workspaceTrialSettingValue",
+            value: WorkspaceTrialSetting.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 9: {
@@ -1287,7 +1312,10 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.schemaTemplateSettingValue = SchemaTemplateSetting.decode(reader, reader.uint32());
+          message.value = {
+            $case: "schemaTemplateSettingValue",
+            value: SchemaTemplateSetting.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 10: {
@@ -1295,7 +1323,10 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.dataClassificationSettingValue = DataClassificationSetting.decode(reader, reader.uint32());
+          message.value = {
+            $case: "dataClassificationSettingValue",
+            value: DataClassificationSetting.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 11: {
@@ -1303,7 +1334,10 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.semanticTypeSettingValue = SemanticTypeSetting.decode(reader, reader.uint32());
+          message.value = {
+            $case: "semanticTypeSettingValue",
+            value: SemanticTypeSetting.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 13: {
@@ -1311,7 +1345,10 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.maximumSqlResultSizeSetting = MaximumSQLResultSizeSetting.decode(reader, reader.uint32());
+          message.value = {
+            $case: "maximumSqlResultSizeSetting",
+            value: MaximumSQLResultSizeSetting.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 14: {
@@ -1319,7 +1356,7 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.scimSetting = SCIMSetting.decode(reader, reader.uint32());
+          message.value = { $case: "scimSetting", value: SCIMSetting.decode(reader, reader.uint32()) };
           continue;
         }
         case 15: {
@@ -1327,7 +1364,10 @@ export const Value: MessageFns<Value> = {
             break;
           }
 
-          message.passwordRestrictionSetting = PasswordRestrictionSetting.decode(reader, reader.uint32());
+          message.value = {
+            $case: "passwordRestrictionSetting",
+            value: PasswordRestrictionSetting.decode(reader, reader.uint32()),
+          };
           continue;
         }
       }
@@ -1341,82 +1381,100 @@ export const Value: MessageFns<Value> = {
 
   fromJSON(object: any): Value {
     return {
-      stringValue: isSet(object.stringValue) ? globalThis.String(object.stringValue) : undefined,
-      smtpMailDeliverySettingValue: isSet(object.smtpMailDeliverySettingValue)
-        ? SMTPMailDeliverySettingValue.fromJSON(object.smtpMailDeliverySettingValue)
-        : undefined,
-      appImSettingValue: isSet(object.appImSettingValue) ? AppIMSetting.fromJSON(object.appImSettingValue) : undefined,
-      agentPluginSettingValue: isSet(object.agentPluginSettingValue)
-        ? AgentPluginSetting.fromJSON(object.agentPluginSettingValue)
-        : undefined,
-      workspaceProfileSettingValue: isSet(object.workspaceProfileSettingValue)
-        ? WorkspaceProfileSetting.fromJSON(object.workspaceProfileSettingValue)
-        : undefined,
-      workspaceApprovalSettingValue: isSet(object.workspaceApprovalSettingValue)
-        ? WorkspaceApprovalSetting.fromJSON(object.workspaceApprovalSettingValue)
-        : undefined,
-      workspaceTrialSettingValue: isSet(object.workspaceTrialSettingValue)
-        ? WorkspaceTrialSetting.fromJSON(object.workspaceTrialSettingValue)
-        : undefined,
-      schemaTemplateSettingValue: isSet(object.schemaTemplateSettingValue)
-        ? SchemaTemplateSetting.fromJSON(object.schemaTemplateSettingValue)
-        : undefined,
-      dataClassificationSettingValue: isSet(object.dataClassificationSettingValue)
-        ? DataClassificationSetting.fromJSON(object.dataClassificationSettingValue)
-        : undefined,
-      semanticTypeSettingValue: isSet(object.semanticTypeSettingValue)
-        ? SemanticTypeSetting.fromJSON(object.semanticTypeSettingValue)
-        : undefined,
-      maximumSqlResultSizeSetting: isSet(object.maximumSqlResultSizeSetting)
-        ? MaximumSQLResultSizeSetting.fromJSON(object.maximumSqlResultSizeSetting)
-        : undefined,
-      scimSetting: isSet(object.scimSetting) ? SCIMSetting.fromJSON(object.scimSetting) : undefined,
-      passwordRestrictionSetting: isSet(object.passwordRestrictionSetting)
-        ? PasswordRestrictionSetting.fromJSON(object.passwordRestrictionSetting)
+      value: isSet(object.stringValue)
+        ? { $case: "stringValue", value: globalThis.String(object.stringValue) }
+        : isSet(object.smtpMailDeliverySettingValue)
+        ? {
+          $case: "smtpMailDeliverySettingValue",
+          value: SMTPMailDeliverySettingValue.fromJSON(object.smtpMailDeliverySettingValue),
+        }
+        : isSet(object.appImSettingValue)
+        ? { $case: "appImSettingValue", value: AppIMSetting.fromJSON(object.appImSettingValue) }
+        : isSet(object.agentPluginSettingValue)
+        ? { $case: "agentPluginSettingValue", value: AgentPluginSetting.fromJSON(object.agentPluginSettingValue) }
+        : isSet(object.workspaceProfileSettingValue)
+        ? {
+          $case: "workspaceProfileSettingValue",
+          value: WorkspaceProfileSetting.fromJSON(object.workspaceProfileSettingValue),
+        }
+        : isSet(object.workspaceApprovalSettingValue)
+        ? {
+          $case: "workspaceApprovalSettingValue",
+          value: WorkspaceApprovalSetting.fromJSON(object.workspaceApprovalSettingValue),
+        }
+        : isSet(object.workspaceTrialSettingValue)
+        ? {
+          $case: "workspaceTrialSettingValue",
+          value: WorkspaceTrialSetting.fromJSON(object.workspaceTrialSettingValue),
+        }
+        : isSet(object.schemaTemplateSettingValue)
+        ? {
+          $case: "schemaTemplateSettingValue",
+          value: SchemaTemplateSetting.fromJSON(object.schemaTemplateSettingValue),
+        }
+        : isSet(object.dataClassificationSettingValue)
+        ? {
+          $case: "dataClassificationSettingValue",
+          value: DataClassificationSetting.fromJSON(object.dataClassificationSettingValue),
+        }
+        : isSet(object.semanticTypeSettingValue)
+        ? { $case: "semanticTypeSettingValue", value: SemanticTypeSetting.fromJSON(object.semanticTypeSettingValue) }
+        : isSet(object.maximumSqlResultSizeSetting)
+        ? {
+          $case: "maximumSqlResultSizeSetting",
+          value: MaximumSQLResultSizeSetting.fromJSON(object.maximumSqlResultSizeSetting),
+        }
+        : isSet(object.scimSetting)
+        ? { $case: "scimSetting", value: SCIMSetting.fromJSON(object.scimSetting) }
+        : isSet(object.passwordRestrictionSetting)
+        ? {
+          $case: "passwordRestrictionSetting",
+          value: PasswordRestrictionSetting.fromJSON(object.passwordRestrictionSetting),
+        }
         : undefined,
     };
   },
 
   toJSON(message: Value): unknown {
     const obj: any = {};
-    if (message.stringValue !== undefined) {
-      obj.stringValue = message.stringValue;
+    if (message.value?.$case === "stringValue") {
+      obj.stringValue = message.value.value;
     }
-    if (message.smtpMailDeliverySettingValue !== undefined) {
-      obj.smtpMailDeliverySettingValue = SMTPMailDeliverySettingValue.toJSON(message.smtpMailDeliverySettingValue);
+    if (message.value?.$case === "smtpMailDeliverySettingValue") {
+      obj.smtpMailDeliverySettingValue = SMTPMailDeliverySettingValue.toJSON(message.value.value);
     }
-    if (message.appImSettingValue !== undefined) {
-      obj.appImSettingValue = AppIMSetting.toJSON(message.appImSettingValue);
+    if (message.value?.$case === "appImSettingValue") {
+      obj.appImSettingValue = AppIMSetting.toJSON(message.value.value);
     }
-    if (message.agentPluginSettingValue !== undefined) {
-      obj.agentPluginSettingValue = AgentPluginSetting.toJSON(message.agentPluginSettingValue);
+    if (message.value?.$case === "agentPluginSettingValue") {
+      obj.agentPluginSettingValue = AgentPluginSetting.toJSON(message.value.value);
     }
-    if (message.workspaceProfileSettingValue !== undefined) {
-      obj.workspaceProfileSettingValue = WorkspaceProfileSetting.toJSON(message.workspaceProfileSettingValue);
+    if (message.value?.$case === "workspaceProfileSettingValue") {
+      obj.workspaceProfileSettingValue = WorkspaceProfileSetting.toJSON(message.value.value);
     }
-    if (message.workspaceApprovalSettingValue !== undefined) {
-      obj.workspaceApprovalSettingValue = WorkspaceApprovalSetting.toJSON(message.workspaceApprovalSettingValue);
+    if (message.value?.$case === "workspaceApprovalSettingValue") {
+      obj.workspaceApprovalSettingValue = WorkspaceApprovalSetting.toJSON(message.value.value);
     }
-    if (message.workspaceTrialSettingValue !== undefined) {
-      obj.workspaceTrialSettingValue = WorkspaceTrialSetting.toJSON(message.workspaceTrialSettingValue);
+    if (message.value?.$case === "workspaceTrialSettingValue") {
+      obj.workspaceTrialSettingValue = WorkspaceTrialSetting.toJSON(message.value.value);
     }
-    if (message.schemaTemplateSettingValue !== undefined) {
-      obj.schemaTemplateSettingValue = SchemaTemplateSetting.toJSON(message.schemaTemplateSettingValue);
+    if (message.value?.$case === "schemaTemplateSettingValue") {
+      obj.schemaTemplateSettingValue = SchemaTemplateSetting.toJSON(message.value.value);
     }
-    if (message.dataClassificationSettingValue !== undefined) {
-      obj.dataClassificationSettingValue = DataClassificationSetting.toJSON(message.dataClassificationSettingValue);
+    if (message.value?.$case === "dataClassificationSettingValue") {
+      obj.dataClassificationSettingValue = DataClassificationSetting.toJSON(message.value.value);
     }
-    if (message.semanticTypeSettingValue !== undefined) {
-      obj.semanticTypeSettingValue = SemanticTypeSetting.toJSON(message.semanticTypeSettingValue);
+    if (message.value?.$case === "semanticTypeSettingValue") {
+      obj.semanticTypeSettingValue = SemanticTypeSetting.toJSON(message.value.value);
     }
-    if (message.maximumSqlResultSizeSetting !== undefined) {
-      obj.maximumSqlResultSizeSetting = MaximumSQLResultSizeSetting.toJSON(message.maximumSqlResultSizeSetting);
+    if (message.value?.$case === "maximumSqlResultSizeSetting") {
+      obj.maximumSqlResultSizeSetting = MaximumSQLResultSizeSetting.toJSON(message.value.value);
     }
-    if (message.scimSetting !== undefined) {
-      obj.scimSetting = SCIMSetting.toJSON(message.scimSetting);
+    if (message.value?.$case === "scimSetting") {
+      obj.scimSetting = SCIMSetting.toJSON(message.value.value);
     }
-    if (message.passwordRestrictionSetting !== undefined) {
-      obj.passwordRestrictionSetting = PasswordRestrictionSetting.toJSON(message.passwordRestrictionSetting);
+    if (message.value?.$case === "passwordRestrictionSetting") {
+      obj.passwordRestrictionSetting = PasswordRestrictionSetting.toJSON(message.value.value);
     }
     return obj;
   },
@@ -1426,53 +1484,111 @@ export const Value: MessageFns<Value> = {
   },
   fromPartial(object: DeepPartial<Value>): Value {
     const message = createBaseValue();
-    message.stringValue = object.stringValue ?? undefined;
-    message.smtpMailDeliverySettingValue =
-      (object.smtpMailDeliverySettingValue !== undefined && object.smtpMailDeliverySettingValue !== null)
-        ? SMTPMailDeliverySettingValue.fromPartial(object.smtpMailDeliverySettingValue)
-        : undefined;
-    message.appImSettingValue = (object.appImSettingValue !== undefined && object.appImSettingValue !== null)
-      ? AppIMSetting.fromPartial(object.appImSettingValue)
-      : undefined;
-    message.agentPluginSettingValue =
-      (object.agentPluginSettingValue !== undefined && object.agentPluginSettingValue !== null)
-        ? AgentPluginSetting.fromPartial(object.agentPluginSettingValue)
-        : undefined;
-    message.workspaceProfileSettingValue =
-      (object.workspaceProfileSettingValue !== undefined && object.workspaceProfileSettingValue !== null)
-        ? WorkspaceProfileSetting.fromPartial(object.workspaceProfileSettingValue)
-        : undefined;
-    message.workspaceApprovalSettingValue =
-      (object.workspaceApprovalSettingValue !== undefined && object.workspaceApprovalSettingValue !== null)
-        ? WorkspaceApprovalSetting.fromPartial(object.workspaceApprovalSettingValue)
-        : undefined;
-    message.workspaceTrialSettingValue =
-      (object.workspaceTrialSettingValue !== undefined && object.workspaceTrialSettingValue !== null)
-        ? WorkspaceTrialSetting.fromPartial(object.workspaceTrialSettingValue)
-        : undefined;
-    message.schemaTemplateSettingValue =
-      (object.schemaTemplateSettingValue !== undefined && object.schemaTemplateSettingValue !== null)
-        ? SchemaTemplateSetting.fromPartial(object.schemaTemplateSettingValue)
-        : undefined;
-    message.dataClassificationSettingValue =
-      (object.dataClassificationSettingValue !== undefined && object.dataClassificationSettingValue !== null)
-        ? DataClassificationSetting.fromPartial(object.dataClassificationSettingValue)
-        : undefined;
-    message.semanticTypeSettingValue =
-      (object.semanticTypeSettingValue !== undefined && object.semanticTypeSettingValue !== null)
-        ? SemanticTypeSetting.fromPartial(object.semanticTypeSettingValue)
-        : undefined;
-    message.maximumSqlResultSizeSetting =
-      (object.maximumSqlResultSizeSetting !== undefined && object.maximumSqlResultSizeSetting !== null)
-        ? MaximumSQLResultSizeSetting.fromPartial(object.maximumSqlResultSizeSetting)
-        : undefined;
-    message.scimSetting = (object.scimSetting !== undefined && object.scimSetting !== null)
-      ? SCIMSetting.fromPartial(object.scimSetting)
-      : undefined;
-    message.passwordRestrictionSetting =
-      (object.passwordRestrictionSetting !== undefined && object.passwordRestrictionSetting !== null)
-        ? PasswordRestrictionSetting.fromPartial(object.passwordRestrictionSetting)
-        : undefined;
+    if (object.value?.$case === "stringValue" && object.value?.value !== undefined && object.value?.value !== null) {
+      message.value = { $case: "stringValue", value: object.value.value };
+    }
+    if (
+      object.value?.$case === "smtpMailDeliverySettingValue" &&
+      object.value?.value !== undefined &&
+      object.value?.value !== null
+    ) {
+      message.value = {
+        $case: "smtpMailDeliverySettingValue",
+        value: SMTPMailDeliverySettingValue.fromPartial(object.value.value),
+      };
+    }
+    if (
+      object.value?.$case === "appImSettingValue" && object.value?.value !== undefined && object.value?.value !== null
+    ) {
+      message.value = { $case: "appImSettingValue", value: AppIMSetting.fromPartial(object.value.value) };
+    }
+    if (
+      object.value?.$case === "agentPluginSettingValue" &&
+      object.value?.value !== undefined &&
+      object.value?.value !== null
+    ) {
+      message.value = { $case: "agentPluginSettingValue", value: AgentPluginSetting.fromPartial(object.value.value) };
+    }
+    if (
+      object.value?.$case === "workspaceProfileSettingValue" &&
+      object.value?.value !== undefined &&
+      object.value?.value !== null
+    ) {
+      message.value = {
+        $case: "workspaceProfileSettingValue",
+        value: WorkspaceProfileSetting.fromPartial(object.value.value),
+      };
+    }
+    if (
+      object.value?.$case === "workspaceApprovalSettingValue" &&
+      object.value?.value !== undefined &&
+      object.value?.value !== null
+    ) {
+      message.value = {
+        $case: "workspaceApprovalSettingValue",
+        value: WorkspaceApprovalSetting.fromPartial(object.value.value),
+      };
+    }
+    if (
+      object.value?.$case === "workspaceTrialSettingValue" &&
+      object.value?.value !== undefined &&
+      object.value?.value !== null
+    ) {
+      message.value = {
+        $case: "workspaceTrialSettingValue",
+        value: WorkspaceTrialSetting.fromPartial(object.value.value),
+      };
+    }
+    if (
+      object.value?.$case === "schemaTemplateSettingValue" &&
+      object.value?.value !== undefined &&
+      object.value?.value !== null
+    ) {
+      message.value = {
+        $case: "schemaTemplateSettingValue",
+        value: SchemaTemplateSetting.fromPartial(object.value.value),
+      };
+    }
+    if (
+      object.value?.$case === "dataClassificationSettingValue" &&
+      object.value?.value !== undefined &&
+      object.value?.value !== null
+    ) {
+      message.value = {
+        $case: "dataClassificationSettingValue",
+        value: DataClassificationSetting.fromPartial(object.value.value),
+      };
+    }
+    if (
+      object.value?.$case === "semanticTypeSettingValue" &&
+      object.value?.value !== undefined &&
+      object.value?.value !== null
+    ) {
+      message.value = { $case: "semanticTypeSettingValue", value: SemanticTypeSetting.fromPartial(object.value.value) };
+    }
+    if (
+      object.value?.$case === "maximumSqlResultSizeSetting" &&
+      object.value?.value !== undefined &&
+      object.value?.value !== null
+    ) {
+      message.value = {
+        $case: "maximumSqlResultSizeSetting",
+        value: MaximumSQLResultSizeSetting.fromPartial(object.value.value),
+      };
+    }
+    if (object.value?.$case === "scimSetting" && object.value?.value !== undefined && object.value?.value !== null) {
+      message.value = { $case: "scimSetting", value: SCIMSetting.fromPartial(object.value.value) };
+    }
+    if (
+      object.value?.$case === "passwordRestrictionSetting" &&
+      object.value?.value !== undefined &&
+      object.value?.value !== null
+    ) {
+      message.value = {
+        $case: "passwordRestrictionSetting",
+        value: PasswordRestrictionSetting.fromPartial(object.value.value),
+      };
+    }
     return message;
   },
 };
@@ -4080,22 +4196,24 @@ export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_Se
 };
 
 function createBaseAlgorithm(): Algorithm {
-  return { fullMask: undefined, rangeMask: undefined, md5Mask: undefined, innerOuterMask: undefined };
+  return { mask: undefined };
 }
 
 export const Algorithm: MessageFns<Algorithm> = {
   encode(message: Algorithm, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.fullMask !== undefined) {
-      Algorithm_FullMask.encode(message.fullMask, writer.uint32(42).fork()).join();
-    }
-    if (message.rangeMask !== undefined) {
-      Algorithm_RangeMask.encode(message.rangeMask, writer.uint32(50).fork()).join();
-    }
-    if (message.md5Mask !== undefined) {
-      Algorithm_MD5Mask.encode(message.md5Mask, writer.uint32(58).fork()).join();
-    }
-    if (message.innerOuterMask !== undefined) {
-      Algorithm_InnerOuterMask.encode(message.innerOuterMask, writer.uint32(66).fork()).join();
+    switch (message.mask?.$case) {
+      case "fullMask":
+        Algorithm_FullMask.encode(message.mask.value, writer.uint32(42).fork()).join();
+        break;
+      case "rangeMask":
+        Algorithm_RangeMask.encode(message.mask.value, writer.uint32(50).fork()).join();
+        break;
+      case "md5Mask":
+        Algorithm_MD5Mask.encode(message.mask.value, writer.uint32(58).fork()).join();
+        break;
+      case "innerOuterMask":
+        Algorithm_InnerOuterMask.encode(message.mask.value, writer.uint32(66).fork()).join();
+        break;
     }
     return writer;
   },
@@ -4112,7 +4230,7 @@ export const Algorithm: MessageFns<Algorithm> = {
             break;
           }
 
-          message.fullMask = Algorithm_FullMask.decode(reader, reader.uint32());
+          message.mask = { $case: "fullMask", value: Algorithm_FullMask.decode(reader, reader.uint32()) };
           continue;
         }
         case 6: {
@@ -4120,7 +4238,7 @@ export const Algorithm: MessageFns<Algorithm> = {
             break;
           }
 
-          message.rangeMask = Algorithm_RangeMask.decode(reader, reader.uint32());
+          message.mask = { $case: "rangeMask", value: Algorithm_RangeMask.decode(reader, reader.uint32()) };
           continue;
         }
         case 7: {
@@ -4128,7 +4246,7 @@ export const Algorithm: MessageFns<Algorithm> = {
             break;
           }
 
-          message.md5Mask = Algorithm_MD5Mask.decode(reader, reader.uint32());
+          message.mask = { $case: "md5Mask", value: Algorithm_MD5Mask.decode(reader, reader.uint32()) };
           continue;
         }
         case 8: {
@@ -4136,7 +4254,7 @@ export const Algorithm: MessageFns<Algorithm> = {
             break;
           }
 
-          message.innerOuterMask = Algorithm_InnerOuterMask.decode(reader, reader.uint32());
+          message.mask = { $case: "innerOuterMask", value: Algorithm_InnerOuterMask.decode(reader, reader.uint32()) };
           continue;
         }
       }
@@ -4150,28 +4268,31 @@ export const Algorithm: MessageFns<Algorithm> = {
 
   fromJSON(object: any): Algorithm {
     return {
-      fullMask: isSet(object.fullMask) ? Algorithm_FullMask.fromJSON(object.fullMask) : undefined,
-      rangeMask: isSet(object.rangeMask) ? Algorithm_RangeMask.fromJSON(object.rangeMask) : undefined,
-      md5Mask: isSet(object.md5Mask) ? Algorithm_MD5Mask.fromJSON(object.md5Mask) : undefined,
-      innerOuterMask: isSet(object.innerOuterMask)
-        ? Algorithm_InnerOuterMask.fromJSON(object.innerOuterMask)
+      mask: isSet(object.fullMask)
+        ? { $case: "fullMask", value: Algorithm_FullMask.fromJSON(object.fullMask) }
+        : isSet(object.rangeMask)
+        ? { $case: "rangeMask", value: Algorithm_RangeMask.fromJSON(object.rangeMask) }
+        : isSet(object.md5Mask)
+        ? { $case: "md5Mask", value: Algorithm_MD5Mask.fromJSON(object.md5Mask) }
+        : isSet(object.innerOuterMask)
+        ? { $case: "innerOuterMask", value: Algorithm_InnerOuterMask.fromJSON(object.innerOuterMask) }
         : undefined,
     };
   },
 
   toJSON(message: Algorithm): unknown {
     const obj: any = {};
-    if (message.fullMask !== undefined) {
-      obj.fullMask = Algorithm_FullMask.toJSON(message.fullMask);
+    if (message.mask?.$case === "fullMask") {
+      obj.fullMask = Algorithm_FullMask.toJSON(message.mask.value);
     }
-    if (message.rangeMask !== undefined) {
-      obj.rangeMask = Algorithm_RangeMask.toJSON(message.rangeMask);
+    if (message.mask?.$case === "rangeMask") {
+      obj.rangeMask = Algorithm_RangeMask.toJSON(message.mask.value);
     }
-    if (message.md5Mask !== undefined) {
-      obj.md5Mask = Algorithm_MD5Mask.toJSON(message.md5Mask);
+    if (message.mask?.$case === "md5Mask") {
+      obj.md5Mask = Algorithm_MD5Mask.toJSON(message.mask.value);
     }
-    if (message.innerOuterMask !== undefined) {
-      obj.innerOuterMask = Algorithm_InnerOuterMask.toJSON(message.innerOuterMask);
+    if (message.mask?.$case === "innerOuterMask") {
+      obj.innerOuterMask = Algorithm_InnerOuterMask.toJSON(message.mask.value);
     }
     return obj;
   },
@@ -4181,18 +4302,18 @@ export const Algorithm: MessageFns<Algorithm> = {
   },
   fromPartial(object: DeepPartial<Algorithm>): Algorithm {
     const message = createBaseAlgorithm();
-    message.fullMask = (object.fullMask !== undefined && object.fullMask !== null)
-      ? Algorithm_FullMask.fromPartial(object.fullMask)
-      : undefined;
-    message.rangeMask = (object.rangeMask !== undefined && object.rangeMask !== null)
-      ? Algorithm_RangeMask.fromPartial(object.rangeMask)
-      : undefined;
-    message.md5Mask = (object.md5Mask !== undefined && object.md5Mask !== null)
-      ? Algorithm_MD5Mask.fromPartial(object.md5Mask)
-      : undefined;
-    message.innerOuterMask = (object.innerOuterMask !== undefined && object.innerOuterMask !== null)
-      ? Algorithm_InnerOuterMask.fromPartial(object.innerOuterMask)
-      : undefined;
+    if (object.mask?.$case === "fullMask" && object.mask?.value !== undefined && object.mask?.value !== null) {
+      message.mask = { $case: "fullMask", value: Algorithm_FullMask.fromPartial(object.mask.value) };
+    }
+    if (object.mask?.$case === "rangeMask" && object.mask?.value !== undefined && object.mask?.value !== null) {
+      message.mask = { $case: "rangeMask", value: Algorithm_RangeMask.fromPartial(object.mask.value) };
+    }
+    if (object.mask?.$case === "md5Mask" && object.mask?.value !== undefined && object.mask?.value !== null) {
+      message.mask = { $case: "md5Mask", value: Algorithm_MD5Mask.fromPartial(object.mask.value) };
+    }
+    if (object.mask?.$case === "innerOuterMask" && object.mask?.value !== undefined && object.mask?.value !== null) {
+      message.mask = { $case: "innerOuterMask", value: Algorithm_InnerOuterMask.fromPartial(object.mask.value) };
+    }
     return message;
   },
 };
@@ -4999,6 +5120,7 @@ type Builtin = Date | Function | Uint8Array | string | number | boolean | undefi
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string; value: unknown } ? { $case: T["$case"]; value?: DeepPartial<T["value"]> }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

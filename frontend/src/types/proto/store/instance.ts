@@ -162,7 +162,10 @@ export interface DataSource {
   authenticationPrivateKeyObfuscated: string;
   externalSecret: DataSourceExternalSecret | undefined;
   authenticationType: DataSource_AuthenticationType;
-  clientSecretCredential?: DataSource_ClientSecretCredential | undefined;
+  iamExtension?:
+    | //
+    { $case: "clientSecretCredential"; value: DataSource_ClientSecretCredential }
+    | undefined;
   saslConfig:
     | SASLConfig
     | undefined;
@@ -336,7 +339,10 @@ export interface DataSource_ExtraConnectionParametersEntry {
 }
 
 export interface SASLConfig {
-  krbConfig?: KerberosConfig | undefined;
+  mechanism?:
+    | //
+    { $case: "krbConfig"; value: KerberosConfig }
+    | undefined;
 }
 
 export interface KerberosConfig {
@@ -353,9 +359,11 @@ export interface DataSourceExternalSecret {
   secretType: DataSourceExternalSecret_SecretType;
   url: string;
   authType: DataSourceExternalSecret_AuthType;
-  appRole?: DataSourceExternalSecret_AppRoleAuthOption | undefined;
-  token?:
-    | string
+  authOption?:
+    | //
+    { $case: "appRole"; value: DataSourceExternalSecret_AppRoleAuthOption }
+    | //
+    { $case: "token"; value: string }
     | undefined;
   /** engine name is the name for secret engine. */
   engineName: string;
@@ -945,7 +953,7 @@ function createBaseDataSource(): DataSource {
     authenticationPrivateKeyObfuscated: "",
     externalSecret: undefined,
     authenticationType: DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED,
-    clientSecretCredential: undefined,
+    iamExtension: undefined,
     saslConfig: undefined,
     additionalAddresses: [],
     directConnection: false,
@@ -1034,8 +1042,10 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.authenticationType !== DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED) {
       writer.uint32(176).int32(dataSource_AuthenticationTypeToNumber(message.authenticationType));
     }
-    if (message.clientSecretCredential !== undefined) {
-      DataSource_ClientSecretCredential.encode(message.clientSecretCredential, writer.uint32(186).fork()).join();
+    switch (message.iamExtension?.$case) {
+      case "clientSecretCredential":
+        DataSource_ClientSecretCredential.encode(message.iamExtension.value, writer.uint32(186).fork()).join();
+        break;
     }
     if (message.saslConfig !== undefined) {
       SASLConfig.encode(message.saslConfig, writer.uint32(194).fork()).join();
@@ -1277,7 +1287,10 @@ export const DataSource: MessageFns<DataSource> = {
             break;
           }
 
-          message.clientSecretCredential = DataSource_ClientSecretCredential.decode(reader, reader.uint32());
+          message.iamExtension = {
+            $case: "clientSecretCredential",
+            value: DataSource_ClientSecretCredential.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 24: {
@@ -1416,8 +1429,11 @@ export const DataSource: MessageFns<DataSource> = {
       authenticationType: isSet(object.authenticationType)
         ? dataSource_AuthenticationTypeFromJSON(object.authenticationType)
         : DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED,
-      clientSecretCredential: isSet(object.clientSecretCredential)
-        ? DataSource_ClientSecretCredential.fromJSON(object.clientSecretCredential)
+      iamExtension: isSet(object.clientSecretCredential)
+        ? {
+          $case: "clientSecretCredential",
+          value: DataSource_ClientSecretCredential.fromJSON(object.clientSecretCredential),
+        }
         : undefined,
       saslConfig: isSet(object.saslConfig) ? SASLConfig.fromJSON(object.saslConfig) : undefined,
       additionalAddresses: globalThis.Array.isArray(object?.additionalAddresses)
@@ -1518,8 +1534,8 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.authenticationType !== DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED) {
       obj.authenticationType = dataSource_AuthenticationTypeToJSON(message.authenticationType);
     }
-    if (message.clientSecretCredential !== undefined) {
-      obj.clientSecretCredential = DataSource_ClientSecretCredential.toJSON(message.clientSecretCredential);
+    if (message.iamExtension?.$case === "clientSecretCredential") {
+      obj.clientSecretCredential = DataSource_ClientSecretCredential.toJSON(message.iamExtension.value);
     }
     if (message.saslConfig !== undefined) {
       obj.saslConfig = SASLConfig.toJSON(message.saslConfig);
@@ -1594,10 +1610,16 @@ export const DataSource: MessageFns<DataSource> = {
       ? DataSourceExternalSecret.fromPartial(object.externalSecret)
       : undefined;
     message.authenticationType = object.authenticationType ?? DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED;
-    message.clientSecretCredential =
-      (object.clientSecretCredential !== undefined && object.clientSecretCredential !== null)
-        ? DataSource_ClientSecretCredential.fromPartial(object.clientSecretCredential)
-        : undefined;
+    if (
+      object.iamExtension?.$case === "clientSecretCredential" &&
+      object.iamExtension?.value !== undefined &&
+      object.iamExtension?.value !== null
+    ) {
+      message.iamExtension = {
+        $case: "clientSecretCredential",
+        value: DataSource_ClientSecretCredential.fromPartial(object.iamExtension.value),
+      };
+    }
     message.saslConfig = (object.saslConfig !== undefined && object.saslConfig !== null)
       ? SASLConfig.fromPartial(object.saslConfig)
       : undefined;
@@ -1869,13 +1891,15 @@ export const DataSource_ExtraConnectionParametersEntry: MessageFns<DataSource_Ex
 };
 
 function createBaseSASLConfig(): SASLConfig {
-  return { krbConfig: undefined };
+  return { mechanism: undefined };
 }
 
 export const SASLConfig: MessageFns<SASLConfig> = {
   encode(message: SASLConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.krbConfig !== undefined) {
-      KerberosConfig.encode(message.krbConfig, writer.uint32(10).fork()).join();
+    switch (message.mechanism?.$case) {
+      case "krbConfig":
+        KerberosConfig.encode(message.mechanism.value, writer.uint32(10).fork()).join();
+        break;
     }
     return writer;
   },
@@ -1892,7 +1916,7 @@ export const SASLConfig: MessageFns<SASLConfig> = {
             break;
           }
 
-          message.krbConfig = KerberosConfig.decode(reader, reader.uint32());
+          message.mechanism = { $case: "krbConfig", value: KerberosConfig.decode(reader, reader.uint32()) };
           continue;
         }
       }
@@ -1905,13 +1929,17 @@ export const SASLConfig: MessageFns<SASLConfig> = {
   },
 
   fromJSON(object: any): SASLConfig {
-    return { krbConfig: isSet(object.krbConfig) ? KerberosConfig.fromJSON(object.krbConfig) : undefined };
+    return {
+      mechanism: isSet(object.krbConfig)
+        ? { $case: "krbConfig", value: KerberosConfig.fromJSON(object.krbConfig) }
+        : undefined,
+    };
   },
 
   toJSON(message: SASLConfig): unknown {
     const obj: any = {};
-    if (message.krbConfig !== undefined) {
-      obj.krbConfig = KerberosConfig.toJSON(message.krbConfig);
+    if (message.mechanism?.$case === "krbConfig") {
+      obj.krbConfig = KerberosConfig.toJSON(message.mechanism.value);
     }
     return obj;
   },
@@ -1921,9 +1949,13 @@ export const SASLConfig: MessageFns<SASLConfig> = {
   },
   fromPartial(object: DeepPartial<SASLConfig>): SASLConfig {
     const message = createBaseSASLConfig();
-    message.krbConfig = (object.krbConfig !== undefined && object.krbConfig !== null)
-      ? KerberosConfig.fromPartial(object.krbConfig)
-      : undefined;
+    if (
+      object.mechanism?.$case === "krbConfig" &&
+      object.mechanism?.value !== undefined &&
+      object.mechanism?.value !== null
+    ) {
+      message.mechanism = { $case: "krbConfig", value: KerberosConfig.fromPartial(object.mechanism.value) };
+    }
     return message;
   },
 };
@@ -2097,8 +2129,7 @@ function createBaseDataSourceExternalSecret(): DataSourceExternalSecret {
     secretType: DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED,
     url: "",
     authType: DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED,
-    appRole: undefined,
-    token: undefined,
+    authOption: undefined,
     engineName: "",
     secretName: "",
     passwordKeyName: "",
@@ -2116,11 +2147,13 @@ export const DataSourceExternalSecret: MessageFns<DataSourceExternalSecret> = {
     if (message.authType !== DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED) {
       writer.uint32(24).int32(dataSourceExternalSecret_AuthTypeToNumber(message.authType));
     }
-    if (message.appRole !== undefined) {
-      DataSourceExternalSecret_AppRoleAuthOption.encode(message.appRole, writer.uint32(34).fork()).join();
-    }
-    if (message.token !== undefined) {
-      writer.uint32(42).string(message.token);
+    switch (message.authOption?.$case) {
+      case "appRole":
+        DataSourceExternalSecret_AppRoleAuthOption.encode(message.authOption.value, writer.uint32(34).fork()).join();
+        break;
+      case "token":
+        writer.uint32(42).string(message.authOption.value);
+        break;
     }
     if (message.engineName !== "") {
       writer.uint32(50).string(message.engineName);
@@ -2170,7 +2203,10 @@ export const DataSourceExternalSecret: MessageFns<DataSourceExternalSecret> = {
             break;
           }
 
-          message.appRole = DataSourceExternalSecret_AppRoleAuthOption.decode(reader, reader.uint32());
+          message.authOption = {
+            $case: "appRole",
+            value: DataSourceExternalSecret_AppRoleAuthOption.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 5: {
@@ -2178,7 +2214,7 @@ export const DataSourceExternalSecret: MessageFns<DataSourceExternalSecret> = {
             break;
           }
 
-          message.token = reader.string();
+          message.authOption = { $case: "token", value: reader.string() };
           continue;
         }
         case 6: {
@@ -2223,8 +2259,11 @@ export const DataSourceExternalSecret: MessageFns<DataSourceExternalSecret> = {
       authType: isSet(object.authType)
         ? dataSourceExternalSecret_AuthTypeFromJSON(object.authType)
         : DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED,
-      appRole: isSet(object.appRole) ? DataSourceExternalSecret_AppRoleAuthOption.fromJSON(object.appRole) : undefined,
-      token: isSet(object.token) ? globalThis.String(object.token) : undefined,
+      authOption: isSet(object.appRole)
+        ? { $case: "appRole", value: DataSourceExternalSecret_AppRoleAuthOption.fromJSON(object.appRole) }
+        : isSet(object.token)
+        ? { $case: "token", value: globalThis.String(object.token) }
+        : undefined,
       engineName: isSet(object.engineName) ? globalThis.String(object.engineName) : "",
       secretName: isSet(object.secretName) ? globalThis.String(object.secretName) : "",
       passwordKeyName: isSet(object.passwordKeyName) ? globalThis.String(object.passwordKeyName) : "",
@@ -2242,11 +2281,11 @@ export const DataSourceExternalSecret: MessageFns<DataSourceExternalSecret> = {
     if (message.authType !== DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED) {
       obj.authType = dataSourceExternalSecret_AuthTypeToJSON(message.authType);
     }
-    if (message.appRole !== undefined) {
-      obj.appRole = DataSourceExternalSecret_AppRoleAuthOption.toJSON(message.appRole);
+    if (message.authOption?.$case === "appRole") {
+      obj.appRole = DataSourceExternalSecret_AppRoleAuthOption.toJSON(message.authOption.value);
     }
-    if (message.token !== undefined) {
-      obj.token = message.token;
+    if (message.authOption?.$case === "token") {
+      obj.token = message.authOption.value;
     }
     if (message.engineName !== "") {
       obj.engineName = message.engineName;
@@ -2268,10 +2307,23 @@ export const DataSourceExternalSecret: MessageFns<DataSourceExternalSecret> = {
     message.secretType = object.secretType ?? DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED;
     message.url = object.url ?? "";
     message.authType = object.authType ?? DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED;
-    message.appRole = (object.appRole !== undefined && object.appRole !== null)
-      ? DataSourceExternalSecret_AppRoleAuthOption.fromPartial(object.appRole)
-      : undefined;
-    message.token = object.token ?? undefined;
+    if (
+      object.authOption?.$case === "appRole" &&
+      object.authOption?.value !== undefined &&
+      object.authOption?.value !== null
+    ) {
+      message.authOption = {
+        $case: "appRole",
+        value: DataSourceExternalSecret_AppRoleAuthOption.fromPartial(object.authOption.value),
+      };
+    }
+    if (
+      object.authOption?.$case === "token" &&
+      object.authOption?.value !== undefined &&
+      object.authOption?.value !== null
+    ) {
+      message.authOption = { $case: "token", value: object.authOption.value };
+    }
     message.engineName = object.engineName ?? "";
     message.secretName = object.secretName ?? "";
     message.passwordKeyName = object.passwordKeyName ?? "";
@@ -2418,6 +2470,7 @@ type Builtin = Date | Function | Uint8Array | string | number | boolean | undefi
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string; value: unknown } ? { $case: T["$case"]; value?: DeepPartial<T["value"]> }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

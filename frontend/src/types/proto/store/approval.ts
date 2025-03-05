@@ -231,11 +231,13 @@ export function approvalStep_TypeToNumber(object: ApprovalStep_Type): number {
 
 export interface ApprovalNode {
   type: ApprovalNode_Type;
-  groupValue?:
-    | ApprovalNode_GroupValue
+  payload?:
+    | //
+    { $case: "groupValue"; value: ApprovalNode_GroupValue }
+    | //
+    /** Format: roles/{role} */
+    { $case: "role"; value: string }
     | undefined;
-  /** Format: roles/{role} */
-  role?: string | undefined;
 }
 
 /**
@@ -826,7 +828,7 @@ export const ApprovalStep: MessageFns<ApprovalStep> = {
 };
 
 function createBaseApprovalNode(): ApprovalNode {
-  return { type: ApprovalNode_Type.TYPE_UNSPECIFIED, groupValue: undefined, role: undefined };
+  return { type: ApprovalNode_Type.TYPE_UNSPECIFIED, payload: undefined };
 }
 
 export const ApprovalNode: MessageFns<ApprovalNode> = {
@@ -834,11 +836,13 @@ export const ApprovalNode: MessageFns<ApprovalNode> = {
     if (message.type !== ApprovalNode_Type.TYPE_UNSPECIFIED) {
       writer.uint32(8).int32(approvalNode_TypeToNumber(message.type));
     }
-    if (message.groupValue !== undefined) {
-      writer.uint32(16).int32(approvalNode_GroupValueToNumber(message.groupValue));
-    }
-    if (message.role !== undefined) {
-      writer.uint32(26).string(message.role);
+    switch (message.payload?.$case) {
+      case "groupValue":
+        writer.uint32(16).int32(approvalNode_GroupValueToNumber(message.payload.value));
+        break;
+      case "role":
+        writer.uint32(26).string(message.payload.value);
+        break;
     }
     return writer;
   },
@@ -863,7 +867,7 @@ export const ApprovalNode: MessageFns<ApprovalNode> = {
             break;
           }
 
-          message.groupValue = approvalNode_GroupValueFromJSON(reader.int32());
+          message.payload = { $case: "groupValue", value: approvalNode_GroupValueFromJSON(reader.int32()) };
           continue;
         }
         case 3: {
@@ -871,7 +875,7 @@ export const ApprovalNode: MessageFns<ApprovalNode> = {
             break;
           }
 
-          message.role = reader.string();
+          message.payload = { $case: "role", value: reader.string() };
           continue;
         }
       }
@@ -886,8 +890,11 @@ export const ApprovalNode: MessageFns<ApprovalNode> = {
   fromJSON(object: any): ApprovalNode {
     return {
       type: isSet(object.type) ? approvalNode_TypeFromJSON(object.type) : ApprovalNode_Type.TYPE_UNSPECIFIED,
-      groupValue: isSet(object.groupValue) ? approvalNode_GroupValueFromJSON(object.groupValue) : undefined,
-      role: isSet(object.role) ? globalThis.String(object.role) : undefined,
+      payload: isSet(object.groupValue)
+        ? { $case: "groupValue", value: approvalNode_GroupValueFromJSON(object.groupValue) }
+        : isSet(object.role)
+        ? { $case: "role", value: globalThis.String(object.role) }
+        : undefined,
     };
   },
 
@@ -896,11 +903,11 @@ export const ApprovalNode: MessageFns<ApprovalNode> = {
     if (message.type !== ApprovalNode_Type.TYPE_UNSPECIFIED) {
       obj.type = approvalNode_TypeToJSON(message.type);
     }
-    if (message.groupValue !== undefined) {
-      obj.groupValue = approvalNode_GroupValueToJSON(message.groupValue);
+    if (message.payload?.$case === "groupValue") {
+      obj.groupValue = approvalNode_GroupValueToJSON(message.payload.value);
     }
-    if (message.role !== undefined) {
-      obj.role = message.role;
+    if (message.payload?.$case === "role") {
+      obj.role = message.payload.value;
     }
     return obj;
   },
@@ -911,8 +918,14 @@ export const ApprovalNode: MessageFns<ApprovalNode> = {
   fromPartial(object: DeepPartial<ApprovalNode>): ApprovalNode {
     const message = createBaseApprovalNode();
     message.type = object.type ?? ApprovalNode_Type.TYPE_UNSPECIFIED;
-    message.groupValue = object.groupValue ?? undefined;
-    message.role = object.role ?? undefined;
+    if (
+      object.payload?.$case === "groupValue" && object.payload?.value !== undefined && object.payload?.value !== null
+    ) {
+      message.payload = { $case: "groupValue", value: object.payload.value };
+    }
+    if (object.payload?.$case === "role" && object.payload?.value !== undefined && object.payload?.value !== null) {
+      message.payload = { $case: "role", value: object.payload.value };
+    }
     return message;
   },
 };
@@ -922,6 +935,7 @@ type Builtin = Date | Function | Uint8Array | string | number | boolean | undefi
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string; value: unknown } ? { $case: T["$case"]; value?: DeepPartial<T["value"]> }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
