@@ -55,47 +55,6 @@ var (
 		name TEXT NULL
 	);
 `
-
-	deploySchedule = &v1pb.Schedule{
-		Deployments: []*v1pb.ScheduleDeployment{
-			{
-				Title: "Test stage",
-				Spec: &v1pb.DeploymentSpec{
-					LabelSelector: &v1pb.LabelSelector{
-						MatchExpressions: []*v1pb.LabelSelectorRequirement{
-							{
-								Key:      api.EnvironmentLabelKey,
-								Operator: v1pb.OperatorType_OPERATOR_TYPE_IN,
-								Values:   []string{"test"},
-							},
-							{
-								Key:      api.TenantLabelKey,
-								Operator: v1pb.OperatorType_OPERATOR_TYPE_EXISTS,
-							},
-						},
-					},
-				},
-			},
-			{
-				Title: "Prod stage",
-				Spec: &v1pb.DeploymentSpec{
-					LabelSelector: &v1pb.LabelSelector{
-						MatchExpressions: []*v1pb.LabelSelectorRequirement{
-							{
-								Key:      api.EnvironmentLabelKey,
-								Operator: v1pb.OperatorType_OPERATOR_TYPE_IN,
-								Values:   []string{"prod"},
-							},
-							{
-								Key:      api.TenantLabelKey,
-								Operator: v1pb.OperatorType_OPERATOR_TYPE_EXISTS,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
 )
 
 type controller struct {

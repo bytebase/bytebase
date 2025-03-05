@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 
-	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -91,15 +90,6 @@ func TestDatabaseGroup(t *testing.T) {
 		a.NoError(err)
 		prodInstances = append(prodInstances, instance)
 	}
-
-	// Create deployment configuration.
-	_, err = ctl.projectServiceClient.UpdateDeploymentConfig(ctx, &v1pb.UpdateDeploymentConfigRequest{
-		DeploymentConfig: &v1pb.DeploymentConfig{
-			Name:     common.FormatDeploymentConfig(project.Name),
-			Schedule: deploySchedule,
-		},
-	})
-	a.NoError(err)
 
 	// Create issues that create databases.
 	databaseName := "testTenantSchemaUpdate"
