@@ -80,9 +80,9 @@ func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.Con
 	var dsn string
 	var err error
 	switch connCfg.AuthenticationType {
-	case storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM:
+	case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
 		dsn, err = getCloudSQLConnection(ctx, connCfg)
-	case storepb.DataSourceOptions_AWS_RDS_IAM:
+	case storepb.DataSource_AWS_RDS_IAM:
 		dsn, err = getRDSConnection(ctx, connCfg)
 	default:
 		dsn, err = d.getMySQLConnection(connCfg)

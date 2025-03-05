@@ -104,7 +104,7 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 
 	driverName := "sqlserver"
 	password := config.Password
-	if config.AuthenticationType == storepb.DataSourceOptions_AZURE_IAM {
+	if config.AuthenticationType == storepb.DataSource_AZURE_IAM {
 		driverName = azuread.DriverName
 		if config.ClientSecretCredential != nil {
 			query.Add("fedauth", azuread.ActiveDirectoryServicePrincipal)

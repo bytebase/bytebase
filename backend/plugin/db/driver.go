@@ -171,10 +171,10 @@ type ConnectionConfig struct {
 	ConnectionContext ConnectionContext
 
 	// AuthenticationType is for the database connection, we support normal username & password or Google IAM.
-	AuthenticationType storepb.DataSourceOptions_AuthenticationType
+	AuthenticationType storepb.DataSource_AuthenticationType
 
 	// AdditionalAddresses and ReplicaSet name are used for MongoDB.
-	AdditionalAddresses []*storepb.DataSourceOptions_Address
+	AdditionalAddresses []*storepb.DataSource_Address
 	ReplicaSet          string
 	DirectConnection    bool
 
@@ -184,7 +184,7 @@ type ConnectionConfig struct {
 	// WarehouseID is used by Databricks.
 	WarehouseID string
 
-	RedisType      storepb.DataSourceOptions_RedisType
+	RedisType      storepb.DataSource_RedisType
 	MasterName     string
 	MasterUsername string
 	MasterPassword string
@@ -197,7 +197,7 @@ type ConnectionConfig struct {
 	MaximumSQLResultSize int64
 
 	// At most one of the following could be set.
-	ClientSecretCredential *storepb.DataSourceOptions_ClientSecretCredential
+	ClientSecretCredential *storepb.DataSource_ClientSecretCredential
 }
 
 // SSHConfig is the configuration for connection over SSH.

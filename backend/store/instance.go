@@ -22,7 +22,6 @@ type InstanceMessage struct {
 	Title         string
 	Engine        storepb.Engine
 	ExternalLink  string
-	DataSources   []*DataSourceMessage
 	Activation    bool
 	EnvironmentID string
 	Deleted       bool
@@ -37,7 +36,6 @@ type UpdateInstanceMessage struct {
 	Title         *string
 	ExternalLink  *string
 	Deleted       *bool
-	DataSources   *[]*DataSourceMessage
 	EngineVersion *string
 	Activation    *bool
 	Metadata      *storepb.InstanceMetadata
@@ -111,7 +109,7 @@ func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) 
 
 // CreateInstanceV2 creates the instance.
 func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMessage, maximumActivation int) (*InstanceMessage, error) {
-	if err := validateDataSourceList(instanceCreate.DataSources); err != nil {
+	if err := validateDataSources(instanceCreate.Metadata); err != nil {
 		return nil, err
 	}
 
@@ -131,12 +129,11 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		return nil, err
 	}
 
-	var instanceID int
 	var environment *string
 	if instanceCreate.EnvironmentID != "" {
 		environment = &instanceCreate.EnvironmentID
 	}
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
 			INSERT INTO instance (
 				resource_id,
 				environment,
@@ -148,7 +145,6 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 			)
 			SELECT $1, $2, $3, $4, $5, $6, $7
 			%s
-			RETURNING id
 		`, where),
 		instanceCreate.ResourceID,
 		environment,
@@ -157,20 +153,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		instanceCreate.ExternalLink,
 		instanceCreate.Activation,
 		metadataBytes,
-	).Scan(&instanceID); err != nil {
-		return nil, err
-	}
-
-	for _, ds := range instanceCreate.DataSources {
-		if err := s.addDataSourceToInstanceImplV2(ctx, tx, instanceCreate.ResourceID, ds); err != nil {
-			return nil, err
-		}
-	}
-
-	instanceDataSourcesMap, err := s.listInstanceDataSourceMap(ctx, tx, &FindDataSourceMessage{
-		InstanceID: &instanceCreate.ResourceID,
-	})
-	if err != nil {
+	); err != nil {
 		return nil, err
 	}
 
@@ -184,7 +167,6 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		Title:         instanceCreate.Title,
 		Engine:        instanceCreate.Engine,
 		ExternalLink:  instanceCreate.ExternalLink,
-		DataSources:   instanceDataSourcesMap[instanceCreate.ResourceID],
 		Activation:    instanceCreate.Activation,
 		Metadata:      instanceCreate.Metadata,
 	}
@@ -194,12 +176,6 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 
 // UpdateInstanceV2 updates an instance.
 func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessage, maximumActivation int) (*InstanceMessage, error) {
-	if patch.DataSources != nil {
-		if err := validateDataSourceList(*patch.DataSources); err != nil {
-			return nil, err
-		}
-	}
-
 	set, args, where := []string{}, []any{}, []string{}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
@@ -301,26 +277,6 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		instance = existedInstance
 	}
 
-	if patch.DataSources != nil {
-		if err := s.clearDataSourceImpl(ctx, tx, instance.ResourceID); err != nil {
-			return nil, err
-		}
-
-		for _, ds := range *patch.DataSources {
-			if err := s.addDataSourceToInstanceImplV2(ctx, tx, instance.ResourceID, ds); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	instanceDataSourcesMap, err := s.listInstanceDataSourceMap(ctx, tx, &FindDataSourceMessage{
-		InstanceID: &patch.ResourceID,
-	})
-	if err != nil {
-		return nil, err
-	}
-	instance.DataSources = instanceDataSourcesMap[patch.ResourceID]
-
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -400,19 +356,6 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 		return nil, err
 	}
 
-	// Use a single query to list all data sources if there are more than one instance to look at.
-	dataSourceFind := &FindDataSourceMessage{}
-	if len(instanceMessages) == 1 {
-		dataSourceFind.InstanceID = &instanceMessages[0].ResourceID
-	}
-	instanceDataSourcesMap, err := s.listInstanceDataSourceMap(ctx, tx, dataSourceFind)
-	if err != nil {
-		return nil, err
-	}
-	for _, instanceMessage := range instanceMessages {
-		instanceMessage.DataSources = instanceDataSourcesMap[instanceMessage.ResourceID]
-	}
-
 	return instanceMessages, nil
 }
 
@@ -431,15 +374,15 @@ func (s *Store) CheckActivationLimit(ctx context.Context, maximumActivation int)
 	return nil
 }
 
-func validateDataSourceList(dataSources []*DataSourceMessage) error {
+func validateDataSources(metadata *storepb.InstanceMetadata) error {
 	dataSourceMap := map[string]bool{}
 	adminCount := 0
-	for _, dataSource := range dataSources {
-		if dataSourceMap[dataSource.Options.GetId()] {
-			return status.Errorf(codes.InvalidArgument, "duplicate data source ID %s", dataSource.Options.GetId())
+	for _, dataSource := range metadata.GetDataSources() {
+		if dataSourceMap[dataSource.GetId()] {
+			return status.Errorf(codes.InvalidArgument, "duplicate data source ID %s", dataSource.GetId())
 		}
-		dataSourceMap[dataSource.Options.GetId()] = true
-		if dataSource.Options.GetType() == storepb.DataSourceType_ADMIN {
+		dataSourceMap[dataSource.GetId()] = true
+		if dataSource.GetType() == storepb.DataSourceType_ADMIN {
 			adminCount++
 		}
 	}
