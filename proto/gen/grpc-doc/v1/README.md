@@ -655,7 +655,6 @@
     - [Stage](#bytebase-v1-Stage)
     - [Task](#bytebase-v1-Task)
     - [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate)
-    - [Task.DatabaseCreate.LabelsEntry](#bytebase-v1-Task-DatabaseCreate-LabelsEntry)
     - [Task.DatabaseDataExport](#bytebase-v1-Task-DatabaseDataExport)
     - [Task.DatabaseDataUpdate](#bytebase-v1-Task-DatabaseDataUpdate)
     - [Task.DatabaseSchemaBaseline](#bytebase-v1-Task-DatabaseSchemaBaseline)
@@ -10432,23 +10431,6 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | character_set | [string](#string) |  |  |
 | collation | [string](#string) |  |  |
 | environment | [string](#string) |  |  |
-| labels | [Task.DatabaseCreate.LabelsEntry](#bytebase-v1-Task-DatabaseCreate-LabelsEntry) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Task-DatabaseCreate-LabelsEntry"></a>
-
-### Task.DatabaseCreate.LabelsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
 
 
 

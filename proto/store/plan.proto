@@ -62,8 +62,6 @@ message PlanConfig {
     // The environment resource.
     // Format: environments/prod where prod is the environment resource ID.
     string environment = 9 [(google.api.field_behavior) = OPTIONAL];
-    // labels of the database.
-    map<string, string> labels = 10 [(google.api.field_behavior) = OPTIONAL];
   }
 
   message ChangeDatabaseConfig {

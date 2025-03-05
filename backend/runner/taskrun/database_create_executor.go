@@ -2,7 +2,6 @@ package taskrun
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -102,26 +101,12 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		slog.String("statement", statement),
 	)
 
-	// Upsert first because we need database id in instance change history.
-	// The sync status is NOT_FOUND, which will be updated to OK if succeeds.
-	labels := make(map[string]string)
-	if payload.Labels != "" {
-		var databaseLabels []*storepb.DatabaseLabel
-		if err := json.Unmarshal([]byte(payload.Labels), &databaseLabels); err != nil {
-			return true, nil, err
-		}
-		for _, databaseLabel := range databaseLabels {
-			labels[databaseLabel.Key] = databaseLabel.Value
-		}
-	}
 	database, err := exec.store.UpsertDatabase(ctx, &store.DatabaseMessage{
 		ProjectID:     pipeline.ProjectID,
 		InstanceID:    instance.ResourceID,
 		DatabaseName:  payload.DatabaseName,
 		EnvironmentID: payload.EnvironmentId,
-		Metadata: &storepb.DatabaseMetadata{
-			Labels: labels,
-		},
+		Metadata:      &storepb.DatabaseMetadata{},
 	})
 	if err != nil {
 		return true, nil, err

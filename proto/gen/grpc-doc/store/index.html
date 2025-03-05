@@ -179,10 +179,6 @@
             <ul>
               
                 <li>
-                  <a href="#bytebase.store.DatabaseLabel"><span class="badge">M</span>DatabaseLabel</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.PageToken"><span class="badge">M</span>PageToken</a>
                 </li>
               
@@ -983,10 +979,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.PlanConfig.CreateDatabaseConfig.LabelsEntry"><span class="badge">M</span>PlanConfig.CreateDatabaseConfig.LabelsEntry</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.PlanConfig.DeploymentSnapshot"><span class="badge">M</span>PlanConfig.DeploymentSnapshot</a>
                 </li>
               
@@ -1612,37 +1604,6 @@
       </div>
       <p></p>
 
-      
-        <h3 id="bytebase.store.DatabaseLabel">DatabaseLabel</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
       
         <h3 id="bytebase.store.PageToken">PageToken</h3>
         <p>Used internally for obfuscating the page token.</p>
@@ -8950,44 +8911,6 @@ Format: instances/{instance}/databases/{database}/backups/{backup-name} </p></td
                   <td></td>
                   <td><p>The environment resource.
 Format: environments/prod where prod is the environment resource ID. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>labels</td>
-                  <td><a href="#bytebase.store.PlanConfig.CreateDatabaseConfig.LabelsEntry">PlanConfig.CreateDatabaseConfig.LabelsEntry</a></td>
-                  <td>repeated</td>
-                  <td><p>labels of the database. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanConfig.CreateDatabaseConfig.LabelsEntry">PlanConfig.CreateDatabaseConfig.LabelsEntry</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
