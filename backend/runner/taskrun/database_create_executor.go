@@ -79,7 +79,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		return true, nil, err
 	}
 
-	if cannotCreateDatabase[instance.Engine] {
+	if cannotCreateDatabase[instance.Metadata.GetEngine()] {
 		return true, nil, errors.Errorf("Creating database is not supported")
 	}
 
@@ -100,7 +100,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 
 	// Create database.
 	slog.Debug("Start creating database...",
-		slog.String("instance", instance.Title),
+		slog.String("instance", instance.Metadata.GetTitle()),
 		slog.String("database", payload.DatabaseName),
 		slog.String("statement", statement),
 	)
@@ -132,7 +132,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 	}
 
 	var defaultDBDriver db.Driver
-	switch instance.Engine {
+	switch instance.Metadata.GetEngine() {
 	case storepb.Engine_MONGODB:
 		// For MongoDB, it allows us to connect to the non-existing database. So we pass the database name to driver to let us connect to the specific database.
 		// And run the create collection statement later.
@@ -186,7 +186,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 
 	if peerSchema != "" {
 		// Better displaying schema in the task.
-		connectionStmt, err := getConnectionStatement(instance.Engine, payload.DatabaseName)
+		connectionStmt, err := getConnectionStatement(instance.Metadata.GetEngine(), payload.DatabaseName)
 		if err != nil {
 			return true, nil, err
 		}
@@ -476,11 +476,11 @@ func (exec *DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.
 	defer driver.Close(ctx)
 
 	dbSchema := (*storepb.DatabaseSchemaMetadata)(nil)
-	if similarDBInstance.Engine == storepb.Engine_MYSQL || similarDBInstance.Engine == storepb.Engine_POSTGRES {
+	if similarDBInstance.Metadata.GetEngine() == storepb.Engine_MYSQL || similarDBInstance.Metadata.GetEngine() == storepb.Engine_POSTGRES {
 		// Use new driver to sync the schema to avoid the session state change, such as SET ROLE in PostgreSQL.
 		syncDriver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, similarDBInstance, similarDB, db.ConnectionContext{})
 		if err != nil {
-			return nil, "", errors.Wrapf(err, "failed to get driver for instance %q", similarDBInstance.Title)
+			return nil, "", errors.Wrapf(err, "failed to get driver for instance %q", similarDBInstance.Metadata.GetTitle())
 		}
 		defer syncDriver.Close(ctx)
 		dbSchema, err = syncDriver.SyncDBSchema(ctx)
@@ -503,7 +503,7 @@ func (exec *DatabaseCreateExecutor) getPeerTenantDatabasesFromDatabaseGroup(ctx 
 	}
 	allDatabases, err := exec.store.ListDatabases(ctx, &store.FindDatabaseMessage{
 		ProjectID: &project.ResourceID,
-		Engine:    &instance.Engine,
+		Engine:    &instance.Metadata.Engine,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to fetch databases in project %s", project.ResourceID)

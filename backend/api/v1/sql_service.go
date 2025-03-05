@@ -183,7 +183,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 
 	// Validate the request.
 	// New query ACL experience.
-	if !request.Explain && !queryNewACLSupportEngines[instance.Engine] {
+	if !request.Explain && !queryNewACLSupportEngines[instance.Metadata.GetEngine()] {
 		if err := validateQueryRequest(instance, statement); err != nil {
 			return nil, err
 		}
@@ -299,7 +299,7 @@ func getSchemaMetadata(engine storepb.Engine, dbSchema *model.DatabaseSchema) *m
 }
 
 func replaceBackupTableWithSource(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, spans []*base.QuerySpan) error {
-	switch instance.Engine {
+	switch instance.Metadata.GetEngine() {
 	case storepb.Engine_POSTGRES:
 		// Don't need to check the database name for postgres here.
 		// We backup the table to the same database with bbdataarchive schema for Postgres.
@@ -316,15 +316,15 @@ func replaceBackupTableWithSource(ctx context.Context, stores *store.Store, inst
 	if err != nil {
 		return err
 	}
-	schema := getSchemaMetadata(instance.Engine, dbSchema)
+	schema := getSchemaMetadata(instance.Metadata.GetEngine(), dbSchema)
 	if schema == nil {
 		return nil
 	}
 
 	for _, span := range spans {
-		span.SourceColumns = generateNewSourceColumnSet(instance.Engine, span.SourceColumns, schema)
+		span.SourceColumns = generateNewSourceColumnSet(instance.Metadata.GetEngine(), span.SourceColumns, schema)
 		for _, result := range span.Results {
-			result.SourceColumns = generateNewSourceColumnSet(instance.Engine, result.SourceColumns, schema)
+			result.SourceColumns = generateNewSourceColumnSet(instance.Metadata.GetEngine(), result.SourceColumns, schema)
 		}
 	}
 	return nil
@@ -412,9 +412,9 @@ func queryRetry(
 				InstanceID:                    instance.ResourceID,
 				GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(stores),
 				ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(stores),
-				GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(stores, instance.Engine),
+				GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
 			},
-			instance.Engine,
+			instance.Metadata.GetEngine(),
 			statement,
 			database.DatabaseName,
 			queryContext.Schema,
@@ -480,9 +480,9 @@ func queryRetry(
 				InstanceID:                    instance.ResourceID,
 				GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(stores),
 				ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(stores),
-				GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(stores, instance.Engine),
+				GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
 			},
-			instance.Engine,
+			instance.Metadata.GetEngine(),
 			statement,
 			database.DatabaseName,
 			queryContext.Schema,
@@ -513,7 +513,7 @@ func queryRetry(
 
 	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil && !queryContext.Explain {
 		// TODO(zp): Refactor Document Database and RDBMS to use the same masking logic.
-		if instance.Engine == storepb.Engine_COSMOSDB {
+		if instance.Metadata.GetEngine() == storepb.Engine_COSMOSDB {
 			objectSchema, err := getCosmosDBContainerObjectSchema(ctx, stores, database.InstanceID, database.DatabaseName, queryContext.Container)
 			if err != nil {
 				return nil, nil, duration, status.Error(codes.Internal, err.Error())
@@ -694,7 +694,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 
 	// Validate the request.
 	// New query ACL experience.
-	if instance.Engine != storepb.Engine_MYSQL {
+	if instance.Metadata.GetEngine() != storepb.Engine_MYSQL {
 		if err := validateQueryRequest(instance, statement); err != nil {
 			return nil, err
 		}
@@ -846,15 +846,15 @@ func DoExport(
 			return nil, duration, err
 		}
 	case v1pb.ExportFormat_SQL:
-		resourceList, err := extractResourceList(ctx, storeInstance, instance.Engine, database.DatabaseName, request.Statement, instance)
+		resourceList, err := extractResourceList(ctx, storeInstance, instance.Metadata.GetEngine(), database.DatabaseName, request.Statement, instance)
 		if err != nil {
 			return nil, 0, status.Errorf(codes.InvalidArgument, "failed to extract resource list: %v", err)
 		}
-		statementPrefix, err := getSQLStatementPrefix(instance.Engine, resourceList, result.ColumnNames)
+		statementPrefix, err := getSQLStatementPrefix(instance.Metadata.GetEngine(), resourceList, result.ColumnNames)
 		if err != nil {
 			return nil, 0, err
 		}
-		content, err = exportSQL(instance.Engine, statementPrefix, result)
+		content, err = exportSQL(instance.Metadata.GetEngine(), statementPrefix, result)
 		if err != nil {
 			return nil, duration, err
 		}
@@ -1170,7 +1170,7 @@ func (s *SQLService) accessCheck(
 
 	for _, span := range spans {
 		// New query ACL experience.
-		if queryNewACLSupportEngines[instance.Engine] {
+		if queryNewACLSupportEngines[instance.Metadata.GetEngine()] {
 			var permission iam.Permission
 			switch span.Type {
 			case base.QueryTypeUnknown:
@@ -1320,7 +1320,7 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 }
 
 func validateQueryRequest(instance *store.InstanceMessage, statement string) error {
-	ok, _, err := base.ValidateSQLForEditor(instance.Engine, statement)
+	ok, _, err := base.ValidateSQLForEditor(instance.Metadata.GetEngine(), statement)
 	if err != nil {
 		syntaxErr, ok := err.(*base.SyntaxError)
 		if ok {
@@ -1471,7 +1471,7 @@ func (s *SQLService) SQLReviewCheck(
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
 ) (storepb.Advice_Status, []*v1pb.Advice, error) {
-	if !isSQLReviewSupported(instance.Engine) || database == nil {
+	if !isSQLReviewSupported(instance.Metadata.GetEngine()) || database == nil {
 		return storepb.Advice_SUCCESS, nil, nil
 	}
 
@@ -1493,7 +1493,7 @@ func (s *SQLService) SQLReviewCheck(
 	}
 	dbMetadata := dbSchema.GetMetadata()
 
-	catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, instance.Engine, store.IsObjectCaseSensitive(instance), dbMetadata)
+	catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance), dbMetadata)
 	if err != nil {
 		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to create a catalog: %v", err)
 	}
@@ -1515,7 +1515,7 @@ func (s *SQLService) SQLReviewCheck(
 		Collation:                dbMetadata.Collation,
 		ChangeType:               changeType,
 		DBSchema:                 dbMetadata,
-		DbType:                   instance.Engine,
+		DbType:                   instance.Metadata.GetEngine(),
 		Catalog:                  catalog,
 		Driver:                   connection,
 		CurrentDatabase:          database.DatabaseName,
@@ -1562,7 +1562,7 @@ func (s *SQLService) SQLReviewCheck(
 }
 
 func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) (bool, error) {
-	if instance.Engine != storepb.Engine_POSTGRES || changeType == storepb.PlanCheckRunConfig_SQL_EDITOR {
+	if instance.Metadata.GetEngine() != storepb.Engine_POSTGRES || changeType == storepb.PlanCheckRunConfig_SQL_EDITOR {
 		return false, nil
 	}
 

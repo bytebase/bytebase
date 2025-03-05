@@ -545,7 +545,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 	// We only support MySQL engine for now.
 	schema := string(dbSchema.GetSchema())
 	if request.SdlFormat {
-		switch instance.Engine {
+		switch instance.Metadata.GetEngine() {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			sdlSchema, err := transform.SchemaTransform(storepb.Engine_MYSQL, schema)
 			if err != nil {
@@ -664,7 +664,7 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 		return engine, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 
-	switch instance.Engine {
+	switch instance.Metadata.GetEngine() {
 	case storepb.Engine_POSTGRES:
 		engine = storepb.Engine_POSTGRES
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
@@ -678,7 +678,7 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 	case storepb.Engine_COCKROACHDB:
 		engine = storepb.Engine_COCKROACHDB
 	default:
-		return engine, status.Errorf(codes.InvalidArgument, "invalid engine type %v", instance.Engine)
+		return engine, status.Errorf(codes.InvalidArgument, "invalid engine type %v", instance.Metadata.GetEngine())
 	}
 
 	return engine, nil
@@ -1314,13 +1314,13 @@ func (s *DatabaseService) AdviseIndex(ctx context.Context, request *v1pb.AdviseI
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 
-	switch instance.Engine {
+	switch instance.Metadata.GetEngine() {
 	case storepb.Engine_POSTGRES:
 		return s.pgAdviseIndex(ctx, request, database)
 	case storepb.Engine_MYSQL:
 		return s.mysqlAdviseIndex(ctx, request, instance, database)
 	default:
-		return nil, status.Errorf(codes.InvalidArgument, "AdviseIndex is not implemented for engine: %v", instance.Engine)
+		return nil, status.Errorf(codes.InvalidArgument, "AdviseIndex is not implemented for engine: %v", instance.Metadata.GetEngine())
 	}
 }
 
@@ -1332,7 +1332,7 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 
 	var schemas []*model.DatabaseSchema
 	// Deal with the cross database query.
-	resources, err := base.ExtractResourceList(instance.Engine, database.DatabaseName, "", request.Statement)
+	resources, err := base.ExtractResourceList(instance.Metadata.GetEngine(), database.DatabaseName, "", request.Statement)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Failed to extract resource list: %v", err)
 	}

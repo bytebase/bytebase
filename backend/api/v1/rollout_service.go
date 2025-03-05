@@ -363,7 +363,7 @@ func (s *RolloutService) GetTaskRunSession(ctx context.Context, request *v1pb.Ge
 	}
 	defer driver.Close(ctx)
 
-	session, err := getSession(ctx, instance.Engine, driver.GetDB(), connID)
+	session, err := getSession(ctx, instance.Metadata.GetEngine(), driver.GetDB(), connID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get session, error: %v", err)
 	}
@@ -921,7 +921,7 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, request *v1
 
 	var results []string
 	for _, item := range backupDetail.Items {
-		restore, err := base.GenerateRestoreSQL(ctx, instance.Engine, base.RestoreContext{
+		restore, err := base.GenerateRestoreSQL(ctx, instance.Metadata.GetEngine(), base.RestoreContext{
 			InstanceID:              instance.ResourceID,
 			GetDatabaseMetadataFunc: BuildGetDatabaseMetadataFunc(s.store),
 			ListDatabaseNamesFunc:   BuildListDatabaseNamesFunc(s.store),

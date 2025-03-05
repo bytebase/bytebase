@@ -100,12 +100,12 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 	if instance == nil {
 		return nil, errors.Errorf("instance %s not found", config.InstanceId)
 	}
-	if !common.StatementAdviseEngines[instance.Engine] {
+	if !common.StatementAdviseEngines[instance.Metadata.GetEngine()] {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
 				Code:    common.Ok.Int32(),
-				Title:   fmt.Sprintf("Statement advise is not supported for %s", instance.Engine),
+				Title:   fmt.Sprintf("Statement advise is not supported for %s", instance.Metadata.GetEngine()),
 				Content: "",
 			},
 		}, nil
@@ -167,7 +167,7 @@ func (e *StatementAdviseExecutor) runReview(
 		}
 	}
 
-	catalog, err := catalog.NewCatalog(ctx, e.store, database.InstanceID, database.DatabaseName, instance.Engine, store.IsObjectCaseSensitive(instance), nil /* Override Metadata */)
+	catalog, err := catalog.NewCatalog(ctx, e.store, database.InstanceID, database.DatabaseName, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance), nil /* Override Metadata */)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
 	}
@@ -196,7 +196,7 @@ func (e *StatementAdviseExecutor) runReview(
 		Collation:                dbSchema.GetMetadata().Collation,
 		DBSchema:                 dbSchema.GetMetadata(),
 		ChangeType:               changeType,
-		DbType:                   instance.Engine,
+		DbType:                   instance.Metadata.GetEngine(),
 		Catalog:                  catalog,
 		Driver:                   connection,
 		PreUpdateBackupDetail:    preUpdateBackupDetail,

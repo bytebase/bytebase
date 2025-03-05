@@ -154,7 +154,7 @@ func (h *Handler) getEngineType(ctx context.Context) storepb.Engine {
 		slog.Error("Instance not found", slog.String("instanceID", instanceID))
 		return storepb.Engine_ENGINE_UNSPECIFIED
 	}
-	return instance.Engine
+	return instance.Metadata.GetEngine()
 }
 
 func (h *Handler) checkInitialized(req *jsonrpc2.Request) error {
