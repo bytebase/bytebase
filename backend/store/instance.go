@@ -59,13 +59,8 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 
 	// We will always return the resource regardless of its deleted state.
 	find.ShowDeleted = true
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
 
-	instances, err := s.listInstanceImplV2(ctx, tx, find)
+	instances, err := s.ListInstancesV2(ctx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list instances with find instance message %+v", find)
 	}
@@ -74,9 +69,6 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 	}
 	if len(instances) > 1 {
 		return nil, errors.Errorf("find %d instances with find instance message %+v, expected 1", len(instances), find)
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
 	}
 
 	instance := instances[0]
@@ -92,7 +84,7 @@ func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) 
 	}
 	defer tx.Rollback()
 
-	instances, err := s.listInstanceImplV2(ctx, tx, find)
+	instances, err := listInstanceImplV2(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +277,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	return instance, nil
 }
 
-func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
+func listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
