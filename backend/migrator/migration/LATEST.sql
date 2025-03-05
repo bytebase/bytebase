@@ -323,8 +323,6 @@ CREATE TABLE issue (
     status text NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
     type text NOT NULL CHECK (type LIKE 'bb.issue.%'),
     description text NOT NULL DEFAULT '',
-    assignee_id integer REFERENCES principal(id),
-    assignee_need_attention boolean NOT NULL DEFAULT FALSE, 
     payload jsonb NOT NULL DEFAULT '{}',
     ts_vector tsvector
 );
