@@ -73,13 +73,6 @@ export interface PlanConfig_CreateDatabaseConfig {
    * Format: environments/prod where prod is the environment resource ID.
    */
   environment: string;
-  /** labels of the database. */
-  labels: { [key: string]: string };
-}
-
-export interface PlanConfig_CreateDatabaseConfig_LabelsEntry {
-  key: string;
-  value: string;
 }
 
 export interface PlanConfig_ChangeDatabaseConfig {
@@ -602,7 +595,6 @@ function createBasePlanConfig_CreateDatabaseConfig(): PlanConfig_CreateDatabaseC
     owner: "",
     backup: "",
     environment: "",
-    labels: {},
   };
 }
 
@@ -635,9 +627,6 @@ export const PlanConfig_CreateDatabaseConfig: MessageFns<PlanConfig_CreateDataba
     if (message.environment !== "") {
       writer.uint32(74).string(message.environment);
     }
-    Object.entries(message.labels).forEach(([key, value]) => {
-      PlanConfig_CreateDatabaseConfig_LabelsEntry.encode({ key: key as any, value }, writer.uint32(82).fork()).join();
-    });
     return writer;
   },
 
@@ -720,17 +709,6 @@ export const PlanConfig_CreateDatabaseConfig: MessageFns<PlanConfig_CreateDataba
           message.environment = reader.string();
           continue;
         }
-        case 10: {
-          if (tag !== 82) {
-            break;
-          }
-
-          const entry10 = PlanConfig_CreateDatabaseConfig_LabelsEntry.decode(reader, reader.uint32());
-          if (entry10.value !== undefined) {
-            message.labels[entry10.key] = entry10.value;
-          }
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -751,12 +729,6 @@ export const PlanConfig_CreateDatabaseConfig: MessageFns<PlanConfig_CreateDataba
       owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
       backup: isSet(object.backup) ? globalThis.String(object.backup) : "",
       environment: isSet(object.environment) ? globalThis.String(object.environment) : "",
-      labels: isObject(object.labels)
-        ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-          acc[key] = String(value);
-          return acc;
-        }, {})
-        : {},
     };
   },
 
@@ -789,15 +761,6 @@ export const PlanConfig_CreateDatabaseConfig: MessageFns<PlanConfig_CreateDataba
     if (message.environment !== "") {
       obj.environment = message.environment;
     }
-    if (message.labels) {
-      const entries = Object.entries(message.labels);
-      if (entries.length > 0) {
-        obj.labels = {};
-        entries.forEach(([k, v]) => {
-          obj.labels[k] = v;
-        });
-      }
-    }
     return obj;
   },
 
@@ -815,93 +778,6 @@ export const PlanConfig_CreateDatabaseConfig: MessageFns<PlanConfig_CreateDataba
     message.owner = object.owner ?? "";
     message.backup = object.backup ?? "";
     message.environment = object.environment ?? "";
-    message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-      if (value !== undefined) {
-        acc[key] = globalThis.String(value);
-      }
-      return acc;
-    }, {});
-    return message;
-  },
-};
-
-function createBasePlanConfig_CreateDatabaseConfig_LabelsEntry(): PlanConfig_CreateDatabaseConfig_LabelsEntry {
-  return { key: "", value: "" };
-}
-
-export const PlanConfig_CreateDatabaseConfig_LabelsEntry: MessageFns<PlanConfig_CreateDatabaseConfig_LabelsEntry> = {
-  encode(
-    message: PlanConfig_CreateDatabaseConfig_LabelsEntry,
-    writer: BinaryWriter = new BinaryWriter(),
-  ): BinaryWriter {
-    if (message.key !== "") {
-      writer.uint32(10).string(message.key);
-    }
-    if (message.value !== "") {
-      writer.uint32(18).string(message.value);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): PlanConfig_CreateDatabaseConfig_LabelsEntry {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanConfig_CreateDatabaseConfig_LabelsEntry();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.value = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): PlanConfig_CreateDatabaseConfig_LabelsEntry {
-    return {
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      value: isSet(object.value) ? globalThis.String(object.value) : "",
-    };
-  },
-
-  toJSON(message: PlanConfig_CreateDatabaseConfig_LabelsEntry): unknown {
-    const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== "") {
-      obj.value = message.value;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<PlanConfig_CreateDatabaseConfig_LabelsEntry>): PlanConfig_CreateDatabaseConfig_LabelsEntry {
-    return PlanConfig_CreateDatabaseConfig_LabelsEntry.fromPartial(base ?? {});
-  },
-  fromPartial(
-    object: DeepPartial<PlanConfig_CreateDatabaseConfig_LabelsEntry>,
-  ): PlanConfig_CreateDatabaseConfig_LabelsEntry {
-    const message = createBasePlanConfig_CreateDatabaseConfig_LabelsEntry();
-    message.key = object.key ?? "";
-    message.value = object.value ?? "";
     return message;
   },
 };

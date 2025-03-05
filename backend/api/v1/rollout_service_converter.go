@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"slices"
 
@@ -119,7 +118,6 @@ func convertToPlanSpecCreateDatabaseConfig(config *storepb.PlanConfig_Spec_Creat
 			Cluster:      c.Cluster,
 			Owner:        c.Owner,
 			Environment:  c.Environment,
-			Labels:       c.Labels,
 		},
 	}
 }
@@ -261,7 +259,6 @@ func convertPlanConfigCreateDatabaseConfig(c *v1pb.Plan_CreateDatabaseConfig) *s
 		Cluster:      c.Cluster,
 		Owner:        c.Owner,
 		Environment:  c.Environment,
-		Labels:       c.Labels,
 	}
 }
 
@@ -295,29 +292,6 @@ func convertPlanSpecExportDataConfig(config *v1pb.Plan_Spec_ExportDataConfig) *s
 			Password: c.Password,
 		},
 	}
-}
-
-// convertDatabaseLabels converts the map[string]string labels to []*api.DatabaseLabel JSON string.
-func convertDatabaseLabels(labelsMap map[string]string) (string, error) {
-	if len(labelsMap) == 0 {
-		return "", nil
-	}
-	// For scalability, each database can have up to four labels for now.
-	if len(labelsMap) > api.DatabaseLabelSizeMax {
-		return "", errors.Errorf("database labels are up to a maximum of %d", api.DatabaseLabelSizeMax)
-	}
-	var labels []*storepb.DatabaseLabel
-	for k, v := range labelsMap {
-		labels = append(labels, &storepb.DatabaseLabel{
-			Key:   k,
-			Value: v,
-		})
-	}
-	labelsJSON, err := json.Marshal(labels)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to marshal labels json")
-	}
-	return string(labelsJSON), nil
 }
 
 func convertToPlanCheckRuns(ctx context.Context, s *store.Store, projectID string, planUID int64, runs []*store.PlanCheckRunMessage) ([]*v1pb.PlanCheckRun, error) {
@@ -689,21 +663,6 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 	}
 }
 
-func convertToDatabaseLabels(labelsJSON string) (map[string]string, error) {
-	if labelsJSON == "" {
-		return nil, nil
-	}
-	var labels []*storepb.DatabaseLabel
-	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
-		return nil, err
-	}
-	labelsMap := make(map[string]string)
-	for _, label := range labels {
-		labelsMap[label.Key] = label.Value
-	}
-	return labelsMap, nil
-}
-
 func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	payload := &storepb.TaskDatabaseCreatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
@@ -714,10 +673,6 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance %s", task.InstanceID)
-	}
-	labels, err := convertToDatabaseLabels(payload.Labels)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert database labels %v", payload.Labels)
 	}
 	v1pbTask := &v1pb.Task{
 		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
@@ -736,7 +691,6 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 				CharacterSet: payload.CharacterSet,
 				Collation:    payload.Collation,
 				Environment:  common.FormatEnvironment(payload.EnvironmentId),
-				Labels:       labels,
 			},
 		},
 	}

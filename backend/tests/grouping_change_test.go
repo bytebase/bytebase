@@ -153,11 +153,11 @@ func TestCreateDatabaseGroup(t *testing.T) {
 				a.NoError(err)
 				instanceResourceID2InstanceTitle[instanceResourceID] = instance.Title
 				for preCreateDatabase := range prepareInstance.matchedDatabasesName {
-					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
+					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "")
 					a.NoError(err)
 				}
 				for preCreateDatabase := range prepareInstance.unmatchedDatabaseName {
-					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "", nil /* labelMap */)
+					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "")
 					a.NoError(err)
 				}
 			}
