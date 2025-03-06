@@ -189,7 +189,7 @@ func getFindDatabaseFilter(filter string) (*store.FindDatabaseFilter, error) {
 			return fmt.Sprintf(`
 			COALESCE(
 				db.environment,
-				(SELECT environment.resource_id FROM environment JOIN instance ON environment.resource_id = instance.environment WHERE instance.resource_id = db.instance)
+				instance.environment
 			) = $%d`, len(positionalArgs)), nil
 		case "engine":
 			v1Engine, ok := v1pb.Engine_value[value.(string)]
