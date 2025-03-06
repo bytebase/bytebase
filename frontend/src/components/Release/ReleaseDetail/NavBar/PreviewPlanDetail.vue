@@ -15,7 +15,7 @@
     >
       <DatabaseView
         class="text-sm"
-        :database="databaseForPlanSpec(spec)"
+        :database="spec.changeDatabaseConfig!.target"
         :link="false"
         :show-not-found="true"
       />
@@ -55,7 +55,7 @@
           <td>
             <DatabaseView
               class="text-sm"
-              :database="databaseStore.getDatabaseByName(temp.database)"
+              :database="temp.database"
               :link="false"
               :show-not-found="true"
             />
@@ -97,7 +97,7 @@
           <td>
             <DatabaseView
               class="text-sm"
-              :database="databaseStore.getDatabaseByName(temp.database)"
+              :database="temp.database"
               :link="false"
               :show-not-found="true"
             />
