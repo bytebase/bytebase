@@ -144,7 +144,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     // Create a clean version of the data source with manually copied extraConnectionParameters
     const cleanDataSource = {...dataSource};
     if (dataSource.extraConnectionParameters) {
-      const cleanParams = {};
+      const cleanParams: Record<string, string> = {};
       Object.entries(dataSource.extraConnectionParameters).forEach(([key, value]) => {
         cleanParams[key] = value;
       });
