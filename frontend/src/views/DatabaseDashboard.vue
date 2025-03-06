@@ -24,8 +24,12 @@
     </div>
 
     <div class="space-y-2">
-      <DatabaseOperations :databases="selectedDatabases" />
+      <DatabaseOperations
+        :databases="selectedDatabases"
+        @refresh="(databases) => pagedDatabaseTableRef?.refreshCache(databases)"
+      />
       <PagedDatabaseTable
+        ref="pagedDatabaseTableRef"
         mode="ALL"
         :bordered="false"
         :filter="filter"
@@ -50,7 +54,7 @@
 <script lang="ts" setup>
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { computed, onMounted, reactive, watch } from "vue";
+import { computed, onMounted, reactive, watch, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
@@ -96,6 +100,7 @@ const hideUnassignedDatabases = useAppFeature(
   "bb.feature.databases.hide-unassigned"
 );
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
+const pagedDatabaseTableRef = ref<InstanceType<typeof PagedDatabaseTable>>();
 
 const defaultSearchParams = () => {
   const params: SearchParams = {
