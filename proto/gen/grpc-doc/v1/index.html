@@ -1961,31 +1961,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.DeploymentConfig"><span class="badge">M</span>DeploymentConfig</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.DeploymentSpec"><span class="badge">M</span>DeploymentSpec</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.GetDeploymentConfigRequest"><span class="badge">M</span>GetDeploymentConfigRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.GetProjectRequest"><span class="badge">M</span>GetProjectRequest</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.v1.Label"><span class="badge">M</span>Label</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.LabelSelector"><span class="badge">M</span>LabelSelector</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.LabelSelectorRequirement"><span class="badge">M</span>LabelSelectorRequirement</a>
                 </li>
               
                 <li>
@@ -2002,14 +1982,6 @@
               
                 <li>
                   <a href="#bytebase.v1.RemoveWebhookRequest"><span class="badge">M</span>RemoveWebhookRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Schedule"><span class="badge">M</span>Schedule</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ScheduleDeployment"><span class="badge">M</span>ScheduleDeployment</a>
                 </li>
               
                 <li>
@@ -2033,10 +2005,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.UpdateDeploymentConfigRequest"><span class="badge">M</span>UpdateDeploymentConfigRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.UpdateProjectRequest"><span class="badge">M</span>UpdateProjectRequest</a>
                 </li>
               
@@ -2051,10 +2019,6 @@
               
                 <li>
                   <a href="#bytebase.v1.Activity.Type"><span class="badge">E</span>Activity.Type</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.OperatorType"><span class="badge">E</span>OperatorType</a>
                 </li>
               
                 <li>
@@ -21111,94 +21075,6 @@ Format: projects/{project} </p></td>
 
         
       
-        <h3 id="bytebase.v1.DeploymentConfig">DeploymentConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the resource.
-Format: projects/{project}/deploymentConfigs/default. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The title of the deployment config. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schedule</td>
-                  <td><a href="#bytebase.v1.Schedule">Schedule</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.DeploymentSpec">DeploymentSpec</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>label_selector</td>
-                  <td><a href="#bytebase.v1.LabelSelector">LabelSelector</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.GetDeploymentConfigRequest">GetDeploymentConfigRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the resource.
-Format: projects/{project}/deploymentConfigs/default. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.GetProjectRequest">GetProjectRequest</h3>
         <p></p>
 
@@ -21252,68 +21128,6 @@ Format: projects/{project} </p></td>
                   <td>group</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.LabelSelector">LabelSelector</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>match_expressions</td>
-                  <td><a href="#bytebase.v1.LabelSelectorRequirement">LabelSelectorRequirement</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.LabelSelectorRequirement">LabelSelectorRequirement</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>operator</td>
-                  <td><a href="#bytebase.v1.OperatorType">OperatorType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>values</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
               
@@ -21542,68 +21356,6 @@ If enabled, the issue will be created with the pre-appended &#34;set role &lt;db
 
         
       
-        <h3 id="bytebase.v1.Schedule">Schedule</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>deployments</td>
-                  <td><a href="#bytebase.v1.ScheduleDeployment">ScheduleDeployment</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ScheduleDeployment">ScheduleDeployment</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The title of the deployment (stage) in a schedule. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>spec</td>
-                  <td><a href="#bytebase.v1.DeploymentSpec">DeploymentSpec</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.SearchProjectsRequest">SearchProjectsRequest</h3>
         <p></p>
 
@@ -21731,30 +21483,6 @@ Format: projects/{project} </p></td>
                   <td></td>
                   <td><p>The name of the deleted project.
 Format: projects/{project} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.UpdateDeploymentConfigRequest">UpdateDeploymentConfigRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>deployment_config</td>
-                  <td><a href="#bytebase.v1.DeploymentConfig">DeploymentConfig</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -22053,41 +21781,6 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
           </tbody>
         </table>
       
-        <h3 id="bytebase.v1.OperatorType">OperatorType</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>OPERATOR_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>The operator is not specified.</p></td>
-              </tr>
-            
-              <tr>
-                <td>OPERATOR_TYPE_IN</td>
-                <td>1</td>
-                <td><p>The operator is &#34;In&#34;.</p></td>
-              </tr>
-            
-              <tr>
-                <td>OPERATOR_TYPE_EXISTS</td>
-                <td>2</td>
-                <td><p>The operator is &#34;Exists&#34;.</p></td>
-              </tr>
-            
-              <tr>
-                <td>OPERATOR_TYPE_NOT_IN</td>
-                <td>3</td>
-                <td><p>The operator is &#34;Not In&#34;.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
         <h3 id="bytebase.v1.Webhook.Type">Webhook.Type</h3>
         <p></p>
         <table class="enum-table">
@@ -22226,20 +21919,6 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
                 <td>SetIamPolicy</td>
                 <td><a href="#bytebase.v1.SetIamPolicyRequest">SetIamPolicyRequest</a></td>
                 <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>GetDeploymentConfig</td>
-                <td><a href="#bytebase.v1.GetDeploymentConfigRequest">GetDeploymentConfigRequest</a></td>
-                <td><a href="#bytebase.v1.DeploymentConfig">DeploymentConfig</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>UpdateDeploymentConfig</td>
-                <td><a href="#bytebase.v1.UpdateDeploymentConfigRequest">UpdateDeploymentConfigRequest</a></td>
-                <td><a href="#bytebase.v1.DeploymentConfig">DeploymentConfig</a></td>
                 <td><p></p></td>
               </tr>
             
@@ -22386,26 +22065,6 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
                 <td>POST</td>
                 <td>/v1/{resource=projects/*}:setIamPolicy</td>
                 <td>*</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>GetDeploymentConfig</td>
-                <td>GET</td>
-                <td>/v1/{name=projects/*/deploymentConfigs/*}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>UpdateDeploymentConfig</td>
-                <td>PATCH</td>
-                <td>/v1/{deployment_config.name=projects/*/deploymentConfigs/*}</td>
-                <td>deployment_config</td>
               </tr>
               
             
@@ -22810,14 +22469,6 @@ Keys are:
                   <td><a href="#bytebase.v1.Plan.ReleaseSource">Plan.ReleaseSource</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>deployment_config_snapshot</td>
-                  <td><a href="#bytebase.v1.DeploymentConfig">DeploymentConfig</a></td>
-                  <td></td>
-                  <td><p>The deployment config snapshot taken at the time of plan creation.
-This is to ensure that we get consistent rollout for the plan. </p></td>
                 </tr>
               
             </tbody>

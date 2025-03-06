@@ -469,31 +469,22 @@
     - [BatchGetIamPolicyResponse.PolicyResult](#bytebase-v1-BatchGetIamPolicyResponse-PolicyResult)
     - [CreateProjectRequest](#bytebase-v1-CreateProjectRequest)
     - [DeleteProjectRequest](#bytebase-v1-DeleteProjectRequest)
-    - [DeploymentConfig](#bytebase-v1-DeploymentConfig)
-    - [DeploymentSpec](#bytebase-v1-DeploymentSpec)
-    - [GetDeploymentConfigRequest](#bytebase-v1-GetDeploymentConfigRequest)
     - [GetProjectRequest](#bytebase-v1-GetProjectRequest)
     - [Label](#bytebase-v1-Label)
-    - [LabelSelector](#bytebase-v1-LabelSelector)
-    - [LabelSelectorRequirement](#bytebase-v1-LabelSelectorRequirement)
     - [ListProjectsRequest](#bytebase-v1-ListProjectsRequest)
     - [ListProjectsResponse](#bytebase-v1-ListProjectsResponse)
     - [Project](#bytebase-v1-Project)
     - [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest)
-    - [Schedule](#bytebase-v1-Schedule)
-    - [ScheduleDeployment](#bytebase-v1-ScheduleDeployment)
     - [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest)
     - [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse)
     - [TestWebhookRequest](#bytebase-v1-TestWebhookRequest)
     - [TestWebhookResponse](#bytebase-v1-TestWebhookResponse)
     - [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest)
-    - [UpdateDeploymentConfigRequest](#bytebase-v1-UpdateDeploymentConfigRequest)
     - [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest)
     - [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest)
     - [Webhook](#bytebase-v1-Webhook)
   
     - [Activity.Type](#bytebase-v1-Activity-Type)
-    - [OperatorType](#bytebase-v1-OperatorType)
     - [Webhook.Type](#bytebase-v1-Webhook-Type)
   
     - [ProjectService](#bytebase-v1-ProjectService)
@@ -7611,53 +7602,6 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
-<a name="bytebase-v1-DeploymentConfig"></a>
-
-### DeploymentConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the resource. Format: projects/{project}/deploymentConfigs/default. |
-| title | [string](#string) |  | The title of the deployment config. |
-| schedule | [Schedule](#bytebase-v1-Schedule) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DeploymentSpec"></a>
-
-### DeploymentSpec
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| label_selector | [LabelSelector](#bytebase-v1-LabelSelector) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-GetDeploymentConfigRequest"></a>
-
-### GetDeploymentConfigRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the resource. Format: projects/{project}/deploymentConfigs/default. |
-
-
-
-
-
-
 <a name="bytebase-v1-GetProjectRequest"></a>
 
 ### GetProjectRequest
@@ -7684,38 +7628,6 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | value | [string](#string) |  |  |
 | color | [string](#string) |  |  |
 | group | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-LabelSelector"></a>
-
-### LabelSelector
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| match_expressions | [LabelSelectorRequirement](#bytebase-v1-LabelSelectorRequirement) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-LabelSelectorRequirement"></a>
-
-### LabelSelectorRequirement
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| operator | [OperatorType](#bytebase-v1-OperatorType) |  |  |
-| values | [string](#string) | repeated |  |
 
 
 
@@ -7800,38 +7712,6 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 
 
 
-<a name="bytebase-v1-Schedule"></a>
-
-### Schedule
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| deployments | [ScheduleDeployment](#bytebase-v1-ScheduleDeployment) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ScheduleDeployment"></a>
-
-### ScheduleDeployment
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  | The title of the deployment (stage) in a schedule. |
-| id | [string](#string) |  |  |
-| spec | [DeploymentSpec](#bytebase-v1-DeploymentSpec) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-SearchProjectsRequest"></a>
 
 ### SearchProjectsRequest
@@ -7903,21 +7783,6 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the deleted project. Format: projects/{project} |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateDeploymentConfigRequest"></a>
-
-### UpdateDeploymentConfigRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| deployment_config | [DeploymentConfig](#bytebase-v1-DeploymentConfig) |  |  |
 
 
 
@@ -8020,20 +7885,6 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 
 
 
-<a name="bytebase-v1-OperatorType"></a>
-
-### OperatorType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| OPERATOR_TYPE_UNSPECIFIED | 0 | The operator is not specified. |
-| OPERATOR_TYPE_IN | 1 | The operator is &#34;In&#34;. |
-| OPERATOR_TYPE_EXISTS | 2 | The operator is &#34;Exists&#34;. |
-| OPERATOR_TYPE_NOT_IN | 3 | The operator is &#34;Not In&#34;. |
-
-
-
 <a name="bytebase-v1-Webhook-Type"></a>
 
 ### Webhook.Type
@@ -8073,8 +7924,6 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | GetIamPolicy | [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) |  |
 | BatchGetIamPolicy | [BatchGetIamPolicyRequest](#bytebase-v1-BatchGetIamPolicyRequest) | [BatchGetIamPolicyResponse](#bytebase-v1-BatchGetIamPolicyResponse) | Deprecated. |
 | SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) |  |
-| GetDeploymentConfig | [GetDeploymentConfigRequest](#bytebase-v1-GetDeploymentConfigRequest) | [DeploymentConfig](#bytebase-v1-DeploymentConfig) |  |
-| UpdateDeploymentConfig | [UpdateDeploymentConfigRequest](#bytebase-v1-UpdateDeploymentConfigRequest) | [DeploymentConfig](#bytebase-v1-DeploymentConfig) |  |
 | AddWebhook | [AddWebhookRequest](#bytebase-v1-AddWebhookRequest) | [Project](#bytebase-v1-Project) |  |
 | UpdateWebhook | [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest) | [Project](#bytebase-v1-Project) |  |
 | RemoveWebhook | [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest) | [Project](#bytebase-v1-Project) |  |
@@ -8237,7 +8086,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | plan_check_run_status_count | [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry) | repeated | The status count of the latest plan check runs. Keys are: - SUCCESS - WARNING - ERROR |
 | release_source | [Plan.ReleaseSource](#bytebase-v1-Plan-ReleaseSource) |  |  |
-| deployment_config_snapshot | [DeploymentConfig](#bytebase-v1-DeploymentConfig) |  | The deployment config snapshot taken at the time of plan creation. This is to ensure that we get consistent rollout for the plan. |
 
 
 
