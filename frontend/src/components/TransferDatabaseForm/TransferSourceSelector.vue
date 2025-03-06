@@ -22,13 +22,11 @@
         <EnvironmentSelect
           class="!w-40"
           :environment-name="environmentFilter?.name"
-          :filter="filterEnvironment"
           @update:environment-name="changeEnvironmentFilter"
         />
         <InstanceSelect
           class="!w-40"
           :instance="instanceFilter?.name"
-          :filter="filterInstance"
           @update:instance-name="changeInstanceFilter"
         />
         <SearchBox
@@ -47,10 +45,8 @@
 
 <script lang="ts" setup>
 import { NInputGroup, NRadio, NRadioGroup } from "naive-ui";
-import { computed } from "vue";
 import { InstanceSelect, SearchBox } from "@/components/v2";
 import { useEnvironmentV1Store, useInstanceResourceByName } from "@/store";
-import type { ComposedDatabase } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
   isValidEnvironmentName,
@@ -62,10 +58,9 @@ import type { Project } from "@/types/proto/v1/project_service";
 import EnvironmentSelect from "../v2/Select/EnvironmentSelect.vue";
 import type { TransferSource } from "./utils";
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     project: Project;
-    rawDatabaseList?: ComposedDatabase[];
     transferSource: TransferSource;
     hasPermissionForDefaultProject: boolean;
     instanceFilter?: InstanceResource;
@@ -73,7 +68,6 @@ const props = withDefaults(
     searchText: string;
   }>(),
   {
-    rawDatabaseList: () => [],
     instanceFilter: undefined,
     environmentFilter: undefined,
     searchText: "",
@@ -86,14 +80,6 @@ const emit = defineEmits<{
   (event: "select-environment", env: Environment | undefined): void;
   (event: "search-text-change", searchText: string): void;
 }>();
-
-const nonEmptyEnvironmentNameSet = computed(() => {
-  return new Set(props.rawDatabaseList.map((db) => db.effectiveEnvironment));
-});
-
-const nonEmptyInstanceNameSet = computed(() => {
-  return new Set(props.rawDatabaseList.map((db) => db.instance));
-});
 
 const changeEnvironmentFilter = (name: string | undefined) => {
   if (!isValidEnvironmentName(name)) {
@@ -110,13 +96,5 @@ const changeInstanceFilter = (name: string | undefined) => {
     return emit("select-instance", undefined);
   }
   emit("select-instance", useInstanceResourceByName(name));
-};
-
-const filterEnvironment = (environment: Environment) => {
-  return nonEmptyEnvironmentNameSet.value.has(environment.name);
-};
-
-const filterInstance = (instance: InstanceResource) => {
-  return nonEmptyInstanceNameSet.value.has(instance.name);
 };
 </script>

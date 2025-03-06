@@ -65,6 +65,7 @@
       "self": "Role"
     },
     "revert": "Revert",
+    "confirm-to-revert": "Confirm to revert your editing?",
     "apply": "Apply",
     "reorder": "Reorder",
     "id": "ID",
@@ -124,7 +125,6 @@
     "read-only": "Read-only",
     "all": "All",
     "recent": "Recent",
-    "deployment-config": "Deployment Config",
     "ok": "OK",
     "share": "Share",
     "or": "or",
@@ -983,9 +983,6 @@
       "request-exporter-role": "Request exporter role"
     }
   },
-  "alter-schema": {
-    "no-databases-in-project": "No databases in this project. Click New DB or Transfer in DB to add databases."
-  },
   "quick-action": {
     "create-db": "Create database",
     "new-db": "New DB",
@@ -1019,7 +1016,6 @@
     "streams": "Streams",
     "tasks": "Tasks",
     "labels-for-resource": "Labels for {resource}",
-    "last-successful-sync": "Last successful sync",
     "failed-to-sync-schema-for-database-database-value-name": "Failed to sync schema for database '{0}'.",
     "successfully-synced-schema-for-database-database-value-name": "Successfully synced schema for database '{0}'.",
     "start-to-sync-schema": "Start to sync schema",
@@ -1148,9 +1144,16 @@
       "password-tip": "You can also specify external secret manage endpoint",
       "google-iam": "Google Cloud SQL IAM",
       "aws-iam": "AWS RDS IAM",
+      "azure-iam": "Azure IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
+    },
+    "iam-extension": {
+      "credential-source": "Credential Source",
+      "tenant-id": "Tenant ID",
+      "client-id": "Client ID",
+      "client-secret": "Client Secret"
     },
     "database-region": "Database Region",
     "external-secret-gcp": {
@@ -1414,7 +1417,6 @@
       "select": "Select table",
       "select-tip": "Please select a table to start."
     },
-    "n-selected-m-in-total": "({selected} selected, {total} in total)",
     "all": "All databases",
     "show-schemaless-databases": "Show schemaless databases. (Edit Schema is not applicable for schemaless databases.)",
     "secret": {
@@ -1498,8 +1500,7 @@
       "success-prompt": "Successfully created project {name}."
     },
     "overview": {
-      "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed here. User should transfer them to the proper application project.",
-      "no-db-prompt": "No database belongs to this project. You can add database by clicking {newDb} or {transferInDb} from the top action bar."
+      "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed here. User should transfer them to the proper application project."
     },
     "webhook": {
       "success-created-prompt": "Successfully created webhook {name}.",
@@ -1646,28 +1647,7 @@
       "revoke-exemption-title": "Remove both export and query masking exemptions for {member}?"
     }
   },
-  "deployment-config": {
-    "add-selector": "Add selector",
-    "update-success": "Successfully updated deployment config.",
-    "this-is-example-deployment-config": "This is the deployment config example. You need to edit and save it.",
-    "add-stage": "Add stage",
-    "confirm-to-revert": "Confirm to revert your editing?",
-    "name-placeholder": "Stage name...",
-    "error": {
-      "at-least-one-stage": "At least 1 stage",
-      "stage-name-required": "Stage name is required",
-      "at-least-one-selector": "At least 1 selector in each stage",
-      "env-in-selector-required": "\"Environment\" is required in each stage",
-      "env-selector-must-has-one-value": "\"Environment ID\" must has exactly one value",
-      "key-required": "Key is required",
-      "values-required": "Values are required"
-    },
-    "matched-databases": {
-      "all": "All matched databases",
-      "n": "{n} matched database | {n} matched databases",
-      "show-more": "Show more"
-    }
-  },
+
   "data-source": {
     "snowflake-keypair-tip": "Key-pair authentication",
     "ssl": {
@@ -1953,14 +1933,9 @@
       "key-necessary": "Key is required",
       "value-necessary": "Value is required",
       "key-duplicated": "Duplicated keys",
-      "max-value-length-exceeded": "Value's length cannot exceed {length} characters",
-      "x-is-reserved-key": "\"{key}\" is a system reserved key"
+      "max-value-length-exceeded": "Value's length cannot exceed {length} characters"
     },
-    "placeholder": {
-      "select-values": "Select values..."
-    },
-    "add-label": "Add label",
-    "filter-by-label": "Filter by label"
+    "add-label": "Add label"
   },
   "oauth": {
     "unknown-event": "Unexpected event type, OAuth failed."

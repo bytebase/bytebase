@@ -74,7 +74,7 @@ const emit = defineEmits<{
 }>();
 
 const options = computed(() => {
-  return [50, 100, 200, 500, 1000].map((num) => ({
+  return [50, 100, 200, 500].map((num) => ({
     value: num,
     label: `${num}`,
   }));
@@ -101,7 +101,11 @@ const sessionState = useDynamicLocalStorage<SessionState>(
 const isLoggedIn = useIsLoggedIn();
 
 const pageSize = computed(() => {
-  return Math.max(options.value[0].value, sessionState.value.pageSize ?? 0);
+  const sizeInSession = sessionState.value.pageSize ?? 0;
+  if (!options.value.find((o) => o.value === sizeInSession)) {
+    return options.value[0].value;
+  }
+  return Math.max(options.value[0].value, sizeInSession);
 });
 
 const onPageSizeChange = (size: number) => {

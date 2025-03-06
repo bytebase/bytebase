@@ -7,13 +7,14 @@
         :autofocus="false"
         :placeholder="$t('database.filter-database')"
         :scope-options="scopeOptions"
+        :readonly-scopes="readonlyScopes"
       />
-      <DatabaseV1Table
+      <PagedDatabaseTable
         mode="PROJECT"
-        :database-list="filteredDatabaseList"
         :show-selection="true"
-        :selected-database-names="databaseSelectState.selectedDatabaseNameList"
-        :keyword="searchParams.query.trim().toLowerCase()"
+        :custom-click="true"
+        :parent="project.name"
+        :filter="filter"
         @update:selected-databases="
           databaseSelectState.selectedDatabaseNameList = Array.from($event)
         "
@@ -42,22 +43,18 @@ import { head } from "lodash-es";
 import { NTabs, NTabPane } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import DatabaseGroupDataTable from "@/components/DatabaseGroup/DatabaseGroupDataTable.vue";
-import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table/DatabaseV1Table.vue";
-import { useDatabaseV1Store, useDBGroupListByProject } from "@/store";
-import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
+import { PagedDatabaseTable } from "@/components/v2/Model/DatabaseV1Table";
+import { useDBGroupListByProject } from "@/store";
 import {
-  DEFAULT_PROJECT_NAME,
-  UNKNOWN_ID,
-  type ComposedProject,
-} from "@/types";
-import { State } from "@/types/proto/v1/common";
+  instanceNamePrefix,
+  environmentNamePrefix,
+} from "@/store/modules/v1/common";
+import { type ComposedProject } from "@/types";
 import {
   CommonFilterScopeIdList,
-  extractEnvironmentResourceName,
-  extractInstanceResourceName,
-  filterDatabaseV1ByKeyword,
-  sortDatabaseV1List,
+  extractProjectResourceName,
   type SearchParams,
+  type SearchScope,
 } from "@/utils";
 import AdvancedSearch from "../AdvancedSearch/AdvancedSearch.vue";
 import { useCommonSearchScopeOptions } from "../AdvancedSearch/useCommonSearchScopeOptions";
@@ -73,12 +70,15 @@ const emit = defineEmits<{
   (event: "update", state: DatabaseSelectState): void;
 }>();
 
-const databaseStore = useDatabaseV1Store();
+const readonlyScopes = computed((): SearchScope[] => [
+  { id: "project", value: extractProjectResourceName(props.project.name) },
+]);
 
 const searchParams = ref<SearchParams>({
   query: "",
-  scopes: [],
+  scopes: [...readonlyScopes.value],
 });
+
 const databaseSelectState = reactive<DatabaseSelectState>(
   props.databaseSelectState || {
     changeSource: "DATABASE",
@@ -86,60 +86,33 @@ const databaseSelectState = reactive<DatabaseSelectState>(
   }
 );
 
-useDatabaseV1List(props.project.name);
 const { dbGroupList } = useDBGroupListByProject(props.project.name);
 
-const databaseList = computed(() => {
-  const list = databaseStore
-    .databaseListByProject(props.project.name)
-    .filter(
-      (db) =>
-        db.state == State.ACTIVE && db.project !== DEFAULT_PROJECT_NAME
-    );
-  return sortDatabaseV1List(list);
-});
-
 const selectedInstance = computed(() => {
-  return (
-    searchParams.value.scopes.find((scope) => scope.id === "instance")?.value ??
-    `${UNKNOWN_ID}`
-  );
+  const instanceId = searchParams.value.scopes.find(
+    (scope) => scope.id === "instance"
+  )?.value;
+  if (!instanceId) {
+    return;
+  }
+  return `${instanceNamePrefix}${instanceId}`;
 });
 
 const selectedEnvironment = computed(() => {
-  return (
-    searchParams.value.scopes.find((scope) => scope.id === "environment")
-      ?.value ?? `${UNKNOWN_ID}`
-  );
+  const environmentId = searchParams.value.scopes.find(
+    (scope) => scope.id === "environment"
+  )?.value;
+  if (!environmentId) {
+    return;
+  }
+  return `${environmentNamePrefix}${environmentId}`;
 });
 
-const filteredDatabaseList = computed(() => {
-  let list = databaseList.value;
-  if (selectedEnvironment.value !== `${UNKNOWN_ID}`) {
-    list = list.filter(
-      (db) =>
-        extractEnvironmentResourceName(db.effectiveEnvironment) ===
-        selectedEnvironment.value
-    );
-  }
-  if (selectedInstance.value !== `${UNKNOWN_ID}`) {
-    list = list.filter(
-      (db) =>
-        extractInstanceResourceName(db.instance) === selectedInstance.value
-    );
-  }
-  const keyword = searchParams.value.query.trim().toLowerCase();
-  if (keyword) {
-    list = list.filter((db) =>
-      filterDatabaseV1ByKeyword(db, keyword, [
-        "name",
-        "environment",
-        "instance",
-      ])
-    );
-  }
-  return list;
-});
+const filter = computed(() => ({
+  instance: selectedInstance.value,
+  environment: selectedEnvironment.value,
+  query: searchParams.value.query,
+}));
 
 const scopeOptions = useCommonSearchScopeOptions(
   computed(() => searchParams.value),

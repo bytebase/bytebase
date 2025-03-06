@@ -18,12 +18,17 @@
 </template>
 
 <script lang="ts" setup>
+import { computedAsync } from "@vueuse/core";
 import { ChevronRightIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { EnvironmentV1Name } from "@/components/v2";
 import { useAppFeature, useDatabaseV1Store } from "@/store";
 import { type SQLEditorTab, UNKNOWN_ENVIRONMENT_NAME } from "@/types";
-import { isValidInstanceName, isValidDatabaseName } from "@/types";
+import {
+  isValidInstanceName,
+  isValidDatabaseName,
+  unknownDatabase,
+} from "@/types";
 
 const props = defineProps<{
   tab: SQLEditorTab;
@@ -31,9 +36,11 @@ const props = defineProps<{
 
 const connection = computed(() => props.tab.connection);
 
-const database = computed(() => {
-  return useDatabaseV1Store().getDatabaseByName(connection.value.database);
-});
+const database = computedAsync(async () => {
+  return useDatabaseV1Store().getOrFetchDatabaseByName(
+    connection.value.database
+  );
+}, unknownDatabase());
 
 const instance = computed(() => {
   return database.value.instanceResource;

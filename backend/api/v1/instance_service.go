@@ -819,10 +819,23 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			if v := request.DataSource.IamExtension; v != nil {
 				switch v := v.(type) {
 				case *v1pb.DataSource_ClientSecretCredential_:
+					v1ClientSecretCredential := v.ClientSecretCredential
+					v1ClientSecretCredential.ClientSecret = common.Obfuscate(v1ClientSecretCredential.ClientSecret, s.secret)
 					dataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{
 						ClientSecretCredential: convertV1ClientSecretCredential(v.ClientSecretCredential),
 					}
 				default:
+				}
+			}
+		// TODO(zp): Remove the hack while frontend use new oneof artifact.
+		case "client_secret_credential":
+			if request.DataSource.GetClientSecretCredential() == nil {
+				dataSource.IamExtension = nil
+			} else {
+				v1ClientSecretCredential := request.DataSource.GetClientSecretCredential()
+				v1ClientSecretCredential.ClientSecret = common.Obfuscate(v1ClientSecretCredential.ClientSecret, s.secret)
+				dataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{
+					ClientSecretCredential: convertV1ClientSecretCredential(request.DataSource.GetClientSecretCredential()),
 				}
 			}
 		default:
@@ -1172,6 +1185,7 @@ func convertDataSources(dataSources []*storepb.DataSource) ([]*v1pb.DataSource, 
 			MasterUsername:         ds.GetMasterUsername(),
 		}
 		if clientSecretCredential := convertClientSecretCredential(ds.GetClientSecretCredential()); clientSecretCredential != nil {
+			clientSecretCredential.ClientSecret = ""
 			dataSource.IamExtension = &v1pb.DataSource_ClientSecretCredential_{
 				ClientSecretCredential: clientSecretCredential,
 			}
@@ -1358,9 +1372,8 @@ func (s *InstanceService) convertV1DataSource(dataSource *v1pb.DataSource) (*sto
 		return nil, err
 	}
 	saslConfig := convertV1DataSourceSaslConfig(dataSource.SaslConfig)
-	clientSecretCredential := convertV1ClientSecretCredential(dataSource.GetClientSecretCredential())
 
-	return &storepb.DataSource{
+	storeDataSource := &storepb.DataSource{
 		Id:                                 dataSource.Id,
 		Type:                               dsType,
 		Username:                           dataSource.Username,
@@ -1394,8 +1407,13 @@ func (s *InstanceService) convertV1DataSource(dataSource *v1pb.DataSource) (*sto
 		MasterName:                         dataSource.MasterName,
 		MasterUsername:                     dataSource.MasterUsername,
 		MasterObfuscatedPassword:           common.Obfuscate(dataSource.MasterPassword, s.secret),
-		IamExtension:                       &storepb.DataSource_ClientSecretCredential_{ClientSecretCredential: clientSecretCredential},
-	}, nil
+	}
+	if v := dataSource.GetClientSecretCredential(); v != nil {
+		v.ClientSecret = common.Obfuscate(v.ClientSecret, s.secret)
+		storeDataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{ClientSecretCredential: convertV1ClientSecretCredential(v)}
+	}
+
+	return storeDataSource, nil
 }
 
 func convertV1ClientSecretCredential(credential *v1pb.DataSource_ClientSecretCredential) *storepb.DataSource_ClientSecretCredential {

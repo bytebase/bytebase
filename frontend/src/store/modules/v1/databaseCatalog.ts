@@ -164,7 +164,9 @@ export const useDatabaseCatalog = (
   skipCache: MaybeRef<boolean>
 ) => {
   const store = useDatabaseCatalogV1Store();
-  watchEffect(() => {
+  const databaseStore = useDatabaseV1Store();
+
+  watchEffect(async () => {
     const { databaseName } = extractDatabaseResourceName(unref(database));
     if (
       databaseName === String(UNKNOWN_ID) ||
@@ -172,9 +174,9 @@ export const useDatabaseCatalog = (
     ) {
       return;
     }
-    const db = useDatabaseV1Store().getDatabaseByName(unref(database));
+    const db = await databaseStore.getOrFetchDatabaseByName(unref(database));
     if (hasProjectPermissionV2(db.projectEntity, "bb.databaseCatalogs.get")) {
-      store.getOrFetchDatabaseCatalog({
+      await store.getOrFetchDatabaseCatalog({
         database: unref(database),
         skipCache: unref(skipCache),
       });

@@ -18,7 +18,7 @@
 <script setup lang="ts">
 import { NCheckbox } from "naive-ui";
 import { ref } from "vue";
-import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
+import { DatabaseV1Table } from "@/components/v2/Model/DatabaseV1Table";
 import type { ComposedDatabase } from "@/types";
 
 defineProps<{

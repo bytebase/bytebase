@@ -13,7 +13,6 @@ export const PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL = `${PROJECT_V1_ROUTE_DAS
 export const PROJECT_V1_ROUTE_DATABASE_GROUPS = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.create`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.detail`;
-export const PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG = `${PROJECT_V1_ROUTE_DASHBOARD}.deployment-config`;
 export const PROJECT_V1_ROUTE_ISSUES = `${PROJECT_V1_ROUTE_DASHBOARD}.issue`;
 export const PROJECT_V1_ROUTE_ISSUE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.issue.detail`;
 export const PROJECT_V1_ROUTE_PLAN_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.plan.detail`;
@@ -134,17 +133,6 @@ const projectV1Routes: RouteRecordRaw[] = [
             props: true,
           },
         ],
-      },
-      {
-        path: "deployment-config",
-        name: PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
-        meta: {
-          overrideTitle: true,
-          requiredProjectPermissionList: () => ["bb.projects.get"],
-        },
-        component: () =>
-          import("@/views/project/ProjectDeploymentConfigPanel.vue"),
-        props: true,
       },
       {
         path: "issues",

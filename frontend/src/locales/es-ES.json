@@ -65,6 +65,7 @@
       "self": "Rol"
     },
     "revert": "Revertir",
+    "confirm-to-revert": "¿Confirmar para revertir la edición?",
     "apply": "Aplicar",
     "reorder": "Reordenar",
     "id": "ID",
@@ -124,7 +125,6 @@
     "read-only": "Solo lectura",
     "all": "Todos",
     "recent": "Reciente",
-    "deployment-config": "Configuración de Despliegue",
     "ok": "OK",
     "share": "Compartir",
     "or": "o",
@@ -983,9 +983,6 @@
       "request-exporter-role": "Solicitar función de exportación"
     }
   },
-  "alter-schema": {
-    "no-databases-in-project": "No hay bases de datos en este proyecto. Haga clic en Nueva BD o Transferir BD para agregar bases de datos."
-  },
   "quick-action": {
     "create-db": "Crear base de datos",
     "new-db": "Nueva BD",
@@ -1019,7 +1016,6 @@
     "streams": "Streams",
     "tasks": "Tareas",
     "labels-for-resource": "Etiquetas para {resource}",
-    "last-successful-sync": "Última sincronización exitosa",
     "failed-to-sync-schema-for-database-database-value-name": "Error al sincronizar el esquema para la base de datos '{0}'.",
     "successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado correctamente para la base de datos '{0}'.",
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
@@ -1147,10 +1143,17 @@
       "password": "Contraseña",
       "password-tip": "También puede especificar un punto final de gestión de secreto externo",
       "google-iam": "Google Cloud SQL IAM",
+      "azure-iam": "Azure IAM",
       "aws-iam": "AWS RDS IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
+    },
+    "iam-extension": {
+      "credential-source": "Credential Source",
+      "tenant-id": "Tenant ID",
+      "client-id": "Client ID",
+      "client-secret": "Client Secret"
     },
     "database-region": "Región de la base de datos",
     "external-secret-gcp": {
@@ -1414,7 +1417,6 @@
       "select": "Seleccionar tabla",
       "select-tip": "Seleccione una mesa para comenzar."
     },
-    "n-selected-m-in-total": "({selected} seleccionados, {total} en total)",
     "all": "Todas las bases de datos",
     "show-schemaless-databases": "Mostrar bases de datos sin esquema. (Editar Schema no se aplica a las bases de datos sin esquema.)",
     "secret": {
@@ -1498,8 +1500,7 @@
       "success-prompt": "Proyecto {name} creado exitosamente."
     },
     "overview": {
-      "info-slot-content": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan aquí primero. El usuario debe transferirlas al proyecto de aplicación adecuado.",
-      "no-db-prompt": "No hay bases de datos que pertenezcan a este proyecto. Puedes agregar bases de datos haciendo clic en {newDb} o {transferInDb} desde la barra de acciones superior."
+      "info-slot-content": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan aquí primero. El usuario debe transferirlas al proyecto de aplicación adecuado."
     },
     "webhook": {
       "success-created-prompt": "Webhook {name} creado exitosamente.",
@@ -1644,28 +1645,6 @@
       "self": "Exenciones de Enmascaramiento",
       "grant-exemption": "Conceder Exención",
       "revoke-exemption-title": "Eliminar tanto las exenciones de exportación como de consulta de enmascaramiento para {member}?"
-    }
-  },
-  "deployment-config": {
-    "add-selector": "Agregar selector",
-    "update-success": "Configuración de implementación actualizada con éxito.",
-    "this-is-example-deployment-config": "Este es un ejemplo de configuración de implementación. Debe editarla y guardarla.",
-    "add-stage": "Agregar etapa",
-    "confirm-to-revert": "¿Confirmar para revertir la edición?",
-    "name-placeholder": "Nombre de la etapa...",
-    "error": {
-      "at-least-one-stage": "Al menos 1 etapa",
-      "stage-name-required": "Se requiere el nombre de la etapa",
-      "at-least-one-selector": "Al menos 1 selector en cada etapa",
-      "env-in-selector-required": "Se requiere \"Entorno\" en cada etapa",
-      "env-selector-must-has-one-value": "\"Entorno ID\" debe tener exactamente un valor",
-      "key-required": "Se requiere una clave",
-      "values-required": "Se requieren valores"
-    },
-    "matched-databases": {
-      "all": "Todas las bases de datos coincidentes",
-      "n": "{n} base de datos coincidente | {n} bases de datos coincidentes",
-      "show-more": "Mostrar más"
     }
   },
   "data-source": {
@@ -1953,14 +1932,9 @@
       "key-necessary": "Se requiere una clave",
       "value-necessary": "Se requiere un valor",
       "key-duplicated": "Claves duplicadas",
-      "max-value-length-exceeded": "La longitud del valor no puede exceder {longitud} caracteres",
-      "x-is-reserved-key": "\"{key}\" es una clave reservada del sistema"
+      "max-value-length-exceeded": "La longitud del valor no puede exceder {longitud} caracteres"
     },
-    "placeholder": {
-      "select-values": "Seleccionar valores..."
-    },
-    "add-label": "Agregar etiqueta",
-    "filter-by-label": "Filtrar por etiqueta"
+    "add-label": "Agregar etiqueta"
   },
   "oauth": {
     "unknown-event": "Tipo de evento inesperado, OAuth falló."

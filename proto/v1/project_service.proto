@@ -98,21 +98,6 @@ service ProjectService {
     option (bytebase.v1.audit) = true;
   }
 
-  rpc GetDeploymentConfig(GetDeploymentConfigRequest) returns (DeploymentConfig) {
-    option (google.api.http) = {get: "/v1/{name=projects/*/deploymentConfigs/*}"};
-    option (bytebase.v1.permission) = "bb.projects.get";
-    option (bytebase.v1.auth_method) = IAM;
-  }
-
-  rpc UpdateDeploymentConfig(UpdateDeploymentConfigRequest) returns (DeploymentConfig) {
-    option (google.api.http) = {
-      patch: "/v1/{deployment_config.name=projects/*/deploymentConfigs/*}"
-      body: "deployment_config"
-    };
-    option (bytebase.v1.permission) = "bb.projects.update";
-    option (bytebase.v1.auth_method) = IAM;
-  }
-
   rpc AddWebhook(AddWebhookRequest) returns (Project) {
     option (google.api.http) = {
       post: "/v1/{project=projects/*}:addWebhook"
@@ -260,19 +245,6 @@ message BatchGetIamPolicyResponse {
   repeated PolicyResult policy_results = 1;
 }
 
-message GetDeploymentConfigRequest {
-  // The name of the resource.
-  // Format: projects/{project}/deploymentConfigs/default.
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/DeploymentConfig"}
-  ];
-}
-
-message UpdateDeploymentConfigRequest {
-  DeploymentConfig deployment_config = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
 message Label {
   string value = 1;
   string color = 2;
@@ -410,58 +382,6 @@ message Webhook {
   // - TYPE_ISSUE_FIELD_UPDATE
   // - TYPE_ISSUE_COMMENT_CREATE
   repeated Activity.Type notification_types = 5 [(google.api.field_behavior) = UNORDERED_LIST];
-}
-
-message DeploymentConfig {
-  option (google.api.resource) = {
-    type: "bytebase.com/DeploymentConfig"
-    pattern: "projects/{project}/deploymentConfigs/default"
-  };
-
-  // The name of the resource.
-  // Format: projects/{project}/deploymentConfigs/default.
-  string name = 1;
-
-  // The title of the deployment config.
-  string title = 2;
-
-  Schedule schedule = 3;
-}
-
-message Schedule {
-  repeated ScheduleDeployment deployments = 1;
-}
-
-message ScheduleDeployment {
-  // The title of the deployment (stage) in a schedule.
-  string title = 1;
-  string id = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
-  DeploymentSpec spec = 2;
-}
-
-message DeploymentSpec {
-  LabelSelector label_selector = 1;
-}
-
-message LabelSelector {
-  repeated LabelSelectorRequirement match_expressions = 1;
-}
-
-message LabelSelectorRequirement {
-  string key = 1;
-  OperatorType operator = 2;
-  repeated string values = 3;
-}
-
-enum OperatorType {
-  // The operator is not specified.
-  OPERATOR_TYPE_UNSPECIFIED = 0;
-  // The operator is "In".
-  OPERATOR_TYPE_IN = 1;
-  // The operator is "Exists".
-  OPERATOR_TYPE_EXISTS = 2;
-  // The operator is "Not In".
-  OPERATOR_TYPE_NOT_IN = 3;
 }
 
 // TODO(zp): move to activity later.

@@ -35,7 +35,7 @@ import { watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, type BBGridColumn } from "@/bbkit";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
-import { useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store, batchGetOrFetchDatabases } from "@/store";
 import type { DatabaseResource } from "@/types";
 import type { DatabaseGroup } from "@/types/proto/v1/database_group_service";
 
@@ -79,11 +79,11 @@ const extractComposedDatabase = (databaseResource: DatabaseResource) => {
 watch(
   () => props.databaseResourceList,
   async () => {
-    for (const databaseResource of props.databaseResourceList) {
-      await databaseStore.getOrFetchDatabaseByName(
-        databaseResource.databaseFullName
-      );
-    }
+    await batchGetOrFetchDatabases(
+      props.databaseResourceList.map(
+        (databaseResource) => databaseResource.databaseFullName
+      )
+    );
   },
   {
     immediate: true,

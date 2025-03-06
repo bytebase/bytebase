@@ -1,6 +1,6 @@
 <template>
-  <div class="w-full flex flex-col gap-4 py-4 px-4 overflow-y-auto">
-    <div class="flex items-center space-x-2">
+  <div class="w-full flex flex-col gap-4 py-4 overflow-y-auto">
+    <div class="flex items-center space-x-2 px-4">
       <SearchBox
         v-model:value="state.keyword"
         style="max-width: 100%"
@@ -17,22 +17,15 @@
       </NButton>
     </div>
 
-    <PagedTable
-      ref="projectPagedTable"
+    <PagedProjectTable
       session-key="bb.sql-editor.project-table"
-      :fetch-list="fetchProjects"
+      :search="state.keyword"
       :footer-class="'mx-4'"
-    >
-      <template #table="{ list, loading }">
-        <ProjectV1Table
-          :bordered="false"
-          :loading="loading"
-          :project-list="list"
-          :prevent-default="true"
-          @row-click="showProjectDetail"
-        />
-      </template>
-    </PagedTable>
+      :bordered="false"
+      :include-default="false"
+      :prevent-default="true"
+      @row-click="showProjectDetail"
+    />
 
     <Drawer
       :show="state.detail.show"
@@ -60,21 +53,17 @@
 </template>
 
 <script setup lang="ts">
-import { useDebounceFn } from "@vueuse/core";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, NEllipsis } from "naive-ui";
-import { reactive, watch, ref } from "vue";
-import type { ComponentExposed } from "vue-component-type-helpers";
+import { reactive, watch } from "vue";
 import { useRouter } from "vue-router";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import {
   Drawer,
   DrawerContent,
-  ProjectV1Table,
+  PagedProjectTable,
   SearchBox,
 } from "@/components/v2";
-import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import { useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
 import Detail from "./Detail.vue";
 
@@ -87,10 +76,6 @@ interface LocalState {
 }
 
 const router = useRouter();
-const projectStore = useProjectV1Store();
-const projectPagedTable =
-  ref<ComponentExposed<typeof PagedTable<ComposedProject>>>();
-
 const state = reactive<LocalState>({
   keyword: "",
   detail: {
@@ -98,29 +83,6 @@ const state = reactive<LocalState>({
     project: undefined,
   },
 });
-
-watch(
-  () => state.keyword,
-  useDebounceFn(async () => {
-    await projectPagedTable.value?.refresh();
-  }, 500)
-);
-
-const fetchProjects = async ({
-  pageToken,
-  pageSize,
-}: {
-  pageToken: string;
-  pageSize: number;
-}) => {
-  const { nextPageToken, projects } = await projectStore.fetchProjectList({
-    showDeleted: false,
-    pageToken,
-    pageSize,
-    query: state.keyword,
-  });
-  return { nextPageToken, list: projects };
-};
 
 const handleClickNewProject = () => {
   state.detail.show = true;

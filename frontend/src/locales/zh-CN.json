@@ -65,6 +65,7 @@
       "self": "角色"
     },
     "revert": "恢复",
+    "confirm-to-revert": "确定撤销编辑？",
     "apply": "应用",
     "reorder": "排序",
     "id": "ID",
@@ -124,7 +125,6 @@
     "read-only": "只读",
     "all": "全部",
     "recent": "最近访问",
-    "deployment-config": "部署配置",
     "ok": "OK",
     "share": "分享",
     "or": "或者",
@@ -983,9 +983,6 @@
       "request-exporter-role": "申请导出者角色"
     }
   },
-  "alter-schema": {
-    "no-databases-in-project": "该项目里没有数据库。点击 创建数据库 或 转移数据库 以添加数据库。"
-  },
   "quick-action": {
     "create-db": "创建数据库",
     "new-db": "创建数据库",
@@ -1019,7 +1016,6 @@
     "streams": "Streams",
     "tasks": "任务",
     "labels-for-resource": "{resource}的标签",
-    "last-successful-sync": "上次成功同步于",
     "failed-to-sync-schema-for-database-database-value-name": "为数据库'{0}'同步 schema 失败。",
     "successfully-synced-schema-for-database-database-value-name": "成功为数据库'{0}'同步 schema 。",
     "start-to-sync-schema": "开始同步 schema",
@@ -1148,9 +1144,16 @@
       "password-tip": "您也可以指定外部的密码管理服务 endpoint",
       "google-iam": "Google Cloud SQL IAM",
       "aws-iam": "AWS RDS IAM",
+      "azure-iam": "Azure IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
+    },
+    "iam-extension": {
+      "credential-source": "Credential Source",
+      "tenant-id": "Tenant ID",
+      "client-id": "Client ID",
+      "client-secret": "Client Secret"
     },
     "database-region": "数据库区域",
     "external-secret-gcp": {
@@ -1414,7 +1417,6 @@
       "select": "选择表",
       "select-tip": "请选择一个表来开始查询。"
     },
-    "n-selected-m-in-total": "（已选择 {selected}，共计 {total}）",
     "all": "所有数据库",
     "show-schemaless-databases": "显示无模式的数据库。（变更 Schema 不适用于无 schema 的数据库. ）",
     "secret": {
@@ -1498,8 +1500,7 @@
       "success-prompt": "成功创建 {name}."
     },
     "overview": {
-      "info-slot-content": "Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于这里，之后您可以再将他们转移到适当的项目中。",
-      "no-db-prompt": "没有数据库属于当前项目。您可以通过点击位于上方菜单栏中的 {newDb} 或者 {transferInDb} 来添加数据库。"
+      "info-slot-content": "Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于这里，之后您可以再将他们转移到适当的项目中。"
     },
     "webhook": {
       "success-created-prompt": "成功创建 {name} webhook.",
@@ -1644,28 +1645,6 @@
       "self": "脱敏豁免",
       "grant-exemption": "授予豁免",
       "revoke-exemption-title": "是否撤销 {member} 的导出和查询脱敏？"
-    }
-  },
-  "deployment-config": {
-    "add-selector": "添加选择条件",
-    "update-success": "成功更新部署配置",
-    "this-is-example-deployment-config": "这是部署配置的样例，您需要在此基础上编辑并保存。",
-    "add-stage": "添加阶段",
-    "confirm-to-revert": "确定撤销编辑？",
-    "name-placeholder": "阶段名称…",
-    "error": {
-      "at-least-one-stage": "至少需要 1 个阶段",
-      "stage-name-required": "需要指定阶段名称",
-      "at-least-one-selector": "每个阶段至少需要 1 个选择条件",
-      "env-in-selector-required": "每个阶段都需要有 \"Environment\" 选择条件",
-      "env-selector-must-has-one-value": "\"Environment ID\" 必须有且只有 1 个值",
-      "key-required": "需要指定 Key",
-      "values-required": "需要指定值"
-    },
-    "matched-databases": {
-      "all": "所有匹配的数据库",
-      "n": "{n} 个匹配的数据库 | {n} 个匹配的数据库",
-      "show-more": "显示更多"
     }
   },
   "data-source": {
@@ -1953,14 +1932,9 @@
       "key-necessary": "需要指定 Key",
       "value-necessary": "需要指定值",
       "key-duplicated": "Key 重复了",
-      "max-value-length-exceeded": "值长的度不能超过 {length} 字符",
-      "x-is-reserved-key": "\"{key}\" 是系统保留 Key"
+      "max-value-length-exceeded": "值长的度不能超过 {length} 字符"
     },
-    "placeholder": {
-      "select-values": "选择值…"
-    },
-    "add-label": "添加标签",
-    "filter-by-label": "按标签过滤"
+    "add-label": "添加标签"
   },
   "oauth": {
     "unknown-event": "未知的事件类型，认证失败"

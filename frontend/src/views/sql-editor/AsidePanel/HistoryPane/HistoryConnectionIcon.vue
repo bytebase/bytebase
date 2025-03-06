@@ -8,10 +8,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computedAsync } from "@vueuse/core";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
-import { isValidInstanceName } from "@/types";
+import { isValidInstanceName, unknownInstance } from "@/types";
 import type { QueryHistory } from "@/types/proto/v1/sql_service";
 import { extractDatabaseResourceName } from "@/utils";
 
@@ -19,9 +19,9 @@ const props = defineProps<{
   queryHistory: QueryHistory;
 }>();
 
-const instance = computed(() => {
+const instance = computedAsync(async () => {
   const { database } = extractDatabaseResourceName(props.queryHistory.database);
-  const d = useDatabaseV1Store().getDatabaseByName(database);
+  const d = await useDatabaseV1Store().getOrFetchDatabaseByName(database);
   return d.instanceResource;
-});
+}, unknownInstance());
 </script>

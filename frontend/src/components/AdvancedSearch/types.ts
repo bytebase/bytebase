@@ -6,6 +6,7 @@ export type ScopeOption = {
   title: string;
   options: ValueOption[];
   description?: string;
+  allowMultiple?: boolean;
 };
 
 export type ValueOption = {

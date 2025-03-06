@@ -202,7 +202,7 @@ func (x TablePartitionMetadata_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TablePartitionMetadata_Type.Descriptor instead.
 func (TablePartitionMetadata_Type) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{24, 0}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{22, 0}
 }
 
 type ColumnMetadata_IdentityGeneration int32
@@ -251,7 +251,7 @@ func (x ColumnMetadata_IdentityGeneration) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ColumnMetadata_IdentityGeneration.Descriptor instead.
 func (ColumnMetadata_IdentityGeneration) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{25, 0}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{23, 0}
 }
 
 type GenerationMetadata_Type int32
@@ -300,7 +300,7 @@ func (x GenerationMetadata_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use GenerationMetadata_Type.Descriptor instead.
 func (GenerationMetadata_Type) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{26, 0}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{24, 0}
 }
 
 type TaskMetadata_State int32
@@ -349,7 +349,7 @@ func (x TaskMetadata_State) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TaskMetadata_State.Descriptor instead.
 func (TaskMetadata_State) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{34, 0}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{32, 0}
 }
 
 type StreamMetadata_Type int32
@@ -395,7 +395,7 @@ func (x StreamMetadata_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use StreamMetadata_Type.Descriptor instead.
 func (StreamMetadata_Type) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{35, 0}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{33, 0}
 }
 
 type StreamMetadata_Mode int32
@@ -447,7 +447,7 @@ func (x StreamMetadata_Mode) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use StreamMetadata_Mode.Descriptor instead.
 func (StreamMetadata_Mode) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{35, 1}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{33, 1}
 }
 
 type Changelog_Status int32
@@ -499,7 +499,7 @@ func (x Changelog_Status) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Changelog_Status.Descriptor instead.
 func (Changelog_Status) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{68, 0}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{66, 0}
 }
 
 type Changelog_Type int32
@@ -557,7 +557,7 @@ func (x Changelog_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Changelog_Type.Descriptor instead.
 func (Changelog_Type) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{68, 1}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{66, 1}
 }
 
 type GetSchemaStringRequest_ObjectType int32
@@ -621,7 +621,7 @@ func (x GetSchemaStringRequest_ObjectType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use GetSchemaStringRequest_ObjectType.Descriptor instead.
 func (GetSchemaStringRequest_ObjectType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{69, 0}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{67, 0}
 }
 
 type GetDatabaseRequest struct {
@@ -670,165 +670,55 @@ func (x *GetDatabaseRequest) GetName() string {
 	return ""
 }
 
-type ListInstanceDatabasesRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The parent, which owns this collection of databases.
-	// - instances/{instance}: list all databases for an instance. Use
-	// "instances/-" to list all databases.
-	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// The maximum number of databases to return. The service may return fewer
-	// than this value. If unspecified, at most 10 databases will be returned.
-	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// A page token, received from a previous `ListInstanceDatabases` call.
-	// Provide this to retrieve the subsequent page.
-	//
-	// When paginating, all other parameters provided to `ListInstanceDatabases`
-	// must match the call that provided the page token.
-	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
-	// Deprecated.
-	// Filter is used to filter databases returned in the list.
-	// For example, `project == "projects/{project}"` can be used to list
-	// databases in a project. Note: the project filter will be moved to parent.
-	Filter        string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListInstanceDatabasesRequest) Reset() {
-	*x = ListInstanceDatabasesRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListInstanceDatabasesRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListInstanceDatabasesRequest) ProtoMessage() {}
-
-func (x *ListInstanceDatabasesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListInstanceDatabasesRequest.ProtoReflect.Descriptor instead.
-func (*ListInstanceDatabasesRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *ListInstanceDatabasesRequest) GetParent() string {
-	if x != nil {
-		return x.Parent
-	}
-	return ""
-}
-
-func (x *ListInstanceDatabasesRequest) GetPageSize() int32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-func (x *ListInstanceDatabasesRequest) GetPageToken() string {
-	if x != nil {
-		return x.PageToken
-	}
-	return ""
-}
-
-func (x *ListInstanceDatabasesRequest) GetFilter() string {
-	if x != nil {
-		return x.Filter
-	}
-	return ""
-}
-
-type ListInstanceDatabasesResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The databases from the specified request.
-	Databases []*Database `protobuf:"bytes,1,rep,name=databases,proto3" json:"databases,omitempty"`
-	// A token, which can be sent as `page_token` to retrieve the next page.
-	// If this field is omitted, there are no subsequent pages.
-	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListInstanceDatabasesResponse) Reset() {
-	*x = ListInstanceDatabasesResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListInstanceDatabasesResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListInstanceDatabasesResponse) ProtoMessage() {}
-
-func (x *ListInstanceDatabasesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListInstanceDatabasesResponse.ProtoReflect.Descriptor instead.
-func (*ListInstanceDatabasesResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *ListInstanceDatabasesResponse) GetDatabases() []*Database {
-	if x != nil {
-		return x.Databases
-	}
-	return nil
-}
-
-func (x *ListInstanceDatabasesResponse) GetNextPageToken() string {
-	if x != nil {
-		return x.NextPageToken
-	}
-	return ""
-}
-
 type ListDatabasesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The parent, which owns this collection of databases.
-	// - projects/{project}: list all databases in a project.
-	// - workspaces/{workspace}: list all databases in a workspace.
+	// - projects/{project}: list databases in a project, require "bb.projects.get" permission.
+	// - workspaces/-: list databases in the workspace, require "bb.databases.list" permission.
+	// - instances/{instances}: list databases in a instance, require "bb.instances.get" permission
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of databases to return. The service may return fewer
-	// than this value. If unspecified, at most 10 databases will be returned.
+	// than this value.
+	// If unspecified, at most 10 databases will be returned.
+	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	// A page token, received from a previous `ListDatabases` call.
 	// Provide this to retrieve the subsequent page.
 	//
 	// When paginating, all other parameters provided to `ListDatabases` must
 	// match the call that provided the page token.
-	PageToken     string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	// Filter is used to filter databases returned in the list.
+	// Supported filter:
+	// - environment
+	// - name
+	// - project
+	// - instance
+	// - engine
+	// - label
+	// - exclude_unassigned: Not show unassigned databases if specified
+	//
+	// For example:
+	// environment == "environments/{environment resource id}"
+	// project == "projects/{project resource id}"
+	// instance == "instances/{instance resource id}"
+	// name.matches("database name")
+	// engine == "MYSQL"
+	// engine in ["MYSQL", "POSTGRES"]
+	// !(engine in ["MYSQL", "POSTGRES"])
+	// label == "region:asia"
+	// label == "tenant:asia,europe"
+	// label == "region:asia" && label == "tenant:bytebase"
+	// exclude_unassigned == true
+	Filter string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
+	// Show deleted database if specified.
+	ShowDeleted   bool `protobuf:"varint,5,opt,name=show_deleted,json=showDeleted,proto3" json:"show_deleted,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListDatabasesRequest) Reset() {
 	*x = ListDatabasesRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[3]
+	mi := &file_v1_database_service_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -840,7 +730,7 @@ func (x *ListDatabasesRequest) String() string {
 func (*ListDatabasesRequest) ProtoMessage() {}
 
 func (x *ListDatabasesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[3]
+	mi := &file_v1_database_service_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -853,7 +743,7 @@ func (x *ListDatabasesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDatabasesRequest.ProtoReflect.Descriptor instead.
 func (*ListDatabasesRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{3}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ListDatabasesRequest) GetParent() string {
@@ -877,6 +767,20 @@ func (x *ListDatabasesRequest) GetPageToken() string {
 	return ""
 }
 
+func (x *ListDatabasesRequest) GetFilter() string {
+	if x != nil {
+		return x.Filter
+	}
+	return ""
+}
+
+func (x *ListDatabasesRequest) GetShowDeleted() bool {
+	if x != nil {
+		return x.ShowDeleted
+	}
+	return false
+}
+
 type ListDatabasesResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The databases from the specified request.
@@ -890,7 +794,7 @@ type ListDatabasesResponse struct {
 
 func (x *ListDatabasesResponse) Reset() {
 	*x = ListDatabasesResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[4]
+	mi := &file_v1_database_service_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -902,7 +806,7 @@ func (x *ListDatabasesResponse) String() string {
 func (*ListDatabasesResponse) ProtoMessage() {}
 
 func (x *ListDatabasesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[4]
+	mi := &file_v1_database_service_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -915,7 +819,7 @@ func (x *ListDatabasesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDatabasesResponse.ProtoReflect.Descriptor instead.
 func (*ListDatabasesResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{4}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ListDatabasesResponse) GetDatabases() []*Database {
@@ -947,7 +851,7 @@ type UpdateDatabaseRequest struct {
 
 func (x *UpdateDatabaseRequest) Reset() {
 	*x = UpdateDatabaseRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[5]
+	mi := &file_v1_database_service_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -959,7 +863,7 @@ func (x *UpdateDatabaseRequest) String() string {
 func (*UpdateDatabaseRequest) ProtoMessage() {}
 
 func (x *UpdateDatabaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[5]
+	mi := &file_v1_database_service_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -972,7 +876,7 @@ func (x *UpdateDatabaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateDatabaseRequest.ProtoReflect.Descriptor instead.
 func (*UpdateDatabaseRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{5}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *UpdateDatabaseRequest) GetDatabase() *Database {
@@ -1005,7 +909,7 @@ type BatchUpdateDatabasesRequest struct {
 
 func (x *BatchUpdateDatabasesRequest) Reset() {
 	*x = BatchUpdateDatabasesRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[6]
+	mi := &file_v1_database_service_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1017,7 +921,7 @@ func (x *BatchUpdateDatabasesRequest) String() string {
 func (*BatchUpdateDatabasesRequest) ProtoMessage() {}
 
 func (x *BatchUpdateDatabasesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[6]
+	mi := &file_v1_database_service_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1030,7 +934,7 @@ func (x *BatchUpdateDatabasesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchUpdateDatabasesRequest.ProtoReflect.Descriptor instead.
 func (*BatchUpdateDatabasesRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{6}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *BatchUpdateDatabasesRequest) GetParent() string {
@@ -1057,7 +961,7 @@ type BatchUpdateDatabasesResponse struct {
 
 func (x *BatchUpdateDatabasesResponse) Reset() {
 	*x = BatchUpdateDatabasesResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[7]
+	mi := &file_v1_database_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1069,7 +973,7 @@ func (x *BatchUpdateDatabasesResponse) String() string {
 func (*BatchUpdateDatabasesResponse) ProtoMessage() {}
 
 func (x *BatchUpdateDatabasesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[7]
+	mi := &file_v1_database_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1082,7 +986,7 @@ func (x *BatchUpdateDatabasesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchUpdateDatabasesResponse.ProtoReflect.Descriptor instead.
 func (*BatchUpdateDatabasesResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{7}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *BatchUpdateDatabasesResponse) GetDatabases() []*Database {
@@ -1103,7 +1007,7 @@ type SyncDatabaseRequest struct {
 
 func (x *SyncDatabaseRequest) Reset() {
 	*x = SyncDatabaseRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[8]
+	mi := &file_v1_database_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1115,7 +1019,7 @@ func (x *SyncDatabaseRequest) String() string {
 func (*SyncDatabaseRequest) ProtoMessage() {}
 
 func (x *SyncDatabaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[8]
+	mi := &file_v1_database_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1128,7 +1032,7 @@ func (x *SyncDatabaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncDatabaseRequest.ProtoReflect.Descriptor instead.
 func (*SyncDatabaseRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{8}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *SyncDatabaseRequest) GetName() string {
@@ -1146,7 +1050,7 @@ type SyncDatabaseResponse struct {
 
 func (x *SyncDatabaseResponse) Reset() {
 	*x = SyncDatabaseResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[9]
+	mi := &file_v1_database_service_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1158,7 +1062,7 @@ func (x *SyncDatabaseResponse) String() string {
 func (*SyncDatabaseResponse) ProtoMessage() {}
 
 func (x *SyncDatabaseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[9]
+	mi := &file_v1_database_service_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1171,7 +1075,7 @@ func (x *SyncDatabaseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncDatabaseResponse.ProtoReflect.Descriptor instead.
 func (*SyncDatabaseResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{9}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{7}
 }
 
 type GetDatabaseMetadataRequest struct {
@@ -1191,7 +1095,7 @@ type GetDatabaseMetadataRequest struct {
 
 func (x *GetDatabaseMetadataRequest) Reset() {
 	*x = GetDatabaseMetadataRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[10]
+	mi := &file_v1_database_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1203,7 +1107,7 @@ func (x *GetDatabaseMetadataRequest) String() string {
 func (*GetDatabaseMetadataRequest) ProtoMessage() {}
 
 func (x *GetDatabaseMetadataRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[10]
+	mi := &file_v1_database_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1216,7 +1120,7 @@ func (x *GetDatabaseMetadataRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDatabaseMetadataRequest.ProtoReflect.Descriptor instead.
 func (*GetDatabaseMetadataRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{10}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetDatabaseMetadataRequest) GetName() string {
@@ -1253,7 +1157,7 @@ type GetDatabaseSchemaRequest struct {
 
 func (x *GetDatabaseSchemaRequest) Reset() {
 	*x = GetDatabaseSchemaRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[11]
+	mi := &file_v1_database_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1265,7 +1169,7 @@ func (x *GetDatabaseSchemaRequest) String() string {
 func (*GetDatabaseSchemaRequest) ProtoMessage() {}
 
 func (x *GetDatabaseSchemaRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[11]
+	mi := &file_v1_database_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1278,7 +1182,7 @@ func (x *GetDatabaseSchemaRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDatabaseSchemaRequest.ProtoReflect.Descriptor instead.
 func (*GetDatabaseSchemaRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{11}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetDatabaseSchemaRequest) GetName() string {
@@ -1315,7 +1219,7 @@ type DiffSchemaRequest struct {
 
 func (x *DiffSchemaRequest) Reset() {
 	*x = DiffSchemaRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[12]
+	mi := &file_v1_database_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1327,7 +1231,7 @@ func (x *DiffSchemaRequest) String() string {
 func (*DiffSchemaRequest) ProtoMessage() {}
 
 func (x *DiffSchemaRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[12]
+	mi := &file_v1_database_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1340,7 +1244,7 @@ func (x *DiffSchemaRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DiffSchemaRequest.ProtoReflect.Descriptor instead.
 func (*DiffSchemaRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{12}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *DiffSchemaRequest) GetName() string {
@@ -1411,7 +1315,7 @@ type DiffSchemaResponse struct {
 
 func (x *DiffSchemaResponse) Reset() {
 	*x = DiffSchemaResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[13]
+	mi := &file_v1_database_service_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1423,7 +1327,7 @@ func (x *DiffSchemaResponse) String() string {
 func (*DiffSchemaResponse) ProtoMessage() {}
 
 func (x *DiffSchemaResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[13]
+	mi := &file_v1_database_service_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1436,7 +1340,7 @@ func (x *DiffSchemaResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DiffSchemaResponse.ProtoReflect.Descriptor instead.
 func (*DiffSchemaResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{13}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *DiffSchemaResponse) GetDiff() string {
@@ -1480,7 +1384,7 @@ type Database struct {
 
 func (x *Database) Reset() {
 	*x = Database{}
-	mi := &file_v1_database_service_proto_msgTypes[14]
+	mi := &file_v1_database_service_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1492,7 +1396,7 @@ func (x *Database) String() string {
 func (*Database) ProtoMessage() {}
 
 func (x *Database) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[14]
+	mi := &file_v1_database_service_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1505,7 +1409,7 @@ func (x *Database) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Database.ProtoReflect.Descriptor instead.
 func (*Database) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{14}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *Database) GetName() string {
@@ -1600,7 +1504,7 @@ type DatabaseMetadata struct {
 
 func (x *DatabaseMetadata) Reset() {
 	*x = DatabaseMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[15]
+	mi := &file_v1_database_service_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1612,7 +1516,7 @@ func (x *DatabaseMetadata) String() string {
 func (*DatabaseMetadata) ProtoMessage() {}
 
 func (x *DatabaseMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[15]
+	mi := &file_v1_database_service_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1625,7 +1529,7 @@ func (x *DatabaseMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatabaseMetadata.ProtoReflect.Descriptor instead.
 func (*DatabaseMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{15}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *DatabaseMetadata) GetName() string {
@@ -1709,7 +1613,7 @@ type SchemaMetadata struct {
 
 func (x *SchemaMetadata) Reset() {
 	*x = SchemaMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[16]
+	mi := &file_v1_database_service_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1721,7 +1625,7 @@ func (x *SchemaMetadata) String() string {
 func (*SchemaMetadata) ProtoMessage() {}
 
 func (x *SchemaMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[16]
+	mi := &file_v1_database_service_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1734,7 +1638,7 @@ func (x *SchemaMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SchemaMetadata.ProtoReflect.Descriptor instead.
 func (*SchemaMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{16}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *SchemaMetadata) GetName() string {
@@ -1856,7 +1760,7 @@ type EnumTypeMetadata struct {
 
 func (x *EnumTypeMetadata) Reset() {
 	*x = EnumTypeMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[17]
+	mi := &file_v1_database_service_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1868,7 +1772,7 @@ func (x *EnumTypeMetadata) String() string {
 func (*EnumTypeMetadata) ProtoMessage() {}
 
 func (x *EnumTypeMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[17]
+	mi := &file_v1_database_service_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1881,7 +1785,7 @@ func (x *EnumTypeMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnumTypeMetadata.ProtoReflect.Descriptor instead.
 func (*EnumTypeMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{17}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *EnumTypeMetadata) GetName() string {
@@ -1929,7 +1833,7 @@ type EventMetadata struct {
 
 func (x *EventMetadata) Reset() {
 	*x = EventMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[18]
+	mi := &file_v1_database_service_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1941,7 +1845,7 @@ func (x *EventMetadata) String() string {
 func (*EventMetadata) ProtoMessage() {}
 
 func (x *EventMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[18]
+	mi := &file_v1_database_service_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1954,7 +1858,7 @@ func (x *EventMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventMetadata.ProtoReflect.Descriptor instead.
 func (*EventMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{18}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *EventMetadata) GetName() string {
@@ -2031,7 +1935,7 @@ type SequenceMetadata struct {
 
 func (x *SequenceMetadata) Reset() {
 	*x = SequenceMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[19]
+	mi := &file_v1_database_service_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2043,7 +1947,7 @@ func (x *SequenceMetadata) String() string {
 func (*SequenceMetadata) ProtoMessage() {}
 
 func (x *SequenceMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[19]
+	mi := &file_v1_database_service_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2056,7 +1960,7 @@ func (x *SequenceMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SequenceMetadata.ProtoReflect.Descriptor instead.
 func (*SequenceMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{19}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *SequenceMetadata) GetName() string {
@@ -2172,7 +2076,7 @@ type TriggerMetadata struct {
 
 func (x *TriggerMetadata) Reset() {
 	*x = TriggerMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[20]
+	mi := &file_v1_database_service_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2184,7 +2088,7 @@ func (x *TriggerMetadata) String() string {
 func (*TriggerMetadata) ProtoMessage() {}
 
 func (x *TriggerMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[20]
+	mi := &file_v1_database_service_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2197,7 +2101,7 @@ func (x *TriggerMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TriggerMetadata.ProtoReflect.Descriptor instead.
 func (*TriggerMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{20}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *TriggerMetadata) GetName() string {
@@ -2279,7 +2183,7 @@ type ExternalTableMetadata struct {
 
 func (x *ExternalTableMetadata) Reset() {
 	*x = ExternalTableMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[21]
+	mi := &file_v1_database_service_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2291,7 +2195,7 @@ func (x *ExternalTableMetadata) String() string {
 func (*ExternalTableMetadata) ProtoMessage() {}
 
 func (x *ExternalTableMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[21]
+	mi := &file_v1_database_service_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2304,7 +2208,7 @@ func (x *ExternalTableMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExternalTableMetadata.ProtoReflect.Descriptor instead.
 func (*ExternalTableMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{21}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ExternalTableMetadata) GetName() string {
@@ -2383,7 +2287,7 @@ type TableMetadata struct {
 
 func (x *TableMetadata) Reset() {
 	*x = TableMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[22]
+	mi := &file_v1_database_service_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2395,7 +2299,7 @@ func (x *TableMetadata) String() string {
 func (*TableMetadata) ProtoMessage() {}
 
 func (x *TableMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[22]
+	mi := &file_v1_database_service_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2408,7 +2312,7 @@ func (x *TableMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TableMetadata.ProtoReflect.Descriptor instead.
 func (*TableMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{22}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *TableMetadata) GetName() string {
@@ -2564,7 +2468,7 @@ type CheckConstraintMetadata struct {
 
 func (x *CheckConstraintMetadata) Reset() {
 	*x = CheckConstraintMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[23]
+	mi := &file_v1_database_service_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2576,7 +2480,7 @@ func (x *CheckConstraintMetadata) String() string {
 func (*CheckConstraintMetadata) ProtoMessage() {}
 
 func (x *CheckConstraintMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[23]
+	mi := &file_v1_database_service_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2589,7 +2493,7 @@ func (x *CheckConstraintMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckConstraintMetadata.ProtoReflect.Descriptor instead.
 func (*CheckConstraintMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{23}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *CheckConstraintMetadata) GetName() string {
@@ -2648,7 +2552,7 @@ type TablePartitionMetadata struct {
 
 func (x *TablePartitionMetadata) Reset() {
 	*x = TablePartitionMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[24]
+	mi := &file_v1_database_service_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2660,7 +2564,7 @@ func (x *TablePartitionMetadata) String() string {
 func (*TablePartitionMetadata) ProtoMessage() {}
 
 func (x *TablePartitionMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[24]
+	mi := &file_v1_database_service_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2673,7 +2577,7 @@ func (x *TablePartitionMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TablePartitionMetadata.ProtoReflect.Descriptor instead.
 func (*TablePartitionMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{24}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *TablePartitionMetadata) GetName() string {
@@ -2768,7 +2672,7 @@ type ColumnMetadata struct {
 
 func (x *ColumnMetadata) Reset() {
 	*x = ColumnMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[25]
+	mi := &file_v1_database_service_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2780,7 +2684,7 @@ func (x *ColumnMetadata) String() string {
 func (*ColumnMetadata) ProtoMessage() {}
 
 func (x *ColumnMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[25]
+	mi := &file_v1_database_service_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2793,7 +2697,7 @@ func (x *ColumnMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnMetadata.ProtoReflect.Descriptor instead.
 func (*ColumnMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{25}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *ColumnMetadata) GetName() string {
@@ -2946,7 +2850,7 @@ type GenerationMetadata struct {
 
 func (x *GenerationMetadata) Reset() {
 	*x = GenerationMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[26]
+	mi := &file_v1_database_service_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2958,7 +2862,7 @@ func (x *GenerationMetadata) String() string {
 func (*GenerationMetadata) ProtoMessage() {}
 
 func (x *GenerationMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[26]
+	mi := &file_v1_database_service_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2971,7 +2875,7 @@ func (x *GenerationMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerationMetadata.ProtoReflect.Descriptor instead.
 func (*GenerationMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{26}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *GenerationMetadata) GetType() GenerationMetadata_Type {
@@ -3010,7 +2914,7 @@ type ViewMetadata struct {
 
 func (x *ViewMetadata) Reset() {
 	*x = ViewMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[27]
+	mi := &file_v1_database_service_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3022,7 +2926,7 @@ func (x *ViewMetadata) String() string {
 func (*ViewMetadata) ProtoMessage() {}
 
 func (x *ViewMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[27]
+	mi := &file_v1_database_service_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3035,7 +2939,7 @@ func (x *ViewMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ViewMetadata.ProtoReflect.Descriptor instead.
 func (*ViewMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{27}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ViewMetadata) GetName() string {
@@ -3102,7 +3006,7 @@ type DependencyColumn struct {
 
 func (x *DependencyColumn) Reset() {
 	*x = DependencyColumn{}
-	mi := &file_v1_database_service_proto_msgTypes[28]
+	mi := &file_v1_database_service_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3114,7 +3018,7 @@ func (x *DependencyColumn) String() string {
 func (*DependencyColumn) ProtoMessage() {}
 
 func (x *DependencyColumn) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[28]
+	mi := &file_v1_database_service_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3127,7 +3031,7 @@ func (x *DependencyColumn) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DependencyColumn.ProtoReflect.Descriptor instead.
 func (*DependencyColumn) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{28}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *DependencyColumn) GetSchema() string {
@@ -3174,7 +3078,7 @@ type MaterializedViewMetadata struct {
 
 func (x *MaterializedViewMetadata) Reset() {
 	*x = MaterializedViewMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[29]
+	mi := &file_v1_database_service_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3186,7 +3090,7 @@ func (x *MaterializedViewMetadata) String() string {
 func (*MaterializedViewMetadata) ProtoMessage() {}
 
 func (x *MaterializedViewMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[29]
+	mi := &file_v1_database_service_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3199,7 +3103,7 @@ func (x *MaterializedViewMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MaterializedViewMetadata.ProtoReflect.Descriptor instead.
 func (*MaterializedViewMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{29}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *MaterializedViewMetadata) GetName() string {
@@ -3263,7 +3167,7 @@ type DependencyTable struct {
 
 func (x *DependencyTable) Reset() {
 	*x = DependencyTable{}
-	mi := &file_v1_database_service_proto_msgTypes[30]
+	mi := &file_v1_database_service_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3275,7 +3179,7 @@ func (x *DependencyTable) String() string {
 func (*DependencyTable) ProtoMessage() {}
 
 func (x *DependencyTable) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[30]
+	mi := &file_v1_database_service_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3288,7 +3192,7 @@ func (x *DependencyTable) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DependencyTable.ProtoReflect.Descriptor instead.
 func (*DependencyTable) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{30}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *DependencyTable) GetSchema() string {
@@ -3331,7 +3235,7 @@ type FunctionMetadata struct {
 
 func (x *FunctionMetadata) Reset() {
 	*x = FunctionMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[31]
+	mi := &file_v1_database_service_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3343,7 +3247,7 @@ func (x *FunctionMetadata) String() string {
 func (*FunctionMetadata) ProtoMessage() {}
 
 func (x *FunctionMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[31]
+	mi := &file_v1_database_service_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3356,7 +3260,7 @@ func (x *FunctionMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FunctionMetadata.ProtoReflect.Descriptor instead.
 func (*FunctionMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{31}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *FunctionMetadata) GetName() string {
@@ -3451,7 +3355,7 @@ type ProcedureMetadata struct {
 
 func (x *ProcedureMetadata) Reset() {
 	*x = ProcedureMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[32]
+	mi := &file_v1_database_service_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3463,7 +3367,7 @@ func (x *ProcedureMetadata) String() string {
 func (*ProcedureMetadata) ProtoMessage() {}
 
 func (x *ProcedureMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[32]
+	mi := &file_v1_database_service_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3476,7 +3380,7 @@ func (x *ProcedureMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProcedureMetadata.ProtoReflect.Descriptor instead.
 func (*ProcedureMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{32}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *ProcedureMetadata) GetName() string {
@@ -3548,7 +3452,7 @@ type PackageMetadata struct {
 
 func (x *PackageMetadata) Reset() {
 	*x = PackageMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[33]
+	mi := &file_v1_database_service_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3560,7 +3464,7 @@ func (x *PackageMetadata) String() string {
 func (*PackageMetadata) ProtoMessage() {}
 
 func (x *PackageMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[33]
+	mi := &file_v1_database_service_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3573,7 +3477,7 @@ func (x *PackageMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PackageMetadata.ProtoReflect.Descriptor instead.
 func (*PackageMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{33}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *PackageMetadata) GetName() string {
@@ -3619,7 +3523,7 @@ type TaskMetadata struct {
 
 func (x *TaskMetadata) Reset() {
 	*x = TaskMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[34]
+	mi := &file_v1_database_service_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3631,7 +3535,7 @@ func (x *TaskMetadata) String() string {
 func (*TaskMetadata) ProtoMessage() {}
 
 func (x *TaskMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[34]
+	mi := &file_v1_database_service_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3644,7 +3548,7 @@ func (x *TaskMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskMetadata.ProtoReflect.Descriptor instead.
 func (*TaskMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{34}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *TaskMetadata) GetName() string {
@@ -3741,7 +3645,7 @@ type StreamMetadata struct {
 
 func (x *StreamMetadata) Reset() {
 	*x = StreamMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[35]
+	mi := &file_v1_database_service_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3753,7 +3657,7 @@ func (x *StreamMetadata) String() string {
 func (*StreamMetadata) ProtoMessage() {}
 
 func (x *StreamMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[35]
+	mi := &file_v1_database_service_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3766,7 +3670,7 @@ func (x *StreamMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StreamMetadata.ProtoReflect.Descriptor instead.
 func (*StreamMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{35}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *StreamMetadata) GetName() string {
@@ -3865,7 +3769,7 @@ type IndexMetadata struct {
 
 func (x *IndexMetadata) Reset() {
 	*x = IndexMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[36]
+	mi := &file_v1_database_service_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3877,7 +3781,7 @@ func (x *IndexMetadata) String() string {
 func (*IndexMetadata) ProtoMessage() {}
 
 func (x *IndexMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[36]
+	mi := &file_v1_database_service_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3890,7 +3794,7 @@ func (x *IndexMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IndexMetadata.ProtoReflect.Descriptor instead.
 func (*IndexMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{36}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *IndexMetadata) GetName() string {
@@ -4009,7 +3913,7 @@ type ExtensionMetadata struct {
 
 func (x *ExtensionMetadata) Reset() {
 	*x = ExtensionMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[37]
+	mi := &file_v1_database_service_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4021,7 +3925,7 @@ func (x *ExtensionMetadata) String() string {
 func (*ExtensionMetadata) ProtoMessage() {}
 
 func (x *ExtensionMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[37]
+	mi := &file_v1_database_service_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4034,7 +3938,7 @@ func (x *ExtensionMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExtensionMetadata.ProtoReflect.Descriptor instead.
 func (*ExtensionMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{37}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *ExtensionMetadata) GetName() string {
@@ -4093,7 +3997,7 @@ type ForeignKeyMetadata struct {
 
 func (x *ForeignKeyMetadata) Reset() {
 	*x = ForeignKeyMetadata{}
-	mi := &file_v1_database_service_proto_msgTypes[38]
+	mi := &file_v1_database_service_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4105,7 +4009,7 @@ func (x *ForeignKeyMetadata) String() string {
 func (*ForeignKeyMetadata) ProtoMessage() {}
 
 func (x *ForeignKeyMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[38]
+	mi := &file_v1_database_service_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4118,7 +4022,7 @@ func (x *ForeignKeyMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ForeignKeyMetadata.ProtoReflect.Descriptor instead.
 func (*ForeignKeyMetadata) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{38}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *ForeignKeyMetadata) GetName() string {
@@ -4188,7 +4092,7 @@ type DatabaseSchema struct {
 
 func (x *DatabaseSchema) Reset() {
 	*x = DatabaseSchema{}
-	mi := &file_v1_database_service_proto_msgTypes[39]
+	mi := &file_v1_database_service_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4200,7 +4104,7 @@ func (x *DatabaseSchema) String() string {
 func (*DatabaseSchema) ProtoMessage() {}
 
 func (x *DatabaseSchema) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[39]
+	mi := &file_v1_database_service_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4213,7 +4117,7 @@ func (x *DatabaseSchema) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatabaseSchema.ProtoReflect.Descriptor instead.
 func (*DatabaseSchema) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{39}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *DatabaseSchema) GetSchema() string {
@@ -4256,7 +4160,7 @@ type ListSlowQueriesRequest struct {
 
 func (x *ListSlowQueriesRequest) Reset() {
 	*x = ListSlowQueriesRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[40]
+	mi := &file_v1_database_service_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4268,7 +4172,7 @@ func (x *ListSlowQueriesRequest) String() string {
 func (*ListSlowQueriesRequest) ProtoMessage() {}
 
 func (x *ListSlowQueriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[40]
+	mi := &file_v1_database_service_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4281,7 +4185,7 @@ func (x *ListSlowQueriesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSlowQueriesRequest.ProtoReflect.Descriptor instead.
 func (*ListSlowQueriesRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{40}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *ListSlowQueriesRequest) GetParent() string {
@@ -4316,7 +4220,7 @@ type ListSlowQueriesResponse struct {
 
 func (x *ListSlowQueriesResponse) Reset() {
 	*x = ListSlowQueriesResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[41]
+	mi := &file_v1_database_service_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4328,7 +4232,7 @@ func (x *ListSlowQueriesResponse) String() string {
 func (*ListSlowQueriesResponse) ProtoMessage() {}
 
 func (x *ListSlowQueriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[41]
+	mi := &file_v1_database_service_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4341,7 +4245,7 @@ func (x *ListSlowQueriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSlowQueriesResponse.ProtoReflect.Descriptor instead.
 func (*ListSlowQueriesResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{41}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *ListSlowQueriesResponse) GetSlowQueryLogs() []*SlowQueryLog {
@@ -4368,7 +4272,7 @@ type SlowQueryLog struct {
 
 func (x *SlowQueryLog) Reset() {
 	*x = SlowQueryLog{}
-	mi := &file_v1_database_service_proto_msgTypes[42]
+	mi := &file_v1_database_service_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4380,7 +4284,7 @@ func (x *SlowQueryLog) String() string {
 func (*SlowQueryLog) ProtoMessage() {}
 
 func (x *SlowQueryLog) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[42]
+	mi := &file_v1_database_service_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4393,7 +4297,7 @@ func (x *SlowQueryLog) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SlowQueryLog.ProtoReflect.Descriptor instead.
 func (*SlowQueryLog) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{42}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *SlowQueryLog) GetResource() string {
@@ -4451,7 +4355,7 @@ type SlowQueryStatistics struct {
 
 func (x *SlowQueryStatistics) Reset() {
 	*x = SlowQueryStatistics{}
-	mi := &file_v1_database_service_proto_msgTypes[43]
+	mi := &file_v1_database_service_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4463,7 +4367,7 @@ func (x *SlowQueryStatistics) String() string {
 func (*SlowQueryStatistics) ProtoMessage() {}
 
 func (x *SlowQueryStatistics) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[43]
+	mi := &file_v1_database_service_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4476,7 +4380,7 @@ func (x *SlowQueryStatistics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SlowQueryStatistics.ProtoReflect.Descriptor instead.
 func (*SlowQueryStatistics) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{43}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *SlowQueryStatistics) GetSqlFingerprint() string {
@@ -4584,7 +4488,7 @@ type SlowQueryDetails struct {
 
 func (x *SlowQueryDetails) Reset() {
 	*x = SlowQueryDetails{}
-	mi := &file_v1_database_service_proto_msgTypes[44]
+	mi := &file_v1_database_service_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4596,7 +4500,7 @@ func (x *SlowQueryDetails) String() string {
 func (*SlowQueryDetails) ProtoMessage() {}
 
 func (x *SlowQueryDetails) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[44]
+	mi := &file_v1_database_service_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4609,7 +4513,7 @@ func (x *SlowQueryDetails) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SlowQueryDetails.ProtoReflect.Descriptor instead.
 func (*SlowQueryDetails) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{44}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *SlowQueryDetails) GetStartTime() *timestamppb.Timestamp {
@@ -4678,7 +4582,7 @@ type ListSecretsRequest struct {
 
 func (x *ListSecretsRequest) Reset() {
 	*x = ListSecretsRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[45]
+	mi := &file_v1_database_service_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4690,7 +4594,7 @@ func (x *ListSecretsRequest) String() string {
 func (*ListSecretsRequest) ProtoMessage() {}
 
 func (x *ListSecretsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[45]
+	mi := &file_v1_database_service_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4703,7 +4607,7 @@ func (x *ListSecretsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSecretsRequest.ProtoReflect.Descriptor instead.
 func (*ListSecretsRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{45}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *ListSecretsRequest) GetParent() string {
@@ -4740,7 +4644,7 @@ type ListSecretsResponse struct {
 
 func (x *ListSecretsResponse) Reset() {
 	*x = ListSecretsResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[46]
+	mi := &file_v1_database_service_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4752,7 +4656,7 @@ func (x *ListSecretsResponse) String() string {
 func (*ListSecretsResponse) ProtoMessage() {}
 
 func (x *ListSecretsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[46]
+	mi := &file_v1_database_service_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4765,7 +4669,7 @@ func (x *ListSecretsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSecretsResponse.ProtoReflect.Descriptor instead.
 func (*ListSecretsResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{46}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *ListSecretsResponse) GetSecrets() []*Secret {
@@ -4796,7 +4700,7 @@ type UpdateSecretRequest struct {
 
 func (x *UpdateSecretRequest) Reset() {
 	*x = UpdateSecretRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[47]
+	mi := &file_v1_database_service_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4808,7 +4712,7 @@ func (x *UpdateSecretRequest) String() string {
 func (*UpdateSecretRequest) ProtoMessage() {}
 
 func (x *UpdateSecretRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[47]
+	mi := &file_v1_database_service_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4821,7 +4725,7 @@ func (x *UpdateSecretRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateSecretRequest.ProtoReflect.Descriptor instead.
 func (*UpdateSecretRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{47}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *UpdateSecretRequest) GetSecret() *Secret {
@@ -4857,7 +4761,7 @@ type DeleteSecretRequest struct {
 
 func (x *DeleteSecretRequest) Reset() {
 	*x = DeleteSecretRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[48]
+	mi := &file_v1_database_service_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4869,7 +4773,7 @@ func (x *DeleteSecretRequest) String() string {
 func (*DeleteSecretRequest) ProtoMessage() {}
 
 func (x *DeleteSecretRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[48]
+	mi := &file_v1_database_service_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4882,7 +4786,7 @@ func (x *DeleteSecretRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteSecretRequest.ProtoReflect.Descriptor instead.
 func (*DeleteSecretRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{48}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *DeleteSecretRequest) GetName() string {
@@ -4913,7 +4817,7 @@ type Secret struct {
 
 func (x *Secret) Reset() {
 	*x = Secret{}
-	mi := &file_v1_database_service_proto_msgTypes[49]
+	mi := &file_v1_database_service_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4925,7 +4829,7 @@ func (x *Secret) String() string {
 func (*Secret) ProtoMessage() {}
 
 func (x *Secret) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[49]
+	mi := &file_v1_database_service_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4938,7 +4842,7 @@ func (x *Secret) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Secret.ProtoReflect.Descriptor instead.
 func (*Secret) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{49}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *Secret) GetName() string {
@@ -4989,7 +4893,7 @@ type AdviseIndexRequest struct {
 
 func (x *AdviseIndexRequest) Reset() {
 	*x = AdviseIndexRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[50]
+	mi := &file_v1_database_service_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5001,7 +4905,7 @@ func (x *AdviseIndexRequest) String() string {
 func (*AdviseIndexRequest) ProtoMessage() {}
 
 func (x *AdviseIndexRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[50]
+	mi := &file_v1_database_service_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5014,7 +4918,7 @@ func (x *AdviseIndexRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AdviseIndexRequest.ProtoReflect.Descriptor instead.
 func (*AdviseIndexRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{50}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *AdviseIndexRequest) GetParent() string {
@@ -5046,7 +4950,7 @@ type AdviseIndexResponse struct {
 
 func (x *AdviseIndexResponse) Reset() {
 	*x = AdviseIndexResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[51]
+	mi := &file_v1_database_service_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5058,7 +4962,7 @@ func (x *AdviseIndexResponse) String() string {
 func (*AdviseIndexResponse) ProtoMessage() {}
 
 func (x *AdviseIndexResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[51]
+	mi := &file_v1_database_service_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5071,7 +4975,7 @@ func (x *AdviseIndexResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AdviseIndexResponse.ProtoReflect.Descriptor instead.
 func (*AdviseIndexResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{51}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *AdviseIndexResponse) GetCurrentIndex() string {
@@ -5104,7 +5008,7 @@ type ChangedResources struct {
 
 func (x *ChangedResources) Reset() {
 	*x = ChangedResources{}
-	mi := &file_v1_database_service_proto_msgTypes[52]
+	mi := &file_v1_database_service_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5116,7 +5020,7 @@ func (x *ChangedResources) String() string {
 func (*ChangedResources) ProtoMessage() {}
 
 func (x *ChangedResources) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[52]
+	mi := &file_v1_database_service_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5129,7 +5033,7 @@ func (x *ChangedResources) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangedResources.ProtoReflect.Descriptor instead.
 func (*ChangedResources) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{52}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *ChangedResources) GetDatabases() []*ChangedResourceDatabase {
@@ -5149,7 +5053,7 @@ type ChangedResourceDatabase struct {
 
 func (x *ChangedResourceDatabase) Reset() {
 	*x = ChangedResourceDatabase{}
-	mi := &file_v1_database_service_proto_msgTypes[53]
+	mi := &file_v1_database_service_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5161,7 +5065,7 @@ func (x *ChangedResourceDatabase) String() string {
 func (*ChangedResourceDatabase) ProtoMessage() {}
 
 func (x *ChangedResourceDatabase) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[53]
+	mi := &file_v1_database_service_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5174,7 +5078,7 @@ func (x *ChangedResourceDatabase) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangedResourceDatabase.ProtoReflect.Descriptor instead.
 func (*ChangedResourceDatabase) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{53}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *ChangedResourceDatabase) GetName() string {
@@ -5204,7 +5108,7 @@ type ChangedResourceSchema struct {
 
 func (x *ChangedResourceSchema) Reset() {
 	*x = ChangedResourceSchema{}
-	mi := &file_v1_database_service_proto_msgTypes[54]
+	mi := &file_v1_database_service_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5216,7 +5120,7 @@ func (x *ChangedResourceSchema) String() string {
 func (*ChangedResourceSchema) ProtoMessage() {}
 
 func (x *ChangedResourceSchema) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[54]
+	mi := &file_v1_database_service_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5229,7 +5133,7 @@ func (x *ChangedResourceSchema) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangedResourceSchema.ProtoReflect.Descriptor instead.
 func (*ChangedResourceSchema) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{54}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *ChangedResourceSchema) GetName() string {
@@ -5278,7 +5182,7 @@ type ChangedResourceTable struct {
 
 func (x *ChangedResourceTable) Reset() {
 	*x = ChangedResourceTable{}
-	mi := &file_v1_database_service_proto_msgTypes[55]
+	mi := &file_v1_database_service_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5290,7 +5194,7 @@ func (x *ChangedResourceTable) String() string {
 func (*ChangedResourceTable) ProtoMessage() {}
 
 func (x *ChangedResourceTable) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[55]
+	mi := &file_v1_database_service_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5303,7 +5207,7 @@ func (x *ChangedResourceTable) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangedResourceTable.ProtoReflect.Descriptor instead.
 func (*ChangedResourceTable) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{55}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *ChangedResourceTable) GetName() string {
@@ -5331,7 +5235,7 @@ type ChangedResourceView struct {
 
 func (x *ChangedResourceView) Reset() {
 	*x = ChangedResourceView{}
-	mi := &file_v1_database_service_proto_msgTypes[56]
+	mi := &file_v1_database_service_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5343,7 +5247,7 @@ func (x *ChangedResourceView) String() string {
 func (*ChangedResourceView) ProtoMessage() {}
 
 func (x *ChangedResourceView) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[56]
+	mi := &file_v1_database_service_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5356,7 +5260,7 @@ func (x *ChangedResourceView) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangedResourceView.ProtoReflect.Descriptor instead.
 func (*ChangedResourceView) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{56}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *ChangedResourceView) GetName() string {
@@ -5384,7 +5288,7 @@ type ChangedResourceFunction struct {
 
 func (x *ChangedResourceFunction) Reset() {
 	*x = ChangedResourceFunction{}
-	mi := &file_v1_database_service_proto_msgTypes[57]
+	mi := &file_v1_database_service_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5396,7 +5300,7 @@ func (x *ChangedResourceFunction) String() string {
 func (*ChangedResourceFunction) ProtoMessage() {}
 
 func (x *ChangedResourceFunction) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[57]
+	mi := &file_v1_database_service_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5409,7 +5313,7 @@ func (x *ChangedResourceFunction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangedResourceFunction.ProtoReflect.Descriptor instead.
 func (*ChangedResourceFunction) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{57}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *ChangedResourceFunction) GetName() string {
@@ -5437,7 +5341,7 @@ type ChangedResourceProcedure struct {
 
 func (x *ChangedResourceProcedure) Reset() {
 	*x = ChangedResourceProcedure{}
-	mi := &file_v1_database_service_proto_msgTypes[58]
+	mi := &file_v1_database_service_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5449,7 +5353,7 @@ func (x *ChangedResourceProcedure) String() string {
 func (*ChangedResourceProcedure) ProtoMessage() {}
 
 func (x *ChangedResourceProcedure) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[58]
+	mi := &file_v1_database_service_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5462,7 +5366,7 @@ func (x *ChangedResourceProcedure) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangedResourceProcedure.ProtoReflect.Descriptor instead.
 func (*ChangedResourceProcedure) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{58}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *ChangedResourceProcedure) GetName() string {
@@ -5501,7 +5405,7 @@ type ListRevisionsRequest struct {
 
 func (x *ListRevisionsRequest) Reset() {
 	*x = ListRevisionsRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[59]
+	mi := &file_v1_database_service_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5513,7 +5417,7 @@ func (x *ListRevisionsRequest) String() string {
 func (*ListRevisionsRequest) ProtoMessage() {}
 
 func (x *ListRevisionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[59]
+	mi := &file_v1_database_service_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5526,7 +5430,7 @@ func (x *ListRevisionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRevisionsRequest.ProtoReflect.Descriptor instead.
 func (*ListRevisionsRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{59}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *ListRevisionsRequest) GetParent() string {
@@ -5569,7 +5473,7 @@ type ListRevisionsResponse struct {
 
 func (x *ListRevisionsResponse) Reset() {
 	*x = ListRevisionsResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[60]
+	mi := &file_v1_database_service_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5581,7 +5485,7 @@ func (x *ListRevisionsResponse) String() string {
 func (*ListRevisionsResponse) ProtoMessage() {}
 
 func (x *ListRevisionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[60]
+	mi := &file_v1_database_service_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5594,7 +5498,7 @@ func (x *ListRevisionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRevisionsResponse.ProtoReflect.Descriptor instead.
 func (*ListRevisionsResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{60}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *ListRevisionsResponse) GetRevisions() []*Revision {
@@ -5623,7 +5527,7 @@ type CreateRevisionRequest struct {
 
 func (x *CreateRevisionRequest) Reset() {
 	*x = CreateRevisionRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[61]
+	mi := &file_v1_database_service_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5635,7 +5539,7 @@ func (x *CreateRevisionRequest) String() string {
 func (*CreateRevisionRequest) ProtoMessage() {}
 
 func (x *CreateRevisionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[61]
+	mi := &file_v1_database_service_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5648,7 +5552,7 @@ func (x *CreateRevisionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateRevisionRequest.ProtoReflect.Descriptor instead.
 func (*CreateRevisionRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{61}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{59}
 }
 
 func (x *CreateRevisionRequest) GetParent() string {
@@ -5676,7 +5580,7 @@ type GetRevisionRequest struct {
 
 func (x *GetRevisionRequest) Reset() {
 	*x = GetRevisionRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[62]
+	mi := &file_v1_database_service_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5688,7 +5592,7 @@ func (x *GetRevisionRequest) String() string {
 func (*GetRevisionRequest) ProtoMessage() {}
 
 func (x *GetRevisionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[62]
+	mi := &file_v1_database_service_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5701,7 +5605,7 @@ func (x *GetRevisionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRevisionRequest.ProtoReflect.Descriptor instead.
 func (*GetRevisionRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{62}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *GetRevisionRequest) GetName() string {
@@ -5722,7 +5626,7 @@ type DeleteRevisionRequest struct {
 
 func (x *DeleteRevisionRequest) Reset() {
 	*x = DeleteRevisionRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[63]
+	mi := &file_v1_database_service_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5734,7 +5638,7 @@ func (x *DeleteRevisionRequest) String() string {
 func (*DeleteRevisionRequest) ProtoMessage() {}
 
 func (x *DeleteRevisionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[63]
+	mi := &file_v1_database_service_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5747,7 +5651,7 @@ func (x *DeleteRevisionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteRevisionRequest.ProtoReflect.Descriptor instead.
 func (*DeleteRevisionRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{63}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *DeleteRevisionRequest) GetName() string {
@@ -5797,7 +5701,7 @@ type Revision struct {
 
 func (x *Revision) Reset() {
 	*x = Revision{}
-	mi := &file_v1_database_service_proto_msgTypes[64]
+	mi := &file_v1_database_service_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5809,7 +5713,7 @@ func (x *Revision) String() string {
 func (*Revision) ProtoMessage() {}
 
 func (x *Revision) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[64]
+	mi := &file_v1_database_service_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5822,7 +5726,7 @@ func (x *Revision) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Revision.ProtoReflect.Descriptor instead.
 func (*Revision) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{64}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{62}
 }
 
 func (x *Revision) GetName() string {
@@ -5975,7 +5879,7 @@ type ListChangelogsRequest struct {
 
 func (x *ListChangelogsRequest) Reset() {
 	*x = ListChangelogsRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[65]
+	mi := &file_v1_database_service_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5987,7 +5891,7 @@ func (x *ListChangelogsRequest) String() string {
 func (*ListChangelogsRequest) ProtoMessage() {}
 
 func (x *ListChangelogsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[65]
+	mi := &file_v1_database_service_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6000,7 +5904,7 @@ func (x *ListChangelogsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListChangelogsRequest.ProtoReflect.Descriptor instead.
 func (*ListChangelogsRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{65}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{63}
 }
 
 func (x *ListChangelogsRequest) GetParent() string {
@@ -6051,7 +5955,7 @@ type ListChangelogsResponse struct {
 
 func (x *ListChangelogsResponse) Reset() {
 	*x = ListChangelogsResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[66]
+	mi := &file_v1_database_service_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6063,7 +5967,7 @@ func (x *ListChangelogsResponse) String() string {
 func (*ListChangelogsResponse) ProtoMessage() {}
 
 func (x *ListChangelogsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[66]
+	mi := &file_v1_database_service_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6076,7 +5980,7 @@ func (x *ListChangelogsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListChangelogsResponse.ProtoReflect.Descriptor instead.
 func (*ListChangelogsResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{66}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{64}
 }
 
 func (x *ListChangelogsResponse) GetChangelogs() []*Changelog {
@@ -6107,7 +6011,7 @@ type GetChangelogRequest struct {
 
 func (x *GetChangelogRequest) Reset() {
 	*x = GetChangelogRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[67]
+	mi := &file_v1_database_service_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6119,7 +6023,7 @@ func (x *GetChangelogRequest) String() string {
 func (*GetChangelogRequest) ProtoMessage() {}
 
 func (x *GetChangelogRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[67]
+	mi := &file_v1_database_service_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6132,7 +6036,7 @@ func (x *GetChangelogRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetChangelogRequest.ProtoReflect.Descriptor instead.
 func (*GetChangelogRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{67}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *GetChangelogRequest) GetName() string {
@@ -6189,7 +6093,7 @@ type Changelog struct {
 
 func (x *Changelog) Reset() {
 	*x = Changelog{}
-	mi := &file_v1_database_service_proto_msgTypes[68]
+	mi := &file_v1_database_service_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6201,7 +6105,7 @@ func (x *Changelog) String() string {
 func (*Changelog) ProtoMessage() {}
 
 func (x *Changelog) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[68]
+	mi := &file_v1_database_service_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6214,7 +6118,7 @@ func (x *Changelog) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Changelog.ProtoReflect.Descriptor instead.
 func (*Changelog) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{68}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{66}
 }
 
 func (x *Changelog) GetName() string {
@@ -6347,7 +6251,7 @@ type GetSchemaStringRequest struct {
 
 func (x *GetSchemaStringRequest) Reset() {
 	*x = GetSchemaStringRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[69]
+	mi := &file_v1_database_service_proto_msgTypes[67]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6359,7 +6263,7 @@ func (x *GetSchemaStringRequest) String() string {
 func (*GetSchemaStringRequest) ProtoMessage() {}
 
 func (x *GetSchemaStringRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[69]
+	mi := &file_v1_database_service_proto_msgTypes[67]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6372,7 +6276,7 @@ func (x *GetSchemaStringRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSchemaStringRequest.ProtoReflect.Descriptor instead.
 func (*GetSchemaStringRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{69}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{67}
 }
 
 func (x *GetSchemaStringRequest) GetName() string {
@@ -6405,7 +6309,7 @@ type GetSchemaStringResponse struct {
 
 func (x *GetSchemaStringResponse) Reset() {
 	*x = GetSchemaStringResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[70]
+	mi := &file_v1_database_service_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6417,7 +6321,7 @@ func (x *GetSchemaStringResponse) String() string {
 func (*GetSchemaStringResponse) ProtoMessage() {}
 
 func (x *GetSchemaStringResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[70]
+	mi := &file_v1_database_service_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6430,7 +6334,7 @@ func (x *GetSchemaStringResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSchemaStringResponse.ProtoReflect.Descriptor instead.
 func (*GetSchemaStringResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{70}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{68}
 }
 
 func (x *GetSchemaStringResponse) GetSchemaString() string {
@@ -6469,34 +6373,19 @@ var file_v1_database_service_proto_rawDesc = string([]byte{
 	0x73, 0x74, 0x12, 0x32, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
 	0x42, 0x1e, 0xe2, 0x41, 0x01, 0x02, 0xfa, 0x41, 0x17, 0x0a, 0x15, 0x62, 0x79, 0x74, 0x65, 0x62,
 	0x61, 0x73, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65,
-	0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x22, 0xaa, 0x01, 0x0a, 0x1c, 0x4c, 0x69, 0x73, 0x74, 0x49,
-	0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x36, 0x0a, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e,
-	0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1e, 0xe2, 0x41, 0x01, 0x02, 0xfa, 0x41, 0x17,
-	0x0a, 0x15, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x49,
-	0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x12,
-	0x1b, 0x0a, 0x09, 0x70, 0x61, 0x67, 0x65, 0x5f, 0x73, 0x69, 0x7a, 0x65, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x05, 0x52, 0x08, 0x70, 0x61, 0x67, 0x65, 0x53, 0x69, 0x7a, 0x65, 0x12, 0x1d, 0x0a, 0x0a,
-	0x70, 0x61, 0x67, 0x65, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x09, 0x70, 0x61, 0x67, 0x65, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x12, 0x16, 0x0a, 0x06, 0x66,
-	0x69, 0x6c, 0x74, 0x65, 0x72, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x66, 0x69, 0x6c,
-	0x74, 0x65, 0x72, 0x22, 0x7c, 0x0a, 0x1d, 0x4c, 0x69, 0x73, 0x74, 0x49, 0x6e, 0x73, 0x74, 0x61,
-	0x6e, 0x63, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x33, 0x0a, 0x09, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65,
-	0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61,
-	0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x52, 0x09,
-	0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x12, 0x26, 0x0a, 0x0f, 0x6e, 0x65, 0x78,
-	0x74, 0x5f, 0x70, 0x61, 0x67, 0x65, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x0d, 0x6e, 0x65, 0x78, 0x74, 0x50, 0x61, 0x67, 0x65, 0x54, 0x6f, 0x6b, 0x65,
-	0x6e, 0x22, 0x8a, 0x01, 0x0a, 0x14, 0x4c, 0x69, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61,
-	0x73, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x36, 0x0a, 0x06, 0x70, 0x61,
-	0x72, 0x65, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1e, 0xe2, 0x41, 0x01, 0x02,
-	0xfa, 0x41, 0x17, 0x12, 0x15, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x63, 0x6f,
-	0x6d, 0x2f, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x52, 0x06, 0x70, 0x61, 0x72, 0x65,
-	0x6e, 0x74, 0x12, 0x1b, 0x0a, 0x09, 0x70, 0x61, 0x67, 0x65, 0x5f, 0x73, 0x69, 0x7a, 0x65, 0x18,
-	0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x08, 0x70, 0x61, 0x67, 0x65, 0x53, 0x69, 0x7a, 0x65, 0x12,
-	0x1d, 0x0a, 0x0a, 0x70, 0x61, 0x67, 0x65, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x18, 0x03, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x09, 0x70, 0x61, 0x67, 0x65, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x22, 0x74,
+	0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x22, 0xc5, 0x01, 0x0a, 0x14, 0x4c, 0x69, 0x73, 0x74, 0x44,
+	0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12,
+	0x36, 0x0a, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42,
+	0x1e, 0xe2, 0x41, 0x01, 0x02, 0xfa, 0x41, 0x17, 0x12, 0x15, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61,
+	0x73, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x52,
+	0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x12, 0x1b, 0x0a, 0x09, 0x70, 0x61, 0x67, 0x65, 0x5f,
+	0x73, 0x69, 0x7a, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x08, 0x70, 0x61, 0x67, 0x65,
+	0x53, 0x69, 0x7a, 0x65, 0x12, 0x1d, 0x0a, 0x0a, 0x70, 0x61, 0x67, 0x65, 0x5f, 0x74, 0x6f, 0x6b,
+	0x65, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x70, 0x61, 0x67, 0x65, 0x54, 0x6f,
+	0x6b, 0x65, 0x6e, 0x12, 0x16, 0x0a, 0x06, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x18, 0x04, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x06, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x12, 0x21, 0x0a, 0x0c, 0x73,
+	0x68, 0x6f, 0x77, 0x5f, 0x64, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x64, 0x18, 0x05, 0x20, 0x01, 0x28,
+	0x08, 0x52, 0x0b, 0x73, 0x68, 0x6f, 0x77, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x64, 0x22, 0x74,
 	0x0a, 0x15, 0x4c, 0x69, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x52,
 	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x33, 0x0a, 0x09, 0x64, 0x61, 0x74, 0x61, 0x62,
 	0x61, 0x73, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x62, 0x79, 0x74,
@@ -7505,7 +7394,7 @@ var file_v1_database_service_proto_rawDesc = string([]byte{
 	0x43, 0x48, 0x41, 0x4e, 0x47, 0x45, 0x4c, 0x4f, 0x47, 0x5f, 0x56, 0x49, 0x45, 0x57, 0x5f, 0x42,
 	0x41, 0x53, 0x49, 0x43, 0x10, 0x01, 0x12, 0x17, 0x0a, 0x13, 0x43, 0x48, 0x41, 0x4e, 0x47, 0x45,
 	0x4c, 0x4f, 0x47, 0x5f, 0x56, 0x49, 0x45, 0x57, 0x5f, 0x46, 0x55, 0x4c, 0x4c, 0x10, 0x02, 0x32,
-	0xc1, 0x1d, 0x0a, 0x0f, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x53, 0x65, 0x72, 0x76,
+	0xb0, 0x1c, 0x0a, 0x0f, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x53, 0x65, 0x72, 0x76,
 	0x69, 0x63, 0x65, 0x12, 0x90, 0x01, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62,
 	0x61, 0x73, 0x65, 0x12, 0x1f, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
 	0x31, 0x2e, 0x47, 0x65, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x52, 0x65, 0x71,
@@ -7515,234 +7404,225 @@ var file_v1_database_service_proto_rawDesc = string([]byte{
 	0x61, 0x73, 0x65, 0x73, 0x2e, 0x67, 0x65, 0x74, 0x90, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93,
 	0x02, 0x24, 0x12, 0x22, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x69, 0x6e,
 	0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61,
-	0x73, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0xb5, 0x01, 0x0a, 0x15, 0x4c, 0x69, 0x73, 0x74, 0x49,
-	0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73,
-	0x12, 0x29, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c,
-	0x69, 0x73, 0x74, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62,
-	0x61, 0x73, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2a, 0x2e, 0x62, 0x79,
-	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x49, 0x6e,
-	0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x52,
-	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x45, 0xda, 0x41, 0x00, 0x8a, 0xea, 0x30, 0x10,
-	0x62, 0x62, 0x2e, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2e, 0x67, 0x65, 0x74,
-	0x90, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x24, 0x12, 0x22, 0x2f, 0x76, 0x31, 0x2f,
-	0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65,
-	0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x12, 0xc4,
-	0x01, 0x0a, 0x0d, 0x4c, 0x69, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73,
-	0x12, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c,
-	0x69, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x1a, 0x22, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
-	0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x52,
-	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x6c, 0xda, 0x41, 0x00, 0x8a, 0xea, 0x30, 0x11,
-	0x62, 0x62, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2e, 0x6c, 0x69, 0x73,
-	0x74, 0x90, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x4a, 0x5a, 0x25, 0x12, 0x23, 0x2f,
-	0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x77, 0x6f, 0x72, 0x6b, 0x73,
-	0x70, 0x61, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73,
-	0x65, 0x73, 0x12, 0x21, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d,
-	0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x64, 0x61, 0x74, 0x61,
-	0x62, 0x61, 0x73, 0x65, 0x73, 0x12, 0xc0, 0x01, 0x0a, 0x0e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65,
-	0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x12, 0x22, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
-	0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x44, 0x61, 0x74,
-	0x61, 0x62, 0x61, 0x73, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x15, 0x2e, 0x62,
-	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x62,
-	0x61, 0x73, 0x65, 0x22, 0x73, 0xda, 0x41, 0x14, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65,
-	0x2c, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x5f, 0x6d, 0x61, 0x73, 0x6b, 0x8a, 0xea, 0x30, 0x13,
-	0x62, 0x62, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2e, 0x75, 0x70, 0x64,
-	0x61, 0x74, 0x65, 0x90, 0xea, 0x30, 0x01, 0x98, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02,
-	0x37, 0x3a, 0x08, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x32, 0x2b, 0x2f, 0x76, 0x31,
-	0x2f, 0x7b, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x6e, 0x61, 0x6d, 0x65, 0x3d,
-	0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61,
-	0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0xc5, 0x01, 0x0a, 0x14, 0x42, 0x61, 0x74,
-	0x63, 0x68, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65,
-	0x73, 0x12, 0x28, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
-	0x42, 0x61, 0x74, 0x63, 0x68, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62,
-	0x61, 0x73, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x29, 0x2e, 0x62, 0x79,
-	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x61, 0x74, 0x63, 0x68, 0x55,
-	0x70, 0x64, 0x61, 0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x58, 0x8a, 0xea, 0x30, 0x13, 0x62, 0x62, 0x2e, 0x64,
-	0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2e, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x90,
-	0xea, 0x30, 0x01, 0x98, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x33, 0x3a, 0x01, 0x2a,
-	0x22, 0x2e, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x69, 0x6e,
-	0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62,
-	0x61, 0x73, 0x65, 0x73, 0x3a, 0x62, 0x61, 0x74, 0x63, 0x68, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65,
-	0x12, 0xa0, 0x01, 0x0a, 0x0c, 0x53, 0x79, 0x6e, 0x63, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73,
-	0x65, 0x12, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
-	0x53, 0x79, 0x6e, 0x63, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x1a, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
-	0x31, 0x2e, 0x53, 0x79, 0x6e, 0x63, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x4b, 0x8a, 0xea, 0x30, 0x11, 0x62, 0x62, 0x2e, 0x64,
-	0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2e, 0x73, 0x79, 0x6e, 0x63, 0x90, 0xea, 0x30,
-	0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2c, 0x3a, 0x01, 0x2a, 0x22, 0x27, 0x2f, 0x76, 0x31, 0x2f,
-	0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f,
-	0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x3a, 0x73,
-	0x79, 0x6e, 0x63, 0x12, 0xb0, 0x01, 0x0a, 0x13, 0x47, 0x65, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62,
-	0x61, 0x73, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x27, 0x2e, 0x62, 0x79,
-	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x44, 0x61, 0x74,
-	0x61, 0x62, 0x61, 0x73, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x1a, 0x1d, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
-	0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x64,
-	0x61, 0x74, 0x61, 0x22, 0x51, 0x8a, 0xea, 0x30, 0x16, 0x62, 0x62, 0x2e, 0x64, 0x61, 0x74, 0x61,
-	0x62, 0x61, 0x73, 0x65, 0x73, 0x2e, 0x67, 0x65, 0x74, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x90,
-	0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2d, 0x12, 0x2b, 0x2f, 0x76, 0x31, 0x2f, 0x7b,
+	0x73, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0xeb, 0x01, 0x0a, 0x0d, 0x4c, 0x69, 0x73, 0x74, 0x44,
+	0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x12, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
+	0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62,
+	0x61, 0x73, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x22, 0x2e, 0x62, 0x79,
+	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x44, 0x61,
+	0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
+	0x92, 0x01, 0xda, 0x41, 0x00, 0x8a, 0xea, 0x30, 0x11, 0x62, 0x62, 0x2e, 0x64, 0x61, 0x74, 0x61,
+	0x62, 0x61, 0x73, 0x65, 0x73, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x90, 0xea, 0x30, 0x02, 0x82, 0xd3,
+	0xe4, 0x93, 0x02, 0x70, 0x5a, 0x24, 0x12, 0x22, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72,
+	0x65, 0x6e, 0x74, 0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x7d,
+	0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x5a, 0x25, 0x12, 0x23, 0x2f, 0x76,
+	0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x77, 0x6f, 0x72, 0x6b, 0x73, 0x70,
+	0x61, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65,
+	0x73, 0x12, 0x21, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70,
+	0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62,
+	0x61, 0x73, 0x65, 0x73, 0x12, 0xc0, 0x01, 0x0a, 0x0e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x44,
+	0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x12, 0x22, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61,
+	0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x44, 0x61, 0x74, 0x61,
+	0x62, 0x61, 0x73, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x15, 0x2e, 0x62, 0x79,
+	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61,
+	0x73, 0x65, 0x22, 0x73, 0xda, 0x41, 0x14, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x2c,
+	0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x5f, 0x6d, 0x61, 0x73, 0x6b, 0x8a, 0xea, 0x30, 0x13, 0x62,
+	0x62, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2e, 0x75, 0x70, 0x64, 0x61,
+	0x74, 0x65, 0x90, 0xea, 0x30, 0x01, 0x98, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x37,
+	0x3a, 0x08, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x32, 0x2b, 0x2f, 0x76, 0x31, 0x2f,
+	0x7b, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x69,
+	0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62,
+	0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0xc5, 0x01, 0x0a, 0x14, 0x42, 0x61, 0x74, 0x63,
+	0x68, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73,
+	0x12, 0x28, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42,
+	0x61, 0x74, 0x63, 0x68, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61,
+	0x73, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x29, 0x2e, 0x62, 0x79, 0x74,
+	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x61, 0x74, 0x63, 0x68, 0x55, 0x70,
+	0x64, 0x61, 0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x58, 0x8a, 0xea, 0x30, 0x13, 0x62, 0x62, 0x2e, 0x64, 0x61,
+	0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2e, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x90, 0xea,
+	0x30, 0x01, 0x98, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x33, 0x3a, 0x01, 0x2a, 0x22,
+	0x2e, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x69, 0x6e, 0x73,
+	0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61,
+	0x73, 0x65, 0x73, 0x3a, 0x62, 0x61, 0x74, 0x63, 0x68, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x12,
+	0xa0, 0x01, 0x0a, 0x0c, 0x53, 0x79, 0x6e, 0x63, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65,
+	0x12, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53,
+	0x79, 0x6e, 0x63, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x1a, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31,
+	0x2e, 0x53, 0x79, 0x6e, 0x63, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x4b, 0x8a, 0xea, 0x30, 0x11, 0x62, 0x62, 0x2e, 0x64, 0x61,
+	0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2e, 0x73, 0x79, 0x6e, 0x63, 0x90, 0xea, 0x30, 0x01,
+	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2c, 0x3a, 0x01, 0x2a, 0x22, 0x27, 0x2f, 0x76, 0x31, 0x2f, 0x7b,
 	0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a,
-	0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x6d, 0x65, 0x74,
-	0x61, 0x64, 0x61, 0x74, 0x61, 0x7d, 0x12, 0xa8, 0x01, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x44, 0x61,
-	0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x12, 0x25, 0x2e, 0x62,
-	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x44, 0x61,
-	0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x1a, 0x1b, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
-	0x31, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61,
-	0x22, 0x4f, 0x8a, 0xea, 0x30, 0x16, 0x62, 0x62, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73,
-	0x65, 0x73, 0x2e, 0x67, 0x65, 0x74, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x90, 0xea, 0x30, 0x01,
-	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2b, 0x12, 0x29, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d,
-	0x65, 0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61,
-	0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61,
-	0x7d, 0x12, 0xe1, 0x01, 0x0a, 0x0a, 0x44, 0x69, 0x66, 0x66, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61,
-	0x12, 0x1e, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44,
-	0x69, 0x66, 0x66, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x1f, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44,
-	0x69, 0x66, 0x66, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x91, 0x01, 0x8a, 0xea, 0x30, 0x10, 0x62, 0x62, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x62,
-	0x61, 0x73, 0x65, 0x73, 0x2e, 0x67, 0x65, 0x74, 0x90, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93,
-	0x02, 0x73, 0x3a, 0x01, 0x2a, 0x5a, 0x3f, 0x3a, 0x01, 0x2a, 0x22, 0x3a, 0x2f, 0x76, 0x31, 0x2f,
-	0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f,
-	0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x63, 0x68,
-	0x61, 0x6e, 0x67, 0x65, 0x6c, 0x6f, 0x67, 0x73, 0x2f, 0x2a, 0x7d, 0x3a, 0x64, 0x69, 0x66, 0x66,
-	0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x22, 0x2d, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d,
-	0x65, 0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61,
-	0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x3a, 0x64, 0x69, 0x66, 0x66, 0x53,
-	0x63, 0x68, 0x65, 0x6d, 0x61, 0x12, 0xad, 0x01, 0x0a, 0x0f, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x6c,
-	0x6f, 0x77, 0x51, 0x75, 0x65, 0x72, 0x69, 0x65, 0x73, 0x12, 0x23, 0x2e, 0x62, 0x79, 0x74, 0x65,
-	0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x6c, 0x6f, 0x77,
-	0x51, 0x75, 0x65, 0x72, 0x69, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x24,
-	0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73,
-	0x74, 0x53, 0x6c, 0x6f, 0x77, 0x51, 0x75, 0x65, 0x72, 0x69, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x4f, 0xda, 0x41, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x8a,
-	0xea, 0x30, 0x13, 0x62, 0x62, 0x2e, 0x73, 0x6c, 0x6f, 0x77, 0x51, 0x75, 0x65, 0x72, 0x69, 0x65,
-	0x73, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x90, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x25,
-	0x12, 0x23, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72,
-	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x73, 0x6c, 0x6f, 0x77, 0x51, 0x75,
-	0x65, 0x72, 0x69, 0x65, 0x73, 0x12, 0xae, 0x01, 0x0a, 0x0b, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x65,
-	0x63, 0x72, 0x65, 0x74, 0x73, 0x12, 0x1f, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
-	0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x73, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
-	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x73,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x5c, 0xda, 0x41, 0x06, 0x70, 0x61, 0x72,
-	0x65, 0x6e, 0x74, 0x8a, 0xea, 0x30, 0x17, 0x62, 0x62, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61,
-	0x73, 0x65, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x73, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x90, 0xea,
-	0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2e, 0x12, 0x2c, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70,
-	0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f,
-	0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x73,
-	0x65, 0x63, 0x72, 0x65, 0x74, 0x73, 0x12, 0xaf, 0x01, 0x0a, 0x0c, 0x55, 0x70, 0x64, 0x61, 0x74,
-	0x65, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x12, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61,
-	0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x53, 0x65, 0x63, 0x72,
-	0x65, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x13, 0x2e, 0x62, 0x79, 0x74, 0x65,
-	0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x22, 0x68,
-	0x8a, 0xea, 0x30, 0x19, 0x62, 0x62, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x53,
-	0x65, 0x63, 0x72, 0x65, 0x74, 0x73, 0x2e, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x90, 0xea, 0x30,
-	0x01, 0x98, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x3d, 0x3a, 0x06, 0x73, 0x65, 0x63,
-	0x72, 0x65, 0x74, 0x32, 0x33, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74,
-	0x2e, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f,
-	0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x73, 0x65,
-	0x63, 0x72, 0x65, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0xa3, 0x01, 0x0a, 0x0c, 0x44, 0x65, 0x6c,
-	0x65, 0x74, 0x65, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x12, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65,
-	0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x53, 0x65,
-	0x63, 0x72, 0x65, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x16, 0x2e, 0x67, 0x6f,
-	0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d,
-	0x70, 0x74, 0x79, 0x22, 0x59, 0x8a, 0xea, 0x30, 0x19, 0x62, 0x62, 0x2e, 0x64, 0x61, 0x74, 0x61,
-	0x62, 0x61, 0x73, 0x65, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x73, 0x2e, 0x64, 0x65, 0x6c, 0x65,
-	0x74, 0x65, 0x90, 0xea, 0x30, 0x01, 0x98, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2e,
-	0x2a, 0x2c, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x69, 0x6e, 0x73, 0x74,
-	0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65,
-	0x73, 0x2f, 0x2a, 0x2f, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0xb3,
-	0x01, 0x0a, 0x0b, 0x41, 0x64, 0x76, 0x69, 0x73, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x1f,
-	0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x41, 0x64, 0x76,
-	0x69, 0x73, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
-	0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x41, 0x64,
-	0x76, 0x69, 0x73, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x61, 0xda, 0x41, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x8a, 0xea, 0x30, 0x18,
-	0x62, 0x62, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2e, 0x61, 0x64, 0x76,
-	0x69, 0x73, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x90, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93,
-	0x02, 0x32, 0x22, 0x30, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d,
-	0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61,
-	0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x3a, 0x61, 0x64, 0x76, 0x69, 0x73, 0x65, 0x49,
-	0x6e, 0x64, 0x65, 0x78, 0x12, 0xb0, 0x01, 0x0a, 0x0d, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x76,
-	0x69, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
-	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f,
-	0x6e, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x22, 0x2e, 0x62, 0x79, 0x74, 0x65,
-	0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x76, 0x69,
-	0x73, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x58, 0xda,
-	0x41, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x8a, 0xea, 0x30, 0x11, 0x62, 0x62, 0x2e, 0x72,
-	0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x90, 0xea, 0x30,
-	0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x30, 0x12, 0x2e, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61,
-	0x72, 0x65, 0x6e, 0x74, 0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a,
-	0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x72, 0x65,
-	0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x9c, 0x01, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x52,
-	0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x1f, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61,
-	0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f,
-	0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x15, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
-	0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x22,
-	0x55, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x8a, 0xea, 0x30, 0x10, 0x62, 0x62, 0x2e, 0x72,
-	0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x65, 0x74, 0x90, 0xea, 0x30, 0x01,
-	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x30, 0x12, 0x2e, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d,
-	0x65, 0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61,
-	0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x72, 0x65, 0x76, 0x69, 0x73, 0x69,
-	0x6f, 0x6e, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0xa8, 0x01, 0x0a, 0x0e, 0x43, 0x72, 0x65, 0x61, 0x74,
-	0x65, 0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x22, 0x2e, 0x62, 0x79, 0x74, 0x65,
-	0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x52, 0x65,
-	0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x15, 0x2e,
-	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x76, 0x69,
-	0x73, 0x69, 0x6f, 0x6e, 0x22, 0x5b, 0x8a, 0xea, 0x30, 0x13, 0x62, 0x62, 0x2e, 0x72, 0x65, 0x76,
-	0x69, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x90, 0xea, 0x30,
-	0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x3a, 0x3a, 0x08, 0x72, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f,
-	0x6e, 0x22, 0x2e, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x69,
-	0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62,
-	0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x72, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e,
-	0x73, 0x12, 0xa6, 0x01, 0x0a, 0x0e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x76, 0x69,
-	0x73, 0x69, 0x6f, 0x6e, 0x12, 0x22, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
-	0x76, 0x31, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f,
-	0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c,
-	0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79,
-	0x22, 0x58, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x8a, 0xea, 0x30, 0x13, 0x62, 0x62, 0x2e,
-	0x72, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x64, 0x65, 0x6c, 0x65, 0x74, 0x65,
-	0x90, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x30, 0x2a, 0x2e, 0x2f, 0x76, 0x31, 0x2f,
-	0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f,
-	0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x72, 0x65,
-	0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0xb5, 0x01, 0x0a, 0x0e, 0x4c,
-	0x69, 0x73, 0x74, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x6c, 0x6f, 0x67, 0x73, 0x12, 0x22, 0x2e,
-	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74,
-	0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x6c, 0x6f, 0x67, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x23, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e,
-	0x4c, 0x69, 0x73, 0x74, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x6c, 0x6f, 0x67, 0x73, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x5a, 0xda, 0x41, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e,
-	0x74, 0x8a, 0xea, 0x30, 0x12, 0x62, 0x62, 0x2e, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x6c, 0x6f,
-	0x67, 0x73, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x90, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02,
-	0x31, 0x12, 0x2f, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x69,
-	0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62,
-	0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x6c, 0x6f,
-	0x67, 0x73, 0x12, 0xa1, 0x01, 0x0a, 0x0c, 0x47, 0x65, 0x74, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65,
-	0x6c, 0x6f, 0x67, 0x12, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
-	0x31, 0x2e, 0x47, 0x65, 0x74, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x6c, 0x6f, 0x67, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x16, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
-	0x2e, 0x76, 0x31, 0x2e, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x6c, 0x6f, 0x67, 0x22, 0x57, 0xda,
-	0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x8a, 0xea, 0x30, 0x11, 0x62, 0x62, 0x2e, 0x63, 0x68, 0x61,
-	0x6e, 0x67, 0x65, 0x6c, 0x6f, 0x67, 0x73, 0x2e, 0x67, 0x65, 0x74, 0x90, 0xea, 0x30, 0x01, 0x82,
-	0xd3, 0xe4, 0x93, 0x02, 0x31, 0x12, 0x2f, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65,
+	0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x3a, 0x73, 0x79,
+	0x6e, 0x63, 0x12, 0xb0, 0x01, 0x0a, 0x13, 0x47, 0x65, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61,
+	0x73, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x27, 0x2e, 0x62, 0x79, 0x74,
+	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x44, 0x61, 0x74, 0x61,
+	0x62, 0x61, 0x73, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x1d, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
+	0x31, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61,
+	0x74, 0x61, 0x22, 0x51, 0x8a, 0xea, 0x30, 0x16, 0x62, 0x62, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x62,
+	0x61, 0x73, 0x65, 0x73, 0x2e, 0x67, 0x65, 0x74, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x90, 0xea,
+	0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2d, 0x12, 0x2b, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e,
+	0x61, 0x6d, 0x65, 0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f,
+	0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x6d, 0x65, 0x74, 0x61,
+	0x64, 0x61, 0x74, 0x61, 0x7d, 0x12, 0xa8, 0x01, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x44, 0x61, 0x74,
+	0x61, 0x62, 0x61, 0x73, 0x65, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x12, 0x25, 0x2e, 0x62, 0x79,
+	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x44, 0x61, 0x74,
+	0x61, 0x62, 0x61, 0x73, 0x65, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x1a, 0x1b, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31,
+	0x2e, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x22,
+	0x4f, 0x8a, 0xea, 0x30, 0x16, 0x62, 0x62, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65,
+	0x73, 0x2e, 0x67, 0x65, 0x74, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x90, 0xea, 0x30, 0x01, 0x82,
+	0xd3, 0xe4, 0x93, 0x02, 0x2b, 0x12, 0x29, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65,
 	0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74,
-	0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x6c,
-	0x6f, 0x67, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0xba, 0x01, 0x0a, 0x0f, 0x47, 0x65, 0x74, 0x53, 0x63,
-	0x68, 0x65, 0x6d, 0x61, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x12, 0x23, 0x2e, 0x62, 0x79, 0x74,
-	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x53, 0x63, 0x68, 0x65,
-	0x6d, 0x61, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
-	0x24, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65,
-	0x74, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x5c, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x8a, 0xea,
-	0x30, 0x16, 0x62, 0x62, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2e, 0x67,
-	0x65, 0x74, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x90, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93,
-	0x02, 0x31, 0x12, 0x2f, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x69, 0x6e,
+	0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x7d,
+	0x12, 0xe1, 0x01, 0x0a, 0x0a, 0x44, 0x69, 0x66, 0x66, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x12,
+	0x1e, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x69,
+	0x66, 0x66, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x1f, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x69,
+	0x66, 0x66, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x22, 0x91, 0x01, 0x8a, 0xea, 0x30, 0x10, 0x62, 0x62, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61,
+	0x73, 0x65, 0x73, 0x2e, 0x67, 0x65, 0x74, 0x90, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02,
+	0x73, 0x3a, 0x01, 0x2a, 0x5a, 0x3f, 0x3a, 0x01, 0x2a, 0x22, 0x3a, 0x2f, 0x76, 0x31, 0x2f, 0x7b,
+	0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a,
+	0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x63, 0x68, 0x61,
+	0x6e, 0x67, 0x65, 0x6c, 0x6f, 0x67, 0x73, 0x2f, 0x2a, 0x7d, 0x3a, 0x64, 0x69, 0x66, 0x66, 0x53,
+	0x63, 0x68, 0x65, 0x6d, 0x61, 0x22, 0x2d, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65,
+	0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74,
+	0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x3a, 0x64, 0x69, 0x66, 0x66, 0x53, 0x63,
+	0x68, 0x65, 0x6d, 0x61, 0x12, 0xad, 0x01, 0x0a, 0x0f, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x6c, 0x6f,
+	0x77, 0x51, 0x75, 0x65, 0x72, 0x69, 0x65, 0x73, 0x12, 0x23, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
+	0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x6c, 0x6f, 0x77, 0x51,
+	0x75, 0x65, 0x72, 0x69, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x24, 0x2e,
+	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74,
+	0x53, 0x6c, 0x6f, 0x77, 0x51, 0x75, 0x65, 0x72, 0x69, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x22, 0x4f, 0xda, 0x41, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x8a, 0xea,
+	0x30, 0x13, 0x62, 0x62, 0x2e, 0x73, 0x6c, 0x6f, 0x77, 0x51, 0x75, 0x65, 0x72, 0x69, 0x65, 0x73,
+	0x2e, 0x6c, 0x69, 0x73, 0x74, 0x90, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x25, 0x12,
+	0x23, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x70, 0x72, 0x6f,
+	0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x73, 0x6c, 0x6f, 0x77, 0x51, 0x75, 0x65,
+	0x72, 0x69, 0x65, 0x73, 0x12, 0xae, 0x01, 0x0a, 0x0b, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x65, 0x63,
+	0x72, 0x65, 0x74, 0x73, 0x12, 0x1f, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
+	0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x73, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
+	0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x73, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x5c, 0xda, 0x41, 0x06, 0x70, 0x61, 0x72, 0x65,
+	0x6e, 0x74, 0x8a, 0xea, 0x30, 0x17, 0x62, 0x62, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73,
+	0x65, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x73, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x90, 0xea, 0x30,
+	0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2e, 0x12, 0x2c, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61,
+	0x72, 0x65, 0x6e, 0x74, 0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a,
+	0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x73, 0x65,
+	0x63, 0x72, 0x65, 0x74, 0x73, 0x12, 0xaf, 0x01, 0x0a, 0x0c, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65,
+	0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x12, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
+	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x53, 0x65, 0x63, 0x72, 0x65,
+	0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x13, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
+	0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x22, 0x68, 0x8a,
+	0xea, 0x30, 0x19, 0x62, 0x62, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x53, 0x65,
+	0x63, 0x72, 0x65, 0x74, 0x73, 0x2e, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x90, 0xea, 0x30, 0x01,
+	0x98, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x3d, 0x3a, 0x06, 0x73, 0x65, 0x63, 0x72,
+	0x65, 0x74, 0x32, 0x33, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x2e,
+	0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a,
+	0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x73, 0x65, 0x63,
+	0x72, 0x65, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0xa3, 0x01, 0x0a, 0x0c, 0x44, 0x65, 0x6c, 0x65,
+	0x74, 0x65, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x12, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
+	0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x53, 0x65, 0x63,
+	0x72, 0x65, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x16, 0x2e, 0x67, 0x6f, 0x6f,
+	0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70,
+	0x74, 0x79, 0x22, 0x59, 0x8a, 0xea, 0x30, 0x19, 0x62, 0x62, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x62,
+	0x61, 0x73, 0x65, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x73, 0x2e, 0x64, 0x65, 0x6c, 0x65, 0x74,
+	0x65, 0x90, 0xea, 0x30, 0x01, 0x98, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2e, 0x2a,
+	0x2c, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61,
+	0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73,
+	0x2f, 0x2a, 0x2f, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0xb3, 0x01,
+	0x0a, 0x0b, 0x41, 0x64, 0x76, 0x69, 0x73, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x1f, 0x2e,
+	0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x41, 0x64, 0x76, 0x69,
+	0x73, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x20,
+	0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x41, 0x64, 0x76,
+	0x69, 0x73, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x22, 0x61, 0xda, 0x41, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x8a, 0xea, 0x30, 0x18, 0x62,
+	0x62, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2e, 0x61, 0x64, 0x76, 0x69,
+	0x73, 0x65, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x90, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02,
+	0x32, 0x22, 0x30, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x69,
+	0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62,
+	0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x3a, 0x61, 0x64, 0x76, 0x69, 0x73, 0x65, 0x49, 0x6e,
+	0x64, 0x65, 0x78, 0x12, 0xb0, 0x01, 0x0a, 0x0d, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x76, 0x69,
+	0x73, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x21, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65,
+	0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e,
+	0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x22, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
+	0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x76, 0x69, 0x73,
+	0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x58, 0xda, 0x41,
+	0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x8a, 0xea, 0x30, 0x11, 0x62, 0x62, 0x2e, 0x72, 0x65,
+	0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x90, 0xea, 0x30, 0x01,
+	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x30, 0x12, 0x2e, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72,
+	0x65, 0x6e, 0x74, 0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f,
+	0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x72, 0x65, 0x76,
+	0x69, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x9c, 0x01, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x52, 0x65,
+	0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x1f, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
+	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x15, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61,
+	0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x22, 0x55,
+	0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x8a, 0xea, 0x30, 0x10, 0x62, 0x62, 0x2e, 0x72, 0x65,
+	0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x65, 0x74, 0x90, 0xea, 0x30, 0x01, 0x82,
+	0xd3, 0xe4, 0x93, 0x02, 0x30, 0x12, 0x2e, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65,
+	0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74,
+	0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x72, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f,
+	0x6e, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0xa8, 0x01, 0x0a, 0x0e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65,
+	0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x22, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
+	0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x52, 0x65, 0x76,
+	0x69, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x15, 0x2e, 0x62,
+	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x76, 0x69, 0x73,
+	0x69, 0x6f, 0x6e, 0x22, 0x5b, 0x8a, 0xea, 0x30, 0x13, 0x62, 0x62, 0x2e, 0x72, 0x65, 0x76, 0x69,
+	0x73, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x90, 0xea, 0x30, 0x01,
+	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x3a, 0x3a, 0x08, 0x72, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e,
+	0x22, 0x2e, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x69, 0x6e,
 	0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61,
-	0x73, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x53, 0x74, 0x72, 0x69,
-	0x6e, 0x67, 0x7d, 0x42, 0x11, 0x5a, 0x0f, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64,
-	0x2d, 0x67, 0x6f, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x73, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x72, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x73,
+	0x12, 0xa6, 0x01, 0x0a, 0x0e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x76, 0x69, 0x73,
+	0x69, 0x6f, 0x6e, 0x12, 0x22, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
+	0x31, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x22,
+	0x58, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x8a, 0xea, 0x30, 0x13, 0x62, 0x62, 0x2e, 0x72,
+	0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x64, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x90,
+	0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x30, 0x2a, 0x2e, 0x2f, 0x76, 0x31, 0x2f, 0x7b,
+	0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a,
+	0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x72, 0x65, 0x76,
+	0x69, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0xb5, 0x01, 0x0a, 0x0e, 0x4c, 0x69,
+	0x73, 0x74, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x6c, 0x6f, 0x67, 0x73, 0x12, 0x22, 0x2e, 0x62,
+	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x43,
+	0x68, 0x61, 0x6e, 0x67, 0x65, 0x6c, 0x6f, 0x67, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x1a, 0x23, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c,
+	0x69, 0x73, 0x74, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x6c, 0x6f, 0x67, 0x73, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x5a, 0xda, 0x41, 0x06, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74,
+	0x8a, 0xea, 0x30, 0x12, 0x62, 0x62, 0x2e, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x6c, 0x6f, 0x67,
+	0x73, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x90, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x31,
+	0x12, 0x2f, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x3d, 0x69, 0x6e,
+	0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61,
+	0x73, 0x65, 0x73, 0x2f, 0x2a, 0x7d, 0x2f, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x6c, 0x6f, 0x67,
+	0x73, 0x12, 0xa1, 0x01, 0x0a, 0x0c, 0x47, 0x65, 0x74, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x6c,
+	0x6f, 0x67, 0x12, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31,
+	0x2e, 0x47, 0x65, 0x74, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x6c, 0x6f, 0x67, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x16, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
+	0x76, 0x31, 0x2e, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x6c, 0x6f, 0x67, 0x22, 0x57, 0xda, 0x41,
+	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x8a, 0xea, 0x30, 0x11, 0x62, 0x62, 0x2e, 0x63, 0x68, 0x61, 0x6e,
+	0x67, 0x65, 0x6c, 0x6f, 0x67, 0x73, 0x2e, 0x67, 0x65, 0x74, 0x90, 0xea, 0x30, 0x01, 0x82, 0xd3,
+	0xe4, 0x93, 0x02, 0x31, 0x12, 0x2f, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d,
+	0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61,
+	0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x6c, 0x6f,
+	0x67, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0xba, 0x01, 0x0a, 0x0f, 0x47, 0x65, 0x74, 0x53, 0x63, 0x68,
+	0x65, 0x6d, 0x61, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x12, 0x23, 0x2e, 0x62, 0x79, 0x74, 0x65,
+	0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x53, 0x63, 0x68, 0x65, 0x6d,
+	0x61, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x24,
+	0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74,
+	0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x5c, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x8a, 0xea, 0x30,
+	0x16, 0x62, 0x62, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2e, 0x67, 0x65,
+	0x74, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x90, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02,
+	0x31, 0x12, 0x2f, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x69, 0x6e, 0x73,
+	0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73,
+	0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x53, 0x74, 0x72, 0x69, 0x6e,
+	0x67, 0x7d, 0x42, 0x11, 0x5a, 0x0f, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d,
+	0x67, 0x6f, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 })
 
 var (
@@ -7758,7 +7638,7 @@ func file_v1_database_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_database_service_proto_enumTypes = make([]protoimpl.EnumInfo, 11)
-var file_v1_database_service_proto_msgTypes = make([]protoimpl.MessageInfo, 72)
+var file_v1_database_service_proto_msgTypes = make([]protoimpl.MessageInfo, 70)
 var file_v1_database_service_proto_goTypes = []any{
 	(DatabaseMetadataView)(0),              // 0: bytebase.v1.DatabaseMetadataView
 	(ChangelogView)(0),                     // 1: bytebase.v1.ChangelogView
@@ -7772,217 +7652,212 @@ var file_v1_database_service_proto_goTypes = []any{
 	(Changelog_Type)(0),                    // 9: bytebase.v1.Changelog.Type
 	(GetSchemaStringRequest_ObjectType)(0), // 10: bytebase.v1.GetSchemaStringRequest.ObjectType
 	(*GetDatabaseRequest)(nil),             // 11: bytebase.v1.GetDatabaseRequest
-	(*ListInstanceDatabasesRequest)(nil),   // 12: bytebase.v1.ListInstanceDatabasesRequest
-	(*ListInstanceDatabasesResponse)(nil),  // 13: bytebase.v1.ListInstanceDatabasesResponse
-	(*ListDatabasesRequest)(nil),           // 14: bytebase.v1.ListDatabasesRequest
-	(*ListDatabasesResponse)(nil),          // 15: bytebase.v1.ListDatabasesResponse
-	(*UpdateDatabaseRequest)(nil),          // 16: bytebase.v1.UpdateDatabaseRequest
-	(*BatchUpdateDatabasesRequest)(nil),    // 17: bytebase.v1.BatchUpdateDatabasesRequest
-	(*BatchUpdateDatabasesResponse)(nil),   // 18: bytebase.v1.BatchUpdateDatabasesResponse
-	(*SyncDatabaseRequest)(nil),            // 19: bytebase.v1.SyncDatabaseRequest
-	(*SyncDatabaseResponse)(nil),           // 20: bytebase.v1.SyncDatabaseResponse
-	(*GetDatabaseMetadataRequest)(nil),     // 21: bytebase.v1.GetDatabaseMetadataRequest
-	(*GetDatabaseSchemaRequest)(nil),       // 22: bytebase.v1.GetDatabaseSchemaRequest
-	(*DiffSchemaRequest)(nil),              // 23: bytebase.v1.DiffSchemaRequest
-	(*DiffSchemaResponse)(nil),             // 24: bytebase.v1.DiffSchemaResponse
-	(*Database)(nil),                       // 25: bytebase.v1.Database
-	(*DatabaseMetadata)(nil),               // 26: bytebase.v1.DatabaseMetadata
-	(*SchemaMetadata)(nil),                 // 27: bytebase.v1.SchemaMetadata
-	(*EnumTypeMetadata)(nil),               // 28: bytebase.v1.EnumTypeMetadata
-	(*EventMetadata)(nil),                  // 29: bytebase.v1.EventMetadata
-	(*SequenceMetadata)(nil),               // 30: bytebase.v1.SequenceMetadata
-	(*TriggerMetadata)(nil),                // 31: bytebase.v1.TriggerMetadata
-	(*ExternalTableMetadata)(nil),          // 32: bytebase.v1.ExternalTableMetadata
-	(*TableMetadata)(nil),                  // 33: bytebase.v1.TableMetadata
-	(*CheckConstraintMetadata)(nil),        // 34: bytebase.v1.CheckConstraintMetadata
-	(*TablePartitionMetadata)(nil),         // 35: bytebase.v1.TablePartitionMetadata
-	(*ColumnMetadata)(nil),                 // 36: bytebase.v1.ColumnMetadata
-	(*GenerationMetadata)(nil),             // 37: bytebase.v1.GenerationMetadata
-	(*ViewMetadata)(nil),                   // 38: bytebase.v1.ViewMetadata
-	(*DependencyColumn)(nil),               // 39: bytebase.v1.DependencyColumn
-	(*MaterializedViewMetadata)(nil),       // 40: bytebase.v1.MaterializedViewMetadata
-	(*DependencyTable)(nil),                // 41: bytebase.v1.DependencyTable
-	(*FunctionMetadata)(nil),               // 42: bytebase.v1.FunctionMetadata
-	(*ProcedureMetadata)(nil),              // 43: bytebase.v1.ProcedureMetadata
-	(*PackageMetadata)(nil),                // 44: bytebase.v1.PackageMetadata
-	(*TaskMetadata)(nil),                   // 45: bytebase.v1.TaskMetadata
-	(*StreamMetadata)(nil),                 // 46: bytebase.v1.StreamMetadata
-	(*IndexMetadata)(nil),                  // 47: bytebase.v1.IndexMetadata
-	(*ExtensionMetadata)(nil),              // 48: bytebase.v1.ExtensionMetadata
-	(*ForeignKeyMetadata)(nil),             // 49: bytebase.v1.ForeignKeyMetadata
-	(*DatabaseSchema)(nil),                 // 50: bytebase.v1.DatabaseSchema
-	(*ListSlowQueriesRequest)(nil),         // 51: bytebase.v1.ListSlowQueriesRequest
-	(*ListSlowQueriesResponse)(nil),        // 52: bytebase.v1.ListSlowQueriesResponse
-	(*SlowQueryLog)(nil),                   // 53: bytebase.v1.SlowQueryLog
-	(*SlowQueryStatistics)(nil),            // 54: bytebase.v1.SlowQueryStatistics
-	(*SlowQueryDetails)(nil),               // 55: bytebase.v1.SlowQueryDetails
-	(*ListSecretsRequest)(nil),             // 56: bytebase.v1.ListSecretsRequest
-	(*ListSecretsResponse)(nil),            // 57: bytebase.v1.ListSecretsResponse
-	(*UpdateSecretRequest)(nil),            // 58: bytebase.v1.UpdateSecretRequest
-	(*DeleteSecretRequest)(nil),            // 59: bytebase.v1.DeleteSecretRequest
-	(*Secret)(nil),                         // 60: bytebase.v1.Secret
-	(*AdviseIndexRequest)(nil),             // 61: bytebase.v1.AdviseIndexRequest
-	(*AdviseIndexResponse)(nil),            // 62: bytebase.v1.AdviseIndexResponse
-	(*ChangedResources)(nil),               // 63: bytebase.v1.ChangedResources
-	(*ChangedResourceDatabase)(nil),        // 64: bytebase.v1.ChangedResourceDatabase
-	(*ChangedResourceSchema)(nil),          // 65: bytebase.v1.ChangedResourceSchema
-	(*ChangedResourceTable)(nil),           // 66: bytebase.v1.ChangedResourceTable
-	(*ChangedResourceView)(nil),            // 67: bytebase.v1.ChangedResourceView
-	(*ChangedResourceFunction)(nil),        // 68: bytebase.v1.ChangedResourceFunction
-	(*ChangedResourceProcedure)(nil),       // 69: bytebase.v1.ChangedResourceProcedure
-	(*ListRevisionsRequest)(nil),           // 70: bytebase.v1.ListRevisionsRequest
-	(*ListRevisionsResponse)(nil),          // 71: bytebase.v1.ListRevisionsResponse
-	(*CreateRevisionRequest)(nil),          // 72: bytebase.v1.CreateRevisionRequest
-	(*GetRevisionRequest)(nil),             // 73: bytebase.v1.GetRevisionRequest
-	(*DeleteRevisionRequest)(nil),          // 74: bytebase.v1.DeleteRevisionRequest
-	(*Revision)(nil),                       // 75: bytebase.v1.Revision
-	(*ListChangelogsRequest)(nil),          // 76: bytebase.v1.ListChangelogsRequest
-	(*ListChangelogsResponse)(nil),         // 77: bytebase.v1.ListChangelogsResponse
-	(*GetChangelogRequest)(nil),            // 78: bytebase.v1.GetChangelogRequest
-	(*Changelog)(nil),                      // 79: bytebase.v1.Changelog
-	(*GetSchemaStringRequest)(nil),         // 80: bytebase.v1.GetSchemaStringRequest
-	(*GetSchemaStringResponse)(nil),        // 81: bytebase.v1.GetSchemaStringResponse
-	nil,                                    // 82: bytebase.v1.Database.LabelsEntry
-	(*fieldmaskpb.FieldMask)(nil),          // 83: google.protobuf.FieldMask
-	(State)(0),                             // 84: bytebase.v1.State
-	(*timestamppb.Timestamp)(nil),          // 85: google.protobuf.Timestamp
-	(*InstanceResource)(nil),               // 86: bytebase.v1.InstanceResource
-	(*durationpb.Duration)(nil),            // 87: google.protobuf.Duration
-	(*Range)(nil),                          // 88: bytebase.v1.Range
-	(*emptypb.Empty)(nil),                  // 89: google.protobuf.Empty
+	(*ListDatabasesRequest)(nil),           // 12: bytebase.v1.ListDatabasesRequest
+	(*ListDatabasesResponse)(nil),          // 13: bytebase.v1.ListDatabasesResponse
+	(*UpdateDatabaseRequest)(nil),          // 14: bytebase.v1.UpdateDatabaseRequest
+	(*BatchUpdateDatabasesRequest)(nil),    // 15: bytebase.v1.BatchUpdateDatabasesRequest
+	(*BatchUpdateDatabasesResponse)(nil),   // 16: bytebase.v1.BatchUpdateDatabasesResponse
+	(*SyncDatabaseRequest)(nil),            // 17: bytebase.v1.SyncDatabaseRequest
+	(*SyncDatabaseResponse)(nil),           // 18: bytebase.v1.SyncDatabaseResponse
+	(*GetDatabaseMetadataRequest)(nil),     // 19: bytebase.v1.GetDatabaseMetadataRequest
+	(*GetDatabaseSchemaRequest)(nil),       // 20: bytebase.v1.GetDatabaseSchemaRequest
+	(*DiffSchemaRequest)(nil),              // 21: bytebase.v1.DiffSchemaRequest
+	(*DiffSchemaResponse)(nil),             // 22: bytebase.v1.DiffSchemaResponse
+	(*Database)(nil),                       // 23: bytebase.v1.Database
+	(*DatabaseMetadata)(nil),               // 24: bytebase.v1.DatabaseMetadata
+	(*SchemaMetadata)(nil),                 // 25: bytebase.v1.SchemaMetadata
+	(*EnumTypeMetadata)(nil),               // 26: bytebase.v1.EnumTypeMetadata
+	(*EventMetadata)(nil),                  // 27: bytebase.v1.EventMetadata
+	(*SequenceMetadata)(nil),               // 28: bytebase.v1.SequenceMetadata
+	(*TriggerMetadata)(nil),                // 29: bytebase.v1.TriggerMetadata
+	(*ExternalTableMetadata)(nil),          // 30: bytebase.v1.ExternalTableMetadata
+	(*TableMetadata)(nil),                  // 31: bytebase.v1.TableMetadata
+	(*CheckConstraintMetadata)(nil),        // 32: bytebase.v1.CheckConstraintMetadata
+	(*TablePartitionMetadata)(nil),         // 33: bytebase.v1.TablePartitionMetadata
+	(*ColumnMetadata)(nil),                 // 34: bytebase.v1.ColumnMetadata
+	(*GenerationMetadata)(nil),             // 35: bytebase.v1.GenerationMetadata
+	(*ViewMetadata)(nil),                   // 36: bytebase.v1.ViewMetadata
+	(*DependencyColumn)(nil),               // 37: bytebase.v1.DependencyColumn
+	(*MaterializedViewMetadata)(nil),       // 38: bytebase.v1.MaterializedViewMetadata
+	(*DependencyTable)(nil),                // 39: bytebase.v1.DependencyTable
+	(*FunctionMetadata)(nil),               // 40: bytebase.v1.FunctionMetadata
+	(*ProcedureMetadata)(nil),              // 41: bytebase.v1.ProcedureMetadata
+	(*PackageMetadata)(nil),                // 42: bytebase.v1.PackageMetadata
+	(*TaskMetadata)(nil),                   // 43: bytebase.v1.TaskMetadata
+	(*StreamMetadata)(nil),                 // 44: bytebase.v1.StreamMetadata
+	(*IndexMetadata)(nil),                  // 45: bytebase.v1.IndexMetadata
+	(*ExtensionMetadata)(nil),              // 46: bytebase.v1.ExtensionMetadata
+	(*ForeignKeyMetadata)(nil),             // 47: bytebase.v1.ForeignKeyMetadata
+	(*DatabaseSchema)(nil),                 // 48: bytebase.v1.DatabaseSchema
+	(*ListSlowQueriesRequest)(nil),         // 49: bytebase.v1.ListSlowQueriesRequest
+	(*ListSlowQueriesResponse)(nil),        // 50: bytebase.v1.ListSlowQueriesResponse
+	(*SlowQueryLog)(nil),                   // 51: bytebase.v1.SlowQueryLog
+	(*SlowQueryStatistics)(nil),            // 52: bytebase.v1.SlowQueryStatistics
+	(*SlowQueryDetails)(nil),               // 53: bytebase.v1.SlowQueryDetails
+	(*ListSecretsRequest)(nil),             // 54: bytebase.v1.ListSecretsRequest
+	(*ListSecretsResponse)(nil),            // 55: bytebase.v1.ListSecretsResponse
+	(*UpdateSecretRequest)(nil),            // 56: bytebase.v1.UpdateSecretRequest
+	(*DeleteSecretRequest)(nil),            // 57: bytebase.v1.DeleteSecretRequest
+	(*Secret)(nil),                         // 58: bytebase.v1.Secret
+	(*AdviseIndexRequest)(nil),             // 59: bytebase.v1.AdviseIndexRequest
+	(*AdviseIndexResponse)(nil),            // 60: bytebase.v1.AdviseIndexResponse
+	(*ChangedResources)(nil),               // 61: bytebase.v1.ChangedResources
+	(*ChangedResourceDatabase)(nil),        // 62: bytebase.v1.ChangedResourceDatabase
+	(*ChangedResourceSchema)(nil),          // 63: bytebase.v1.ChangedResourceSchema
+	(*ChangedResourceTable)(nil),           // 64: bytebase.v1.ChangedResourceTable
+	(*ChangedResourceView)(nil),            // 65: bytebase.v1.ChangedResourceView
+	(*ChangedResourceFunction)(nil),        // 66: bytebase.v1.ChangedResourceFunction
+	(*ChangedResourceProcedure)(nil),       // 67: bytebase.v1.ChangedResourceProcedure
+	(*ListRevisionsRequest)(nil),           // 68: bytebase.v1.ListRevisionsRequest
+	(*ListRevisionsResponse)(nil),          // 69: bytebase.v1.ListRevisionsResponse
+	(*CreateRevisionRequest)(nil),          // 70: bytebase.v1.CreateRevisionRequest
+	(*GetRevisionRequest)(nil),             // 71: bytebase.v1.GetRevisionRequest
+	(*DeleteRevisionRequest)(nil),          // 72: bytebase.v1.DeleteRevisionRequest
+	(*Revision)(nil),                       // 73: bytebase.v1.Revision
+	(*ListChangelogsRequest)(nil),          // 74: bytebase.v1.ListChangelogsRequest
+	(*ListChangelogsResponse)(nil),         // 75: bytebase.v1.ListChangelogsResponse
+	(*GetChangelogRequest)(nil),            // 76: bytebase.v1.GetChangelogRequest
+	(*Changelog)(nil),                      // 77: bytebase.v1.Changelog
+	(*GetSchemaStringRequest)(nil),         // 78: bytebase.v1.GetSchemaStringRequest
+	(*GetSchemaStringResponse)(nil),        // 79: bytebase.v1.GetSchemaStringResponse
+	nil,                                    // 80: bytebase.v1.Database.LabelsEntry
+	(*fieldmaskpb.FieldMask)(nil),          // 81: google.protobuf.FieldMask
+	(State)(0),                             // 82: bytebase.v1.State
+	(*timestamppb.Timestamp)(nil),          // 83: google.protobuf.Timestamp
+	(*InstanceResource)(nil),               // 84: bytebase.v1.InstanceResource
+	(*durationpb.Duration)(nil),            // 85: google.protobuf.Duration
+	(*Range)(nil),                          // 86: bytebase.v1.Range
+	(*emptypb.Empty)(nil),                  // 87: google.protobuf.Empty
 }
 var file_v1_database_service_proto_depIdxs = []int32{
-	25,  // 0: bytebase.v1.ListInstanceDatabasesResponse.databases:type_name -> bytebase.v1.Database
-	25,  // 1: bytebase.v1.ListDatabasesResponse.databases:type_name -> bytebase.v1.Database
-	25,  // 2: bytebase.v1.UpdateDatabaseRequest.database:type_name -> bytebase.v1.Database
-	83,  // 3: bytebase.v1.UpdateDatabaseRequest.update_mask:type_name -> google.protobuf.FieldMask
-	16,  // 4: bytebase.v1.BatchUpdateDatabasesRequest.requests:type_name -> bytebase.v1.UpdateDatabaseRequest
-	25,  // 5: bytebase.v1.BatchUpdateDatabasesResponse.databases:type_name -> bytebase.v1.Database
-	0,   // 6: bytebase.v1.GetDatabaseMetadataRequest.view:type_name -> bytebase.v1.DatabaseMetadataView
-	84,  // 7: bytebase.v1.Database.state:type_name -> bytebase.v1.State
-	85,  // 8: bytebase.v1.Database.successful_sync_time:type_name -> google.protobuf.Timestamp
-	82,  // 9: bytebase.v1.Database.labels:type_name -> bytebase.v1.Database.LabelsEntry
-	86,  // 10: bytebase.v1.Database.instance_resource:type_name -> bytebase.v1.InstanceResource
-	27,  // 11: bytebase.v1.DatabaseMetadata.schemas:type_name -> bytebase.v1.SchemaMetadata
-	48,  // 12: bytebase.v1.DatabaseMetadata.extensions:type_name -> bytebase.v1.ExtensionMetadata
-	33,  // 13: bytebase.v1.SchemaMetadata.tables:type_name -> bytebase.v1.TableMetadata
-	32,  // 14: bytebase.v1.SchemaMetadata.external_tables:type_name -> bytebase.v1.ExternalTableMetadata
-	38,  // 15: bytebase.v1.SchemaMetadata.views:type_name -> bytebase.v1.ViewMetadata
-	42,  // 16: bytebase.v1.SchemaMetadata.functions:type_name -> bytebase.v1.FunctionMetadata
-	43,  // 17: bytebase.v1.SchemaMetadata.procedures:type_name -> bytebase.v1.ProcedureMetadata
-	46,  // 18: bytebase.v1.SchemaMetadata.streams:type_name -> bytebase.v1.StreamMetadata
-	45,  // 19: bytebase.v1.SchemaMetadata.tasks:type_name -> bytebase.v1.TaskMetadata
-	40,  // 20: bytebase.v1.SchemaMetadata.materialized_views:type_name -> bytebase.v1.MaterializedViewMetadata
-	44,  // 21: bytebase.v1.SchemaMetadata.packages:type_name -> bytebase.v1.PackageMetadata
-	30,  // 22: bytebase.v1.SchemaMetadata.sequences:type_name -> bytebase.v1.SequenceMetadata
-	29,  // 23: bytebase.v1.SchemaMetadata.events:type_name -> bytebase.v1.EventMetadata
-	28,  // 24: bytebase.v1.SchemaMetadata.enum_types:type_name -> bytebase.v1.EnumTypeMetadata
-	36,  // 25: bytebase.v1.ExternalTableMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
-	36,  // 26: bytebase.v1.TableMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
-	47,  // 27: bytebase.v1.TableMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
-	49,  // 28: bytebase.v1.TableMetadata.foreign_keys:type_name -> bytebase.v1.ForeignKeyMetadata
-	35,  // 29: bytebase.v1.TableMetadata.partitions:type_name -> bytebase.v1.TablePartitionMetadata
-	34,  // 30: bytebase.v1.TableMetadata.check_constraints:type_name -> bytebase.v1.CheckConstraintMetadata
-	31,  // 31: bytebase.v1.TableMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
-	2,   // 32: bytebase.v1.TablePartitionMetadata.type:type_name -> bytebase.v1.TablePartitionMetadata.Type
-	35,  // 33: bytebase.v1.TablePartitionMetadata.subpartitions:type_name -> bytebase.v1.TablePartitionMetadata
-	47,  // 34: bytebase.v1.TablePartitionMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
-	37,  // 35: bytebase.v1.ColumnMetadata.generation:type_name -> bytebase.v1.GenerationMetadata
-	3,   // 36: bytebase.v1.ColumnMetadata.identity_generation:type_name -> bytebase.v1.ColumnMetadata.IdentityGeneration
-	4,   // 37: bytebase.v1.GenerationMetadata.type:type_name -> bytebase.v1.GenerationMetadata.Type
-	39,  // 38: bytebase.v1.ViewMetadata.dependency_columns:type_name -> bytebase.v1.DependencyColumn
-	36,  // 39: bytebase.v1.ViewMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
-	31,  // 40: bytebase.v1.ViewMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
-	39,  // 41: bytebase.v1.MaterializedViewMetadata.dependency_columns:type_name -> bytebase.v1.DependencyColumn
-	31,  // 42: bytebase.v1.MaterializedViewMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
-	47,  // 43: bytebase.v1.MaterializedViewMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
-	41,  // 44: bytebase.v1.FunctionMetadata.dependency_tables:type_name -> bytebase.v1.DependencyTable
-	5,   // 45: bytebase.v1.TaskMetadata.state:type_name -> bytebase.v1.TaskMetadata.State
-	6,   // 46: bytebase.v1.StreamMetadata.type:type_name -> bytebase.v1.StreamMetadata.Type
-	7,   // 47: bytebase.v1.StreamMetadata.mode:type_name -> bytebase.v1.StreamMetadata.Mode
-	53,  // 48: bytebase.v1.ListSlowQueriesResponse.slow_query_logs:type_name -> bytebase.v1.SlowQueryLog
-	54,  // 49: bytebase.v1.SlowQueryLog.statistics:type_name -> bytebase.v1.SlowQueryStatistics
-	85,  // 50: bytebase.v1.SlowQueryStatistics.latest_log_time:type_name -> google.protobuf.Timestamp
-	87,  // 51: bytebase.v1.SlowQueryStatistics.average_query_time:type_name -> google.protobuf.Duration
-	87,  // 52: bytebase.v1.SlowQueryStatistics.maximum_query_time:type_name -> google.protobuf.Duration
-	55,  // 53: bytebase.v1.SlowQueryStatistics.samples:type_name -> bytebase.v1.SlowQueryDetails
-	85,  // 54: bytebase.v1.SlowQueryDetails.start_time:type_name -> google.protobuf.Timestamp
-	87,  // 55: bytebase.v1.SlowQueryDetails.query_time:type_name -> google.protobuf.Duration
-	87,  // 56: bytebase.v1.SlowQueryDetails.lock_time:type_name -> google.protobuf.Duration
-	60,  // 57: bytebase.v1.ListSecretsResponse.secrets:type_name -> bytebase.v1.Secret
-	60,  // 58: bytebase.v1.UpdateSecretRequest.secret:type_name -> bytebase.v1.Secret
-	83,  // 59: bytebase.v1.UpdateSecretRequest.update_mask:type_name -> google.protobuf.FieldMask
-	85,  // 60: bytebase.v1.Secret.created_time:type_name -> google.protobuf.Timestamp
-	85,  // 61: bytebase.v1.Secret.updated_time:type_name -> google.protobuf.Timestamp
-	64,  // 62: bytebase.v1.ChangedResources.databases:type_name -> bytebase.v1.ChangedResourceDatabase
-	65,  // 63: bytebase.v1.ChangedResourceDatabase.schemas:type_name -> bytebase.v1.ChangedResourceSchema
-	66,  // 64: bytebase.v1.ChangedResourceSchema.tables:type_name -> bytebase.v1.ChangedResourceTable
-	67,  // 65: bytebase.v1.ChangedResourceSchema.views:type_name -> bytebase.v1.ChangedResourceView
-	68,  // 66: bytebase.v1.ChangedResourceSchema.functions:type_name -> bytebase.v1.ChangedResourceFunction
-	69,  // 67: bytebase.v1.ChangedResourceSchema.procedures:type_name -> bytebase.v1.ChangedResourceProcedure
-	88,  // 68: bytebase.v1.ChangedResourceTable.ranges:type_name -> bytebase.v1.Range
-	88,  // 69: bytebase.v1.ChangedResourceView.ranges:type_name -> bytebase.v1.Range
-	88,  // 70: bytebase.v1.ChangedResourceFunction.ranges:type_name -> bytebase.v1.Range
-	88,  // 71: bytebase.v1.ChangedResourceProcedure.ranges:type_name -> bytebase.v1.Range
-	75,  // 72: bytebase.v1.ListRevisionsResponse.revisions:type_name -> bytebase.v1.Revision
-	75,  // 73: bytebase.v1.CreateRevisionRequest.revision:type_name -> bytebase.v1.Revision
-	85,  // 74: bytebase.v1.Revision.create_time:type_name -> google.protobuf.Timestamp
-	85,  // 75: bytebase.v1.Revision.delete_time:type_name -> google.protobuf.Timestamp
-	1,   // 76: bytebase.v1.ListChangelogsRequest.view:type_name -> bytebase.v1.ChangelogView
-	79,  // 77: bytebase.v1.ListChangelogsResponse.changelogs:type_name -> bytebase.v1.Changelog
-	1,   // 78: bytebase.v1.GetChangelogRequest.view:type_name -> bytebase.v1.ChangelogView
-	85,  // 79: bytebase.v1.Changelog.create_time:type_name -> google.protobuf.Timestamp
-	8,   // 80: bytebase.v1.Changelog.status:type_name -> bytebase.v1.Changelog.Status
-	63,  // 81: bytebase.v1.Changelog.changed_resources:type_name -> bytebase.v1.ChangedResources
-	9,   // 82: bytebase.v1.Changelog.type:type_name -> bytebase.v1.Changelog.Type
-	10,  // 83: bytebase.v1.GetSchemaStringRequest.object_type:type_name -> bytebase.v1.GetSchemaStringRequest.ObjectType
-	11,  // 84: bytebase.v1.DatabaseService.GetDatabase:input_type -> bytebase.v1.GetDatabaseRequest
-	12,  // 85: bytebase.v1.DatabaseService.ListInstanceDatabases:input_type -> bytebase.v1.ListInstanceDatabasesRequest
-	14,  // 86: bytebase.v1.DatabaseService.ListDatabases:input_type -> bytebase.v1.ListDatabasesRequest
-	16,  // 87: bytebase.v1.DatabaseService.UpdateDatabase:input_type -> bytebase.v1.UpdateDatabaseRequest
-	17,  // 88: bytebase.v1.DatabaseService.BatchUpdateDatabases:input_type -> bytebase.v1.BatchUpdateDatabasesRequest
-	19,  // 89: bytebase.v1.DatabaseService.SyncDatabase:input_type -> bytebase.v1.SyncDatabaseRequest
-	21,  // 90: bytebase.v1.DatabaseService.GetDatabaseMetadata:input_type -> bytebase.v1.GetDatabaseMetadataRequest
-	22,  // 91: bytebase.v1.DatabaseService.GetDatabaseSchema:input_type -> bytebase.v1.GetDatabaseSchemaRequest
-	23,  // 92: bytebase.v1.DatabaseService.DiffSchema:input_type -> bytebase.v1.DiffSchemaRequest
-	51,  // 93: bytebase.v1.DatabaseService.ListSlowQueries:input_type -> bytebase.v1.ListSlowQueriesRequest
-	56,  // 94: bytebase.v1.DatabaseService.ListSecrets:input_type -> bytebase.v1.ListSecretsRequest
-	58,  // 95: bytebase.v1.DatabaseService.UpdateSecret:input_type -> bytebase.v1.UpdateSecretRequest
-	59,  // 96: bytebase.v1.DatabaseService.DeleteSecret:input_type -> bytebase.v1.DeleteSecretRequest
-	61,  // 97: bytebase.v1.DatabaseService.AdviseIndex:input_type -> bytebase.v1.AdviseIndexRequest
-	70,  // 98: bytebase.v1.DatabaseService.ListRevisions:input_type -> bytebase.v1.ListRevisionsRequest
-	73,  // 99: bytebase.v1.DatabaseService.GetRevision:input_type -> bytebase.v1.GetRevisionRequest
-	72,  // 100: bytebase.v1.DatabaseService.CreateRevision:input_type -> bytebase.v1.CreateRevisionRequest
-	74,  // 101: bytebase.v1.DatabaseService.DeleteRevision:input_type -> bytebase.v1.DeleteRevisionRequest
-	76,  // 102: bytebase.v1.DatabaseService.ListChangelogs:input_type -> bytebase.v1.ListChangelogsRequest
-	78,  // 103: bytebase.v1.DatabaseService.GetChangelog:input_type -> bytebase.v1.GetChangelogRequest
-	80,  // 104: bytebase.v1.DatabaseService.GetSchemaString:input_type -> bytebase.v1.GetSchemaStringRequest
-	25,  // 105: bytebase.v1.DatabaseService.GetDatabase:output_type -> bytebase.v1.Database
-	13,  // 106: bytebase.v1.DatabaseService.ListInstanceDatabases:output_type -> bytebase.v1.ListInstanceDatabasesResponse
-	15,  // 107: bytebase.v1.DatabaseService.ListDatabases:output_type -> bytebase.v1.ListDatabasesResponse
-	25,  // 108: bytebase.v1.DatabaseService.UpdateDatabase:output_type -> bytebase.v1.Database
-	18,  // 109: bytebase.v1.DatabaseService.BatchUpdateDatabases:output_type -> bytebase.v1.BatchUpdateDatabasesResponse
-	20,  // 110: bytebase.v1.DatabaseService.SyncDatabase:output_type -> bytebase.v1.SyncDatabaseResponse
-	26,  // 111: bytebase.v1.DatabaseService.GetDatabaseMetadata:output_type -> bytebase.v1.DatabaseMetadata
-	50,  // 112: bytebase.v1.DatabaseService.GetDatabaseSchema:output_type -> bytebase.v1.DatabaseSchema
-	24,  // 113: bytebase.v1.DatabaseService.DiffSchema:output_type -> bytebase.v1.DiffSchemaResponse
-	52,  // 114: bytebase.v1.DatabaseService.ListSlowQueries:output_type -> bytebase.v1.ListSlowQueriesResponse
-	57,  // 115: bytebase.v1.DatabaseService.ListSecrets:output_type -> bytebase.v1.ListSecretsResponse
-	60,  // 116: bytebase.v1.DatabaseService.UpdateSecret:output_type -> bytebase.v1.Secret
-	89,  // 117: bytebase.v1.DatabaseService.DeleteSecret:output_type -> google.protobuf.Empty
-	62,  // 118: bytebase.v1.DatabaseService.AdviseIndex:output_type -> bytebase.v1.AdviseIndexResponse
-	71,  // 119: bytebase.v1.DatabaseService.ListRevisions:output_type -> bytebase.v1.ListRevisionsResponse
-	75,  // 120: bytebase.v1.DatabaseService.GetRevision:output_type -> bytebase.v1.Revision
-	75,  // 121: bytebase.v1.DatabaseService.CreateRevision:output_type -> bytebase.v1.Revision
-	89,  // 122: bytebase.v1.DatabaseService.DeleteRevision:output_type -> google.protobuf.Empty
-	77,  // 123: bytebase.v1.DatabaseService.ListChangelogs:output_type -> bytebase.v1.ListChangelogsResponse
-	79,  // 124: bytebase.v1.DatabaseService.GetChangelog:output_type -> bytebase.v1.Changelog
-	81,  // 125: bytebase.v1.DatabaseService.GetSchemaString:output_type -> bytebase.v1.GetSchemaStringResponse
-	105, // [105:126] is the sub-list for method output_type
-	84,  // [84:105] is the sub-list for method input_type
-	84,  // [84:84] is the sub-list for extension type_name
-	84,  // [84:84] is the sub-list for extension extendee
-	0,   // [0:84] is the sub-list for field type_name
+	23,  // 0: bytebase.v1.ListDatabasesResponse.databases:type_name -> bytebase.v1.Database
+	23,  // 1: bytebase.v1.UpdateDatabaseRequest.database:type_name -> bytebase.v1.Database
+	81,  // 2: bytebase.v1.UpdateDatabaseRequest.update_mask:type_name -> google.protobuf.FieldMask
+	14,  // 3: bytebase.v1.BatchUpdateDatabasesRequest.requests:type_name -> bytebase.v1.UpdateDatabaseRequest
+	23,  // 4: bytebase.v1.BatchUpdateDatabasesResponse.databases:type_name -> bytebase.v1.Database
+	0,   // 5: bytebase.v1.GetDatabaseMetadataRequest.view:type_name -> bytebase.v1.DatabaseMetadataView
+	82,  // 6: bytebase.v1.Database.state:type_name -> bytebase.v1.State
+	83,  // 7: bytebase.v1.Database.successful_sync_time:type_name -> google.protobuf.Timestamp
+	80,  // 8: bytebase.v1.Database.labels:type_name -> bytebase.v1.Database.LabelsEntry
+	84,  // 9: bytebase.v1.Database.instance_resource:type_name -> bytebase.v1.InstanceResource
+	25,  // 10: bytebase.v1.DatabaseMetadata.schemas:type_name -> bytebase.v1.SchemaMetadata
+	46,  // 11: bytebase.v1.DatabaseMetadata.extensions:type_name -> bytebase.v1.ExtensionMetadata
+	31,  // 12: bytebase.v1.SchemaMetadata.tables:type_name -> bytebase.v1.TableMetadata
+	30,  // 13: bytebase.v1.SchemaMetadata.external_tables:type_name -> bytebase.v1.ExternalTableMetadata
+	36,  // 14: bytebase.v1.SchemaMetadata.views:type_name -> bytebase.v1.ViewMetadata
+	40,  // 15: bytebase.v1.SchemaMetadata.functions:type_name -> bytebase.v1.FunctionMetadata
+	41,  // 16: bytebase.v1.SchemaMetadata.procedures:type_name -> bytebase.v1.ProcedureMetadata
+	44,  // 17: bytebase.v1.SchemaMetadata.streams:type_name -> bytebase.v1.StreamMetadata
+	43,  // 18: bytebase.v1.SchemaMetadata.tasks:type_name -> bytebase.v1.TaskMetadata
+	38,  // 19: bytebase.v1.SchemaMetadata.materialized_views:type_name -> bytebase.v1.MaterializedViewMetadata
+	42,  // 20: bytebase.v1.SchemaMetadata.packages:type_name -> bytebase.v1.PackageMetadata
+	28,  // 21: bytebase.v1.SchemaMetadata.sequences:type_name -> bytebase.v1.SequenceMetadata
+	27,  // 22: bytebase.v1.SchemaMetadata.events:type_name -> bytebase.v1.EventMetadata
+	26,  // 23: bytebase.v1.SchemaMetadata.enum_types:type_name -> bytebase.v1.EnumTypeMetadata
+	34,  // 24: bytebase.v1.ExternalTableMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
+	34,  // 25: bytebase.v1.TableMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
+	45,  // 26: bytebase.v1.TableMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
+	47,  // 27: bytebase.v1.TableMetadata.foreign_keys:type_name -> bytebase.v1.ForeignKeyMetadata
+	33,  // 28: bytebase.v1.TableMetadata.partitions:type_name -> bytebase.v1.TablePartitionMetadata
+	32,  // 29: bytebase.v1.TableMetadata.check_constraints:type_name -> bytebase.v1.CheckConstraintMetadata
+	29,  // 30: bytebase.v1.TableMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
+	2,   // 31: bytebase.v1.TablePartitionMetadata.type:type_name -> bytebase.v1.TablePartitionMetadata.Type
+	33,  // 32: bytebase.v1.TablePartitionMetadata.subpartitions:type_name -> bytebase.v1.TablePartitionMetadata
+	45,  // 33: bytebase.v1.TablePartitionMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
+	35,  // 34: bytebase.v1.ColumnMetadata.generation:type_name -> bytebase.v1.GenerationMetadata
+	3,   // 35: bytebase.v1.ColumnMetadata.identity_generation:type_name -> bytebase.v1.ColumnMetadata.IdentityGeneration
+	4,   // 36: bytebase.v1.GenerationMetadata.type:type_name -> bytebase.v1.GenerationMetadata.Type
+	37,  // 37: bytebase.v1.ViewMetadata.dependency_columns:type_name -> bytebase.v1.DependencyColumn
+	34,  // 38: bytebase.v1.ViewMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
+	29,  // 39: bytebase.v1.ViewMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
+	37,  // 40: bytebase.v1.MaterializedViewMetadata.dependency_columns:type_name -> bytebase.v1.DependencyColumn
+	29,  // 41: bytebase.v1.MaterializedViewMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
+	45,  // 42: bytebase.v1.MaterializedViewMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
+	39,  // 43: bytebase.v1.FunctionMetadata.dependency_tables:type_name -> bytebase.v1.DependencyTable
+	5,   // 44: bytebase.v1.TaskMetadata.state:type_name -> bytebase.v1.TaskMetadata.State
+	6,   // 45: bytebase.v1.StreamMetadata.type:type_name -> bytebase.v1.StreamMetadata.Type
+	7,   // 46: bytebase.v1.StreamMetadata.mode:type_name -> bytebase.v1.StreamMetadata.Mode
+	51,  // 47: bytebase.v1.ListSlowQueriesResponse.slow_query_logs:type_name -> bytebase.v1.SlowQueryLog
+	52,  // 48: bytebase.v1.SlowQueryLog.statistics:type_name -> bytebase.v1.SlowQueryStatistics
+	83,  // 49: bytebase.v1.SlowQueryStatistics.latest_log_time:type_name -> google.protobuf.Timestamp
+	85,  // 50: bytebase.v1.SlowQueryStatistics.average_query_time:type_name -> google.protobuf.Duration
+	85,  // 51: bytebase.v1.SlowQueryStatistics.maximum_query_time:type_name -> google.protobuf.Duration
+	53,  // 52: bytebase.v1.SlowQueryStatistics.samples:type_name -> bytebase.v1.SlowQueryDetails
+	83,  // 53: bytebase.v1.SlowQueryDetails.start_time:type_name -> google.protobuf.Timestamp
+	85,  // 54: bytebase.v1.SlowQueryDetails.query_time:type_name -> google.protobuf.Duration
+	85,  // 55: bytebase.v1.SlowQueryDetails.lock_time:type_name -> google.protobuf.Duration
+	58,  // 56: bytebase.v1.ListSecretsResponse.secrets:type_name -> bytebase.v1.Secret
+	58,  // 57: bytebase.v1.UpdateSecretRequest.secret:type_name -> bytebase.v1.Secret
+	81,  // 58: bytebase.v1.UpdateSecretRequest.update_mask:type_name -> google.protobuf.FieldMask
+	83,  // 59: bytebase.v1.Secret.created_time:type_name -> google.protobuf.Timestamp
+	83,  // 60: bytebase.v1.Secret.updated_time:type_name -> google.protobuf.Timestamp
+	62,  // 61: bytebase.v1.ChangedResources.databases:type_name -> bytebase.v1.ChangedResourceDatabase
+	63,  // 62: bytebase.v1.ChangedResourceDatabase.schemas:type_name -> bytebase.v1.ChangedResourceSchema
+	64,  // 63: bytebase.v1.ChangedResourceSchema.tables:type_name -> bytebase.v1.ChangedResourceTable
+	65,  // 64: bytebase.v1.ChangedResourceSchema.views:type_name -> bytebase.v1.ChangedResourceView
+	66,  // 65: bytebase.v1.ChangedResourceSchema.functions:type_name -> bytebase.v1.ChangedResourceFunction
+	67,  // 66: bytebase.v1.ChangedResourceSchema.procedures:type_name -> bytebase.v1.ChangedResourceProcedure
+	86,  // 67: bytebase.v1.ChangedResourceTable.ranges:type_name -> bytebase.v1.Range
+	86,  // 68: bytebase.v1.ChangedResourceView.ranges:type_name -> bytebase.v1.Range
+	86,  // 69: bytebase.v1.ChangedResourceFunction.ranges:type_name -> bytebase.v1.Range
+	86,  // 70: bytebase.v1.ChangedResourceProcedure.ranges:type_name -> bytebase.v1.Range
+	73,  // 71: bytebase.v1.ListRevisionsResponse.revisions:type_name -> bytebase.v1.Revision
+	73,  // 72: bytebase.v1.CreateRevisionRequest.revision:type_name -> bytebase.v1.Revision
+	83,  // 73: bytebase.v1.Revision.create_time:type_name -> google.protobuf.Timestamp
+	83,  // 74: bytebase.v1.Revision.delete_time:type_name -> google.protobuf.Timestamp
+	1,   // 75: bytebase.v1.ListChangelogsRequest.view:type_name -> bytebase.v1.ChangelogView
+	77,  // 76: bytebase.v1.ListChangelogsResponse.changelogs:type_name -> bytebase.v1.Changelog
+	1,   // 77: bytebase.v1.GetChangelogRequest.view:type_name -> bytebase.v1.ChangelogView
+	83,  // 78: bytebase.v1.Changelog.create_time:type_name -> google.protobuf.Timestamp
+	8,   // 79: bytebase.v1.Changelog.status:type_name -> bytebase.v1.Changelog.Status
+	61,  // 80: bytebase.v1.Changelog.changed_resources:type_name -> bytebase.v1.ChangedResources
+	9,   // 81: bytebase.v1.Changelog.type:type_name -> bytebase.v1.Changelog.Type
+	10,  // 82: bytebase.v1.GetSchemaStringRequest.object_type:type_name -> bytebase.v1.GetSchemaStringRequest.ObjectType
+	11,  // 83: bytebase.v1.DatabaseService.GetDatabase:input_type -> bytebase.v1.GetDatabaseRequest
+	12,  // 84: bytebase.v1.DatabaseService.ListDatabases:input_type -> bytebase.v1.ListDatabasesRequest
+	14,  // 85: bytebase.v1.DatabaseService.UpdateDatabase:input_type -> bytebase.v1.UpdateDatabaseRequest
+	15,  // 86: bytebase.v1.DatabaseService.BatchUpdateDatabases:input_type -> bytebase.v1.BatchUpdateDatabasesRequest
+	17,  // 87: bytebase.v1.DatabaseService.SyncDatabase:input_type -> bytebase.v1.SyncDatabaseRequest
+	19,  // 88: bytebase.v1.DatabaseService.GetDatabaseMetadata:input_type -> bytebase.v1.GetDatabaseMetadataRequest
+	20,  // 89: bytebase.v1.DatabaseService.GetDatabaseSchema:input_type -> bytebase.v1.GetDatabaseSchemaRequest
+	21,  // 90: bytebase.v1.DatabaseService.DiffSchema:input_type -> bytebase.v1.DiffSchemaRequest
+	49,  // 91: bytebase.v1.DatabaseService.ListSlowQueries:input_type -> bytebase.v1.ListSlowQueriesRequest
+	54,  // 92: bytebase.v1.DatabaseService.ListSecrets:input_type -> bytebase.v1.ListSecretsRequest
+	56,  // 93: bytebase.v1.DatabaseService.UpdateSecret:input_type -> bytebase.v1.UpdateSecretRequest
+	57,  // 94: bytebase.v1.DatabaseService.DeleteSecret:input_type -> bytebase.v1.DeleteSecretRequest
+	59,  // 95: bytebase.v1.DatabaseService.AdviseIndex:input_type -> bytebase.v1.AdviseIndexRequest
+	68,  // 96: bytebase.v1.DatabaseService.ListRevisions:input_type -> bytebase.v1.ListRevisionsRequest
+	71,  // 97: bytebase.v1.DatabaseService.GetRevision:input_type -> bytebase.v1.GetRevisionRequest
+	70,  // 98: bytebase.v1.DatabaseService.CreateRevision:input_type -> bytebase.v1.CreateRevisionRequest
+	72,  // 99: bytebase.v1.DatabaseService.DeleteRevision:input_type -> bytebase.v1.DeleteRevisionRequest
+	74,  // 100: bytebase.v1.DatabaseService.ListChangelogs:input_type -> bytebase.v1.ListChangelogsRequest
+	76,  // 101: bytebase.v1.DatabaseService.GetChangelog:input_type -> bytebase.v1.GetChangelogRequest
+	78,  // 102: bytebase.v1.DatabaseService.GetSchemaString:input_type -> bytebase.v1.GetSchemaStringRequest
+	23,  // 103: bytebase.v1.DatabaseService.GetDatabase:output_type -> bytebase.v1.Database
+	13,  // 104: bytebase.v1.DatabaseService.ListDatabases:output_type -> bytebase.v1.ListDatabasesResponse
+	23,  // 105: bytebase.v1.DatabaseService.UpdateDatabase:output_type -> bytebase.v1.Database
+	16,  // 106: bytebase.v1.DatabaseService.BatchUpdateDatabases:output_type -> bytebase.v1.BatchUpdateDatabasesResponse
+	18,  // 107: bytebase.v1.DatabaseService.SyncDatabase:output_type -> bytebase.v1.SyncDatabaseResponse
+	24,  // 108: bytebase.v1.DatabaseService.GetDatabaseMetadata:output_type -> bytebase.v1.DatabaseMetadata
+	48,  // 109: bytebase.v1.DatabaseService.GetDatabaseSchema:output_type -> bytebase.v1.DatabaseSchema
+	22,  // 110: bytebase.v1.DatabaseService.DiffSchema:output_type -> bytebase.v1.DiffSchemaResponse
+	50,  // 111: bytebase.v1.DatabaseService.ListSlowQueries:output_type -> bytebase.v1.ListSlowQueriesResponse
+	55,  // 112: bytebase.v1.DatabaseService.ListSecrets:output_type -> bytebase.v1.ListSecretsResponse
+	58,  // 113: bytebase.v1.DatabaseService.UpdateSecret:output_type -> bytebase.v1.Secret
+	87,  // 114: bytebase.v1.DatabaseService.DeleteSecret:output_type -> google.protobuf.Empty
+	60,  // 115: bytebase.v1.DatabaseService.AdviseIndex:output_type -> bytebase.v1.AdviseIndexResponse
+	69,  // 116: bytebase.v1.DatabaseService.ListRevisions:output_type -> bytebase.v1.ListRevisionsResponse
+	73,  // 117: bytebase.v1.DatabaseService.GetRevision:output_type -> bytebase.v1.Revision
+	73,  // 118: bytebase.v1.DatabaseService.CreateRevision:output_type -> bytebase.v1.Revision
+	87,  // 119: bytebase.v1.DatabaseService.DeleteRevision:output_type -> google.protobuf.Empty
+	75,  // 120: bytebase.v1.DatabaseService.ListChangelogs:output_type -> bytebase.v1.ListChangelogsResponse
+	77,  // 121: bytebase.v1.DatabaseService.GetChangelog:output_type -> bytebase.v1.Changelog
+	79,  // 122: bytebase.v1.DatabaseService.GetSchemaString:output_type -> bytebase.v1.GetSchemaStringResponse
+	103, // [103:123] is the sub-list for method output_type
+	83,  // [83:103] is the sub-list for method input_type
+	83,  // [83:83] is the sub-list for extension type_name
+	83,  // [83:83] is the sub-list for extension extendee
+	0,   // [0:83] is the sub-list for field type_name
 }
 
 func init() { file_v1_database_service_proto_init() }
@@ -7993,11 +7868,11 @@ func file_v1_database_service_proto_init() {
 	file_v1_annotation_proto_init()
 	file_v1_common_proto_init()
 	file_v1_instance_service_proto_init()
-	file_v1_database_service_proto_msgTypes[12].OneofWrappers = []any{
+	file_v1_database_service_proto_msgTypes[10].OneofWrappers = []any{
 		(*DiffSchemaRequest_Schema)(nil),
 		(*DiffSchemaRequest_Changelog)(nil),
 	}
-	file_v1_database_service_proto_msgTypes[25].OneofWrappers = []any{
+	file_v1_database_service_proto_msgTypes[23].OneofWrappers = []any{
 		(*ColumnMetadata_DefaultNull)(nil),
 		(*ColumnMetadata_DefaultString)(nil),
 		(*ColumnMetadata_DefaultExpression)(nil),
@@ -8008,7 +7883,7 @@ func file_v1_database_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_database_service_proto_rawDesc), len(file_v1_database_service_proto_rawDesc)),
 			NumEnums:      11,
-			NumMessages:   72,
+			NumMessages:   70,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
