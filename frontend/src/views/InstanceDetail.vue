@@ -85,6 +85,7 @@
 
 <script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
+import { cloneDeep } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, watch, ref } from "vue";
@@ -200,9 +201,11 @@ watch(
 watch(
   () => state.selectedTab,
   (tab) => {
+    const query = cloneDeep(route.query);
+    delete query["qs"];
     router.replace({
+      query,
       hash: `#${tab}`,
-      query: route.query,
     });
   },
   { immediate: true }

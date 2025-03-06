@@ -1,13 +1,12 @@
-import { computedAsync } from "@vueuse/core";
 import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref } from "vue";
-import { useAppFeature, useDatabaseV1Store } from "@/store";
+import { useAppFeature, useDatabaseV1ByName } from "@/store";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
 import type { ComposedDatabase, Permission } from "@/types";
-import { DEFAULT_PROJECT_NAME, unknownDatabase } from "@/types";
+import { DEFAULT_PROJECT_NAME } from "@/types";
 import {
   hasProjectPermissionV2,
   instanceV1HasAlterSchema,
@@ -47,13 +46,12 @@ export const provideDatabaseDetailContext = (
 ) => {
   const databaseOperations = useAppFeature("bb.feature.databases.operations");
 
-  const databaseV1Store = useDatabaseV1Store();
-
-  const database: Ref<ComposedDatabase> = computedAsync(() => {
-    return databaseV1Store.getOrFetchDatabaseByName(
-      `${instanceNamePrefix}${instanceId.value}/${databaseNamePrefix}${databaseName.value}`
-    );
-  }, unknownDatabase());
+  const { database } = useDatabaseV1ByName(
+    computed(
+      () =>
+        `${instanceNamePrefix}${instanceId.value}/${databaseNamePrefix}${databaseName.value}`
+    )
+  );
 
   const pagedRevisionTableSessionKey = ref(
     `bb.paged-revision-table.${Date.now()}`

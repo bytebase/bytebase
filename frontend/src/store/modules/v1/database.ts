@@ -139,11 +139,9 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       await fetchDatabaseByName(database);
     }
   };
+  // TODO(ed): deprecate it.
   const databaseListByProject = (project: string) => {
     return databaseList.value.filter((db) => db.project === project);
-  };
-  const databaseListByInstance = (instance: string) => {
-    return databaseList.value.filter((db) => db.instance === instance);
   };
   const getDatabaseByName = (name: string) => {
     return databaseMapByName.get(name) ?? unknownDatabase();
@@ -162,9 +160,6 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
 
     return composed;
   };
-  // TODO(ed):
-  // 1. make sure using `silent = true`
-  // 2. use batchGetOrFetchDatabases
   const getOrFetchDatabaseByName = async (name: string, silent = false) => {
     const existed = databaseMapByName.get(name);
     if (existed) {
@@ -200,11 +195,9 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   return {
     reset,
     removeCacheByInstance,
-    databaseList,
     upsertDatabaseMap,
     syncDatabase,
     databaseListByProject,
-    databaseListByInstance,
     getDatabaseByName,
     fetchDatabaseByName,
     getOrFetchDatabaseByName,

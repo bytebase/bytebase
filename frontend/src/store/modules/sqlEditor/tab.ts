@@ -1,5 +1,5 @@
 import type { MaybeRef } from "@vueuse/core";
-import { computedAsync, watchThrottled } from "@vueuse/core";
+import { watchThrottled } from "@vueuse/core";
 import { head, omit, pick, uniqBy } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
 import { computed, nextTick, reactive, ref, unref, watch } from "vue";
@@ -9,11 +9,7 @@ import type {
   CoreSQLEditorTab,
   SQLEditorTab,
 } from "@/types";
-import {
-  DEFAULT_SQL_EDITOR_TAB_MODE,
-  isValidDatabaseName,
-  unknownDatabase,
-} from "@/types";
+import { DEFAULT_SQL_EDITOR_TAB_MODE, isValidDatabaseName } from "@/types";
 import {
   WebStorageHelper,
   defaultSQLEditorTab,
@@ -26,6 +22,7 @@ import {
 import { useCurrentUserV1 } from "../auth";
 import {
   useDatabaseV1Store,
+  useDatabaseV1ByName,
   useEnvironmentV1Store,
   useInstanceResourceByName,
 } from "../v1";
@@ -416,11 +413,9 @@ export const useSQLEditorConnectionDetail = (
     return useInstanceResourceByName(unref(connection).instance);
   });
 
-  const database = computedAsync(async () => {
-    return useDatabaseV1Store().getOrFetchDatabaseByName(
-      unref(connection).database
-    );
-  }, unknownDatabase());
+  const { database } = useDatabaseV1ByName(
+    computed(() => unref(connection).database)
+  );
 
   const environment = computed(() => {
     if (isValidDatabaseName(database.value.name)) {

@@ -54,8 +54,7 @@
 <script lang="ts" setup>
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { computed, onMounted, reactive, watch, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { computed, onMounted, reactive, ref } from "vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
@@ -77,8 +76,6 @@ import type { SearchParams } from "@/utils";
 import {
   CommonFilterScopeIdList,
   extractProjectResourceName,
-  buildSearchTextBySearchParams,
-  buildSearchParamsBySearchText,
   hasWorkspacePermissionV2,
 } from "@/utils";
 
@@ -92,8 +89,6 @@ defineProps<{
   onClickDatabase?: (event: MouseEvent, db: ComposedDatabase) => void;
 }>();
 
-const route = useRoute();
-const router = useRouter();
 const uiStateStore = useUIStateStore();
 const databaseStore = useDatabaseV1Store();
 const hideUnassignedDatabases = useAppFeature(
@@ -116,18 +111,10 @@ const defaultSearchParams = () => {
   return params;
 };
 
-const initializeSearchParamsFromQuery = () => {
-  const { qs } = route.query;
-  if (typeof qs === "string" && qs.length > 0) {
-    return buildSearchParamsBySearchText(qs);
-  }
-  return defaultSearchParams();
-};
-
 const state = reactive<LocalState>({
   selectedDatabaseNameList: new Set(),
   showCreateDrawer: false,
-  params: initializeSearchParamsFromQuery(),
+  params: defaultSearchParams(),
 });
 
 const allowToCreateDB = computed(() => {
@@ -207,17 +194,4 @@ const handleDatabasesSelectionChanged = (
 ): void => {
   state.selectedDatabaseNameList = selectedDatabaseNameList;
 };
-
-watch(
-  () => state.params,
-  () => {
-    router.replace({
-      query: {
-        ...route.query,
-        qs: buildSearchTextBySearchParams(state.params),
-      },
-    });
-  },
-  { deep: true }
-);
 </script>
