@@ -4050,73 +4050,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/deploymentConfigs/{deploymentConfig}:
-        get:
-            tags:
-                - ProjectService
-            operationId: ProjectService_GetDeploymentConfig
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: deploymentConfig
-                  in: path
-                  description: The deploymentConfig id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/DeploymentConfig'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        patch:
-            tags:
-                - ProjectService
-            operationId: ProjectService_UpdateDeploymentConfig
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: deploymentConfig
-                  in: path
-                  description: The deploymentConfig id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/DeploymentConfig'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/DeploymentConfig'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}/issues:
         get:
             tags:
@@ -9284,16 +9217,6 @@ components:
                     type: string
                     description: The schema dump from database.
             description: DatabaseSchema is the metadata for databases.
-        DeploymentConfig:
-            type: object
-            properties:
-                schedule:
-                    $ref: '#/components/schemas/Schedule'
-        DeploymentSpec:
-            type: object
-            properties:
-                selector:
-                    $ref: '#/components/schemas/LabelSelector'
         DiffMetadataRequest:
             required:
                 - sourceMetadata
@@ -10353,32 +10276,6 @@ components:
                     type: string
                 group:
                     type: string
-        LabelSelector:
-            type: object
-            properties:
-                matchExpressions:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/LabelSelectorRequirement'
-                    description: match_expressions is a list of label selector requirements. The requirements are ANDed.
-        LabelSelectorRequirement:
-            type: object
-            properties:
-                key:
-                    type: string
-                operator:
-                    enum:
-                        - OPERATOR_TYPE_UNSPECIFIED
-                        - IN
-                        - EXISTS
-                        - NOT_IN
-                    type: string
-                    format: enum
-                values:
-                    type: array
-                    items:
-                        type: string
-                    description: Values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
         ListChangelistsResponse:
             type: object
             properties:
@@ -11030,13 +10927,6 @@ components:
                          - ERROR
                 releaseSource:
                     $ref: '#/components/schemas/Plan_ReleaseSource'
-                deploymentConfigSnapshot:
-                    readOnly: true
-                    allOf:
-                        - $ref: '#/components/schemas/DeploymentConfig'
-                    description: |-
-                        The deployment config snapshot taken at the time of plan creation.
-                         This is to ensure that we get consistent rollout for the plan.
         PlanCheckRun:
             type: object
             properties:
@@ -12342,24 +12232,6 @@ components:
                     format: enum
                 comment:
                     type: string
-        Schedule:
-            type: object
-            properties:
-                deployments:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ScheduleDeployment'
-            description: Schedule is the message for deployment schedule.
-        ScheduleDeployment:
-            type: object
-            properties:
-                title:
-                    type: string
-                    description: The title of the deployment (stage) in a schedule.
-                id:
-                    type: string
-                spec:
-                    $ref: '#/components/schemas/DeploymentSpec'
         SchedulerInfo_WaitingCause:
             type: object
             properties:
