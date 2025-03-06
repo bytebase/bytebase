@@ -421,7 +421,7 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 			)
 			continue
 		}
-		maximumConnections := int(instance.Options.GetMaximumConnections())
+		maximumConnections := int(instance.Metadata.GetMaximumConnections())
 		if s.stateCfg.InstanceOutstandingConnections.Increment(task.InstanceID, maximumConnections) {
 			s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
 				ReportTime: timestamppb.Now(),

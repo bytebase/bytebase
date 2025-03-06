@@ -202,7 +202,6 @@ interface LocalState {
   environmentName?: string;
   instanceName?: string;
   instanceRole?: InstanceRole;
-  labels: Record<string, string>;
   databaseName: string;
   tableName: string;
   characterSet: string;
@@ -233,7 +232,6 @@ const state = reactive<LocalState>({
   projectName: props.projectName,
   environmentName: props.environmentName,
   instanceName: props.instanceName,
-  labels: {},
   tableName: "",
   characterSet: "",
   collation: "",
@@ -342,7 +340,6 @@ const createV1 = async () => {
     target: state.instanceName,
     database: databaseName,
     table: tableName,
-    labels: state.labels,
     environment: state.environmentName,
 
     characterSet:

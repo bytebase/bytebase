@@ -355,31 +355,31 @@ const doUpdate = async () => {
       updateMask.push("environment");
     }
     if (
-      instancePatch.options?.syncInterval?.seconds?.toNumber() !==
-      inst.options?.syncInterval?.seconds?.toNumber()
+      instancePatch.syncInterval?.seconds?.toNumber() !==
+      inst.syncInterval?.seconds?.toNumber()
     ) {
-      updateMask.push("options.sync_interval");
+      updateMask.push("sync_interval");
     }
     if (
-      instancePatch.options?.maximumConnections !==
-      inst.options?.maximumConnections
+      instancePatch.maximumConnections !==
+      inst.maximumConnections
     ) {
-      updateMask.push("options.maximum_connections");
+      updateMask.push("maximum_connections");
     }
     if (
       !isEqual(
-        instancePatch.options?.syncDatabases,
-        inst.options?.syncDatabases
+        instancePatch.syncDatabases,
+        inst.syncDatabases
       )
     ) {
-      updateMask.push("options.sync_databases");
+      updateMask.push("sync_databases");
     }
     if (updateMask.length === 0) {
       return;
     }
     pendingRequestRunners.push(() =>
       instanceV1Store.updateInstance(instancePatch, updateMask).then(() => {
-        if (updateMask.includes("options.sync_databases")) {
+        if (updateMask.includes("sync_databases")) {
           return refreshInstanceDatabases(instancePatch.name);
         }
       })

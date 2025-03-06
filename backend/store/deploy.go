@@ -126,7 +126,7 @@ func (s *Store) getDefaultDeploymentConfigV2(ctx context.Context) (*DeploymentCo
 	var deployments []*storepb.ScheduleDeployment
 	for i, environment := range environmentList {
 		deployments = append(deployments, &storepb.ScheduleDeployment{
-			Title: fmt.Sprintf("%s Stage", environment.Title),
+			Title: environment.ResourceID,
 			// Use index rather than uuid to ensure consistent Id for the default deployment config.
 			Id: fmt.Sprintf("%d", i),
 			Spec: &storepb.DeploymentSpec{

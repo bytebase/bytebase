@@ -72,8 +72,3 @@ message Range {
   int32 start = 1;
   int32 end = 2;
 }
-
-message DatabaseLabel {
-  string key = 1;
-  string value = 2;
-}

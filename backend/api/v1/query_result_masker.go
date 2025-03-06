@@ -130,7 +130,7 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 	action storepb.MaskingExceptionPolicy_MaskingException_Action,
 	currentPrincipal *store.UserMessage,
 ) (masker.Masker, error) {
-	if instance != nil && !isMaskingSupported(instance.Engine) {
+	if instance != nil && !isMaskingSupported(instance.Metadata.GetEngine()) {
 		return masker.NewNoneMasker(), nil
 	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{

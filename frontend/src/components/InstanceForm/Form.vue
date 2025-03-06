@@ -351,7 +351,7 @@
         <ScanIntervalInput
           v-if="!isCreating"
           ref="scanIntervalInputRef"
-          :scan-interval="basicInfo.options?.syncInterval"
+          :scan-interval="basicInfo.syncInterval"
           :allow-edit="allowEdit"
           @update:scan-interval="changeScanInterval"
         />
@@ -361,14 +361,14 @@
           :is-creating="false"
           :show-label="true"
           :allow-edit="allowEdit"
-          :sync-databases="basicInfo.options?.syncDatabases"
+          :sync-databases="basicInfo.syncDatabases"
           @update:sync-databases="handleChangeSyncDatabases"
         />
 
         <MaximumConnectionsInput
           v-if="!isCreating"
           ref="maximumConnectionsInputRef"
-          :maximum-connections="basicInfo.options?.maximumConnections ?? 0"
+          :maximum-connections="basicInfo.maximumConnections ?? 0"
           :allow-edit="allowEdit"
           @update:maximum-connections="changeMaximumConnections"
         />
@@ -415,12 +415,7 @@
       </div>
 
       <!-- Connection Info -->
-      <template
-        v-if="
-          basicInfo.engine !== Engine.DYNAMODB &&
-          basicInfo.engine !== Engine.COSMOSDB
-        "
-      >
+      <template v-if="basicInfo.engine !== Engine.DYNAMODB">
         <p class="mt-6 pt-4 w-full text-lg leading-6 font-medium text-gray-900">
           {{ $t("instance.connection-info") }}
         </p>
@@ -461,7 +456,7 @@
           :is-creating="true"
           :show-label="false"
           :allow-edit="allowEdit && !!allowCreate"
-          :sync-databases="basicInfo.options?.syncDatabases"
+          :sync-databases="basicInfo.syncDatabases"
           @update:sync-databases="handleChangeSyncDatabases"
         />
       </div>
@@ -507,10 +502,7 @@ import type { ResourceId, ValidatedMessage, ComposedInstance } from "@/types";
 import { UNKNOWN_ID, isValidEnvironmentName } from "@/types";
 import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { Engine } from "@/types/proto/v1/common";
-import {
-  InstanceOptions,
-  DataSource_AuthenticationType,
-} from "@/types/proto/v1/instance_service";
+import { DataSource_AuthenticationType } from "@/types/proto/v1/instance_service";
 import { DataSource_RedisType } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import {
@@ -646,6 +638,10 @@ const changeInstanceEngine = (engine: Engine) => {
     ) {
       adminDataSource.value.host = "";
     }
+  } else if (engine === Engine.COSMOSDB) {
+    // Cosmos DB supports Azure IAM only.
+    adminDataSource.value.authenticationType =
+      DataSource_AuthenticationType.AZURE_IAM;
   } else {
     if (!adminDataSource.value.host) {
       adminDataSource.value.host = isDev()
@@ -657,24 +653,15 @@ const changeInstanceEngine = (engine: Engine) => {
 };
 
 const handleChangeSyncDatabases = (databases: string[]) => {
-  if (!basicInfo.value.options) {
-    basicInfo.value.options = InstanceOptions.fromPartial({});
-  }
-  basicInfo.value.options.syncDatabases = [...databases];
+  basicInfo.value.syncDatabases = [...databases];
 };
 
 const changeScanInterval = (duration: Duration | undefined) => {
-  if (!basicInfo.value.options) {
-    basicInfo.value.options = InstanceOptions.fromPartial({});
-  }
-  basicInfo.value.options.syncInterval = duration;
+  basicInfo.value.syncInterval = duration;
 };
 
 const changeMaximumConnections = (maximumConnections: number) => {
-  if (!basicInfo.value.options) {
-    basicInfo.value.options = InstanceOptions.fromPartial({});
-  }
-  basicInfo.value.options.maximumConnections = maximumConnections;
+  basicInfo.value.maximumConnections = maximumConnections;
 };
 
 const handleRedisConnectionTypeChange = (type: string) => {

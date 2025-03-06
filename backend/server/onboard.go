@@ -37,24 +37,26 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	// Test Sample Instance
 	testInstance, err := s.store.CreateInstanceV2(ctx, &store.InstanceMessage{
-		ResourceID:   "test-sample-instance",
-		Title:        "Test Sample Instance",
-		Engine:       storepb.Engine_POSTGRES,
-		ExternalLink: "",
-		DataSources: []*store.DataSourceMessage{
-			{
-				ID:                 "admin",
-				Type:               api.Admin,
-				Username:           postgres.SampleUser,
-				ObfuscatedPassword: common.Obfuscate("", s.secret),
-				Host:               common.GetPostgresSocketDir(),
-				Port:               strconv.Itoa(s.profile.SampleDatabasePort),
-				Database:           postgres.SampleDatabaseTest,
+		ResourceID:    "test-sample-instance",
+		EnvironmentID: api.DefaultTestEnvironmentID,
+		Metadata: &storepb.Instance{
+			Title:        "Test Sample Instance",
+			Engine:       storepb.Engine_POSTGRES,
+			ExternalLink: "",
+			Activation:   false,
+			DataSources: []*storepb.DataSource{
+				{
+					Id:                 "admin",
+					Type:               storepb.DataSourceType_ADMIN,
+					Username:           postgres.SampleUser,
+					ObfuscatedPassword: common.Obfuscate("", s.secret),
+					Host:               common.GetPostgresSocketDir(),
+					Port:               strconv.Itoa(s.profile.SampleDatabasePort),
+					Database:           postgres.SampleDatabaseTest,
+				},
 			},
 		},
-		EnvironmentID: api.DefaultTestEnvironmentID,
-		Activation:    false,
-	}, -1)
+	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create test onboarding instance")
 	}
@@ -96,24 +98,26 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	// Prod Sample Instance
 	prodInstance, err := s.store.CreateInstanceV2(ctx, &store.InstanceMessage{
-		ResourceID:   "prod-sample-instance",
-		Title:        "Prod Sample Instance",
-		Engine:       storepb.Engine_POSTGRES,
-		ExternalLink: "",
-		DataSources: []*store.DataSourceMessage{
-			{
-				ID:                 "admin",
-				Type:               api.Admin,
-				Username:           postgres.SampleUser,
-				ObfuscatedPassword: common.Obfuscate("", s.secret),
-				Host:               common.GetPostgresSocketDir(),
-				Port:               strconv.Itoa(s.profile.SampleDatabasePort + 1),
-				Database:           postgres.SampleDatabaseProd,
+		ResourceID:    "prod-sample-instance",
+		EnvironmentID: api.DefaultProdEnvironmentID,
+		Metadata: &storepb.Instance{
+			Title:        "Prod Sample Instance",
+			Engine:       storepb.Engine_POSTGRES,
+			ExternalLink: "",
+			Activation:   false,
+			DataSources: []*storepb.DataSource{
+				{
+					Id:                 "admin",
+					Type:               storepb.DataSourceType_ADMIN,
+					Username:           postgres.SampleUser,
+					ObfuscatedPassword: common.Obfuscate("", s.secret),
+					Host:               common.GetPostgresSocketDir(),
+					Port:               strconv.Itoa(s.profile.SampleDatabasePort + 1),
+					Database:           postgres.SampleDatabaseProd,
+				},
 			},
 		},
-		EnvironmentID: api.DefaultProdEnvironmentID,
-		Activation:    false,
-	}, -1)
+	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create prod onboarding instance")
 	}
@@ -212,7 +216,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		Statement: "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
 
 		Payload: &storepb.SheetPayload{
-			Engine: testInstance.Engine,
+			Engine: testInstance.Metadata.GetEngine(),
 		},
 	})
 	if err != nil {
@@ -225,7 +229,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		Title:     "Alter table to prod sample instance for sample issue",
 		Statement: "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
 		Payload: &storepb.SheetPayload{
-			Engine: prodInstance.Engine,
+			Engine: prodInstance.Metadata.GetEngine(),
 		},
 	})
 	if err != nil {

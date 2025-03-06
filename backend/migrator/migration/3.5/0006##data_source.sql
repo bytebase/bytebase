@@ -1,0 +1,22 @@
+UPDATE data_source SET options = options || jsonb_build_object('host', host);
+UPDATE data_source SET options = options || jsonb_build_object('port', port);
+UPDATE data_source SET options = options || jsonb_build_object('username', username);
+UPDATE data_source SET options = options || jsonb_build_object('obfuscatedPassword', password);
+UPDATE data_source SET options = options || jsonb_build_object('database', database);
+UPDATE data_source SET options = options || jsonb_build_object('obfuscatedSslKey', ssl_key);
+UPDATE data_source SET options = options || jsonb_build_object('obfuscatedSslCert', ssl_cert);
+UPDATE data_source SET options = options || jsonb_build_object('obfuscatedSslCa', ssl_ca);
+UPDATE data_source SET options = options || jsonb_build_object('id', name);
+UPDATE data_source SET options = options || jsonb_build_object('type', 'ADMIN') WHERE type = 'ADMIN';
+UPDATE data_source SET options = options || jsonb_build_object('type', 'READ_ONLY') WHERE type = 'RO';
+
+ALTER TABLE data_source DROP COLUMN host;
+ALTER TABLE data_source DROP COLUMN port;
+ALTER TABLE data_source DROP COLUMN username;
+ALTER TABLE data_source DROP COLUMN password;
+ALTER TABLE data_source DROP COLUMN database;
+ALTER TABLE data_source DROP COLUMN ssl_key;
+ALTER TABLE data_source DROP COLUMN ssl_cert;
+ALTER TABLE data_source DROP COLUMN ssl_ca;
+ALTER TABLE data_source DROP COLUMN name;
+ALTER TABLE data_source DROP COLUMN type;

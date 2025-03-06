@@ -54,12 +54,12 @@
     - [DataSource](#bytebase-v1-DataSource)
     - [DataSource.Address](#bytebase-v1-DataSource-Address)
     - [DataSource.ClientSecretCredential](#bytebase-v1-DataSource-ClientSecretCredential)
+    - [DataSource.ExtraConnectionParametersEntry](#bytebase-v1-DataSource-ExtraConnectionParametersEntry)
     - [DataSourceExternalSecret](#bytebase-v1-DataSourceExternalSecret)
     - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption)
     - [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest)
     - [GetInstanceRequest](#bytebase-v1-GetInstanceRequest)
     - [Instance](#bytebase-v1-Instance)
-    - [InstanceOptions](#bytebase-v1-InstanceOptions)
     - [InstanceResource](#bytebase-v1-InstanceResource)
     - [KerberosConfig](#bytebase-v1-KerberosConfig)
     - [ListInstanceDatabaseRequest](#bytebase-v1-ListInstanceDatabaseRequest)
@@ -512,7 +512,6 @@
     - [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry)
     - [Plan.ChangeDatabaseConfig.PreUpdateBackupDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-PreUpdateBackupDetail)
     - [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig)
-    - [Plan.CreateDatabaseConfig.LabelsEntry](#bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry)
     - [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig)
     - [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry)
     - [Plan.ReleaseSource](#bytebase-v1-Plan-ReleaseSource)
@@ -655,7 +654,6 @@
     - [Stage](#bytebase-v1-Stage)
     - [Task](#bytebase-v1-Task)
     - [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate)
-    - [Task.DatabaseCreate.LabelsEntry](#bytebase-v1-Task-DatabaseCreate-LabelsEntry)
     - [Task.DatabaseDataExport](#bytebase-v1-Task-DatabaseDataExport)
     - [Task.DatabaseDataUpdate](#bytebase-v1-Task-DatabaseDataUpdate)
     - [Task.DatabaseSchemaBaseline](#bytebase-v1-Task-DatabaseSchemaBaseline)
@@ -1318,8 +1316,9 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | host | [string](#string) |  |  |
 | port | [string](#string) |  |  |
 | database | [string](#string) |  |  |
-| srv | [bool](#bool) |  | srv, authentication_database and replica_set are used for MongoDB. |
-| authentication_database | [string](#string) |  |  |
+| srv | [bool](#bool) |  | srv, authentication_database and replica_set are used for MongoDB. srv is a boolean flag that indicates whether the host is a DNS SRV record. |
+| authentication_database | [string](#string) |  | authentication_database is the database name to authenticate against, which stores the user credentials. |
+| replica_set | [string](#string) |  | replica_set is used for MongoDB replica set. |
 | sid | [string](#string) |  | sid and service_name are used for Oracle. |
 | service_name | [string](#string) |  |  |
 | ssh_host | [string](#string) |  | Connection over SSH. The hostname of the SSH server agent. Required. |
@@ -1329,11 +1328,10 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | ssh_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
 | authentication_private_key | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
 | external_secret | [DataSourceExternalSecret](#bytebase-v1-DataSourceExternalSecret) |  |  |
-| client_secret_credential | [DataSource.ClientSecretCredential](#bytebase-v1-DataSource-ClientSecretCredential) |  |  |
 | authentication_type | [DataSource.AuthenticationType](#bytebase-v1-DataSource-AuthenticationType) |  |  |
+| client_secret_credential | [DataSource.ClientSecretCredential](#bytebase-v1-DataSource-ClientSecretCredential) |  |  |
 | sasl_config | [SASLConfig](#bytebase-v1-SASLConfig) |  |  |
 | additional_addresses | [DataSource.Address](#bytebase-v1-DataSource-Address) | repeated | additional_addresses is used for MongoDB replica set. |
-| replica_set | [string](#string) |  | replica_set is used for MongoDB replica set. |
 | direct_connection | [bool](#bool) |  | direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string. |
 | region | [string](#string) |  | region is the location of where the DB is, works for AWS RDS. For example, us-east-1. |
 | warehouse_id | [string](#string) |  | warehouse_id is used by Databricks. |
@@ -1342,6 +1340,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | master_password | [string](#string) |  |  |
 | redis_type | [DataSource.RedisType](#bytebase-v1-DataSource-RedisType) |  |  |
 | cluster | [string](#string) |  | Cluster is the cluster name for the data source. Used by CockroachDB. |
+| extra_connection_parameters | [DataSource.ExtraConnectionParametersEntry](#bytebase-v1-DataSource-ExtraConnectionParametersEntry) | repeated | Extra connection parameters for the database connection. For PostgreSQL HA, this can be used to set target_session_attrs=read-write |
 
 
 
@@ -1375,6 +1374,22 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | tenant_id | [string](#string) |  |  |
 | client_id | [string](#string) |  |  |
 | client_secret | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DataSource-ExtraConnectionParametersEntry"></a>
+
+### DataSource.ExtraConnectionParametersEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
 
 
 
@@ -1469,22 +1484,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | data_sources | [DataSource](#bytebase-v1-DataSource) | repeated |  |
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
 | activation | [bool](#bool) |  |  |
-| options | [InstanceOptions](#bytebase-v1-InstanceOptions) |  |  |
 | roles | [InstanceRole](#bytebase-v1-InstanceRole) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-InstanceOptions"></a>
-
-### InstanceOptions
-InstanceOptions is the option for instances.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
 | sync_interval | [google.protobuf.Duration](#google-protobuf-Duration) |  | How often the instance is synced. |
 | maximum_connections | [int32](#int32) |  | The maximum number of connections. The default is 10 if the value is unset or zero. |
 | sync_databases | [string](#string) | repeated | Enable sync for following databases. Default empty, means sync all schemas &amp; databases. |
@@ -8311,23 +8311,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | cluster | [string](#string) |  | cluster is the cluster of the database. This is only applicable to ClickHouse for &#34;ON CLUSTER &lt;&lt;cluster&gt;&gt;&#34;. |
 | owner | [string](#string) |  | owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. |
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
-| labels | [Plan.CreateDatabaseConfig.LabelsEntry](#bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry) | repeated | labels of the database. |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry"></a>
-
-### Plan.CreateDatabaseConfig.LabelsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
 
 
 
@@ -10430,23 +10413,6 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | character_set | [string](#string) |  |  |
 | collation | [string](#string) |  |  |
 | environment | [string](#string) |  |  |
-| labels | [Task.DatabaseCreate.LabelsEntry](#bytebase-v1-Task-DatabaseCreate-LabelsEntry) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Task-DatabaseCreate-LabelsEntry"></a>
-
-### Task.DatabaseCreate.LabelsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
 
 
 

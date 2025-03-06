@@ -119,7 +119,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 			return nil, status.Errorf(codes.NotFound, "instance %q not found", database.InstanceID)
 		}
 
-		catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, instance.Engine, store.IsObjectCaseSensitive(instance), nil)
+		catalog, err := catalog.NewCatalog(ctx, s.store, database.InstanceID, database.DatabaseName, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance), nil)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create catalog: %v", err)
 		}
@@ -149,7 +149,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, request *v1pb.CheckRe
 			}
 
 			// Check if any syntax error in the statement.
-			_, syntaxAdvices := s.sheetManager.GetASTsForChecks(instance.Engine, file.Statement)
+			_, syntaxAdvices := s.sheetManager.GetASTsForChecks(instance.Metadata.GetEngine(), file.Statement)
 			if len(syntaxAdvices) > 0 {
 				for _, advice := range syntaxAdvices {
 					checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
@@ -241,7 +241,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	changeType storepb.PlanCheckRunConfig_ChangeDatabaseType,
 	statement string,
 ) (storepb.Advice_Status, []*v1pb.Advice, error) {
-	if !isSQLReviewSupported(instance.Engine) || database == nil {
+	if !isSQLReviewSupported(instance.Metadata.GetEngine()) || database == nil {
 		return storepb.Advice_SUCCESS, nil, nil
 	}
 
@@ -280,7 +280,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		Collation:                dbMetadata.Collation,
 		ChangeType:               changeType,
 		DBSchema:                 dbMetadata,
-		DbType:                   instance.Engine,
+		DbType:                   instance.Metadata.GetEngine(),
 		Catalog:                  catalog,
 		Driver:                   connection,
 		CurrentDatabase:          database.DatabaseName,
@@ -374,7 +374,7 @@ func (s *ReleaseService) calculateRiskLevel(
 				"project_id":     database.ProjectID,
 				"database_name":  database.DatabaseName,
 				// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
-				"db_engine":     instance.Engine.String(),
+				"db_engine":     instance.Metadata.GetEngine().String(),
 				"sql_statement": statement,
 			}
 

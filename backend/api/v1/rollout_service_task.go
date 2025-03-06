@@ -142,7 +142,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 	if err != nil {
 		return nil, err
 	}
-	if instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_OCEANBASE_ORACLE {
+	if instance.Metadata.GetEngine() == storepb.Engine_ORACLE || instance.Metadata.GetEngine() == storepb.Engine_OCEANBASE_ORACLE {
 		return nil, errors.Errorf("creating Oracle database is not supported")
 	}
 
@@ -164,37 +164,32 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		return nil, err
 	}
 
-	if instance.Engine == storepb.Engine_MONGODB && c.Table == "" {
+	if instance.Metadata.GetEngine() == storepb.Engine_MONGODB && c.Table == "" {
 		return nil, errors.Errorf("collection name is required for MongoDB")
 	}
 
 	taskCreates, err := func() ([]*store.TaskMessage, error) {
-		if err := checkCharacterSetCollationOwner(instance.Engine, c.CharacterSet, c.Collation, c.Owner); err != nil {
+		if err := checkCharacterSetCollationOwner(instance.Metadata.GetEngine(), c.CharacterSet, c.Collation, c.Owner); err != nil {
 			return nil, err
 		}
 		if c.Database == "" {
 			return nil, errors.Errorf("database name is required")
 		}
-		if instance.Engine == storepb.Engine_SNOWFLAKE {
+		if instance.Metadata.GetEngine() == storepb.Engine_SNOWFLAKE {
 			// Snowflake needs to use upper case of DatabaseName.
 			c.Database = strings.ToUpper(c.Database)
 		}
-		if instance.Engine == storepb.Engine_MONGODB && c.Table == "" {
+		if instance.Metadata.GetEngine() == storepb.Engine_MONGODB && c.Table == "" {
 			return nil, common.Errorf(common.Invalid, "Failed to create issue, collection name missing for MongoDB")
-		}
-		// Validate the labels. Labels are set upon task completion.
-		labelsJSON, err := convertDatabaseLabels(c.Labels)
-		if err != nil {
-			return nil, errors.Wrapf(err, "invalid database label %q", c.Labels)
 		}
 
 		// Get admin data source username.
-		adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
+		adminDataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)
 		if adminDataSource == nil {
-			return nil, common.Errorf(common.Internal, "admin data source not found for instance %q", instance.Title)
+			return nil, common.Errorf(common.Internal, "admin data source not found for instance %q", instance.ResourceID)
 		}
 		databaseName := c.Database
-		switch instance.Engine {
+		switch instance.Metadata.GetEngine() {
 		case storepb.Engine_SNOWFLAKE:
 			// Snowflake needs to use upper case of DatabaseName.
 			databaseName = strings.ToUpper(databaseName)
@@ -204,7 +199,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			// And also, meet an error in here is not a big deal, we will just use the original DatabaseName.
 			driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 			if err != nil {
-				slog.Warn("failed to get admin database driver for instance %q, please check the connection for admin data source", log.BBError(err), slog.String("instance", instance.Title))
+				slog.Warn("failed to get admin database driver for instance %q, please check the connection for admin data source", log.BBError(err), slog.String("instance", instance.ResourceID))
 				break
 			}
 			defer driver.Close(ctx)
@@ -212,7 +207,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			var unused any
 			db := driver.GetDB()
 			if err := db.QueryRowContext(ctx, "SHOW VARIABLES LIKE 'lower_case_table_names'").Scan(&unused, &lowerCaseTableNames); err != nil {
-				slog.Warn("failed to get lower_case_table_names for instance %q", log.BBError(err), slog.String("instance", instance.Title))
+				slog.Warn("failed to get lower_case_table_names for instance %q", log.BBError(err), slog.String("instance", instance.ResourceID))
 				break
 			}
 			if lowerCaseTableNames == 1 {
@@ -220,7 +215,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			}
 		}
 
-		statement, err := getCreateDatabaseStatement(instance.Engine, c, databaseName, adminDataSource.Username)
+		statement, err := getCreateDatabaseStatement(instance.Metadata.GetEngine(), c, databaseName, adminDataSource.GetUsername())
 		if err != nil {
 			return nil, err
 		}
@@ -230,7 +225,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			Title:     fmt.Sprintf("Sheet for creating database %v", databaseName),
 			Statement: statement,
 			Payload: &storepb.SheetPayload{
-				Engine: instance.Engine,
+				Engine: instance.Metadata.GetEngine(),
 			},
 		})
 		if err != nil {
@@ -243,7 +238,6 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			TableName:     c.Table,
 			Collation:     c.Collation,
 			EnvironmentId: dbEnvironmentID,
-			Labels:        labelsJSON,
 			DatabaseName:  databaseName,
 			SheetId:       int32(sheet.UID),
 		}
@@ -612,25 +606,18 @@ func getCreateDatabaseStatement(dbType storepb.Engine, c *storepb.PlanConfig_Cre
 		return fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s;", databaseName, c.CharacterSet, c.Collation), nil
 	case storepb.Engine_MSSQL:
 		return fmt.Sprintf(`CREATE DATABASE "%s";`, databaseName), nil
-	case storepb.Engine_POSTGRES:
-		// On Cloud RDS, the data source role isn't the actual superuser with sudo privilege.
-		// We need to grant the database owner role to the data source admin so that Bytebase can have permission for the database using the data source admin.
-		if adminDatasourceUser != "" && c.Owner != adminDatasourceUser {
-			stmt = fmt.Sprintf("GRANT \"%s\" TO \"%s\";\n", c.Owner, adminDatasourceUser)
+	case storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB:
+		collationPart := ""
+		if c.Collation != "" {
+			collationPart = fmt.Sprintf(" LC_COLLATE %q", c.Collation)
 		}
-		if c.Collation == "" {
-			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q;", stmt, databaseName, c.CharacterSet)
-		} else {
-			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", stmt, databaseName, c.CharacterSet, c.Collation)
-		}
+		stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q%s;", stmt, databaseName, c.CharacterSet, collationPart)
 		// Set the database owner.
 		// We didn't use CREATE DATABASE WITH OWNER because RDS requires the current role to be a member of the database owner.
 		// However, people can still use ALTER DATABASE to change the owner afterwards.
 		// Error string below:
 		// query: CREATE DATABASE h1 WITH OWNER hello;
 		// ERROR:  must be member of role "hello"
-		//
-		// TODO(d): alter schema "public" owner to the database owner.
 		return fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO \"%s\";", stmt, databaseName, c.Owner), nil
 	case storepb.Engine_CLICKHOUSE:
 		clusterPart := ""
@@ -666,26 +653,6 @@ func getCreateDatabaseStatement(dbType storepb.Engine, c *storepb.PlanConfig_Cre
 			stmt = fmt.Sprintf("%s WITH\n\t%s", stmt, strings.Join(list, "\n\t"))
 		}
 		return fmt.Sprintf("%s;", stmt), nil
-	case storepb.Engine_COCKROACHDB:
-		// On Cloud RDS, the data source role isn't the actual superuser with sudo privilege.
-		// We need to grant the database owner role to the data source admin so that Bytebase can have permission for the database using the data source admin.
-		if adminDatasourceUser != "" && c.Owner != adminDatasourceUser {
-			stmt = fmt.Sprintf("GRANT \"%s\" TO \"%s\";\n", c.Owner, adminDatasourceUser)
-		}
-		if c.Collation == "" {
-			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q;", stmt, databaseName, c.CharacterSet)
-		} else {
-			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", stmt, databaseName, c.CharacterSet, c.Collation)
-		}
-		// Set the database owner.
-		// We didn't use CREATE DATABASE WITH OWNER because RDS requires the current role to be a member of the database owner.
-		// However, people can still use ALTER DATABASE to change the owner afterwards.
-		// Error string below:
-		// query: CREATE DATABASE h1 WITH OWNER hello;
-		// ERROR:  must be member of role "hello"
-		//
-		// TODO(d): alter schema "public" owner to the database owner.
-		return fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO \"%s\";", stmt, databaseName, c.Owner), nil
 	case storepb.Engine_HIVE:
 		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
 	}

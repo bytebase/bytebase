@@ -178,7 +178,7 @@ func (exec *DataUpdateExecutor) backupData(
 		return nil, errors.Wrap(err, "failed to parse backup database")
 	}
 
-	if instance.Engine != storepb.Engine_POSTGRES {
+	if instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
 		backupDatabase, err = exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &backupInstanceID, DatabaseName: &backupDatabaseName})
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get backup database")
@@ -211,7 +211,7 @@ func (exec *DataUpdateExecutor) backupData(
 		ListDatabaseNamesFunc:   BuildListDatabaseNamesFunc(exec.store),
 		IsCaseSensitive:         store.IsObjectCaseSensitive(instance),
 	}
-	if instance.Engine == storepb.Engine_ORACLE {
+	if instance.Metadata.GetEngine() == storepb.Engine_ORACLE {
 		oracleDriver, ok := driver.(*oracle.Driver)
 		if ok {
 			if version, err := oracleDriver.GetVersion(); err == nil {
@@ -225,12 +225,12 @@ func (exec *DataUpdateExecutor) backupData(
 	}
 
 	prefix := "_" + time.Now().Format("20060102150405")
-	statements, err := base.TransformDMLToSelect(ctx, instance.Engine, tc, originStatement, database.DatabaseName, backupDatabaseName, prefix)
+	statements, err := base.TransformDMLToSelect(ctx, instance.Metadata.GetEngine(), tc, originStatement, database.DatabaseName, backupDatabaseName, prefix)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to transform DML to select")
 	}
 
-	preAppendStatements, err := getPreAppendStatements(instance.Engine, originStatement)
+	preAppendStatements, err := getPreAppendStatements(instance.Metadata.GetEngine(), originStatement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get pre append statements")
 	}
@@ -248,7 +248,7 @@ func (exec *DataUpdateExecutor) backupData(
 		if _, err := driver.Execute(driverCtx, backupStatement, db.ExecuteOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "failed to execute backup statement %q", backupStatement)
 		}
-		switch instance.Engine {
+		switch instance.Metadata.GetEngine() {
 		case storepb.Engine_TIDB:
 			if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = '%s, source table (%s, %s)'", backupDatabaseName, statement.TargetTableName, bbSource, database.DatabaseName, statement.SourceTableName), db.ExecuteOptions{}); err != nil {
 				return nil, errors.Wrap(err, "failed to set table comment")
@@ -293,7 +293,7 @@ func (exec *DataUpdateExecutor) backupData(
 			StartPosition: statement.StartPosition,
 			EndPosition:   statement.EndPosition,
 		}
-		if instance.Engine == storepb.Engine_POSTGRES {
+		if instance.Metadata.GetEngine() == storepb.Engine_POSTGRES {
 			item.TargetTable = &storepb.PriorBackupDetail_Item_Table{
 				Database: sourceDatabaseName,
 				// postgres uses schema as the backup database name currently.
@@ -326,7 +326,7 @@ func (exec *DataUpdateExecutor) backupData(
 		}
 	}
 
-	if instance.Engine != storepb.Engine_POSTGRES {
+	if instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
 		if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, backupDatabase); err != nil {
 			slog.Error("failed to sync backup database schema",
 				slog.String("database", payload.PreUpdateBackupDetail.Database),

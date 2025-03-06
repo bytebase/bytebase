@@ -38,7 +38,7 @@ func (s *InstanceRoleService) ListInstanceRoles(ctx context.Context, request *v1
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get instance: %v", err)
 	}
-	instanceRoles := convertToInstanceRoles(instance, instance.Metadata.GetRoles())
+	instanceRoles := convertInstanceRoles(instance, instance.Metadata.GetRoles())
 	return &v1pb.ListInstanceRolesResponse{
 		Roles: instanceRoles,
 	}, nil

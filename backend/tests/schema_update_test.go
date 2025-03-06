@@ -47,7 +47,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 
 	// Create an issue that creates a database.
 	databaseName := "testSchemaUpdate"
-	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "", nil /* labelMap */)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "")
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -315,7 +315,7 @@ CREATE TABLE "public"."book" (
 				a.FailNow("unsupported db type")
 			}
 
-			err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, test.databaseName, "postgres", nil /* labelMap */)
+			err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, test.databaseName, "postgres")
 			a.NoError(err)
 
 			database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{
@@ -393,7 +393,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 
 	// Create an issue that creates a database.
 	databaseName := "testSchemaUpdate"
-	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, databaseName, "", nil /* labelMap */)
+	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, databaseName, "")
 	a.NoError(err)
 
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, &v1pb.GetDatabaseRequest{

@@ -80,9 +80,9 @@ func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.Con
 	var dsn string
 	var err error
 	switch connCfg.AuthenticationType {
-	case storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM:
+	case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
 		dsn, err = getCloudSQLConnection(ctx, connCfg)
-	case storepb.DataSourceOptions_AWS_RDS_IAM:
+	case storepb.DataSource_AWS_RDS_IAM:
 		dsn, err = getRDSConnection(ctx, connCfg)
 	default:
 		dsn, err = d.getMySQLConnection(connCfg)
@@ -128,7 +128,6 @@ func (d *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error)
 		protocol = "mysql+tcp"
 	}
 
-	// TODO(zp): mysql and mysqlbinlog doesn't support SSL yet. We need to write certs to temp files and load them as CLI flags.
 	tlsConfig, err := connCfg.TLSConfig.GetSslConfig()
 	if err != nil {
 		return "", errors.Wrap(err, "sql: tls config error")

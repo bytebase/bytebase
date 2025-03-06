@@ -3,7 +3,6 @@
     ref="textModelEditorRef"
     class="bb-monaco-editor"
     :model="model"
-    :line-highlights="lineHighlights"
     @update:content="handleContentChange"
     @update:selection="handleSelectionChange"
   >
@@ -19,14 +18,13 @@
 <script setup lang="ts">
 import { editor, type IRange } from "monaco-editor";
 import { v4 as uuidv4 } from "uuid";
-import { computed, toRef, watchEffect } from "vue";
+import { computed, toRef, watch, watchEffect } from "vue";
 import { ref } from "vue";
 import type { Language } from "@/types";
-import { isDev } from "@/utils";
 import MonacoTextModelEditor from "./MonacoTextModelEditor.vue";
 import { useSQLParser } from "./composables";
 import { useMonacoTextModel, getUriByFilename } from "./text-model";
-import type { LineHighlightOption, Selection } from "./types";
+import type { Selection } from "./types";
 import { extensionNameOfLanguage } from "./utils";
 
 const textModelEditorRef = ref<InstanceType<typeof MonacoTextModelEditor>>();
@@ -36,6 +34,7 @@ const props = withDefaults(
     filename?: string;
     content: string;
     language?: Language;
+    enableDecorations?: boolean;
   }>(),
   {
     filename: undefined,
@@ -156,20 +155,37 @@ const activeRange = computed((): IRange | undefined => {
   };
 });
 
-const lineHighlights = computed((): LineHighlightOption[] => {
-  const range = activeRange.value;
-  if (!range || !isDev()) {
-    return [];
+const oldDecorationsCollection = ref<editor.IEditorDecorationsCollection>();
+
+watch(activeRange, () => {
+  if (!props.enableDecorations) {
+    return;
   }
-  return [
-    {
-      startLineNumber: range.startLineNumber,
-      endLineNumber: range.endLineNumber,
-      options: {
-        blockClassName: "border border-accent",
+
+  oldDecorationsCollection.value?.clear();
+  if (!activeRange.value) {
+    return;
+  }
+  if (
+    activeSelection.value &&
+    (activeSelection.value.startLineNumber !==
+      activeSelection.value.endLineNumber ||
+      activeSelection.value.startColumn !== activeSelection.value.endColumn)
+  ) {
+    return;
+  }
+
+  oldDecorationsCollection.value =
+    textModelEditorRef.value?.codeEditor?.createDecorationsCollection([
+      {
+        range: activeRange.value,
+        options: {
+          isWholeLine: false,
+          shouldFillLineOnLineBreak: true,
+          className: "bg-gray-200",
+        },
       },
-    },
-  ];
+    ]);
 });
 
 const filename = computed(() => {
@@ -189,7 +205,6 @@ defineExpose({
       return "";
     }
     const model = textModelEditorRef.value?.codeEditor?.getModel();
-    textModelEditorRef.value?.codeEditor?.setSelection(activeRange.value);
     return model?.getValueInRange(activeRange.value);
   },
 });

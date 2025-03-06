@@ -418,7 +418,6 @@ message Task {
     string character_set = 5;
     string collation = 6;
     string environment = 7;
-    map<string, string> labels = 8;
   }
 
   message DatabaseSchemaBaseline {

@@ -13,6 +13,8 @@ message DatabaseMetadata {
   map<string, string> labels = 1;
   google.protobuf.Timestamp last_sync_time = 2;
   bool backup_available = 3;
+  bool datashare = 4;
+  repeated Secret secrets = 5;
 }
 
 // DatabaseSchemaMetadata is the schema metadata for databases.
@@ -711,12 +713,7 @@ message InstanceRoleMetadata {
   string grant = 7;
 }
 
-message Secrets {
-  // The list of secrets.
-  repeated SecretItem items = 1;
-}
-
-message SecretItem {
+message Secret {
   // The name is the name of the secret.
   string name = 1;
 

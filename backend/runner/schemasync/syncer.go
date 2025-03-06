@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/conc/pool"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -115,7 +116,7 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 							log.BBError(err))
 						return true
 					}
-					if s.stateCfg.InstanceOutstandingConnections.Increment(instance.ResourceID, int(instance.Options.GetMaximumConnections())) {
+					if s.stateCfg.InstanceOutstandingConnections.Increment(instance.ResourceID, int(instance.Metadata.GetMaximumConnections())) {
 						return true
 					}
 
@@ -269,7 +270,7 @@ func (s *Syncer) GetInstanceMeta(ctx context.Context, instance *store.InstanceMe
 	}
 
 	if instanceMeta.Metadata == nil {
-		instanceMeta.Metadata = &storepb.InstanceMetadata{}
+		instanceMeta.Metadata = &storepb.Instance{}
 	}
 
 	instanceMeta.Metadata.LastSyncTime = timestamppb.Now()
@@ -287,15 +288,22 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	metadata, ok := proto.Clone(instance.Metadata).(*storepb.Instance)
+	if !ok {
+		return nil, nil, nil, errors.Errorf("failed to convert instance metadata type")
+	}
+	metadata.LastSyncTime = instanceMeta.Metadata.LastSyncTime
+	metadata.MysqlLowerCaseTableNames = instanceMeta.Metadata.MysqlLowerCaseTableNames
+	metadata.Roles = instanceMeta.Metadata.Roles
 
 	updateInstance := &store.UpdateInstanceMessage{
 		ResourceID: instance.ResourceID,
-		Metadata:   instanceMeta.Metadata,
+		Metadata:   metadata,
 	}
-	if instanceMeta.Version != instance.EngineVersion {
-		updateInstance.EngineVersion = &instanceMeta.Version
+	if instanceMeta.Version != instance.Metadata.GetVersion() {
+		metadata.Version = instanceMeta.Version
 	}
-	updatedInstance, err := s.store.UpdateInstanceV2(ctx, updateInstance, -1)
+	updatedInstance, err := s.store.UpdateInstanceV2(ctx, updateInstance)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -308,7 +316,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	var filteredDatabaseMetadatas []*storepb.DatabaseSchemaMetadata
 
 	for _, databaseMetadata := range instanceMeta.Databases {
-		if len(instance.Options.GetSyncDatabases()) > 0 && !slices.Contains(instance.Options.GetSyncDatabases(), databaseMetadata.Name) {
+		if len(instance.Metadata.GetSyncDatabases()) > 0 && !slices.Contains(instance.Metadata.GetSyncDatabases(), databaseMetadata.Name) {
 			continue
 		}
 		filteredDatabaseMetadatas = append(filteredDatabaseMetadatas, databaseMetadata)
@@ -319,8 +327,6 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 			newDatabase, err := s.store.CreateDatabaseDefault(ctx, &store.DatabaseMessage{
 				InstanceID:   instance.ResourceID,
 				DatabaseName: databaseMetadata.Name,
-				DataShare:    databaseMetadata.Datashare,
-				ServiceName:  databaseMetadata.ServiceName,
 				ProjectID:    api.DefaultProjectID,
 			})
 			if err != nil {
@@ -398,7 +404,7 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 		return 0, errors.Wrapf(err, `failed to get classification config by id "%s"`, project.DataClassificationConfigID)
 	}
 
-	if instance.Engine != storepb.Engine_MYSQL && instance.Engine != storepb.Engine_POSTGRES {
+	if instance.Metadata.GetEngine() != storepb.Engine_MYSQL && instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
 		// Force to disable classification from comment if the engine is not MYSQL or PG.
 		classificationConfig.ClassificationFromConfig = true
 	}
@@ -411,16 +417,18 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 	}
 
 	d := false
-	ts := time.Now()
+	metadata, ok := proto.Clone(database.Metadata).(*storepb.DatabaseMetadata)
+	if !ok {
+		return 0, errors.Errorf("failed to convert database metadata type")
+	}
+	metadata.LastSyncTime = timestamppb.New(time.Now())
+	metadata.BackupAvailable = s.hasBackupSchema(ctx, instance, databaseMetadata)
+	metadata.Datashare = databaseMetadata.Datashare
 	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 		Deleted:      &d,
-		SyncAt:       &ts,
-		MetadataUpsert: &storepb.DatabaseMetadata{
-			LastSyncTime:    timestamppb.New(ts),
-			BackupAvailable: s.hasBackupSchema(ctx, instance, databaseMetadata),
-		},
+		Metadata:     metadata,
 	}); err != nil {
 		return 0, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
@@ -504,7 +512,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		return errors.Wrapf(err, `failed to get classification config by id "%s"`, project.DataClassificationConfigID)
 	}
 
-	if instance.Engine != storepb.Engine_MYSQL && instance.Engine != storepb.Engine_POSTGRES {
+	if instance.Metadata.GetEngine() != storepb.Engine_MYSQL && instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
 		// Force to disable classification from comment if the engine is not MYSQL or PG.
 		classificationConfig.ClassificationFromConfig = true
 	}
@@ -517,16 +525,18 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	}
 
 	d := false
-	ts := time.Now()
+	metadata, ok := proto.Clone(database.Metadata).(*storepb.DatabaseMetadata)
+	if !ok {
+		return errors.Errorf("failed to convert database metadata type")
+	}
+	metadata.LastSyncTime = timestamppb.New(time.Now())
+	metadata.BackupAvailable = s.hasBackupSchema(ctx, instance, databaseMetadata)
+	metadata.Datashare = databaseMetadata.Datashare
 	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
 		Deleted:      &d,
-		SyncAt:       &ts,
-		MetadataUpsert: &storepb.DatabaseMetadata{
-			LastSyncTime:    timestamppb.New(ts),
-			BackupAvailable: s.hasBackupSchema(ctx, instance, databaseMetadata),
-		},
+		Metadata:     metadata,
 	}); err != nil {
 		return errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
@@ -553,7 +563,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	if s.licenseService.IsFeatureEnabledForInstance(api.FeatureSchemaDrift, instance) == nil {
 		if err := func() error {
 			// Redis and MongoDB are schemaless.
-			if disableSchemaDriftAnomalyCheck(instance.Engine) {
+			if disableSchemaDriftAnomalyCheck(instance.Metadata.GetEngine()) {
 				return nil
 			}
 			limit := 1
@@ -609,7 +619,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 }
 
 func (s *Syncer) hasBackupSchema(ctx context.Context, instance *store.InstanceMessage, dbSchema *storepb.DatabaseSchemaMetadata) bool {
-	switch instance.Engine {
+	switch instance.Metadata.GetEngine() {
 	case storepb.Engine_POSTGRES:
 		if dbSchema == nil {
 			return false
@@ -727,16 +737,16 @@ func setUserCommentFromComment(dbSchema *storepb.DatabaseSchemaMetadata) {
 }
 
 func getOrDefaultSyncInterval(instance *store.InstanceMessage) time.Duration {
-	if !instance.Activation {
+	if !instance.Metadata.GetActivation() {
 		return defaultSyncInterval
 	}
-	if !instance.Options.SyncInterval.IsValid() {
+	if !instance.Metadata.GetSyncInterval().IsValid() {
 		return defaultSyncInterval
 	}
-	if instance.Options.SyncInterval.GetSeconds() == 0 && instance.Options.SyncInterval.GetNanos() == 0 {
+	if instance.Metadata.GetSyncInterval().GetSeconds() == 0 && instance.Metadata.GetSyncInterval().GetNanos() == 0 {
 		return defaultSyncInterval
 	}
-	return instance.Options.SyncInterval.AsDuration()
+	return instance.Metadata.GetSyncInterval().AsDuration()
 }
 
 func getOrDefaultLastSyncTime(t *timestamppb.Timestamp) time.Time {

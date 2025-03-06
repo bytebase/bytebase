@@ -115,14 +115,7 @@ CREATE TABLE instance (
     id serial PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
     environment text REFERENCES environment(resource_id),
-    name text NOT NULL,
-    engine text NOT NULL,
-    engine_version text NOT NULL DEFAULT '',
-    external_link text NOT NULL DEFAULT '',
     resource_id text NOT NULL,
-    -- activation should set to be TRUE if users assign license to this instance.
-    activation boolean NOT NULL DEFAULT false,
-    options jsonb NOT NULL DEFAULT '{}',
     metadata jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -139,12 +132,6 @@ CREATE TABLE db (
     instance text NOT NULL REFERENCES instance(resource_id),
     name text NOT NULL,
     environment text REFERENCES environment(resource_id),
-    sync_at timestamptz NOT NULL DEFAULT now(),
-    schema_version text NOT NULL,
-    secrets jsonb NOT NULL DEFAULT '{}',
-    datashare boolean NOT NULL DEFAULT FALSE,
-    -- service_name is the Oracle specific field.
-    service_name text NOT NULL DEFAULT '',
     metadata jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -169,24 +156,12 @@ CREATE UNIQUE INDEX idx_db_schema_unique_instance_db_name ON db_schema(instance,
 
 ALTER SEQUENCE db_schema_id_seq RESTART WITH 101;
 
--- data_source table stores the data source for a particular database
+-- Deprecated. To be deleted later.
 CREATE TABLE data_source (
     id serial PRIMARY KEY,
     instance text NOT NULL REFERENCES instance(resource_id),
-    name text NOT NULL,
-    type text NOT NULL CHECK (type IN ('ADMIN', 'RW', 'RO')),
-    username text NOT NULL,
-    password text NOT NULL,
-    ssl_key text NOT NULL DEFAULT '',
-    ssl_cert text NOT NULL DEFAULT '',
-    ssl_ca text NOT NULL DEFAULT '',
-    host text NOT NULL DEFAULT '',
-    port text NOT NULL DEFAULT '',
-    options jsonb NOT NULL DEFAULT '{}',
-    database text NOT NULL DEFAULT ''
+    options jsonb NOT NULL DEFAULT '{}'
 );
-
-CREATE UNIQUE INDEX idx_data_source_unique_instance_name ON data_source(instance, name);
 
 ALTER SEQUENCE data_source_id_seq RESTART WITH 101;
 
@@ -342,8 +317,6 @@ CREATE TABLE issue (
     status text NOT NULL CHECK (status IN ('OPEN', 'DONE', 'CANCELED')),
     type text NOT NULL CHECK (type LIKE 'bb.issue.%'),
     description text NOT NULL DEFAULT '',
-    assignee_id integer REFERENCES principal(id),
-    assignee_need_attention boolean NOT NULL DEFAULT FALSE, 
     payload jsonb NOT NULL DEFAULT '{}',
     ts_vector tsvector
 );
@@ -355,8 +328,6 @@ CREATE INDEX idx_issue_plan_id ON issue(plan_id);
 CREATE INDEX idx_issue_pipeline_id ON issue(pipeline_id);
 
 CREATE INDEX idx_issue_creator_id ON issue(creator_id);
-
-CREATE INDEX idx_issue_assignee_id ON issue(assignee_id);
 
 CREATE INDEX idx_issue_ts_vector ON issue USING GIN(ts_vector);
 
