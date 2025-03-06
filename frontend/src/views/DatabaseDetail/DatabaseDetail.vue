@@ -198,7 +198,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computedAsync, useTitle } from "@vueuse/core";
+import { useTitle } from "@vueuse/core";
 import dayjs from "dayjs";
 import { ArrowRightLeftIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
@@ -232,6 +232,7 @@ import {
   useAppFeature,
   useDatabaseV1Store,
   useEnvironmentV1Store,
+  useDatabaseV1ByName,
 } from "@/store";
 import {
   databaseNamePrefix,
@@ -240,7 +241,6 @@ import {
 import {
   UNKNOWN_PROJECT_NAME,
   unknownEnvironment,
-  unknownDatabase,
   isValidDatabaseName,
 } from "@/types";
 import type { Anomaly } from "@/types/proto/v1/anomaly_service";
@@ -329,11 +329,12 @@ watch(
   { immediate: true }
 );
 
-const database = computedAsync(async () => {
-  return databaseV1Store.getOrFetchDatabaseByName(
-    `${instanceNamePrefix}${props.instanceId}/${databaseNamePrefix}${props.databaseName}`
-  );
-}, unknownDatabase());
+const { database } = useDatabaseV1ByName(
+  computed(
+    () =>
+      `${instanceNamePrefix}${props.instanceId}/${databaseNamePrefix}${props.databaseName}`
+  )
+);
 
 const project = computed(() => database.value.projectEntity);
 

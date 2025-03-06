@@ -16,15 +16,13 @@
 </template>
 
 <script setup lang="ts">
-import { computedAsync } from "@vueuse/core";
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import GrantRequestPanel from "@/components/GrantRequestPanel";
-import { useDatabaseV1Store } from "@/store";
+import { useDatabaseV1ByName } from "@/store";
 import {
   isValidDatabaseName,
   PresetRoleType,
-  unknownDatabase,
   type DatabaseResource,
 } from "@/types";
 import { hasPermissionToCreateRequestGrantIssue } from "@/utils";
@@ -40,12 +38,9 @@ const props = withDefaults(
 );
 
 const showPanel = ref(false);
-const dbStore = useDatabaseV1Store();
 
-const database = computedAsync(
-  () =>
-    dbStore.getOrFetchDatabaseByName(props.databaseResource.databaseFullName),
-  unknownDatabase()
+const { database } = useDatabaseV1ByName(
+  computed(() => props.databaseResource.databaseFullName)
 );
 
 const available = computed(() => {
