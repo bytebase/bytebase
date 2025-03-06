@@ -65,6 +65,7 @@
       "self": "Role"
     },
     "revert": "Revert",
+    "confirm-to-revert": "Confirm to revert your editing?",
     "apply": "Apply",
     "reorder": "Reorder",
     "id": "ID",
@@ -124,7 +125,6 @@
     "read-only": "Read-only",
     "all": "All",
     "recent": "Recent",
-    "deployment-config": "Deployment Config",
     "ok": "OK",
     "share": "Share",
     "or": "or",
@@ -1019,7 +1019,6 @@
     "streams": "Streams",
     "tasks": "Tasks",
     "labels-for-resource": "Labels for {resource}",
-    "last-successful-sync": "Last successful sync",
     "failed-to-sync-schema-for-database-database-value-name": "Failed to sync schema for database '{0}'.",
     "successfully-synced-schema-for-database-database-value-name": "Successfully synced schema for database '{0}'.",
     "start-to-sync-schema": "Start to sync schema",
@@ -1646,28 +1645,7 @@
       "revoke-exemption-title": "Remove both export and query masking exemptions for {member}?"
     }
   },
-  "deployment-config": {
-    "add-selector": "Add selector",
-    "update-success": "Successfully updated deployment config.",
-    "this-is-example-deployment-config": "This is the deployment config example. You need to edit and save it.",
-    "add-stage": "Add stage",
-    "confirm-to-revert": "Confirm to revert your editing?",
-    "name-placeholder": "Stage name...",
-    "error": {
-      "at-least-one-stage": "At least 1 stage",
-      "stage-name-required": "Stage name is required",
-      "at-least-one-selector": "At least 1 selector in each stage",
-      "env-in-selector-required": "\"Environment\" is required in each stage",
-      "env-selector-must-has-one-value": "\"Environment ID\" must has exactly one value",
-      "key-required": "Key is required",
-      "values-required": "Values are required"
-    },
-    "matched-databases": {
-      "all": "All matched databases",
-      "n": "{n} matched database | {n} matched databases",
-      "show-more": "Show more"
-    }
-  },
+
   "data-source": {
     "snowflake-keypair-tip": "Key-pair authentication",
     "ssl": {
@@ -1953,11 +1931,7 @@
       "key-necessary": "Key is required",
       "value-necessary": "Value is required",
       "key-duplicated": "Duplicated keys",
-      "max-value-length-exceeded": "Value's length cannot exceed {length} characters",
-      "x-is-reserved-key": "\"{key}\" is a system reserved key"
-    },
-    "placeholder": {
-      "select-values": "Select values..."
+      "max-value-length-exceeded": "Value's length cannot exceed {length} characters"
     },
     "add-label": "Add label",
     "filter-by-label": "Filter by label"
