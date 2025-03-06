@@ -67,9 +67,6 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 
 	var err error
 	if config.TLSConfig.UseSSL && config.TLSConfig.SslCA != "" {
-		// We should not TrustServerCertificate in production environment, otherwise, TLS is susceptible
-		// to man-in-the middle attacks. TrustServerCertificate makes driver accepts any certificate presented by the server
-		// and any host name in that certificate.
 		// Due to Golang runtime limitation, x509 package will throw the error of 'certificate relies on legacy Common Name field, use SANs instead.
 		// Driver reads the certificate from file instead of regarding it as certificate content.
 		// https://github.com/microsoft/go-mssqldb/blob/main/msdsn/conn_str.go#L159
