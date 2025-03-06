@@ -118,20 +118,20 @@ const activeRangeByCursor = computed((): IRange | undefined => {
   return range;
 });
 
-const activeRange = computed((): IRange | undefined => {
-  const rangeByCursor = activeRangeByCursor.value;
-  const rangeBySelection = activeSelection.value;
+const hasSelection = computed(() => {
+  return (
+    activeSelection.value &&
+    (activeSelection.value.startLineNumber !==
+      activeSelection.value.endLineNumber ||
+      activeSelection.value.startColumn !== activeSelection.value.endColumn)
+  );
+});
 
-  // Means no selection, use the cursor range.
-  if (
-    !rangeBySelection ||
-    (rangeBySelection.startLineNumber === rangeBySelection.endLineNumber &&
-      rangeBySelection.startColumn === rangeBySelection.endColumn)
-  ) {
-    return rangeByCursor;
+const activeRange = computed((): IRange | null | undefined => {
+  if (!hasSelection.value) {
+    return activeRangeByCursor.value;
   }
-  // Otherwise, use the selection range.
-  return rangeBySelection;
+  return activeSelection.value;
 });
 
 const oldDecorationsCollection = ref<editor.IEditorDecorationsCollection>();
@@ -142,15 +142,8 @@ watch(activeRange, () => {
   }
 
   oldDecorationsCollection.value?.clear();
-  if (!activeRange.value) {
-    return;
-  }
-  if (
-    activeSelection.value &&
-    (activeSelection.value.startLineNumber !==
-      activeSelection.value.endLineNumber ||
-      activeSelection.value.startColumn !== activeSelection.value.endColumn)
-  ) {
+  // Has manual selection or no active range, do not highlight.
+  if (hasSelection.value || !activeRange.value) {
     return;
   }
 
