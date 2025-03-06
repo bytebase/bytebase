@@ -11094,11 +11094,6 @@ components:
                     description: |-
                         The environment resource.
                          Format: environments/prod where prod is the environment resource ID.
-                labels:
-                    type: object
-                    additionalProperties:
-                        type: string
-                    description: labels of the database.
         Plan_ExportDataConfig:
             type: object
             properties:
