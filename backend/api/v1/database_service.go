@@ -225,10 +225,13 @@ func getFindDatabaseFilter(filter string) (*store.FindDatabaseFilter, error) {
 	parseToEngineSQL := func(expr celast.Expr, relation string) (string, error) {
 		variable, value := getVariavleAndValue(expr)
 		if variable != "engine" {
-			return "", status.Errorf(codes.InvalidArgument, `only "engine" support "in"/"not_in" operator`)
+			return "", status.Errorf(codes.InvalidArgument, `only "engine" support "engine in [xx]"/"!(engine in [xx])" operator`)
 		}
 
-		rawEngineList := value.([]any)
+		rawEngineList, ok := value.([]any)
+		if !ok {
+			return "", status.Errorf(codes.InvalidArgument, "invalid engine value %q", value)
+		}
 		engineList := []string{}
 		for _, rawEngine := range rawEngineList {
 			v1Engine, ok := v1pb.Engine_value[rawEngine.(string)]
