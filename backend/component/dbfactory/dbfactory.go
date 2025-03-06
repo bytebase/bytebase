@@ -133,6 +133,16 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 	connectionContext.InstanceID = instance.ResourceID
 	connectionContext.EngineVersion = instance.EngineVersion
 
+	var clientSecretCredential *storepb.DataSource_ClientSecretCredential
+	if dataSource.GetClientSecretCredential() != nil {
+		clientSecretCredential = dataSource.GetClientSecretCredential()
+		updatedClientSecret, err := common.Unobfuscate(clientSecretCredential.GetClientSecret(), d.secret)
+		if err != nil {
+			return nil, err
+		}
+		clientSecretCredential.ClientSecret = updatedClientSecret
+	}
+
 	maximumSQLResultSize := d.store.GetMaximumSQLResultLimit(ctx)
 	driver, err := db.Open(
 		ctx,
@@ -174,7 +184,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			MasterPassword:            masterPassword,
 			ExtraConnectionParameters: dataSource.GetExtraConnectionParameters(),
 			MaximumSQLResultSize:      maximumSQLResultSize,
-			ClientSecretCredential:    dataSource.GetClientSecretCredential(),
+			ClientSecretCredential:    clientSecretCredential,
 		},
 	)
 	if err != nil {

@@ -415,12 +415,7 @@
       </div>
 
       <!-- Connection Info -->
-      <template
-        v-if="
-          basicInfo.engine !== Engine.DYNAMODB &&
-          basicInfo.engine !== Engine.COSMOSDB
-        "
-      >
+      <template v-if="basicInfo.engine !== Engine.DYNAMODB">
         <p class="mt-6 pt-4 w-full text-lg leading-6 font-medium text-gray-900">
           {{ $t("instance.connection-info") }}
         </p>
@@ -643,6 +638,10 @@ const changeInstanceEngine = (engine: Engine) => {
     ) {
       adminDataSource.value.host = "";
     }
+  } else if (engine === Engine.COSMOSDB) {
+    // Cosmos DB supports Azure IAM only.
+    adminDataSource.value.authenticationType =
+      DataSource_AuthenticationType.AZURE_IAM;
   } else {
     if (!adminDataSource.value.host) {
       adminDataSource.value.host = isDev()
