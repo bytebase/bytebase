@@ -76,7 +76,7 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 	for _, stage := range pipeline.Stages {
 		if createdStage, ok := oldCreatedStages[stage.DeploymentID]; ok {
 			// The stage was created, but we could have tasks to create.
-			tasks, err := s.listTasks(ctx, tx, &TaskFind{
+			tasks, err := s.listTasksTx(ctx, tx, &TaskFind{
 				PipelineID: &createdPipelineUID,
 				StageID:    &createdStage.ID,
 			})
@@ -92,15 +92,15 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 
 			createdTasks := map[taskKey]struct{}{}
 			for _, task := range tasks {
-				var payloadSheetUid struct {
+				var payloadSheetUID struct {
 					SheetUID int `json:"sheetId"`
 				}
-				if err := json.Unmarshal([]byte(task.Payload), &payloadSheetUid); err != nil {
+				if err := json.Unmarshal([]byte(task.Payload), &payloadSheetUID); err != nil {
 					return 0, errors.Wrapf(err, "failed to unmarshal task payload")
 				}
 				k := taskKey{
 					instance: task.InstanceID,
-					sheet:    payloadSheetUid.SheetUID,
+					sheet:    payloadSheetUID.SheetUID,
 				}
 				if task.DatabaseName != nil {
 					k.database = *task.DatabaseName
@@ -111,15 +111,15 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 			var taskCreateList []*TaskMessage
 
 			for _, taskCreate := range stage.TaskList {
-				var payloadSheetUid struct {
+				var payloadSheetUID struct {
 					SheetUID int `json:"sheetId"`
 				}
-				if err := json.Unmarshal([]byte(taskCreate.Payload), &payloadSheetUid); err != nil {
+				if err := json.Unmarshal([]byte(taskCreate.Payload), &payloadSheetUID); err != nil {
 					return 0, errors.Wrapf(err, "failed to unmarshal task payload")
 				}
 				k := taskKey{
 					instance: taskCreate.InstanceID,
-					sheet:    payloadSheetUid.SheetUID,
+					sheet:    payloadSheetUID.SheetUID,
 				}
 				if taskCreate.DatabaseName != nil {
 					k.database = *taskCreate.DatabaseName

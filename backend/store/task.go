@@ -238,7 +238,7 @@ func (s *Store) CreateTasksV2(ctx context.Context, creates ...*TaskMessage) ([]*
 	return tasks, nil
 }
 
-func (*Store) listTasks(ctx context.Context, tx *Tx, find *TaskFind) ([]*TaskMessage, error) {
+func (*Store) listTasksTx(ctx context.Context, tx *Tx, find *TaskFind) ([]*TaskMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("task.id = $%d", len(args)+1)), append(args, *v)
@@ -351,7 +351,7 @@ func (s *Store) ListTasks(ctx context.Context, find *TaskFind) ([]*TaskMessage, 
 	}
 	defer tx.Rollback()
 
-	tasks, err := s.listTasks(ctx, tx, find)
+	tasks, err := s.listTasksTx(ctx, tx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list tasks")
 	}
