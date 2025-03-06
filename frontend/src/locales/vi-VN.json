@@ -1147,9 +1147,16 @@
       "password-tip": "Bạn cũng có thể chỉ định điểm cuối quản lý bí mật bên ngoài",
       "google-iam": "Google Cloud SQL IAM",
       "aws-iam": "AWS RDS IAM",
+      "azure-iam": "Azure IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
+    },
+    "iam-extension": {
+      "credential-source": "Credential Source",
+      "tenant-id": "Tenant ID",
+      "client-id": "Client ID",
+      "client-secret": "Client Secret"
     },
     "database-region": "Khu vực cơ sở dữ liệu",
     "external-secret-gcp": {
