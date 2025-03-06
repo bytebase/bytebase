@@ -17,18 +17,16 @@
             v-model:params="state.params"
             :placeholder="$t('database.filter-database')"
             :scope-options="scopeOptions"
-          />
-          <DatabaseLabelFilter
-            v-model:selected="state.selectedLabels"
-            :database-list="rawDatabaseList"
-            :placement="'left-start'"
+            :readonly-scopes="readonlyScopes"
           />
         </div>
-        <DatabaseV1Table
+
+        <PagedDatabaseTable
           mode="ALL_SHORT"
-          :database-list="filteredDatabaseList"
           :single-selection="true"
-          :keyword="state.params.query.trim().toLowerCase()"
+          :custom-click="true"
+          :filter="filter"
+          :parent="projectName"
           @update:selected-databases="handleDatabasesSelectionChanged"
         />
       </div>
@@ -60,117 +58,82 @@ import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import AdvancedSearch from "@/components/AdvancedSearch";
-import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
+import { PagedDatabaseTable } from "@/components/v2/Model/DatabaseV1Table";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store, useProjectByName } from "@/store";
-import type { ComposedDatabase } from "@/types";
-import { UNKNOWN_ID, DEFAULT_PROJECT_NAME } from "@/types";
-import { State } from "@/types/proto/v1/common";
-import type { SearchParams } from "@/utils";
 import {
-  filterDatabaseV1ByKeyword,
-  sortDatabaseV1List,
-  extractEnvironmentResourceName,
-  extractInstanceResourceName,
-  generateIssueTitle,
-  extractProjectResourceName,
-} from "@/utils";
+  instanceNamePrefix,
+  environmentNamePrefix,
+} from "@/store/modules/v1/common";
+import { isValidDatabaseName } from "@/types";
+import type { SearchParams, SearchScope } from "@/utils";
+import { generateIssueTitle, extractProjectResourceName } from "@/utils";
 import { useCommonSearchScopeOptions } from "../AdvancedSearch/useCommonSearchScopeOptions";
-import { DatabaseLabelFilter, DrawerContent } from "../v2";
+import { DrawerContent } from "../v2";
 
 type LocalState = {
-  label: string;
   selectedDatabaseName?: string;
-  selectedLabels: { key: string; value: string }[];
   params: SearchParams;
 };
 
-const props = defineProps({
-  projectName: {
-    type: String,
-    required: true,
-  },
-});
+const props = defineProps<{
+  projectName: string;
+}>();
+
+useProjectByName(props.projectName);
 
 const emit = defineEmits(["dismiss"]);
 
 const router = useRouter();
 const databaseV1Store = useDatabaseV1Store();
 
+const readonlyScopes = computed((): SearchScope[] => [
+  { id: "project", value: extractProjectResourceName(props.projectName) },
+]);
 const state = reactive<LocalState>({
-  label: "environment",
-  selectedLabels: [],
   params: {
     query: "",
-    scopes: [],
+    scopes: [...readonlyScopes.value],
   },
 });
 
 const scopeOptions = useCommonSearchScopeOptions(
   computed(() => state.params),
-  ["environment", "instance"]
+  ["environment", "instance", "label"]
 );
 
-const { project: selectedProject } = useProjectByName(props.projectName);
-
 const selectedInstance = computed(() => {
-  return (
-    state.params.scopes.find((scope) => scope.id === "instance")?.value ??
-    `${UNKNOWN_ID}`
-  );
+  const instanceId = state.params.scopes.find(
+    (scope) => scope.id === "instance"
+  )?.value;
+  if (!instanceId) {
+    return;
+  }
+  return `${instanceNamePrefix}${instanceId}`;
 });
 
 const selectedEnvironment = computed(() => {
-  return (
-    state.params.scopes.find((scope) => scope.id === "environment")?.value ??
-    `${UNKNOWN_ID}`
-  );
-});
-
-const rawDatabaseList = computed(() => {
-  let list: ComposedDatabase[] = [];
-  if (selectedProject.value) {
-    list = databaseV1Store.databaseListByProject(selectedProject.value.name);
-  } else {
-    list = databaseV1Store.databaseListByUser;
+  const environmentId = state.params.scopes.find(
+    (scope) => scope.id === "environment"
+  )?.value;
+  if (!environmentId) {
+    return;
   }
-  list = list.filter(
-    (db) => db.state == State.ACTIVE && db.project !== DEFAULT_PROJECT_NAME
-  );
-  return list;
+  return `${environmentNamePrefix}${environmentId}`;
 });
 
-const filteredDatabaseList = computed(() => {
-  let list = [...rawDatabaseList.value];
-
-  list = list.filter((db) => {
-    if (selectedEnvironment.value !== `${UNKNOWN_ID}`) {
-      return (
-        extractEnvironmentResourceName(db.effectiveEnvironment) ===
-        selectedEnvironment.value
-      );
-    }
-    if (selectedInstance.value !== `${UNKNOWN_ID}`) {
-      return (
-        extractInstanceResourceName(db.instance) === selectedInstance.value
-      );
-    }
-    return filterDatabaseV1ByKeyword(db, state.params.query.trim(), [
-      "name",
-      "environment",
-      "instance",
-    ]);
-  });
-
-  const labels = state.selectedLabels;
-  if (labels.length > 0) {
-    list = list.filter((db) => {
-      return labels.some((kv) => db.labels[kv.key] === kv.value);
-    });
-  }
-
-  return sortDatabaseV1List(list);
+const selectedLabels = computed(() => {
+  return state.params.scopes
+    .filter((scope) => scope.id === "label")
+    .map((scope) => scope.value);
 });
+
+const filter = computed(() => ({
+  instance: selectedInstance.value,
+  environment: selectedEnvironment.value,
+  query: state.params.query,
+  labels: selectedLabels.value,
+}));
 
 const handleDatabasesSelectionChanged = (
   selectedDatabaseNameList: Set<string>
@@ -186,9 +149,12 @@ const navigateToIssuePage = async () => {
     return;
   }
 
-  const selectedDatabase = filteredDatabaseList.value.find(
-    (db) => db.name === state.selectedDatabaseName
-  ) as ComposedDatabase;
+  const selectedDatabase = databaseV1Store.getDatabaseByName(
+    state.selectedDatabaseName
+  );
+  if (!isValidDatabaseName(selectedDatabase.name)) {
+    return;
+  }
 
   const project = selectedDatabase?.projectEntity;
   const issueType = "bb.issue.database.data.export";

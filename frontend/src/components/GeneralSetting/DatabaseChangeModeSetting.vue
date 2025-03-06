@@ -92,13 +92,12 @@
 </template>
 
 <script lang="ts" setup>
-import { isEqual } from "lodash-es";
 import { NRadioGroup, NSpace, NRadio, NButton } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { BBModal } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { router } from "@/router";
-import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
+import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
@@ -137,7 +136,7 @@ const containerRef = ref<HTMLDivElement>();
 const state = reactive<LocalState>(getInitialState());
 
 const allowSave = computed((): boolean => {
-  return !isEqual(state, getInitialState());
+  return state.databaseChangeMode !== getInitialState().databaseChangeMode;
 });
 
 const onUpdate = async () => {
@@ -157,12 +156,12 @@ const onUpdate = async () => {
     isSQLEditorRoute(router) &&
     state.databaseChangeMode === DatabaseChangeMode.PIPELINE
   ) {
-    router.push({ name: WORKSPACE_ROOT_MODULE });
+    router.replace({ name: WORKSPACE_ROUTE_LANDING });
   }
 };
 
 const goToSQLEditor = () => {
-  router.push({
+  router.replace({
     name: SQL_EDITOR_HOME_MODULE,
   });
 };

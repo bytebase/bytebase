@@ -983,9 +983,6 @@
       "request-exporter-role": "Request exporter role"
     }
   },
-  "alter-schema": {
-    "no-databases-in-project": "No databases in this project. Click New DB or Transfer in DB to add databases."
-  },
   "quick-action": {
     "create-db": "Create database",
     "new-db": "New DB",
@@ -1420,7 +1417,6 @@
       "select": "Select table",
       "select-tip": "Please select a table to start."
     },
-    "n-selected-m-in-total": "({selected} selected, {total} in total)",
     "all": "All databases",
     "show-schemaless-databases": "Show schemaless databases. (Edit Schema is not applicable for schemaless databases.)",
     "secret": {
@@ -1504,8 +1500,7 @@
       "success-prompt": "Successfully created project {name}."
     },
     "overview": {
-      "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed here. User should transfer them to the proper application project.",
-      "no-db-prompt": "No database belongs to this project. You can add database by clicking {newDb} or {transferInDb} from the top action bar."
+      "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed here. User should transfer them to the proper application project."
     },
     "webhook": {
       "success-created-prompt": "Successfully created webhook {name}.",
@@ -1940,8 +1935,7 @@
       "key-duplicated": "Duplicated keys",
       "max-value-length-exceeded": "Value's length cannot exceed {length} characters"
     },
-    "add-label": "Add label",
-    "filter-by-label": "Filter by label"
+    "add-label": "Add label"
   },
   "oauth": {
     "unknown-event": "Unexpected event type, OAuth failed."

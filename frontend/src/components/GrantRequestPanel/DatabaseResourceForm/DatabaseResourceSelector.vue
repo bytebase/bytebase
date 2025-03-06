@@ -1,6 +1,7 @@
 <template>
   <div class="w-full relative">
     <NTransfer
+      id="database-resource-selector"
       v-model:value="selectedValueList"
       style="height: 512px"
       :disabled="disabled"
@@ -20,7 +21,8 @@
 </template>
 
 <script setup lang="tsx">
-import { orderBy } from "lodash-es";
+import { useDebounceFn } from "@vueuse/core";
+import { orderBy, uniqBy } from "lodash-es";
 import type { TransferRenderSourceList, TreeOption } from "naive-ui";
 import { NTransfer, NTree } from "naive-ui";
 import { computed, h, onMounted, ref, watch } from "vue";
@@ -28,12 +30,10 @@ import { BBSpin } from "@/bbkit";
 import {
   useDatabaseV1Store,
   useDBSchemaV1Store,
-  useProjectByName,
+  batchGetOrFetchDatabases,
 } from "@/store";
-import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
-import type { DatabaseResource } from "@/types";
+import type { ComposedDatabase, DatabaseResource } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { wrapRefAsPromise } from "@/utils";
 import Label from "./Label.vue";
 import type { DatabaseTreeOption } from "./common";
 import {
@@ -59,7 +59,6 @@ const emit = defineEmits<{
 
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
-const { project } = useProjectByName(props.projectName);
 
 const parseResourceToKey = (resource: DatabaseResource): string => {
   const data = [
@@ -89,6 +88,8 @@ const selectedValueList = ref<string[]>([]);
 const expandedKeys = ref<string[]>([]);
 const indeterminateKeys = ref<string[]>([]);
 const loading = ref(true);
+const databaseList = ref<ComposedDatabase[]>([]);
+const searchText = ref<string>("");
 
 const cascadeLoopTreeNode = (
   treeNode: DatabaseTreeOption,
@@ -100,8 +101,42 @@ const cascadeLoopTreeNode = (
   }
 };
 
+const fetchDatabaseList = useDebounceFn(async () => {
+  const { databases } = await databaseStore.fetchDatabases({
+    pageSize: 100,
+    parent: props.projectName,
+    filter: searchText.value ? `name.matches("${searchText.value}")` : "",
+  });
+  databaseList.value = databases;
+}, 500);
+
+watch(() => searchText.value, fetchDatabaseList);
+
 onMounted(async () => {
-  await wrapRefAsPromise(useDatabaseV1List(props.projectName).ready, true);
+  await fetchDatabaseList();
+  await batchGetOrFetchDatabases(
+    props.databaseResources.map((resource) => resource.databaseFullName)
+  );
+
+  // TODO(ed): I really don't want to do this.
+  // But the transfer component not support native search callback.
+  const selectorElement = document.getElementById("database-resource-selector");
+  const input = selectorElement?.querySelector("input");
+  if (input) {
+    input.addEventListener("input", () => {
+      searchText.value = input.value;
+    });
+  }
+
+  databaseList.value = uniqBy(
+    [
+      ...databaseList.value,
+      ...props.databaseResources.map((resource) =>
+        databaseStore.getDatabaseByName(resource.databaseFullName)
+      ),
+    ],
+    (db) => db.name
+  );
 
   const selectedKeys = props.databaseResources.map(parseResourceToKey);
   const databaseNames = new Set(
@@ -195,20 +230,6 @@ const parseKeyToPathes = (key: string): string[] => {
   return resp;
 };
 
-const databaseList = computed(() => {
-  const list = orderBy(
-    databaseStore.databaseListByProject(project.value.name),
-    [
-      (db) => db.effectiveEnvironmentEntity.order,
-      (db) => db.effectiveEnvironmentEntity.title,
-      (db) => db.databaseName,
-      (db) => db.instanceResource.title,
-    ],
-    ["desc", "asc", "asc", "asc"]
-  );
-  return list;
-});
-
 const sourceTreeOptions = computed(() => {
   return mapTreeOptions({
     databaseList: databaseList.value,
@@ -228,7 +249,9 @@ const onTreeNodeLoad = async (node: TreeOption) => {
       database: treeNode.value,
       view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
     });
-    const database = databaseStore.getDatabaseByName(treeNode.value);
+    const database = await databaseStore.getOrFetchDatabaseByName(
+      treeNode.value
+    );
     const children = getSchemaOrTableTreeOptions({
       database,
       includeCloumn: props.includeCloumn,

@@ -983,9 +983,6 @@
       "request-exporter-role": "申请导出者角色"
     }
   },
-  "alter-schema": {
-    "no-databases-in-project": "该项目里没有数据库。点击 创建数据库 或 转移数据库 以添加数据库。"
-  },
   "quick-action": {
     "create-db": "创建数据库",
     "new-db": "创建数据库",
@@ -1420,7 +1417,6 @@
       "select": "选择表",
       "select-tip": "请选择一个表来开始查询。"
     },
-    "n-selected-m-in-total": "（已选择 {selected}，共计 {total}）",
     "all": "所有数据库",
     "show-schemaless-databases": "显示无模式的数据库。（变更 Schema 不适用于无 schema 的数据库. ）",
     "secret": {
@@ -1504,8 +1500,7 @@
       "success-prompt": "成功创建 {name}."
     },
     "overview": {
-      "info-slot-content": "Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于这里，之后您可以再将他们转移到适当的项目中。",
-      "no-db-prompt": "没有数据库属于当前项目。您可以通过点击位于上方菜单栏中的 {newDb} 或者 {transferInDb} 来添加数据库。"
+      "info-slot-content": "Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于这里，之后您可以再将他们转移到适当的项目中。"
     },
     "webhook": {
       "success-created-prompt": "成功创建 {name} webhook.",
@@ -1939,8 +1934,7 @@
       "key-duplicated": "Key 重复了",
       "max-value-length-exceeded": "值长的度不能超过 {length} 字符"
     },
-    "add-label": "添加标签",
-    "filter-by-label": "按标签过滤"
+    "add-label": "添加标签"
   },
   "oauth": {
     "unknown-event": "未知的事件类型，认证失败"

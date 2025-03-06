@@ -143,55 +143,18 @@ export interface GetDatabaseRequest {
   name: string;
 }
 
-export interface ListInstanceDatabasesRequest {
-  /**
-   * The parent, which owns this collection of databases.
-   * - instances/{instance}: list all databases for an instance. Use
-   * "instances/-" to list all databases.
-   */
-  parent: string;
-  /**
-   * The maximum number of databases to return. The service may return fewer
-   * than this value. If unspecified, at most 10 databases will be returned.
-   */
-  pageSize: number;
-  /**
-   * A page token, received from a previous `ListInstanceDatabases` call.
-   * Provide this to retrieve the subsequent page.
-   *
-   * When paginating, all other parameters provided to `ListInstanceDatabases`
-   * must match the call that provided the page token.
-   */
-  pageToken: string;
-  /**
-   * Deprecated.
-   * Filter is used to filter databases returned in the list.
-   * For example, `project == "projects/{project}"` can be used to list
-   * databases in a project. Note: the project filter will be moved to parent.
-   */
-  filter: string;
-}
-
-export interface ListInstanceDatabasesResponse {
-  /** The databases from the specified request. */
-  databases: Database[];
-  /**
-   * A token, which can be sent as `page_token` to retrieve the next page.
-   * If this field is omitted, there are no subsequent pages.
-   */
-  nextPageToken: string;
-}
-
 export interface ListDatabasesRequest {
   /**
-   * The parent, which owns this collection of databases.
-   * - projects/{project}: list all databases in a project.
-   * - workspaces/{workspace}: list all databases in a workspace.
+   * - projects/{project}: list databases in a project, require "bb.projects.get" permission.
+   * - workspaces/-: list databases in the workspace, require "bb.databases.list" permission.
+   * - instances/{instances}: list databases in a instance, require "bb.instances.get" permission
    */
   parent: string;
   /**
    * The maximum number of databases to return. The service may return fewer
-   * than this value. If unspecified, at most 10 databases will be returned.
+   * than this value.
+   * If unspecified, at most 10 databases will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
    */
   pageSize: number;
   /**
@@ -202,6 +165,33 @@ export interface ListDatabasesRequest {
    * match the call that provided the page token.
    */
   pageToken: string;
+  /**
+   * Filter is used to filter databases returned in the list.
+   * Supported filter:
+   * - environment
+   * - name
+   * - project
+   * - instance
+   * - engine
+   * - label
+   * - exclude_unassigned: Not show unassigned databases if specified
+   *
+   * For example:
+   * environment == "environments/{environment resource id}"
+   * project == "projects/{project resource id}"
+   * instance == "instances/{instance resource id}"
+   * name.matches("database name")
+   * engine == "MYSQL"
+   * engine in ["MYSQL", "POSTGRES"]
+   * !(engine in ["MYSQL", "POSTGRES"])
+   * label == "region:asia"
+   * label == "tenant:asia,europe"
+   * label == "region:asia" && label == "tenant:bytebase"
+   * exclude_unassigned == true
+   */
+  filter: string;
+  /** Show deleted database if specified. */
+  showDeleted: boolean;
 }
 
 export interface ListDatabasesResponse {
@@ -1916,194 +1906,8 @@ export const GetDatabaseRequest: MessageFns<GetDatabaseRequest> = {
   },
 };
 
-function createBaseListInstanceDatabasesRequest(): ListInstanceDatabasesRequest {
-  return { parent: "", pageSize: 0, pageToken: "", filter: "" };
-}
-
-export const ListInstanceDatabasesRequest: MessageFns<ListInstanceDatabasesRequest> = {
-  encode(message: ListInstanceDatabasesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.parent !== "") {
-      writer.uint32(10).string(message.parent);
-    }
-    if (message.pageSize !== 0) {
-      writer.uint32(16).int32(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      writer.uint32(26).string(message.pageToken);
-    }
-    if (message.filter !== "") {
-      writer.uint32(34).string(message.filter);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ListInstanceDatabasesRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListInstanceDatabasesRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.parent = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.pageSize = reader.int32();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.pageToken = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.filter = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ListInstanceDatabasesRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
-    };
-  },
-
-  toJSON(message: ListInstanceDatabasesRequest): unknown {
-    const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
-    if (message.filter !== "") {
-      obj.filter = message.filter;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<ListInstanceDatabasesRequest>): ListInstanceDatabasesRequest {
-    return ListInstanceDatabasesRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<ListInstanceDatabasesRequest>): ListInstanceDatabasesRequest {
-    const message = createBaseListInstanceDatabasesRequest();
-    message.parent = object.parent ?? "";
-    message.pageSize = object.pageSize ?? 0;
-    message.pageToken = object.pageToken ?? "";
-    message.filter = object.filter ?? "";
-    return message;
-  },
-};
-
-function createBaseListInstanceDatabasesResponse(): ListInstanceDatabasesResponse {
-  return { databases: [], nextPageToken: "" };
-}
-
-export const ListInstanceDatabasesResponse: MessageFns<ListInstanceDatabasesResponse> = {
-  encode(message: ListInstanceDatabasesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.databases) {
-      Database.encode(v!, writer.uint32(10).fork()).join();
-    }
-    if (message.nextPageToken !== "") {
-      writer.uint32(18).string(message.nextPageToken);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ListInstanceDatabasesResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListInstanceDatabasesResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.databases.push(Database.decode(reader, reader.uint32()));
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.nextPageToken = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ListInstanceDatabasesResponse {
-    return {
-      databases: globalThis.Array.isArray(object?.databases)
-        ? object.databases.map((e: any) => Database.fromJSON(e))
-        : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
-  },
-
-  toJSON(message: ListInstanceDatabasesResponse): unknown {
-    const obj: any = {};
-    if (message.databases?.length) {
-      obj.databases = message.databases.map((e) => Database.toJSON(e));
-    }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<ListInstanceDatabasesResponse>): ListInstanceDatabasesResponse {
-    return ListInstanceDatabasesResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<ListInstanceDatabasesResponse>): ListInstanceDatabasesResponse {
-    const message = createBaseListInstanceDatabasesResponse();
-    message.databases = object.databases?.map((e) => Database.fromPartial(e)) || [];
-    message.nextPageToken = object.nextPageToken ?? "";
-    return message;
-  },
-};
-
 function createBaseListDatabasesRequest(): ListDatabasesRequest {
-  return { parent: "", pageSize: 0, pageToken: "" };
+  return { parent: "", pageSize: 0, pageToken: "", filter: "", showDeleted: false };
 }
 
 export const ListDatabasesRequest: MessageFns<ListDatabasesRequest> = {
@@ -2116,6 +1920,12 @@ export const ListDatabasesRequest: MessageFns<ListDatabasesRequest> = {
     }
     if (message.pageToken !== "") {
       writer.uint32(26).string(message.pageToken);
+    }
+    if (message.filter !== "") {
+      writer.uint32(34).string(message.filter);
+    }
+    if (message.showDeleted !== false) {
+      writer.uint32(40).bool(message.showDeleted);
     }
     return writer;
   },
@@ -2151,6 +1961,22 @@ export const ListDatabasesRequest: MessageFns<ListDatabasesRequest> = {
           message.pageToken = reader.string();
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.showDeleted = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2165,6 +1991,8 @@ export const ListDatabasesRequest: MessageFns<ListDatabasesRequest> = {
       parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
+      showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
     };
   },
 
@@ -2179,6 +2007,12 @@ export const ListDatabasesRequest: MessageFns<ListDatabasesRequest> = {
     if (message.pageToken !== "") {
       obj.pageToken = message.pageToken;
     }
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
+    if (message.showDeleted !== false) {
+      obj.showDeleted = message.showDeleted;
+    }
     return obj;
   },
 
@@ -2190,6 +2024,8 @@ export const ListDatabasesRequest: MessageFns<ListDatabasesRequest> = {
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
+    message.filter = object.filter ?? "";
+    message.showDeleted = object.showDeleted ?? false;
     return message;
   },
 };
@@ -10780,19 +10616,21 @@ export const DatabaseServiceDefinition = {
         },
       },
     },
-    listInstanceDatabases: {
-      name: "ListInstanceDatabases",
-      requestType: ListInstanceDatabasesRequest,
+    listDatabases: {
+      name: "ListDatabases",
+      requestType: ListDatabasesRequest,
       requestStream: false,
-      responseType: ListInstanceDatabasesResponse,
+      responseType: ListDatabasesResponse,
       responseStream: false,
       options: {
         _unknownFields: {
           8410: [new Uint8Array([0])],
-          800010: [new Uint8Array([16, 98, 98, 46, 105, 110, 115, 116, 97, 110, 99, 101, 115, 46, 103, 101, 116])],
-          800016: [new Uint8Array([1])],
+          800010: [new Uint8Array([17, 98, 98, 46, 100, 97, 116, 97, 98, 97, 115, 101, 115, 46, 108, 105, 115, 116])],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
+              112,
+              90,
               36,
               18,
               34,
@@ -10830,25 +10668,6 @@ export const DatabaseServiceDefinition = {
               115,
               101,
               115,
-            ]),
-          ],
-        },
-      },
-    },
-    listDatabases: {
-      name: "ListDatabases",
-      requestType: ListDatabasesRequest,
-      requestStream: false,
-      responseType: ListDatabasesResponse,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [new Uint8Array([0])],
-          800010: [new Uint8Array([17, 98, 98, 46, 100, 97, 116, 97, 98, 97, 115, 101, 115, 46, 108, 105, 115, 116])],
-          800016: [new Uint8Array([1])],
-          578365826: [
-            new Uint8Array([
-              74,
               90,
               37,
               18,

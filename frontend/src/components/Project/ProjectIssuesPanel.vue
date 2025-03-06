@@ -213,34 +213,43 @@ const mergeSearchParamsByTab = (params: SearchParams, tab: TabValue) => {
     return common;
   }
   if (tab === "CREATED") {
-    return upsertScope(common, {
-      id: "creator",
-      value: me.value.email,
+    return upsertScope({
+      params: common,
+      scopes: {
+        id: "creator",
+        value: me.value.email,
+      },
     });
   }
   if (tab === "WAITING_APPROVAL") {
-    return upsertScope(common, [
-      {
-        id: "status",
-        value: "OPEN",
-      },
-      {
-        id: "approval",
-        value: "pending",
-      },
-    ]);
+    return upsertScope({
+      params: common,
+      scopes: [
+        {
+          id: "status",
+          value: "OPEN",
+        },
+        {
+          id: "approval",
+          value: "pending",
+        },
+      ],
+    });
   }
   if (tab === "WAITING_ROLLOUT") {
-    return upsertScope(common, [
-      {
-        id: "status",
-        value: "OPEN",
-      },
-      {
-        id: "approval",
-        value: "approved",
-      },
-    ]);
+    return upsertScope({
+      params: common,
+      scopes: [
+        {
+          id: "status",
+          value: "OPEN",
+        },
+        {
+          id: "approval",
+          value: "approved",
+        },
+      ],
+    });
   }
   console.error("[mergeSearchParamsByTab] should never reach this line", tab);
   return common;
@@ -369,14 +378,14 @@ watch(
   () => {
     if (tab.value === "WAITING_APPROVAL" || tab.value === "WAITING_ROLLOUT") {
       if (getValueFromSearchParams(state.params, "status") === "CLOSED") {
-        upsertScope(
-          state.params,
-          {
+        upsertScope({
+          params: state.params,
+          scopes: {
             id: "status",
             value: "OPEN",
           },
-          true /* mutate */
-        );
+          mutate: true,
+        });
       }
     }
   },

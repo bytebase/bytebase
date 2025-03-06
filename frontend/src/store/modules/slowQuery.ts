@@ -1,11 +1,11 @@
 import { defineStore } from "pinia";
 import { databaseServiceClient, instanceServiceClient } from "@/grpcweb";
-import type { ComposedSlowQueryLog, ComposedDatabase } from "@/types";
+import type { ComposedSlowQueryLog } from "@/types";
 import type {
   ListSlowQueriesRequest,
   SlowQueryLog,
 } from "@/types/proto/v1/database_service";
-import { useDatabaseV1Store } from "./v1/database";
+import { useDatabaseV1Store, batchGetOrFetchDatabases } from "./v1/database";
 
 export const useSlowQueryStore = defineStore("slow-query", () => {
   const fetchSlowQueryLogList = async (
@@ -31,28 +31,16 @@ export const useSlowQueryStore = defineStore("slow-query", () => {
   return { fetchSlowQueryLogList, syncSlowQueries };
 });
 
-const databaseRequestCache = new Map<string, Promise<ComposedDatabase>>();
-
-const getOrFetchV1Database = (name: string) => {
-  const cached = databaseRequestCache.get(name);
-  if (cached) return cached;
-  const request = useDatabaseV1Store().getOrFetchDatabaseByName(name);
-  databaseRequestCache.set(name, request);
-  return request;
-};
-
 const composeSlowQueryLogDatabase = async (
   slowQueryLogList: SlowQueryLog[]
 ) => {
   const databaseNameList = slowQueryLogList.map((log) => log.resource);
-  await Promise.all(
-    databaseNameList.map((name) => {
-      return getOrFetchV1Database(name);
-    })
-  );
+  await batchGetOrFetchDatabases(databaseNameList);
+  const databaseStore = useDatabaseV1Store();
+
   return slowQueryLogList.map<ComposedSlowQueryLog>((log, index) => ({
     id: `${index}`,
     log,
-    database: useDatabaseV1Store().getDatabaseByName(log.resource),
+    database: databaseStore.getDatabaseByName(log.resource),
   }));
 };

@@ -36,19 +36,19 @@ export const useCurrentProject = (
     return String(UNKNOWN_ID);
   });
 
-  const database = computed(() => {
+  const database = computedAsync(async () => {
     if (unref(params).changelogId) {
       const parent = `${instanceNamePrefix}${route.params.instanceId}/${databaseNamePrefix}${route.params.databaseName}`;
-      return useDatabaseV1Store().getDatabaseByName(parent);
+      return await useDatabaseV1Store().getOrFetchDatabaseByName(parent);
     } else if (unref(params).databaseName) {
-      return useDatabaseV1Store().getDatabaseByName(
+      return await useDatabaseV1Store().getOrFetchDatabaseByName(
         `${instanceNamePrefix}${
           unref(params).instanceId
         }/${databaseNamePrefix}${unref(params).databaseName}`
       );
     }
     return unknownDatabase();
-  });
+  }, unknownDatabase());
 
   const project = computedAsync(async () => {
     if (unref(params).projectId) {

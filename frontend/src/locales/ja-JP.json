@@ -983,9 +983,6 @@
       "request-exporter-role": "エクスポートロールのリクエスト"
     }
   },
-  "alter-schema": {
-    "no-databases-in-project": "このプロジェクトにはデータベースがありません。 「データベースの作成」または「データベースの転送」をクリックしてデータベースを追加します。"
-  },
   "quick-action": {
     "create-db": "データベースの作成",
     "new-db": "データベースの作成",
@@ -1420,7 +1417,6 @@
       "select": "テーブルを選択",
       "select-tip": "開始するにはテーブルを選択してください。"
     },
-    "n-selected-m-in-total": "({selected} 個が選択され、合計 {total} 個)",
     "all": "すべてのデータベース",
     "show-schemaless-databases": "スキーマレス データベースを示します。 (スキーマの変更は、スキーマのないデータベースでは機能しません。)",
     "secret": {
@@ -1504,8 +1500,7 @@
       "success-prompt": "{name} が正常に作成されました。"
     },
     "overview": {
-      "info-slot-content": "Bytebase はインスタンスのスキーマを定期的に同期します。新しく同期されたデータベースは最初にここに配置され、その後、それらを適切なプロジェクトに転送できます。",
-      "no-db-prompt": "現在のプロジェクトに属しているデータベースはありません。上のメニュー バーの {newDb} または {transferInDb} をクリックすると、データベースを追加できます。"
+      "info-slot-content": "Bytebase はインスタンスのスキーマを定期的に同期します。新しく同期されたデータベースは最初にここに配置され、その後、それらを適切なプロジェクトに転送できます。"
     },
     "webhook": {
       "success-created-prompt": "{name} Webhook が正常に作成されました。",
@@ -1939,8 +1934,7 @@
       "key-duplicated": "キーが繰り返されました",
       "max-value-length-exceeded": "値は {length} 文字を超えることはできません"
     },
-    "add-label": "タグ付けする",
-    "filter-by-label": "タグでフィルタリングする"
+    "add-label": "タグ付けする"
   },
   "oauth": {
     "unknown-event": "不明なイベント タイプ、認証に失敗しました"
