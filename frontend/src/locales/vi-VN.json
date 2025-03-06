@@ -65,6 +65,7 @@
       "self": "Vai trò"
     },
     "revert": "Hoàn tác",
+    "confirm-to-revert": "Xác nhận hoàn tác chỉnh sửa của bạn?",
     "apply": "Áp dụng",
     "reorder": "Sắp xếp lại",
     "id": "ID",
@@ -124,7 +125,6 @@
     "read-only": "Chỉ đọc",
     "all": "Tất cả",
     "recent": "Gần đây",
-    "deployment-config": "Cấu hình triển khai",
     "ok": "OK",
     "share": "Chia sẻ",
     "or": "hoặc",
@@ -1019,7 +1019,6 @@
     "streams": "Luồng",
     "tasks": "Tác vụ",
     "labels-for-resource": "Nhãn cho {resource}",
-    "last-successful-sync": "Đồng bộ thành công lần cuối",
     "failed-to-sync-schema-for-database-database-value-name": "Không đồng bộ hóa được lược đồ cho cơ sở dữ liệu '{0}'.",
     "successfully-synced-schema-for-database-database-value-name": "Đã đồng bộ hóa thành công lược đồ cho cơ sở dữ liệu '{0}'.",
     "start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ",
@@ -1646,28 +1645,6 @@
       "revoke-exemption-title": "Xóa cả miễn trừ che giấu xuất và truy vấn cho {member}?"
     }
   },
-  "deployment-config": {
-    "add-selector": "Thêm bộ chọn",
-    "update-success": "Đã cập nhật thành công cấu hình triển khai.",
-    "this-is-example-deployment-config": "Đây là ví dụ cấu hình triển khai. Bạn cần chỉnh sửa và lưu nó.",
-    "add-stage": "Thêm giai đoạn",
-    "confirm-to-revert": "Xác nhận hoàn tác chỉnh sửa của bạn?",
-    "name-placeholder": "Tên giai đoạn...",
-    "error": {
-      "at-least-one-stage": "Ít nhất 1 giai đoạn",
-      "stage-name-required": "Tên sân khấu là bắt buộc",
-      "at-least-one-selector": "Ít nhất 1 bộ chọn ở mỗi giai đoạn",
-      "env-in-selector-required": "\"Môi trường\" là bắt buộc trong mỗi giai đoạn",
-      "env-selector-must-has-one-value": "\"ID môi trường\" phải có đúng một giá trị",
-      "key-required": "Chìa khóa là bắt buộc",
-      "values-required": "Các giá trị được yêu cầu"
-    },
-    "matched-databases": {
-      "all": "Tất cả cơ sở dữ liệu phù hợp",
-      "n": "{n} cơ sở dữ liệu phù hợp | {n} cơ sở dữ liệu phù hợp",
-      "show-more": "Hiển thị thêm"
-    }
-  },
   "data-source": {
     "snowflake-keypair-tip": "Xác thực cặp khóa",
     "ssl": {
@@ -1953,11 +1930,7 @@
       "key-necessary": "Khóa là bắt buộc",
       "value-necessary": "Giá trị là bắt buộc",
       "key-duplicated": "Khóa trùng lặp",
-      "max-value-length-exceeded": "Độ dài giá trị không được vượt quá {length} ký tự",
-      "x-is-reserved-key": "\"{key}\" là một khóa hệ thống dành riêng"
-    },
-    "placeholder": {
-      "select-values": "Chọn giá trị..."
+      "max-value-length-exceeded": "Độ dài giá trị không được vượt quá {length} ký tự"
     },
     "add-label": "Thêm nhãn",
     "filter-by-label": "Lọc theo nhãn"

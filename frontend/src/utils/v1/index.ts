@@ -5,7 +5,6 @@ export * from "./database";
 export * from "./databaseGroup";
 export * from "./project";
 export * from "./projectWebhook";
-export * from "./deploymentConfig";
 export * from "./user";
 export * from "./instance";
 export * from "./sql";

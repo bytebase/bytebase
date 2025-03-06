@@ -9,7 +9,6 @@ import {
   PencilRuler,
   SearchCodeIcon,
   DownloadIcon,
-  SquareGanttChartIcon,
   PackageIcon,
 } from "lucide-vue-next";
 import { computed, h, unref } from "vue";
@@ -28,7 +27,6 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_WEBHOOKS,
   PROJECT_V1_ROUTE_CHANGELISTS,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
-  PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
   PROJECT_V1_ROUTE_EXPORT_CENTER,
   PROJECT_V1_ROUTE_AUDIT_LOGS,
   PROJECT_V1_ROUTE_REVIEW_CENTER,
@@ -241,15 +239,6 @@ export const useProjectSidebar = (
             type: "div",
           },
         ],
-      },
-      {
-        title: t("common.deployment-config"),
-        icon: () => h(SquareGanttChartIcon),
-        path: PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
-        type: "div",
-        hide:
-          isDefaultProject.value ||
-          databaseChangeMode.value === DatabaseChangeMode.EDITOR,
       },
       {
         title: t("common.setting"),
