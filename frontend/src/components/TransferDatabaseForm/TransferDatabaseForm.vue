@@ -114,10 +114,15 @@ interface LocalState {
   fromProjectName: string | undefined;
 }
 
-const props = defineProps<{
-  projectName: string;
-  onSuccess?: (databases: ComposedDatabase[]) => void;
-}>();
+const props = withDefaults(
+  defineProps<{
+    projectName: string;
+    onSuccess?: (databases: ComposedDatabase[]) => void;
+  }>(),
+  {
+    onSuccess: (_: ComposedDatabase[]) => {},
+  }
+);
 
 const emit = defineEmits<{
   (e: "dismiss"): void;
@@ -205,11 +210,8 @@ const transferDatabase = async () => {
         ? `${selectedDatabaseList.value.length} databases`
         : `'${selectedDatabaseList.value[0].databaseName}'`;
 
-    if (props.onSuccess) {
-      props.onSuccess(updated);
-    } else {
-      emit("dismiss");
-    }
+    props.onSuccess(updated);
+    emit("dismiss");
 
     pushNotification({
       module: "bytebase",
