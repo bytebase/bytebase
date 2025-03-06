@@ -194,7 +194,6 @@ const resolveLocalState = async () => {
       expr = resolveCELExpr(celExpr);
     }
   }
-  console.log(expr);
 
   state.value = {
     risk,
