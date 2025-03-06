@@ -47,21 +47,14 @@
               :scope-options="scopeOptions"
               :readonly-scopes="readonlyScopes"
             />
-            <DatabaseLabelFilter
-              v-model:selected="state.selectedLabels"
-              :database-list="databaseList"
-              :placement="'left-start'"
-            />
           </div>
           <DatabaseOperations :databases="selectedDatabases" />
-          <DatabaseV1Table
-            :key="`database-table.${instanceId}`"
+          <PagedDatabaseTable
             mode="INSTANCE"
+            :footer-class="'pb-4'"
             :show-selection="true"
-            :database-list="filteredDatabaseList"
-            :custom-click="true"
-            :keyword="state.params.query.trim().toLowerCase()"
-            @row-click="handleDatabaseClick"
+            :filter="filter"
+            :parent="instance.name"
             @update:selected-databases="handleDatabasesSelectionChanged"
           />
         </div>
@@ -103,32 +96,30 @@ import {
   Buttons as InstanceFormButtons,
 } from "@/components/InstanceForm/";
 import { InstanceRoleTable, Drawer } from "@/components/v2";
-import DatabaseV1Table, {
+import {
+  PagedDatabaseTable,
   DatabaseOperations,
-  DatabaseLabelFilter,
 } from "@/components/v2/Model/DatabaseV1Table";
 import { useBodyLayoutContext } from "@/layouts/common";
 import {
   pushNotification,
-  useDBSchemaV1Store,
+  useDatabaseV1Store,
   useInstanceV1Store,
   useEnvironmentV1Store,
   useAppFeature,
 } from "@/store";
-import { instanceNamePrefix } from "@/store/modules/v1/common";
-import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
-import { UNKNOWN_ID, type ComposedDatabase } from "@/types";
+import {
+  instanceNamePrefix,
+  projectNamePrefix,
+  environmentNamePrefix,
+} from "@/store/modules/v1/common";
+import { type ComposedDatabase, isValidDatabaseName } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import {
   instanceV1HasCreateDatabase,
   instanceV1Name,
-  wrapRefAsPromise,
-  autoDatabaseRoute,
   CommonFilterScopeIdList,
-  filterDatabaseV1ByKeyword,
-  extractEnvironmentResourceName,
-  extractProjectResourceName,
 } from "@/utils";
 import type { SearchParams, SearchScope } from "@/utils";
 
@@ -141,7 +132,6 @@ interface LocalState {
   showCreateDatabaseModal: boolean;
   syncingSchema: boolean;
   selectedDatabaseNameList: Set<string>;
-  selectedLabels: { key: string; value: string }[];
   params: SearchParams;
   selectedTab: InstanceHash;
 }
@@ -164,6 +154,7 @@ if (!props.embedded) {
 const { t } = useI18n();
 const router = useRouter();
 const instanceV1Store = useInstanceV1Store();
+const databaseStore = useDatabaseV1Store();
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 const readonlyScopes = computed((): SearchScope[] => [
@@ -174,7 +165,6 @@ const state = reactive<LocalState>({
   showCreateDatabaseModal: false,
   syncingSchema: false,
   selectedDatabaseNameList: new Set(),
-  selectedLabels: [],
   params: {
     query: "",
     scopes: [...readonlyScopes.value],
@@ -186,7 +176,7 @@ const route = useRoute();
 
 const scopeOptions = useCommonSearchScopeOptions(
   computed(() => state.params),
-  [...CommonFilterScopeIdList, "project"]
+  [...CommonFilterScopeIdList, "project", "label"]
 );
 
 watch(
@@ -223,54 +213,38 @@ const environment = computed(() => {
   );
 });
 
-const { databaseList, listCache, ready } = useDatabaseV1List(
-  instance.value.name
-);
-
 const selectedEnvironment = computed(() => {
-  return (
-    state.params.scopes.find((scope) => scope.id === "environment")?.value ??
-    `${UNKNOWN_ID}`
-  );
+  const environmentId = state.params.scopes.find(
+    (scope) => scope.id === "environment"
+  )?.value;
+  if (!environmentId) {
+    return;
+  }
+  return `${environmentNamePrefix}${environmentId}`;
 });
 
 const selectedProject = computed(() => {
-  return state.params.scopes.find((scope) => scope.id === "project")?.value;
+  const projectId = state.params.scopes.find(
+    (scope) => scope.id === "project"
+  )?.value;
+  if (!projectId) {
+    return;
+  }
+  return `${projectNamePrefix}${projectId}`;
 });
 
-const filteredDatabaseList = computed(() => {
-  let list = databaseList.value;
-  if (selectedEnvironment.value !== `${UNKNOWN_ID}`) {
-    list = list.filter(
-      (db) =>
-        extractEnvironmentResourceName(db.effectiveEnvironment) ===
-        selectedEnvironment.value
-    );
-  }
-  if (selectedProject.value) {
-    list = list.filter(
-      (db) => extractProjectResourceName(db.project) === selectedProject.value
-    );
-  }
-  const keyword = state.params.query.trim().toLowerCase();
-  if (keyword) {
-    list = list.filter((db) =>
-      filterDatabaseV1ByKeyword(db, keyword, [
-        "name",
-        "environment",
-        "instance",
-        "project",
-      ])
-    );
-  }
-  const labels = state.selectedLabels;
-  if (labels.length > 0) {
-    list = list.filter((db) => {
-      return labels.some((kv) => db.labels[kv.key] === kv.value);
-    });
-  }
-  return list;
+const selectedLabels = computed(() => {
+  return state.params.scopes
+    .filter((scope) => scope.id === "label")
+    .map((scope) => scope.value);
 });
+
+const filter = computed(() => ({
+  environment: selectedEnvironment.value,
+  project: selectedProject.value,
+  query: state.params.query,
+  labels: selectedLabels.value,
+}));
 
 const instanceRoleList = computed(() => {
   return instance.value.roles;
@@ -287,16 +261,7 @@ const allowCreateDatabase = computed(() => {
 const syncSchema = async (enableFullSync: boolean) => {
   await instanceV1Store.syncInstance(instance.value.name, enableFullSync);
   // Remove the database list cache for the instance.
-  listCache.deleteCache(instance.value.name);
-  await wrapRefAsPromise(ready, true);
-  if (enableFullSync) {
-    // Clear the db schema metadata cache entities.
-    // So we will re-fetch new values when needed.
-    const dbSchemaStore = useDBSchemaV1Store();
-    databaseList.value.forEach((database) =>
-      dbSchemaStore.removeCache(database.name)
-    );
-  }
+  databaseStore.removeCacheByInstance(instance.value.name);
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
@@ -313,15 +278,6 @@ const createDatabase = () => {
 
 useTitle(instance.value.title);
 
-const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
-  const url = router.resolve(autoDatabaseRoute(router, database)).fullPath;
-  if (event.ctrlKey || event.metaKey) {
-    window.open(url, "_blank");
-  } else {
-    router.push(url);
-  }
-};
-
 const handleDatabasesSelectionChanged = (
   selectedDatabaseNameList: Set<string>
 ): void => {
@@ -329,8 +285,8 @@ const handleDatabasesSelectionChanged = (
 };
 
 const selectedDatabases = computed((): ComposedDatabase[] => {
-  return databaseList.value.filter((db) =>
-    state.selectedDatabaseNameList.has(db.name)
-  );
+  return [...state.selectedDatabaseNameList]
+    .map((databaseName) => databaseStore.getDatabaseByName(databaseName))
+    .filter((database) => isValidDatabaseName(database.name));
 });
 </script>

@@ -1,14 +1,21 @@
 <template>
   <div class="sql-editor-tree gap-y-1 h-full flex flex-col relative">
     <div class="flex flex-row gap-x-0.5 px-1 items-center">
-      <SearchBox v-model:search-pattern="searchPattern" class="flex-1" />
-      <GroupingBar class="shrink-0" />
+      <SearchBox
+        :loading="editrStore.loading"
+        v-model:search-pattern="searchPattern"
+        class="flex-1"
+      />
+      <GroupingBar :disabled="editrStore.loading" class="shrink-0" />
     </div>
     <div
       v-if="hasMissingQueryDatabases"
       class="flex items-center space-x-2 px-2 py-2"
     >
-      <NCheckbox v-model:checked="showMissingQueryDatabases">
+      <NCheckbox
+        :disabled="editrStore.loading"
+        v-model:checked="showMissingQueryDatabases"
+      >
         <span class="textinfolabel text-sm">
           {{ $t("sql-editor.show-databases-without-query-permission") }}
         </span>
@@ -59,12 +66,11 @@
 </template>
 
 <script lang="ts" setup>
-import { useElementSize, useMounted } from "@vueuse/core";
+import { computedAsync, useElementSize, useMounted } from "@vueuse/core";
 import { head } from "lodash-es";
 import { NTree, NDropdown, NCheckbox, type TreeOption } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { ref, computed, nextTick, watch, h } from "vue";
-import { onMounted } from "vue";
+import { ref, nextTick, watch, h, onMounted } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
@@ -73,6 +79,7 @@ import {
   useSQLEditorTabStore,
   resolveOpeningDatabaseListFromSQLEditorTabList,
   useSQLEditorTreeStore,
+  useSQLEditorStore,
   idForSQLEditorTreeNodeTarget,
   useConnectionOfCurrentSQLEditorTab,
   useInstanceResourceByName,
@@ -103,6 +110,7 @@ import { setConnection, useDropdown } from "./actions";
 
 const treeStore = useSQLEditorTreeStore();
 const tabStore = useSQLEditorTabStore();
+const editrStore = useSQLEditorStore();
 const databaseStore = useDatabaseV1Store();
 const isLoggedIn = useIsLoggedIn();
 
@@ -135,15 +143,22 @@ const { height: treeContainerHeight } = useElementSize(
 const treeRef = ref<InstanceType<typeof NTree>>();
 const searchPattern = ref("");
 
+watch(
+  () => searchPattern.value,
+  (search) => editrStore.prepareDatabases(search)
+);
+
 // Highlight the current tab's connection node.
-const selectedKeys = computed(() => {
+const selectedKeys = computedAsync(async () => {
   const connection = tabStore.currentTab?.connection;
   if (!connection) {
     return [];
   }
 
   if (connection.database) {
-    const database = databaseStore.getDatabaseByName(connection.database);
+    const database = await databaseStore.getOrFetchDatabaseByName(
+      connection.database
+    );
     const node = head(treeStore.nodesByTarget("database", database));
     if (!node) return [];
     return [node.key];
@@ -153,7 +168,7 @@ const selectedKeys = computed(() => {
     return nodes.map((node) => node.key);
   }
   return [];
-});
+}, []);
 const { expandedKeys, hasMissingQueryDatabases, showMissingQueryDatabases } =
   storeToRefs(treeStore);
 const upsertExpandedKeys = (key: string) => {

@@ -17,6 +17,7 @@
 </template>
 
 <script setup lang="ts">
+import { computedAsync } from "@vueuse/core";
 import { escape } from "lodash-es";
 import { computed, h } from "vue";
 import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
@@ -34,10 +35,10 @@ const props = defineProps<{
 
 const option = computed(() => props.option);
 
-const database = computed(() => {
+const database = computedAsync(() => {
   const { option } = props;
   if (option.level !== "databases") return undefined;
-  return useDatabaseV1Store().getDatabaseByName(option.value);
+  return useDatabaseV1Store().getOrFetchDatabaseByName(option.value);
 });
 
 const environment = computed(() => {

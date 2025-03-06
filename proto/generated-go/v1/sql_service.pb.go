@@ -1874,7 +1874,7 @@ type SearchQueryHistoriesRequest struct {
 	//   - database, for example:
 	//     database = "instances/{instance}/databases/{database}"
 	//   - instance, for example:
-	//     instance = "instance/{instance}"
+	//     instance = "instances/{instance}"
 	//   - type, for example:
 	//     type = "QUERY"
 	Filter        string `protobuf:"bytes,3,opt,name=filter,proto3" json:"filter,omitempty"`

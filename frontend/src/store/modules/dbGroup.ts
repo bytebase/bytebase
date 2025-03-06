@@ -27,6 +27,7 @@ import { useCache } from "../cache";
 import {
   useProjectV1Store,
   useDatabaseV1Store,
+  batchGetOrFetchDatabases,
   batchGetOrFetchProjects,
 } from "./v1";
 import {
@@ -44,6 +45,7 @@ const batchComposeDatabaseGroup = async (
   const composedDatabaseGroupNameList: string[] = [];
 
   const projectStore = useProjectV1Store();
+
   await batchGetOrFetchProjects(
     databaseGroupList.map((databaseGroup) => {
       const [projectName, _] = getProjectNameAndDatabaseGroupName(
@@ -60,6 +62,11 @@ const batchComposeDatabaseGroup = async (
     const project = projectStore.getProjectByName(
       `${projectNamePrefix}${projectName}`
     );
+
+    await batchGetOrFetchDatabases([
+      ...databaseGroup.matchedDatabases.map((db) => db.name),
+      ...databaseGroup.unmatchedDatabases.map((db) => db.name),
+    ]);
 
     composedDatabaseGroupMap.set(databaseGroup.name, {
       ...databaseGroup,

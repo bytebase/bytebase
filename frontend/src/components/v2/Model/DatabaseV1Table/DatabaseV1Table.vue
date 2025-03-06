@@ -3,18 +3,16 @@
     key="database-table"
     size="small"
     :columns="columnList"
-    :data="data"
+    :data="databaseList"
     :striped="true"
     :bordered="bordered"
     :loading="loading"
     :row-key="(data: ComposedDatabase) => data.name"
     :checked-row-keys="Array.from(state.selectedDatabaseNameList)"
     :row-props="rowProps"
-    :pagination="{ pageSize: 60 }"
-    :paginate-single-page="false"
     @update:checked-row-keys="
-        (val) => (state.selectedDatabaseNameList = new Set(val as string[]))
-      "
+      (val) => (state.selectedDatabaseNameList = new Set(val as string[]))
+    "
   />
 </template>
 
@@ -182,10 +180,6 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
   return [SELECTION, ...(columnsMap.get(props.mode) || [])].filter(
     (column) => !column.hide
   );
-});
-
-const data = computed(() => {
-  return [...props.databaseList];
 });
 
 const rowProps = (database: ComposedDatabase) => {

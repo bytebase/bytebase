@@ -182,7 +182,8 @@ const sourceList = computed(() => {
 
 const resolveLocalState = async () => {
   const risk = cloneDeep(context.dialog.value!.risk);
-
+  console.log("risk");
+  console.log(risk);
   let expr: SimpleExpr = emptySimpleExpr();
   if (risk.condition?.expression) {
     const parsedExprs = await batchConvertCELStringToParsedExpr([
@@ -193,6 +194,7 @@ const resolveLocalState = async () => {
       expr = resolveCELExpr(celExpr);
     }
   }
+  console.log(expr);
 
   state.value = {
     risk,

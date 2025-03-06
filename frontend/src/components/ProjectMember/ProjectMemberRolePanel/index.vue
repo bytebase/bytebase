@@ -226,13 +226,14 @@ import {
   useProjectIamPolicyStore,
   useUserStore,
   pushNotification,
+  batchGetOrFetchDatabases,
 } from "@/store";
 import { groupNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject, DatabaseResource } from "@/types";
 import { PresetRoleType, PRESET_ROLES } from "@/types";
-import { type User } from "@/types/proto/v1/user_service";
 import { State } from "@/types/proto/v1/common";
 import { Binding } from "@/types/proto/v1/iam_policy";
+import { type User } from "@/types/proto/v1/user_service";
 import { displayRoleTitle, hasProjectPermissionV2 } from "@/utils";
 import {
   convertFromExpr,
@@ -504,21 +505,19 @@ const handleDeleteCondition = async (singleBinding: SingleBinding) => {
   });
 };
 
-const extractDatabaseName = (databaseResource?: DatabaseResource) => {
-  if (!databaseResource) {
-    return "*";
-  }
-  const database = databaseStore.getDatabaseByName(
-    databaseResource.databaseFullName
-  );
-  return database.databaseName;
-};
-
 const extractDatabase = (databaseResource: DatabaseResource) => {
   const database = databaseStore.getDatabaseByName(
     databaseResource.databaseFullName
   );
   return database;
+};
+
+const extractDatabaseName = (databaseResource?: DatabaseResource) => {
+  if (!databaseResource) {
+    return "*";
+  }
+  const database = extractDatabase(databaseResource);
+  return database.databaseName;
 };
 
 const extractSchemaName = (databaseResource?: DatabaseResource) => {
@@ -589,6 +588,11 @@ watch(
           Array.isArray(conditionExpr.databaseResources) &&
           conditionExpr.databaseResources.length > 0
         ) {
+          await batchGetOrFetchDatabases(
+            conditionExpr.databaseResources.map(
+              (resource) => resource.databaseFullName
+            )
+          );
           for (const resource of conditionExpr.databaseResources) {
             singleBindingList.push({
               ...singleBinding,

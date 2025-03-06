@@ -1,5 +1,5 @@
 import type { MaybeRef } from "@vueuse/core";
-import { watchThrottled } from "@vueuse/core";
+import { computedAsync, watchThrottled } from "@vueuse/core";
 import { head, omit, pick, uniqBy } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
 import { computed, nextTick, reactive, ref, unref, watch } from "vue";
@@ -9,7 +9,11 @@ import type {
   CoreSQLEditorTab,
   SQLEditorTab,
 } from "@/types";
-import { DEFAULT_SQL_EDITOR_TAB_MODE, isValidDatabaseName } from "@/types";
+import {
+  DEFAULT_SQL_EDITOR_TAB_MODE,
+  isValidDatabaseName,
+  unknownDatabase,
+} from "@/types";
 import {
   WebStorageHelper,
   defaultSQLEditorTab,
@@ -412,9 +416,11 @@ export const useSQLEditorConnectionDetail = (
     return useInstanceResourceByName(unref(connection).instance);
   });
 
-  const database = computed(() => {
-    return useDatabaseV1Store().getDatabaseByName(unref(connection).database);
-  });
+  const database = computedAsync(async () => {
+    return useDatabaseV1Store().getOrFetchDatabaseByName(
+      unref(connection).database
+    );
+  }, unknownDatabase());
 
   const environment = computed(() => {
     if (isValidDatabaseName(database.value.name)) {
@@ -443,11 +449,12 @@ export const useConnectionOfCurrentSQLEditorTab = () => {
 
 export const resolveOpeningDatabaseListFromSQLEditorTabList = () => {
   const { tabList } = useSQLEditorTabStore();
+  const databaseStore = useDatabaseV1Store();
   return uniqBy(
     tabList.flatMap<SQLEditorTreeNodeMeta<"database">>((tab) => {
       const { database } = tab.connection;
       if (database) {
-        const db = useDatabaseV1Store().getDatabaseByName(database);
+        const db = databaseStore.getDatabaseByName(database);
         return [{ type: "database", target: db }];
       }
       return [];

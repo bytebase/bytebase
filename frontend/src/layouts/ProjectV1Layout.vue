@@ -80,7 +80,6 @@ import {
   usePermissionStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import {
   UNKNOWN_PROJECT_NAME,
   DEFAULT_PROJECT_NAME,
@@ -112,8 +111,6 @@ const { t } = useI18n();
 const hideQuickAction = useAppFeature("bb.feature.console.hide-quick-action");
 const hideDefaultProject = useAppFeature("bb.feature.project.hide-default");
 const projectName = computed(() => `${projectNamePrefix}${props.projectId}`);
-// Prepare database list of the project.
-const { ready: databaseListReady } = useDatabaseV1List(projectName);
 
 watchEffect(async () => {
   try {
@@ -146,10 +143,7 @@ watchEffect(async () => {
 const { project, ready } = useProjectByName(projectName.value);
 
 const initialized = computed(
-  () =>
-    ready &&
-    project.value.name !== UNKNOWN_PROJECT_NAME &&
-    databaseListReady.value
+  () => ready && project.value.name !== UNKNOWN_PROJECT_NAME
 );
 
 const isDefaultProject = computed((): boolean => {

@@ -28,6 +28,7 @@
 </template>
 
 <script lang="ts" setup>
+import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import {
   DatabaseV1Name,
@@ -43,10 +44,10 @@ const props = defineProps<{
 }>();
 const databaseStore = useDatabaseV1Store();
 
-const database = computed(() => {
+const database = computedAsync(async () => {
   const { sheet } = props;
   if (!props.sheet.database) return undefined;
-  const db = databaseStore.getDatabaseByName(sheet.database);
+  const db = await databaseStore.getOrFetchDatabaseByName(sheet.database);
   if (!isValidDatabaseName(db.name)) return undefined;
   return db;
 });

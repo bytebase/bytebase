@@ -122,8 +122,8 @@ const { width: windowWidth } = useWindowSize();
 useEmitteryEventListener(
   editorEvents,
   "alter-schema",
-  ({ databaseName, schema, table }) => {
-    const database = databaseStore.getDatabaseByName(databaseName);
+  async ({ databaseName, schema, table }) => {
+    const database = await databaseStore.getOrFetchDatabaseByName(databaseName);
     const exampleSQL = ["ALTER TABLE"];
     if (table) {
       if (schema) {

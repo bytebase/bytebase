@@ -29,7 +29,7 @@ import { NAutoComplete } from "naive-ui";
 import { computed, watchEffect, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
-import { useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store, batchGetOrFetchDatabases } from "@/store";
 import type { CoreSQLEditorTab } from "@/types";
 import { DEFAULT_SQL_EDITOR_TAB_MODE, isValidDatabaseName } from "@/types";
 import {
@@ -127,8 +127,8 @@ const renderLabel = (option: SelectOption) => {
   );
 };
 
-const handleDatabaseSelect = (databaseName: string) => {
-  const database = databaseStore.getDatabaseByName(databaseName);
+const handleDatabaseSelect = async (databaseName: string) => {
+  const database = await databaseStore.getOrFetchDatabaseByName(databaseName);
   const coreTab: CoreSQLEditorTab = {
     connection: {
       ...emptySQLEditorConnection(),
@@ -147,15 +147,6 @@ const handleEscapeKey = (_e: KeyboardEvent) => {
 };
 
 watchEffect(async () => {
-  for (const databaseName of searchHistory.value) {
-    try {
-      await databaseStore.getOrFetchDatabaseByName(
-        databaseName,
-        true /* silent */
-      );
-    } catch {
-      // nothing
-    }
-  }
+  await batchGetOrFetchDatabases(searchHistory.value);
 });
 </script>

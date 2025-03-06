@@ -45,7 +45,7 @@ import {
   getUserEmailInBinding,
   getGroupEmailInBinding,
   groupBindingPrefix,
-  UNKNOWN_DATABASE_NAME,
+  isValidDatabaseName,
 } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { MaskingExceptionPolicy_MaskingException_Action } from "@/types/proto/v1/org_policy_service";
@@ -104,12 +104,12 @@ const filteredList = computed(() =>
 
 const isValidDatabaseResource = (access: AccessUser): boolean => {
   if (!access.databaseResource) {
-    return true;
+    return false;
   }
   const database = databaseStore.getDatabaseByName(
     access.databaseResource.databaseFullName
   );
-  return database.name !== UNKNOWN_DATABASE_NAME;
+  return isValidDatabaseName(database.name);
 };
 
 const getDatabaseAccessResource = (access: AccessUser): VNodeChild => {

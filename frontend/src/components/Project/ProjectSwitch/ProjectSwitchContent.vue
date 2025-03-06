@@ -68,7 +68,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useCurrentProject } from "@/components/Project/useCurrentProject";
 import { useRecentProjects } from "@/components/Project/useRecentProjects";
-import { SearchBox, ProjectV1Table } from "@/components/v2";
+import { SearchBox } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";

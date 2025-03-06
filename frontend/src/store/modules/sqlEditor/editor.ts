@@ -1,11 +1,14 @@
-import { useLocalStorage } from "@vueuse/core";
+import { useLocalStorage, useDebounceFn } from "@vueuse/core";
 import { defineStore } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, watchEffect } from "vue";
+import { useDatabaseV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto/v1/sql_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 export const useSQLEditorStore = defineStore("sqlEditor", () => {
+  const databaseStore = useDatabaseV1Store();
+
   const resultRowsLimit = useLocalStorage(
     "bb.sql-editor.result-rows-limit",
     1000
@@ -33,6 +36,29 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
 
   // `databaseList` is query-able databases scoped by `project`
   const databaseList = ref<ComposedDatabase[]>([]);
+  const loading = ref<boolean>(false);
+
+  const prepareDatabases = useDebounceFn(async (name?: string) => {
+    loading.value = true;
+    try {
+      const { databases } = await databaseStore.fetchDatabases({
+        parent: project.value,
+        pageSize: 100,
+        filter: name ? `name.matches("${name}")` : "",
+      });
+      databaseList.value = [...databases];
+    } catch {
+      databaseList.value = [];
+    } finally {
+      loading.value = false;
+    }
+  }, 500);
+
+  watchEffect(async () => {
+    if (project.value) {
+      await prepareDatabases();
+    }
+  });
 
   watch(project, (project) => {
     storedLastViewedProject.value = project;
@@ -52,5 +78,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
     isShowExecutingHint,
     executingHintDatabase,
     redisCommandOption,
+    prepareDatabases,
+    loading,
   };
 });
