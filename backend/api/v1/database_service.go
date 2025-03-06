@@ -183,7 +183,7 @@ func getFindDatabaseFilter(filter string) (*store.FindDatabaseFilter, error) {
 		case "environment":
 			environmentID, err := common.GetEnvironmentID(value.(string))
 			if err != nil {
-				return "", status.Errorf(codes.InvalidArgument, "invalid enviroment environment filter %q", value)
+				return "", status.Errorf(codes.InvalidArgument, "invalid environment filter %q", value)
 			}
 			positionalArgs = append(positionalArgs, environmentID)
 			return fmt.Sprintf(`
