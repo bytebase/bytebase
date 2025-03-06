@@ -24,23 +24,17 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  rpc ListInstanceDatabases(ListInstanceDatabasesRequest) returns (ListInstanceDatabasesResponse) {
-    option (google.api.http) = {get: "/v1/{parent=instances/*}/databases"};
-    option (google.api.method_signature) = "";
-    option (bytebase.v1.permission) = "bb.instances.get";
-    option (bytebase.v1.auth_method) = IAM;
-  }
-
   rpc ListDatabases(ListDatabasesRequest) returns (ListDatabasesResponse) {
     option (google.api.http) = {
       get: "/v1/{parent=projects/*}/databases"
 
+      additional_bindings: {get: "/v1/{parent=instances/*}/databases"}
       additional_bindings: {get: "/v1/{parent=workspaces/*}/databases"}
     };
 
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.databases.list";
-    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc UpdateDatabase(UpdateDatabaseRequest) returns (Database) {
@@ -189,53 +183,19 @@ message GetDatabaseRequest {
   ];
 }
 
-message ListInstanceDatabasesRequest {
-  // The parent, which owns this collection of databases.
-  // - instances/{instance}: list all databases for an instance. Use
-  // "instances/-" to list all databases.
-  string parent = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Instance"}
-  ];
-
-  // The maximum number of databases to return. The service may return fewer
-  // than this value. If unspecified, at most 10 databases will be returned.
-  int32 page_size = 2;
-
-  // A page token, received from a previous `ListInstanceDatabases` call.
-  // Provide this to retrieve the subsequent page.
-  //
-  // When paginating, all other parameters provided to `ListInstanceDatabases`
-  // must match the call that provided the page token.
-  string page_token = 3;
-
-  // Deprecated.
-  // Filter is used to filter databases returned in the list.
-  // For example, `project == "projects/{project}"` can be used to list
-  // databases in a project. Note: the project filter will be moved to parent.
-  string filter = 4;
-}
-
-message ListInstanceDatabasesResponse {
-  // The databases from the specified request.
-  repeated Database databases = 1;
-
-  // A token, which can be sent as `page_token` to retrieve the next page.
-  // If this field is omitted, there are no subsequent pages.
-  string next_page_token = 2;
-}
-
 message ListDatabasesRequest {
-  // The parent, which owns this collection of databases.
-  // - projects/{project}: list all databases in a project.
-  // - workspaces/{workspace}: list all databases in a workspace.
+  // - projects/{project}: list databases in a project, require "bb.projects.get" permission.
+  // - workspaces/-: list databases in the workspace, require "bb.databases.list" permission.
+  // - instances/{instances}: list databases in a instance, require "bb.instances.get" permission
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {child_type: "bytebase.com/Database"}
   ];
 
   // The maximum number of databases to return. The service may return fewer
-  // than this value. If unspecified, at most 10 databases will be returned.
+  // than this value.
+  // If unspecified, at most 10 databases will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 2;
 
   // A page token, received from a previous `ListDatabases` call.
@@ -244,6 +204,33 @@ message ListDatabasesRequest {
   // When paginating, all other parameters provided to `ListDatabases` must
   // match the call that provided the page token.
   string page_token = 3;
+
+  // Filter is used to filter databases returned in the list.
+  // Supported filter:
+  // - environment
+  // - name
+  // - project
+  // - instance
+  // - engine
+  // - label
+  // - exclude_unassigned: Not show unassigned databases if specified
+  //
+  // For example:
+  // environment == "environments/{environment resource id}"
+  // project == "projects/{project resource id}"
+  // instance == "instances/{instance resource id}"
+  // name.matches("database name")
+  // engine == "MYSQL"
+  // engine in ["MYSQL", "POSTGRES"]
+  // !(engine in ["MYSQL", "POSTGRES"])
+  // label == "region:asia"
+  // label == "tenant:asia,europe"
+  // label == "region:asia" && label == "tenant:bytebase"
+  // exclude_unassigned == true
+  string filter = 4;
+
+  // Show deleted database if specified.
+  bool show_deleted = 5;
 }
 
 message ListDatabasesResponse {

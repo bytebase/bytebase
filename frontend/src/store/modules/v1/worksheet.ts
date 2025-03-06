@@ -18,6 +18,7 @@ import {
 import { useCurrentUserV1 } from "../auth";
 import { useSQLEditorTabStore } from "../sqlEditor";
 import { getUserEmailFromIdentifier } from "./common";
+import { useDatabaseV1Store, batchGetOrFetchDatabases } from "./database";
 import { useProjectV1Store, batchGetOrFetchProjects } from "./project";
 
 type WorksheetView = "FULL" | "BASIC";
@@ -28,6 +29,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     "bb.worksheet.by-uid"
   );
   const projectStore = useProjectV1Store();
+  const databaseStore = useDatabaseV1Store();
 
   // Getters
   const worksheetList = computed(() => {
@@ -63,12 +65,18 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
       cacheByUID.invalidateEntity([uid, "BASIC"]);
     }
 
-    await projectStore.getOrFetchProjectByName(worksheet.project);
+    await Promise.all([
+      projectStore.getOrFetchProjectByName(worksheet.project),
+      databaseStore.getOrFetchDatabaseByName(worksheet.database),
+    ]);
     cacheByUID.setEntity([uid, view], worksheet);
   };
   const setListCache = async (worksheets: Worksheet[]) => {
     await batchGetOrFetchProjects(
       worksheets.map((worksheet) => worksheet.project)
+    );
+    await batchGetOrFetchDatabases(
+      worksheets.map((worksheet) => worksheet.database)
     );
     for (const worksheet of worksheets) {
       await setCache(worksheet, "BASIC");

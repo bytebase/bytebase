@@ -127,7 +127,7 @@ import { cloneDeep, head, uniq } from "lodash-es";
 import { NTabs, NCheckbox, NButton, NTabPane, useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import type { PropType } from "vue";
-import { computed, onMounted, h, reactive, ref, watch } from "vue";
+import { computed, onMounted, h, reactive, ref, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBModal } from "@/bbkit";
@@ -145,6 +145,7 @@ import {
   useAppFeature,
   useStorageStore,
   useDatabaseCatalogV1Store,
+  batchGetOrFetchDatabases,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { dialectOfEngineV1, isValidProjectName, unknownProject } from "@/types";
@@ -237,11 +238,16 @@ const allowPreviewIssue = computed(() => {
   }
 });
 
+watchEffect(async () => {
+  await batchGetOrFetchDatabases(props.databaseNames);
+});
+
 const databaseList = computed(() => {
   return props.databaseNames.map((database) => {
     return databaseV1Store.getDatabaseByName(database);
   });
 });
+
 // Returns the type if it's uniq.
 // Returns Engine.UNRECOGNIZED if there are more than ONE types.
 const databaseEngine = computed((): Engine => {
@@ -342,7 +348,7 @@ const handleSyncSQLFromSchemaEditor = async () => {
   for (const [database, result] of statementMap.entries()) {
     if (!result.statement) {
       emptyStatementDatabaseList.push(
-        useDatabaseV1Store().getDatabaseByName(database)
+        databaseV1Store.getDatabaseByName(database)
       );
     }
   }
@@ -462,7 +468,7 @@ const handlePreviewIssue = async () => {
     for (const [database, result] of statementMap.entries()) {
       if (!result.statement) {
         emptyStatementDatabaseList.push(
-          useDatabaseV1Store().getDatabaseByName(database)
+          databaseV1Store.getDatabaseByName(database)
         );
       }
       statementList.push(result.statement);

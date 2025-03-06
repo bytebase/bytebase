@@ -9,12 +9,11 @@ import {
   useProjectV1Store,
   useSheetV1Store,
   useStorageStore,
+  batchGetOrFetchDatabases,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import { composePlan } from "@/store/modules/v1/plan";
 import type { ComposedProject } from "@/types";
-import { isValidProjectName } from "@/types";
 import {
   Plan,
   Plan_ChangeDatabaseConfig,
@@ -28,7 +27,6 @@ import {
   generateSQLForChangeToDatabase,
   getSheetStatement,
   setSheetStatement,
-  wrapRefAsPromise,
 } from "@/utils";
 import { databaseEngineForSpec, sheetNameForSpec } from "../plan";
 import { createEmptyLocalSheet, getLocalSheetByName } from "../sheet";
@@ -61,7 +59,7 @@ export const createPlanSkeleton = async (
     `${projectNamePrefix}${projectName}`
   );
   const databaseNameList = (query.databaseList ?? "").split(",");
-  await prepareDatabaseList(databaseNameList, project.name);
+  await batchGetOrFetchDatabases(databaseNameList);
 
   const params: CreatePlanParams = {
     databaseNameList,
@@ -109,8 +107,10 @@ export const buildSteps = async (
   params: CreatePlanParams,
   sheetUID?: string // if specified, all specs will share the same sheet
 ) => {
+  await batchGetOrFetchDatabases(databaseNameList);
+  const databaseStore = useDatabaseV1Store();
   const databaseList = databaseNameList.map((name) =>
-    useDatabaseV1Store().getDatabaseByName(name)
+    databaseStore.getDatabaseByName(name)
   );
 
   const databaseListGroupByEnvironment = groupBy(
@@ -186,8 +186,10 @@ export const buildStepsViaChangelist = async (
   );
   const { changes } = changelist;
 
+  await batchGetOrFetchDatabases(databaseNameList);
+  const databaseStore = useDatabaseV1Store();
   const databaseList = databaseNameList.map((name) =>
-    useDatabaseV1Store().getDatabaseByName(name)
+    databaseStore.getDatabaseByName(name)
   );
 
   const databaseListGroupByEnvironment = groupBy(
@@ -358,38 +360,6 @@ const hasInitialSQL = (initialSQL?: InitialSQL) => {
     return true;
   }
   return false;
-};
-
-export const prepareDatabaseList = async (
-  databaseNameList: string[],
-  projectName: string
-) => {
-  const databaseStore = useDatabaseV1Store();
-  if (isValidProjectName(projectName)) {
-    // For preparing the database if user visits creating plan url directly.
-    // It's horrible to fetchDatabaseByName one-by-one when query.databaseList
-    // is big (100+ sometimes)
-    // So we are fetching databaseList by project since that's better cached.
-    const project =
-      await useProjectV1Store().getOrFetchProjectByName(projectName);
-    await prepareDatabaseListByProject(project.name);
-  } else {
-    // Otherwise, we don't have the projectName (very rare to see, theoretically)
-    // so we need to fetch the first database in databaseList by id,
-    // and see what project it belongs.
-    if (databaseNameList.length > 0) {
-      const firstDB = await databaseStore.getOrFetchDatabaseByName(
-        databaseNameList[0]
-      );
-      if (databaseNameList.length > 1) {
-        await prepareDatabaseListByProject(firstDB.project);
-      }
-    }
-  }
-};
-
-const prepareDatabaseListByProject = async (project: string) => {
-  await wrapRefAsPromise(useDatabaseV1List(project).ready, true);
 };
 
 export const isValidSpec = (spec: Plan_Spec): boolean => {

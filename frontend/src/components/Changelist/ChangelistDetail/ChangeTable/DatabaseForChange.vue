@@ -25,7 +25,7 @@ const database = asyncComputed(async () => {
   const { source } = change;
   if (isChangelogChangeSource(change)) {
     const { database } = extractDatabaseResourceName(source);
-    return useDatabaseV1Store().getDatabaseByName(database);
+    return useDatabaseV1Store().getOrFetchDatabaseByName(database);
   } else {
     // Raw SQL
     return undefined;

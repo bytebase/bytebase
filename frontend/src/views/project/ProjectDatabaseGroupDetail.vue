@@ -72,7 +72,7 @@
             :enable-raw-expression="true"
             :factor-list="FactorList"
             :factor-support-dropdown="factorSupportDropdown"
-            :option-config-map="getDatabaseGroupOptionConfigMap(project)"
+            :option-config-map="getDatabaseGroupOptionConfigMap()"
           />
         </div>
         <div class="col-span-2">

@@ -197,7 +197,8 @@ const useExecuteSQL = () => {
 
     const queryContext = tab.queryContext!;
     const batchQueryContext = tab.batchQueryContext;
-    const selectedDatabase = useDatabaseV1Store().getDatabaseByName(
+
+    const selectedDatabase = await databaseStore.getOrFetchDatabaseByName(
       params.connection.database
     );
     const databaseName = isValidDatabaseName(selectedDatabase.name)
@@ -212,10 +213,11 @@ const useExecuteSQL = () => {
       batchQueryContext.databases.length > 0
     ) {
       for (const databaseResourceName of batchQueryContext.databases) {
-        const database = databaseStore.getDatabaseByName(databaseResourceName);
-        if (database.name === selectedDatabase.name) {
+        if (databaseResourceName === selectedDatabase.name) {
           continue;
         }
+        const database =
+          await databaseStore.getOrFetchDatabaseByName(databaseResourceName);
         batchQueryDatabases.push(database);
       }
     }

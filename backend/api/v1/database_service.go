@@ -10,6 +10,10 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/google/cel-go/cel"
+	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
+	celoverloads "github.com/google/cel-go/common/overloads"
 	tidbparser "github.com/pingcap/tidb/pkg/parser"
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/format"
@@ -51,9 +55,6 @@ const (
 	orderByKeyMaximumRowsSent     = "maximum_rows_sent"
 	orderByKeyAverageRowsExamined = "average_rows_examined"
 	orderByKeyMaximumRowsExamined = "maximum_rows_examined"
-
-	// TODO: the frontend not support pagination yet.
-	maximumListDatabasePageSize = 1000000
 )
 
 // DatabaseService implements the database service.
@@ -111,91 +112,205 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 	return database, nil
 }
 
-// ListInstanceDatabases lists all databases for an instance.
-func (s *DatabaseService) ListInstanceDatabases(ctx context.Context, request *v1pb.ListInstanceDatabasesRequest) (*v1pb.ListInstanceDatabasesResponse, error) {
-	instanceID, err := common.GetInstanceID(request.Parent)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+// TODO(ed): test it.
+func getFindDatabaseFilter(filter string) (*store.FindDatabaseFilter, error) {
+	if filter == "" {
+		return nil, nil
 	}
 
-	offset, err := parseLimitAndOffset(&pageSize{
-		token:   request.PageToken,
-		limit:   int(request.PageSize),
-		maximum: maximumListDatabasePageSize,
-	})
+	e, err := cel.NewEnv()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create cel env")
+	}
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to parse filter %v, error: %v", filter, iss.String())
+	}
+
+	var getFilter func(expr celast.Expr) (string, error)
+	var positionalArgs []any
+
+	getSubCondition := func(expr celast.Expr, join string) (string, error) {
+		var args []string
+		for _, arg := range expr.AsCall().Args() {
+			s, err := getFilter(arg)
+			if err != nil {
+				return "", err
+			}
+			args = append(args, "("+s+")")
+		}
+		return strings.Join(args, fmt.Sprintf(" %s ", join)), nil
+	}
+
+	getVariavleAndValue := func(expr celast.Expr) (string, any) {
+		var variable string
+		var value any
+		for _, arg := range expr.AsCall().Args() {
+			switch arg.Kind() {
+			case celast.IdentKind:
+				variable = arg.AsIdent()
+			case celast.LiteralKind:
+				value = arg.AsLiteral().Value()
+			case celast.ListKind:
+				list := []any{}
+				for _, e := range arg.AsList().Elements() {
+					if e.Kind() == celast.LiteralKind {
+						list = append(list, e.AsLiteral().Value())
+					}
+				}
+				value = list
+			}
+		}
+		return variable, value
+	}
+
+	parseToSQL := func(variable, value any) (string, error) {
+		switch variable {
+		case "project":
+			projectID, err := common.GetProjectID(value.(string))
+			if err != nil {
+				return "", status.Errorf(codes.InvalidArgument, "invalid project filter %q", value)
+			}
+			positionalArgs = append(positionalArgs, projectID)
+			return fmt.Sprintf("db.project = $%d", len(positionalArgs)), nil
+		case "instance":
+			instanceID, err := common.GetInstanceID(value.(string))
+			if err != nil {
+				return "", status.Errorf(codes.InvalidArgument, "invalid instance filter %q", value)
+			}
+			positionalArgs = append(positionalArgs, instanceID)
+			return fmt.Sprintf("db.instance = $%d", len(positionalArgs)), nil
+		case "environment":
+			environmentID, err := common.GetEnvironmentID(value.(string))
+			if err != nil {
+				return "", status.Errorf(codes.InvalidArgument, "invalid environment filter %q", value)
+			}
+			positionalArgs = append(positionalArgs, environmentID)
+			return fmt.Sprintf(`
+			COALESCE(
+				db.environment,
+				instance.environment
+			) = $%d`, len(positionalArgs)), nil
+		case "engine":
+			v1Engine, ok := v1pb.Engine_value[value.(string)]
+			if !ok {
+				return "", status.Errorf(codes.InvalidArgument, "invalid engine filter %q", value)
+			}
+			engine := convertEngine(v1pb.Engine(v1Engine))
+			positionalArgs = append(positionalArgs, engine)
+			return fmt.Sprintf("instance.engine = $%d", len(positionalArgs)), nil
+		case "name":
+			positionalArgs = append(positionalArgs, value)
+			return fmt.Sprintf("db.name = $%d", len(positionalArgs)), nil
+		case "label":
+			keyVal := strings.Split(value.(string), ":")
+			if len(keyVal) != 2 {
+				return "", status.Errorf(codes.InvalidArgument, `invalid label filter %q, should in "{label key}:{label value} format"`, value)
+			}
+			labelKey := keyVal[0]
+			labelValues := strings.Split(keyVal[1], ",")
+			positionalArgs = append(positionalArgs, labelValues)
+			return fmt.Sprintf("db.metadata->'labels'->>'%s' = ANY($%d)", labelKey, len(positionalArgs)), nil
+		case "exclude_unassigned":
+			if _, ok := value.(bool); ok {
+				positionalArgs = append(positionalArgs, api.DefaultProjectID)
+				return fmt.Sprintf("db.project != $%d", len(positionalArgs)), nil
+			}
+			return "TRUE", nil
+		default:
+			return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
+		}
+	}
+
+	parseToEngineSQL := func(expr celast.Expr, relation string) (string, error) {
+		variable, value := getVariavleAndValue(expr)
+		if variable != "engine" {
+			return "", status.Errorf(codes.InvalidArgument, `only "engine" support "engine in [xx]"/"!(engine in [xx])" operator`)
+		}
+
+		rawEngineList, ok := value.([]any)
+		if !ok {
+			return "", status.Errorf(codes.InvalidArgument, "invalid engine value %q", value)
+		}
+		engineList := []string{}
+		for _, rawEngine := range rawEngineList {
+			v1Engine, ok := v1pb.Engine_value[rawEngine.(string)]
+			if !ok {
+				return "", status.Errorf(codes.InvalidArgument, "invalid engine filter %q", rawEngine)
+			}
+			engine := convertEngine(v1pb.Engine(v1Engine))
+			positionalArgs = append(positionalArgs, engine)
+			engineList = append(engineList, fmt.Sprintf("$%d", len(positionalArgs)))
+		}
+
+		return fmt.Sprintf("instance.engine %s (%s)", relation, strings.Join(engineList, ",")), nil
+	}
+
+	getFilter = func(expr celast.Expr) (string, error) {
+		switch expr.Kind() {
+		case celast.CallKind:
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
+			case celoperators.LogicalOr:
+				return getSubCondition(expr, "OR")
+			case celoperators.LogicalAnd:
+				return getSubCondition(expr, "AND")
+			case celoperators.Equals:
+				variable, value := getVariavleAndValue(expr)
+				return parseToSQL(variable, value)
+			case celoverloads.Matches:
+				variable := expr.AsCall().Target().AsIdent()
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return "", status.Errorf(codes.InvalidArgument, `invalid args for %q`, variable)
+				}
+				value := args[0].AsLiteral().Value()
+				if variable != "name" {
+					return "", status.Errorf(codes.InvalidArgument, `only "name" support %q operator, but found %q`, celoverloads.Matches, variable)
+				}
+				strValue, ok := value.(string)
+				if !ok {
+					return "", status.Errorf(codes.InvalidArgument, "expect string, got %T, hint: filter literals should be string", value)
+				}
+				return "LOWER(db.name) LIKE '%" + strings.ToLower(strValue) + "%'", nil
+			case celoperators.In:
+				return parseToEngineSQL(expr, "IN")
+			case celoperators.LogicalNot:
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return "", status.Errorf(codes.InvalidArgument, `only support !(engine in ["{engine1}", "{engine2}"]) format`)
+				}
+				return parseToEngineSQL(args[0], "NOT IN")
+			default:
+				return "", status.Errorf(codes.InvalidArgument, "unexpected function %v", functionName)
+			}
+		default:
+			return "", status.Errorf(codes.InvalidArgument, "unexpected expr kind %v", expr.Kind())
+		}
+	}
+
+	where, err := getFilter(ast.NativeRep().Expr())
 	if err != nil {
 		return nil, err
 	}
-	limitPlusOne := offset.limit + 1
 
-	find := &store.FindDatabaseMessage{
-		InstanceID: &instanceID,
-		Limit:      &limitPlusOne,
-		Offset:     &offset.offset,
-	}
-
-	// Deprecated. Remove this later.
-	if instanceID == "-" {
-		find.InstanceID = nil
-	}
-	if request.Filter != "" {
-		projectFilter, err := getProjectFilter(request.Filter)
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		projectID, err := common.GetProjectID(projectFilter)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid project %q in the filter", projectFilter)
-		}
-		find.ProjectID = &projectID
-	}
-
-	databaseMessages, err := s.store.ListDatabases(ctx, find)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	nextPageToken := ""
-	if len(databaseMessages) == limitPlusOne {
-		databaseMessages = databaseMessages[:offset.limit]
-		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
-		}
-	}
-
-	response := &v1pb.ListInstanceDatabasesResponse{
-		NextPageToken: nextPageToken,
-	}
-	for _, databaseMessage := range databaseMessages {
-		database, err := s.convertToDatabase(ctx, databaseMessage)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert database, error: %v", err)
-		}
-		response.Databases = append(response.Databases, database)
-	}
-	return response, nil
+	return &store.FindDatabaseFilter{
+		Args:  positionalArgs,
+		Where: "(" + where + ")",
+	}, nil
 }
 
 // ListDatabases lists all databases.
 func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListDatabasesRequest) (*v1pb.ListDatabasesResponse, error) {
-	var projectID *string
-	switch {
-	case strings.HasPrefix(request.Parent, common.ProjectNamePrefix):
-		p, err := common.GetProjectID(request.Parent)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid project parent %q", request.Parent)
-		}
-		projectID = &p
-	case strings.HasPrefix(request.Parent, common.WorkspacePrefix):
-		// List all databases in a workspace.
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, "invalid parent %q", request.Parent)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
 		token:   request.PageToken,
 		limit:   int(request.PageSize),
-		maximum: maximumListDatabasePageSize,
+		maximum: 1000,
 	})
 	if err != nil {
 		return nil, err
@@ -203,9 +318,56 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	limitPlusOne := offset.limit + 1
 
 	find := &store.FindDatabaseMessage{
-		ProjectID: projectID,
-		Limit:     &limitPlusOne,
-		Offset:    &offset.offset,
+		Limit:       &limitPlusOne,
+		Offset:      &offset.offset,
+		ShowDeleted: request.ShowDeleted,
+	}
+
+	filter, err := getFindDatabaseFilter(request.Filter)
+	if err != nil {
+		return nil, err
+	}
+	find.Filter = filter
+
+	switch {
+	case strings.HasPrefix(request.Parent, common.ProjectNamePrefix):
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionProjectsGet)
+		}
+
+		p, err := common.GetProjectID(request.Parent)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid parent %q", request.Parent)
+		}
+		find.ProjectID = &p
+	case strings.HasPrefix(request.Parent, common.WorkspacePrefix):
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionDatabasesList, user)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionDatabasesList)
+		}
+	case strings.HasPrefix(request.Parent, common.InstanceNamePrefix):
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstancesGet, user)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionInstancesGet)
+		}
+
+		instanceID, err := common.GetInstanceID(request.Parent)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid parent %q", request.Parent)
+		}
+		find.InstanceID = &instanceID
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "invalid parent %q", request.Parent)
 	}
 
 	databaseMessages, err := s.store.ListDatabases(ctx, find)

@@ -39,7 +39,6 @@ import {
 import {
   usePolicyV1Store,
   useProjectV1Store,
-  useCurrentUserV1,
   useDatabaseV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
@@ -49,12 +48,10 @@ import {
   useAppFeature,
   useProjectV1List,
 } from "@/store";
-import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { SQLEditorConnection } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
   DEFAULT_SQL_EDITOR_TAB_MODE,
-  UNKNOWN_USER_NAME,
   isValidDatabaseName,
   isValidInstanceName,
   isValidProjectName,
@@ -86,7 +83,6 @@ import {
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const me = useCurrentUserV1();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const editorStore = useSQLEditorStore();
@@ -187,22 +183,6 @@ const handleProjectSwitched = async () => {
     await wrapRefAsPromise(useProjectV1List().ready, true);
   }
   tabStore.maybeInitProject(project);
-};
-
-const prepareDatabases = async () => {
-  // It will also be called when user logout
-  if (me.value.name === UNKNOWN_USER_NAME) {
-    return;
-  }
-  const { project } = editorStore;
-  if (!project) {
-    editorStore.databaseList = [];
-    return;
-  }
-  // `databaseList` is the database list in the project.
-  const { databaseList, ready } = useDatabaseV1List(project);
-  await wrapRefAsPromise(ready, true);
-  editorStore.databaseList = databaseList.value;
 };
 
 const connect = (connection: SQLEditorConnection) => {
@@ -433,7 +413,14 @@ const syncURLWithConnection = () => {
       () => connection.value?.schema,
       () => connection.value?.table,
     ],
-    ([projectName, sheetName, instanceName, databaseName, schema, table]) => {
+    async ([
+      projectName,
+      sheetName,
+      instanceName,
+      databaseName,
+      schema,
+      table,
+    ]) => {
       const query = omit(
         route.query,
         "filter",
@@ -470,7 +457,8 @@ const syncURLWithConnection = () => {
         }
       }
       if (databaseName) {
-        const database = databaseStore.getDatabaseByName(databaseName);
+        const database =
+          await databaseStore.getOrFetchDatabaseByName(databaseName);
         if (isValidDatabaseName(database.name)) {
           if (schema) {
             query.schema = schema;
@@ -550,7 +538,6 @@ onMounted(async () => {
     initializeProjects(),
     groupStore.fetchGroupList(),
   ]);
-  await prepareDatabases();
   tabStore.maybeInitProject(editorStore.project);
   editorStore.projectContextReady = true;
   nextTick(() => {
@@ -565,7 +552,6 @@ onMounted(async () => {
     async () => {
       editorStore.projectContextReady = false;
       await handleProjectSwitched();
-      await prepareDatabases();
       tabStore.maybeInitProject(editorStore.project);
       editorStore.projectContextReady = true;
       nextTick(() => {

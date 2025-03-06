@@ -16,7 +16,7 @@
           style="width: 100%"
           class="project-select"
           :menu-props="{ class: 'project-select-menu' }"
-          :project-name="projectName"
+          :project-name="project"
           :include-all="false"
           :include-default-project="allowAccessDefaultProject"
           :loading="!projectContextReady"
@@ -84,10 +84,6 @@ const { project, projectContextReady, strictProject } =
 const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
 const hideProjects = useAppFeature("bb.feature.sql-editor.hide-projects");
-
-const projectName = computed(() => {
-  return editorStore.project ?? null;
-});
 
 const allowAccessDefaultProject = computed(() => {
   return hasProjectPermissionV2(defaultProject(), "bb.projects.get");

@@ -107,7 +107,9 @@ useEmitteryEventListener(AIEvents, "run-statement", async ({ statement }) => {
   });
   await nextAnimationFrame();
   const connection = tab.value.connection;
-  const database = useDatabaseV1Store().getDatabaseByName(connection.database);
+  const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
+    connection.database
+  );
   execute({
     connection,
     statement,

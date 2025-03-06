@@ -13,17 +13,16 @@ import {
   useProjectV1Store,
   useSheetV1Store,
   useStorageStore,
+  batchGetOrFetchDatabases,
 } from "@/store";
 import {
   databaseNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
-import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedProject } from "@/types";
 import {
   emptyIssue,
   isValidDatabaseName,
-  isValidProjectName,
   TaskTypeListWithStatement,
 } from "@/types";
 import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
@@ -46,7 +45,6 @@ import {
   hasProjectPermissionV2,
   setSheetStatement,
   sheetNameOfTaskV1,
-  wrapRefAsPromise,
 } from "@/utils";
 import { getArchiveDatabase } from "../../components/Sidebar/PreBackupSection/common";
 import { nextUID } from "../base";
@@ -137,7 +135,7 @@ export const buildPlan = async (params: CreateIssueParams) => {
       databaseNameList = dbGroup.matchedDatabases.map((db) => db.name);
     }
   }
-  await prepareDatabaseList(databaseNameList, project.name);
+  await batchGetOrFetchDatabases(databaseNameList);
   const plan = Plan.fromPartial({
     name: `${project.name}/plans/${nextUID()}`,
   });
@@ -168,8 +166,10 @@ export const buildSteps = async (
   params: CreateIssueParams,
   sheetUID?: string // if specified, all tasks will share the same sheet
 ) => {
+  await batchGetOrFetchDatabases(databaseNameList);
+  const databaseStore = useDatabaseV1Store();
   const databaseList = databaseNameList.map((name) =>
-    useDatabaseV1Store().getDatabaseByName(name)
+    databaseStore.getDatabaseByName(name)
   );
 
   const databaseListGroupByEnvironment = groupBy(
@@ -238,8 +238,10 @@ export const buildStepsViaChangelist = async (
   );
   const { changes } = changelist;
 
+  await batchGetOrFetchDatabases(databaseNameList);
+  const databaseStore = useDatabaseV1Store();
   const databaseList = databaseNameList.map((name) =>
-    useDatabaseV1Store().getDatabaseByName(name)
+    databaseStore.getDatabaseByName(name)
   );
 
   const databaseListGroupByEnvironment = groupBy(
@@ -318,7 +320,8 @@ export const buildSpecForTarget = async (
     if (version) {
       spec.changeDatabaseConfig.schemaVersion = version;
     }
-    const database = useDatabaseV1Store().getDatabaseByName(target);
+    const database =
+      await useDatabaseV1Store().getOrFetchDatabaseByName(target);
     if (isValidDatabaseName(database.name)) {
       // Set default backup behavior for the database.
       if (project.autoEnableBackup) {
@@ -458,38 +461,6 @@ const hasInitialSQL = (initialSQL?: InitialSQL) => {
     return true;
   }
   return false;
-};
-
-export const prepareDatabaseList = async (
-  databaseNameList: string[],
-  projectName: string
-) => {
-  const databaseStore = useDatabaseV1Store();
-  if (isValidProjectName(projectName)) {
-    // For preparing the database if user visits creating issue url directly.
-    // It's horrible to fetchDatabaseByName one-by-one when query.databaseList
-    // is big (100+ sometimes)
-    // So we are fetching databaseList by project since that's better cached.
-    const project =
-      await useProjectV1Store().getOrFetchProjectByName(projectName);
-    await prepareDatabaseListByProject(project.name);
-  } else {
-    // Otherwise, we don't have the projectName (very rare to see, theoretically)
-    // so we need to fetch the first database in databaseList by id,
-    // and see what project it belongs.
-    if (databaseNameList.length > 0) {
-      const firstDB = await databaseStore.getOrFetchDatabaseByName(
-        databaseNameList[0]
-      );
-      if (databaseNameList.length > 1) {
-        await prepareDatabaseListByProject(firstDB.project);
-      }
-    }
-  }
-};
-
-const prepareDatabaseListByProject = async (project: string) => {
-  await wrapRefAsPromise(useDatabaseV1List(project).ready, true);
 };
 
 export const isValidStage = (stage: Stage): boolean => {

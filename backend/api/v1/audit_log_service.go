@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -241,7 +242,7 @@ func (s *AuditLogService) getSearchAuditLogsFilter(ctx context.Context, filter s
 		case celast.CallKind:
 			functionName := expr.AsCall().FunctionName()
 			switch functionName {
-			case "_||_":
+			case celoperators.LogicalOr:
 				var args []string
 				for _, arg := range expr.AsCall().Args() {
 					s, err := getFilter(arg)
@@ -252,7 +253,7 @@ func (s *AuditLogService) getSearchAuditLogsFilter(ctx context.Context, filter s
 				}
 				return strings.Join(args, " OR "), nil
 
-			case "_&&_":
+			case celoperators.LogicalAnd:
 				var args []string
 				for _, arg := range expr.AsCall().Args() {
 					s, err := getFilter(arg)
@@ -263,7 +264,7 @@ func (s *AuditLogService) getSearchAuditLogsFilter(ctx context.Context, filter s
 				}
 				return strings.Join(args, " AND "), nil
 
-			case "_==_":
+			case celoperators.Equals:
 				var variable, value string
 				for _, arg := range expr.AsCall().Args() {
 					switch arg.Kind() {
@@ -294,7 +295,7 @@ func (s *AuditLogService) getSearchAuditLogsFilter(ctx context.Context, filter s
 				positionalArgs = append(positionalArgs, value)
 				return fmt.Sprintf("payload->>'%s'=$%d", variable, len(positionalArgs)), nil
 
-			case "_>=_", "_<=_":
+			case celoperators.GreaterEquals, celoperators.LessEquals:
 				var variable, value string
 				for _, arg := range expr.AsCall().Args() {
 					switch arg.Kind() {
@@ -317,7 +318,7 @@ func (s *AuditLogService) getSearchAuditLogsFilter(ctx context.Context, filter s
 					return "", errors.Errorf("failed to parse time %v, error: %v", value, err)
 				}
 				positionalArgs = append(positionalArgs, t)
-				if functionName == "_>=_" {
+				if functionName == celoperators.GreaterEquals {
 					return fmt.Sprintf("created_at >= $%d", len(positionalArgs)), nil
 				}
 				return fmt.Sprintf("created_at <= $%d", len(positionalArgs)), nil

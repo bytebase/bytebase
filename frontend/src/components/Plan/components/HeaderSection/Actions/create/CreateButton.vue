@@ -169,7 +169,7 @@ const maybeFormatSQL = async (sheet: Sheet, target: string) => {
   if (!formatOnSave.value) {
     return;
   }
-  const db = useDatabaseV1Store().getDatabaseByName(target);
+  const db = await useDatabaseV1Store().getOrFetchDatabaseByName(target);
   if (!db) {
     return;
   }
