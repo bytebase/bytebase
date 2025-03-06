@@ -2173,7 +2173,7 @@ paths:
                   required: true
                   schema:
                     type: string
-                - name: objectType
+                - name: type
                   in: query
                   schema:
                     enum:
@@ -2185,15 +2185,17 @@ paths:
                         - MATERIALIZED_VIEW
                         - FUNCTION
                         - PROCEDURE
+                        - SEQUENCE
                     type: string
                     format: enum
-                - name: objectName
+                - name: schema
                   in: query
-                  description: |-
-                    Format:
-                      for database: empty string
-                      for schema: "schemaName"
-                      for table/view/materialized view/function/procedure: "schemaName.objectName"
+                  description: It's empty for DATABASE.
+                  schema:
+                    type: string
+                - name: object
+                  in: query
+                  description: It's empty for DATABASE and SCHEMA.
                   schema:
                     type: string
             responses:

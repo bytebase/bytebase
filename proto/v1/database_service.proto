@@ -1617,13 +1617,13 @@ message GetSchemaStringRequest {
     MATERIALIZED_VIEW = 5;
     FUNCTION = 6;
     PROCEDURE = 7;
+    SEQUENCE = 8;
   }
-  ObjectType object_type = 2;
-  // Format:
-  //  for database: empty string
-  //  for schema: "schemaName"
-  //  for table/view/materialized view/function/procedure: "schemaName.objectName"
-  string object_name = 3;
+  ObjectType type = 2;
+  // It's empty for DATABASE.
+  string schema = 3;
+  // It's empty for DATABASE and SCHEMA.
+  string object = 4;
 }
 
 message GetSchemaStringResponse {

@@ -7528,20 +7528,24 @@ Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
-                  <td>object_type</td>
+                  <td>type</td>
                   <td><a href="#bytebase.v1.GetSchemaStringRequest.ObjectType">GetSchemaStringRequest.ObjectType</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
               
                 <tr>
-                  <td>object_name</td>
+                  <td>schema</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format:
- for database: empty string
- for schema: &#34;schemaName&#34;
- for table/view/materialized view/function/procedure: &#34;schemaName.objectName&#34; </p></td>
+                  <td><p>It&#39;s empty for DATABASE. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>object</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>It&#39;s empty for DATABASE and SCHEMA. </p></td>
                 </tr>
               
             </tbody>
@@ -9858,6 +9862,12 @@ view, function names.</p></td>
               <tr>
                 <td>PROCEDURE</td>
                 <td>7</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SEQUENCE</td>
+                <td>8</td>
                 <td><p></p></td>
               </tr>
             

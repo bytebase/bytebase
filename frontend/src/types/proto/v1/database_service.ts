@@ -1854,14 +1854,11 @@ export interface GetSchemaStringRequest {
    * Format: instances/{instance}/databases/{database}
    */
   name: string;
-  objectType: GetSchemaStringRequest_ObjectType;
-  /**
-   * Format:
-   *  for database: empty string
-   *  for schema: "schemaName"
-   *  for table/view/materialized view/function/procedure: "schemaName.objectName"
-   */
-  objectName: string;
+  type: GetSchemaStringRequest_ObjectType;
+  /** It's empty for DATABASE. */
+  schema: string;
+  /** It's empty for DATABASE and SCHEMA. */
+  object: string;
 }
 
 export enum GetSchemaStringRequest_ObjectType {
@@ -1873,6 +1870,7 @@ export enum GetSchemaStringRequest_ObjectType {
   MATERIALIZED_VIEW = "MATERIALIZED_VIEW",
   FUNCTION = "FUNCTION",
   PROCEDURE = "PROCEDURE",
+  SEQUENCE = "SEQUENCE",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -1902,6 +1900,9 @@ export function getSchemaStringRequest_ObjectTypeFromJSON(object: any): GetSchem
     case 7:
     case "PROCEDURE":
       return GetSchemaStringRequest_ObjectType.PROCEDURE;
+    case 8:
+    case "SEQUENCE":
+      return GetSchemaStringRequest_ObjectType.SEQUENCE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -1927,6 +1928,8 @@ export function getSchemaStringRequest_ObjectTypeToJSON(object: GetSchemaStringR
       return "FUNCTION";
     case GetSchemaStringRequest_ObjectType.PROCEDURE:
       return "PROCEDURE";
+    case GetSchemaStringRequest_ObjectType.SEQUENCE:
+      return "SEQUENCE";
     case GetSchemaStringRequest_ObjectType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -1951,6 +1954,8 @@ export function getSchemaStringRequest_ObjectTypeToNumber(object: GetSchemaStrin
       return 6;
     case GetSchemaStringRequest_ObjectType.PROCEDURE:
       return 7;
+    case GetSchemaStringRequest_ObjectType.SEQUENCE:
+      return 8;
     case GetSchemaStringRequest_ObjectType.UNRECOGNIZED:
     default:
       return -1;
@@ -10670,7 +10675,7 @@ export const Changelog: MessageFns<Changelog> = {
 };
 
 function createBaseGetSchemaStringRequest(): GetSchemaStringRequest {
-  return { name: "", objectType: GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED, objectName: "" };
+  return { name: "", type: GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED, schema: "", object: "" };
 }
 
 export const GetSchemaStringRequest: MessageFns<GetSchemaStringRequest> = {
@@ -10678,11 +10683,14 @@ export const GetSchemaStringRequest: MessageFns<GetSchemaStringRequest> = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.objectType !== GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED) {
-      writer.uint32(16).int32(getSchemaStringRequest_ObjectTypeToNumber(message.objectType));
+    if (message.type !== GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED) {
+      writer.uint32(16).int32(getSchemaStringRequest_ObjectTypeToNumber(message.type));
     }
-    if (message.objectName !== "") {
-      writer.uint32(26).string(message.objectName);
+    if (message.schema !== "") {
+      writer.uint32(26).string(message.schema);
+    }
+    if (message.object !== "") {
+      writer.uint32(34).string(message.object);
     }
     return writer;
   },
@@ -10707,7 +10715,7 @@ export const GetSchemaStringRequest: MessageFns<GetSchemaStringRequest> = {
             break;
           }
 
-          message.objectType = getSchemaStringRequest_ObjectTypeFromJSON(reader.int32());
+          message.type = getSchemaStringRequest_ObjectTypeFromJSON(reader.int32());
           continue;
         }
         case 3: {
@@ -10715,7 +10723,15 @@ export const GetSchemaStringRequest: MessageFns<GetSchemaStringRequest> = {
             break;
           }
 
-          message.objectName = reader.string();
+          message.schema = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.object = reader.string();
           continue;
         }
       }
@@ -10730,10 +10746,11 @@ export const GetSchemaStringRequest: MessageFns<GetSchemaStringRequest> = {
   fromJSON(object: any): GetSchemaStringRequest {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      objectType: isSet(object.objectType)
-        ? getSchemaStringRequest_ObjectTypeFromJSON(object.objectType)
+      type: isSet(object.type)
+        ? getSchemaStringRequest_ObjectTypeFromJSON(object.type)
         : GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED,
-      objectName: isSet(object.objectName) ? globalThis.String(object.objectName) : "",
+      schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
+      object: isSet(object.object) ? globalThis.String(object.object) : "",
     };
   },
 
@@ -10742,11 +10759,14 @@ export const GetSchemaStringRequest: MessageFns<GetSchemaStringRequest> = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.objectType !== GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED) {
-      obj.objectType = getSchemaStringRequest_ObjectTypeToJSON(message.objectType);
+    if (message.type !== GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED) {
+      obj.type = getSchemaStringRequest_ObjectTypeToJSON(message.type);
     }
-    if (message.objectName !== "") {
-      obj.objectName = message.objectName;
+    if (message.schema !== "") {
+      obj.schema = message.schema;
+    }
+    if (message.object !== "") {
+      obj.object = message.object;
     }
     return obj;
   },
@@ -10757,8 +10777,9 @@ export const GetSchemaStringRequest: MessageFns<GetSchemaStringRequest> = {
   fromPartial(object: DeepPartial<GetSchemaStringRequest>): GetSchemaStringRequest {
     const message = createBaseGetSchemaStringRequest();
     message.name = object.name ?? "";
-    message.objectType = object.objectType ?? GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED;
-    message.objectName = object.objectName ?? "";
+    message.type = object.type ?? GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED;
+    message.schema = object.schema ?? "";
+    message.object = object.object ?? "";
     return message;
   },
 };

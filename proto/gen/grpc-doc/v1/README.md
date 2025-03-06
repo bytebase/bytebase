@@ -2509,8 +2509,9 @@ FunctionMetadata is the metadata for functions.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the database. Format: instances/{instance}/databases/{database} |
-| object_type | [GetSchemaStringRequest.ObjectType](#bytebase-v1-GetSchemaStringRequest-ObjectType) |  |  |
-| object_name | [string](#string) |  | Format: for database: empty string for schema: &#34;schemaName&#34; for table/view/materialized view/function/procedure: &#34;schemaName.objectName&#34; |
+| type | [GetSchemaStringRequest.ObjectType](#bytebase-v1-GetSchemaStringRequest-ObjectType) |  |  |
+| schema | [string](#string) |  | It&#39;s empty for DATABASE. |
+| object | [string](#string) |  | It&#39;s empty for DATABASE and SCHEMA. |
 
 
 
@@ -3274,6 +3275,7 @@ ViewMetadata is the metadata for views.
 | MATERIALIZED_VIEW | 5 |  |
 | FUNCTION | 6 |  |
 | PROCEDURE | 7 |  |
+| SEQUENCE | 8 |  |
 
 
 
