@@ -31,7 +31,7 @@
   </div>
 </template>
 
-<script lang="ts" setup generic="T extends object">
+<script lang="ts" setup generic="T extends { name: string }">
 import { NSelect, NButton } from "naive-ui";
 import { computed, reactive, watch, ref, type Ref } from "vue";
 import { useIsLoggedIn, useCurrentUserV1 } from "@/store";
@@ -187,7 +187,17 @@ watch(
   (list) => emit("list:update", list)
 );
 
+const refreshCache = (data: T[]) => {
+  for (const item of data) {
+    const index = dataList.value.findIndex((d) => d.name === item.name);
+    if (index >= 0) {
+      dataList.value[index] = item;
+    }
+  }
+};
+
 defineExpose({
   refresh,
+  refreshCache,
 });
 </script>

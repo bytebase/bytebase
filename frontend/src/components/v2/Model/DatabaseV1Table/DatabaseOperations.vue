@@ -69,11 +69,13 @@
       v-if="state.transferOutDatabaseType === 'TRANSFER-OUT'"
       :database-list="props.databases"
       :selected-database-names="selectedDatabaseNameList"
+      :on-success="(databases) => $emit('refresh', databases)"
       @dismiss="state.transferOutDatabaseType = undefined"
     />
     <TransferDatabaseForm
       v-else
       :project-name="projectName"
+      :on-success="(databases) => $emit('refresh', databases)"
       @dismiss="state.transferOutDatabaseType = undefined"
     />
   </Drawer>
@@ -179,6 +181,10 @@ const state = reactive<LocalState>({
   showEditEnvironmentDrawer: false,
   transferOutDatabaseType: undefined,
 });
+
+const emit = defineEmits<{
+  (event: "refresh", databases: ComposedDatabase[]): void;
+}>();
 
 const { t } = useI18n();
 const router = useRouter();
@@ -368,7 +374,7 @@ const unAssignDatabases = async () => {
   }
   try {
     state.loading = true;
-    await useDatabaseV1Store().batchUpdateDatabases({
+    const databases = await useDatabaseV1Store().batchUpdateDatabases({
       parent: "-",
       requests: assignedDatabases.value.map((database) => {
         return UpdateDatabaseRequest.fromPartial({
@@ -380,6 +386,7 @@ const unAssignDatabases = async () => {
         });
       }),
     });
+    emit("refresh", databases);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -577,19 +584,20 @@ const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
   }
 
   // We doesn't support batch update labels, so we update one by one.
-  await Promise.all(
+  const updatedDatabases = await Promise.all(
     props.databases.map(async (database, i) => {
       const label = labelsList[i];
       const patch = {
         ...Database.fromPartial(database),
         labels: label,
       };
-      await useDatabaseV1Store().updateDatabase({
+      return await useDatabaseV1Store().updateDatabase({
         database: patch,
         updateMask: ["labels"],
       });
     })
   );
+  emit("refresh", updatedDatabases);
 
   pushNotification({
     module: "bytebase",

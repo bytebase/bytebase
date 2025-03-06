@@ -94,10 +94,17 @@ import { UpdateDatabaseRequest } from "@/types/proto/v1/database_service";
 import { autoProjectRoute } from "@/utils";
 import DatabaseV1Table from "../v2/Model/DatabaseV1Table/DatabaseV1Table.vue";
 
-const props = defineProps<{
-  databaseList: ComposedDatabase[];
-  selectedDatabaseNames?: string[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    databaseList: ComposedDatabase[];
+    selectedDatabaseNames?: string[];
+    onSuccess?: (databases: ComposedDatabase[]) => void;
+  }>(),
+  {
+    selectedDatabaseNames: () => [],
+    onSuccess: (_: ComposedDatabase[]) => {},
+  }
+);
 
 const emit = defineEmits<{
   (e: "dismiss"): void;
@@ -195,6 +202,7 @@ const doTransfer = async () => {
           });
         }),
       });
+
       const displayDatabaseName =
         databaseList.length > 1
           ? `${databaseList.length} databases`
@@ -213,6 +221,7 @@ const doTransfer = async () => {
       }
     }
 
+    props.onSuccess(databaseList);
     emit("dismiss");
   } finally {
     loading.value = false;
