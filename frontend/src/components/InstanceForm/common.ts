@@ -102,7 +102,7 @@ export const wrapEditDataSource = (ds: DataSource | undefined) => {
       Object.entries(obj).forEach(([key, value]) => {
         result[key] = value as string;
       });
-    } catch (e) {
+    } catch {
       // Silent catch - if we can't access properties, return empty object
     }
     
@@ -171,7 +171,7 @@ export const calcDataSourceUpdateMask = (
   // Make sure editing has the correct extraConnectionParameters
   if (editState.extraConnectionParameters) {
     // Clone the map manually to ensure it's a plain object, not a Proxy
-    const params = {};
+    const params: Record<string, string> = {};
     Object.entries(editState.extraConnectionParameters).forEach(([key, value]) => {
       params[key] = value;
     });
