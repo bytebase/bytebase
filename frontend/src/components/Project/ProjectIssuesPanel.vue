@@ -95,8 +95,6 @@ import type {
 } from "@/utils";
 import {
   buildIssueFilterBySearchParams,
-  buildSearchParamsBySearchText,
-  buildSearchTextBySearchParams,
   buildUIIssueFilterBySearchParams,
   extractProjectResourceName,
   getSemanticIssueStatusFromSearchParams,
@@ -290,13 +288,6 @@ const guessTabValueFromSearchParams = (params: SearchParams): TabValue => {
   return "";
 };
 const initializeSearchParamsFromQueryOrLocalStorage = () => {
-  const { qs } = route.query;
-  if (typeof qs === "string" && qs.length > 0) {
-    return {
-      params: buildSearchParamsBySearchText(qs),
-      advanced: true,
-    };
-  }
   return {
     params: mergeSearchParamsByTab(defaultSearchParams(), storedTab.value),
     advanced: false,
@@ -400,20 +391,12 @@ watch(
 );
 
 watch(
-  [() => state.params, tab],
+  () => tab.value,
   () => {
     const hash = route.hash;
-    if (state.params.query || tab.value === "") {
+    if (tab.value !== "") {
       // using custom advanced search query, sync the search query string
       // to URL
-      router.replace({
-        query: {
-          ...route.query,
-          qs: buildSearchTextBySearchParams(state.params),
-        },
-        hash,
-      });
-    } else {
       const query = cloneDeep(route.query);
       delete query["qs"];
       router.replace({
@@ -421,8 +404,7 @@ watch(
         hash,
       });
     }
-  },
-  { deep: true }
+  }
 );
 
 watch(

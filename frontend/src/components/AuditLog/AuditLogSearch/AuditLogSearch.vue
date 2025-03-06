@@ -94,7 +94,6 @@ const scopeOptions = computed((): ScopeOption[] => {
       id: "project",
       title: t("issue.advanced-search.scope.project.title"),
       description: t("issue.advanced-search.scope.project.description"),
-      // TODO(ed): We need to support search projects asynchronous.
       options: projectList.value.map<ValueOption>((project) => {
         const name = extractProjectResourceName(project.name);
         return {
