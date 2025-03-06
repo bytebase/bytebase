@@ -1185,6 +1185,7 @@ func convertDataSources(dataSources []*storepb.DataSource) ([]*v1pb.DataSource, 
 			RedisType:              convertRedisType(ds.GetRedisType()),
 			MasterName:             ds.GetMasterName(),
 			MasterUsername:         ds.GetMasterUsername(),
+			ExtraConnectionParameters: ds.GetExtraConnectionParameters(),
 		}
 		if clientSecretCredential := convertClientSecretCredential(ds.GetClientSecretCredential()); clientSecretCredential != nil {
 			clientSecretCredential.ClientSecret = ""
@@ -1409,6 +1410,7 @@ func (s *InstanceService) convertV1DataSource(dataSource *v1pb.DataSource) (*sto
 		MasterName:                         dataSource.MasterName,
 		MasterUsername:                     dataSource.MasterUsername,
 		MasterObfuscatedPassword:           common.Obfuscate(dataSource.MasterPassword, s.secret),
+		ExtraConnectionParameters:          dataSource.ExtraConnectionParameters,
 	}
 	if v := dataSource.GetClientSecretCredential(); v != nil {
 		v.ClientSecret = common.Obfuscate(v.ClientSecret, s.secret)

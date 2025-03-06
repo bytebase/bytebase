@@ -81,15 +81,50 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
 };
 
 export const wrapEditDataSource = (ds: DataSource | undefined) => {
-  return {
-    ...cloneDeep(ds ?? emptyDataSource()),
+  // Deep clone the data source to avoid reference issues
+  const cloned = cloneDeep(ds ?? emptyDataSource());
+  
+  // Create a plain object from potentially proxied extraConnectionParameters
+  const createPlainParamsObject = (obj: any) => {
+    if (!obj) return {};
+    
+    const result: Record<string, string> = {};
+    
+    // This handles both plain objects and Proxy objects
+    try {
+      // Get keys and copy each property
+      const keys = Object.keys(obj);
+      keys.forEach(key => {
+        result[key] = obj[key];
+      });
+      
+      // Also try using Object.entries as a backup
+      Object.entries(obj).forEach(([key, value]) => {
+        result[key] = value as string;
+      });
+    } catch (e) {
+      // Silent catch - if we can't access properties, return empty object
+    }
+    
+    return result;
+  };
+  
+  // First try to get params from original ds, then from cloned
+  const extraParams = createPlainParamsObject(ds?.extraConnectionParameters) || 
+                      createPlainParamsObject(cloned.extraConnectionParameters) || 
+                      {};
+  
+  const result = {
+    ...cloned,
     pendingCreate: ds === undefined,
     updatedPassword: "",
     updatedMasterPassword: "",
     useEmptyPassword: false,
     useEmptyMasterPassword: false,
-    extraConnectionParameters: ds?.extraConnectionParameters ?? {},
+    extraConnectionParameters: extraParams,
   };
+  
+  return result;
 };
 
 export const calcDataSourceUpdateMask = (
@@ -129,9 +164,21 @@ export const calcDataSourceUpdateMask = (
     updateMask.add("authentication_private_key");
   }
   
-  // Always add extra_connection_parameters to update mask if they exist
-  if (editing.extraConnectionParameters) {
-    updateMask.add("extra_connection_parameters");
+  // Always add extra_connection_parameters to update mask
+  // This is needed even if they're empty or haven't changed, to ensure proper handling of parameters
+  updateMask.add("extra_connection_parameters");
+  
+  // Make sure editing has the correct extraConnectionParameters
+  if (editState.extraConnectionParameters) {
+    // Clone the map manually to ensure it's a plain object, not a Proxy
+    const params = {};
+    Object.entries(editState.extraConnectionParameters).forEach(([key, value]) => {
+      params[key] = value;
+    });
+    
+    editing.extraConnectionParameters = params;
+  } else {
+    editing.extraConnectionParameters = {}; 
   }
 
   return Array.from(updateMask);

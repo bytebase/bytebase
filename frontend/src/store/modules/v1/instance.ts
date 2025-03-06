@@ -40,9 +40,11 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     const composedInstances = await Promise.all(
       list.map((instance) => composeInstance(instance))
     );
+    
     composedInstances.forEach((composed) => {
       instanceMapByName.set(composed.name, composed);
     });
+    
     return composedInstances;
   };
   const createInstance = async (instance: Instance) => {
@@ -120,7 +122,8 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       return cached;
     }
     await fetchInstanceByName(name, silent);
-    return getInstanceByName(name);
+    const instance = getInstanceByName(name);
+    return instance;
   };
   const createDataSource = async (
     instance: Instance,
@@ -138,11 +141,22 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     dataSource: DataSource,
     updateMask: string[]
   ) => {
+    // Create a clean version of the data source with manually copied extraConnectionParameters
+    const cleanDataSource = {...dataSource};
+    if (dataSource.extraConnectionParameters) {
+      const cleanParams = {};
+      Object.entries(dataSource.extraConnectionParameters).forEach(([key, value]) => {
+        cleanParams[key] = value;
+      });
+      cleanDataSource.extraConnectionParameters = cleanParams;
+    }
+    
     const updatedInstance = await instanceServiceClient.updateDataSource({
       name: instance.name,
-      dataSource: dataSource,
+      dataSource: cleanDataSource,
       updateMask,
     });
+    
     const [composed] = await upsertInstances([updatedInstance]);
     return composed;
   };

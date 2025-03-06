@@ -293,7 +293,20 @@ const updateEditState = (instance: Instance) => {
   basicInfo.value = extractBasicInfo(instance);
   const updatedEditState = extractDataSourceEditState(instance);
   
+  // Explicitly preserve extraConnectionParameters from the instance when setting the updated edit state
+  if (instance.dataSources) {
+    instance.dataSources.forEach((originalDs) => {
+      const ds = updatedEditState.dataSources.find(d => d.id === originalDs.id);
+      if (ds && originalDs.extraConnectionParameters) {
+        // Ensure we have a fresh copy of the extraConnectionParameters
+        ds.extraConnectionParameters = { ...originalDs.extraConnectionParameters };
+      }
+    });
+  }
+  
+  // Now set the updated dataSources in the edit state
   dataSourceEditState.value.dataSources = updatedEditState.dataSources;
+  
   if (
     updatedEditState.dataSources.findIndex(
       (ds) => ds.id === dataSourceEditState.value.editingDataSourceId
