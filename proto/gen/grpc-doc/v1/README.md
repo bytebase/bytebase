@@ -122,6 +122,8 @@
     - [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest)
     - [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest)
     - [GetRevisionRequest](#bytebase-v1-GetRevisionRequest)
+    - [GetSchemaStringRequest](#bytebase-v1-GetSchemaStringRequest)
+    - [GetSchemaStringResponse](#bytebase-v1-GetSchemaStringResponse)
     - [IndexMetadata](#bytebase-v1-IndexMetadata)
     - [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest)
     - [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse)
@@ -160,6 +162,7 @@
     - [ColumnMetadata.IdentityGeneration](#bytebase-v1-ColumnMetadata-IdentityGeneration)
     - [DatabaseMetadataView](#bytebase-v1-DatabaseMetadataView)
     - [GenerationMetadata.Type](#bytebase-v1-GenerationMetadata-Type)
+    - [GetSchemaStringRequest.ObjectType](#bytebase-v1-GetSchemaStringRequest-ObjectType)
     - [StreamMetadata.Mode](#bytebase-v1-StreamMetadata-Mode)
     - [StreamMetadata.Type](#bytebase-v1-StreamMetadata-Type)
     - [TablePartitionMetadata.Type](#bytebase-v1-TablePartitionMetadata-Type)
@@ -2497,6 +2500,39 @@ FunctionMetadata is the metadata for functions.
 
 
 
+<a name="bytebase-v1-GetSchemaStringRequest"></a>
+
+### GetSchemaStringRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database. Format: instances/{instance}/databases/{database} |
+| type | [GetSchemaStringRequest.ObjectType](#bytebase-v1-GetSchemaStringRequest-ObjectType) |  |  |
+| schema | [string](#string) |  | It&#39;s empty for DATABASE. |
+| object | [string](#string) |  | It&#39;s empty for DATABASE and SCHEMA. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetSchemaStringResponse"></a>
+
+### GetSchemaStringResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema_string | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-IndexMetadata"></a>
 
 ### IndexMetadata
@@ -3224,6 +3260,25 @@ ViewMetadata is the metadata for views.
 
 
 
+<a name="bytebase-v1-GetSchemaStringRequest-ObjectType"></a>
+
+### GetSchemaStringRequest.ObjectType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| OBJECT_TYPE_UNSPECIFIED | 0 |  |
+| DATABASE | 1 |  |
+| SCHEMA | 2 |  |
+| TABLE | 3 |  |
+| VIEW | 4 |  |
+| MATERIALIZED_VIEW | 5 |  |
+| FUNCTION | 6 |  |
+| PROCEDURE | 7 |  |
+| SEQUENCE | 8 |  |
+
+
+
 <a name="bytebase-v1-StreamMetadata-Mode"></a>
 
 ### StreamMetadata.Mode
@@ -3318,6 +3373,7 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | DeleteRevision | [DeleteRevisionRequest](#bytebase-v1-DeleteRevisionRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | ListChangelogs | [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest) | [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse) |  |
 | GetChangelog | [GetChangelogRequest](#bytebase-v1-GetChangelogRequest) | [Changelog](#bytebase-v1-Changelog) |  |
+| GetSchemaString | [GetSchemaStringRequest](#bytebase-v1-GetSchemaStringRequest) | [GetSchemaStringResponse](#bytebase-v1-GetSchemaStringResponse) |  |
 
  
 
