@@ -238,8 +238,7 @@ func (s *Store) CreateTasksV2(ctx context.Context, creates ...*TaskMessage) ([]*
 	return tasks, nil
 }
 
-// ListTasks retrieves a list of tasks based on find.
-func (s *Store) ListTasks(ctx context.Context, find *TaskFind) ([]*TaskMessage, error) {
+func (*Store) listTasksTx(ctx context.Context, tx *Tx, find *TaskFind) ([]*TaskMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("task.id = $%d", len(args)+1)), append(args, *v)
@@ -280,12 +279,6 @@ func (s *Store) ListTasks(ctx context.Context, find *TaskFind) ([]*TaskMessage, 
 	if find.NonRollbackTask {
 		where = append(where, "(NOT (task.type='bb.task.database.data.update' AND task.payload->>'rollbackFromTaskId' IS NOT NULL))")
 	}
-
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
 
 	args = append(args, api.TaskRunNotStarted)
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
@@ -347,6 +340,22 @@ func (s *Store) ListTasks(ctx context.Context, find *TaskFind) ([]*TaskMessage, 
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+	return tasks, nil
+}
+
+// ListTasks retrieves a list of tasks based on find.
+func (s *Store) ListTasks(ctx context.Context, find *TaskFind) ([]*TaskMessage, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	tasks, err := s.listTasksTx(ctx, tx, find)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list tasks")
+	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
