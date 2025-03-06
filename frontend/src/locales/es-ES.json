@@ -1930,8 +1930,7 @@
       "key-necessary": "Se requiere una clave",
       "value-necessary": "Se requiere un valor",
       "key-duplicated": "Claves duplicadas",
-      "max-value-length-exceeded": "La longitud del valor no puede exceder {longitud} caracteres",
-      "x-is-reserved-key": "\"{key}\" es una clave reservada del sistema"
+      "max-value-length-exceeded": "La longitud del valor no puede exceder {longitud} caracteres"
     },
     "add-label": "Agregar etiqueta",
     "filter-by-label": "Filtrar por etiqueta"

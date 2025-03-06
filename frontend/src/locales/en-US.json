@@ -1931,8 +1931,7 @@
       "key-necessary": "Key is required",
       "value-necessary": "Value is required",
       "key-duplicated": "Duplicated keys",
-      "max-value-length-exceeded": "Value's length cannot exceed {length} characters",
-      "x-is-reserved-key": "\"{key}\" is a system reserved key"
+      "max-value-length-exceeded": "Value's length cannot exceed {length} characters"
     },
     "add-label": "Add label",
     "filter-by-label": "Filter by label"

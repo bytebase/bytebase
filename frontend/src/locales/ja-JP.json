@@ -1930,8 +1930,7 @@
       "key-necessary": "キーを指定する必要があります",
       "value-necessary": "値を指定する必要があります",
       "key-duplicated": "キーが繰り返されました",
-      "max-value-length-exceeded": "値は {length} 文字を超えることはできません",
-      "x-is-reserved-key": "「{key}」はシステムで予約されているキーです"
+      "max-value-length-exceeded": "値は {length} 文字を超えることはできません"
     },
     "add-label": "タグ付けする",
     "filter-by-label": "タグでフィルタリングする"

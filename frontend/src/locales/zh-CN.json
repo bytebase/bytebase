@@ -1930,8 +1930,7 @@
       "key-necessary": "需要指定 Key",
       "value-necessary": "需要指定值",
       "key-duplicated": "Key 重复了",
-      "max-value-length-exceeded": "值长的度不能超过 {length} 字符",
-      "x-is-reserved-key": "\"{key}\" 是系统保留 Key"
+      "max-value-length-exceeded": "值长的度不能超过 {length} 字符"
     },
     "add-label": "添加标签",
     "filter-by-label": "按标签过滤"

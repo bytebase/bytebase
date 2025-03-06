@@ -1930,8 +1930,7 @@
       "key-necessary": "Khóa là bắt buộc",
       "value-necessary": "Giá trị là bắt buộc",
       "key-duplicated": "Khóa trùng lặp",
-      "max-value-length-exceeded": "Độ dài giá trị không được vượt quá {length} ký tự",
-      "x-is-reserved-key": "\"{key}\" là một khóa hệ thống dành riêng"
+      "max-value-length-exceeded": "Độ dài giá trị không được vượt quá {length} ký tự"
     },
     "add-label": "Thêm nhãn",
     "filter-by-label": "Lọc theo nhãn"
