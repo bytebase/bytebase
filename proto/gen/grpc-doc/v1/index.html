@@ -658,14 +658,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ListInstanceDatabasesRequest"><span class="badge">M</span>ListInstanceDatabasesRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListInstanceDatabasesResponse"><span class="badge">M</span>ListInstanceDatabasesResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.ListRevisionsRequest"><span class="badge">M</span>ListRevisionsRequest</a>
                 </li>
               
@@ -7793,9 +7785,9 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The parent, which owns this collection of databases.
-- projects/{project}: list all databases in a project.
-- workspaces/{workspace}: list all databases in a workspace. </p></td>
+                  <td><p>- projects/{project}: list databases in a project, require &#34;bb.projects.get&#34; permission.
+- workspaces/-: list databases in the workspace, require &#34;bb.databases.list&#34; permission.
+- instances/{instances}: list databases in a instance, require &#34;bb.instances.get&#34; permission </p></td>
                 </tr>
               
                 <tr>
@@ -7803,7 +7795,9 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p>The maximum number of databases to return. The service may return fewer
-than this value. If unspecified, at most 10 databases will be returned. </p></td>
+than this value.
+If unspecified, at most 10 databases will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
                 </tr>
               
                 <tr>
@@ -7817,6 +7811,41 @@ When paginating, all other parameters provided to `ListDatabases` must
 match the call that provided the page token. </p></td>
                 </tr>
               
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Filter is used to filter databases returned in the list.
+Supported filter:
+- environment
+- name
+- project
+- instance
+- engine
+- label
+- exclude_unassigned: Not show unassigned databases if specified
+
+For example:
+environment == &#34;environments/{environment resource id}&#34;
+project == &#34;projects/{project resource id}&#34;
+instance == &#34;instances/{instance resource id}&#34;
+name.matches(&#34;database name&#34;)
+engine == &#34;MYSQL&#34;
+engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]
+!(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;])
+label == &#34;region:asia&#34;
+label == &#34;tenant:asia,europe&#34;
+label == &#34;region:asia&#34; &amp;&amp; label == &#34;tenant:bytebase&#34;
+exclude_unassigned == true </p></td>
+                </tr>
+              
+                <tr>
+                  <td>show_deleted</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Show deleted database if specified. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7825,93 +7854,6 @@ match the call that provided the page token. </p></td>
         
       
         <h3 id="bytebase.v1.ListDatabasesResponse">ListDatabasesResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>databases</td>
-                  <td><a href="#bytebase.v1.Database">Database</a></td>
-                  <td>repeated</td>
-                  <td><p>The databases from the specified request. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
-If this field is omitted, there are no subsequent pages. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListInstanceDatabasesRequest">ListInstanceDatabasesRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent, which owns this collection of databases.
-- instances/{instance}: list all databases for an instance. Use
-&#34;instances/-&#34; to list all databases. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The maximum number of databases to return. The service may return fewer
-than this value. If unspecified, at most 10 databases will be returned. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A page token, received from a previous `ListInstanceDatabases` call.
-Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListInstanceDatabases`
-must match the call that provided the page token. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Deprecated.
-Filter is used to filter databases returned in the list.
-For example, `project == &#34;projects/{project}&#34;` can be used to list
-databases in a project. Note: the project filter will be moved to parent. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListInstanceDatabasesResponse">ListInstanceDatabasesResponse</h3>
         <p></p>
 
         
@@ -9993,13 +9935,6 @@ view, function names.</p></td>
               </tr>
             
               <tr>
-                <td>ListInstanceDatabases</td>
-                <td><a href="#bytebase.v1.ListInstanceDatabasesRequest">ListInstanceDatabasesRequest</a></td>
-                <td><a href="#bytebase.v1.ListInstanceDatabasesResponse">ListInstanceDatabasesResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>ListDatabases</td>
                 <td><a href="#bytebase.v1.ListDatabasesRequest">ListDatabasesRequest</a></td>
                 <td><a href="#bytebase.v1.ListDatabasesResponse">ListDatabasesResponse</a></td>
@@ -10156,19 +10091,16 @@ view, function names.</p></td>
               
               
               <tr>
-                <td>ListInstanceDatabases</td>
+                <td>ListDatabases</td>
                 <td>GET</td>
-                <td>/v1/{parent=instances/*}/databases</td>
+                <td>/v1/{parent=projects/*}/databases</td>
                 <td></td>
               </tr>
-              
-            
-              
               
               <tr>
                 <td>ListDatabases</td>
                 <td>GET</td>
-                <td>/v1/{parent=projects/*}/databases</td>
+                <td>/v1/{parent=instances/*}/databases</td>
                 <td></td>
               </tr>
               
@@ -25309,7 +25241,7 @@ syntax. Support filter by:
 - database, for example:
    database = &#34;instances/{instance}/databases/{database}&#34;
 - instance, for example:
-   instance = &#34;instance/{instance}&#34;
+   instance = &#34;instances/{instance}&#34;
 - type, for example:
    type = &#34;QUERY&#34; </p></td>
                 </tr>

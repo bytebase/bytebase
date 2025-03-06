@@ -2,22 +2,25 @@
   <ResourceSelect
     v-bind="$attrs"
     class="bb-database-select"
+    :remote="true"
+    :loading="state.loading"
     :placeholder="$t('database.select')"
     :multiple="multiple"
     :value="databaseName"
     :values="databaseNames"
     :options="options"
     :custom-label="renderLabel"
+    @search="handleSearch"
     @update:value="(val) => $emit('update:database-name', val)"
     @update:values="(val) => $emit('update:database-names', val)"
   />
 </template>
 
 <script lang="ts" setup>
-import { computed, h, watch } from "vue";
+import { useDebounceFn } from "@vueuse/core";
+import { computed, h, watch, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useDatabaseV1Store } from "@/store";
-import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedDatabase } from "@/types";
 import {
   isValidDatabaseName,
@@ -30,6 +33,11 @@ import type { Engine } from "@/types/proto/v1/common";
 import { instanceV1Name, supportedEngineV1List } from "@/utils";
 import { InstanceV1EngineIcon } from "../Model";
 import ResourceSelect from "./ResourceSelect.vue";
+
+interface LocalState {
+  loading: boolean;
+  rawDatabaseList: ComposedDatabase[];
+}
 
 const props = withDefaults(
   defineProps<{
@@ -44,6 +52,7 @@ const props = withDefaults(
     filter?: (database: ComposedDatabase, index: number) => boolean;
     multiple?: boolean;
     clearable?: boolean;
+    defaultSelectFirst?: boolean;
   }>(),
   {
     databaseName: undefined,
@@ -57,6 +66,7 @@ const props = withDefaults(
     filter: undefined,
     multiple: false,
     clearable: false,
+    defaultSelectFirst: false,
   }
 );
 
@@ -66,54 +76,79 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { ready } = useDatabaseV1List(props.projectName || props.instanceName);
+const databaseStore = useDatabaseV1Store();
 
-const rawDatabaseList = computed(() => {
-  const list = useDatabaseV1Store().databaseListByUser;
-
-  return list.filter((db) => {
-    if (
-      isValidEnvironmentName(props.environmentName) &&
-      db.effectiveEnvironment !== props.environmentName
-    ) {
-      return false;
-    }
-    if (
-      isValidInstanceName(props.instanceName) &&
-      props.instanceName !== db.instance
-    ) {
-      return false;
-    }
-    if (
-      isValidProjectName(props.projectName) &&
-      db.project !== props.projectName
-    ) {
-      return false;
-    }
-    if (!props.allowedEngineTypeList.includes(db.instanceResource.engine)) {
-      return false;
-    }
-
-    return true;
-  });
+const state = reactive<LocalState>({
+  loading: true,
+  rawDatabaseList: [],
 });
 
-const combinedDatabaseList = computed(() => {
-  let list = [...rawDatabaseList.value];
-
-  if (props.filter) {
-    list = list.filter(props.filter);
+const filterParams = computed(() => {
+  const list = [];
+  if (isValidEnvironmentName(props.environmentName)) {
+    list.push(`environment == "${props.environmentName}"`);
   }
-
-  if (props.includeAll) {
-    const dummyAll = {
-      ...unknownDatabase(),
-      databaseName: t("database.all"),
-    };
-    list.unshift(dummyAll);
+  if (isValidInstanceName(props.instanceName)) {
+    list.push(`instance == "${props.instanceName}"`);
+  }
+  if (isValidProjectName(props.projectName)) {
+    list.push(`project == "${props.projectName}"`);
+  }
+  if (props.allowedEngineTypeList.length > 0) {
+    list.push(
+      `engine in [${props.allowedEngineTypeList.map((e) => `"${e}"`).join(", ")}]`
+    );
   }
 
   return list;
+});
+
+const searchDatabases = async (name: string) => {
+  const dbFilter = [...filterParams.value];
+  if (name) {
+    dbFilter.push(`name.matches("${name}")`);
+  }
+  const { databases } = await databaseStore.fetchDatabases({
+    parent: "workspaces/-",
+    filter: dbFilter.join(" && "),
+    pageSize: 100,
+  });
+  return databases;
+};
+
+const handleSearch = useDebounceFn(async (search: string) => {
+  state.loading = true;
+  try {
+    const databases = await searchDatabases(search);
+    state.rawDatabaseList = databases;
+    if (!search && props.includeAll) {
+      const dummyAll = {
+        ...unknownDatabase(),
+        databaseName: t("database.all"),
+      };
+      state.rawDatabaseList.unshift(dummyAll);
+    }
+  } finally {
+    state.loading = false;
+  }
+}, 500);
+
+watch(
+  () => filterParams.value,
+  () => {
+    handleSearch("");
+  },
+  {
+    immediate: true,
+  }
+);
+
+const combinedDatabaseList = computed(() => {
+  if (props.filter) {
+    return state.rawDatabaseList.filter(props.filter);
+  }
+
+  return state.rawDatabaseList;
 });
 
 const options = computed(() => {
@@ -124,6 +159,17 @@ const options = computed(() => {
       label: database.databaseName,
     };
   });
+});
+
+watchEffect(() => {
+  if (!props.defaultSelectFirst || props.multiple) {
+    return;
+  }
+  if (options.value.length === 0) {
+    return;
+  }
+
+  emit("update:database-name", options.value[0].value);
 });
 
 const renderLabel = (database: ComposedDatabase) => {
@@ -162,7 +208,7 @@ const renderLabel = (database: ComposedDatabase) => {
 const resetInvalidSelection = () => {
   if (!props.autoReset) return;
   if (
-    ready.value &&
+    !state.loading &&
     props.databaseName &&
     !combinedDatabaseList.value.find((item) => item.name === props.databaseName)
   ) {
@@ -170,14 +216,8 @@ const resetInvalidSelection = () => {
   }
 };
 
-watch(
-  [
-    () => [props.projectName, props.environmentName, props.databaseName],
-    combinedDatabaseList,
-  ],
-  resetInvalidSelection,
-  {
-    immediate: true,
-  }
-);
+watch(() => combinedDatabaseList.value, resetInvalidSelection, {
+  immediate: true,
+  deep: true,
+});
 </script>

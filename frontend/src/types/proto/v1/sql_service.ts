@@ -559,7 +559,7 @@ export interface SearchQueryHistoriesRequest {
    * - database, for example:
    *    database = "instances/{instance}/databases/{database}"
    * - instance, for example:
-   *    instance = "instance/{instance}"
+   *    instance = "instances/{instance}"
    * - type, for example:
    *    type = "QUERY"
    */

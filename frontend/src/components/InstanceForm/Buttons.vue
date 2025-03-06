@@ -55,20 +55,19 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
+  useDatabaseV1Store,
   useInstanceV1Store,
   useSubscriptionV1Store,
   useGracefulRequest,
   pushNotification,
-  useDBSchemaV1Store,
 } from "@/store";
-import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import { Engine } from "@/types/proto/v1/common";
 import {
   DataSource,
   DataSourceType,
   Instance,
 } from "@/types/proto/v1/instance_service";
-import { isValidSpannerHost, defer, wrapRefAsPromise } from "@/utils";
+import { isValidSpannerHost, defer } from "@/utils";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import {
   calcDataSourceUpdateMask,
@@ -116,6 +115,7 @@ const {
 const router = useRouter();
 const { t } = useI18n();
 const instanceV1Store = useInstanceV1Store();
+const databaseStore = useDatabaseV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 const scanIntervalInputRef = ref<InstanceType<typeof ScanIntervalInput>>();
 
@@ -266,8 +266,6 @@ const doCreate = async () => {
       const createdInstance = await instanceV1Store.createInstance(
         pendingCreateInstance.value
       );
-      // Sync the database list after instance is created.
-      useDatabaseV1List(createdInstance.name);
       if (props.onCreated) {
         props.onCreated(createdInstance);
       } else {
@@ -387,13 +385,7 @@ const doUpdate = async () => {
   };
   const refreshInstanceDatabases = async (instance: string) => {
     await instanceV1Store.syncInstance(instance, true);
-    const { listCache, databaseList, ready } = useDatabaseV1List(instance);
-    listCache.deleteCache(instance);
-    await wrapRefAsPromise(ready, true);
-    const dbSchemaStore = useDBSchemaV1Store();
-    databaseList.value.forEach((database) =>
-      dbSchemaStore.removeCache(database.name)
-    );
+    databaseStore.removeCacheByInstance(instance);
   };
   /**
    * @returns true if blocked by connection testing failure

@@ -148,7 +148,7 @@ const handleClose = () => {
   emit("close");
 };
 
-const gotoCreateIssue = () => {
+const gotoCreateIssue = async () => {
   const database = tabStore.currentTab?.connection.database ?? "";
   if (!database) {
     pushNotification({
@@ -161,7 +161,7 @@ const gotoCreateIssue = () => {
 
   emit("close");
 
-  const db = useDatabaseV1Store().getDatabaseByName(database);
+  const db = await useDatabaseV1Store().getOrFetchDatabaseByName(database);
   const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
   useStorageStore().put(sqlStorageKey, statement.value);
   const route = router.resolve({

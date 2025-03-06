@@ -44,6 +44,11 @@ type UpdateDatabaseMessage struct {
 	Metadata      *storepb.DatabaseMetadata
 }
 
+type FindDatabaseFilter struct {
+	Args  []any
+	Where string
+}
+
 // FindDatabaseMessage is the message for finding databases.
 type FindDatabaseMessage struct {
 	ProjectID              *string
@@ -58,6 +63,7 @@ type FindDatabaseMessage struct {
 	// IsCaseSensitive is used to ignore case sensitive when finding database.
 	IsCaseSensitive bool
 
+	Filter *FindDatabaseFilter
 	Limit  *int
 	Offset *int
 }
@@ -317,6 +323,10 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 
 func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
+	if filter := find.Filter; filter != nil {
+		where = append(where, filter.Where)
+		args = append(args, filter.Args...)
+	}
 	if v := find.ProjectID; v != nil {
 		where, args = append(where, fmt.Sprintf("db.project = $%d", len(args)+1)), append(args, *v)
 	}

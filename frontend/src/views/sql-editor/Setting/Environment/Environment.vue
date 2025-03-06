@@ -2,32 +2,6 @@
   <div
     class="w-full h-full flex flex-col gap-4 pt-4 px-4 overflow-hidden relative"
   >
-    <div
-      v-if="allowCreate || allowReorder"
-      class="flex items-center justify-end space-x-2 px-2"
-    >
-      <NButton
-        v-if="allowCreate"
-        type="primary"
-        @click="handleClickCreateEnvironment"
-      >
-        <template #icon>
-          <PlusIcon class="h-4 w-4" />
-        </template>
-        <NEllipsis>
-          {{ $t("environment.create") }}
-        </NEllipsis>
-      </NButton>
-      <NButton v-if="allowReorder" @click="startReorder">
-        <template #icon>
-          <ListOrderedIcon class="h-4 w-4" />
-        </template>
-        <NEllipsis>
-          {{ $t("common.reorder") }}
-        </NEllipsis>
-      </NButton>
-    </div>
-
     <div class="flex-1 overflow-y-auto">
       <NTabs
         type="line"
@@ -35,7 +9,7 @@
         :value="state.selectedId"
         size="large"
         justify-content="start"
-        tab-style="margin: 0; padding: 0 2.5rem 0.5rem 2rem;"
+        tab-style="margin: 0 1rem; padding-left: 2rem; padding: 0 2.5rem 0.5rem 2.5rem;"
         @update:value="onTabChange"
       >
         <NTabPane
@@ -70,6 +44,33 @@
             </NButton>
           </div>
         </NTabPane>
+        <template #suffix>
+          <div
+            v-if="!state.reorder"
+            class="flex items-center justify-end space-x-2 px-2 pb-1"
+          >
+            <NButton
+              v-if="allowCreate"
+              type="primary"
+              @click="handleClickCreateEnvironment"
+            >
+              <template #icon>
+                <PlusIcon class="h-4 w-4" />
+              </template>
+              <NEllipsis>
+                {{ $t("environment.create") }}
+              </NEllipsis>
+            </NButton>
+            <NButton v-if="allowReorder" @click="startReorder">
+              <template #icon>
+                <ListOrderedIcon class="h-4 w-4" />
+              </template>
+              <NEllipsis>
+                {{ $t("common.reorder") }}
+              </NEllipsis>
+            </NButton>
+          </div>
+        </template>
       </NTabs>
     </div>
   </div>
@@ -331,7 +332,7 @@ const renderTab = (env: Environment, index: number) => {
     }
   }
 
-  return h("div", { class: "flex items-center space-x-2" }, child);
+  return h("div", { class: "flex items-center space-x-2 py-1" }, child);
 };
 
 onMounted(() => {

@@ -983,9 +983,6 @@
       "request-exporter-role": "Solicitar función de exportación"
     }
   },
-  "alter-schema": {
-    "no-databases-in-project": "No hay bases de datos en este proyecto. Haga clic en Nueva BD o Transferir BD para agregar bases de datos."
-  },
   "quick-action": {
     "create-db": "Crear base de datos",
     "new-db": "Nueva BD",
@@ -1420,7 +1417,6 @@
       "select": "Seleccionar tabla",
       "select-tip": "Seleccione una mesa para comenzar."
     },
-    "n-selected-m-in-total": "({selected} seleccionados, {total} en total)",
     "all": "Todas las bases de datos",
     "show-schemaless-databases": "Mostrar bases de datos sin esquema. (Editar Schema no se aplica a las bases de datos sin esquema.)",
     "secret": {
@@ -1504,8 +1500,7 @@
       "success-prompt": "Proyecto {name} creado exitosamente."
     },
     "overview": {
-      "info-slot-content": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan aquí primero. El usuario debe transferirlas al proyecto de aplicación adecuado.",
-      "no-db-prompt": "No hay bases de datos que pertenezcan a este proyecto. Puedes agregar bases de datos haciendo clic en {newDb} o {transferInDb} desde la barra de acciones superior."
+      "info-slot-content": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan aquí primero. El usuario debe transferirlas al proyecto de aplicación adecuado."
     },
     "webhook": {
       "success-created-prompt": "Webhook {name} creado exitosamente.",
@@ -1939,8 +1934,7 @@
       "key-duplicated": "Claves duplicadas",
       "max-value-length-exceeded": "La longitud del valor no puede exceder {longitud} caracteres"
     },
-    "add-label": "Agregar etiqueta",
-    "filter-by-label": "Filtrar por etiqueta"
+    "add-label": "Agregar etiqueta"
   },
   "oauth": {
     "unknown-event": "Tipo de evento inesperado, OAuth falló."

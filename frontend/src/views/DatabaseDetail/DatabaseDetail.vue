@@ -198,11 +198,11 @@
 </template>
 
 <script lang="ts" setup>
-import { useTitle } from "@vueuse/core";
+import { computedAsync, useTitle } from "@vueuse/core";
 import dayjs from "dayjs";
 import { ArrowRightLeftIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
-import { computed, reactive, watch, ref, onMounted } from "vue";
+import { computed, reactive, watch, ref, watchEffect } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { BBModal } from "@/bbkit";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
@@ -237,7 +237,12 @@ import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { UNKNOWN_PROJECT_NAME, unknownEnvironment } from "@/types";
+import {
+  UNKNOWN_PROJECT_NAME,
+  unknownEnvironment,
+  unknownDatabase,
+  isValidDatabaseName,
+} from "@/types";
 import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { State } from "@/types/proto/v1/common";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
@@ -302,13 +307,6 @@ const disableSchemaEditor = useAppFeature(
 );
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
-onMounted(async () => {
-  anomalyList.value = await useAnomalyV1Store().fetchAnomalyList(
-    database.value.project,
-    { database: database.value.name }
-  );
-});
-
 watch(
   () => route.hash,
   (hash) => {
@@ -331,12 +329,22 @@ watch(
   { immediate: true }
 );
 
-const database = computed(() => {
-  return databaseV1Store.getDatabaseByName(
+const database = computedAsync(async () => {
+  return databaseV1Store.getOrFetchDatabaseByName(
     `${instanceNamePrefix}${props.instanceId}/${databaseNamePrefix}${props.databaseName}`
   );
-});
+}, unknownDatabase());
+
 const project = computed(() => database.value.projectEntity);
+
+watchEffect(async () => {
+  if (isValidDatabaseName(database.value.name)) {
+    anomalyList.value = await useAnomalyV1Store().fetchAnomalyList(
+      database.value.project,
+      { database: database.value.name }
+    );
+  }
+});
 
 const hasSchemaDiagramFeature = computed((): boolean => {
   return instanceV1HasAlterSchema(database.value.instanceResource);

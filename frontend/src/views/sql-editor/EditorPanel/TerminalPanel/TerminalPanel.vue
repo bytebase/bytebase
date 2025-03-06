@@ -79,6 +79,7 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { computed, defineAsyncComponent, ref, unref, watch } from "vue";
+import { watchEffect } from "vue";
 import { BBSpin } from "@/bbkit";
 import type { IStandaloneCodeEditor } from "@/components/MonacoEditor";
 import {
@@ -109,6 +110,18 @@ const queryState = computed(() => {
 
 const queryList = computed(() => {
   return unref(queryState.value.queryItemList);
+});
+
+watchEffect(async () => {
+  await Promise.all(
+    queryList.value.map((query) => {
+      if (query && query.params) {
+        return databaseStore.getOrFetchDatabaseByName(
+          query.params.connection.database
+        );
+      }
+    })
+  );
 });
 
 const queryListContainerRef = ref<HTMLDivElement>();

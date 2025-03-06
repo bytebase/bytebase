@@ -1256,7 +1256,7 @@ paths:
         get:
             tags:
                 - DatabaseService
-            operationId: DatabaseService_ListInstanceDatabases
+            operationId: DatabaseService_ListDatabases
             parameters:
                 - name: instance
                   in: path
@@ -1268,36 +1268,61 @@ paths:
                   in: query
                   description: |-
                     The maximum number of databases to return. The service may return fewer
-                     than this value. If unspecified, at most 10 databases will be returned.
+                     than this value.
+                     If unspecified, at most 10 databases will be returned.
+                     The maximum value is 1000; values above 1000 will be coerced to 1000.
                   schema:
                     type: integer
                     format: int32
                 - name: pageToken
                   in: query
                   description: |-
-                    A page token, received from a previous `ListInstanceDatabases` call.
+                    A page token, received from a previous `ListDatabases` call.
                      Provide this to retrieve the subsequent page.
 
-                     When paginating, all other parameters provided to `ListInstanceDatabases`
-                     must match the call that provided the page token.
+                     When paginating, all other parameters provided to `ListDatabases` must
+                     match the call that provided the page token.
                   schema:
                     type: string
                 - name: filter
                   in: query
                   description: |-
-                    Deprecated.
-                     Filter is used to filter databases returned in the list.
-                     For example, `project == "projects/{project}"` can be used to list
-                     databases in a project. Note: the project filter will be moved to parent.
+                    Filter is used to filter databases returned in the list.
+                     Supported filter:
+                     - environment
+                     - name
+                     - project
+                     - instance
+                     - engine
+                     - label
+                     - exclude_unassigned: Not show unassigned databases if specified
+
+                     For example:
+                     environment == "environments/{environment resource id}"
+                     project == "projects/{project resource id}"
+                     instance == "instances/{instance resource id}"
+                     name.matches("database name")
+                     engine == "MYSQL"
+                     engine in ["MYSQL", "POSTGRES"]
+                     !(engine in ["MYSQL", "POSTGRES"])
+                     label == "region:asia"
+                     label == "tenant:asia,europe"
+                     label == "region:asia" && label == "tenant:bytebase"
+                     exclude_unassigned == true
                   schema:
                     type: string
+                - name: showDeleted
+                  in: query
+                  description: Show deleted database if specified.
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ListInstanceDatabasesResponse'
+                                $ref: '#/components/schemas/ListDatabasesResponse'
                 default:
                     description: Default error response
                     content:
@@ -3964,7 +3989,9 @@ paths:
                   in: query
                   description: |-
                     The maximum number of databases to return. The service may return fewer
-                     than this value. If unspecified, at most 10 databases will be returned.
+                     than this value.
+                     If unspecified, at most 10 databases will be returned.
+                     The maximum value is 1000; values above 1000 will be coerced to 1000.
                   schema:
                     type: integer
                     format: int32
@@ -3978,6 +4005,38 @@ paths:
                      match the call that provided the page token.
                   schema:
                     type: string
+                - name: filter
+                  in: query
+                  description: |-
+                    Filter is used to filter databases returned in the list.
+                     Supported filter:
+                     - environment
+                     - name
+                     - project
+                     - instance
+                     - engine
+                     - label
+                     - exclude_unassigned: Not show unassigned databases if specified
+
+                     For example:
+                     environment == "environments/{environment resource id}"
+                     project == "projects/{project resource id}"
+                     instance == "instances/{instance resource id}"
+                     name.matches("database name")
+                     engine == "MYSQL"
+                     engine in ["MYSQL", "POSTGRES"]
+                     !(engine in ["MYSQL", "POSTGRES"])
+                     label == "region:asia"
+                     label == "tenant:asia,europe"
+                     label == "region:asia" && label == "tenant:bytebase"
+                     exclude_unassigned == true
+                  schema:
+                    type: string
+                - name: showDeleted
+                  in: query
+                  description: Show deleted database if specified.
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     description: OK
@@ -7588,7 +7647,9 @@ paths:
                   in: query
                   description: |-
                     The maximum number of databases to return. The service may return fewer
-                     than this value. If unspecified, at most 10 databases will be returned.
+                     than this value.
+                     If unspecified, at most 10 databases will be returned.
+                     The maximum value is 1000; values above 1000 will be coerced to 1000.
                   schema:
                     type: integer
                     format: int32
@@ -7602,6 +7663,38 @@ paths:
                      match the call that provided the page token.
                   schema:
                     type: string
+                - name: filter
+                  in: query
+                  description: |-
+                    Filter is used to filter databases returned in the list.
+                     Supported filter:
+                     - environment
+                     - name
+                     - project
+                     - instance
+                     - engine
+                     - label
+                     - exclude_unassigned: Not show unassigned databases if specified
+
+                     For example:
+                     environment == "environments/{environment resource id}"
+                     project == "projects/{project resource id}"
+                     instance == "instances/{instance resource id}"
+                     name.matches("database name")
+                     engine == "MYSQL"
+                     engine in ["MYSQL", "POSTGRES"]
+                     !(engine in ["MYSQL", "POSTGRES"])
+                     label == "region:asia"
+                     label == "tenant:asia,europe"
+                     label == "region:asia" && label == "tenant:bytebase"
+                     exclude_unassigned == true
+                  schema:
+                    type: string
+                - name: showDeleted
+                  in: query
+                  description: Show deleted database if specified.
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     description: OK
@@ -10400,19 +10493,6 @@ components:
                     items:
                         type: string
                     description: All database name list in the instance.
-        ListInstanceDatabasesResponse:
-            type: object
-            properties:
-                databases:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Database'
-                    description: The databases from the specified request.
-                nextPageToken:
-                    type: string
-                    description: |-
-                        A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
         ListInstanceRolesResponse:
             type: object
             properties:
@@ -12668,7 +12748,7 @@ components:
                          - database, for example:
                             database = "instances/{instance}/databases/{database}"
                          - instance, for example:
-                            instance = "instance/{instance}"
+                            instance = "instances/{instance}"
                          - type, for example:
                             type = "QUERY"
         SearchQueryHistoriesResponse:

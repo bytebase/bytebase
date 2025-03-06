@@ -15,7 +15,7 @@
     <div
       class="space-y-4 h-full w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
     >
-      <div v-if="ready">
+      <div>
         <div class="space-y-3">
           <div class="w-full flex items-center space-x-2">
             <AdvancedSearch
@@ -23,32 +23,19 @@
               :autofocus="false"
               :placeholder="$t('database.filter-database')"
               :scope-options="scopeOptions"
-            />
-            <DatabaseLabelFilter
-              v-model:selected="state.selectedLabels"
-              :database-list="rawDatabaseList"
-              :placement="'left-start'"
+              :readonly-scopes="readonlyScopes"
             />
           </div>
-          <DatabaseV1Table
+
+          <PagedDatabaseTable
             mode="ALL_SHORT"
+            :filter="filter"
+            :parent="projectName"
+            :custom-click="true"
             :show-sql-editor-button="false"
-            :database-list="selectableDatabaseList"
-            :keyword="state.params.query.trim().toLowerCase()"
             @update:selected-databases="handleDatabasesSelectionChanged"
           />
-          <SchemalessDatabaseTable
-            v-if="isEditSchema"
-            mode="ALL"
-            :database-list="schemalessDatabaseList"
-          />
         </div>
-      </div>
-      <div
-        v-if="!ready"
-        class="w-full h-[20rem] flex items-center justify-center"
-      >
-        <BBSpin />
       </div>
     </div>
 
@@ -119,42 +106,34 @@
 <script lang="ts" setup>
 import { uniqBy } from "lodash-es";
 import { NButton, NCheckbox, NTooltip } from "naive-ui";
-import type { PropType } from "vue";
 import { computed, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import { BBSpin } from "@/bbkit";
 import { FeatureModal } from "@/components/FeatureGuard";
-import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
+import { PagedDatabaseTable } from "@/components/v2/Model/DatabaseV1Table";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
 } from "@/router/dashboard/projectV1";
-import { useDatabaseV1Store, useProjectByName, useAppFeature } from "@/store";
-import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
-import type { ComposedDatabase, FeatureType } from "@/types";
-import { UNKNOWN_ID, DEFAULT_PROJECT_NAME } from "@/types";
-import { State } from "@/types/proto/v1/common";
-import type { SearchParams } from "@/utils";
+import { useDatabaseV1Store, useAppFeature } from "@/store";
+import {
+  instanceNamePrefix,
+  environmentNamePrefix,
+} from "@/store/modules/v1/common";
+import type { FeatureType } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
+import type { SearchParams, SearchScope } from "@/utils";
 import {
   allowUsingSchemaEditor,
-  instanceV1HasAlterSchema,
-  filterDatabaseV1ByKeyword,
-  sortDatabaseV1List,
   generateIssueTitle,
-  extractEnvironmentResourceName,
-  extractInstanceResourceName,
   extractProjectResourceName,
 } from "@/utils";
 import AdvancedSearch from "../AdvancedSearch";
 import { useCommonSearchScopeOptions } from "../AdvancedSearch/useCommonSearchScopeOptions";
-import { DatabaseLabelFilter, DrawerContent } from "../v2";
+import { DrawerContent } from "../v2";
 import SchemaEditorModal from "./SchemaEditorModal.vue";
-import SchemalessDatabaseTable from "./SchemalessDatabaseTable.vue";
 
 type LocalState = {
-  label: string;
   showSchemaLessDatabaseList: boolean;
-  selectedLabels: { key: string; value: string }[];
   selectedDatabaseNames: Set<string>;
   showSchemaEditorModal: boolean;
   params: SearchParams;
@@ -162,22 +141,16 @@ type LocalState = {
   planOnly: boolean;
 };
 
-const props = defineProps({
-  projectName: {
-    type: String,
-    required: true,
-  },
-  type: {
-    type: String as PropType<
-      "bb.issue.database.schema.update" | "bb.issue.database.data.update"
-    >,
-    required: true,
-  },
-  planOnly: {
-    type: Boolean,
-    default: false,
-  },
-});
+const props = withDefaults(
+  defineProps<{
+    projectName: string;
+    type: "bb.issue.database.schema.update" | "bb.issue.database.data.update";
+    planOnly?: boolean;
+  }>(),
+  {
+    planOnly: false,
+  }
+);
 
 const emit = defineEmits(["dismiss"]);
 
@@ -197,109 +170,63 @@ const schemaEditorContext = ref<{
   databaseNameList: [],
 });
 
+const readonlyScopes = computed((): SearchScope[] => [
+  { id: "project", value: extractProjectResourceName(props.projectName) },
+]);
+
 const state = reactive<LocalState>({
   selectedDatabaseNames: new Set<string>(),
-  label: "environment",
   showSchemaLessDatabaseList: false,
   showSchemaEditorModal: false,
-  selectedLabels: [],
   params: {
     query: "",
-    scopes: [],
+    scopes: [...readonlyScopes.value],
   },
   planOnly: props.planOnly,
 });
 
 const scopeOptions = useCommonSearchScopeOptions(
   computed(() => state.params),
-  computed(() => ["project", "instance", "environment"])
+  computed(() => ["project", "instance", "environment", "label"])
 );
 
-const { project: selectedProject } = useProjectByName(props.projectName);
-
 const selectedInstance = computed(() => {
-  return (
-    state.params.scopes.find((scope) => scope.id === "instance")?.value ??
-    `${UNKNOWN_ID}`
-  );
+  const instanceId = state.params.scopes.find(
+    (scope) => scope.id === "instance"
+  )?.value;
+  if (!instanceId) {
+    return;
+  }
+  return `${instanceNamePrefix}${instanceId}`;
 });
 
 const selectedEnvironment = computed(() => {
-  return (
-    state.params.scopes.find((scope) => scope.id === "environment")?.value ??
-    `${UNKNOWN_ID}`
-  );
+  const environmentId = state.params.scopes.find(
+    (scope) => scope.id === "environment"
+  )?.value;
+  if (!environmentId) {
+    return;
+  }
+  return `${environmentNamePrefix}${environmentId}`;
 });
+
+const selectedLabels = computed(() => {
+  return state.params.scopes
+    .filter((scope) => scope.id === "label")
+    .map((scope) => scope.value);
+});
+
+const filter = computed(() => ({
+  instance: selectedInstance.value,
+  environment: selectedEnvironment.value,
+  query: state.params.query,
+  excludeEngines: [Engine.REDIS],
+  labels: selectedLabels.value,
+}));
 
 // Returns true if alter schema, false if change data.
 const isEditSchema = computed((): boolean => {
   return props.type === "bb.issue.database.schema.update";
-});
-
-const { ready } = useDatabaseV1List(props.projectName);
-
-const rawDatabaseList = computed(() => {
-  let list: ComposedDatabase[] = [];
-  if (selectedProject.value) {
-    list = databaseV1Store.databaseListByProject(selectedProject.value.name);
-  } else {
-    list = databaseV1Store.databaseListByUser;
-  }
-  list = list.filter(
-    (db) => db.state == State.ACTIVE && db.project !== DEFAULT_PROJECT_NAME
-  );
-  return list;
-});
-
-const filteredDatabaseList = computed(() => {
-  const list = rawDatabaseList.value.filter((db) => {
-    if (
-      selectedEnvironment.value !== `${UNKNOWN_ID}` &&
-      extractEnvironmentResourceName(db.effectiveEnvironment) !==
-        selectedEnvironment.value
-    ) {
-      return false;
-    }
-    if (
-      selectedInstance.value !== `${UNKNOWN_ID}` &&
-      extractInstanceResourceName(db.instance) !== selectedInstance.value
-    ) {
-      return false;
-    }
-
-    const filterByKeyword = filterDatabaseV1ByKeyword(
-      db,
-      state.params.query.trim(),
-      ["name", "environment", "instance", "project"]
-    );
-    if (!filterByKeyword) {
-      return false;
-    }
-
-    if (state.selectedLabels.length > 0) {
-      return state.selectedLabels.some((kv) => db.labels[kv.key] === kv.value);
-    }
-
-    return true;
-  });
-
-  return sortDatabaseV1List(list);
-});
-
-const selectableDatabaseList = computed(() => {
-  if (isEditSchema.value) {
-    return filteredDatabaseList.value.filter((db) =>
-      instanceV1HasAlterSchema(db.instanceResource)
-    );
-  }
-
-  return filteredDatabaseList.value;
-});
-
-const schemalessDatabaseList = computed(() => {
-  return filteredDatabaseList.value.filter(
-    (db) => !instanceV1HasAlterSchema(db.instanceResource)
-  );
 });
 
 const flattenSelectedDatabaseNameList = computed(() => {
@@ -321,8 +248,8 @@ const allowGenerateMultiDb = computed(() => {
 });
 
 const flattenSelectedDatabaseList = computed(() =>
-  flattenSelectedDatabaseNameList.value.map(
-    (name) => selectableDatabaseList.value.find((db) => db.name === name)!
+  flattenSelectedDatabaseNameList.value.map((name) =>
+    databaseV1Store.getDatabaseByName(name)
   )
 );
 

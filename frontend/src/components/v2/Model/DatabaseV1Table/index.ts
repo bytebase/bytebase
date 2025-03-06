@@ -1,7 +1,5 @@
-import DatabaseLabelFilter from "./DatabaseLabelFilter.vue";
 import DatabaseOperations from "./DatabaseOperations.vue";
 import DatabaseV1Table from "./DatabaseV1Table.vue";
+import PagedDatabaseTable from "./PagedDatabaseTable.vue";
 
-export { DatabaseOperations, DatabaseLabelFilter };
-
-export default DatabaseV1Table;
+export { DatabaseOperations, PagedDatabaseTable, DatabaseV1Table };

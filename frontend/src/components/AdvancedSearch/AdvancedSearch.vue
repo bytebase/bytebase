@@ -67,6 +67,7 @@
           @hover-item="menuIndex = $event"
         />
         <ValueMenu
+          v-if="visibleValueOptions.length > 0"
           :show="state.menuView === 'value'"
           :params="params"
           :scope-option="currentScopeOption"
@@ -194,7 +195,7 @@ const availableScopeOptions = computed((): ScopeOption[] => {
   );
 
   return props.scopeOptions.filter((scope) => {
-    if (existedScopes.has(scope.id)) {
+    if (existedScopes.has(scope.id) && !scope.allowMultiple) {
       return false;
     }
     return true;
@@ -288,9 +289,12 @@ const moveMenuIndex = (delta: -1 | 1) => {
 };
 
 const removeScope = (id: SearchScopeId) => {
-  const updated = upsertScope(props.params, {
-    id,
-    value: "",
+  const updated = upsertScope({
+    params: props.params,
+    scopes: {
+      id,
+      value: "",
+    },
   });
   emit("update:params", updated);
 };
@@ -310,15 +314,33 @@ const selectScope = (
     state.menuView = "scope";
   }
 };
-const selectValue = (value: string) => {
+
+const extractValue = () => {
   const id = state.currentScope;
   if (!id) {
+    return;
+  }
+  const text = inputText.value;
+  if (!text.startsWith(`${id}:`)) {
+    return;
+  }
+  return text.slice(`${id}:`.length);
+};
+
+const selectValue = (value: string) => {
+  const id = state.currentScope;
+  if (!id || !currentScopeOption.value) {
     state.menuView = undefined;
     return;
   }
-  const updated = upsertScope(props.params, {
-    id,
-    value,
+  const { allowMultiple } = currentScopeOption.value;
+  const updated = upsertScope({
+    params: props.params,
+    scopes: {
+      id,
+      value,
+    },
+    allowMultiple,
   });
   updated.query = "";
   inputText.value = "";
@@ -459,9 +481,14 @@ const handleKeyUp = (e: KeyboardEvent) => {
       }
     }
     if (state.menuView === "value") {
-      const option = visibleValueOptions.value[index];
-      if (option) {
-        selectValue(option.value);
+      if (visibleValueOptions.value.length === 0) {
+        const val = extractValue();
+        if (val) {
+          selectValue(val);
+          return;
+        }
+      } else if (visibleValueOptions.value[index]) {
+        selectValue(visibleValueOptions.value[index].value);
         return;
       }
     }

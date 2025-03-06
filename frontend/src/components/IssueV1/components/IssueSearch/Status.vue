@@ -55,9 +55,12 @@ const tab = computed(() => {
 const updateStatus = (value: SemanticIssueStatus) => {
   if (!["", "OPEN", "CLOSED"].includes(value)) return;
 
-  const updated = upsertScope(props.params, {
-    id: "status",
-    value: value,
+  const updated = upsertScope({
+    params: props.params,
+    scopes: {
+      id: "status",
+      value: value,
+    },
   });
   emit("update:params", updated);
 };

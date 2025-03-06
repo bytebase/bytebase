@@ -76,7 +76,9 @@ export const isValidDatabaseName = (name: any): name is string => {
   return Boolean(
     instanceName &&
       instanceName !== String(UNKNOWN_ID) &&
+      instanceName !== String(EMPTY_ID) &&
       databaseName &&
-      databaseName !== String(UNKNOWN_ID)
+      databaseName !== String(UNKNOWN_ID) &&
+      databaseName !== String(EMPTY_ID)
   );
 };

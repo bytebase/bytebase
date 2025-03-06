@@ -233,6 +233,8 @@ const batchComposeProjectIamPolicy = async (projectList: Project[]) => {
   });
 };
 
+const projectRequestCache = new Map<string, Promise<ComposedProject>>();
+
 export const batchGetOrFetchProjects = async (projectNames: string[]) => {
   const store = useProjectV1Store();
 
@@ -246,7 +248,14 @@ export const batchGetOrFetchProjects = async (projectNames: string[]) => {
       ) {
         return;
       }
-      return store.getOrFetchProjectByName(projectName, true /* silent */);
+      const cached = projectRequestCache.get(projectName);
+      if (cached) return cached;
+      const request = store.getOrFetchProjectByName(
+        projectName,
+        true /* silent */
+      );
+      projectRequestCache.set(projectName, request);
+      return request;
     })
   );
 };

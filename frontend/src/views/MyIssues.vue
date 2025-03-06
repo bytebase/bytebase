@@ -285,48 +285,60 @@ const mergeSearchParamsByTab = (params: SearchParams, tab: TabValue) => {
 
   const myEmail = me.value.email;
   if (tab === "CREATED") {
-    return upsertScope(common, {
-      id: "creator",
-      value: myEmail,
+    return upsertScope({
+      params: common,
+      scopes: {
+        id: "creator",
+        value: myEmail,
+      },
     });
   }
   if (tab === "SUBSCRIBED") {
-    return upsertScope(common, {
-      id: "subscriber",
-      value: myEmail,
+    return upsertScope({
+      params: common,
+      scopes: {
+        id: "subscriber",
+        value: myEmail,
+      },
     });
   }
   if (tab === "WAITING_APPROVAL") {
-    return upsertScope(common, [
-      {
-        id: "status",
-        value: "OPEN",
-      },
-      {
-        id: "approval",
-        value: "pending",
-      },
-      {
-        id: "approver",
-        value: myEmail,
-      },
-    ]);
+    return upsertScope({
+      params: common,
+      scopes: [
+        {
+          id: "status",
+          value: "OPEN",
+        },
+        {
+          id: "approval",
+          value: "pending",
+        },
+        {
+          id: "approver",
+          value: myEmail,
+        },
+      ],
+    });
   }
   if (tab === "WAITING_ROLLOUT") {
-    return upsertScope(common, [
-      {
-        id: "status",
-        value: "OPEN",
-      },
-      {
-        id: "approval",
-        value: "approved",
-      },
-      {
-        id: "releaser",
-        value: myEmail,
-      },
-    ]);
+    return upsertScope({
+      params: common,
+      scopes: [
+        {
+          id: "status",
+          value: "OPEN",
+        },
+        {
+          id: "approval",
+          value: "approved",
+        },
+        {
+          id: "releaser",
+          value: myEmail,
+        },
+      ],
+    });
   }
   console.error("[mergeSearchParamsByTab] should never reach this line", tab);
   return common;
@@ -479,14 +491,14 @@ watch(
   () => {
     if (tab.value === "WAITING_APPROVAL" || tab.value === "WAITING_ROLLOUT") {
       if (getValueFromSearchParams(state.params, "status") === "CLOSED") {
-        upsertScope(
-          state.params,
-          {
+        upsertScope({
+          params: state.params,
+          scopes: {
             id: "status",
             value: "OPEN",
           },
-          true /* mutate */
-        );
+          mutate: true,
+        });
       }
     }
   },

@@ -15,8 +15,7 @@ import {
   useInstanceResourceList,
   useProjectV1Store,
 } from "@/store";
-import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
-import { UNKNOWN_ID, type MaybeRef } from "@/types";
+import { UNKNOWN_ID, isValidProjectName, type MaybeRef } from "@/types";
 import { engineToJSON } from "@/types/proto/v1/common";
 import type { SearchParams, SearchScopeId } from "@/utils";
 import {
@@ -51,10 +50,12 @@ export const useCommonSearchScopeOptions = (
     return undefined;
   });
 
-  const databaseList = computed(() =>
-    // Only use the database list from the store if the project is set.
-    project.value ? useDatabaseV1List(project.value).databaseList.value : []
-  );
+  const databaseList = computed(() => {
+    if (!isValidProjectName(project.value)) {
+      return [];
+    }
+    return databaseV1Store.databaseListByProject(project.value!);
+  });
 
   const instanceList = computed(() => useInstanceResourceList().value);
 
@@ -157,6 +158,13 @@ export const useCommonSearchScopeOptions = (
               }),
           };
         }),
+      }),
+      label: () => ({
+        id: "label",
+        title: "Label",
+        description: "Input the {label key}:{label value} then press Enter.",
+        options: [] as ValueOption[],
+        allowMultiple: true,
       }),
     } as Record<SearchScopeId, () => ScopeOption>;
 

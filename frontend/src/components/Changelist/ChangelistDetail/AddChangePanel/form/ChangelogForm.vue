@@ -45,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { first, orderBy } from "lodash-es";
+import { orderBy } from "lodash-es";
 import { NCheckbox, NCheckboxGroup } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { ChangelogDataTable } from "@/components/Changelog";
@@ -85,6 +85,7 @@ type LocalState = {
 };
 
 const changelogStore = useChangelogStore();
+const databaseStore = useDatabaseV1Store();
 const { project } = useChangelistDetailContext();
 const { changesFromChangelog: changes } = useAddChangeContext();
 
@@ -100,7 +101,7 @@ const state = reactive<LocalState>({
 const database = computed(() => {
   const name = state.databaseName;
   if (!isValidDatabaseName(name)) return undefined;
-  return useDatabaseV1Store().getDatabaseByName(name);
+  return databaseStore.getDatabaseByName(name);
 });
 
 const filteredChangelogList = computed(() => {
@@ -174,22 +175,12 @@ const handleRemoveChange = (change: Change) => {
 
 const handleClickChange = (change: Change) => {
   const changelogName = change.source;
-  const database = useDatabaseV1Store().getDatabaseByName(
+  const database = databaseStore.getDatabaseByName(
     extractDatabaseResourceName(changelogName).database
   );
   state.databaseName = database.name;
   state.detailChangelogName = changelogName;
 };
-
-// Select the first database automatically
-watch(
-  () => project.value.name,
-  (project) => {
-    const databaseList = useDatabaseV1Store().databaseListByProject(project);
-    state.databaseName = first(databaseList)?.name;
-  },
-  { immediate: true }
-);
 
 watch(() => database.value?.name, fetchChangelogList, { immediate: true });
 

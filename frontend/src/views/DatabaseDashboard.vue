@@ -9,11 +9,6 @@
         :placeholder="$t('database.filter-database')"
         :scope-options="scopeOptions"
       />
-      <DatabaseLabelFilter
-        v-model:selected="state.selectedLabels"
-        :database-list="rawDatabaseList"
-        :placement="'left-start'"
-      />
       <NButton
         v-if="
           allowToCreateDB && databaseChangeMode !== DatabaseChangeMode.EDITOR
@@ -30,15 +25,14 @@
 
     <div class="space-y-2">
       <DatabaseOperations :databases="selectedDatabases" />
-
-      <DatabaseV1Table
+      <PagedDatabaseTable
         mode="ALL"
-        :loading="loading"
         :bordered="false"
-        :database-list="filteredDatabaseList"
-        :custom-click="true"
-        :keyword="state.params.query.trim().toLowerCase()"
-        @row-click="handleDatabaseClick"
+        :filter="filter"
+        :parent="'workspaces/-'"
+        :footer-class="'mx-4'"
+        :custom-click="!!onClickDatabase"
+        @row-click="onClickDatabase"
         @update:selected-databases="handleDatabasesSelectionChanged"
       />
     </div>
@@ -56,34 +50,31 @@
 <script lang="ts" setup>
 import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import { Drawer } from "@/components/v2";
-import DatabaseV1Table, {
-  DatabaseLabelFilter,
+import {
+  PagedDatabaseTable,
   DatabaseOperations,
 } from "@/components/v2/Model/DatabaseV1Table";
 import { useAppFeature, useDatabaseV1Store, useUIStateStore } from "@/store";
-import { projectNamePrefix } from "@/store/modules/v1/common";
-import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
+import {
+  instanceNamePrefix,
+  projectNamePrefix,
+  environmentNamePrefix,
+} from "@/store/modules/v1/common";
 import type { ComposedDatabase } from "@/types";
-import { DEFAULT_PROJECT_NAME } from "@/types";
+import { DEFAULT_PROJECT_NAME, isValidDatabaseName } from "@/types";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import type { SearchParams } from "@/utils";
 import {
-  filterDatabaseV1ByKeyword,
-  sortDatabaseV1List,
   CommonFilterScopeIdList,
-  extractEnvironmentResourceName,
-  extractInstanceResourceName,
   extractProjectResourceName,
   buildSearchTextBySearchParams,
   buildSearchParamsBySearchText,
-  databaseV1Url,
-  wrapRefAsPromise,
   hasWorkspacePermissionV2,
 } from "@/utils";
 
@@ -91,26 +82,20 @@ interface LocalState {
   selectedDatabaseNameList: Set<string>;
   params: SearchParams;
   showCreateDrawer: boolean;
-  selectedLabels: { key: string; value: string }[];
 }
 
-const props = defineProps<{
-  onClickDatabase?: (db: ComposedDatabase, event: MouseEvent) => void;
-}>();
-
-const emit = defineEmits<{
-  (event: "ready"): void;
+defineProps<{
+  onClickDatabase?: (event: MouseEvent, db: ComposedDatabase) => void;
 }>();
 
 const route = useRoute();
 const router = useRouter();
 const uiStateStore = useUIStateStore();
+const databaseStore = useDatabaseV1Store();
 const hideUnassignedDatabases = useAppFeature(
   "bb.feature.databases.hide-unassigned"
 );
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
-
-const loading = ref(false);
 
 const defaultSearchParams = () => {
   const params: SearchParams = {
@@ -138,7 +123,6 @@ const state = reactive<LocalState>({
   selectedDatabaseNameList: new Set(),
   showCreateDrawer: false,
   params: initializeSearchParamsFromQuery(),
-  selectedLabels: [],
 });
 
 const allowToCreateDB = computed(() => {
@@ -150,20 +134,53 @@ const allowToCreateDB = computed(() => {
 
 const scopeOptions = useCommonSearchScopeOptions(
   computed(() => state.params),
-  [...CommonFilterScopeIdList, "project"]
+  [...CommonFilterScopeIdList, "project", "label"]
 );
 
-const selectedInstance = computed(() => {
-  return state.params.scopes.find((scope) => scope.id === "instance")?.value;
-});
-
-const selectedEnvironment = computed(() => {
-  return state.params.scopes.find((scope) => scope.id === "environment")?.value;
+const selectedLabels = computed(() => {
+  return state.params.scopes
+    .filter((scope) => scope.id === "label")
+    .map((scope) => scope.value);
 });
 
 const selectedProject = computed(() => {
-  return state.params.scopes.find((scope) => scope.id === "project")?.value;
+  const projectId = state.params.scopes.find(
+    (scope) => scope.id === "project"
+  )?.value;
+  if (!projectId) {
+    return;
+  }
+  return `${projectNamePrefix}${projectId}`;
 });
+
+const selectedInstance = computed(() => {
+  const instanceId = state.params.scopes.find(
+    (scope) => scope.id === "instance"
+  )?.value;
+  if (!instanceId) {
+    return;
+  }
+  return `${instanceNamePrefix}${instanceId}`;
+});
+
+const selectedEnvironment = computed(() => {
+  const environmentId = state.params.scopes.find(
+    (scope) => scope.id === "environment"
+  )?.value;
+  if (!environmentId) {
+    return;
+  }
+  return `${environmentNamePrefix}${environmentId}`;
+});
+
+const filter = computed(() => ({
+  instance: selectedInstance.value,
+  environment: selectedEnvironment.value,
+  project: selectedProject.value,
+  query: state.params.query,
+  labels: selectedLabels.value,
+  excludeUnassigned: hideUnassignedDatabases.value,
+}));
 
 onMounted(() => {
   if (!uiStateStore.getIntroStateByKey("database.visit")) {
@@ -174,96 +191,16 @@ onMounted(() => {
   }
 });
 
-watch(
-  () => selectedProject.value,
-  async () => {
-    loading.value = true;
-    let parent = undefined;
-    if (selectedProject.value) {
-      parent = `${projectNamePrefix}${selectedProject.value}`;
-    }
-    await wrapRefAsPromise(
-      useDatabaseV1List(parent).ready,
-      /* expected */ true
-    );
-    loading.value = false;
-    emit("ready");
-  },
-  {
-    immediate: true,
-  }
-);
-
-const rawDatabaseList = computed(() => {
-  return useDatabaseV1Store().databaseList;
-});
-
-const filteredDatabaseList = computed(() => {
-  let list = rawDatabaseList.value;
-  if (selectedEnvironment.value) {
-    list = list.filter(
-      (db) =>
-        extractEnvironmentResourceName(db.effectiveEnvironment) ===
-        selectedEnvironment.value
-    );
-  }
-  if (selectedInstance.value) {
-    list = list.filter(
-      (db) =>
-        extractInstanceResourceName(db.instance) === selectedInstance.value
-    );
-  }
-  if (selectedProject.value) {
-    list = list.filter(
-      (db) => extractProjectResourceName(db.project) === selectedProject.value
-    );
-  }
-  if (state.selectedLabels.length > 0) {
-    list = list.filter((db) => {
-      return state.selectedLabels.some((kv) => db.labels[kv.key] === kv.value);
-    });
-  }
-  if (hideUnassignedDatabases.value) {
-    list = list.filter((db) => db.projectEntity.name !== DEFAULT_PROJECT_NAME);
-  }
-  const keyword = state.params.query.trim().toLowerCase();
-  if (keyword) {
-    list = list.filter((db) =>
-      filterDatabaseV1ByKeyword(db, keyword, [
-        "name",
-        "environment",
-        "instance",
-        "project",
-      ])
-    );
-  }
-  return sortDatabaseV1List(list);
-});
-
 const selectedDatabases = computed((): ComposedDatabase[] => {
-  return filteredDatabaseList.value.filter((db) =>
-    state.selectedDatabaseNameList.has(db.name)
-  );
+  return [...state.selectedDatabaseNameList]
+    .map((databaseName) => databaseStore.getDatabaseByName(databaseName))
+    .filter((database) => isValidDatabaseName(database.name));
 });
 
 const handleDatabasesSelectionChanged = (
   selectedDatabaseNameList: Set<string>
 ): void => {
   state.selectedDatabaseNameList = selectedDatabaseNameList;
-};
-
-const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
-  if (props.onClickDatabase) {
-    props.onClickDatabase(database, event);
-    return;
-  }
-
-  const url = databaseV1Url(database);
-  if (event.ctrlKey || event.metaKey) {
-    window.open(url, "_blank");
-  } else {
-    router.push(url);
-  }
 };
 
 watch(
