@@ -39,7 +39,6 @@ import {
 import {
   usePolicyV1Store,
   useProjectV1Store,
-  useCurrentUserV1,
   useDatabaseV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,

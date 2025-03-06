@@ -98,7 +98,7 @@ import {
 } from "@/types";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
-import { hasProjectPermissionV2, wrapRefAsPromise } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 import { DrawerContent, ProjectSelect } from "../v2";
 import { PagedDatabaseTable } from "../v2/Model/DatabaseV1Table";
 import TransferSourceSelector from "./TransferSourceSelector.vue";

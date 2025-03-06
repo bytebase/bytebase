@@ -983,9 +983,6 @@
       "request-exporter-role": "Yêu cầu vai trò người xuất"
     }
   },
-  "alter-schema": {
-    "no-databases-in-project": "Không có cơ sở dữ liệu nào trong dự án này. Nhấp vào Cơ sở dữ liệu mới hoặc Chuyển vào Cơ sở dữ liệu để thêm cơ sở dữ liệu."
-  },
   "quick-action": {
     "create-db": "Tạo cơ sở dữ liệu",
     "new-db": "Cơ sở dữ liệu mới",
@@ -1420,7 +1417,6 @@
       "select": "Chọn bảng",
       "select-tip": "Vui lòng chọn một bảng để bắt đầu."
     },
-    "n-selected-m-in-total": "({selected} đã chọn, {total} tổng cộng)",
     "all": "Tất cả cơ sở dữ liệu",
     "show-schemaless-databases": "Hiển thị cơ sở dữ liệu không có lược đồ. (Chỉnh sửa lược đồ không áp dụng cho cơ sở dữ liệu không có lược đồ.)",
     "secret": {
@@ -1504,8 +1500,7 @@
       "success-prompt": "Đã tạo thành công dự án {name}."
     },
     "overview": {
-      "info-slot-content": "Bytebase định kỳ đồng bộ hóa lược đồ phiên bản. Các cơ sở dữ liệu mới được đồng bộ hóa trước tiên được đặt ở đây. Người dùng nên chuyển chúng đến dự án ứng dụng thích hợp.",
-      "no-db-prompt": "Không có cơ sở dữ liệu nào thuộc dự án này. Bạn có thể thêm cơ sở dữ liệu bằng cách nhấp vào {newDb} hoặc {transferInDb} từ thanh tác vụ trên cùng."
+      "info-slot-content": "Bytebase định kỳ đồng bộ hóa lược đồ phiên bản. Các cơ sở dữ liệu mới được đồng bộ hóa trước tiên được đặt ở đây. Người dùng nên chuyển chúng đến dự án ứng dụng thích hợp."
     },
     "webhook": {
       "success-created-prompt": "Đã tạo thành công webhook {name}.",
@@ -1939,8 +1934,7 @@
       "key-duplicated": "Khóa trùng lặp",
       "max-value-length-exceeded": "Độ dài giá trị không được vượt quá {length} ký tự"
     },
-    "add-label": "Thêm nhãn",
-    "filter-by-label": "Lọc theo nhãn"
+    "add-label": "Thêm nhãn"
   },
   "oauth": {
     "unknown-event": "Loại sự kiện không mong đợi, OAuth không thành công."

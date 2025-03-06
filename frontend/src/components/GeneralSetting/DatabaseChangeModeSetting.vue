@@ -92,7 +92,6 @@
 </template>
 
 <script lang="ts" setup>
-import { isEqual } from "lodash-es";
 import { NRadioGroup, NSpace, NRadio, NButton } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { BBModal } from "@/bbkit";

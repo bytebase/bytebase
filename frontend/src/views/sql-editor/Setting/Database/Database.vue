@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from "vue";
+import { onMounted, reactive, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
@@ -26,7 +26,7 @@ import {
 } from "@/router/sqlEditor";
 import { useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName, type ComposedDatabase } from "@/types";
-import { extractDatabaseResourceName, wrapRefAsPromise } from "@/utils";
+import { extractDatabaseResourceName } from "@/utils";
 import DatabaseDashboard from "@/views/DatabaseDashboard.vue";
 import Detail from "./Detail.vue";
 
