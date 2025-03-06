@@ -65,6 +65,7 @@
       "self": "Rol"
     },
     "revert": "Revertir",
+    "confirm-to-revert": "¿Confirmar para revertir la edición?",
     "apply": "Aplicar",
     "reorder": "Reordenar",
     "id": "ID",
@@ -124,7 +125,6 @@
     "read-only": "Solo lectura",
     "all": "Todos",
     "recent": "Reciente",
-    "deployment-config": "Configuración de Despliegue",
     "ok": "OK",
     "share": "Compartir",
     "or": "o",
@@ -1019,7 +1019,6 @@
     "streams": "Streams",
     "tasks": "Tareas",
     "labels-for-resource": "Etiquetas para {resource}",
-    "last-successful-sync": "Última sincronización exitosa",
     "failed-to-sync-schema-for-database-database-value-name": "Error al sincronizar el esquema para la base de datos '{0}'.",
     "successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado correctamente para la base de datos '{0}'.",
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
@@ -1646,28 +1645,6 @@
       "revoke-exemption-title": "Eliminar tanto las exenciones de exportación como de consulta de enmascaramiento para {member}?"
     }
   },
-  "deployment-config": {
-    "add-selector": "Agregar selector",
-    "update-success": "Configuración de implementación actualizada con éxito.",
-    "this-is-example-deployment-config": "Este es un ejemplo de configuración de implementación. Debe editarla y guardarla.",
-    "add-stage": "Agregar etapa",
-    "confirm-to-revert": "¿Confirmar para revertir la edición?",
-    "name-placeholder": "Nombre de la etapa...",
-    "error": {
-      "at-least-one-stage": "Al menos 1 etapa",
-      "stage-name-required": "Se requiere el nombre de la etapa",
-      "at-least-one-selector": "Al menos 1 selector en cada etapa",
-      "env-in-selector-required": "Se requiere \"Entorno\" en cada etapa",
-      "env-selector-must-has-one-value": "\"Entorno ID\" debe tener exactamente un valor",
-      "key-required": "Se requiere una clave",
-      "values-required": "Se requieren valores"
-    },
-    "matched-databases": {
-      "all": "Todas las bases de datos coincidentes",
-      "n": "{n} base de datos coincidente | {n} bases de datos coincidentes",
-      "show-more": "Mostrar más"
-    }
-  },
   "data-source": {
     "snowflake-keypair-tip": "Autenticación de par de claves",
     "ssl": {
@@ -1953,11 +1930,7 @@
       "key-necessary": "Se requiere una clave",
       "value-necessary": "Se requiere un valor",
       "key-duplicated": "Claves duplicadas",
-      "max-value-length-exceeded": "La longitud del valor no puede exceder {longitud} caracteres",
-      "x-is-reserved-key": "\"{key}\" es una clave reservada del sistema"
-    },
-    "placeholder": {
-      "select-values": "Seleccionar valores..."
+      "max-value-length-exceeded": "La longitud del valor no puede exceder {longitud} caracteres"
     },
     "add-label": "Agregar etiqueta",
     "filter-by-label": "Filtrar por etiqueta"

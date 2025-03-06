@@ -65,6 +65,7 @@
       "self": "役割"
     },
     "revert": "元に戻す",
+    "confirm-to-revert": "編集を元に戻してもよろしいですか?",
     "apply": "適用",
     "reorder": "並び替え",
     "id": "ID",
@@ -124,7 +125,6 @@
     "read-only": "読み取り専用",
     "all": "全て",
     "recent": "最近",
-    "deployment-config": "デプロイ設定",
     "ok": "わかりました",
     "share": "共有",
     "or": "または",
@@ -1019,7 +1019,6 @@
     "streams": "ストリーム",
     "tasks": "タスク",
     "labels-for-resource": "{resource} のタグ",
-    "last-successful-sync": "最後に正常に同期された日",
     "failed-to-sync-schema-for-database-database-value-name": "データベース '{0}' のスキーマを同期できませんでした。",
     "successfully-synced-schema-for-database-database-value-name": "データベース '{0}' のスキーマが正常に同期されました。",
     "start-to-sync-schema": "スキーマの同期を開始します",
@@ -1646,28 +1645,6 @@
       "revoke-exemption-title": "{member} のエクスポートおよびクエリのマスキング免除を両方削除しますか？"
     }
   },
-  "deployment-config": {
-    "add-selector": "選択基準を追加する",
-    "update-success": "デプロイ設定が正常に更新されました",
-    "this-is-example-deployment-config": "これはサンプルのデプロイ設定であり、編集して保存する必要があります。",
-    "add-stage": "ステージを追加",
-    "confirm-to-revert": "編集を元に戻してもよろしいですか?",
-    "name-placeholder": "芸名…",
-    "error": {
-      "at-least-one-stage": "少なくとも 1 つのステージが必要です",
-      "stage-name-required": "ステージ名の指定が必要です",
-      "at-least-one-selector": "各ステージには少なくとも 1 つの選択基準が必要です",
-      "env-in-selector-required": "各ステージには「環境」の選択条件が必要です",
-      "env-selector-must-has-one-value": "「環境 ID」の値は 1 つだけでなければなりません",
-      "key-required": "キーを指定する必要があります",
-      "values-required": "値を指定する必要があります"
-    },
-    "matched-databases": {
-      "all": "一致したすべてのデータベース",
-      "n": "{n} 個の一致したデータベース | {n} 個の一致したデータベース",
-      "show-more": "もっと見る"
-    }
-  },
   "data-source": {
     "snowflake-keypair-tip": "キーペア認証",
     "ssl": {
@@ -1953,11 +1930,7 @@
       "key-necessary": "キーを指定する必要があります",
       "value-necessary": "値を指定する必要があります",
       "key-duplicated": "キーが繰り返されました",
-      "max-value-length-exceeded": "値は {length} 文字を超えることはできません",
-      "x-is-reserved-key": "「{key}」はシステムで予約されているキーです"
-    },
-    "placeholder": {
-      "select-values": "値を選択してください…"
+      "max-value-length-exceeded": "値は {length} 文字を超えることはできません"
     },
     "add-label": "タグ付けする",
     "filter-by-label": "タグでフィルタリングする"
