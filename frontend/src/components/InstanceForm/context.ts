@@ -246,6 +246,7 @@ export const provideInstanceFormContext = (baseContext: {
     edit: EditDataSource
   ): DataSource => {
     const { showDatabase, showSSH, showSSL } = specs;
+    
     const ds = cloneDeep(
       omit(
         edit,
@@ -259,6 +260,11 @@ export const provideInstanceFormContext = (baseContext: {
         "updateAuthenticationPrivateKey"
       )
     );
+    
+    // Ensure extraConnectionParameters is preserved
+    if (edit.extraConnectionParameters && Object.keys(edit.extraConnectionParameters).length > 0) {
+      ds.extraConnectionParameters = { ...edit.extraConnectionParameters };
+    }
     if (edit.updatedPassword) {
       ds.password = edit.updatedPassword;
     }

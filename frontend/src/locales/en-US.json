@@ -1655,6 +1655,10 @@
 
   "data-source": {
     "snowflake-keypair-tip": "Key-pair authentication",
+    "extra-params": {
+      "self": "Extra Parameters",
+      "description": "Additional parameters for database connection string. For PostgreSQL, you can use parameters like target_session_attrs=read-write to ensure connections to read-write instances."
+    },
     "ssl": {
       "ca-cert": "CA Certificate",
       "client-key": "Client Key",

@@ -23,6 +23,7 @@ export type EditDataSource = DataSource & {
   updateSsl?: boolean;
   updateSsh?: boolean;
   updateAuthenticationPrivateKey?: boolean;
+  extraConnectionParameters?: Record<string, string>;
 };
 
 export type DataSourceEditState = {
@@ -87,6 +88,7 @@ export const wrapEditDataSource = (ds: DataSource | undefined) => {
     updatedMasterPassword: "",
     useEmptyPassword: false,
     useEmptyMasterPassword: false,
+    extraConnectionParameters: ds?.extraConnectionParameters ?? {},
   };
 };
 
@@ -125,6 +127,11 @@ export const calcDataSourceUpdateMask = (
   }
   if (updateAuthenticationPrivateKey) {
     updateMask.add("authentication_private_key");
+  }
+  
+  // Always add extra_connection_parameters to update mask if they exist
+  if (editing.extraConnectionParameters) {
+    updateMask.add("extra_connection_parameters");
   }
 
   return Array.from(updateMask);

@@ -811,6 +811,67 @@ MIIEvQ...
     />
   </div>
 
+  <div 
+    v-if="basicInfo.engine === Engine.POSTGRES" 
+    class="mt-4 sm:col-span-3 sm:col-start-1"
+  >
+    <div class="flex flex-row items-center justify-between">
+      <label class="textlabel block">
+        {{ $t("data-source.extra-params.self") }}
+      </label>
+      <NButton 
+        size="small" 
+        type="primary" 
+        ghost
+        :disabled="!allowEdit"
+        @click="addExtraConnectionParam"
+      >
+        {{ $t("common.add") }}
+      </NButton>
+    </div>
+    <div class="text-gray-400 text-sm mt-1">
+      {{ $t("data-source.extra-params.description") }}
+    </div>
+    <div 
+      v-for="(param, index) in extraConnectionParamsList" 
+      :key="index" 
+      class="flex mt-2 space-x-2"
+    >
+      <NInput
+        class="w-full"
+        :value="param.key"
+        :disabled="!allowEdit"
+        placeholder="Parameter name"
+        @update:value="(v) => updateExtraConnectionParamKey(index, v)"
+      />
+      <NInput
+        class="w-full"
+        :value="param.value"
+        :disabled="!allowEdit"
+        placeholder="Parameter value"
+        @update:value="(v) => updateExtraConnectionParamValue(index, v)"
+      />
+      <NButton 
+        type="error" 
+        secondary
+        size="small" 
+        :disabled="!allowEdit" 
+        @click="removeExtraConnectionParam(index)"
+        title="Remove parameter"
+      >
+        Remove
+      </NButton>
+    </div>
+    
+    <!-- Show a message when there are no parameters -->
+    <div 
+      v-if="extraConnectionParamsList.length === 0 && !allowEdit" 
+      class="text-gray-500 text-sm mt-2 italic"
+    >
+      No extra connection parameters configured
+    </div>
+  </div>
+
   <div
     v-if="
       showSSL &&
@@ -959,6 +1020,11 @@ interface IAMExtensionOptions {
   value: string;
 }
 
+interface ExtraConnectionParam {
+  key: string;
+  value: string;
+}
+
 const props = defineProps<{
   dataSource: EditDataSource;
 }>();
@@ -988,6 +1054,14 @@ const {
 const state = reactive<LocalState>({
   passwordType: DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED,
   credentialSource: "default-credential",
+});
+
+// Helper computed to convert object to array for UI
+const extraConnectionParamsList = computed<ExtraConnectionParam[]>(() => {
+  const params = props.dataSource.extraConnectionParameters || {};
+  return Object.entries(params).map(
+    ([key, value]) => ({ key, value })
+  );
 });
 const { t } = useI18n();
 
@@ -1248,6 +1322,7 @@ const handleKeytabUpload = (options: { file: UploadFileInfo }) => {
   reader.readAsArrayBuffer(options.file.file as Blob);
 };
 
+// IAM Extension Options
 const getIAMExtensionOptions = (
   authenticationType: DataSource_AuthenticationType
 ): IAMExtensionOptions[] => {
@@ -1278,5 +1353,71 @@ const onSelectIAMExtension = (value: string) => {
 const resetIAMExtension = () => {
   const ds = props.dataSource;
   ds.clientSecretCredential = undefined;
+};
+
+// Extra connection parameters management
+const addExtraConnectionParam = () => {
+  const ds = props.dataSource;
+  // Ensure we have an object to start with
+  if (!ds.extraConnectionParameters) {
+    ds.extraConnectionParameters = {};
+  }
+  
+  const extraParams = { ...ds.extraConnectionParameters };
+  
+  // Add an empty parameter entry
+  extraParams[""] = "";
+  
+  // Force reactivity by creating a new object
+  ds.extraConnectionParameters = { ...extraParams };
+};
+
+const updateExtraConnectionParamKey = (index: number, newKey: string) => {
+  const ds = props.dataSource;
+  const params = extraConnectionParamsList.value;
+  if (index >= params.length || !ds.extraConnectionParameters) return;
+  
+  const oldKey = params[index].key;
+  const value = params[index].value;
+  
+  // Skip if the key hasn't changed
+  if (oldKey === newKey) return;
+  
+  // Skip empty keys
+  if (!newKey.trim()) return;
+  
+  // Create a fresh copy to ensure reactivity
+  const extraParams = { ...ds.extraConnectionParameters };
+  
+  // Delete the old key and add with the new key
+  delete extraParams[oldKey];
+  extraParams[newKey] = value;
+  
+  // Force reactivity by creating a new object
+  ds.extraConnectionParameters = { ...extraParams };
+};
+
+const updateExtraConnectionParamValue = (index: number, newValue: string) => {
+  const ds = props.dataSource;
+  const params = extraConnectionParamsList.value;
+  if (index >= params.length || !ds.extraConnectionParameters) return;
+  
+  const extraParams = { ...ds.extraConnectionParameters };
+  extraParams[params[index].key] = newValue;
+  
+  // Force reactivity by creating a new object
+  ds.extraConnectionParameters = { ...extraParams };
+};
+
+const removeExtraConnectionParam = (index: number) => {
+  const ds = props.dataSource;
+  const params = extraConnectionParamsList.value;
+  if (index >= params.length || !ds.extraConnectionParameters) return;
+  
+  const extraParams = { ...ds.extraConnectionParameters };
+  delete extraParams[params[index].key];
+  
+  // Force reactivity by creating a new object
+  ds.extraConnectionParameters = { ...extraParams };
 };
 </script>

@@ -292,6 +292,7 @@ const doCreate = async () => {
 const updateEditState = (instance: Instance) => {
   basicInfo.value = extractBasicInfo(instance);
   const updatedEditState = extractDataSourceEditState(instance);
+  
   dataSourceEditState.value.dataSources = updatedEditState.dataSources;
   if (
     updatedEditState.dataSources.findIndex(
@@ -495,8 +496,9 @@ const doUpdate = async () => {
       const runner = pendingRequestRunners[i];
       await runner();
     }
-
-    const updatedInstance = instanceV1Store.getInstanceByName(inst.name);
+    
+    // Refresh the instance data to ensure we have the latest values including extra parameters
+    const updatedInstance = await instanceV1Store.getOrFetchInstanceByName(inst.name, true);
     updateEditState(updatedInstance);
     pushNotification({
       module: "bytebase",
