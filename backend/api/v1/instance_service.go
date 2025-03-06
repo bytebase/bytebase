@@ -827,6 +827,8 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 				default:
 				}
 			}
+		case "extra_connection_parameters":
+			dataSource.ExtraConnectionParameters = request.DataSource.ExtraConnectionParameters
 		// TODO(zp): Remove the hack while frontend use new oneof artifact.
 		case "client_secret_credential":
 			if request.DataSource.GetClientSecretCredential() == nil {
