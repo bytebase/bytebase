@@ -90,6 +90,7 @@ import {
   DEFAULT_PROJECT_NAME,
   isValidProjectName,
 } from "@/types";
+import { UpdateDatabaseRequest } from "@/types/proto/v1/database_service";
 import { autoProjectRoute } from "@/utils";
 import DatabaseV1Table from "../v2/Model/DatabaseV1Table/DatabaseV1Table.vue";
 
@@ -182,10 +183,18 @@ const doTransfer = async () => {
     loading.value = true;
 
     if (databaseList.length > 0) {
-      await useDatabaseV1Store().transferDatabases(
-        selectedDatabaseList.value,
-        target.name
-      );
+      await useDatabaseV1Store().batchUpdateDatabases({
+        parent: "-",
+        requests: selectedDatabaseList.value.map((database) => {
+          return UpdateDatabaseRequest.fromPartial({
+            database: {
+              name: database.name,
+              project: target.name,
+            },
+            updateMask: ["project"],
+          });
+        }),
+      });
       const displayDatabaseName =
         databaseList.length > 1
           ? `${databaseList.length} databases`

@@ -314,7 +314,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 	if request.Force {
 		if len(databases) > 0 {
 			defaultProject := api.DefaultProjectID
-			if _, err := s.store.BatchUpdateDatabaseProject(ctx, databases, defaultProject); err != nil {
+			if _, err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{ProjectID: &defaultProject}); err != nil {
 				return nil, err
 			}
 		}
