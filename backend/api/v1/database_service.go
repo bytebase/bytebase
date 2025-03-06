@@ -619,7 +619,7 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 			return nil, status.Errorf(codes.FailedPrecondition, "project %q is deleted", *batchUpdate.ProjectID)
 		}
 	}
-	if batchUpdate.EnvironmentID != nil {
+	if batchUpdate.EnvironmentID != nil && *batchUpdate.EnvironmentID != "" {
 		environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
 			ResourceID:  batchUpdate.EnvironmentID,
 			ShowDeleted: true,
