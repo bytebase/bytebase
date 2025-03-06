@@ -122,37 +122,16 @@ const activeRange = computed((): IRange | undefined => {
   const rangeByCursor = activeRangeByCursor.value;
   const rangeBySelection = activeSelection.value;
 
-  if (!rangeBySelection) {
-    return rangeByCursor;
-  }
+  // Means no selection, use the cursor range.
   if (
-    rangeBySelection.startLineNumber === rangeBySelection.endLineNumber &&
-    rangeBySelection.startColumn === rangeBySelection.endColumn
+    !rangeBySelection ||
+    (rangeBySelection.startLineNumber === rangeBySelection.endLineNumber &&
+      rangeBySelection.startColumn === rangeBySelection.endColumn)
   ) {
-    // Means no selection, just active cursor.
     return rangeByCursor;
   }
-
-  if (!rangeByCursor) {
-    return rangeBySelection;
-  }
-
-  // Calculate the maximum range
-  return {
-    startLineNumber: Math.min(
-      rangeByCursor.startLineNumber,
-      rangeBySelection.startLineNumber
-    ),
-    startColumn: Math.min(
-      rangeByCursor.startColumn,
-      rangeBySelection.startColumn
-    ),
-    endLineNumber: Math.max(
-      rangeByCursor.endLineNumber,
-      rangeBySelection.endLineNumber
-    ),
-    endColumn: Math.max(rangeByCursor.endColumn, rangeBySelection.endColumn),
-  };
+  // Otherwise, use the selection range.
+  return rangeBySelection;
 });
 
 const oldDecorationsCollection = ref<editor.IEditorDecorationsCollection>();
