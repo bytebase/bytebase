@@ -71,9 +71,7 @@
             </li>
           </ul>
           <hr />
-          <template>
-            <Candidates :step="step" />
-          </template>
+          <Candidates :step="step" />
         </div>
       </template>
     </NPopover>
@@ -100,5 +98,4 @@ defineProps<{
 }>();
 
 const { issue } = useIssueContext();
-
 </script>
