@@ -230,7 +230,6 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useAnomalyV1Store,
   useAppFeature,
-  useDatabaseV1Store,
   useEnvironmentV1Store,
   useDatabaseV1ByName,
 } from "@/store";
@@ -281,7 +280,6 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
-const databaseV1Store = useDatabaseV1Store();
 
 const state = reactive<LocalState>({
   showTransferDatabaseModal: false,
