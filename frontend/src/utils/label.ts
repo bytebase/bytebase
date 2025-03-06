@@ -1,5 +1,4 @@
-import { orderBy, uniq } from "lodash-es";
-import { useEnvironmentV1Store } from "@/store";
+import { orderBy } from "lodash-es";
 import type { ComposedDatabase } from "@/types";
 import { extractEnvironmentResourceName } from "./v1";
 
@@ -31,28 +30,6 @@ export const convertKVListToLabels = (
     labels[key] = value;
   }
   return labels;
-};
-
-export const getLabelValuesFromDatabaseV1List = (
-  key: string,
-  databaseList: ComposedDatabase[]
-): string[] => {
-  if (key === "environment") {
-    const environmentList = useEnvironmentV1Store().getEnvironmentList();
-    return environmentList.map((env) =>
-      extractEnvironmentResourceName(env.name)
-    );
-  }
-
-  const valueList = databaseList.flatMap((db) => {
-    if (key in db.labels) {
-      return getSemanticLabelValue(db, key);
-    }
-    return [];
-  });
-
-  // Select all distinct database label values of {{key}}
-  return uniq(valueList);
 };
 
 export const getSemanticLabelValue = (db: ComposedDatabase, key: string) => {

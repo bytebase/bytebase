@@ -23,11 +23,13 @@
 </template>
 
 <script lang="ts" setup>
-import { computedAsync } from "@vueuse/core";
-import { onMounted, ref } from "vue";
+import { onMounted, ref, computed } from "vue";
 import { BBModal, BBSpin } from "@/bbkit";
-import { useChangelogStore, useDatabaseV1Store } from "@/store";
-import { unknownDatabase } from "@/types";
+import {
+  useChangelogStore,
+  useDatabaseV1Store,
+  useDatabaseV1ByName,
+} from "@/store";
 import { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { ChangelogView } from "@/types/proto/v1/database_service";
 import { DiffEditor } from "../MonacoEditor";
@@ -44,9 +46,9 @@ const isLoading = ref(true);
 const originalSchema = ref<string>("");
 const modifiedSchema = ref<string>("");
 
-const database = computedAsync(() => {
-  return databaseStore.getOrFetchDatabaseByName(props.anomaly.resource);
-}, unknownDatabase());
+const { database } = useDatabaseV1ByName(
+  computed(() => props.anomaly.resource)
+);
 
 onMounted(async () => {
   const database = await databaseStore.getOrFetchDatabaseByName(

@@ -159,8 +159,6 @@ import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import type { SearchParams, SearchScopeId, SemanticIssueStatus } from "@/utils";
 import {
   buildIssueFilterBySearchParams,
-  buildSearchParamsBySearchText,
-  buildSearchTextBySearchParams,
   buildUIIssueFilterBySearchParams,
   getSemanticIssueStatusFromSearchParams,
   getValueFromSearchParams,
@@ -388,13 +386,6 @@ const guessTabValueFromSearchParams = (params: SearchParams): TabValue => {
   return "";
 };
 const initializeSearchParamsFromQueryOrLocalStorage = () => {
-  const { qs } = route.query;
-  if (typeof qs === "string" && qs.length > 0) {
-    return {
-      params: buildSearchParamsBySearchText(qs),
-      advanced: true,
-    };
-  }
   return {
     params: mergeSearchParamsByTab(defaultSearchParams(), storedTab.value),
     advanced: false,
@@ -506,26 +497,18 @@ watch(
 );
 
 watch(
-  [() => state.params, tab],
+  () => tab.value,
   () => {
-    if (state.params.query || tab.value === "") {
+    if (tab.value !== "") {
       // using custom advanced search query, sync the search query string
       // to URL
-      router.replace({
-        query: {
-          ...route.query,
-          qs: buildSearchTextBySearchParams(state.params),
-        },
-      });
-    } else {
       const query = cloneDeep(route.query);
       delete query["qs"];
       router.replace({
         query,
       });
     }
-  },
-  { deep: true }
+  }
 );
 
 watch(

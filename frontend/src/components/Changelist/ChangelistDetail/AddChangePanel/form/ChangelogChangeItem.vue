@@ -49,12 +49,10 @@
 </template>
 
 <script setup lang="ts">
-import { computedAsync } from "@vueuse/core";
 import { NButton, NTag } from "naive-ui";
 import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
-import { useChangelogStore, useDatabaseV1Store } from "@/store";
-import { unknownDatabase } from "@/types";
+import { useChangelogStore, useDatabaseV1ByName } from "@/store";
 import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import { Changelog } from "@/types/proto/v1/database_service";
 import { extractDatabaseResourceName, extractIssueUID } from "@/utils";
@@ -80,8 +78,7 @@ const changelog = computed(() => {
   );
 });
 
-const database = computedAsync(() => {
-  const { database } = extractDatabaseResourceName(changelog.value.name);
-  return useDatabaseV1Store().getOrFetchDatabaseByName(database);
-}, unknownDatabase());
+const { database } = useDatabaseV1ByName(
+  computed(() => extractDatabaseResourceName(changelog.value.name).database)
+);
 </script>

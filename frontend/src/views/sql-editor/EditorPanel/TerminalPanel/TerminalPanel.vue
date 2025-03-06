@@ -86,6 +86,7 @@ import {
   useSQLEditorTabStore,
   useDatabaseV1Store,
   useWebTerminalStore,
+  batchGetOrFetchDatabases,
 } from "@/store";
 import type { SQLEditorQueryParams, WebTerminalQueryItemV1 } from "@/types";
 import {
@@ -113,14 +114,8 @@ const queryList = computed(() => {
 });
 
 watchEffect(async () => {
-  await Promise.all(
-    queryList.value.map((query) => {
-      if (query && query.params) {
-        return databaseStore.getOrFetchDatabaseByName(
-          query.params.connection.database
-        );
-      }
-    })
+  await batchGetOrFetchDatabases(
+    queryList.value.map((query) => query?.params?.connection.database ?? "")
   );
 });
 

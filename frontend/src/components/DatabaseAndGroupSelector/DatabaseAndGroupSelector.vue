@@ -42,6 +42,7 @@
 import { head } from "lodash-es";
 import { NTabs, NTabPane } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
+import AdvancedSearch from "@/components/AdvancedSearch";
 import DatabaseGroupDataTable from "@/components/DatabaseGroup/DatabaseGroupDataTable.vue";
 import { PagedDatabaseTable } from "@/components/v2/Model/DatabaseV1Table";
 import { useDBGroupListByProject } from "@/store";
@@ -56,7 +57,6 @@ import {
   type SearchParams,
   type SearchScope,
 } from "@/utils";
-import AdvancedSearch from "../AdvancedSearch/AdvancedSearch.vue";
 import { useCommonSearchScopeOptions } from "../AdvancedSearch/useCommonSearchScopeOptions";
 import type { DatabaseSelectState } from "./types";
 
