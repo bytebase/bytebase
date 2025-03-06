@@ -2,7 +2,7 @@
   <Drawer :show="show" @close="$emit('dismiss')">
     <DrawerContent
       :title="$t('database.edit-environment')"
-      class="w-[40rem] max-w-[100vw]"
+      class="w-96 max-w-[100vw]"
     >
       <EnvironmentSelect
         v-model:environment-name="environment"
