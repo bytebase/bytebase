@@ -15,7 +15,7 @@
     >
       <DatabaseView
         class="text-sm"
-        :database="databaseForPlanSpec(spec)"
+        :database="spec.changeDatabaseConfig!.target"
         :link="false"
         :show-not-found="true"
       />
@@ -55,7 +55,7 @@
           <td>
             <DatabaseView
               class="text-sm"
-              :database="databaseStore.getDatabaseByName(temp.database)"
+              :database="temp.database"
               :link="false"
               :show-not-found="true"
             />
@@ -97,7 +97,7 @@
           <td>
             <DatabaseView
               class="text-sm"
-              :database="databaseStore.getDatabaseByName(temp.database)"
+              :database="temp.database"
               :link="false"
               :show-not-found="true"
             />
@@ -126,7 +126,7 @@ import { computed } from "vue";
 import type { DatabaseSelectState } from "@/components/DatabaseAndGroupSelector";
 import DatabaseView from "@/components/v2/Model/DatabaseView.vue";
 import { useDatabaseV1Store, useDBGroupStore } from "@/store";
-import type { ComposedDatabase, ComposedRelease } from "@/types";
+import type { ComposedRelease } from "@/types";
 import type {
   Plan_Spec,
   PreviewPlanResponse,
@@ -175,10 +175,6 @@ const shouldShowAppliedAlert = computed(() => {
     flattenSpecList.value.length
   );
 });
-
-const databaseForPlanSpec = (spec: Plan_Spec): ComposedDatabase => {
-  return databaseStore.getDatabaseByName(spec.changeDatabaseConfig!.target);
-};
 
 const specReleaseVersion = (spec: Plan_Spec): string => {
   return spec.changeDatabaseConfig!.schemaVersion;
