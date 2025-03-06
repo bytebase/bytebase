@@ -192,7 +192,7 @@ const doTransfer = async () => {
     if (databaseList.length > 0) {
       await useDatabaseV1Store().batchUpdateDatabases({
         parent: "-",
-        requests: selectedDatabaseList.value.map((database) => {
+        requests: databaseList.map((database) => {
           return UpdateDatabaseRequest.fromPartial({
             database: {
               name: database.name,
