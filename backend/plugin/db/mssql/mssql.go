@@ -65,16 +65,9 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	// See: https://github.com/microsoft/go-mssqldb/issues/33
 	query.Add("tlsmin", "1.0")
 
-	trustServerCertificate := "true"
-
 	var err error
 	if config.TLSConfig.UseSSL && config.TLSConfig.SslCA != "" {
-		// We should not TrustServerCertificate in production environment, otherwise, TLS is susceptible
-		// to man-in-the middle attacks. TrustServerCertificate makes driver accepts any certificate presented by the server
-		// and any host name in that certificate.
-		// Due to Golang runtime limitation, x509 package will throw the error of 'certificate relies on legacy Common Name field, use SANs instead if
-		// TrustServerCertificate is false.
-		trustServerCertificate = "false"
+		// Due to Golang runtime limitation, x509 package will throw the error of 'certificate relies on legacy Common Name field, use SANs instead.
 		// Driver reads the certificate from file instead of regarding it as certificate content.
 		// https://github.com/microsoft/go-mssqldb/blob/main/msdsn/conn_str.go#L159
 		// TODO(zp): Driver supports .der format also.
@@ -100,7 +93,7 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 		}
 		query.Add("certificate", fName)
 	}
-	query.Add("TrustServerCertificate", trustServerCertificate)
+	query.Add("TrustServerCertificate", "true")
 
 	driverName := "sqlserver"
 	password := config.Password
