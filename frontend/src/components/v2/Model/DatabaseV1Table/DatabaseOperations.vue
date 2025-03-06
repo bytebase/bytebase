@@ -62,11 +62,13 @@
       v-if="state.transferOutDatabaseType === 'TRANSFER-OUT'"
       :database-list="props.databases"
       :selected-database-names="selectedDatabaseNameList"
+      :on-success="(databases) => $emit('refresh', databases)"
       @dismiss="state.transferOutDatabaseType = undefined"
     />
     <TransferDatabaseForm
       v-else
       :project-name="projectName"
+      :on-success="(databases) => $emit('refresh', databases)"
       @dismiss="state.transferOutDatabaseType = undefined"
     />
   </Drawer>
@@ -167,6 +169,10 @@ const state = reactive<LocalState>({
   showLabelEditorDrawer: false,
   transferOutDatabaseType: undefined,
 });
+
+const emit = defineEmits<{
+  (event: "refresh", databases: ComposedDatabase[]): void;
+}>();
 
 const { t } = useI18n();
 const router = useRouter();
@@ -356,10 +362,11 @@ const unAssignDatabases = async () => {
   }
   try {
     state.loading = true;
-    await useDatabaseV1Store().transferDatabases(
+    const databases = await useDatabaseV1Store().transferDatabases(
       assignedDatabases.value,
       DEFAULT_PROJECT_NAME
     );
+    emit("refresh", databases);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -540,19 +547,20 @@ const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
     return;
   }
 
-  await Promise.all(
+  const updatedDatabases = await Promise.all(
     props.databases.map(async (database, i) => {
       const label = labelsList[i];
       const patch: Database = {
         ...Database.fromPartial(database),
         labels: label,
       };
-      await useDatabaseV1Store().updateDatabase({
+      return await useDatabaseV1Store().updateDatabase({
         database: patch,
         updateMask: ["labels"],
       });
     })
   );
+  emit("refresh", updatedDatabases);
 
   pushNotification({
     module: "bytebase",
