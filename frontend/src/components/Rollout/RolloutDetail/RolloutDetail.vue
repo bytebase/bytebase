@@ -3,7 +3,11 @@
     class="w-full min-h-full flex flex-col items-start gap-y-4 relative py-4"
   >
     <BasicInfo />
+    <div v-if="loading" class="flex justify-center items-center py-10">
+      <BBSpin />
+    </div>
     <NTabs
+      v-else
       v-model:value="state.selectedTab"
       class="w-full grow"
       type="line"
@@ -21,11 +25,14 @@
 </template>
 
 <script lang="ts" setup>
+import { flatMap } from "lodash-es";
 import { NTabs, NTabPane } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, watch, watchEffect, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { BBSpin } from "@/bbkit";
 import { useBodyLayoutContext } from "@/layouts/common";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL } from "@/router/dashboard/projectV1";
+import { batchGetOrFetchDatabases } from "@/store";
 import BasicInfo from "./BasicInfo.vue";
 import Overview from "./Panels/Overview";
 import Tasks from "./Panels/Tasks.vue";
@@ -39,8 +46,23 @@ interface LocalState {
 
 const route = useRoute();
 const router = useRouter();
-const { rollout } = useRolloutDetailContext();
+const { rollout, mergedStages } = useRolloutDetailContext();
 const state = reactive<LocalState>({});
+const loading = ref<boolean>(false);
+
+watchEffect(async () => {
+  try {
+    loading.value = true;
+    const databaseNames = flatMap(
+      mergedStages.value.map((stage) => {
+        return stage.tasks.map((task) => task.target);
+      })
+    );
+    await batchGetOrFetchDatabases(databaseNames);
+  } finally {
+    loading.value = false;
+  }
+});
 
 watch(
   () => route.hash,
