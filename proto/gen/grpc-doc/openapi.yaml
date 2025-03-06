@@ -2130,6 +2130,60 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/instances/{instance}/databases/{database}/schemaString:
+        get:
+            tags:
+                - DatabaseService
+            operationId: DatabaseService_GetSchemaString
+            parameters:
+                - name: instance
+                  in: path
+                  description: The instance id.
+                  required: true
+                  schema:
+                    type: string
+                - name: database
+                  in: path
+                  description: The database id.
+                  required: true
+                  schema:
+                    type: string
+                - name: objectType
+                  in: query
+                  schema:
+                    enum:
+                        - OBJECT_TYPE_UNSPECIFIED
+                        - DATABASE
+                        - SCHEMA
+                        - TABLE
+                        - VIEW
+                        - MATERIALIZED_VIEW
+                        - FUNCTION
+                        - PROCEDURE
+                    type: string
+                    format: enum
+                - name: objectName
+                  in: query
+                  description: |-
+                    Format:
+                      for database: empty string
+                      for schema: "schemaName"
+                      for table/view/materialized view/function/procedure: "schemaName.objectName"
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetSchemaStringResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}/databases/{database}/secrets:
         get:
             tags:
@@ -9584,6 +9638,11 @@ components:
                     format: enum
                 expression:
                     type: string
+        GetSchemaStringResponse:
+            type: object
+            properties:
+                schemaString:
+                    type: string
         GoogleProtobufAny:
             type: object
             properties:
@@ -11094,11 +11153,6 @@ components:
                     description: |-
                         The environment resource.
                          Format: environments/prod where prod is the environment resource ID.
-                labels:
-                    type: object
-                    additionalProperties:
-                        type: string
-                    description: labels of the database.
         Plan_ExportDataConfig:
             type: object
             properties:

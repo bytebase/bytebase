@@ -560,6 +560,70 @@ func (Changelog_Type) EnumDescriptor() ([]byte, []int) {
 	return file_v1_database_service_proto_rawDescGZIP(), []int{68, 1}
 }
 
+type GetSchemaStringRequest_ObjectType int32
+
+const (
+	GetSchemaStringRequest_OBJECT_TYPE_UNSPECIFIED GetSchemaStringRequest_ObjectType = 0
+	GetSchemaStringRequest_DATABASE                GetSchemaStringRequest_ObjectType = 1
+	GetSchemaStringRequest_SCHEMA                  GetSchemaStringRequest_ObjectType = 2
+	GetSchemaStringRequest_TABLE                   GetSchemaStringRequest_ObjectType = 3
+	GetSchemaStringRequest_VIEW                    GetSchemaStringRequest_ObjectType = 4
+	GetSchemaStringRequest_MATERIALIZED_VIEW       GetSchemaStringRequest_ObjectType = 5
+	GetSchemaStringRequest_FUNCTION                GetSchemaStringRequest_ObjectType = 6
+	GetSchemaStringRequest_PROCEDURE               GetSchemaStringRequest_ObjectType = 7
+)
+
+// Enum value maps for GetSchemaStringRequest_ObjectType.
+var (
+	GetSchemaStringRequest_ObjectType_name = map[int32]string{
+		0: "OBJECT_TYPE_UNSPECIFIED",
+		1: "DATABASE",
+		2: "SCHEMA",
+		3: "TABLE",
+		4: "VIEW",
+		5: "MATERIALIZED_VIEW",
+		6: "FUNCTION",
+		7: "PROCEDURE",
+	}
+	GetSchemaStringRequest_ObjectType_value = map[string]int32{
+		"OBJECT_TYPE_UNSPECIFIED": 0,
+		"DATABASE":                1,
+		"SCHEMA":                  2,
+		"TABLE":                   3,
+		"VIEW":                    4,
+		"MATERIALIZED_VIEW":       5,
+		"FUNCTION":                6,
+		"PROCEDURE":               7,
+	}
+)
+
+func (x GetSchemaStringRequest_ObjectType) Enum() *GetSchemaStringRequest_ObjectType {
+	p := new(GetSchemaStringRequest_ObjectType)
+	*p = x
+	return p
+}
+
+func (x GetSchemaStringRequest_ObjectType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (GetSchemaStringRequest_ObjectType) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_database_service_proto_enumTypes[10].Descriptor()
+}
+
+func (GetSchemaStringRequest_ObjectType) Type() protoreflect.EnumType {
+	return &file_v1_database_service_proto_enumTypes[10]
+}
+
+func (x GetSchemaStringRequest_ObjectType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use GetSchemaStringRequest_ObjectType.Descriptor instead.
+func (GetSchemaStringRequest_ObjectType) EnumDescriptor() ([]byte, []int) {
+	return file_v1_database_service_proto_rawDescGZIP(), []int{69, 0}
+}
+
 type GetDatabaseRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the database to retrieve.
@@ -6265,6 +6329,117 @@ func (x *Changelog) GetType() Changelog_Type {
 	return Changelog_TYPE_UNSPECIFIED
 }
 
+type GetSchemaStringRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The name of the database.
+	// Format: instances/{instance}/databases/{database}
+	Name       string                            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	ObjectType GetSchemaStringRequest_ObjectType `protobuf:"varint,2,opt,name=object_type,json=objectType,proto3,enum=bytebase.v1.GetSchemaStringRequest_ObjectType" json:"object_type,omitempty"`
+	// Format:
+	//
+	//	for database: empty string
+	//	for schema: "schemaName"
+	//	for table/view/materialized view/function/procedure: "schemaName.objectName"
+	ObjectName    string `protobuf:"bytes,3,opt,name=object_name,json=objectName,proto3" json:"object_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSchemaStringRequest) Reset() {
+	*x = GetSchemaStringRequest{}
+	mi := &file_v1_database_service_proto_msgTypes[69]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSchemaStringRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSchemaStringRequest) ProtoMessage() {}
+
+func (x *GetSchemaStringRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_database_service_proto_msgTypes[69]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSchemaStringRequest.ProtoReflect.Descriptor instead.
+func (*GetSchemaStringRequest) Descriptor() ([]byte, []int) {
+	return file_v1_database_service_proto_rawDescGZIP(), []int{69}
+}
+
+func (x *GetSchemaStringRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *GetSchemaStringRequest) GetObjectType() GetSchemaStringRequest_ObjectType {
+	if x != nil {
+		return x.ObjectType
+	}
+	return GetSchemaStringRequest_OBJECT_TYPE_UNSPECIFIED
+}
+
+func (x *GetSchemaStringRequest) GetObjectName() string {
+	if x != nil {
+		return x.ObjectName
+	}
+	return ""
+}
+
+type GetSchemaStringResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SchemaString  string                 `protobuf:"bytes,1,opt,name=schema_string,json=schemaString,proto3" json:"schema_string,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSchemaStringResponse) Reset() {
+	*x = GetSchemaStringResponse{}
+	mi := &file_v1_database_service_proto_msgTypes[70]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSchemaStringResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSchemaStringResponse) ProtoMessage() {}
+
+func (x *GetSchemaStringResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_database_service_proto_msgTypes[70]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSchemaStringResponse.ProtoReflect.Descriptor instead.
+func (*GetSchemaStringResponse) Descriptor() ([]byte, []int) {
+	return file_v1_database_service_proto_rawDescGZIP(), []int{70}
+}
+
+func (x *GetSchemaStringResponse) GetSchemaString() string {
+	if x != nil {
+		return x.SchemaString
+	}
+	return ""
+}
+
 var File_v1_database_service_proto protoreflect.FileDescriptor
 
 var file_v1_database_service_proto_rawDesc = string([]byte{
@@ -7290,7 +7465,32 @@ var file_v1_database_service_proto_rawDesc = string([]byte{
 	0x2f, 0x7b, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x7d, 0x2f, 0x64, 0x61, 0x74, 0x61,
 	0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x7b, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x7d,
 	0x2f, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x6c, 0x6f, 0x67, 0x73, 0x2f, 0x7b, 0x63, 0x68, 0x61,
-	0x6e, 0x67, 0x65, 0x6c, 0x6f, 0x67, 0x7d, 0x2a, 0x81, 0x01, 0x0a, 0x14, 0x44, 0x61, 0x74, 0x61,
+	0x6e, 0x67, 0x65, 0x6c, 0x6f, 0x67, 0x7d, 0x22, 0xcd, 0x02, 0x0a, 0x16, 0x47, 0x65, 0x74, 0x53,
+	0x63, 0x68, 0x65, 0x6d, 0x61, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x12, 0x32, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
+	0x42, 0x1e, 0xe2, 0x41, 0x01, 0x02, 0xfa, 0x41, 0x17, 0x0a, 0x15, 0x62, 0x79, 0x74, 0x65, 0x62,
+	0x61, 0x73, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65,
+	0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x4f, 0x0a, 0x0b, 0x6f, 0x62, 0x6a, 0x65, 0x63, 0x74,
+	0x5f, 0x74, 0x79, 0x70, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x2e, 0x2e, 0x62, 0x79,
+	0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x53, 0x63, 0x68,
+	0x65, 0x6d, 0x61, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x2e, 0x4f, 0x62, 0x6a, 0x65, 0x63, 0x74, 0x54, 0x79, 0x70, 0x65, 0x52, 0x0a, 0x6f, 0x62, 0x6a,
+	0x65, 0x63, 0x74, 0x54, 0x79, 0x70, 0x65, 0x12, 0x1f, 0x0a, 0x0b, 0x6f, 0x62, 0x6a, 0x65, 0x63,
+	0x74, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x6f, 0x62,
+	0x6a, 0x65, 0x63, 0x74, 0x4e, 0x61, 0x6d, 0x65, 0x22, 0x8c, 0x01, 0x0a, 0x0a, 0x4f, 0x62, 0x6a,
+	0x65, 0x63, 0x74, 0x54, 0x79, 0x70, 0x65, 0x12, 0x1b, 0x0a, 0x17, 0x4f, 0x42, 0x4a, 0x45, 0x43,
+	0x54, 0x5f, 0x54, 0x59, 0x50, 0x45, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49,
+	0x45, 0x44, 0x10, 0x00, 0x12, 0x0c, 0x0a, 0x08, 0x44, 0x41, 0x54, 0x41, 0x42, 0x41, 0x53, 0x45,
+	0x10, 0x01, 0x12, 0x0a, 0x0a, 0x06, 0x53, 0x43, 0x48, 0x45, 0x4d, 0x41, 0x10, 0x02, 0x12, 0x09,
+	0x0a, 0x05, 0x54, 0x41, 0x42, 0x4c, 0x45, 0x10, 0x03, 0x12, 0x08, 0x0a, 0x04, 0x56, 0x49, 0x45,
+	0x57, 0x10, 0x04, 0x12, 0x15, 0x0a, 0x11, 0x4d, 0x41, 0x54, 0x45, 0x52, 0x49, 0x41, 0x4c, 0x49,
+	0x5a, 0x45, 0x44, 0x5f, 0x56, 0x49, 0x45, 0x57, 0x10, 0x05, 0x12, 0x0c, 0x0a, 0x08, 0x46, 0x55,
+	0x4e, 0x43, 0x54, 0x49, 0x4f, 0x4e, 0x10, 0x06, 0x12, 0x0d, 0x0a, 0x09, 0x50, 0x52, 0x4f, 0x43,
+	0x45, 0x44, 0x55, 0x52, 0x45, 0x10, 0x07, 0x22, 0x3e, 0x0a, 0x17, 0x47, 0x65, 0x74, 0x53, 0x63,
+	0x68, 0x65, 0x6d, 0x61, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x12, 0x23, 0x0a, 0x0d, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x5f, 0x73, 0x74, 0x72,
+	0x69, 0x6e, 0x67, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x73, 0x63, 0x68, 0x65, 0x6d,
+	0x61, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x2a, 0x81, 0x01, 0x0a, 0x14, 0x44, 0x61, 0x74, 0x61,
 	0x62, 0x61, 0x73, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x56, 0x69, 0x65, 0x77,
 	0x12, 0x26, 0x0a, 0x22, 0x44, 0x41, 0x54, 0x41, 0x42, 0x41, 0x53, 0x45, 0x5f, 0x4d, 0x45, 0x54,
 	0x41, 0x44, 0x41, 0x54, 0x41, 0x5f, 0x56, 0x49, 0x45, 0x57, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45,
@@ -7305,7 +7505,7 @@ var file_v1_database_service_proto_rawDesc = string([]byte{
 	0x43, 0x48, 0x41, 0x4e, 0x47, 0x45, 0x4c, 0x4f, 0x47, 0x5f, 0x56, 0x49, 0x45, 0x57, 0x5f, 0x42,
 	0x41, 0x53, 0x49, 0x43, 0x10, 0x01, 0x12, 0x17, 0x0a, 0x13, 0x43, 0x48, 0x41, 0x4e, 0x47, 0x45,
 	0x4c, 0x4f, 0x47, 0x5f, 0x56, 0x49, 0x45, 0x57, 0x5f, 0x46, 0x55, 0x4c, 0x4c, 0x10, 0x02, 0x32,
-	0x84, 0x1c, 0x0a, 0x0f, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x53, 0x65, 0x72, 0x76,
+	0xc1, 0x1d, 0x0a, 0x0f, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x53, 0x65, 0x72, 0x76,
 	0x69, 0x63, 0x65, 0x12, 0x90, 0x01, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62,
 	0x61, 0x73, 0x65, 0x12, 0x1f, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76,
 	0x31, 0x2e, 0x47, 0x65, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x52, 0x65, 0x71,
@@ -7529,9 +7729,20 @@ var file_v1_database_service_proto_rawDesc = string([]byte{
 	0xd3, 0xe4, 0x93, 0x02, 0x31, 0x12, 0x2f, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65,
 	0x3d, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74,
 	0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x6c,
-	0x6f, 0x67, 0x73, 0x2f, 0x2a, 0x7d, 0x42, 0x11, 0x5a, 0x0f, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61,
-	0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x6f, 0x67, 0x73, 0x2f, 0x2a, 0x7d, 0x12, 0xba, 0x01, 0x0a, 0x0f, 0x47, 0x65, 0x74, 0x53, 0x63,
+	0x68, 0x65, 0x6d, 0x61, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x12, 0x23, 0x2e, 0x62, 0x79, 0x74,
+	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x53, 0x63, 0x68, 0x65,
+	0x6d, 0x61, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x24, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65,
+	0x74, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x5c, 0xda, 0x41, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x8a, 0xea,
+	0x30, 0x16, 0x62, 0x62, 0x2e, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x2e, 0x67,
+	0x65, 0x74, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x90, 0xea, 0x30, 0x01, 0x82, 0xd3, 0xe4, 0x93,
+	0x02, 0x31, 0x12, 0x2f, 0x2f, 0x76, 0x31, 0x2f, 0x7b, 0x6e, 0x61, 0x6d, 0x65, 0x3d, 0x69, 0x6e,
+	0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61,
+	0x73, 0x65, 0x73, 0x2f, 0x2a, 0x2f, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x53, 0x74, 0x72, 0x69,
+	0x6e, 0x67, 0x7d, 0x42, 0x11, 0x5a, 0x0f, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64,
+	0x2d, 0x67, 0x6f, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 })
 
 var (
@@ -7546,8 +7757,8 @@ func file_v1_database_service_proto_rawDescGZIP() []byte {
 	return file_v1_database_service_proto_rawDescData
 }
 
-var file_v1_database_service_proto_enumTypes = make([]protoimpl.EnumInfo, 10)
-var file_v1_database_service_proto_msgTypes = make([]protoimpl.MessageInfo, 70)
+var file_v1_database_service_proto_enumTypes = make([]protoimpl.EnumInfo, 11)
+var file_v1_database_service_proto_msgTypes = make([]protoimpl.MessageInfo, 72)
 var file_v1_database_service_proto_goTypes = []any{
 	(DatabaseMetadataView)(0),              // 0: bytebase.v1.DatabaseMetadataView
 	(ChangelogView)(0),                     // 1: bytebase.v1.ChangelogView
@@ -7559,213 +7770,219 @@ var file_v1_database_service_proto_goTypes = []any{
 	(StreamMetadata_Mode)(0),               // 7: bytebase.v1.StreamMetadata.Mode
 	(Changelog_Status)(0),                  // 8: bytebase.v1.Changelog.Status
 	(Changelog_Type)(0),                    // 9: bytebase.v1.Changelog.Type
-	(*GetDatabaseRequest)(nil),             // 10: bytebase.v1.GetDatabaseRequest
-	(*ListInstanceDatabasesRequest)(nil),   // 11: bytebase.v1.ListInstanceDatabasesRequest
-	(*ListInstanceDatabasesResponse)(nil),  // 12: bytebase.v1.ListInstanceDatabasesResponse
-	(*ListDatabasesRequest)(nil),           // 13: bytebase.v1.ListDatabasesRequest
-	(*ListDatabasesResponse)(nil),          // 14: bytebase.v1.ListDatabasesResponse
-	(*UpdateDatabaseRequest)(nil),          // 15: bytebase.v1.UpdateDatabaseRequest
-	(*BatchUpdateDatabasesRequest)(nil),    // 16: bytebase.v1.BatchUpdateDatabasesRequest
-	(*BatchUpdateDatabasesResponse)(nil),   // 17: bytebase.v1.BatchUpdateDatabasesResponse
-	(*SyncDatabaseRequest)(nil),            // 18: bytebase.v1.SyncDatabaseRequest
-	(*SyncDatabaseResponse)(nil),           // 19: bytebase.v1.SyncDatabaseResponse
-	(*GetDatabaseMetadataRequest)(nil),     // 20: bytebase.v1.GetDatabaseMetadataRequest
-	(*GetDatabaseSchemaRequest)(nil),       // 21: bytebase.v1.GetDatabaseSchemaRequest
-	(*DiffSchemaRequest)(nil),              // 22: bytebase.v1.DiffSchemaRequest
-	(*DiffSchemaResponse)(nil),             // 23: bytebase.v1.DiffSchemaResponse
-	(*Database)(nil),                       // 24: bytebase.v1.Database
-	(*DatabaseMetadata)(nil),               // 25: bytebase.v1.DatabaseMetadata
-	(*SchemaMetadata)(nil),                 // 26: bytebase.v1.SchemaMetadata
-	(*EnumTypeMetadata)(nil),               // 27: bytebase.v1.EnumTypeMetadata
-	(*EventMetadata)(nil),                  // 28: bytebase.v1.EventMetadata
-	(*SequenceMetadata)(nil),               // 29: bytebase.v1.SequenceMetadata
-	(*TriggerMetadata)(nil),                // 30: bytebase.v1.TriggerMetadata
-	(*ExternalTableMetadata)(nil),          // 31: bytebase.v1.ExternalTableMetadata
-	(*TableMetadata)(nil),                  // 32: bytebase.v1.TableMetadata
-	(*CheckConstraintMetadata)(nil),        // 33: bytebase.v1.CheckConstraintMetadata
-	(*TablePartitionMetadata)(nil),         // 34: bytebase.v1.TablePartitionMetadata
-	(*ColumnMetadata)(nil),                 // 35: bytebase.v1.ColumnMetadata
-	(*GenerationMetadata)(nil),             // 36: bytebase.v1.GenerationMetadata
-	(*ViewMetadata)(nil),                   // 37: bytebase.v1.ViewMetadata
-	(*DependencyColumn)(nil),               // 38: bytebase.v1.DependencyColumn
-	(*MaterializedViewMetadata)(nil),       // 39: bytebase.v1.MaterializedViewMetadata
-	(*DependencyTable)(nil),                // 40: bytebase.v1.DependencyTable
-	(*FunctionMetadata)(nil),               // 41: bytebase.v1.FunctionMetadata
-	(*ProcedureMetadata)(nil),              // 42: bytebase.v1.ProcedureMetadata
-	(*PackageMetadata)(nil),                // 43: bytebase.v1.PackageMetadata
-	(*TaskMetadata)(nil),                   // 44: bytebase.v1.TaskMetadata
-	(*StreamMetadata)(nil),                 // 45: bytebase.v1.StreamMetadata
-	(*IndexMetadata)(nil),                  // 46: bytebase.v1.IndexMetadata
-	(*ExtensionMetadata)(nil),              // 47: bytebase.v1.ExtensionMetadata
-	(*ForeignKeyMetadata)(nil),             // 48: bytebase.v1.ForeignKeyMetadata
-	(*DatabaseSchema)(nil),                 // 49: bytebase.v1.DatabaseSchema
-	(*ListSlowQueriesRequest)(nil),         // 50: bytebase.v1.ListSlowQueriesRequest
-	(*ListSlowQueriesResponse)(nil),        // 51: bytebase.v1.ListSlowQueriesResponse
-	(*SlowQueryLog)(nil),                   // 52: bytebase.v1.SlowQueryLog
-	(*SlowQueryStatistics)(nil),            // 53: bytebase.v1.SlowQueryStatistics
-	(*SlowQueryDetails)(nil),               // 54: bytebase.v1.SlowQueryDetails
-	(*ListSecretsRequest)(nil),             // 55: bytebase.v1.ListSecretsRequest
-	(*ListSecretsResponse)(nil),            // 56: bytebase.v1.ListSecretsResponse
-	(*UpdateSecretRequest)(nil),            // 57: bytebase.v1.UpdateSecretRequest
-	(*DeleteSecretRequest)(nil),            // 58: bytebase.v1.DeleteSecretRequest
-	(*Secret)(nil),                         // 59: bytebase.v1.Secret
-	(*AdviseIndexRequest)(nil),             // 60: bytebase.v1.AdviseIndexRequest
-	(*AdviseIndexResponse)(nil),            // 61: bytebase.v1.AdviseIndexResponse
-	(*ChangedResources)(nil),               // 62: bytebase.v1.ChangedResources
-	(*ChangedResourceDatabase)(nil),        // 63: bytebase.v1.ChangedResourceDatabase
-	(*ChangedResourceSchema)(nil),          // 64: bytebase.v1.ChangedResourceSchema
-	(*ChangedResourceTable)(nil),           // 65: bytebase.v1.ChangedResourceTable
-	(*ChangedResourceView)(nil),            // 66: bytebase.v1.ChangedResourceView
-	(*ChangedResourceFunction)(nil),        // 67: bytebase.v1.ChangedResourceFunction
-	(*ChangedResourceProcedure)(nil),       // 68: bytebase.v1.ChangedResourceProcedure
-	(*ListRevisionsRequest)(nil),           // 69: bytebase.v1.ListRevisionsRequest
-	(*ListRevisionsResponse)(nil),          // 70: bytebase.v1.ListRevisionsResponse
-	(*CreateRevisionRequest)(nil),          // 71: bytebase.v1.CreateRevisionRequest
-	(*GetRevisionRequest)(nil),             // 72: bytebase.v1.GetRevisionRequest
-	(*DeleteRevisionRequest)(nil),          // 73: bytebase.v1.DeleteRevisionRequest
-	(*Revision)(nil),                       // 74: bytebase.v1.Revision
-	(*ListChangelogsRequest)(nil),          // 75: bytebase.v1.ListChangelogsRequest
-	(*ListChangelogsResponse)(nil),         // 76: bytebase.v1.ListChangelogsResponse
-	(*GetChangelogRequest)(nil),            // 77: bytebase.v1.GetChangelogRequest
-	(*Changelog)(nil),                      // 78: bytebase.v1.Changelog
-	nil,                                    // 79: bytebase.v1.Database.LabelsEntry
-	(*fieldmaskpb.FieldMask)(nil),          // 80: google.protobuf.FieldMask
-	(State)(0),                             // 81: bytebase.v1.State
-	(*timestamppb.Timestamp)(nil),          // 82: google.protobuf.Timestamp
-	(*InstanceResource)(nil),               // 83: bytebase.v1.InstanceResource
-	(*durationpb.Duration)(nil),            // 84: google.protobuf.Duration
-	(*Range)(nil),                          // 85: bytebase.v1.Range
-	(*emptypb.Empty)(nil),                  // 86: google.protobuf.Empty
+	(GetSchemaStringRequest_ObjectType)(0), // 10: bytebase.v1.GetSchemaStringRequest.ObjectType
+	(*GetDatabaseRequest)(nil),             // 11: bytebase.v1.GetDatabaseRequest
+	(*ListInstanceDatabasesRequest)(nil),   // 12: bytebase.v1.ListInstanceDatabasesRequest
+	(*ListInstanceDatabasesResponse)(nil),  // 13: bytebase.v1.ListInstanceDatabasesResponse
+	(*ListDatabasesRequest)(nil),           // 14: bytebase.v1.ListDatabasesRequest
+	(*ListDatabasesResponse)(nil),          // 15: bytebase.v1.ListDatabasesResponse
+	(*UpdateDatabaseRequest)(nil),          // 16: bytebase.v1.UpdateDatabaseRequest
+	(*BatchUpdateDatabasesRequest)(nil),    // 17: bytebase.v1.BatchUpdateDatabasesRequest
+	(*BatchUpdateDatabasesResponse)(nil),   // 18: bytebase.v1.BatchUpdateDatabasesResponse
+	(*SyncDatabaseRequest)(nil),            // 19: bytebase.v1.SyncDatabaseRequest
+	(*SyncDatabaseResponse)(nil),           // 20: bytebase.v1.SyncDatabaseResponse
+	(*GetDatabaseMetadataRequest)(nil),     // 21: bytebase.v1.GetDatabaseMetadataRequest
+	(*GetDatabaseSchemaRequest)(nil),       // 22: bytebase.v1.GetDatabaseSchemaRequest
+	(*DiffSchemaRequest)(nil),              // 23: bytebase.v1.DiffSchemaRequest
+	(*DiffSchemaResponse)(nil),             // 24: bytebase.v1.DiffSchemaResponse
+	(*Database)(nil),                       // 25: bytebase.v1.Database
+	(*DatabaseMetadata)(nil),               // 26: bytebase.v1.DatabaseMetadata
+	(*SchemaMetadata)(nil),                 // 27: bytebase.v1.SchemaMetadata
+	(*EnumTypeMetadata)(nil),               // 28: bytebase.v1.EnumTypeMetadata
+	(*EventMetadata)(nil),                  // 29: bytebase.v1.EventMetadata
+	(*SequenceMetadata)(nil),               // 30: bytebase.v1.SequenceMetadata
+	(*TriggerMetadata)(nil),                // 31: bytebase.v1.TriggerMetadata
+	(*ExternalTableMetadata)(nil),          // 32: bytebase.v1.ExternalTableMetadata
+	(*TableMetadata)(nil),                  // 33: bytebase.v1.TableMetadata
+	(*CheckConstraintMetadata)(nil),        // 34: bytebase.v1.CheckConstraintMetadata
+	(*TablePartitionMetadata)(nil),         // 35: bytebase.v1.TablePartitionMetadata
+	(*ColumnMetadata)(nil),                 // 36: bytebase.v1.ColumnMetadata
+	(*GenerationMetadata)(nil),             // 37: bytebase.v1.GenerationMetadata
+	(*ViewMetadata)(nil),                   // 38: bytebase.v1.ViewMetadata
+	(*DependencyColumn)(nil),               // 39: bytebase.v1.DependencyColumn
+	(*MaterializedViewMetadata)(nil),       // 40: bytebase.v1.MaterializedViewMetadata
+	(*DependencyTable)(nil),                // 41: bytebase.v1.DependencyTable
+	(*FunctionMetadata)(nil),               // 42: bytebase.v1.FunctionMetadata
+	(*ProcedureMetadata)(nil),              // 43: bytebase.v1.ProcedureMetadata
+	(*PackageMetadata)(nil),                // 44: bytebase.v1.PackageMetadata
+	(*TaskMetadata)(nil),                   // 45: bytebase.v1.TaskMetadata
+	(*StreamMetadata)(nil),                 // 46: bytebase.v1.StreamMetadata
+	(*IndexMetadata)(nil),                  // 47: bytebase.v1.IndexMetadata
+	(*ExtensionMetadata)(nil),              // 48: bytebase.v1.ExtensionMetadata
+	(*ForeignKeyMetadata)(nil),             // 49: bytebase.v1.ForeignKeyMetadata
+	(*DatabaseSchema)(nil),                 // 50: bytebase.v1.DatabaseSchema
+	(*ListSlowQueriesRequest)(nil),         // 51: bytebase.v1.ListSlowQueriesRequest
+	(*ListSlowQueriesResponse)(nil),        // 52: bytebase.v1.ListSlowQueriesResponse
+	(*SlowQueryLog)(nil),                   // 53: bytebase.v1.SlowQueryLog
+	(*SlowQueryStatistics)(nil),            // 54: bytebase.v1.SlowQueryStatistics
+	(*SlowQueryDetails)(nil),               // 55: bytebase.v1.SlowQueryDetails
+	(*ListSecretsRequest)(nil),             // 56: bytebase.v1.ListSecretsRequest
+	(*ListSecretsResponse)(nil),            // 57: bytebase.v1.ListSecretsResponse
+	(*UpdateSecretRequest)(nil),            // 58: bytebase.v1.UpdateSecretRequest
+	(*DeleteSecretRequest)(nil),            // 59: bytebase.v1.DeleteSecretRequest
+	(*Secret)(nil),                         // 60: bytebase.v1.Secret
+	(*AdviseIndexRequest)(nil),             // 61: bytebase.v1.AdviseIndexRequest
+	(*AdviseIndexResponse)(nil),            // 62: bytebase.v1.AdviseIndexResponse
+	(*ChangedResources)(nil),               // 63: bytebase.v1.ChangedResources
+	(*ChangedResourceDatabase)(nil),        // 64: bytebase.v1.ChangedResourceDatabase
+	(*ChangedResourceSchema)(nil),          // 65: bytebase.v1.ChangedResourceSchema
+	(*ChangedResourceTable)(nil),           // 66: bytebase.v1.ChangedResourceTable
+	(*ChangedResourceView)(nil),            // 67: bytebase.v1.ChangedResourceView
+	(*ChangedResourceFunction)(nil),        // 68: bytebase.v1.ChangedResourceFunction
+	(*ChangedResourceProcedure)(nil),       // 69: bytebase.v1.ChangedResourceProcedure
+	(*ListRevisionsRequest)(nil),           // 70: bytebase.v1.ListRevisionsRequest
+	(*ListRevisionsResponse)(nil),          // 71: bytebase.v1.ListRevisionsResponse
+	(*CreateRevisionRequest)(nil),          // 72: bytebase.v1.CreateRevisionRequest
+	(*GetRevisionRequest)(nil),             // 73: bytebase.v1.GetRevisionRequest
+	(*DeleteRevisionRequest)(nil),          // 74: bytebase.v1.DeleteRevisionRequest
+	(*Revision)(nil),                       // 75: bytebase.v1.Revision
+	(*ListChangelogsRequest)(nil),          // 76: bytebase.v1.ListChangelogsRequest
+	(*ListChangelogsResponse)(nil),         // 77: bytebase.v1.ListChangelogsResponse
+	(*GetChangelogRequest)(nil),            // 78: bytebase.v1.GetChangelogRequest
+	(*Changelog)(nil),                      // 79: bytebase.v1.Changelog
+	(*GetSchemaStringRequest)(nil),         // 80: bytebase.v1.GetSchemaStringRequest
+	(*GetSchemaStringResponse)(nil),        // 81: bytebase.v1.GetSchemaStringResponse
+	nil,                                    // 82: bytebase.v1.Database.LabelsEntry
+	(*fieldmaskpb.FieldMask)(nil),          // 83: google.protobuf.FieldMask
+	(State)(0),                             // 84: bytebase.v1.State
+	(*timestamppb.Timestamp)(nil),          // 85: google.protobuf.Timestamp
+	(*InstanceResource)(nil),               // 86: bytebase.v1.InstanceResource
+	(*durationpb.Duration)(nil),            // 87: google.protobuf.Duration
+	(*Range)(nil),                          // 88: bytebase.v1.Range
+	(*emptypb.Empty)(nil),                  // 89: google.protobuf.Empty
 }
 var file_v1_database_service_proto_depIdxs = []int32{
-	24,  // 0: bytebase.v1.ListInstanceDatabasesResponse.databases:type_name -> bytebase.v1.Database
-	24,  // 1: bytebase.v1.ListDatabasesResponse.databases:type_name -> bytebase.v1.Database
-	24,  // 2: bytebase.v1.UpdateDatabaseRequest.database:type_name -> bytebase.v1.Database
-	80,  // 3: bytebase.v1.UpdateDatabaseRequest.update_mask:type_name -> google.protobuf.FieldMask
-	15,  // 4: bytebase.v1.BatchUpdateDatabasesRequest.requests:type_name -> bytebase.v1.UpdateDatabaseRequest
-	24,  // 5: bytebase.v1.BatchUpdateDatabasesResponse.databases:type_name -> bytebase.v1.Database
+	25,  // 0: bytebase.v1.ListInstanceDatabasesResponse.databases:type_name -> bytebase.v1.Database
+	25,  // 1: bytebase.v1.ListDatabasesResponse.databases:type_name -> bytebase.v1.Database
+	25,  // 2: bytebase.v1.UpdateDatabaseRequest.database:type_name -> bytebase.v1.Database
+	83,  // 3: bytebase.v1.UpdateDatabaseRequest.update_mask:type_name -> google.protobuf.FieldMask
+	16,  // 4: bytebase.v1.BatchUpdateDatabasesRequest.requests:type_name -> bytebase.v1.UpdateDatabaseRequest
+	25,  // 5: bytebase.v1.BatchUpdateDatabasesResponse.databases:type_name -> bytebase.v1.Database
 	0,   // 6: bytebase.v1.GetDatabaseMetadataRequest.view:type_name -> bytebase.v1.DatabaseMetadataView
-	81,  // 7: bytebase.v1.Database.state:type_name -> bytebase.v1.State
-	82,  // 8: bytebase.v1.Database.successful_sync_time:type_name -> google.protobuf.Timestamp
-	79,  // 9: bytebase.v1.Database.labels:type_name -> bytebase.v1.Database.LabelsEntry
-	83,  // 10: bytebase.v1.Database.instance_resource:type_name -> bytebase.v1.InstanceResource
-	26,  // 11: bytebase.v1.DatabaseMetadata.schemas:type_name -> bytebase.v1.SchemaMetadata
-	47,  // 12: bytebase.v1.DatabaseMetadata.extensions:type_name -> bytebase.v1.ExtensionMetadata
-	32,  // 13: bytebase.v1.SchemaMetadata.tables:type_name -> bytebase.v1.TableMetadata
-	31,  // 14: bytebase.v1.SchemaMetadata.external_tables:type_name -> bytebase.v1.ExternalTableMetadata
-	37,  // 15: bytebase.v1.SchemaMetadata.views:type_name -> bytebase.v1.ViewMetadata
-	41,  // 16: bytebase.v1.SchemaMetadata.functions:type_name -> bytebase.v1.FunctionMetadata
-	42,  // 17: bytebase.v1.SchemaMetadata.procedures:type_name -> bytebase.v1.ProcedureMetadata
-	45,  // 18: bytebase.v1.SchemaMetadata.streams:type_name -> bytebase.v1.StreamMetadata
-	44,  // 19: bytebase.v1.SchemaMetadata.tasks:type_name -> bytebase.v1.TaskMetadata
-	39,  // 20: bytebase.v1.SchemaMetadata.materialized_views:type_name -> bytebase.v1.MaterializedViewMetadata
-	43,  // 21: bytebase.v1.SchemaMetadata.packages:type_name -> bytebase.v1.PackageMetadata
-	29,  // 22: bytebase.v1.SchemaMetadata.sequences:type_name -> bytebase.v1.SequenceMetadata
-	28,  // 23: bytebase.v1.SchemaMetadata.events:type_name -> bytebase.v1.EventMetadata
-	27,  // 24: bytebase.v1.SchemaMetadata.enum_types:type_name -> bytebase.v1.EnumTypeMetadata
-	35,  // 25: bytebase.v1.ExternalTableMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
-	35,  // 26: bytebase.v1.TableMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
-	46,  // 27: bytebase.v1.TableMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
-	48,  // 28: bytebase.v1.TableMetadata.foreign_keys:type_name -> bytebase.v1.ForeignKeyMetadata
-	34,  // 29: bytebase.v1.TableMetadata.partitions:type_name -> bytebase.v1.TablePartitionMetadata
-	33,  // 30: bytebase.v1.TableMetadata.check_constraints:type_name -> bytebase.v1.CheckConstraintMetadata
-	30,  // 31: bytebase.v1.TableMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
+	84,  // 7: bytebase.v1.Database.state:type_name -> bytebase.v1.State
+	85,  // 8: bytebase.v1.Database.successful_sync_time:type_name -> google.protobuf.Timestamp
+	82,  // 9: bytebase.v1.Database.labels:type_name -> bytebase.v1.Database.LabelsEntry
+	86,  // 10: bytebase.v1.Database.instance_resource:type_name -> bytebase.v1.InstanceResource
+	27,  // 11: bytebase.v1.DatabaseMetadata.schemas:type_name -> bytebase.v1.SchemaMetadata
+	48,  // 12: bytebase.v1.DatabaseMetadata.extensions:type_name -> bytebase.v1.ExtensionMetadata
+	33,  // 13: bytebase.v1.SchemaMetadata.tables:type_name -> bytebase.v1.TableMetadata
+	32,  // 14: bytebase.v1.SchemaMetadata.external_tables:type_name -> bytebase.v1.ExternalTableMetadata
+	38,  // 15: bytebase.v1.SchemaMetadata.views:type_name -> bytebase.v1.ViewMetadata
+	42,  // 16: bytebase.v1.SchemaMetadata.functions:type_name -> bytebase.v1.FunctionMetadata
+	43,  // 17: bytebase.v1.SchemaMetadata.procedures:type_name -> bytebase.v1.ProcedureMetadata
+	46,  // 18: bytebase.v1.SchemaMetadata.streams:type_name -> bytebase.v1.StreamMetadata
+	45,  // 19: bytebase.v1.SchemaMetadata.tasks:type_name -> bytebase.v1.TaskMetadata
+	40,  // 20: bytebase.v1.SchemaMetadata.materialized_views:type_name -> bytebase.v1.MaterializedViewMetadata
+	44,  // 21: bytebase.v1.SchemaMetadata.packages:type_name -> bytebase.v1.PackageMetadata
+	30,  // 22: bytebase.v1.SchemaMetadata.sequences:type_name -> bytebase.v1.SequenceMetadata
+	29,  // 23: bytebase.v1.SchemaMetadata.events:type_name -> bytebase.v1.EventMetadata
+	28,  // 24: bytebase.v1.SchemaMetadata.enum_types:type_name -> bytebase.v1.EnumTypeMetadata
+	36,  // 25: bytebase.v1.ExternalTableMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
+	36,  // 26: bytebase.v1.TableMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
+	47,  // 27: bytebase.v1.TableMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
+	49,  // 28: bytebase.v1.TableMetadata.foreign_keys:type_name -> bytebase.v1.ForeignKeyMetadata
+	35,  // 29: bytebase.v1.TableMetadata.partitions:type_name -> bytebase.v1.TablePartitionMetadata
+	34,  // 30: bytebase.v1.TableMetadata.check_constraints:type_name -> bytebase.v1.CheckConstraintMetadata
+	31,  // 31: bytebase.v1.TableMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
 	2,   // 32: bytebase.v1.TablePartitionMetadata.type:type_name -> bytebase.v1.TablePartitionMetadata.Type
-	34,  // 33: bytebase.v1.TablePartitionMetadata.subpartitions:type_name -> bytebase.v1.TablePartitionMetadata
-	46,  // 34: bytebase.v1.TablePartitionMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
-	36,  // 35: bytebase.v1.ColumnMetadata.generation:type_name -> bytebase.v1.GenerationMetadata
+	35,  // 33: bytebase.v1.TablePartitionMetadata.subpartitions:type_name -> bytebase.v1.TablePartitionMetadata
+	47,  // 34: bytebase.v1.TablePartitionMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
+	37,  // 35: bytebase.v1.ColumnMetadata.generation:type_name -> bytebase.v1.GenerationMetadata
 	3,   // 36: bytebase.v1.ColumnMetadata.identity_generation:type_name -> bytebase.v1.ColumnMetadata.IdentityGeneration
 	4,   // 37: bytebase.v1.GenerationMetadata.type:type_name -> bytebase.v1.GenerationMetadata.Type
-	38,  // 38: bytebase.v1.ViewMetadata.dependency_columns:type_name -> bytebase.v1.DependencyColumn
-	35,  // 39: bytebase.v1.ViewMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
-	30,  // 40: bytebase.v1.ViewMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
-	38,  // 41: bytebase.v1.MaterializedViewMetadata.dependency_columns:type_name -> bytebase.v1.DependencyColumn
-	30,  // 42: bytebase.v1.MaterializedViewMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
-	46,  // 43: bytebase.v1.MaterializedViewMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
-	40,  // 44: bytebase.v1.FunctionMetadata.dependency_tables:type_name -> bytebase.v1.DependencyTable
+	39,  // 38: bytebase.v1.ViewMetadata.dependency_columns:type_name -> bytebase.v1.DependencyColumn
+	36,  // 39: bytebase.v1.ViewMetadata.columns:type_name -> bytebase.v1.ColumnMetadata
+	31,  // 40: bytebase.v1.ViewMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
+	39,  // 41: bytebase.v1.MaterializedViewMetadata.dependency_columns:type_name -> bytebase.v1.DependencyColumn
+	31,  // 42: bytebase.v1.MaterializedViewMetadata.triggers:type_name -> bytebase.v1.TriggerMetadata
+	47,  // 43: bytebase.v1.MaterializedViewMetadata.indexes:type_name -> bytebase.v1.IndexMetadata
+	41,  // 44: bytebase.v1.FunctionMetadata.dependency_tables:type_name -> bytebase.v1.DependencyTable
 	5,   // 45: bytebase.v1.TaskMetadata.state:type_name -> bytebase.v1.TaskMetadata.State
 	6,   // 46: bytebase.v1.StreamMetadata.type:type_name -> bytebase.v1.StreamMetadata.Type
 	7,   // 47: bytebase.v1.StreamMetadata.mode:type_name -> bytebase.v1.StreamMetadata.Mode
-	52,  // 48: bytebase.v1.ListSlowQueriesResponse.slow_query_logs:type_name -> bytebase.v1.SlowQueryLog
-	53,  // 49: bytebase.v1.SlowQueryLog.statistics:type_name -> bytebase.v1.SlowQueryStatistics
-	82,  // 50: bytebase.v1.SlowQueryStatistics.latest_log_time:type_name -> google.protobuf.Timestamp
-	84,  // 51: bytebase.v1.SlowQueryStatistics.average_query_time:type_name -> google.protobuf.Duration
-	84,  // 52: bytebase.v1.SlowQueryStatistics.maximum_query_time:type_name -> google.protobuf.Duration
-	54,  // 53: bytebase.v1.SlowQueryStatistics.samples:type_name -> bytebase.v1.SlowQueryDetails
-	82,  // 54: bytebase.v1.SlowQueryDetails.start_time:type_name -> google.protobuf.Timestamp
-	84,  // 55: bytebase.v1.SlowQueryDetails.query_time:type_name -> google.protobuf.Duration
-	84,  // 56: bytebase.v1.SlowQueryDetails.lock_time:type_name -> google.protobuf.Duration
-	59,  // 57: bytebase.v1.ListSecretsResponse.secrets:type_name -> bytebase.v1.Secret
-	59,  // 58: bytebase.v1.UpdateSecretRequest.secret:type_name -> bytebase.v1.Secret
-	80,  // 59: bytebase.v1.UpdateSecretRequest.update_mask:type_name -> google.protobuf.FieldMask
-	82,  // 60: bytebase.v1.Secret.created_time:type_name -> google.protobuf.Timestamp
-	82,  // 61: bytebase.v1.Secret.updated_time:type_name -> google.protobuf.Timestamp
-	63,  // 62: bytebase.v1.ChangedResources.databases:type_name -> bytebase.v1.ChangedResourceDatabase
-	64,  // 63: bytebase.v1.ChangedResourceDatabase.schemas:type_name -> bytebase.v1.ChangedResourceSchema
-	65,  // 64: bytebase.v1.ChangedResourceSchema.tables:type_name -> bytebase.v1.ChangedResourceTable
-	66,  // 65: bytebase.v1.ChangedResourceSchema.views:type_name -> bytebase.v1.ChangedResourceView
-	67,  // 66: bytebase.v1.ChangedResourceSchema.functions:type_name -> bytebase.v1.ChangedResourceFunction
-	68,  // 67: bytebase.v1.ChangedResourceSchema.procedures:type_name -> bytebase.v1.ChangedResourceProcedure
-	85,  // 68: bytebase.v1.ChangedResourceTable.ranges:type_name -> bytebase.v1.Range
-	85,  // 69: bytebase.v1.ChangedResourceView.ranges:type_name -> bytebase.v1.Range
-	85,  // 70: bytebase.v1.ChangedResourceFunction.ranges:type_name -> bytebase.v1.Range
-	85,  // 71: bytebase.v1.ChangedResourceProcedure.ranges:type_name -> bytebase.v1.Range
-	74,  // 72: bytebase.v1.ListRevisionsResponse.revisions:type_name -> bytebase.v1.Revision
-	74,  // 73: bytebase.v1.CreateRevisionRequest.revision:type_name -> bytebase.v1.Revision
-	82,  // 74: bytebase.v1.Revision.create_time:type_name -> google.protobuf.Timestamp
-	82,  // 75: bytebase.v1.Revision.delete_time:type_name -> google.protobuf.Timestamp
+	53,  // 48: bytebase.v1.ListSlowQueriesResponse.slow_query_logs:type_name -> bytebase.v1.SlowQueryLog
+	54,  // 49: bytebase.v1.SlowQueryLog.statistics:type_name -> bytebase.v1.SlowQueryStatistics
+	85,  // 50: bytebase.v1.SlowQueryStatistics.latest_log_time:type_name -> google.protobuf.Timestamp
+	87,  // 51: bytebase.v1.SlowQueryStatistics.average_query_time:type_name -> google.protobuf.Duration
+	87,  // 52: bytebase.v1.SlowQueryStatistics.maximum_query_time:type_name -> google.protobuf.Duration
+	55,  // 53: bytebase.v1.SlowQueryStatistics.samples:type_name -> bytebase.v1.SlowQueryDetails
+	85,  // 54: bytebase.v1.SlowQueryDetails.start_time:type_name -> google.protobuf.Timestamp
+	87,  // 55: bytebase.v1.SlowQueryDetails.query_time:type_name -> google.protobuf.Duration
+	87,  // 56: bytebase.v1.SlowQueryDetails.lock_time:type_name -> google.protobuf.Duration
+	60,  // 57: bytebase.v1.ListSecretsResponse.secrets:type_name -> bytebase.v1.Secret
+	60,  // 58: bytebase.v1.UpdateSecretRequest.secret:type_name -> bytebase.v1.Secret
+	83,  // 59: bytebase.v1.UpdateSecretRequest.update_mask:type_name -> google.protobuf.FieldMask
+	85,  // 60: bytebase.v1.Secret.created_time:type_name -> google.protobuf.Timestamp
+	85,  // 61: bytebase.v1.Secret.updated_time:type_name -> google.protobuf.Timestamp
+	64,  // 62: bytebase.v1.ChangedResources.databases:type_name -> bytebase.v1.ChangedResourceDatabase
+	65,  // 63: bytebase.v1.ChangedResourceDatabase.schemas:type_name -> bytebase.v1.ChangedResourceSchema
+	66,  // 64: bytebase.v1.ChangedResourceSchema.tables:type_name -> bytebase.v1.ChangedResourceTable
+	67,  // 65: bytebase.v1.ChangedResourceSchema.views:type_name -> bytebase.v1.ChangedResourceView
+	68,  // 66: bytebase.v1.ChangedResourceSchema.functions:type_name -> bytebase.v1.ChangedResourceFunction
+	69,  // 67: bytebase.v1.ChangedResourceSchema.procedures:type_name -> bytebase.v1.ChangedResourceProcedure
+	88,  // 68: bytebase.v1.ChangedResourceTable.ranges:type_name -> bytebase.v1.Range
+	88,  // 69: bytebase.v1.ChangedResourceView.ranges:type_name -> bytebase.v1.Range
+	88,  // 70: bytebase.v1.ChangedResourceFunction.ranges:type_name -> bytebase.v1.Range
+	88,  // 71: bytebase.v1.ChangedResourceProcedure.ranges:type_name -> bytebase.v1.Range
+	75,  // 72: bytebase.v1.ListRevisionsResponse.revisions:type_name -> bytebase.v1.Revision
+	75,  // 73: bytebase.v1.CreateRevisionRequest.revision:type_name -> bytebase.v1.Revision
+	85,  // 74: bytebase.v1.Revision.create_time:type_name -> google.protobuf.Timestamp
+	85,  // 75: bytebase.v1.Revision.delete_time:type_name -> google.protobuf.Timestamp
 	1,   // 76: bytebase.v1.ListChangelogsRequest.view:type_name -> bytebase.v1.ChangelogView
-	78,  // 77: bytebase.v1.ListChangelogsResponse.changelogs:type_name -> bytebase.v1.Changelog
+	79,  // 77: bytebase.v1.ListChangelogsResponse.changelogs:type_name -> bytebase.v1.Changelog
 	1,   // 78: bytebase.v1.GetChangelogRequest.view:type_name -> bytebase.v1.ChangelogView
-	82,  // 79: bytebase.v1.Changelog.create_time:type_name -> google.protobuf.Timestamp
+	85,  // 79: bytebase.v1.Changelog.create_time:type_name -> google.protobuf.Timestamp
 	8,   // 80: bytebase.v1.Changelog.status:type_name -> bytebase.v1.Changelog.Status
-	62,  // 81: bytebase.v1.Changelog.changed_resources:type_name -> bytebase.v1.ChangedResources
+	63,  // 81: bytebase.v1.Changelog.changed_resources:type_name -> bytebase.v1.ChangedResources
 	9,   // 82: bytebase.v1.Changelog.type:type_name -> bytebase.v1.Changelog.Type
-	10,  // 83: bytebase.v1.DatabaseService.GetDatabase:input_type -> bytebase.v1.GetDatabaseRequest
-	11,  // 84: bytebase.v1.DatabaseService.ListInstanceDatabases:input_type -> bytebase.v1.ListInstanceDatabasesRequest
-	13,  // 85: bytebase.v1.DatabaseService.ListDatabases:input_type -> bytebase.v1.ListDatabasesRequest
-	15,  // 86: bytebase.v1.DatabaseService.UpdateDatabase:input_type -> bytebase.v1.UpdateDatabaseRequest
-	16,  // 87: bytebase.v1.DatabaseService.BatchUpdateDatabases:input_type -> bytebase.v1.BatchUpdateDatabasesRequest
-	18,  // 88: bytebase.v1.DatabaseService.SyncDatabase:input_type -> bytebase.v1.SyncDatabaseRequest
-	20,  // 89: bytebase.v1.DatabaseService.GetDatabaseMetadata:input_type -> bytebase.v1.GetDatabaseMetadataRequest
-	21,  // 90: bytebase.v1.DatabaseService.GetDatabaseSchema:input_type -> bytebase.v1.GetDatabaseSchemaRequest
-	22,  // 91: bytebase.v1.DatabaseService.DiffSchema:input_type -> bytebase.v1.DiffSchemaRequest
-	50,  // 92: bytebase.v1.DatabaseService.ListSlowQueries:input_type -> bytebase.v1.ListSlowQueriesRequest
-	55,  // 93: bytebase.v1.DatabaseService.ListSecrets:input_type -> bytebase.v1.ListSecretsRequest
-	57,  // 94: bytebase.v1.DatabaseService.UpdateSecret:input_type -> bytebase.v1.UpdateSecretRequest
-	58,  // 95: bytebase.v1.DatabaseService.DeleteSecret:input_type -> bytebase.v1.DeleteSecretRequest
-	60,  // 96: bytebase.v1.DatabaseService.AdviseIndex:input_type -> bytebase.v1.AdviseIndexRequest
-	69,  // 97: bytebase.v1.DatabaseService.ListRevisions:input_type -> bytebase.v1.ListRevisionsRequest
-	72,  // 98: bytebase.v1.DatabaseService.GetRevision:input_type -> bytebase.v1.GetRevisionRequest
-	71,  // 99: bytebase.v1.DatabaseService.CreateRevision:input_type -> bytebase.v1.CreateRevisionRequest
-	73,  // 100: bytebase.v1.DatabaseService.DeleteRevision:input_type -> bytebase.v1.DeleteRevisionRequest
-	75,  // 101: bytebase.v1.DatabaseService.ListChangelogs:input_type -> bytebase.v1.ListChangelogsRequest
-	77,  // 102: bytebase.v1.DatabaseService.GetChangelog:input_type -> bytebase.v1.GetChangelogRequest
-	24,  // 103: bytebase.v1.DatabaseService.GetDatabase:output_type -> bytebase.v1.Database
-	12,  // 104: bytebase.v1.DatabaseService.ListInstanceDatabases:output_type -> bytebase.v1.ListInstanceDatabasesResponse
-	14,  // 105: bytebase.v1.DatabaseService.ListDatabases:output_type -> bytebase.v1.ListDatabasesResponse
-	24,  // 106: bytebase.v1.DatabaseService.UpdateDatabase:output_type -> bytebase.v1.Database
-	17,  // 107: bytebase.v1.DatabaseService.BatchUpdateDatabases:output_type -> bytebase.v1.BatchUpdateDatabasesResponse
-	19,  // 108: bytebase.v1.DatabaseService.SyncDatabase:output_type -> bytebase.v1.SyncDatabaseResponse
-	25,  // 109: bytebase.v1.DatabaseService.GetDatabaseMetadata:output_type -> bytebase.v1.DatabaseMetadata
-	49,  // 110: bytebase.v1.DatabaseService.GetDatabaseSchema:output_type -> bytebase.v1.DatabaseSchema
-	23,  // 111: bytebase.v1.DatabaseService.DiffSchema:output_type -> bytebase.v1.DiffSchemaResponse
-	51,  // 112: bytebase.v1.DatabaseService.ListSlowQueries:output_type -> bytebase.v1.ListSlowQueriesResponse
-	56,  // 113: bytebase.v1.DatabaseService.ListSecrets:output_type -> bytebase.v1.ListSecretsResponse
-	59,  // 114: bytebase.v1.DatabaseService.UpdateSecret:output_type -> bytebase.v1.Secret
-	86,  // 115: bytebase.v1.DatabaseService.DeleteSecret:output_type -> google.protobuf.Empty
-	61,  // 116: bytebase.v1.DatabaseService.AdviseIndex:output_type -> bytebase.v1.AdviseIndexResponse
-	70,  // 117: bytebase.v1.DatabaseService.ListRevisions:output_type -> bytebase.v1.ListRevisionsResponse
-	74,  // 118: bytebase.v1.DatabaseService.GetRevision:output_type -> bytebase.v1.Revision
-	74,  // 119: bytebase.v1.DatabaseService.CreateRevision:output_type -> bytebase.v1.Revision
-	86,  // 120: bytebase.v1.DatabaseService.DeleteRevision:output_type -> google.protobuf.Empty
-	76,  // 121: bytebase.v1.DatabaseService.ListChangelogs:output_type -> bytebase.v1.ListChangelogsResponse
-	78,  // 122: bytebase.v1.DatabaseService.GetChangelog:output_type -> bytebase.v1.Changelog
-	103, // [103:123] is the sub-list for method output_type
-	83,  // [83:103] is the sub-list for method input_type
-	83,  // [83:83] is the sub-list for extension type_name
-	83,  // [83:83] is the sub-list for extension extendee
-	0,   // [0:83] is the sub-list for field type_name
+	10,  // 83: bytebase.v1.GetSchemaStringRequest.object_type:type_name -> bytebase.v1.GetSchemaStringRequest.ObjectType
+	11,  // 84: bytebase.v1.DatabaseService.GetDatabase:input_type -> bytebase.v1.GetDatabaseRequest
+	12,  // 85: bytebase.v1.DatabaseService.ListInstanceDatabases:input_type -> bytebase.v1.ListInstanceDatabasesRequest
+	14,  // 86: bytebase.v1.DatabaseService.ListDatabases:input_type -> bytebase.v1.ListDatabasesRequest
+	16,  // 87: bytebase.v1.DatabaseService.UpdateDatabase:input_type -> bytebase.v1.UpdateDatabaseRequest
+	17,  // 88: bytebase.v1.DatabaseService.BatchUpdateDatabases:input_type -> bytebase.v1.BatchUpdateDatabasesRequest
+	19,  // 89: bytebase.v1.DatabaseService.SyncDatabase:input_type -> bytebase.v1.SyncDatabaseRequest
+	21,  // 90: bytebase.v1.DatabaseService.GetDatabaseMetadata:input_type -> bytebase.v1.GetDatabaseMetadataRequest
+	22,  // 91: bytebase.v1.DatabaseService.GetDatabaseSchema:input_type -> bytebase.v1.GetDatabaseSchemaRequest
+	23,  // 92: bytebase.v1.DatabaseService.DiffSchema:input_type -> bytebase.v1.DiffSchemaRequest
+	51,  // 93: bytebase.v1.DatabaseService.ListSlowQueries:input_type -> bytebase.v1.ListSlowQueriesRequest
+	56,  // 94: bytebase.v1.DatabaseService.ListSecrets:input_type -> bytebase.v1.ListSecretsRequest
+	58,  // 95: bytebase.v1.DatabaseService.UpdateSecret:input_type -> bytebase.v1.UpdateSecretRequest
+	59,  // 96: bytebase.v1.DatabaseService.DeleteSecret:input_type -> bytebase.v1.DeleteSecretRequest
+	61,  // 97: bytebase.v1.DatabaseService.AdviseIndex:input_type -> bytebase.v1.AdviseIndexRequest
+	70,  // 98: bytebase.v1.DatabaseService.ListRevisions:input_type -> bytebase.v1.ListRevisionsRequest
+	73,  // 99: bytebase.v1.DatabaseService.GetRevision:input_type -> bytebase.v1.GetRevisionRequest
+	72,  // 100: bytebase.v1.DatabaseService.CreateRevision:input_type -> bytebase.v1.CreateRevisionRequest
+	74,  // 101: bytebase.v1.DatabaseService.DeleteRevision:input_type -> bytebase.v1.DeleteRevisionRequest
+	76,  // 102: bytebase.v1.DatabaseService.ListChangelogs:input_type -> bytebase.v1.ListChangelogsRequest
+	78,  // 103: bytebase.v1.DatabaseService.GetChangelog:input_type -> bytebase.v1.GetChangelogRequest
+	80,  // 104: bytebase.v1.DatabaseService.GetSchemaString:input_type -> bytebase.v1.GetSchemaStringRequest
+	25,  // 105: bytebase.v1.DatabaseService.GetDatabase:output_type -> bytebase.v1.Database
+	13,  // 106: bytebase.v1.DatabaseService.ListInstanceDatabases:output_type -> bytebase.v1.ListInstanceDatabasesResponse
+	15,  // 107: bytebase.v1.DatabaseService.ListDatabases:output_type -> bytebase.v1.ListDatabasesResponse
+	25,  // 108: bytebase.v1.DatabaseService.UpdateDatabase:output_type -> bytebase.v1.Database
+	18,  // 109: bytebase.v1.DatabaseService.BatchUpdateDatabases:output_type -> bytebase.v1.BatchUpdateDatabasesResponse
+	20,  // 110: bytebase.v1.DatabaseService.SyncDatabase:output_type -> bytebase.v1.SyncDatabaseResponse
+	26,  // 111: bytebase.v1.DatabaseService.GetDatabaseMetadata:output_type -> bytebase.v1.DatabaseMetadata
+	50,  // 112: bytebase.v1.DatabaseService.GetDatabaseSchema:output_type -> bytebase.v1.DatabaseSchema
+	24,  // 113: bytebase.v1.DatabaseService.DiffSchema:output_type -> bytebase.v1.DiffSchemaResponse
+	52,  // 114: bytebase.v1.DatabaseService.ListSlowQueries:output_type -> bytebase.v1.ListSlowQueriesResponse
+	57,  // 115: bytebase.v1.DatabaseService.ListSecrets:output_type -> bytebase.v1.ListSecretsResponse
+	60,  // 116: bytebase.v1.DatabaseService.UpdateSecret:output_type -> bytebase.v1.Secret
+	89,  // 117: bytebase.v1.DatabaseService.DeleteSecret:output_type -> google.protobuf.Empty
+	62,  // 118: bytebase.v1.DatabaseService.AdviseIndex:output_type -> bytebase.v1.AdviseIndexResponse
+	71,  // 119: bytebase.v1.DatabaseService.ListRevisions:output_type -> bytebase.v1.ListRevisionsResponse
+	75,  // 120: bytebase.v1.DatabaseService.GetRevision:output_type -> bytebase.v1.Revision
+	75,  // 121: bytebase.v1.DatabaseService.CreateRevision:output_type -> bytebase.v1.Revision
+	89,  // 122: bytebase.v1.DatabaseService.DeleteRevision:output_type -> google.protobuf.Empty
+	77,  // 123: bytebase.v1.DatabaseService.ListChangelogs:output_type -> bytebase.v1.ListChangelogsResponse
+	79,  // 124: bytebase.v1.DatabaseService.GetChangelog:output_type -> bytebase.v1.Changelog
+	81,  // 125: bytebase.v1.DatabaseService.GetSchemaString:output_type -> bytebase.v1.GetSchemaStringResponse
+	105, // [105:126] is the sub-list for method output_type
+	84,  // [84:105] is the sub-list for method input_type
+	84,  // [84:84] is the sub-list for extension type_name
+	84,  // [84:84] is the sub-list for extension extendee
+	0,   // [0:84] is the sub-list for field type_name
 }
 
 func init() { file_v1_database_service_proto_init() }
@@ -7790,8 +8007,8 @@ func file_v1_database_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_database_service_proto_rawDesc), len(file_v1_database_service_proto_rawDesc)),
-			NumEnums:      10,
-			NumMessages:   70,
+			NumEnums:      11,
+			NumMessages:   72,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

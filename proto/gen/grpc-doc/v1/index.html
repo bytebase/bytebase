@@ -638,6 +638,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.GetSchemaStringRequest"><span class="badge">M</span>GetSchemaStringRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GetSchemaStringResponse"><span class="badge">M</span>GetSchemaStringResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.IndexMetadata"><span class="badge">M</span>IndexMetadata</a>
                 </li>
               
@@ -792,6 +800,10 @@
               
                 <li>
                   <a href="#bytebase.v1.GenerationMetadata.Type"><span class="badge">E</span>GenerationMetadata.Type</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GetSchemaStringRequest.ObjectType"><span class="badge">E</span>GetSchemaStringRequest.ObjectType</a>
                 </li>
               
                 <li>
@@ -2125,10 +2137,6 @@
               
                 <li>
                   <a href="#bytebase.v1.Plan.CreateDatabaseConfig"><span class="badge">M</span>Plan.CreateDatabaseConfig</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Plan.CreateDatabaseConfig.LabelsEntry"><span class="badge">M</span>Plan.CreateDatabaseConfig.LabelsEntry</a>
                 </li>
               
                 <li>
@@ -7545,6 +7553,72 @@ Format: instances/{instance}/databases/{database}/revisions/{revision} </p></td>
 
         
       
+        <h3 id="bytebase.v1.GetSchemaStringRequest">GetSchemaStringRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the database.
+Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>object_type</td>
+                  <td><a href="#bytebase.v1.GetSchemaStringRequest.ObjectType">GetSchemaStringRequest.ObjectType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>object_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format:
+ for database: empty string
+ for schema: &#34;schemaName&#34;
+ for table/view/materialized view/function/procedure: &#34;schemaName.objectName&#34; </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetSchemaStringResponse">GetSchemaStringResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>schema_string</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.IndexMetadata">IndexMetadata</h3>
         <p>IndexMetadata is the metadata for indexes.</p>
 
@@ -9825,6 +9899,65 @@ view, function names.</p></td>
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.GetSchemaStringRequest.ObjectType">GetSchemaStringRequest.ObjectType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>OBJECT_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DATABASE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SCHEMA</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TABLE</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>VIEW</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MATERIALIZED_VIEW</td>
+                <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FUNCTION</td>
+                <td>6</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PROCEDURE</td>
+                <td>7</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.StreamMetadata.Mode">StreamMetadata.Mode</h3>
         <p></p>
         <table class="enum-table">
@@ -10129,6 +10262,13 @@ view, function names.</p></td>
                 <td><p></p></td>
               </tr>
             
+              <tr>
+                <td>GetSchemaString</td>
+                <td><a href="#bytebase.v1.GetSchemaStringRequest">GetSchemaStringRequest</a></td>
+                <td><a href="#bytebase.v1.GetSchemaStringResponse">GetSchemaStringResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -10357,6 +10497,16 @@ view, function names.</p></td>
                 <td>GetChangelog</td>
                 <td>GET</td>
                 <td>/v1/{name=instances/*/databases/*/changelogs/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetSchemaString</td>
+                <td>GET</td>
+                <td>/v1/{name=instances/*/databases/*/schemaString}</td>
                 <td></td>
               </tr>
               
@@ -23017,44 +23167,6 @@ For example, in MongoDB, it only creates the database when we first store data i
                   <td></td>
                   <td><p>The environment resource.
 Format: environments/prod where prod is the environment resource ID. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>labels</td>
-                  <td><a href="#bytebase.v1.Plan.CreateDatabaseConfig.LabelsEntry">Plan.CreateDatabaseConfig.LabelsEntry</a></td>
-                  <td>repeated</td>
-                  <td><p>labels of the database. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan.CreateDatabaseConfig.LabelsEntry">Plan.CreateDatabaseConfig.LabelsEntry</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>

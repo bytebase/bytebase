@@ -1858,6 +1858,119 @@ export function changelog_TypeToNumber(object: Changelog_Type): number {
   }
 }
 
+export interface GetSchemaStringRequest {
+  /**
+   * The name of the database.
+   * Format: instances/{instance}/databases/{database}
+   */
+  name: string;
+  objectType: GetSchemaStringRequest_ObjectType;
+  /**
+   * Format:
+   *  for database: empty string
+   *  for schema: "schemaName"
+   *  for table/view/materialized view/function/procedure: "schemaName.objectName"
+   */
+  objectName: string;
+}
+
+export enum GetSchemaStringRequest_ObjectType {
+  OBJECT_TYPE_UNSPECIFIED = "OBJECT_TYPE_UNSPECIFIED",
+  DATABASE = "DATABASE",
+  SCHEMA = "SCHEMA",
+  TABLE = "TABLE",
+  VIEW = "VIEW",
+  MATERIALIZED_VIEW = "MATERIALIZED_VIEW",
+  FUNCTION = "FUNCTION",
+  PROCEDURE = "PROCEDURE",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function getSchemaStringRequest_ObjectTypeFromJSON(object: any): GetSchemaStringRequest_ObjectType {
+  switch (object) {
+    case 0:
+    case "OBJECT_TYPE_UNSPECIFIED":
+      return GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED;
+    case 1:
+    case "DATABASE":
+      return GetSchemaStringRequest_ObjectType.DATABASE;
+    case 2:
+    case "SCHEMA":
+      return GetSchemaStringRequest_ObjectType.SCHEMA;
+    case 3:
+    case "TABLE":
+      return GetSchemaStringRequest_ObjectType.TABLE;
+    case 4:
+    case "VIEW":
+      return GetSchemaStringRequest_ObjectType.VIEW;
+    case 5:
+    case "MATERIALIZED_VIEW":
+      return GetSchemaStringRequest_ObjectType.MATERIALIZED_VIEW;
+    case 6:
+    case "FUNCTION":
+      return GetSchemaStringRequest_ObjectType.FUNCTION;
+    case 7:
+    case "PROCEDURE":
+      return GetSchemaStringRequest_ObjectType.PROCEDURE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return GetSchemaStringRequest_ObjectType.UNRECOGNIZED;
+  }
+}
+
+export function getSchemaStringRequest_ObjectTypeToJSON(object: GetSchemaStringRequest_ObjectType): string {
+  switch (object) {
+    case GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED:
+      return "OBJECT_TYPE_UNSPECIFIED";
+    case GetSchemaStringRequest_ObjectType.DATABASE:
+      return "DATABASE";
+    case GetSchemaStringRequest_ObjectType.SCHEMA:
+      return "SCHEMA";
+    case GetSchemaStringRequest_ObjectType.TABLE:
+      return "TABLE";
+    case GetSchemaStringRequest_ObjectType.VIEW:
+      return "VIEW";
+    case GetSchemaStringRequest_ObjectType.MATERIALIZED_VIEW:
+      return "MATERIALIZED_VIEW";
+    case GetSchemaStringRequest_ObjectType.FUNCTION:
+      return "FUNCTION";
+    case GetSchemaStringRequest_ObjectType.PROCEDURE:
+      return "PROCEDURE";
+    case GetSchemaStringRequest_ObjectType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function getSchemaStringRequest_ObjectTypeToNumber(object: GetSchemaStringRequest_ObjectType): number {
+  switch (object) {
+    case GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED:
+      return 0;
+    case GetSchemaStringRequest_ObjectType.DATABASE:
+      return 1;
+    case GetSchemaStringRequest_ObjectType.SCHEMA:
+      return 2;
+    case GetSchemaStringRequest_ObjectType.TABLE:
+      return 3;
+    case GetSchemaStringRequest_ObjectType.VIEW:
+      return 4;
+    case GetSchemaStringRequest_ObjectType.MATERIALIZED_VIEW:
+      return 5;
+    case GetSchemaStringRequest_ObjectType.FUNCTION:
+      return 6;
+    case GetSchemaStringRequest_ObjectType.PROCEDURE:
+      return 7;
+    case GetSchemaStringRequest_ObjectType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
+export interface GetSchemaStringResponse {
+  schemaString: string;
+}
+
 function createBaseGetDatabaseRequest(): GetDatabaseRequest {
   return { name: "" };
 }
@@ -10720,6 +10833,158 @@ export const Changelog: MessageFns<Changelog> = {
   },
 };
 
+function createBaseGetSchemaStringRequest(): GetSchemaStringRequest {
+  return { name: "", objectType: GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED, objectName: "" };
+}
+
+export const GetSchemaStringRequest: MessageFns<GetSchemaStringRequest> = {
+  encode(message: GetSchemaStringRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.objectType !== GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED) {
+      writer.uint32(16).int32(getSchemaStringRequest_ObjectTypeToNumber(message.objectType));
+    }
+    if (message.objectName !== "") {
+      writer.uint32(26).string(message.objectName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetSchemaStringRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetSchemaStringRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.objectType = getSchemaStringRequest_ObjectTypeFromJSON(reader.int32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.objectName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetSchemaStringRequest {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      objectType: isSet(object.objectType)
+        ? getSchemaStringRequest_ObjectTypeFromJSON(object.objectType)
+        : GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED,
+      objectName: isSet(object.objectName) ? globalThis.String(object.objectName) : "",
+    };
+  },
+
+  toJSON(message: GetSchemaStringRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.objectType !== GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED) {
+      obj.objectType = getSchemaStringRequest_ObjectTypeToJSON(message.objectType);
+    }
+    if (message.objectName !== "") {
+      obj.objectName = message.objectName;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetSchemaStringRequest>): GetSchemaStringRequest {
+    return GetSchemaStringRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetSchemaStringRequest>): GetSchemaStringRequest {
+    const message = createBaseGetSchemaStringRequest();
+    message.name = object.name ?? "";
+    message.objectType = object.objectType ?? GetSchemaStringRequest_ObjectType.OBJECT_TYPE_UNSPECIFIED;
+    message.objectName = object.objectName ?? "";
+    return message;
+  },
+};
+
+function createBaseGetSchemaStringResponse(): GetSchemaStringResponse {
+  return { schemaString: "" };
+}
+
+export const GetSchemaStringResponse: MessageFns<GetSchemaStringResponse> = {
+  encode(message: GetSchemaStringResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.schemaString !== "") {
+      writer.uint32(10).string(message.schemaString);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetSchemaStringResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetSchemaStringResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.schemaString = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetSchemaStringResponse {
+    return { schemaString: isSet(object.schemaString) ? globalThis.String(object.schemaString) : "" };
+  },
+
+  toJSON(message: GetSchemaStringResponse): unknown {
+    const obj: any = {};
+    if (message.schemaString !== "") {
+      obj.schemaString = message.schemaString;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetSchemaStringResponse>): GetSchemaStringResponse {
+    return GetSchemaStringResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetSchemaStringResponse>): GetSchemaStringResponse {
+    const message = createBaseGetSchemaStringResponse();
+    message.schemaString = object.schemaString ?? "";
+    return message;
+  },
+};
+
 export type DatabaseServiceDefinition = typeof DatabaseServiceDefinition;
 export const DatabaseServiceDefinition = {
   name: "DatabaseService",
@@ -12400,6 +12665,100 @@ export const DatabaseServiceDefinition = {
               115,
               47,
               42,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
+    getSchemaString: {
+      name: "GetSchemaString",
+      requestType: GetSchemaStringRequest,
+      requestStream: false,
+      responseType: GetSchemaStringResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          800010: [
+            new Uint8Array([
+              22,
+              98,
+              98,
+              46,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              46,
+              103,
+              101,
+              116,
+              83,
+              99,
+              104,
+              101,
+              109,
+              97,
+            ]),
+          ],
+          800016: [new Uint8Array([1])],
+          578365826: [
+            new Uint8Array([
+              49,
+              18,
+              47,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              115,
+              99,
+              104,
+              101,
+              109,
+              97,
+              83,
+              116,
+              114,
+              105,
+              110,
+              103,
               125,
             ]),
           ],

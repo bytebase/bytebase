@@ -178,6 +178,13 @@ service DatabaseService {
     option (bytebase.v1.permission) = "bb.changelogs.get";
     option (bytebase.v1.auth_method) = IAM;
   }
+
+  rpc GetSchemaString(GetSchemaStringRequest) returns (GetSchemaStringResponse) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/schemaString}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.databases.getSchema";
+    option (bytebase.v1.auth_method) = IAM;
+  }
 }
 
 message GetDatabaseRequest {
@@ -1604,4 +1611,34 @@ message Changelog {
     DATA = 6;
   }
   Type type = 17;
+}
+
+message GetSchemaStringRequest {
+  // The name of the database.
+  // Format: instances/{instance}/databases/{database}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+
+  enum ObjectType {
+    OBJECT_TYPE_UNSPECIFIED = 0;
+    DATABASE = 1;
+    SCHEMA = 2;
+    TABLE = 3;
+    VIEW = 4;
+    MATERIALIZED_VIEW = 5;
+    FUNCTION = 6;
+    PROCEDURE = 7;
+  }
+  ObjectType object_type = 2;
+  // Format:
+  //  for database: empty string
+  //  for schema: "schemaName"
+  //  for table/view/materialized view/function/procedure: "schemaName.objectName"
+  string object_name = 3;
+}
+
+message GetSchemaStringResponse {
+  string schema_string = 1;
 }

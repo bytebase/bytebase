@@ -40,6 +40,7 @@ const (
 	DatabaseService_DeleteRevision_FullMethodName        = "/bytebase.v1.DatabaseService/DeleteRevision"
 	DatabaseService_ListChangelogs_FullMethodName        = "/bytebase.v1.DatabaseService/ListChangelogs"
 	DatabaseService_GetChangelog_FullMethodName          = "/bytebase.v1.DatabaseService/GetChangelog"
+	DatabaseService_GetSchemaString_FullMethodName       = "/bytebase.v1.DatabaseService/GetSchemaString"
 )
 
 // DatabaseServiceClient is the client API for DatabaseService service.
@@ -66,6 +67,7 @@ type DatabaseServiceClient interface {
 	DeleteRevision(ctx context.Context, in *DeleteRevisionRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	ListChangelogs(ctx context.Context, in *ListChangelogsRequest, opts ...grpc.CallOption) (*ListChangelogsResponse, error)
 	GetChangelog(ctx context.Context, in *GetChangelogRequest, opts ...grpc.CallOption) (*Changelog, error)
+	GetSchemaString(ctx context.Context, in *GetSchemaStringRequest, opts ...grpc.CallOption) (*GetSchemaStringResponse, error)
 }
 
 type databaseServiceClient struct {
@@ -276,6 +278,16 @@ func (c *databaseServiceClient) GetChangelog(ctx context.Context, in *GetChangel
 	return out, nil
 }
 
+func (c *databaseServiceClient) GetSchemaString(ctx context.Context, in *GetSchemaStringRequest, opts ...grpc.CallOption) (*GetSchemaStringResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSchemaStringResponse)
+	err := c.cc.Invoke(ctx, DatabaseService_GetSchemaString_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DatabaseServiceServer is the server API for DatabaseService service.
 // All implementations must embed UnimplementedDatabaseServiceServer
 // for forward compatibility.
@@ -300,6 +312,7 @@ type DatabaseServiceServer interface {
 	DeleteRevision(context.Context, *DeleteRevisionRequest) (*emptypb.Empty, error)
 	ListChangelogs(context.Context, *ListChangelogsRequest) (*ListChangelogsResponse, error)
 	GetChangelog(context.Context, *GetChangelogRequest) (*Changelog, error)
+	GetSchemaString(context.Context, *GetSchemaStringRequest) (*GetSchemaStringResponse, error)
 	mustEmbedUnimplementedDatabaseServiceServer()
 }
 
@@ -369,6 +382,9 @@ func (UnimplementedDatabaseServiceServer) ListChangelogs(context.Context, *ListC
 }
 func (UnimplementedDatabaseServiceServer) GetChangelog(context.Context, *GetChangelogRequest) (*Changelog, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetChangelog not implemented")
+}
+func (UnimplementedDatabaseServiceServer) GetSchemaString(context.Context, *GetSchemaStringRequest) (*GetSchemaStringResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSchemaString not implemented")
 }
 func (UnimplementedDatabaseServiceServer) mustEmbedUnimplementedDatabaseServiceServer() {}
 func (UnimplementedDatabaseServiceServer) testEmbeddedByValue()                         {}
@@ -751,6 +767,24 @@ func _DatabaseService_GetChangelog_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DatabaseService_GetSchemaString_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSchemaStringRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DatabaseServiceServer).GetSchemaString(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DatabaseService_GetSchemaString_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DatabaseServiceServer).GetSchemaString(ctx, req.(*GetSchemaStringRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DatabaseService_ServiceDesc is the grpc.ServiceDesc for DatabaseService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -837,6 +871,10 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetChangelog",
 			Handler:    _DatabaseService_GetChangelog_Handler,
+		},
+		{
+			MethodName: "GetSchemaString",
+			Handler:    _DatabaseService_GetSchemaString_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

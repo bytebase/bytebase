@@ -122,6 +122,8 @@
     - [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest)
     - [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest)
     - [GetRevisionRequest](#bytebase-v1-GetRevisionRequest)
+    - [GetSchemaStringRequest](#bytebase-v1-GetSchemaStringRequest)
+    - [GetSchemaStringResponse](#bytebase-v1-GetSchemaStringResponse)
     - [IndexMetadata](#bytebase-v1-IndexMetadata)
     - [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest)
     - [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse)
@@ -162,6 +164,7 @@
     - [ColumnMetadata.IdentityGeneration](#bytebase-v1-ColumnMetadata-IdentityGeneration)
     - [DatabaseMetadataView](#bytebase-v1-DatabaseMetadataView)
     - [GenerationMetadata.Type](#bytebase-v1-GenerationMetadata-Type)
+    - [GetSchemaStringRequest.ObjectType](#bytebase-v1-GetSchemaStringRequest-ObjectType)
     - [StreamMetadata.Mode](#bytebase-v1-StreamMetadata-Mode)
     - [StreamMetadata.Type](#bytebase-v1-StreamMetadata-Type)
     - [TablePartitionMetadata.Type](#bytebase-v1-TablePartitionMetadata-Type)
@@ -512,7 +515,6 @@
     - [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry)
     - [Plan.ChangeDatabaseConfig.PreUpdateBackupDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-PreUpdateBackupDetail)
     - [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig)
-    - [Plan.CreateDatabaseConfig.LabelsEntry](#bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry)
     - [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig)
     - [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry)
     - [Plan.ReleaseSource](#bytebase-v1-Plan-ReleaseSource)
@@ -2509,6 +2511,38 @@ FunctionMetadata is the metadata for functions.
 
 
 
+<a name="bytebase-v1-GetSchemaStringRequest"></a>
+
+### GetSchemaStringRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the database. Format: instances/{instance}/databases/{database} |
+| object_type | [GetSchemaStringRequest.ObjectType](#bytebase-v1-GetSchemaStringRequest-ObjectType) |  |  |
+| object_name | [string](#string) |  | Format: for database: empty string for schema: &#34;schemaName&#34; for table/view/materialized view/function/procedure: &#34;schemaName.objectName&#34; |
+
+
+
+
+
+
+<a name="bytebase-v1-GetSchemaStringResponse"></a>
+
+### GetSchemaStringResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema_string | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-IndexMetadata"></a>
 
 ### IndexMetadata
@@ -3268,6 +3302,24 @@ ViewMetadata is the metadata for views.
 
 
 
+<a name="bytebase-v1-GetSchemaStringRequest-ObjectType"></a>
+
+### GetSchemaStringRequest.ObjectType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| OBJECT_TYPE_UNSPECIFIED | 0 |  |
+| DATABASE | 1 |  |
+| SCHEMA | 2 |  |
+| TABLE | 3 |  |
+| VIEW | 4 |  |
+| MATERIALIZED_VIEW | 5 |  |
+| FUNCTION | 6 |  |
+| PROCEDURE | 7 |  |
+
+
+
 <a name="bytebase-v1-StreamMetadata-Mode"></a>
 
 ### StreamMetadata.Mode
@@ -3363,6 +3415,7 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | DeleteRevision | [DeleteRevisionRequest](#bytebase-v1-DeleteRevisionRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | ListChangelogs | [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest) | [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse) |  |
 | GetChangelog | [GetChangelogRequest](#bytebase-v1-GetChangelogRequest) | [Changelog](#bytebase-v1-Changelog) |  |
+| GetSchemaString | [GetSchemaStringRequest](#bytebase-v1-GetSchemaStringRequest) | [GetSchemaStringResponse](#bytebase-v1-GetSchemaStringResponse) |  |
 
  
 
@@ -8312,23 +8365,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | cluster | [string](#string) |  | cluster is the cluster of the database. This is only applicable to ClickHouse for &#34;ON CLUSTER &lt;&lt;cluster&gt;&gt;&#34;. |
 | owner | [string](#string) |  | owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. |
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
-| labels | [Plan.CreateDatabaseConfig.LabelsEntry](#bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry) | repeated | labels of the database. |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry"></a>
-
-### Plan.CreateDatabaseConfig.LabelsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
 
 
 
