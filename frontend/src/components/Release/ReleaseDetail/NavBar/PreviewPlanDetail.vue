@@ -126,7 +126,7 @@ import { computed } from "vue";
 import type { DatabaseSelectState } from "@/components/DatabaseAndGroupSelector";
 import DatabaseView from "@/components/v2/Model/DatabaseView.vue";
 import { useDatabaseV1Store, useDBGroupStore } from "@/store";
-import type { ComposedDatabase, ComposedRelease } from "@/types";
+import type { ComposedRelease } from "@/types";
 import type {
   Plan_Spec,
   PreviewPlanResponse,
@@ -175,10 +175,6 @@ const shouldShowAppliedAlert = computed(() => {
     flattenSpecList.value.length
   );
 });
-
-const databaseForPlanSpec = (spec: Plan_Spec): ComposedDatabase => {
-  return databaseStore.getDatabaseByName(spec.changeDatabaseConfig!.target);
-};
 
 const specReleaseVersion = (spec: Plan_Spec): string => {
   return spec.changeDatabaseConfig!.schemaVersion;
