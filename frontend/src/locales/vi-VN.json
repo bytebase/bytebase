@@ -1352,6 +1352,7 @@
     "unassign-alert-description": "Các cơ sở dữ liệu đã chọn sẽ bị xóa khỏi dự án",
     "edit-schema": "Chỉnh sửa lược đồ",
     "edit-labels": "Chỉnh sửa nhãn",
+    "edit-environment": "Chỉnh sửa Môi trường",
     "mixed-values-for-label": "Nhãn đã chọn này có các giá trị hỗn hợp",
     "mixed-label-values-warning": "Một số tài nguyên đã chọn có các giá trị hỗn hợp cho cùng một khóa",
     "change-data": "Thay đổi dữ liệu",
