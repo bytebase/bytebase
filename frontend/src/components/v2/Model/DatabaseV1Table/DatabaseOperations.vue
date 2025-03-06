@@ -374,7 +374,7 @@ const unAssignDatabases = async () => {
   }
   try {
     state.loading = true;
-    const databases = await useDatabaseV1Store().batchUpdateDatabases({
+    const databases = await databaseStore.batchUpdateDatabases({
       parent: "-",
       requests: assignedDatabases.value.map((database) => {
         return UpdateDatabaseRequest.fromPartial({
@@ -591,7 +591,7 @@ const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
         ...Database.fromPartial(database),
         labels: label,
       };
-      return await useDatabaseV1Store().updateDatabase({
+      return await databaseStore.updateDatabase({
         database: patch,
         updateMask: ["labels"],
       });
@@ -607,7 +607,7 @@ const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
 };
 
 const onEnvironmentUpdate = async (environment: string) => {
-  await useDatabaseV1Store().batchUpdateDatabases({
+  const updatedDatabases = await databaseStore.batchUpdateDatabases({
     parent: "-",
     requests: props.databases.map((database) => {
       return UpdateDatabaseRequest.fromPartial({
@@ -619,6 +619,7 @@ const onEnvironmentUpdate = async (environment: string) => {
       });
     }),
   });
+  emit("refresh", updatedDatabases);
 
   pushNotification({
     module: "bytebase",
