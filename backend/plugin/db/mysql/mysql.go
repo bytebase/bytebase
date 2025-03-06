@@ -128,7 +128,6 @@ func (d *Driver) getMySQLConnection(connCfg db.ConnectionConfig) (string, error)
 		protocol = "mysql+tcp"
 	}
 
-	// TODO(zp): mysql and mysqlbinlog doesn't support SSL yet. We need to write certs to temp files and load them as CLI flags.
 	tlsConfig, err := connCfg.TLSConfig.GetSslConfig()
 	if err != nil {
 		return "", errors.Wrap(err, "sql: tls config error")
