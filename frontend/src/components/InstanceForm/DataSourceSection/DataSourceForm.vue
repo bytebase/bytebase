@@ -11,25 +11,39 @@
     <div
       v-if="
         basicInfo.engine === Engine.MYSQL ||
-        basicInfo.engine === Engine.POSTGRES
+        basicInfo.engine === Engine.POSTGRES ||
+        basicInfo.engine === Engine.COSMOSDB
       "
       class="mt-2 sm:col-span-3 sm:col-start-1"
     >
-      <NRadioGroup
-        v-model:value="dataSource.authenticationType"
-        class="textlabel"
-        :disabled="!allowEdit"
-      >
-        <NRadio :value="DataSource_AuthenticationType.PASSWORD">
-          {{ $t("instance.password-type.password") }}
-        </NRadio>
-        <NRadio :value="DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM">
-          {{ $t("instance.password-type.google-iam") }}
-        </NRadio>
-        <NRadio :value="DataSource_AuthenticationType.AWS_RDS_IAM">
-          {{ $t("instance.password-type.aws-iam") }}
-        </NRadio>
-      </NRadioGroup>
+      <template v-if="basicInfo.engine === Engine.COSMOSDB">
+        <NRadioGroup
+          v-model:value="dataSource.authenticationType"
+          class="textlabel"
+          :disabled="!allowEdit"
+        >
+          <NRadio :value="DataSource_AuthenticationType.AZURE_IAM">
+            {{ $t("instance.password-type.azure-iam") }}
+          </NRadio>
+        </NRadioGroup>
+      </template>
+      <template v-else>
+        <NRadioGroup
+          v-model:value="dataSource.authenticationType"
+          class="textlabel"
+          :disabled="!allowEdit"
+        >
+          <NRadio :value="DataSource_AuthenticationType.PASSWORD">
+            {{ $t("instance.password-type.password") }}
+          </NRadio>
+          <NRadio :value="DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM">
+            {{ $t("instance.password-type.google-iam") }}
+          </NRadio>
+          <NRadio :value="DataSource_AuthenticationType.AWS_RDS_IAM">
+            {{ $t("instance.password-type.aws-iam") }}
+          </NRadio>
+        </NRadioGroup>
+      </template>
     </div>
     <div
       v-else-if="basicInfo.engine === Engine.HIVE"
@@ -129,7 +143,13 @@
       </div>
     </div>
     <div v-else class="sm:col-span-3 sm:col-start-1">
-      <div class="mt-4 sm:col-span-3 sm:col-start-1">
+      <div
+        v-if="
+          dataSource.authenticationType !==
+          DataSource_AuthenticationType.AZURE_IAM
+        "
+        class="mt-4 sm:col-span-3 sm:col-start-1"
+      >
         <label for="username" class="textlabel block">
           {{ $t("common.username") }}
         </label>
@@ -144,6 +164,60 @@
             basicInfo.engine === Engine.CLICKHOUSE ? $t('common.default') : ''
           "
         />
+      </div>
+      <div v-else class="mt-4 sm:col-span-3 sm:col-start-1">
+        <label for="credential-source" class="textlabel block">
+          {{ $t("instance.iam-extension.credential-source") }}
+        </label>
+        <NRadioGroup
+          :value="state.credentialSource"
+          class="textlabel"
+          :disabled="!allowEdit"
+          @update:value="onSelectIAMExtension"
+        >
+          <template
+            v-for="option in getIAMExtensionOptions(
+              DataSource_AuthenticationType.AZURE_IAM
+            )"
+            :key="option.value"
+          >
+            <NRadio :value="option.value" :label="option.label" />
+          </template>
+        </NRadioGroup>
+        <div
+          v-if="state.credentialSource === 'client-secret-credential'"
+          class="mt-4 sm:col-span-3 sm:col-start-1"
+        >
+          <label for="tenant-id" class="textlabel block mt-2">
+            {{ $t("instance.iam-extension.tenant-id") }}
+          </label>
+          <NInput
+            v-model:value="dataSource.clientSecretCredential!.tenantId"
+            class="mt-2 w-full"
+            :disabled="!allowEdit"
+            :placeholder="''"
+          />
+          <label for="client-id" class="textlabel block mt-2">
+            {{ $t("instance.iam-extension.client-id") }}
+          </label>
+          <NInput
+            v-model:value="dataSource.clientSecretCredential!.clientId"
+            class="mt-2 w-full"
+            :disabled="!allowEdit"
+            :placeholder="''"
+          />
+          <label for="client-secret" class="textlabel block mt-2">
+            {{ $t("instance.iam-extension.client-secret") }}
+          </label>
+          <NInput
+            type="password"
+            show-password-on="click"
+            v-model:value="dataSource.clientSecretCredential!.clientSecret"
+            class="mt-2 w-full"
+            :disabled="!allowEdit"
+            :placeholder="$t('instance.type-or-paste-credentials-write-only')"
+          />
+        </div>
       </div>
       <div
         v-if="
@@ -863,6 +937,7 @@ import {
   DataSourceExternalSecret_AppRoleAuthOption,
   DataSourceExternalSecret_AppRoleAuthOption_SecretType,
   DataSource_AuthenticationType,
+  DataSource_ClientSecretCredential,
 } from "@/types/proto/v1/instance_service";
 import { DataSource_RedisType } from "@/types/proto/v1/instance_service";
 import { onlyAllowNumber } from "@/utils";
@@ -876,6 +951,12 @@ import SslCertificateFormV1 from "./SslCertificateFormV1.vue";
 
 interface LocalState {
   passwordType: DataSourceExternalSecret_SecretType;
+  credentialSource: string;
+}
+
+interface IAMExtensionOptions {
+  label: string;
+  value: string;
 }
 
 const props = defineProps<{
@@ -906,6 +987,7 @@ const {
 
 const state = reactive<LocalState>({
   passwordType: DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED,
+  credentialSource: "default-credential",
 });
 const { t } = useI18n();
 
@@ -917,6 +999,18 @@ watch(
     } else {
       state.passwordType =
         DataSourceExternalSecret_SecretType.SAECRET_TYPE_UNSPECIFIED;
+    }
+  },
+  { immediate: true, deep: true }
+);
+
+watch(
+  () => props.dataSource.clientSecretCredential,
+  (clientSecretCredential) => {
+    if (clientSecretCredential) {
+      state.credentialSource = "client-secret-credential";
+    } else {
+      state.credentialSource = "default-credential";
     }
   },
   { immediate: true, deep: true }
@@ -1152,5 +1246,37 @@ const handleKeytabUpload = (options: { file: UploadFileInfo }) => {
     }
   };
   reader.readAsArrayBuffer(options.file.file as Blob);
+};
+
+const getIAMExtensionOptions = (
+  authenticationType: DataSource_AuthenticationType
+): IAMExtensionOptions[] => {
+  if (authenticationType == DataSource_AuthenticationType.AZURE_IAM) {
+    return [
+      {
+        label: "Default",
+        value: "default-credential",
+      },
+      {
+        label: "Client Secret Credential",
+        value: "client-secret-credential",
+      },
+    ];
+  }
+  return [];
+};
+
+const onSelectIAMExtension = (value: string) => {
+  state.credentialSource = value;
+  resetIAMExtension();
+  if (value === "client-secret-credential") {
+    const ds = props.dataSource;
+    ds.clientSecretCredential = DataSource_ClientSecretCredential.create();
+  }
+};
+
+const resetIAMExtension = () => {
+  const ds = props.dataSource;
+  ds.clientSecretCredential = undefined;
 };
 </script>
