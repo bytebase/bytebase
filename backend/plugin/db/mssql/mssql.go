@@ -77,13 +77,13 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 			return nil, errors.Wrapf(err, "failed to create temporary file with pattern %s", pattern)
 		}
 		fName := file.Name()
-		defer func() {
+		defer func(err error) {
 			if err != nil {
 				_ = os.Remove(fName)
 			} else {
 				driver.certFilePath = fName
 			}
-		}()
+		}(err)
 		_, err = file.WriteString(config.TLSConfig.SslCA)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to write certificate to file %s", fName)
