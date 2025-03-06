@@ -40,10 +40,9 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 		ReleaseSource: &v1pb.Plan_ReleaseSource{
 			Release: plan.Config.GetReleaseSource().GetRelease(),
 		},
-		CreateTime:               timestamppb.New(plan.CreatedAt),
-		UpdateTime:               timestamppb.New(plan.UpdatedAt),
-		PlanCheckRunStatusCount:  plan.PlanCheckRunStatusCount,
-		DeploymentConfigSnapshot: convertToDeploymentConfigSnapshot(plan.Config.GetDeploymentSnapshot().GetDeploymentConfigSnapshot()),
+		CreateTime:              timestamppb.New(plan.CreatedAt),
+		UpdateTime:              timestamppb.New(plan.UpdatedAt),
+		PlanCheckRunStatusCount: plan.PlanCheckRunStatusCount,
 	}
 
 	creator, err := s.GetUserByID(ctx, plan.CreatorUID)
@@ -189,16 +188,6 @@ func convertPlanReleaseSource(s *v1pb.Plan_ReleaseSource) *storepb.PlanConfig_Re
 	}
 }
 
-func convertToDeploymentConfigSnapshot(s *storepb.PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot) *v1pb.DeploymentConfig {
-	if s == nil {
-		return nil
-	}
-	return &v1pb.DeploymentConfig{
-		Name:     s.Name,
-		Title:    s.Title,
-		Schedule: convertToSchedule(s.DeploymentConfig.GetSchedule()),
-	}
-}
 func convertPlanSteps(steps []*v1pb.Plan_Step) []*storepb.PlanConfig_Step {
 	storeSteps := make([]*storepb.PlanConfig_Step, len(steps))
 	for i := range steps {
