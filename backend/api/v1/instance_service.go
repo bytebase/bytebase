@@ -527,7 +527,8 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 	}
 	if request.Force {
 		if len(databases) > 0 {
-			if _, err := s.store.BatchUpdateDatabaseProject(ctx, databases, api.DefaultProjectID); err != nil {
+			defaultProjectID := api.DefaultProjectID
+			if _, err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{ProjectID: &defaultProjectID}); err != nil {
 				return nil, err
 			}
 		}

@@ -1352,6 +1352,7 @@
     "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",
     "edit-schema": "スキーマの変更",
     "edit-labels": "タグを編集する",
+    "edit-environment": "編集環境",
     "mixed-values-for-label": "タグの値が異なります",
     "mixed-label-values-warning": "一部のタグには異なる値があり、タグの編集はバッチで適用されます",
     "change-data": "データ変更",

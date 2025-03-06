@@ -197,29 +197,6 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     return resp;
   };
 
-  const transferDatabases = async (
-    databaseList: Database[],
-    project: string
-  ) => {
-    const updates = databaseList.map((db) => {
-      const databasePatch = {
-        ...db,
-      };
-      databasePatch.project = project;
-      const updateMask = ["project"];
-      return {
-        database: databasePatch,
-        updateMask,
-      } as UpdateDatabaseRequest;
-    });
-
-    const response = await batchUpdateDatabases({
-      parent: "-",
-      requests: updates,
-    });
-    return response;
-  };
-
   return {
     reset,
     removeCacheByInstance,
@@ -236,7 +213,6 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     fetchDatabaseSchema,
     updateDatabaseInstance,
     diffSchema,
-    transferDatabases,
     fetchDatabases,
   };
 });
