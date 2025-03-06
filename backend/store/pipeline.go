@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -66,14 +67,79 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to list stages")
 	}
-	stagesAlreadyExist := map[string]bool{}
+	oldCreatedStages := map[string]*StageMessage{}
 	for _, stage := range stages {
-		stagesAlreadyExist[stage.DeploymentID] = true
+		oldCreatedStages[stage.DeploymentID] = stage
 	}
 
 	var stagesToCreate []*StageMessage
 	for _, stage := range pipeline.Stages {
-		if !stagesAlreadyExist[stage.DeploymentID] {
+		if createdStage, ok := oldCreatedStages[stage.DeploymentID]; ok {
+			// The stage was created, but we could have tasks to create.
+			tasks, err := s.listTasksTx(ctx, tx, &TaskFind{
+				PipelineID: &createdPipelineUID,
+				StageID:    &createdStage.ID,
+			})
+			if err != nil {
+				return 0, errors.Wrapf(err, "failed to list tasks in a created stage")
+			}
+
+			type taskKey struct {
+				instance string
+				database string
+				sheet    int
+			}
+
+			createdTasks := map[taskKey]struct{}{}
+			for _, task := range tasks {
+				var payloadSheetUID struct {
+					SheetUID int `json:"sheetId"`
+				}
+				if err := json.Unmarshal([]byte(task.Payload), &payloadSheetUID); err != nil {
+					return 0, errors.Wrapf(err, "failed to unmarshal task payload")
+				}
+				k := taskKey{
+					instance: task.InstanceID,
+					sheet:    payloadSheetUID.SheetUID,
+				}
+				if task.DatabaseName != nil {
+					k.database = *task.DatabaseName
+				}
+				createdTasks[k] = struct{}{}
+			}
+
+			var taskCreateList []*TaskMessage
+
+			for _, taskCreate := range stage.TaskList {
+				var payloadSheetUID struct {
+					SheetUID int `json:"sheetId"`
+				}
+				if err := json.Unmarshal([]byte(taskCreate.Payload), &payloadSheetUID); err != nil {
+					return 0, errors.Wrapf(err, "failed to unmarshal task payload")
+				}
+				k := taskKey{
+					instance: taskCreate.InstanceID,
+					sheet:    payloadSheetUID.SheetUID,
+				}
+				if taskCreate.DatabaseName != nil {
+					k.database = *taskCreate.DatabaseName
+				}
+
+				if _, ok := createdTasks[k]; ok {
+					continue
+				}
+				taskCreate.PipelineID = createdPipelineUID
+				taskCreate.StageID = createdStage.ID
+				taskCreateList = append(taskCreateList, taskCreate)
+			}
+
+			if len(taskCreateList) > 0 {
+				if _, err := s.createTasks(ctx, tx, taskCreateList...); err != nil {
+					return 0, errors.Wrap(err, "failed to create tasks")
+				}
+			}
+		} else {
+			// Create the stage and the tasks.
 			stagesToCreate = append(stagesToCreate, stage)
 		}
 	}
@@ -91,8 +157,10 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 			c.StageID = stage.ID
 			taskCreateList = append(taskCreateList, c)
 		}
-		if _, err := s.createTasks(ctx, tx, taskCreateList...); err != nil {
-			return 0, errors.Wrap(err, "failed to create tasks")
+		if len(taskCreateList) > 0 {
+			if _, err := s.createTasks(ctx, tx, taskCreateList...); err != nil {
+				return 0, errors.Wrap(err, "failed to create tasks")
+			}
 		}
 	}
 

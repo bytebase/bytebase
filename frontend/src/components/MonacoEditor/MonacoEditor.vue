@@ -118,41 +118,20 @@ const activeRangeByCursor = computed((): IRange | undefined => {
   return range;
 });
 
-const activeRange = computed((): IRange | undefined => {
-  const rangeByCursor = activeRangeByCursor.value;
-  const rangeBySelection = activeSelection.value;
+const hasSelection = computed(() => {
+  return (
+    activeSelection.value &&
+    (activeSelection.value.startLineNumber !==
+      activeSelection.value.endLineNumber ||
+      activeSelection.value.startColumn !== activeSelection.value.endColumn)
+  );
+});
 
-  if (!rangeBySelection) {
-    return rangeByCursor;
+const activeRange = computed((): IRange | null | undefined => {
+  if (!hasSelection.value) {
+    return activeRangeByCursor.value;
   }
-  if (
-    rangeBySelection.startLineNumber === rangeBySelection.endLineNumber &&
-    rangeBySelection.startColumn === rangeBySelection.endColumn
-  ) {
-    // Means no selection, just active cursor.
-    return rangeByCursor;
-  }
-
-  if (!rangeByCursor) {
-    return rangeBySelection;
-  }
-
-  // Calculate the maximum range
-  return {
-    startLineNumber: Math.min(
-      rangeByCursor.startLineNumber,
-      rangeBySelection.startLineNumber
-    ),
-    startColumn: Math.min(
-      rangeByCursor.startColumn,
-      rangeBySelection.startColumn
-    ),
-    endLineNumber: Math.max(
-      rangeByCursor.endLineNumber,
-      rangeBySelection.endLineNumber
-    ),
-    endColumn: Math.max(rangeByCursor.endColumn, rangeBySelection.endColumn),
-  };
+  return activeSelection.value;
 });
 
 const oldDecorationsCollection = ref<editor.IEditorDecorationsCollection>();
@@ -163,15 +142,8 @@ watch(activeRange, () => {
   }
 
   oldDecorationsCollection.value?.clear();
-  if (!activeRange.value) {
-    return;
-  }
-  if (
-    activeSelection.value &&
-    (activeSelection.value.startLineNumber !==
-      activeSelection.value.endLineNumber ||
-      activeSelection.value.startColumn !== activeSelection.value.endColumn)
-  ) {
+  // Has manual selection or no active range, do not highlight.
+  if (hasSelection.value || !activeRange.value) {
     return;
   }
 

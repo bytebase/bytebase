@@ -44,6 +44,13 @@ type UpdateDatabaseMessage struct {
 	Metadata      *storepb.DatabaseMetadata
 }
 
+// BatchUpdateDatabases is the message for batch updating databases.
+type BatchUpdateDatabases struct {
+	ProjectID *string
+	// Empty string will unset the environment.
+	EnvironmentID *string
+}
+
 type FindDatabaseFilter struct {
 	Args  []any
 	Where string
@@ -280,10 +287,20 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{InstanceID: &patch.InstanceID, DatabaseName: &patch.DatabaseName, ShowDeleted: true})
 }
 
-// BatchUpdateDatabaseProject updates the project for databases in batch.
-func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*DatabaseMessage, projectID string) ([]*DatabaseMessage, error) {
+// BatchUpdateDatabases update databases in batch.
+func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseMessage, update *BatchUpdateDatabases) ([]*DatabaseMessage, error) {
 	if len(databases) == 0 {
 		return nil, errors.Errorf("there is no database in the project")
+	}
+	set, args, wheres := []string{}, []any{}, []string{}
+	if update.ProjectID != nil {
+		set, args = append(set, fmt.Sprintf("project = $%d", len(args)+1)), append(args, *update.ProjectID)
+	}
+	if update.EnvironmentID != nil {
+		set, args = append(set, fmt.Sprintf("environment = $%d", len(args)+1)), append(args, *update.EnvironmentID)
+	}
+	if len(set) == 0 {
+		return nil, errors.New("no update field specified")
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -291,16 +308,13 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 		return nil, err
 	}
 	defer tx.Rollback()
-
-	var wheres []string
-	args := []any{projectID}
-	for i, database := range databases {
-		wheres = append(wheres, fmt.Sprintf("(db.instance = $%d AND db.name = $%d)", 2*i+2, 2*i+3))
+	for _, database := range databases {
+		wheres = append(wheres, fmt.Sprintf("(db.instance = $%d AND db.name = $%d)", len(args)+1, len(args)+2))
 		args = append(args, database.InstanceID, database.DatabaseName)
 	}
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
 			UPDATE db
-			SET project = $1
+			SET `+strings.Join(set, ", ")+`
 			WHERE %s;`, strings.Join(wheres, " OR ")),
 		args...,
 	); err != nil {
@@ -314,7 +328,24 @@ func (s *Store) BatchUpdateDatabaseProject(ctx context.Context, databases []*Dat
 	var updatedDatabases []*DatabaseMessage
 	for _, database := range databases {
 		updatedDatabase := *database
-		updatedDatabase.ProjectID = projectID
+		// Update cache for project field.
+		if update.ProjectID != nil {
+			updatedDatabase.ProjectID = *update.ProjectID
+		}
+		// Update cache for environment field and effective environment field.
+		if update.EnvironmentID != nil {
+			updatedDatabase.EnvironmentID = *update.EnvironmentID
+			if *update.EnvironmentID == "" {
+				instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &database.InstanceID})
+				if err != nil {
+					// Should not reach here.
+					return nil, err
+				}
+				updatedDatabase.EffectiveEnvironmentID = instance.EnvironmentID
+			} else {
+				updatedDatabase.EffectiveEnvironmentID = *update.EnvironmentID
+			}
+		}
 		s.databaseCache.Add(getDatabaseCacheKey(database.InstanceID, database.DatabaseName), &updatedDatabase)
 		updatedDatabases = append(updatedDatabases, &updatedDatabase)
 	}

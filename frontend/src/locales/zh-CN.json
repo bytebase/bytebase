@@ -1352,6 +1352,7 @@
     "unassign-alert-description": "选定的数据库将从项目中移除",
     "edit-schema": "变更 Schema",
     "edit-labels": "编辑标签",
+    "edit-environment": "编辑环境",
     "mixed-values-for-label": "该标签拥有不同的值",
     "mixed-label-values-warning": "某些标签拥有不同的值，编辑标签将会批量应用",
     "change-data": "变更数据",

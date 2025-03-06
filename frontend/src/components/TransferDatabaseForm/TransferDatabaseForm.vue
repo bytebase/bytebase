@@ -96,6 +96,7 @@ import {
   defaultProject,
   isValidProjectName,
 } from "@/types";
+import { UpdateDatabaseRequest } from "@/types/proto/v1/database_service";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { hasProjectPermissionV2 } from "@/utils";
@@ -200,10 +201,18 @@ const transferDatabase = async () => {
   try {
     state.loading = true;
 
-    const updated = await databaseStore.transferDatabases(
-      selectedDatabaseList.value,
-      props.projectName
-    );
+    const updated = await useDatabaseV1Store().batchUpdateDatabases({
+      parent: "-",
+      requests: selectedDatabaseList.value.map((database) => {
+        return UpdateDatabaseRequest.fromPartial({
+          database: {
+            name: database.name,
+            project: props.projectName,
+          },
+          updateMask: ["project"],
+        });
+      }),
+    });
 
     const displayDatabaseName =
       selectedDatabaseList.value.length > 1

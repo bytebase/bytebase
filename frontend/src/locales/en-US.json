@@ -1352,6 +1352,7 @@
     "unassign-alert-description": "The selected databases will be removed from the project",
     "edit-schema": "Edit Schema",
     "edit-labels": "Edit Labels",
+    "edit-environment": "Edit Environment",
     "mixed-values-for-label": "This selected label have mixed values",
     "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key",
     "change-data": "Change Data",
