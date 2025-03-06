@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"slices"
 
@@ -38,11 +37,6 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 		Title:       plan.Name,
 		Description: plan.Description,
 		Steps:       convertToPlanSteps(plan.Config.Steps),
-		VcsSource: &v1pb.Plan_VCSSource{
-			VcsType:        v1pb.VCSType(plan.Config.GetVcsSource().GetVcsType()),
-			VcsConnector:   plan.Config.GetVcsSource().GetVcsConnector(),
-			PullRequestUrl: plan.Config.GetVcsSource().GetPullRequestUrl(),
-		},
 		ReleaseSource: &v1pb.Plan_ReleaseSource{
 			Release: plan.Config.GetReleaseSource().GetRelease(),
 		},
@@ -95,7 +89,6 @@ func convertToPlanSpec(spec *storepb.PlanConfig_Spec) *v1pb.Plan_Spec {
 	v1Spec := &v1pb.Plan_Spec{
 		EarliestAllowedTime: spec.EarliestAllowedTime,
 		Id:                  spec.Id,
-		DependsOnSpecs:      spec.DependsOnSpecs,
 		SpecReleaseSource: &v1pb.Plan_SpecReleaseSource{
 			File: spec.SpecReleaseSource.GetFile(),
 		},
@@ -125,7 +118,6 @@ func convertToPlanSpecCreateDatabaseConfig(config *storepb.PlanConfig_Spec_Creat
 			Cluster:      c.Cluster,
 			Owner:        c.Owner,
 			Environment:  c.Environment,
-			Labels:       c.Labels,
 		},
 	}
 }
@@ -183,20 +175,8 @@ func convertPlan(plan *v1pb.Plan) *storepb.PlanConfig {
 	}
 	return &storepb.PlanConfig{
 		Steps:              convertPlanSteps(plan.Steps),
-		VcsSource:          convertPlanVcsSource(plan.VcsSource),
 		ReleaseSource:      convertPlanReleaseSource(plan.ReleaseSource),
 		DeploymentSnapshot: nil,
-	}
-}
-
-func convertPlanVcsSource(s *v1pb.Plan_VCSSource) *storepb.PlanConfig_VCSSource {
-	if s == nil {
-		return nil
-	}
-	return &storepb.PlanConfig_VCSSource{
-		VcsType:        storepb.VCSType(s.VcsType),
-		VcsConnector:   s.VcsConnector,
-		PullRequestUrl: s.PullRequestUrl,
 	}
 }
 
@@ -246,7 +226,6 @@ func convertPlanSpec(spec *v1pb.Plan_Spec) *storepb.PlanConfig_Spec {
 	storeSpec := &storepb.PlanConfig_Spec{
 		EarliestAllowedTime: spec.EarliestAllowedTime,
 		Id:                  spec.Id,
-		DependsOnSpecs:      spec.DependsOnSpecs,
 		SpecReleaseSource: &storepb.PlanConfig_SpecReleaseSource{
 			File: spec.SpecReleaseSource.GetFile(),
 		},
@@ -280,7 +259,6 @@ func convertPlanConfigCreateDatabaseConfig(c *v1pb.Plan_CreateDatabaseConfig) *s
 		Cluster:      c.Cluster,
 		Owner:        c.Owner,
 		Environment:  c.Environment,
-		Labels:       c.Labels,
 	}
 }
 
@@ -314,29 +292,6 @@ func convertPlanSpecExportDataConfig(config *v1pb.Plan_Spec_ExportDataConfig) *s
 			Password: c.Password,
 		},
 	}
-}
-
-// convertDatabaseLabels converts the map[string]string labels to []*api.DatabaseLabel JSON string.
-func convertDatabaseLabels(labelsMap map[string]string) (string, error) {
-	if len(labelsMap) == 0 {
-		return "", nil
-	}
-	// For scalability, each database can have up to four labels for now.
-	if len(labelsMap) > api.DatabaseLabelSizeMax {
-		return "", errors.Errorf("database labels are up to a maximum of %d", api.DatabaseLabelSizeMax)
-	}
-	var labels []*storepb.DatabaseLabel
-	for k, v := range labelsMap {
-		labels = append(labels, &storepb.DatabaseLabel{
-			Key:   k,
-			Value: v,
-		})
-	}
-	labelsJSON, err := json.Marshal(labels)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to marshal labels json")
-	}
-	return string(labelsJSON), nil
 }
 
 func convertToPlanCheckRuns(ctx context.Context, s *store.Store, projectID string, planUID int64, runs []*store.PlanCheckRunMessage) ([]*v1pb.PlanCheckRun, error) {
@@ -686,15 +641,6 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 		rolloutV1.Stages = append(rolloutV1.Stages, rolloutStage)
 	}
 
-	for i, rolloutStage := range rolloutV1.Stages {
-		for j, rolloutTask := range rolloutStage.Tasks {
-			task := rollout.Stages[i].TaskList[j]
-			for _, blockingTask := range task.DependsOn {
-				rolloutTask.DependsOnTasks = append(rolloutTask.DependsOnTasks, taskIDToName[blockingTask])
-			}
-		}
-	}
-
 	return rolloutV1, nil
 }
 
@@ -717,21 +663,6 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 	}
 }
 
-func convertToDatabaseLabels(labelsJSON string) (map[string]string, error) {
-	if labelsJSON == "" {
-		return nil, nil
-	}
-	var labels []*storepb.DatabaseLabel
-	if err := json.Unmarshal([]byte(labelsJSON), &labels); err != nil {
-		return nil, err
-	}
-	labelsMap := make(map[string]string)
-	for _, label := range labels {
-		labelsMap[label.Key] = label.Value
-	}
-	return labelsMap, nil
-}
-
 func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	payload := &storepb.TaskDatabaseCreatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
@@ -743,19 +674,14 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance %s", task.InstanceID)
 	}
-	labels, err := convertToDatabaseLabels(payload.Labels)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert database labels %v", payload.Labels)
-	}
 	v1pbTask := &v1pb.Task{
-		Name:           common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		Title:          task.Name,
-		SpecId:         payload.SpecId,
-		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
-		SkippedReason:  payload.SkippedReason,
-		DependsOnTasks: nil,
-		Target:         common.FormatInstance(instance.ResourceID),
+		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
+		Title:         task.Name,
+		SpecId:        payload.SpecId,
+		Type:          convertToTaskType(task.Type),
+		Status:        convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason: payload.SkippedReason,
+		Target:        common.FormatInstance(instance.ResourceID),
 		Payload: &v1pb.Task_DatabaseCreate_{
 			DatabaseCreate: &v1pb.Task_DatabaseCreate{
 				Project:      "",
@@ -765,7 +691,6 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 				CharacterSet: payload.CharacterSet,
 				Collation:    payload.Collation,
 				Environment:  common.FormatEnvironment(payload.EnvironmentId),
-				Labels:       labels,
 			},
 		},
 	}
@@ -789,14 +714,13 @@ func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, projec
 		return nil, errors.Errorf("database not found")
 	}
 	v1pbTask := &v1pb.Task{
-		Name:           common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		Title:          task.Name,
-		SpecId:         payload.SpecId,
-		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
-		SkippedReason:  payload.SkippedReason,
-		DependsOnTasks: nil,
-		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
+		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
+		Title:         task.Name,
+		SpecId:        payload.SpecId,
+		Type:          convertToTaskType(task.Type),
+		Status:        convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason: payload.SkippedReason,
+		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaBaseline_{
 			DatabaseSchemaBaseline: &v1pb.Task_DatabaseSchemaBaseline{
 				SchemaVersion: payload.SchemaVersion,
@@ -823,14 +747,13 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 	}
 
 	v1pbTask := &v1pb.Task{
-		Name:           common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		Title:          task.Name,
-		SpecId:         payload.SpecId,
-		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
-		SkippedReason:  payload.SkippedReason,
-		DependsOnTasks: nil,
-		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
+		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
+		Title:         task.Name,
+		SpecId:        payload.SpecId,
+		Type:          convertToTaskType(task.Type),
+		Status:        convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason: payload.SkippedReason,
+		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaUpdate_{
 			DatabaseSchemaUpdate: &v1pb.Task_DatabaseSchemaUpdate{
 				Sheet:         common.FormatSheet(project.ResourceID, int(payload.SheetId)),
@@ -858,15 +781,14 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 	}
 
 	v1pbTask := &v1pb.Task{
-		Name:           common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		Title:          task.Name,
-		SpecId:         payload.SpecId,
-		Type:           convertToTaskType(task.Type),
-		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
-		SkippedReason:  payload.SkippedReason,
-		DependsOnTasks: nil,
-		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
-		Payload:        nil,
+		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
+		Title:         task.Name,
+		SpecId:        payload.SpecId,
+		Type:          convertToTaskType(task.Type),
+		Status:        convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
+		SkippedReason: payload.SkippedReason,
+		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
+		Payload:       nil,
 	}
 	v1pbTaskPayload := &v1pb.Task_DatabaseDataUpdate_{
 		DatabaseDataUpdate: &v1pb.Task_DatabaseDataUpdate{

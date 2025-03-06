@@ -8,4 +8,3 @@ title: イシュー」とは何か？
 
 - [初めてのデータベース変更](https://www.bytebase.com/docs/get-started/step-by-step/change-schema)
 - [一括変更](https://www.bytebase.com/docs/change-database/batch-change/)
-- [GitOps ワークフロー](https://www.bytebase.com/docs/get-started/step-by-step/change-schema)

@@ -366,7 +366,7 @@
     },
     "column-default-disallow-volatile": {
       "title": "Không cho phép đặt giá trị mặc định không ổn định trên các cột",
-      "description": "Các hàm không ổn định (ví dụ: clock_timestamp()) cập nhật từng hàng với giá trị tại thời điểm thực hiện ALTER TABLE, có khả năng gây ra các bản cập nhật kéo dài."
+      "description": "Các hàm không ổn định (ví dụ: clock_timestamp()) cập nhật từng hàng với giá trị tại thời điểm thực hiện ALTER TABLE ADD COLUMN, có khả năng gây ra các bản cập nhật kéo dài."
     },
     "column-require-charset": {
       "title": "Yêu cầu charset cho cột kiểu text",

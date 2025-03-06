@@ -21,8 +21,8 @@ const projectName = computed(() => `${projectNamePrefix}${props.projectId}`);
 const projectStore = useProjectV1Store();
 const router = useRouter();
 
-watchEffect(() => {
-  const project = projectStore.getProjectByName(projectName.value);
+watchEffect(async () => {
+  const project = await projectStore.getOrFetchProjectByName(projectName.value);
   if (hasProjectPermissionV2(project, "bb.issues.list")) {
     router.replace({
       name: PROJECT_V1_ROUTE_ISSUES,

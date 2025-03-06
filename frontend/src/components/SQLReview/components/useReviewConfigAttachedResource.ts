@@ -55,7 +55,10 @@ export const useReviewConfigAttachedResource = (resource: Ref<string>) => {
         return;
       case "project":
         if (hasWorkspacePermissionV2("bb.projects.get")) {
-          await projectStore.getOrFetchProjectByName(resource.value);
+          await projectStore.getOrFetchProjectByName(
+            resource.value,
+            true /* silent */
+          );
         }
         return;
     }

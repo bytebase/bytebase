@@ -257,16 +257,9 @@ export function engineToNumber(object: Engine): number {
 
 export enum VCSType {
   VCS_TYPE_UNSPECIFIED = "VCS_TYPE_UNSPECIFIED",
-  /** GITHUB - GitHub type. Using for GitHub community edition(ce). */
   GITHUB = "GITHUB",
-  /**
-   * GITLAB - GitLab type. Using for GitLab community edition(ce) and enterprise
-   * edition(ee).
-   */
   GITLAB = "GITLAB",
-  /** BITBUCKET - BitBucket type. Using for BitBucket cloud or BitBucket server. */
   BITBUCKET = "BITBUCKET",
-  /** AZURE_DEVOPS - Azure DevOps. Using for Azure DevOps GitOps workflow. */
   AZURE_DEVOPS = "AZURE_DEVOPS",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
@@ -475,11 +468,6 @@ export interface Position {
 export interface Range {
   start: number;
   end: number;
-}
-
-export interface DatabaseLabel {
-  key: string;
-  value: string;
 }
 
 function createBasePageToken(): PageToken {
@@ -706,82 +694,6 @@ export const Range: MessageFns<Range> = {
     const message = createBaseRange();
     message.start = object.start ?? 0;
     message.end = object.end ?? 0;
-    return message;
-  },
-};
-
-function createBaseDatabaseLabel(): DatabaseLabel {
-  return { key: "", value: "" };
-}
-
-export const DatabaseLabel: MessageFns<DatabaseLabel> = {
-  encode(message: DatabaseLabel, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.key !== "") {
-      writer.uint32(10).string(message.key);
-    }
-    if (message.value !== "") {
-      writer.uint32(18).string(message.value);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): DatabaseLabel {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDatabaseLabel();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.value = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): DatabaseLabel {
-    return {
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      value: isSet(object.value) ? globalThis.String(object.value) : "",
-    };
-  },
-
-  toJSON(message: DatabaseLabel): unknown {
-    const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== "") {
-      obj.value = message.value;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<DatabaseLabel>): DatabaseLabel {
-    return DatabaseLabel.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<DatabaseLabel>): DatabaseLabel {
-    const message = createBaseDatabaseLabel();
-    message.key = object.key ?? "";
-    message.value = object.value ?? "";
     return message;
   },
 };

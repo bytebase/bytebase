@@ -64,7 +64,7 @@ func (s *QueryResultMasker) getSensitiveColumnsForPredicate(
 	action storepb.MaskingExceptionPolicy_MaskingException_Action,
 	currentPrincipal *store.UserMessage,
 ) ([]base.ColumnResource, error) {
-	if instance != nil && !isPredicateColumnsCheckEnabled(instance.Engine) {
+	if instance != nil && !isPredicateColumnsCheckEnabled(instance.Metadata.GetEngine()) {
 		return nil, nil
 	}
 

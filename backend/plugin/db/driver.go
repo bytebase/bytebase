@@ -37,7 +37,7 @@ type InstanceMetadata struct {
 	Version string
 	// Simplified database metadata.
 	Databases []*storepb.DatabaseSchemaMetadata
-	Metadata  *storepb.InstanceMetadata
+	Metadata  *storepb.Instance
 }
 
 // TableKey is the map key for table metadata.
@@ -83,18 +83,6 @@ type DriverConfig struct {
 }
 
 type driverFunc func(DriverConfig) Driver
-
-// MigrationSource is the migration engine.
-type MigrationSource string
-
-const (
-	// UI is the migration source type for UI.
-	UI MigrationSource = "UI"
-	// VCS is the migration source type for VCS.
-	VCS MigrationSource = "VCS"
-	// LIBRARY is the migration source type for LIBRARY.
-	LIBRARY MigrationSource = "LIBRARY"
-)
 
 // MigrationType is the type of a migration.
 type MigrationType string
@@ -183,10 +171,10 @@ type ConnectionConfig struct {
 	ConnectionContext ConnectionContext
 
 	// AuthenticationType is for the database connection, we support normal username & password or Google IAM.
-	AuthenticationType storepb.DataSourceOptions_AuthenticationType
+	AuthenticationType storepb.DataSource_AuthenticationType
 
 	// AdditionalAddresses and ReplicaSet name are used for MongoDB.
-	AdditionalAddresses []*storepb.DataSourceOptions_Address
+	AdditionalAddresses []*storepb.DataSource_Address
 	ReplicaSet          string
 	DirectConnection    bool
 
@@ -196,7 +184,7 @@ type ConnectionConfig struct {
 	// WarehouseID is used by Databricks.
 	WarehouseID string
 
-	RedisType      storepb.DataSourceOptions_RedisType
+	RedisType      storepb.DataSource_RedisType
 	MasterName     string
 	MasterUsername string
 	MasterPassword string
@@ -207,6 +195,9 @@ type ConnectionConfig struct {
 
 	// The maximum number of bytes for sql results in response body.
 	MaximumSQLResultSize int64
+
+	// At most one of the following could be set.
+	ClientSecretCredential *storepb.DataSource_ClientSecretCredential
 }
 
 // SSHConfig is the configuration for connection over SSH.

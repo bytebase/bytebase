@@ -72,18 +72,6 @@
     "helpName": "help.member"
   },
   {
-    "routeName": "setting.workspace.gitops",
-    "helpName": ""
-  },
-  {
-    "routeName": "setting.workspace.gitops.create",
-    "helpName": ""
-  },
-  {
-    "routeName": "setting.workspace.gitops.detail",
-    "helpName": ""
-  },
-  {
     "routeName": "setting.workspace.subscription",
     "helpName": ""
   },

@@ -448,6 +448,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -515,6 +516,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -1497,7 +1499,7 @@ paths:
                      syntax. Support filter by type, source or table. For example: table =
                      "tableExists('{database}', '{schema}', '{table}')" table =
                      "tableExists('db', 'public', 'table1') || tableExists('db', 'public',
-                     'table2')" type = "MIGRATE | DATA" source = "UI" source = "VCS"
+                     'table2')"
 
                      The table filter follow the CEL syntax.
                      currently, we have one function for CEL:
@@ -1711,6 +1713,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -1784,6 +1787,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -2507,6 +2511,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -2574,6 +2579,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -3112,6 +3118,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -3183,6 +3190,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -3302,8 +3310,7 @@ paths:
                 - name: pageSize
                   in: query
                   description: |-
-                    Not used.
-                     The maximum number of projects to return. The service may return fewer than
+                    The maximum number of projects to return. The service may return fewer than
                      this value.
                      If unspecified, at most 10 projects will be returned.
                      The maximum value is 1000; values above 1000 will be coerced to 1000.
@@ -3313,8 +3320,7 @@ paths:
                 - name: pageToken
                   in: query
                   description: |-
-                    Not used.
-                     A page token, received from a previous `ListProjects` call.
+                    A page token, received from a previous `ListProjects` call.
                      Provide this to retrieve the subsequent page.
 
                      When paginating, all other parameters provided to `ListProjects` must match
@@ -4905,6 +4911,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
                 - name: pageSize
@@ -4972,6 +4979,7 @@ paths:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
             requestBody:
@@ -6072,193 +6080,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ListSlowQueriesResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/vcsConnectors:
-        get:
-            tags:
-                - VCSConnectorService
-            operationId: VCSConnectorService_ListVCSConnectors
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Not used.
-                     The maximum number of vcs connectors to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 10 vcs connectors will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Not used.
-                     A page token, received from a previous `ListVCSConnectors` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListVCSConnectors` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListVCSConnectorsResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        post:
-            tags:
-                - VCSConnectorService
-            operationId: VCSConnectorService_CreateVCSConnector
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: vcsConnectorId
-                  in: query
-                  description: |-
-                    The ID to use for the vcsConnector, which will become the final component of
-                     the vcsConnector's resource name.
-
-                     This value should be 4-63 characters, and valid characters
-                     are /[a-z][0-9]-/.
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/VCSConnector'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/VCSConnector'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/vcsConnectors/{vcsConnector}:
-        get:
-            tags:
-                - VCSConnectorService
-            operationId: VCSConnectorService_GetVCSConnector
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: vcsConnector
-                  in: path
-                  description: The vcsConnector id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/VCSConnector'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        delete:
-            tags:
-                - VCSConnectorService
-            operationId: VCSConnectorService_DeleteVCSConnector
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: vcsConnector
-                  in: path
-                  description: The vcsConnector id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content: {}
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        patch:
-            tags:
-                - VCSConnectorService
-            operationId: VCSConnectorService_UpdateVCSConnector
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: vcsConnector
-                  in: path
-                  description: The vcsConnector id.
-                  required: true
-                  schema:
-                    type: string
-                - name: updateMask
-                  in: query
-                  description: The list of fields to be updated.
-                  schema:
-                    type: string
-                    format: field-mask
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/VCSConnector'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/VCSConnector'
                 default:
                     description: Default error response
                     content:
@@ -7549,215 +7370,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/vcsProviders:
-        get:
-            tags:
-                - VCSProviderService
-            operationId: VCSProviderService_ListVCSProviders
-            parameters:
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Not used.
-                     The maximum number of vcs provider to return. The service may return fewer than this value.
-                     If unspecified, at most 10 vcs provider will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Not used.
-                     A page token, received from a previous `ListVCSProviders` call.
-                     Provide this to retrieve the subsequent page.
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListVCSProvidersResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        post:
-            tags:
-                - VCSProviderService
-            operationId: VCSProviderService_CreateVCSProvider
-            parameters:
-                - name: vcsProviderId
-                  in: query
-                  description: |-
-                    The ID to use for the VCS provider, which will become the final component of
-                     the VCS provider's name.
-
-                     This value should be 4-63 characters, and valid characters
-                     are /[a-z][0-9]-/.
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/VCSProvider'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/VCSProvider'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/vcsProviders/{vcsProvider}:
-        get:
-            tags:
-                - VCSProviderService
-            operationId: VCSProviderService_GetVCSProvider
-            parameters:
-                - name: vcsProvider
-                  in: path
-                  description: The vcsProvider id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/VCSProvider'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        delete:
-            tags:
-                - VCSProviderService
-            operationId: VCSProviderService_DeleteVCSProvider
-            parameters:
-                - name: vcsProvider
-                  in: path
-                  description: The vcsProvider id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content: {}
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        patch:
-            tags:
-                - VCSProviderService
-            operationId: VCSProviderService_UpdateVCSProvider
-            parameters:
-                - name: vcsProvider
-                  in: path
-                  description: The vcsProvider id.
-                  required: true
-                  schema:
-                    type: string
-                - name: updateMask
-                  in: query
-                  description: The list of fields to be updated.
-                  schema:
-                    type: string
-                    format: field-mask
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/VCSProvider'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/VCSProvider'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/vcsProviders/{vcsProvider}/vcsConnectors:
-        get:
-            tags:
-                - VCSProviderService
-            operationId: VCSProviderService_ListVCSConnectorsInProvider
-            parameters:
-                - name: vcsProvider
-                  in: path
-                  description: The vcsProvider id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListVCSConnectorsInProviderResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/vcsProviders/{vcsProvider}:searchRepositories:
-        post:
-            tags:
-                - VCSProviderService
-            operationId: VCSProviderService_SearchVCSProviderRepositories
-            parameters:
-                - name: vcsProvider
-                  in: path
-                  description: The vcsProvider id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/SearchVCSProviderRepositoriesRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/SearchVCSProviderRepositoriesResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/worksheets:
         post:
             tags:
@@ -8083,13 +7695,6 @@ paths:
                   schema:
                     type: integer
                     format: int32
-                - name: timeout
-                  in: query
-                  description: The timeout for the request.
-                  schema:
-                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
-                    type: string
-                    description: Represents a a duration between -315,576,000,000s and 315,576,000,000s (around 10000 years). Precision is in nanoseconds. 1 nanosecond is represented as 0.000000001s
                 - name: schema
                   in: query
                   description: |-
@@ -8175,22 +7780,9 @@ components:
                     readOnly: true
                     type: string
                     description: workspace_id is the identifier for the workspace.
-                gitopsWebhookUrl:
-                    readOnly: true
-                    type: string
-                    description: gitops_webhook_url is the webhook URL for GitOps.
                 debug:
                     type: boolean
                     description: debug flag means if the debug mode is enabled.
-                lsp:
-                    type: boolean
-                    description: lsp is the enablement of lsp in SQL Editor.
-                preUpdateBackup:
-                    type: boolean
-                    description: pre_update_backup is the enablement of data backup prior to data update.
-                iamGuard:
-                    type: boolean
-                    description: iam_guard is the enablement of IAM checks.
                 unlicensedFeatures:
                     type: array
                     items:
@@ -9268,20 +8860,16 @@ components:
                     format: enum
                 username:
                     type: string
-                password:
-                    writeOnly: true
+                obfuscatedPassword:
                     type: string
                 useSsl:
                     type: boolean
                     description: Use SSL to connect to the data source. By default, we use system default SSL configuration.
-                sslCa:
-                    writeOnly: true
+                obfuscatedSslCa:
                     type: string
-                sslCert:
-                    writeOnly: true
+                obfuscatedSslCert:
                     type: string
-                sslKey:
-                    writeOnly: true
+                obfuscatedSslKey:
                     type: string
                 host:
                     type: string
@@ -9291,9 +8879,15 @@ components:
                     type: string
                 srv:
                     type: boolean
-                    description: srv, authentication_database and replica_set are used for MongoDB.
+                    description: |-
+                        srv, authentication_database and replica_set are used for MongoDB.
+                         srv is a boolean flag that indicates whether the host is a DNS SRV record.
                 authenticationDatabase:
                     type: string
+                    description: authentication_database is the database name to authenticate against, which stores the user credentials.
+                replicaSet:
+                    type: string
+                    description: replica_set is used for MongoDB replica set.
                 sid:
                     type: string
                     description: sid and service_name are used for Oracle.
@@ -9302,37 +8896,27 @@ components:
                 sshHost:
                     type: string
                     description: |-
-                        Connection over SSH.
+                        SSH related
                          The hostname of the SSH server agent.
-                         Required.
                 sshPort:
                     type: string
-                    description: |-
-                        The port of the SSH server agent. It's 22 typically.
-                         Required.
+                    description: The port of the SSH server agent. It's 22 typically.
                 sshUser:
                     type: string
-                    description: |-
-                        The user to login the server.
-                         Required.
-                sshPassword:
-                    writeOnly: true
+                    description: The user to login the server.
+                sshObfuscatedPassword:
                     type: string
                     description: The password to login the server. If it's empty string, no password is required.
-                sshPrivateKey:
-                    writeOnly: true
+                sshObfuscatedPrivateKey:
                     type: string
                     description: The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK").
-                authenticationPrivateKey:
-                    writeOnly: true
+                authenticationPrivateKeyObfuscated:
                     type: string
                     description: |-
                         PKCS#8 private key in PEM format. If it's empty string, no private key is required.
                          Used for authentication when connecting to the data source.
                 externalSecret:
                     $ref: '#/components/schemas/DataSourceExternalSecret'
-                clientSecretCredential:
-                    $ref: '#/components/schemas/DataSource_ClientSecretCredential'
                 authenticationType:
                     enum:
                         - AUTHENTICATION_UNSPECIFIED
@@ -9342,6 +8926,8 @@ components:
                         - AZURE_IAM
                     type: string
                     format: enum
+                clientSecretCredential:
+                    $ref: '#/components/schemas/DataSource_ClientSecretCredential'
                 saslConfig:
                     $ref: '#/components/schemas/SASLConfig'
                 additionalAddresses:
@@ -9349,9 +8935,6 @@ components:
                     items:
                         $ref: '#/components/schemas/DataSource_Address'
                     description: additional_addresses is used for MongoDB replica set.
-                replicaSet:
-                    type: string
-                    description: replica_set is used for MongoDB replica set.
                 directConnection:
                     type: boolean
                     description: direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.
@@ -9366,8 +8949,8 @@ components:
                     description: master_name is the master name used by connecting redis-master via redis sentinel.
                 masterUsername:
                     type: string
-                    description: master_username and master_password are master credentials used by redis sentinel mode.
-                masterPassword:
+                    description: master_username and master_obfuscated_password are master credentials used by redis sentinel mode.
+                masterObfuscatedPassword:
                     type: string
                 redisType:
                     enum:
@@ -9380,6 +8963,13 @@ components:
                 cluster:
                     type: string
                     description: Cluster is the cluster name for the data source. Used by CockroachDB.
+                extraConnectionParameters:
+                    type: object
+                    additionalProperties:
+                        type: string
+                    description: |-
+                        Extra connection parameters for the database connection.
+                         For PostgreSQL HA, this can be used to set target_session_attrs=read-write
         DataSourceExternalSecret:
             type: object
             properties:
@@ -9475,14 +9065,14 @@ components:
                         The name of the database.
                          Format: instances/{instance}/databases/{database}
                          {database} is the database name in the instance.
-                syncState:
+                state:
                     readOnly: true
                     enum:
                         - STATE_UNSPECIFIED
                         - ACTIVE
                         - DELETED
                     type: string
-                    description: The existence of a database on latest sync.
+                    description: The existence of a database.
                     format: enum
                 successfulSyncTime:
                     readOnly: true
@@ -9587,6 +9177,12 @@ components:
                     format: date-time
                 backupAvailable:
                     type: boolean
+                datashare:
+                    type: boolean
+                secrets:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Secret'
             description: DatabaseMetadata is the metadata for databases.
         DatabaseSchema:
             type: object
@@ -10168,18 +9764,6 @@ components:
         Instance:
             type: object
             properties:
-                name:
-                    type: string
-                    description: |-
-                        The name of the instance.
-                         Format: instances/{instance}
-                state:
-                    enum:
-                        - STATE_UNSPECIFIED
-                        - ACTIVE
-                        - DELETED
-                    type: string
-                    format: enum
                 title:
                     type: string
                 engine:
@@ -10213,8 +9797,9 @@ components:
                         - COSMOSDB
                     type: string
                     format: enum
-                engineVersion:
-                    readOnly: true
+                activation:
+                    type: boolean
+                version:
                     type: string
                 externalLink:
                     type: string
@@ -10222,23 +9807,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/DataSource'
-                environment:
-                    type: string
-                    description: |-
-                        The environment resource.
-                         Format: environments/prod where prod is the environment resource ID.
-                activation:
-                    type: boolean
-                options:
-                    $ref: '#/components/schemas/InstanceOptions'
-                roles:
-                    readOnly: true
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/InstanceRole'
-        InstanceOptions:
-            type: object
-            properties:
                 syncInterval:
                     pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
                     type: string
@@ -10256,7 +9824,20 @@ components:
                     description: |-
                         Enable sync for following databases.
                          Default empty, means sync all schemas & databases.
-            description: InstanceOptions is the option for instances.
+                mysqlLowerCaseTableNames:
+                    type: integer
+                    description: |-
+                        The lower_case_table_names config for MySQL instances.
+                         It is used to determine whether the table names and database names are case sensitive.
+                    format: int32
+                lastSyncTime:
+                    type: string
+                    format: date-time
+                roles:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/InstanceRole'
+            description: Instance is the proto for instances.
         InstanceResource:
             type: object
             properties:
@@ -10417,7 +9998,6 @@ components:
                     description: |-
                         The releasers of the pending stage of the issue rollout, judging
                          from the rollout policy.
-                         If the policy is auto rollout, the releasers are the project owners and the issue creator.
                          Format:
                          - roles/workspaceOwner
                          - roles/workspaceDBA
@@ -11071,40 +10651,6 @@ components:
                     description: |-
                         A token, which can be sent as `page_token` to retrieve the next page.
                          If this field is omitted, there are no subsequent pages.
-        ListVCSConnectorsInProviderResponse:
-            type: object
-            properties:
-                vcsConnectors:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/VCSConnector'
-                    description: The vcsConnectors from the specified request.
-        ListVCSConnectorsResponse:
-            type: object
-            properties:
-                vcsConnectors:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/VCSConnector'
-                    description: The vcsConnectors from the specified request.
-                nextPageToken:
-                    type: string
-                    description: |-
-                        A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
-        ListVCSProvidersResponse:
-            type: object
-            properties:
-                vcsProviders:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/VCSProvider'
-                    description: The list of vcs providers.
-                nextPageToken:
-                    type: string
-                    description: |-
-                        Not used. A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
         LoginRequest:
             type: object
             properties:
@@ -11378,8 +10924,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Plan_Step'
-                vcsSource:
-                    $ref: '#/components/schemas/Plan_VCSSource'
                 creator:
                     readOnly: true
                     type: string
@@ -11504,7 +11048,7 @@ components:
                 schemaVersion:
                     type: string
                     description: |-
-                        schema_version is parsed from VCS file name.
+                        schema_version is parsed from file name.
                          It is automatically generated in the UI workflow.
                 ghostFlags:
                     type: object
@@ -11550,11 +11094,6 @@ components:
                     description: |-
                         The environment resource.
                          Format: environments/prod where prod is the environment resource ID.
-                labels:
-                    type: object
-                    additionalProperties:
-                        type: string
-                    description: labels of the database.
         Plan_ExportDataConfig:
             type: object
             properties:
@@ -11601,13 +11140,6 @@ components:
                 id:
                     type: string
                     description: A UUID4 string that uniquely identifies the Spec.
-                dependsOnSpecs:
-                    type: array
-                    items:
-                        type: string
-                    description: |-
-                        IDs of the specs that this spec depends on.
-                         Must be a subset of the specs in the same step.
                 specReleaseSource:
                     $ref: '#/components/schemas/Plan_SpecReleaseSource'
                 createDatabaseConfig:
@@ -11633,26 +11165,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Plan_Spec'
-        Plan_VCSSource:
-            type: object
-            properties:
-                vcsType:
-                    enum:
-                        - VCS_TYPE_UNSPECIFIED
-                        - GITHUB
-                        - GITLAB
-                        - BITBUCKET
-                        - AZURE_DEVOPS
-                    type: string
-                    format: enum
-                vcsConnector:
-                    type: string
-                    description: |-
-                        Optional.
-                         If present, we will update the pull request for rollout status.
-                         Format: projects/{project-ID}/vcsConnectors/{vcs-connector}
-                pullRequestUrl:
-                    type: string
         Policy:
             type: object
             properties:
@@ -11679,6 +11191,7 @@ components:
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_EXPORT
+                        - DATA_QUERY
                     type: string
                     format: enum
                 rolloutPolicy:
@@ -11699,6 +11212,8 @@ components:
                     $ref: '#/components/schemas/DataSourceQueryPolicy'
                 exportDataPolicy:
                     $ref: '#/components/schemas/ExportDataPolicy'
+                queryDataPolicy:
+                    $ref: '#/components/schemas/QueryDataPolicy'
                 enforce:
                     type: boolean
                 resourceType:
@@ -11947,6 +11462,14 @@ components:
                 allowSelfApproval:
                     type: boolean
                     description: Whether to allow the issue creator to self-approve the issue.
+        QueryDataPolicy:
+            type: object
+            properties:
+                timeout:
+                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
+                    type: string
+                    description: The query timeout duration.
+            description: QueryDataPolicy is the policy configuration for querying data.
         QueryHistory:
             type: object
             properties:
@@ -12013,10 +11536,6 @@ components:
                     type: integer
                     description: The maximum number of rows to return.
                     format: int32
-                timeout:
-                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
-                    type: string
-                    description: The timeout for the request.
                 dataSourceId:
                     type: string
                     description: |-
@@ -13112,6 +12631,9 @@ components:
                 showDeleted:
                     type: boolean
                     description: Show deleted projects if specified.
+                query:
+                    type: string
+                    description: Filter the project title or resource id by query.
         SearchProjectsResponse:
             type: object
             properties:
@@ -13164,24 +12686,6 @@ components:
                         A token to retrieve next page of history.
                          Pass this value in the page_token field in the subsequent call to
                          `ListQueryHistory` method to retrieve the next page of history.
-        SearchVCSProviderRepositoriesRequest:
-            required:
-                - name
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: |-
-                        The name of the vcs provider to retrieve the vcs provider repositories.
-                         Format: vcsProviders/{vcsProvider}
-        SearchVCSProviderRepositoriesResponse:
-            type: object
-            properties:
-                repositories:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/VCSRepository'
-                    description: The list of repositories in vcs provider.
         SearchWorksheetsRequest:
             type: object
             properties:
@@ -13226,34 +12730,17 @@ components:
                         Not used. A token, which can be sent as `page_token` to retrieve the next page.
                          If this field is omitted, there are no subsequent pages.
         Secret:
-            required:
-                - name
             type: object
             properties:
                 name:
                     type: string
-                    description: |-
-                        name is the unique name of the secret, which is specified by the client.
-                         Format:
-                         instances/{instance}/databases/{database}/secrets/{secret}
-                createdTime:
-                    readOnly: true
-                    type: string
-                    description: Not used. The timestamp when the secret resource was created initially.
-                    format: date-time
-                updatedTime:
-                    readOnly: true
-                    type: string
-                    description: Not used. The timestamp when the secret resource was updated.
-                    format: date-time
+                    description: The name is the name of the secret.
                 value:
-                    writeOnly: true
                     type: string
-                    description: The value of the secret.
+                    description: The value is the value of the secret.
                 description:
                     type: string
-                    description: The description of the secret.
-            description: Secret is the secret of the database now.
+                    description: The description is the description of the secret.
         SemanticTypeSetting:
             type: object
             properties:
@@ -13882,11 +13369,6 @@ components:
                         - DATABASE_DATA_EXPORT
                     type: string
                     format: enum
-                dependsOnTasks:
-                    type: array
-                    items:
-                        type: string
-                    description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}'
                 target:
                     type: string
                     description: |-
@@ -14155,10 +13637,6 @@ components:
                     type: string
                 environment:
                     type: string
-                labels:
-                    type: object
-                    additionalProperties:
-                        type: string
         Task_DatabaseDataExport:
             type: object
             properties:
@@ -14434,103 +13912,6 @@ components:
                 source:
                     type: string
                     description: source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
-        VCSConnector:
-            type: object
-            properties:
-                title:
-                    type: string
-                    description: The title or display name of the VCS connector.
-                fullPath:
-                    type: string
-                    description: |-
-                        Full path from the corresponding VCS provider.
-                         For GitLab, this is the project full path. e.g. group1/project-1
-                webUrl:
-                    type: string
-                    description: |-
-                        Web url from the corresponding VCS provider.
-                         For GitLab, this is the project web url. e.g. https://gitlab.example.com/group1/project-1
-                branch:
-                    type: string
-                    description: Branch to listen to.
-                baseDirectory:
-                    type: string
-                    description: Base working directory we are interested.
-                externalId:
-                    type: string
-                    description: |-
-                        Repository id from the corresponding VCS provider.
-                         For GitLab, this is the project id. e.g. 123
-                externalWebhookId:
-                    type: string
-                    description: |-
-                        Push webhook id from the corresponding VCS provider.
-                         For GitLab, this is the project webhook id. e.g. 123
-                webhookSecretToken:
-                    type: string
-                    description: For GitLab, webhook request contains this in the 'X-Gitlab-Token" header and we compare it with the one stored in db to validate it sends to the expected endpoint.
-                databaseGroup:
-                    type: string
-                    description: |-
-                        Apply changes to the database group. Optional, if not set, will apply changes to all databases in the project.
-                         Format: projects/{project}/databaseGroups/{databaseGroup}
-        VCSProvider:
-            required:
-                - title
-                - type
-                - url
-            type: object
-            properties:
-                name:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The name of the vcs provider.
-                         Format: vcsProviders/{vcsProvider}
-                title:
-                    type: string
-                    description: The title of the vcs provider. It is used to display in the UI. Specified by the client.
-                type:
-                    enum:
-                        - VCS_TYPE_UNSPECIFIED
-                        - GITHUB
-                        - GITLAB
-                        - BITBUCKET
-                        - AZURE_DEVOPS
-                    type: string
-                    format: enum
-                url:
-                    type: string
-                    description: |-
-                        The url of the vcs provider. Specified by the client.
-                         For example: github.com, gitlab.com, gitlab.bytebase.com.
-                accessToken:
-                    writeOnly: true
-                    type: string
-                    description: The access token of the vcs provider.
-        VCSRepository:
-            type: object
-            properties:
-                id:
-                    type: string
-                    description: |-
-                        The id of the repository in vcs provider.
-                         e.g. In GitLab, this is the corresponding project id. e.g. 123
-                title:
-                    type: string
-                    description: |-
-                        The title of the repository in vcs provider.
-                         e.g. sample-project
-                fullPath:
-                    type: string
-                    description: |-
-                        The full_path of the repository in vcs provider.
-                         e.g. bytebase/sample-project
-                webUrl:
-                    type: string
-                    description: |-
-                        Web url of the repository in vcs provider.
-                         e.g. http://gitlab.bytebase.com/bytebase/sample-project
         Value:
             type: object
             properties:
@@ -14577,14 +13958,13 @@ components:
                 type:
                     enum:
                         - TYPE_UNSPECIFIED
-                        - TYPE_SLACK
-                        - TYPE_DISCORD
-                        - TYPE_TEAMS
-                        - TYPE_DINGTALK
-                        - TYPE_FEISHU
-                        - TYPE_WECOM
-                        - TYPE_CUSTOM
-                        - TYPE_LARK
+                        - SLACK
+                        - DISCORD
+                        - TEAMS
+                        - DINGTALK
+                        - FEISHU
+                        - WECOM
+                        - LARK
                     type: string
                     description: type is the type of the webhook.
                     format: enum
@@ -14740,12 +14120,7 @@ components:
             properties:
                 externalUrl:
                     type: string
-                    description: |-
-                        The URL user visits Bytebase.
-
-                         The external URL is used for:
-                         1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend.
-                         2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend.
+                    description: The external URL is used for sso authentication callback.
                 disallowSignup:
                     type: boolean
                     description: Disallow self-service signup, users can only be invited by the owner.
@@ -14757,9 +14132,6 @@ components:
                     items:
                         type: string
                     description: outbound_ip_list is the outbound IP for Bytebase instance in SaaS mode.
-                gitopsWebhookUrl:
-                    type: string
-                    description: The webhook URL for the GitOps workflow.
                 tokenDuration:
                     pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
                     type: string
@@ -14844,7 +14216,5 @@ tags:
     - name: SheetService
     - name: SubscriptionService
     - name: UserService
-    - name: VCSConnectorService
-    - name: VCSProviderService
     - name: WorksheetService
     - name: WorkspaceService

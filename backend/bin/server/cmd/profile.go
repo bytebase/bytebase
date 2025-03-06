@@ -35,7 +35,6 @@ func getBaseProfile(dataDir string) *config.Profile {
 		PgURL:                flags.pgURL,
 		DeployID:             uuid.NewString()[:8],
 		LastActiveTs:         time.Now().Unix(),
-		Lsp:                  flags.lsp,
 		DevelopmentVersioned: flags.developmentVersioned,
 	}
 }

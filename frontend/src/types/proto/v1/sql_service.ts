@@ -36,10 +36,6 @@ export interface AdminExecuteRequest {
   statement: string;
   /** The maximum number of rows to return. */
   limit: number;
-  /** The timeout for the request. */
-  timeout:
-    | Duration
-    | undefined;
   /**
    * The default schema to execute the statement. Equals to the current schema
    * in Oracle and search path in Postgres.
@@ -69,10 +65,6 @@ export interface QueryRequest {
   statement: string;
   /** The maximum number of rows to return. */
   limit: number;
-  /** The timeout for the request. */
-  timeout?:
-    | Duration
-    | undefined;
   /**
    * The id of data source.
    * It is used for querying admin data source even if the instance has
@@ -658,7 +650,7 @@ export function queryHistory_TypeToNumber(object: QueryHistory_Type): number {
 }
 
 function createBaseAdminExecuteRequest(): AdminExecuteRequest {
-  return { name: "", statement: "", limit: 0, timeout: undefined, schema: undefined, container: undefined };
+  return { name: "", statement: "", limit: 0, schema: undefined, container: undefined };
 }
 
 export const AdminExecuteRequest: MessageFns<AdminExecuteRequest> = {
@@ -671,9 +663,6 @@ export const AdminExecuteRequest: MessageFns<AdminExecuteRequest> = {
     }
     if (message.limit !== 0) {
       writer.uint32(32).int32(message.limit);
-    }
-    if (message.timeout !== undefined) {
-      Duration.encode(message.timeout, writer.uint32(42).fork()).join();
     }
     if (message.schema !== undefined) {
       writer.uint32(50).string(message.schema);
@@ -715,14 +704,6 @@ export const AdminExecuteRequest: MessageFns<AdminExecuteRequest> = {
           message.limit = reader.int32();
           continue;
         }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.timeout = Duration.decode(reader, reader.uint32());
-          continue;
-        }
         case 6: {
           if (tag !== 50) {
             break;
@@ -753,7 +734,6 @@ export const AdminExecuteRequest: MessageFns<AdminExecuteRequest> = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
       limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
-      timeout: isSet(object.timeout) ? Duration.fromJSON(object.timeout) : undefined,
       schema: isSet(object.schema) ? globalThis.String(object.schema) : undefined,
       container: isSet(object.container) ? globalThis.String(object.container) : undefined,
     };
@@ -769,9 +749,6 @@ export const AdminExecuteRequest: MessageFns<AdminExecuteRequest> = {
     }
     if (message.limit !== 0) {
       obj.limit = Math.round(message.limit);
-    }
-    if (message.timeout !== undefined) {
-      obj.timeout = Duration.toJSON(message.timeout);
     }
     if (message.schema !== undefined) {
       obj.schema = message.schema;
@@ -790,9 +767,6 @@ export const AdminExecuteRequest: MessageFns<AdminExecuteRequest> = {
     message.name = object.name ?? "";
     message.statement = object.statement ?? "";
     message.limit = object.limit ?? 0;
-    message.timeout = (object.timeout !== undefined && object.timeout !== null)
-      ? Duration.fromPartial(object.timeout)
-      : undefined;
     message.schema = object.schema ?? undefined;
     message.container = object.container ?? undefined;
     return message;
@@ -864,7 +838,6 @@ function createBaseQueryRequest(): QueryRequest {
     name: "",
     statement: "",
     limit: 0,
-    timeout: undefined,
     dataSourceId: "",
     explain: false,
     schema: undefined,
@@ -883,9 +856,6 @@ export const QueryRequest: MessageFns<QueryRequest> = {
     }
     if (message.limit !== 0) {
       writer.uint32(32).int32(message.limit);
-    }
-    if (message.timeout !== undefined) {
-      Duration.encode(message.timeout, writer.uint32(42).fork()).join();
     }
     if (message.dataSourceId !== "") {
       writer.uint32(50).string(message.dataSourceId);
@@ -934,14 +904,6 @@ export const QueryRequest: MessageFns<QueryRequest> = {
           }
 
           message.limit = reader.int32();
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.timeout = Duration.decode(reader, reader.uint32());
           continue;
         }
         case 6: {
@@ -998,7 +960,6 @@ export const QueryRequest: MessageFns<QueryRequest> = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
       limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
-      timeout: isSet(object.timeout) ? Duration.fromJSON(object.timeout) : undefined,
       dataSourceId: isSet(object.dataSourceId) ? globalThis.String(object.dataSourceId) : "",
       explain: isSet(object.explain) ? globalThis.Boolean(object.explain) : false,
       schema: isSet(object.schema) ? globalThis.String(object.schema) : undefined,
@@ -1017,9 +978,6 @@ export const QueryRequest: MessageFns<QueryRequest> = {
     }
     if (message.limit !== 0) {
       obj.limit = Math.round(message.limit);
-    }
-    if (message.timeout !== undefined) {
-      obj.timeout = Duration.toJSON(message.timeout);
     }
     if (message.dataSourceId !== "") {
       obj.dataSourceId = message.dataSourceId;
@@ -1047,9 +1005,6 @@ export const QueryRequest: MessageFns<QueryRequest> = {
     message.name = object.name ?? "";
     message.statement = object.statement ?? "";
     message.limit = object.limit ?? 0;
-    message.timeout = (object.timeout !== undefined && object.timeout !== null)
-      ? Duration.fromPartial(object.timeout)
-      : undefined;
     message.dataSourceId = object.dataSourceId ?? "";
     message.explain = object.explain ?? false;
     message.schema = object.schema ?? undefined;

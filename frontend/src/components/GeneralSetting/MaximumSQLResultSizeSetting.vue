@@ -12,6 +12,7 @@
       <NInputNumber
         :value="maximumSQLResultLimit"
         :disabled="!allowEdit"
+        class="w-60"
         :min="1"
         :precision="0"
         @update:value="handleInput"

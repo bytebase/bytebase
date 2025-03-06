@@ -107,6 +107,7 @@
 </template>
 
 <script setup lang="ts">
+import { computedAsync } from "@vueuse/core";
 import { XIcon, CheckCircleIcon } from "lucide-vue-next";
 import type { Ref } from "vue";
 import { computed, unref, watchEffect } from "vue";
@@ -156,9 +157,10 @@ const show = computed(() => {
   return !uiStateStore.getIntroStateByKey("hidden");
 });
 
-const sampleProject = computed(() => {
-  const project = projectStore.getProjectByName(
-    `${projectNamePrefix}${SAMPLE_PROJECT_NAME}`
+const sampleProject = computedAsync(async () => {
+  const project = await projectStore.getOrFetchProjectByName(
+    `${projectNamePrefix}${SAMPLE_PROJECT_NAME}`,
+    true /* silent */
   );
   if (!isValidProjectName(project.name)) {
     return;

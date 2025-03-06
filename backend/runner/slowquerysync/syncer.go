@@ -15,7 +15,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/store"
@@ -116,13 +115,13 @@ func (s *Syncer) syncInstanceSlowQuery(ctx context.Context, instance *store.Inst
 		return nil
 	}
 
-	switch instance.Engine {
+	switch instance.Metadata.GetEngine() {
 	case storepb.Engine_MYSQL:
 		return s.syncMySQLSlowQuery(ctx, instance)
 	case storepb.Engine_POSTGRES:
 		return s.syncPostgreSQLSlowQuery(ctx, instance)
 	default:
-		return errors.Errorf("unsupported database engine: %s", instance.Engine)
+		return errors.Errorf("unsupported database engine: %s", instance.Metadata.GetEngine())
 	}
 }
 
@@ -145,7 +144,7 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 
 	var enabledDatabase *store.DatabaseMessage
 	for _, database := range databases {
-		if database.SyncState != api.OK {
+		if database.Deleted {
 			continue
 		}
 		if pgparser.IsSystemDatabase(database.DatabaseName) {

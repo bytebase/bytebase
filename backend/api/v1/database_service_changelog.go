@@ -154,7 +154,7 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, request *v1pb.GetCha
 		return nil, status.Errorf(codes.Internal, "failed to convert changelog, error: %v", err)
 	}
 	if request.SdlFormat {
-		switch instance.Engine {
+		switch instance.Metadata.GetEngine() {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			sdlSchema, err := transform.SchemaTransform(storepb.Engine_MYSQL, converted.Schema)
 			if err != nil {

@@ -40,7 +40,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	return &db.InstanceMetadata{
 		Version:   version,
 		Databases: []*storepb.DatabaseSchemaMetadata{dbMetadata},
-		Metadata: &storepb.InstanceMetadata{
+		Metadata: &storepb.Instance{
 			Roles: instanceRoles,
 		},
 	}, nil

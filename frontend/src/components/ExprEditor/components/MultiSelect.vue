@@ -1,15 +1,19 @@
 <template>
   <NSelect
     :value="value"
-    :options="options"
+    :remote="optionConfig.remote"
+    :options="state.rawOptionList"
+    :loading="state.loading"
     :multiple="true"
     :filterable="true"
     :consistent-menu-width="false"
+    :clear-filter-after-select="false"
     :placeholder="$t('cel.condition.select-value')"
     :disabled="!allowAdmin"
     max-tag-count="responsive"
     size="small"
     style="min-width: 12rem; width: auto; max-width: 20rem; overflow-x: hidden"
+    @search="handleSearch"
     @update:value="$emit('update:value', $event)"
   >
     <template #action>
@@ -23,11 +27,18 @@
 </template>
 
 <script lang="ts" setup>
+import { useDebounceFn } from "@vueuse/core";
 import { NCheckbox, NSelect } from "naive-ui";
-import { computed, toRef, watch } from "vue";
+import type { SelectOption } from "naive-ui";
+import { toRef, watch, reactive, computed, watchEffect } from "vue";
 import { type ConditionExpr } from "@/plugins/cel";
 import { useExprEditorContext } from "../context";
 import { useSelectOptions } from "./common";
+
+interface LocalState {
+  loading: boolean;
+  rawOptionList: SelectOption[];
+}
 
 const props = defineProps<{
   value: string[] | number[];
@@ -40,14 +51,22 @@ const emit = defineEmits<{
 
 const context = useExprEditorContext();
 const { allowAdmin } = context;
+const state = reactive<LocalState>({
+  loading: false,
+  rawOptionList: [],
+});
 
-const options = useSelectOptions(toRef(props, "expr"));
+const optionConfig = useSelectOptions(toRef(props, "expr"));
+
+watchEffect(() => {
+  state.rawOptionList = [...optionConfig.value.options];
+});
 
 const checkAllState = computed(() => {
   const selected = new Set<any>(props.value);
   const checked =
     selected.size > 0 &&
-    options.value.every((opt) => {
+    state.rawOptionList.every((opt) => {
       return selected.has(opt.value);
     });
   const indeterminate = props.value.length > 0 && !checked;
@@ -61,7 +80,7 @@ const toggleCheckAll = (on: boolean) => {
   if (on) {
     emit(
       "update:value",
-      options.value.map((opt) => opt.value as string)
+      state.rawOptionList.map((opt) => opt.value as string)
     );
   } else {
     emit("update:value", []);
@@ -69,9 +88,9 @@ const toggleCheckAll = (on: boolean) => {
 };
 
 watch(
-  [options, () => props.value],
+  [state.rawOptionList, () => props.value],
   () => {
-    const values = new Set(options.value.map((opt) => opt.value));
+    const values = new Set(state.rawOptionList.map((opt) => opt.value));
     const filtered = (props.value as any[]).filter((v) => values.has(v));
     if (filtered.length !== props.value.length) {
       // Some values are not suitable for the select options.
@@ -80,4 +99,19 @@ watch(
   },
   { immediate: true }
 );
+
+const handleSearch = useDebounceFn(async (search: string) => {
+  if (!search || !optionConfig.value.search) {
+    state.rawOptionList = [...optionConfig.value.options];
+    return;
+  }
+
+  state.loading = true;
+  try {
+    const options = await optionConfig.value.search(search);
+    state.rawOptionList = [...options];
+  } finally {
+    state.loading = false;
+  }
+}, 500);
 </script>

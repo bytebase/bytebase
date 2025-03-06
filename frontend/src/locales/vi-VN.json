@@ -65,6 +65,7 @@
       "self": "Vai trò"
     },
     "revert": "Hoàn tác",
+    "confirm-to-revert": "Xác nhận hoàn tác chỉnh sửa của bạn?",
     "apply": "Áp dụng",
     "reorder": "Sắp xếp lại",
     "id": "ID",
@@ -98,16 +99,12 @@
     "detail": "Chi tiết",
     "type": "Loại",
     "language": "Ngôn ngữ",
-    "repository": "Kho lưu trữ",
     "change": "Thay đổi",
-    "branch": "Nhánh",
     "sensitive-placeholder": "Nhạy cảm - Chỉ ghi",
     "enabled": "Đã kích hoạt",
     "default": "Mặc định",
-    "gitops": "GitOps",
     "restore": "Khôi phục",
     "detailed-guide": "Hướng dẫn chi tiết",
-    "workspace": "Không gian làm việc",
     "confirm": "Xác nhận",
     "learn-more": "Tìm hiểu thêm",
     "troubleshoot": "Khắc phục sự cố",
@@ -128,7 +125,6 @@
     "read-only": "Chỉ đọc",
     "all": "Tất cả",
     "recent": "Gần đây",
-    "deployment-config": "Cấu hình triển khai",
     "ok": "OK",
     "share": "Chia sẻ",
     "or": "hoặc",
@@ -337,7 +333,6 @@
       "iam-and-admin": "IAM & Quản trị",
       "im-integration": "Tích hợp",
       "sso": "SSO",
-      "gitops": "GitOps",
       "subscription": "Gói đăng ký",
       "global-masking": "Che giấu toàn cục",
       "data-classification": "Phân loại dữ liệu",
@@ -515,11 +510,6 @@
           "self": "URL bên ngoài",
           "description": "URL bên ngoài mà người dùng truy cập Bytebase, phải bắt đầu bằng http:// hoặc https://."
         },
-        "gitops-webhook-url": {
-          "self": "URL Webhook GitOps",
-          "description": "URL được sử dụng để gửi webhook GitOps đến phiên bản Bytebase.",
-          "default-to-external-url": "Mặc định là URL bên ngoài"
-        },
         "sign-in-frequency": {
           "self": "Tần suất đăng nhập",
           "description": "Tần suất đăng nhập xác định tần suất người dùng phải xác thực lại. Cập nhật cấu hình yêu cầu người dùng đăng nhập lại để thay đổi có hiệu lực.",
@@ -535,6 +525,13 @@
         "maximum-sql-result": {
           "self": "Kích thước kết quả SQL tối đa",
           "description": "Giới hạn kích thước kết quả truy vấn SQL đầu ra."
+        },
+        "query-data-policy": {
+          "timeout": {
+            "self": "Thời gian truy vấn tối đa",
+            "description": "Thời gian tối đa được phép chạy truy vấn trong SQL Editor.",
+            "no-time-limit": "Không giới hạn thời gian cho truy vấn khi đặt thành 0."
+          }
         },
         "domain-restriction": {
           "self": "Tên miền không gian làm việc",
@@ -987,7 +984,6 @@
     }
   },
   "alter-schema": {
-    "vcs-info": "VCS đã được bật. Chọn tùy chọn này sẽ điều hướng bạn đến kho lưu trữ Git tương ứng để bắt đầu quá trình thay đổi.",
     "no-databases-in-project": "Không có cơ sở dữ liệu nào trong dự án này. Nhấp vào Cơ sở dữ liệu mới hoặc Chuyển vào Cơ sở dữ liệu để thêm cơ sở dữ liệu."
   },
   "quick-action": {
@@ -1023,7 +1019,6 @@
     "streams": "Luồng",
     "tasks": "Tác vụ",
     "labels-for-resource": "Nhãn cho {resource}",
-    "last-successful-sync": "Đồng bộ thành công lần cuối",
     "failed-to-sync-schema-for-database-database-value-name": "Không đồng bộ hóa được lược đồ cho cơ sở dữ liệu '{0}'.",
     "successfully-synced-schema-for-database-database-value-name": "Đã đồng bộ hóa thành công lược đồ cho cơ sở dữ liệu '{0}'.",
     "start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ",
@@ -1152,9 +1147,16 @@
       "password-tip": "Bạn cũng có thể chỉ định điểm cuối quản lý bí mật bên ngoài",
       "google-iam": "Google Cloud SQL IAM",
       "aws-iam": "AWS RDS IAM",
+      "azure-iam": "Azure IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
       "external-secret-gcp": "GCP Secret Manager"
+    },
+    "iam-extension": {
+      "credential-source": "Credential Source",
+      "tenant-id": "Tenant ID",
+      "client-id": "Client ID",
+      "client-secret": "Client Secret"
     },
     "database-region": "Khu vực cơ sở dữ liệu",
     "external-secret-gcp": {
@@ -1363,7 +1365,6 @@
     "batch-action-disabled-for-unassigned": "Không thể {action} đối với cơ sở dữ liệu chưa được gán",
     "data-export-action-disabled": "Không thể xuất dữ liệu cho nhiều hơn một cơ sở dữ liệu",
     "successfully-transferred-databases": "Đã chuyển thành công cơ sở dữ liệu",
-    "gitops-enabled": "GitOps đã bật",
     "nullable": "Có thể null",
     "expression": "Biểu thức",
     "position": "Vị trí",
@@ -1479,34 +1480,6 @@
       }
     },
     "not-found": "Không tìm thấy cơ sở dữ liệu"
-  },
-  "repository": {
-    "our-webhook-link": "Webhook được tạo bởi Bytebase có thể được tìm thấy tại {webhookLink}.",
-    "branch-observe-file-change": "Nhánh mà Bytebase quan sát sự thay đổi tệp.",
-    "database-group-description": "Theo mặc định, các thay đổi sẽ được áp dụng cho tất cả cơ sở dữ liệu trong dự án. Ngoài ra, chúng có thể được áp dụng cho nhóm cơ sở dữ liệu.",
-    "base-directory": "Thư mục cơ sở",
-    "base-directory-description": "Thư mục gốc nơi Bytebase quan sát sự thay đổi tệp. Sử dụng \"/\" nếu các tệp được lưu trữ trong thư mục gốc của kho lưu trữ.",
-    "git-provider": "Nhà cung cấp Git",
-    "gitops-naming-format": "định dạng đặt tên",
-    "gitops-description-file-path": "Tập lệnh di chuyển cơ sở dữ liệu được lưu trữ trong {fullPath}. Để thực hiện thay đổi cơ sở dữ liệu, nhà phát triển sẽ tạo một tập lệnh di chuyển tuân theo {naming}.",
-    "gitops-description-branch": "Sau khi tập lệnh được phê duyệt và hợp nhất vào nhánh {branch}, Bytebase sẽ tự động tạo vấn đề để áp dụng thay đổi cơ sở dữ liệu.",
-    "setup-wizard-guide": "Nếu bạn gặp lỗi trong quá trình này, vui lòng tham khảo {guide} của chúng tôi",
-    "add-git-provider": "Thêm nhà cung cấp Git",
-    "choose-git-provider": "Chọn nhà cung cấp Git",
-    "select-repository": "Chọn kho lưu trữ",
-    "configure-deploy": "Cấu hình triển khai",
-    "choose-git-provider-description": "Chọn nhà cung cấp Git nơi lưu trữ tập lệnh lược đồ cơ sở dữ liệu (.sql) của bạn. Khi bạn đẩy tập lệnh đã thay đổi vào kho lưu trữ Git, Bytebase sẽ tự động tạo một quy trình để áp dụng thay đổi lược đồ cho cơ sở dữ liệu.",
-    "choose-git-provider-visit-workspace": "Truy cập cài đặt {workspace} để thêm nhiều nhà cung cấp Git.",
-    "choose-git-provider-contact-workspace-admin": "Liên hệ với quản trị viên không gian làm việc Bytebase của bạn nếu bạn muốn các nhà cung cấp Git khác xuất hiện ở đây. Bytebase hiện hỗ trợ GitLab EE/CE tự lưu trữ và có kế hoạch thêm GitLab.com và GitHub Enterprise sau này.",
-    "select-repository-attention-gitlab": "Bytebase chỉ liệt kê các dự án GitLab cấp cho bạn ít nhất vai trò 'Maintainer', cho phép định cấu hình webhook dự án để quan sát sự kiện đẩy mã.",
-    "select-repository-attention-github": "Bytebase chỉ liệt kê các kho lưu trữ GitHub mà bạn có quyền quản trị, cho phép định cấu hình webhook kho lưu trữ để quan sát sự kiện đẩy mã.",
-    "select-repository-attention-bitbucket": "Bytebase chỉ liệt kê các kho lưu trữ Bitbucket mà bạn có quyền quản trị, cho phép định cấu hình webhook kho lưu trữ để quan sát sự kiện đẩy mã.",
-    "select-repository-attention-azure-devops": "Bytebase chỉ liệt kê các kho lưu trữ Azure DevOps thuộc tổ chức mà quyền truy cập ứng dụng của bên thứ ba thông qua OAuth được cấp. Nếu bạn không thấy kho lưu trữ bạn muốn, vui lòng truy cập Tổ chức -> Cài đặt tổ chức -> Chính sách để bật quyền truy cập ứng dụng của bên thứ ba.",
-    "select-repository-search": "Tìm kiếm kho lưu trữ",
-    "linked": "Kho lưu trữ được liên kết"
-  },
-  "workflow": {
-    "gitops-workflow-description": "Tập lệnh di chuyển cơ sở dữ liệu được lưu trữ trong kho lưu trữ git. Để thực hiện thay đổi cơ sở dữ liệu, nhà phát triển sẽ tạo một tập lệnh di chuyển và gửi để xem xét trong VCS tương ứng như GitLab. Sau khi tập lệnh được phê duyệt và hợp nhất vào nhánh đã định cấu hình, Bytebase sẽ tự động khởi động tác vụ để áp dụng thay đổi cơ sở dữ liệu."
   },
   "anomaly": {
     "attention-desc": "Bytebase định kỳ phát hiện các bất thường dựa trên khoảng thời gian quét phiên bản và hiển thị các phát hiện ở đây.",
@@ -1673,78 +1646,10 @@
     },
     "select": "Chọn Dự án",
     "all": "Tất cả dự án",
-    "gitops-connector": {
-      "add": "Thêm trình kết nối GitOps",
-      "delete": "Xóa trình kết nối GitOps",
-      "update-success": "Đã cập nhật thành công trình kết nối GitOps",
-      "create-success": "Đã tạo thành công trình kết nối GitOps",
-      "delete-success": "Trình kết nối GitOps bị xóa"
-    },
     "masking-exemption": {
       "self": "Miễn trừ Che giấu",
       "grant-exemption": "Cấp Miễn trừ",
       "revoke-exemption-title": "Xóa cả miễn trừ che giấu xuất và truy vấn cho {member}?"
-    }
-  },
-  "gitops": {
-    "setting": {
-      "description": "Trong quy trình GitOps của Bytebase, các nhà phát triển lưu trữ tập lệnh di chuyển trong VCS. Yêu cầu kéo nhắc đánh giá SQL và những yêu cầu được hợp nhất bắt đầu kế hoạch di chuyển. Quản trị viên định cấu hình nhà cung cấp VCS, trong khi chủ sở hữu dự án thiết lập kết nối VCS trong các dự án.",
-      "add-git-provider": {
-        "self": "Thêm nhà cung cấp Git",
-        "description": "Trước khi bất kỳ dự án nào có thể bật quy trình GitOps, trước tiên Bytebase cần tích hợp với hệ thống kiểm soát phiên bản (VCS) tương ứng bằng cách đăng ký làm ứng dụng OAuth trong VCS đó.",
-        "gitlab-self-host": "GitLab Tự lưu trữ",
-        "github-self-host": "GitHub Tự lưu trữ",
-        "azure-devops-service": "Dịch vụ Azure DevOps",
-        "add-success": "Đã thêm thành công nhà cung cấp Git {vcs}",
-        "choose": "Chọn nhà cung cấp Git",
-        "basic-info": {
-          "gitlab-instance-url": "URL phiên bản GitLab",
-          "gitlab-instance-url-label": "URL phiên bản VCS. Đảm bảo phiên bản này và Bytebase có thể truy cập mạng từ nhau.",
-          "github-instance-url": "URL phiên bản GitHub",
-          "bitbucket-instance-url": "URL phiên bản Bitbucket",
-          "azure-instance-url": "URL phiên bản Azure DevOps",
-          "instance-url-error": "URL phiên bản phải bắt đầu bằng https:// hoặc http://",
-          "display-name": "Tên hiển thị",
-          "display-name-label": "Tên hiển thị tùy chọn để giúp xác định trong số các cấu hình khác nhau sử dụng cùng một nhà cung cấp Git."
-        },
-        "access-token": {
-          "personal-access-token": "mã thông báo truy cập cá nhân",
-          "github-fine-grained-token": "mã thông báo truy cập cá nhân chi tiết",
-          "gitlab-personal-access-token": "Tạo một người dùng dịch vụ chuyên dụng và tạo một {token} với vai trò người bảo trì và ít nhất các quyền sau cho nhóm hoặc dự án sẽ được quản lý. Bạn có thể tạo mã thông báo truy cập dự án để quản lý một dự án duy nhất hoặc tạo mã thông báo truy cập nhóm để quản lý tất cả các dự án trong nhóm.",
-          "github-personal-access-token": "Tạo một tài khoản dịch vụ chuyên dụng và tạo một {token} với vai trò thành viên cho tổ chức hoặc tất cả các dự án cần quản lý.",
-          "bitbucket-app-access-token": "Tạo một người dùng dịch vụ cụ thể và tạo {app_password} với ít nhất các quyền sau cho các tổ chức, dự án hoặc kho lưu trữ có liên quan để quản lý.",
-          "bitbucket-app-access-token-tips": "Chèn '{secret}' bên dưới.",
-          "bitbucket-app-password": "mật khẩu ứng dụng",
-          "azure-devops-personal-access-token": "Tạo một người dùng dịch vụ chuyên dụng và tạo {token} với vai trò thành viên cho tất cả các tổ chức có thể truy cập với các phạm vi sau. Trường 'Tổ chức' phải được đặt thành 'Tất cả các tổ chức có thể truy cập'."
-        }
-      },
-      "git-provider": {
-        "delete-forbidden": "Để xóa nhà cung cấp này, hãy hủy liên kết tất cả các kho lưu trữ trước.",
-        "delete": "Xóa nhà cung cấp Git này",
-        "delete-confirm": "Xóa nhà cung cấp Git \"{name}\"?"
-      }
-    }
-  },
-  "deployment-config": {
-    "add-selector": "Thêm bộ chọn",
-    "update-success": "Đã cập nhật thành công cấu hình triển khai.",
-    "this-is-example-deployment-config": "Đây là ví dụ cấu hình triển khai. Bạn cần chỉnh sửa và lưu nó.",
-    "add-stage": "Thêm giai đoạn",
-    "confirm-to-revert": "Xác nhận hoàn tác chỉnh sửa của bạn?",
-    "name-placeholder": "Tên giai đoạn...",
-    "error": {
-      "at-least-one-stage": "Ít nhất 1 giai đoạn",
-      "stage-name-required": "Tên sân khấu là bắt buộc",
-      "at-least-one-selector": "Ít nhất 1 bộ chọn ở mỗi giai đoạn",
-      "env-in-selector-required": "\"Môi trường\" là bắt buộc trong mỗi giai đoạn",
-      "env-selector-must-has-one-value": "\"ID môi trường\" phải có đúng một giá trị",
-      "key-required": "Chìa khóa là bắt buộc",
-      "values-required": "Các giá trị được yêu cầu"
-    },
-    "matched-databases": {
-      "all": "Tất cả cơ sở dữ liệu phù hợp",
-      "n": "{n} cơ sở dữ liệu phù hợp | {n} cơ sở dữ liệu phù hợp",
-      "show-more": "Hiển thị thêm"
     }
   },
   "data-source": {
@@ -1806,7 +1711,6 @@
     "to-enable-admin-mode": "để bật chế độ quản trị",
     "notify-empty-statement": "Vui lòng nhập câu lệnh SQL của bạn vào trình soạn thảo",
     "goto-edit-schema-hint": "Vui lòng chọn một kết nối cơ sở dữ liệu từ đầu trình soạn thảo",
-    "notify-invalid-sql-statement": "Câu lệnh SQL không hợp lệ.",
     "can-not-execute-query": "Không thể thực hiện truy vấn khi đang tải dữ liệu.",
     "rows": "dòng | dòng",
     "vertical-display": "Hiển thị dọc",
@@ -2033,11 +1937,7 @@
       "key-necessary": "Khóa là bắt buộc",
       "value-necessary": "Giá trị là bắt buộc",
       "key-duplicated": "Khóa trùng lặp",
-      "max-value-length-exceeded": "Độ dài giá trị không được vượt quá {length} ký tự",
-      "x-is-reserved-key": "\"{key}\" là một khóa hệ thống dành riêng"
-    },
-    "placeholder": {
-      "select-values": "Chọn giá trị..."
+      "max-value-length-exceeded": "Độ dài giá trị không được vượt quá {length} ký tự"
     },
     "add-label": "Thêm nhãn",
     "filter-by-label": "Lọc theo nhãn"
@@ -2571,7 +2471,6 @@
     }
   },
   "database-group": {
-    "self": "Nhóm cơ sở dữ liệu",
     "create": "Nhóm cơ sở dữ liệu mới",
     "edit": "Chỉnh sửa nhóm cơ sở dữ liệu",
     "matched-database": "Cơ sở dữ liệu phù hợp",

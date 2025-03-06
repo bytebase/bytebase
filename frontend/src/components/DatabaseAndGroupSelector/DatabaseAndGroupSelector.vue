@@ -94,7 +94,7 @@ const databaseList = computed(() => {
     .databaseListByProject(props.project.name)
     .filter(
       (db) =>
-        db.syncState == State.ACTIVE && db.project !== DEFAULT_PROJECT_NAME
+        db.state == State.ACTIVE && db.project !== DEFAULT_PROJECT_NAME
     );
   return sortDatabaseV1List(list);
 });

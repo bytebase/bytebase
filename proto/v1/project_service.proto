@@ -161,14 +161,12 @@ message GetProjectRequest {
 }
 
 message ListProjectsRequest {
-  // Not used.
   // The maximum number of projects to return. The service may return fewer than
   // this value.
   // If unspecified, at most 10 projects will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 1;
 
-  // Not used.
   // A page token, received from a previous `ListProjects` call.
   // Provide this to retrieve the subsequent page.
   //
@@ -192,6 +190,9 @@ message ListProjectsResponse {
 message SearchProjectsRequest {
   // Show deleted projects if specified.
   bool show_deleted = 1;
+
+  // Filter the project title or resource id by query.
+  string query = 2;
 }
 
 message SearchProjectsResponse {
@@ -294,8 +295,6 @@ message Project {
   // The title or name of a project. It's not unique within the workspace.
   string title = 4;
 
-  Workflow workflow = 6;
-
   repeated Webhook webhooks = 11;
 
   string data_classification_config_id = 12;
@@ -323,12 +322,6 @@ message Project {
 
   // Whether to allow the issue creator to self-approve the issue.
   bool allow_self_approval = 21;
-}
-
-enum Workflow {
-  WORKFLOW_UNSPECIFIED = 0;
-  UI = 1;
-  VCS = 2;
 }
 
 message AddWebhookRequest {
@@ -385,14 +378,13 @@ message Webhook {
 
   enum Type {
     TYPE_UNSPECIFIED = 0;
-    TYPE_SLACK = 1;
-    TYPE_DISCORD = 2;
-    TYPE_TEAMS = 3;
-    TYPE_DINGTALK = 4;
-    TYPE_FEISHU = 5;
-    TYPE_WECOM = 6;
-    TYPE_CUSTOM = 7;
-    TYPE_LARK = 8;
+    SLACK = 1;
+    DISCORD = 2;
+    TEAMS = 3;
+    DINGTALK = 4;
+    FEISHU = 5;
+    WECOM = 6;
+    LARK = 8;
   }
   // type is the type of the webhook.
   Type type = 2 [(google.api.field_behavior) = REQUIRED];

@@ -22,7 +22,6 @@ type ProjectMessage struct {
 	Webhooks                   []*ProjectWebhookMessage
 	DataClassificationConfigID string
 	Setting                    *storepb.Project
-	VCSConnectorsCount         int
 	Deleted                    bool
 }
 
@@ -34,6 +33,9 @@ func (p *ProjectMessage) GetName() string {
 type FindProjectMessage struct {
 	ResourceID  *string
 	ShowDeleted bool
+	Limit       *int
+	Offset      *int
+	Query       *string
 }
 
 // UpdateProjectMessage is the message for updating a project.
@@ -240,25 +242,32 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, *v)
+	} else if v := find.Query; v != nil {
+		where = append(where, "(resource_id LIKE '%"+*v+"%' OR LOWER(name) LIKE '%"+strings.ToLower(*v)+"%')")
 	}
 	if !find.ShowDeleted {
 		where, args = append(where, fmt.Sprintf("deleted = $%d", len(args)+1)), append(args, false)
 	}
 
-	var projectMessages []*ProjectMessage
-	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	query := fmt.Sprintf(`
 		SELECT
 			resource_id,
 			name,
 			data_classification_config_id,
-			(SELECT COUNT(1) FROM vcs_connector WHERE project.resource_id = vcs_connector.project) AS connectors,
 			setting,
 			deleted
 		FROM project
 		WHERE %s
-		ORDER BY project.resource_id`, strings.Join(where, " AND ")),
-		args...,
-	)
+		ORDER BY project.resource_id`, strings.Join(where, " AND "))
+	if v := find.Limit; v != nil {
+		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		query += fmt.Sprintf(" OFFSET %d", *v)
+	}
+
+	var projectMessages []*ProjectMessage
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +280,6 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			&projectMessage.ResourceID,
 			&projectMessage.Title,
 			&projectMessage.DataClassificationConfigID,
-			&projectMessage.VCSConnectorsCount,
 			&payload,
 			&projectMessage.Deleted,
 		); err != nil {

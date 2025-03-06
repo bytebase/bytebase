@@ -1,3 +1,4 @@
+import { computedAsync } from "@vueuse/core";
 import Emittery from "emittery";
 import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref, watchEffect } from "vue";
@@ -53,14 +54,17 @@ export const provideChangelistDetailContext = () => {
   const route = useRoute();
   const projectV1Store = useProjectV1Store();
 
-  const project = computed(() => {
+  const project = computedAsync(async () => {
     const projectId = route.params.projectId as string;
     if (!projectId) {
       return unknownProject();
     }
 
-    return projectV1Store.getProjectByName(`${projectNamePrefix}${projectId}`);
-  });
+    const proj = await projectV1Store.getOrFetchProjectByName(
+      `${projectNamePrefix}${projectId}`
+    );
+    return proj;
+  }, unknownProject());
 
   const name = computed(() => {
     return `${project.value.name}/changelists/${route.params.changelistName}`;

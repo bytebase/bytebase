@@ -62,13 +62,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computedAsync } from "@vueuse/core";
 import { NAlert, NButton } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { parseSQL, isDDLStatement } from "@/components/MonacoEditor/sqlParser";
 import { EnvironmentV1Name } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
@@ -94,9 +92,6 @@ const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
-const DDLIssueTemplate = "bb.issue.database.schema.update";
-const DMLIssueTemplate = "bb.issue.database.data.update";
-
 const router = useRouter();
 const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
@@ -109,11 +104,6 @@ const statement = computed(() => {
   const tab = tabStore.currentTab;
   return tab?.selectedStatement || tab?.statement || "";
 });
-
-const isDDL = computedAsync(async () => {
-  const { data } = await parseSQL(statement.value);
-  return data !== null ? isDDLStatement(data, "some") : false;
-}, false);
 
 const actions = computed(() => {
   type Actions = {
@@ -139,17 +129,13 @@ const actions = computed(() => {
 
 const descriptions = computed(() => {
   const descriptions = {
-    want: isDDL.value
-      ? t("database.edit-schema").toLowerCase()
-      : t("database.change-data").toLowerCase(),
+    want: t("database.edit-schema").toLowerCase(),
     action: "",
     reaction: "",
   };
   const { admin, issue } = actions.value;
   if (issue) {
-    descriptions.action = isDDL.value
-      ? t("database.edit-schema")
-      : t("database.change-data");
+    descriptions.action = t("database.edit-schema");
     descriptions.reaction = t("sql-editor.and-submit-an-issue");
   } else if (admin) {
     descriptions.action = t("sql-editor.admin-mode.self");
@@ -185,10 +171,8 @@ const gotoCreateIssue = () => {
       issueSlug: "create",
     },
     query: {
-      template: isDDL.value ? DDLIssueTemplate : DMLIssueTemplate,
-      name: `[${db.databaseName}] ${
-        isDDL.value ? "Edit schema" : "Change Data"
-      }`,
+      template: "bb.issue.database.schema.update", // Default to DDL issue template.
+      name: `[${db.databaseName}] Update from SQL Editor`,
       databaseList: db.name,
       sqlStorageKey,
     },

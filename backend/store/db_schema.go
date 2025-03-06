@@ -180,5 +180,5 @@ func (s *Store) convertMetadataAndConfig(ctx context.Context, metadata, schema, 
 	if err != nil {
 		return nil, err
 	}
-	return model.NewDatabaseSchema(&databaseSchema, schema, &databaseConfig, instance.Engine, IsObjectCaseSensitive(instance)), nil
+	return model.NewDatabaseSchema(&databaseSchema, schema, &databaseConfig, instance.Metadata.GetEngine(), IsObjectCaseSensitive(instance)), nil
 }

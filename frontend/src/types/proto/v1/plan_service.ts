@@ -9,17 +9,7 @@ import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import Long from "long";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
-import {
-  ExportFormat,
-  exportFormatFromJSON,
-  exportFormatToJSON,
-  exportFormatToNumber,
-  Position,
-  VCSType,
-  vCSTypeFromJSON,
-  vCSTypeToJSON,
-  vCSTypeToNumber,
-} from "./common";
+import { ExportFormat, exportFormatFromJSON, exportFormatToJSON, exportFormatToNumber, Position } from "./common";
 import { ChangedResources } from "./database_service";
 import { DeploymentConfig } from "./project_service";
 
@@ -142,9 +132,6 @@ export interface Plan {
   title: string;
   description: string;
   steps: Plan_Step[];
-  vcsSource:
-    | Plan_VCSSource
-    | undefined;
   /** Format: users/hello@world.com */
   creator: string;
   createTime: Timestamp | undefined;
@@ -181,11 +168,6 @@ export interface Plan_Spec {
     | undefined;
   /** A UUID4 string that uniquely identifies the Spec. */
   id: string;
-  /**
-   * IDs of the specs that this spec depends on.
-   * Must be a subset of the specs in the same step.
-   */
-  dependsOnSpecs: string[];
   specReleaseSource: Plan_SpecReleaseSource | undefined;
   createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
   changeDatabaseConfig?: Plan_ChangeDatabaseConfig | undefined;
@@ -223,13 +205,6 @@ export interface Plan_CreateDatabaseConfig {
    * Format: environments/prod where prod is the environment resource ID.
    */
   environment: string;
-  /** labels of the database. */
-  labels: { [key: string]: string };
-}
-
-export interface Plan_CreateDatabaseConfig_LabelsEntry {
-  key: string;
-  value: string;
 }
 
 export interface Plan_ChangeDatabaseConfig {
@@ -246,7 +221,7 @@ export interface Plan_ChangeDatabaseConfig {
   sheet: string;
   type: Plan_ChangeDatabaseConfig_Type;
   /**
-   * schema_version is parsed from VCS file name.
+   * schema_version is parsed from file name.
    * It is automatically generated in the UI workflow.
    */
   schemaVersion: string;
@@ -373,17 +348,6 @@ export interface Plan_ExportDataConfig {
    * Leave it empty if no needs to encrypt the zip file.
    */
   password?: string | undefined;
-}
-
-export interface Plan_VCSSource {
-  vcsType: VCSType;
-  /**
-   * Optional.
-   * If present, we will update the pull request for rollout status.
-   * Format: projects/{project-ID}/vcsConnectors/{vcs-connector}
-   */
-  vcsConnector: string;
-  pullRequestUrl: string;
 }
 
 export interface Plan_ReleaseSource {
@@ -1320,7 +1284,6 @@ function createBasePlan(): Plan {
     title: "",
     description: "",
     steps: [],
-    vcsSource: undefined,
     creator: "",
     createTime: undefined,
     updateTime: undefined,
@@ -1346,9 +1309,6 @@ export const Plan: MessageFns<Plan> = {
     }
     for (const v of message.steps) {
       Plan_Step.encode(v!, writer.uint32(50).fork()).join();
-    }
-    if (message.vcsSource !== undefined) {
-      Plan_VCSSource.encode(message.vcsSource, writer.uint32(58).fork()).join();
     }
     if (message.creator !== "") {
       writer.uint32(66).string(message.creator);
@@ -1418,14 +1378,6 @@ export const Plan: MessageFns<Plan> = {
           message.steps.push(Plan_Step.decode(reader, reader.uint32()));
           continue;
         }
-        case 7: {
-          if (tag !== 58) {
-            break;
-          }
-
-          message.vcsSource = Plan_VCSSource.decode(reader, reader.uint32());
-          continue;
-        }
         case 8: {
           if (tag !== 66) {
             break;
@@ -1493,7 +1445,6 @@ export const Plan: MessageFns<Plan> = {
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       description: isSet(object.description) ? globalThis.String(object.description) : "",
       steps: globalThis.Array.isArray(object?.steps) ? object.steps.map((e: any) => Plan_Step.fromJSON(e)) : [],
-      vcsSource: isSet(object.vcsSource) ? Plan_VCSSource.fromJSON(object.vcsSource) : undefined,
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
@@ -1526,9 +1477,6 @@ export const Plan: MessageFns<Plan> = {
     }
     if (message.steps?.length) {
       obj.steps = message.steps.map((e) => Plan_Step.toJSON(e));
-    }
-    if (message.vcsSource !== undefined) {
-      obj.vcsSource = Plan_VCSSource.toJSON(message.vcsSource);
     }
     if (message.creator !== "") {
       obj.creator = message.creator;
@@ -1567,9 +1515,6 @@ export const Plan: MessageFns<Plan> = {
     message.title = object.title ?? "";
     message.description = object.description ?? "";
     message.steps = object.steps?.map((e) => Plan_Step.fromPartial(e)) || [];
-    message.vcsSource = (object.vcsSource !== undefined && object.vcsSource !== null)
-      ? Plan_VCSSource.fromPartial(object.vcsSource)
-      : undefined;
     message.creator = object.creator ?? "";
     message.createTime = (object.createTime !== undefined && object.createTime !== null)
       ? Timestamp.fromPartial(object.createTime)
@@ -1676,7 +1621,6 @@ function createBasePlan_Spec(): Plan_Spec {
   return {
     earliestAllowedTime: undefined,
     id: "",
-    dependsOnSpecs: [],
     specReleaseSource: undefined,
     createDatabaseConfig: undefined,
     changeDatabaseConfig: undefined,
@@ -1691,9 +1635,6 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
     }
     if (message.id !== "") {
       writer.uint32(42).string(message.id);
-    }
-    for (const v of message.dependsOnSpecs) {
-      writer.uint32(50).string(v!);
     }
     if (message.specReleaseSource !== undefined) {
       Plan_SpecReleaseSource.encode(message.specReleaseSource, writer.uint32(66).fork()).join();
@@ -1731,14 +1672,6 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
           }
 
           message.id = reader.string();
-          continue;
-        }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.dependsOnSpecs.push(reader.string());
           continue;
         }
         case 8: {
@@ -1788,9 +1721,6 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
         ? fromJsonTimestamp(object.earliestAllowedTime)
         : undefined,
       id: isSet(object.id) ? globalThis.String(object.id) : "",
-      dependsOnSpecs: globalThis.Array.isArray(object?.dependsOnSpecs)
-        ? object.dependsOnSpecs.map((e: any) => globalThis.String(e))
-        : [],
       specReleaseSource: isSet(object.specReleaseSource)
         ? Plan_SpecReleaseSource.fromJSON(object.specReleaseSource)
         : undefined,
@@ -1813,9 +1743,6 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
     }
     if (message.id !== "") {
       obj.id = message.id;
-    }
-    if (message.dependsOnSpecs?.length) {
-      obj.dependsOnSpecs = message.dependsOnSpecs;
     }
     if (message.specReleaseSource !== undefined) {
       obj.specReleaseSource = Plan_SpecReleaseSource.toJSON(message.specReleaseSource);
@@ -1841,7 +1768,6 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
       ? Timestamp.fromPartial(object.earliestAllowedTime)
       : undefined;
     message.id = object.id ?? "";
-    message.dependsOnSpecs = object.dependsOnSpecs?.map((e) => e) || [];
     message.specReleaseSource = (object.specReleaseSource !== undefined && object.specReleaseSource !== null)
       ? Plan_SpecReleaseSource.fromPartial(object.specReleaseSource)
       : undefined;
@@ -1944,7 +1870,6 @@ function createBasePlan_CreateDatabaseConfig(): Plan_CreateDatabaseConfig {
     cluster: "",
     owner: "",
     environment: "",
-    labels: {},
   };
 }
 
@@ -1974,9 +1899,6 @@ export const Plan_CreateDatabaseConfig: MessageFns<Plan_CreateDatabaseConfig> = 
     if (message.environment !== "") {
       writer.uint32(74).string(message.environment);
     }
-    Object.entries(message.labels).forEach(([key, value]) => {
-      Plan_CreateDatabaseConfig_LabelsEntry.encode({ key: key as any, value }, writer.uint32(82).fork()).join();
-    });
     return writer;
   },
 
@@ -2051,17 +1973,6 @@ export const Plan_CreateDatabaseConfig: MessageFns<Plan_CreateDatabaseConfig> = 
           message.environment = reader.string();
           continue;
         }
-        case 10: {
-          if (tag !== 82) {
-            break;
-          }
-
-          const entry10 = Plan_CreateDatabaseConfig_LabelsEntry.decode(reader, reader.uint32());
-          if (entry10.value !== undefined) {
-            message.labels[entry10.key] = entry10.value;
-          }
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2081,12 +1992,6 @@ export const Plan_CreateDatabaseConfig: MessageFns<Plan_CreateDatabaseConfig> = 
       cluster: isSet(object.cluster) ? globalThis.String(object.cluster) : "",
       owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
       environment: isSet(object.environment) ? globalThis.String(object.environment) : "",
-      labels: isObject(object.labels)
-        ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-          acc[key] = String(value);
-          return acc;
-        }, {})
-        : {},
     };
   },
 
@@ -2116,15 +2021,6 @@ export const Plan_CreateDatabaseConfig: MessageFns<Plan_CreateDatabaseConfig> = 
     if (message.environment !== "") {
       obj.environment = message.environment;
     }
-    if (message.labels) {
-      const entries = Object.entries(message.labels);
-      if (entries.length > 0) {
-        obj.labels = {};
-        entries.forEach(([k, v]) => {
-          obj.labels[k] = v;
-        });
-      }
-    }
     return obj;
   },
 
@@ -2141,88 +2037,6 @@ export const Plan_CreateDatabaseConfig: MessageFns<Plan_CreateDatabaseConfig> = 
     message.cluster = object.cluster ?? "";
     message.owner = object.owner ?? "";
     message.environment = object.environment ?? "";
-    message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-      if (value !== undefined) {
-        acc[key] = globalThis.String(value);
-      }
-      return acc;
-    }, {});
-    return message;
-  },
-};
-
-function createBasePlan_CreateDatabaseConfig_LabelsEntry(): Plan_CreateDatabaseConfig_LabelsEntry {
-  return { key: "", value: "" };
-}
-
-export const Plan_CreateDatabaseConfig_LabelsEntry: MessageFns<Plan_CreateDatabaseConfig_LabelsEntry> = {
-  encode(message: Plan_CreateDatabaseConfig_LabelsEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.key !== "") {
-      writer.uint32(10).string(message.key);
-    }
-    if (message.value !== "") {
-      writer.uint32(18).string(message.value);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Plan_CreateDatabaseConfig_LabelsEntry {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlan_CreateDatabaseConfig_LabelsEntry();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.value = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Plan_CreateDatabaseConfig_LabelsEntry {
-    return {
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      value: isSet(object.value) ? globalThis.String(object.value) : "",
-    };
-  },
-
-  toJSON(message: Plan_CreateDatabaseConfig_LabelsEntry): unknown {
-    const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== "") {
-      obj.value = message.value;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Plan_CreateDatabaseConfig_LabelsEntry>): Plan_CreateDatabaseConfig_LabelsEntry {
-    return Plan_CreateDatabaseConfig_LabelsEntry.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Plan_CreateDatabaseConfig_LabelsEntry>): Plan_CreateDatabaseConfig_LabelsEntry {
-    const message = createBasePlan_CreateDatabaseConfig_LabelsEntry();
-    message.key = object.key ?? "";
-    message.value = object.value ?? "";
     return message;
   },
 };
@@ -2656,98 +2470,6 @@ export const Plan_ExportDataConfig: MessageFns<Plan_ExportDataConfig> = {
     message.sheet = object.sheet ?? "";
     message.format = object.format ?? ExportFormat.FORMAT_UNSPECIFIED;
     message.password = object.password ?? undefined;
-    return message;
-  },
-};
-
-function createBasePlan_VCSSource(): Plan_VCSSource {
-  return { vcsType: VCSType.VCS_TYPE_UNSPECIFIED, vcsConnector: "", pullRequestUrl: "" };
-}
-
-export const Plan_VCSSource: MessageFns<Plan_VCSSource> = {
-  encode(message: Plan_VCSSource, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.vcsType !== VCSType.VCS_TYPE_UNSPECIFIED) {
-      writer.uint32(8).int32(vCSTypeToNumber(message.vcsType));
-    }
-    if (message.vcsConnector !== "") {
-      writer.uint32(18).string(message.vcsConnector);
-    }
-    if (message.pullRequestUrl !== "") {
-      writer.uint32(26).string(message.pullRequestUrl);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Plan_VCSSource {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlan_VCSSource();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.vcsType = vCSTypeFromJSON(reader.int32());
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.vcsConnector = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.pullRequestUrl = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Plan_VCSSource {
-    return {
-      vcsType: isSet(object.vcsType) ? vCSTypeFromJSON(object.vcsType) : VCSType.VCS_TYPE_UNSPECIFIED,
-      vcsConnector: isSet(object.vcsConnector) ? globalThis.String(object.vcsConnector) : "",
-      pullRequestUrl: isSet(object.pullRequestUrl) ? globalThis.String(object.pullRequestUrl) : "",
-    };
-  },
-
-  toJSON(message: Plan_VCSSource): unknown {
-    const obj: any = {};
-    if (message.vcsType !== VCSType.VCS_TYPE_UNSPECIFIED) {
-      obj.vcsType = vCSTypeToJSON(message.vcsType);
-    }
-    if (message.vcsConnector !== "") {
-      obj.vcsConnector = message.vcsConnector;
-    }
-    if (message.pullRequestUrl !== "") {
-      obj.pullRequestUrl = message.pullRequestUrl;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Plan_VCSSource>): Plan_VCSSource {
-    return Plan_VCSSource.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Plan_VCSSource>): Plan_VCSSource {
-    const message = createBasePlan_VCSSource();
-    message.vcsType = object.vcsType ?? VCSType.VCS_TYPE_UNSPECIFIED;
-    message.vcsConnector = object.vcsConnector ?? "";
-    message.pullRequestUrl = object.pullRequestUrl ?? "";
     return message;
   },
 };

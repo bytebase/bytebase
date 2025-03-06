@@ -1,3 +1,4 @@
+import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import { useProjectV1Store, useCurrentUserV1 } from "@/store";
 import { isValidProjectName } from "@/types";
@@ -31,17 +32,22 @@ export const useRecentProjects = () => {
     }
   };
 
-  const recentViewProjects = computed(() => {
-    return recentViewProjectNames.value
-      .map((project) => {
-        return projectV1Store.getProjectByName(project);
-      })
-      .filter(
-        (project) =>
-          isValidProjectName(project.name) &&
-          hasProjectPermissionV2(project, "bb.projects.get")
+  const recentViewProjects = computedAsync(async () => {
+    const projects = [];
+    for (const projectName of recentViewProjectNames.value) {
+      const project = await projectV1Store.getOrFetchProjectByName(
+        projectName,
+        true /* silent */
       );
-  });
+      if (
+        isValidProjectName(project.name) &&
+        hasProjectPermissionV2(project, "bb.projects.get")
+      ) {
+        projects.push(project);
+      }
+    }
+    return projects;
+  }, []);
 
   return {
     setRecentProject,

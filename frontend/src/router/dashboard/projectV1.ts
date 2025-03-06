@@ -13,7 +13,6 @@ export const PROJECT_V1_ROUTE_DATABASE_REVISION_DETAIL = `${PROJECT_V1_ROUTE_DAS
 export const PROJECT_V1_ROUTE_DATABASE_GROUPS = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.create`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.detail`;
-export const PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG = `${PROJECT_V1_ROUTE_DASHBOARD}.deployment-config`;
 export const PROJECT_V1_ROUTE_ISSUES = `${PROJECT_V1_ROUTE_DASHBOARD}.issue`;
 export const PROJECT_V1_ROUTE_ISSUE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.issue.detail`;
 export const PROJECT_V1_ROUTE_PLAN_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.plan.detail`;
@@ -23,9 +22,6 @@ export const PROJECT_V1_ROUTE_SYNC_SCHEMA = `${PROJECT_V1_ROUTE_DASHBOARD}.sync-
 export const PROJECT_V1_ROUTE_SLOW_QUERIES = `${PROJECT_V1_ROUTE_DASHBOARD}.slow-queries`;
 export const PROJECT_V1_ROUTE_ANOMALIES = `${PROJECT_V1_ROUTE_DASHBOARD}.anomalies`;
 export const PROJECT_V1_ROUTE_AUDIT_LOGS = `${PROJECT_V1_ROUTE_DASHBOARD}.audit-logs`;
-export const PROJECT_V1_ROUTE_GITOPS = `${PROJECT_V1_ROUTE_DASHBOARD}.gitops`;
-export const PROJECT_V1_ROUTE_GITOPS_CREATE = `${PROJECT_V1_ROUTE_GITOPS}.create`;
-export const PROJECT_V1_ROUTE_GITOPS_DETAIL = `${PROJECT_V1_ROUTE_GITOPS}.detail`;
 export const PROJECT_V1_ROUTE_WEBHOOKS = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook`;
 export const PROJECT_V1_ROUTE_WEBHOOK_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook.create`;
 export const PROJECT_V1_ROUTE_WEBHOOK_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.webhook.detail`;
@@ -137,17 +133,6 @@ const projectV1Routes: RouteRecordRaw[] = [
             props: true,
           },
         ],
-      },
-      {
-        path: "deployment-config",
-        name: PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
-        meta: {
-          overrideTitle: true,
-          requiredProjectPermissionList: () => ["bb.projects.get"],
-        },
-        component: () =>
-          import("@/views/project/ProjectDeploymentConfigPanel.vue"),
-        props: true,
       },
       {
         path: "issues",
@@ -270,54 +255,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         },
         component: () => import("@/views/project/ProjectAuditLogDashboard.vue"),
         props: true,
-      },
-      {
-        path: "gitops",
-        meta: {
-          overrideTitle: true,
-        },
-        props: true,
-        children: [
-          {
-            path: "",
-            name: PROJECT_V1_ROUTE_GITOPS,
-            meta: {
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
-                "bb.vcsConnectors.list",
-              ],
-            },
-            component: () =>
-              import("@/views/project/ProjectVersionControlPanel.vue"),
-            props: true,
-          },
-          {
-            path: "new",
-            name: PROJECT_V1_ROUTE_GITOPS_CREATE,
-            meta: {
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
-                "bb.vcsConnectors.create",
-              ],
-            },
-            component: () =>
-              import("@/views/project/ProjectVersionControlCreate.vue"),
-            props: true,
-          },
-          {
-            path: ":vcsConnectorId",
-            name: PROJECT_V1_ROUTE_GITOPS_DETAIL,
-            meta: {
-              requiredProjectPermissionList: () => [
-                "bb.projects.get",
-                "bb.vcsConnectors.get",
-              ],
-            },
-            component: () =>
-              import("@/views/project/ProjectVersionControlDetail.vue"),
-            props: true,
-          },
-        ],
       },
       {
         path: "webhooks",

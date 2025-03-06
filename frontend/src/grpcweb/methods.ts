@@ -24,8 +24,6 @@ import { SheetServiceDefinition } from "@/types/proto/v1/sheet_service";
 import { SQLServiceDefinition } from "@/types/proto/v1/sql_service";
 import { SubscriptionServiceDefinition } from "@/types/proto/v1/subscription_service";
 import { UserServiceDefinition } from "@/types/proto/v1/user_service";
-import { VCSConnectorServiceDefinition } from "@/types/proto/v1/vcs_connector_service";
-import { VCSProviderServiceDefinition } from "@/types/proto/v1/vcs_provider_service";
 import { WorksheetServiceDefinition } from "@/types/proto/v1/worksheet_service";
 import { WorkspaceServiceDefinition } from "@/types/proto/v1/workspace_service";
 
@@ -64,8 +62,6 @@ export const ALL_METHODS_WITH_AUDIT = [
   SQLServiceDefinition,
   SubscriptionServiceDefinition,
   UserServiceDefinition,
-  VCSConnectorServiceDefinition,
-  VCSProviderServiceDefinition,
   WorksheetServiceDefinition,
   WorkspaceServiceDefinition,
 ]

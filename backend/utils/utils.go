@@ -31,9 +31,9 @@ import (
 )
 
 // DataSourceFromInstanceWithType gets a typed data source from an instance.
-func DataSourceFromInstanceWithType(instance *store.InstanceMessage, dataSourceType api.DataSourceType) *store.DataSourceMessage {
-	for _, dataSource := range instance.DataSources {
-		if dataSource.Type == dataSourceType {
+func DataSourceFromInstanceWithType(instance *store.InstanceMessage, dataSourceType storepb.DataSourceType) *storepb.DataSource {
+	for _, dataSource := range instance.Metadata.GetDataSources() {
+		if dataSource.GetType() == dataSourceType {
 			return dataSource
 		}
 	}
@@ -152,7 +152,7 @@ func GetDatabaseMatrixFromDeploymentSchedule(schedule *storepb.Schedule, databas
 				continue
 			}
 			// Skip if the database is not found.
-			if database.SyncState == api.NotFound {
+			if database.Deleted {
 				continue
 			}
 
@@ -199,31 +199,6 @@ func GetTaskSkipped(task *store.TaskMessage) (bool, error) {
 		return false, err
 	}
 	return payload.Skipped, nil
-}
-
-// MergeTaskCreateLists merges a matrix of taskCreate and taskIndexDAG to a list of taskCreate and taskIndexDAG.
-// The index of returned taskIndexDAG list is set regarding the merged taskCreate.
-func MergeTaskCreateLists(taskCreateLists [][]*store.TaskMessage, taskIndexDAGLists [][]store.TaskIndexDAG) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
-	if len(taskCreateLists) != len(taskIndexDAGLists) {
-		return nil, nil, errors.Errorf("expect taskCreateLists and taskIndexDAGLists to have the same length, get %d, %d respectively", len(taskCreateLists), len(taskIndexDAGLists))
-	}
-	var resTaskCreateList []*store.TaskMessage
-	var resTaskIndexDAGList []store.TaskIndexDAG
-	offset := 0
-	for i := range taskCreateLists {
-		taskCreateList := taskCreateLists[i]
-		taskIndexDAGList := taskIndexDAGLists[i]
-
-		resTaskCreateList = append(resTaskCreateList, taskCreateList...)
-		for _, dag := range taskIndexDAGList {
-			resTaskIndexDAGList = append(resTaskIndexDAGList, store.TaskIndexDAG{
-				FromIndex: dag.FromIndex + offset,
-				ToIndex:   dag.ToIndex + offset,
-			})
-		}
-		offset += len(taskCreateList)
-	}
-	return resTaskCreateList, resTaskIndexDAGList, nil
 }
 
 // FindNextPendingStep finds the next pending step in the approval flow.
@@ -400,15 +375,11 @@ func RenderStatement(templateStatement string, secrets map[string]string) string
 
 // GetSecretMapFromDatabaseMessage extracts the secret map from the given database message.
 func GetSecretMapFromDatabaseMessage(databaseMessage *store.DatabaseMessage) map[string]string {
-	materials := make(map[string]string)
-	if databaseMessage.Secrets == nil || len(databaseMessage.Secrets.Items) == 0 {
-		return materials
+	secrets := make(map[string]string)
+	for _, v := range databaseMessage.Metadata.GetSecrets() {
+		secrets[v.Name] = v.Value
 	}
-
-	for _, item := range databaseMessage.Secrets.Items {
-		materials[item.Name] = item.Value
-	}
-	return materials
+	return secrets
 }
 
 // GetMatchedAndUnmatchedDatabasesInDatabaseGroup returns the matched and unmatched databases in the given database group.

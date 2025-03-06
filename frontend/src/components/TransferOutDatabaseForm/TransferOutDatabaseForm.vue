@@ -148,15 +148,9 @@ watch(
   }
 );
 
-const targetProject = computed(() => {
-  const name = targetProjectName.value;
-  if (!name || !isValidProjectName(name)) return undefined;
-  return projectStore.getProjectByName(name);
-});
-
 const validationErrors = computed(() => {
   const errors: string[] = [];
-  if (!targetProject.value) {
+  if (!targetProjectName.value) {
     errors.push(t("database.transfer.errors.select-target-project"));
   }
   if (selectedDatabaseNameList.value.length === 0) {
@@ -170,8 +164,15 @@ const allowTransfer = computed(() => {
 });
 
 const doTransfer = async () => {
-  const target = targetProject.value!;
-  if (!target) return;
+  const name = targetProjectName.value;
+  if (!name || !isValidProjectName(name)) {
+    return;
+  }
+
+  const target = await projectStore.getOrFetchProjectByName(name);
+  if (!target) {
+    return;
+  }
 
   const databaseList = selectedDatabaseList.value.filter(
     (db) => db.project !== target.name

@@ -65,11 +65,35 @@ func (s *ProjectService) GetProject(ctx context.Context, request *v1pb.GetProjec
 
 // ListProjects lists all projects.
 func (s *ProjectService) ListProjects(ctx context.Context, request *v1pb.ListProjectsRequest) (*v1pb.ListProjectsResponse, error) {
-	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{ShowDeleted: request.ShowDeleted})
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := offset.limit + 1
+	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{
+		ShowDeleted: request.ShowDeleted,
+		Limit:       &limitPlusOne,
+		Offset:      &offset.offset,
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	response := &v1pb.ListProjectsResponse{}
+
+	nextPageToken := ""
+	if len(projects) == limitPlusOne {
+		projects = projects[:offset.limit]
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
+		}
+	}
+
+	response := &v1pb.ListProjectsResponse{
+		NextPageToken: nextPageToken,
+	}
 	for _, project := range projects {
 		response.Projects = append(response.Projects, convertToProject(project))
 	}
@@ -83,7 +107,14 @@ func (s *ProjectService) SearchProjects(ctx context.Context, request *v1pb.Searc
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
-	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{ShowDeleted: request.ShowDeleted})
+	find := &store.FindProjectMessage{
+		ShowDeleted: request.ShowDeleted,
+	}
+	if request.Query != "" {
+		find.Query = &request.Query
+	}
+
+	projects, err := s.store.ListProjectV2(ctx, find)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -999,21 +1030,19 @@ func convertToAPIWebhookTypeString(tp v1pb.Webhook_Type) (string, error) {
 	case v1pb.Webhook_TYPE_UNSPECIFIED:
 		return "", common.Errorf(common.Invalid, "webhook type must not be unspecified")
 	// TODO(zp): find a better way to place the "bb.plugin.webhook.*".
-	case v1pb.Webhook_TYPE_SLACK:
+	case v1pb.Webhook_SLACK:
 		return "bb.plugin.webhook.slack", nil
-	case v1pb.Webhook_TYPE_DISCORD:
+	case v1pb.Webhook_DISCORD:
 		return "bb.plugin.webhook.discord", nil
-	case v1pb.Webhook_TYPE_TEAMS:
+	case v1pb.Webhook_TEAMS:
 		return "bb.plugin.webhook.teams", nil
-	case v1pb.Webhook_TYPE_DINGTALK:
+	case v1pb.Webhook_DINGTALK:
 		return "bb.plugin.webhook.dingtalk", nil
-	case v1pb.Webhook_TYPE_FEISHU:
+	case v1pb.Webhook_FEISHU:
 		return "bb.plugin.webhook.feishu", nil
-	case v1pb.Webhook_TYPE_WECOM:
+	case v1pb.Webhook_WECOM:
 		return "bb.plugin.webhook.wecom", nil
-	case v1pb.Webhook_TYPE_CUSTOM:
-		return "bb.plugin.webhook.custom", nil
-	case v1pb.Webhook_TYPE_LARK:
+	case v1pb.Webhook_LARK:
 		return "bb.plugin.webhook.lark", nil
 	default:
 		return "", common.Errorf(common.Invalid, "webhook type %q is not supported", tp)
@@ -1023,21 +1052,19 @@ func convertToAPIWebhookTypeString(tp v1pb.Webhook_Type) (string, error) {
 func convertWebhookTypeString(tp string) v1pb.Webhook_Type {
 	switch tp {
 	case "bb.plugin.webhook.slack":
-		return v1pb.Webhook_TYPE_SLACK
+		return v1pb.Webhook_SLACK
 	case "bb.plugin.webhook.discord":
-		return v1pb.Webhook_TYPE_DISCORD
+		return v1pb.Webhook_DISCORD
 	case "bb.plugin.webhook.teams":
-		return v1pb.Webhook_TYPE_TEAMS
+		return v1pb.Webhook_TEAMS
 	case "bb.plugin.webhook.dingtalk":
-		return v1pb.Webhook_TYPE_DINGTALK
+		return v1pb.Webhook_DINGTALK
 	case "bb.plugin.webhook.feishu":
-		return v1pb.Webhook_TYPE_FEISHU
+		return v1pb.Webhook_FEISHU
 	case "bb.plugin.webhook.wecom":
-		return v1pb.Webhook_TYPE_WECOM
-	case "bb.plugin.webhook.custom":
-		return v1pb.Webhook_TYPE_CUSTOM
+		return v1pb.Webhook_WECOM
 	case "bb.plugin.webhook.lark":
-		return v1pb.Webhook_TYPE_LARK
+		return v1pb.Webhook_LARK
 	default:
 		return v1pb.Webhook_TYPE_UNSPECIFIED
 	}
@@ -1228,10 +1255,6 @@ func convertToStoreIamPolicyMember(ctx context.Context, stores *store.Store, mem
 }
 
 func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
-	workflow := v1pb.Workflow_UI
-	if projectMessage.VCSConnectorsCount > 0 {
-		workflow = v1pb.Workflow_VCS
-	}
 	var projectWebhooks []*v1pb.Webhook
 	for _, webhook := range projectMessage.Webhooks {
 		projectWebhooks = append(projectWebhooks, &v1pb.Webhook{
@@ -1257,7 +1280,6 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		Name:                       common.FormatProject(projectMessage.ResourceID),
 		State:                      convertDeletedToState(projectMessage.Deleted),
 		Title:                      projectMessage.Title,
-		Workflow:                   workflow,
 		Webhooks:                   projectWebhooks,
 		DataClassificationConfigId: projectMessage.DataClassificationConfigID,
 		IssueLabels:                issueLabels,

@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "google/protobuf/duration.proto";
 import "google/type/expr.proto";
 import "store/common.proto";
 
@@ -118,6 +119,12 @@ message DisableCopyDataPolicy {
 // ExportDataPolicy is the policy configuration for export data.
 message ExportDataPolicy {
   bool disable = 1;
+}
+
+// QueryDataPolicy is the policy configuration for querying data.
+message QueryDataPolicy {
+  // The query timeout duration.
+  google.protobuf.Duration timeout = 1;
 }
 
 // RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restricting issue creation for SQL review.

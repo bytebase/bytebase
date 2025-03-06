@@ -35,9 +35,9 @@ jobs:
       - name: Run all tests
         run: go test -p=8 -ldflags "-w -s" -v ./backend/... | tee test.log; exit ${PIPESTATUS[0]}
       - name: Pretty print tests running time
-        # grep: filter out lines like "--- PASS: TestVCS (15.04s)"
+        # grep: filter out lines like "--- PASS: Test (15.04s)"
         # sed: remove unnecessary characters
-        # awk: re-format lines to "PASS: TestVCS (15.04s)"
+        # awk: re-format lines to "PASS: Test (15.04s)"
         # sort: cut into columns by delimiter ' ' (single space) and sort by column 3 (test time in seconds) as numeric type in reverse order (largest comes first)
         # awk: accumulate sum by test time in seconds
         run: grep --color=never -e '--- PASS:' -e '--- FAIL:' test.log | sed 's/[:()]//g' | awk '{print $2,$3,$4}' | sort -t' ' -nk3 -r | awk '{sum += $3; print $1,$2,$3,sum"s"}'

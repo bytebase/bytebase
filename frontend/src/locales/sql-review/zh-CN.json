@@ -366,7 +366,7 @@
     },
     "column-default-disallow-volatile": {
       "title": "禁止在列上设置易变的默认值",
-      "description": "易变函数（例如，clock_timestamp()）会在执行 ALTER TABLE 时更新每一行的值，可能导致更新操作时间过长。"
+      "description": "易变函数（例如，clock_timestamp()）会在执行 ALTER TABLE ADD COLUMN 时更新每一行的值，可能导致更新操作时间过长。"
     },
     "column-require-charset": {
       "title": "要求列设置字符集",

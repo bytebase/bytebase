@@ -14,59 +14,6 @@ import { GetIamPolicyRequest, IamPolicy, SetIamPolicyRequest } from "./iam_polic
 
 export const protobufPackage = "bytebase.v1";
 
-export enum Workflow {
-  WORKFLOW_UNSPECIFIED = "WORKFLOW_UNSPECIFIED",
-  UI = "UI",
-  VCS = "VCS",
-  UNRECOGNIZED = "UNRECOGNIZED",
-}
-
-export function workflowFromJSON(object: any): Workflow {
-  switch (object) {
-    case 0:
-    case "WORKFLOW_UNSPECIFIED":
-      return Workflow.WORKFLOW_UNSPECIFIED;
-    case 1:
-    case "UI":
-      return Workflow.UI;
-    case 2:
-    case "VCS":
-      return Workflow.VCS;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Workflow.UNRECOGNIZED;
-  }
-}
-
-export function workflowToJSON(object: Workflow): string {
-  switch (object) {
-    case Workflow.WORKFLOW_UNSPECIFIED:
-      return "WORKFLOW_UNSPECIFIED";
-    case Workflow.UI:
-      return "UI";
-    case Workflow.VCS:
-      return "VCS";
-    case Workflow.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export function workflowToNumber(object: Workflow): number {
-  switch (object) {
-    case Workflow.WORKFLOW_UNSPECIFIED:
-      return 0;
-    case Workflow.UI:
-      return 1;
-    case Workflow.VCS:
-      return 2;
-    case Workflow.UNRECOGNIZED:
-    default:
-      return -1;
-  }
-}
-
 export enum OperatorType {
   /** OPERATOR_TYPE_UNSPECIFIED - The operator is not specified. */
   OPERATOR_TYPE_UNSPECIFIED = "OPERATOR_TYPE_UNSPECIFIED",
@@ -142,7 +89,6 @@ export interface GetProjectRequest {
 
 export interface ListProjectsRequest {
   /**
-   * Not used.
    * The maximum number of projects to return. The service may return fewer than
    * this value.
    * If unspecified, at most 10 projects will be returned.
@@ -150,7 +96,6 @@ export interface ListProjectsRequest {
    */
   pageSize: number;
   /**
-   * Not used.
    * A page token, received from a previous `ListProjects` call.
    * Provide this to retrieve the subsequent page.
    *
@@ -175,6 +120,8 @@ export interface ListProjectsResponse {
 export interface SearchProjectsRequest {
   /** Show deleted projects if specified. */
   showDeleted: boolean;
+  /** Filter the project title or resource id by query. */
+  query: string;
 }
 
 export interface SearchProjectsResponse {
@@ -271,7 +218,6 @@ export interface Project {
   state: State;
   /** The title or name of a project. It's not unique within the workspace. */
   title: string;
-  workflow: Workflow;
   webhooks: Webhook[];
   dataClassificationConfigId: string;
   issueLabels: Label[];
@@ -369,14 +315,13 @@ export interface Webhook {
 
 export enum Webhook_Type {
   TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
-  TYPE_SLACK = "TYPE_SLACK",
-  TYPE_DISCORD = "TYPE_DISCORD",
-  TYPE_TEAMS = "TYPE_TEAMS",
-  TYPE_DINGTALK = "TYPE_DINGTALK",
-  TYPE_FEISHU = "TYPE_FEISHU",
-  TYPE_WECOM = "TYPE_WECOM",
-  TYPE_CUSTOM = "TYPE_CUSTOM",
-  TYPE_LARK = "TYPE_LARK",
+  SLACK = "SLACK",
+  DISCORD = "DISCORD",
+  TEAMS = "TEAMS",
+  DINGTALK = "DINGTALK",
+  FEISHU = "FEISHU",
+  WECOM = "WECOM",
+  LARK = "LARK",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -386,29 +331,26 @@ export function webhook_TypeFromJSON(object: any): Webhook_Type {
     case "TYPE_UNSPECIFIED":
       return Webhook_Type.TYPE_UNSPECIFIED;
     case 1:
-    case "TYPE_SLACK":
-      return Webhook_Type.TYPE_SLACK;
+    case "SLACK":
+      return Webhook_Type.SLACK;
     case 2:
-    case "TYPE_DISCORD":
-      return Webhook_Type.TYPE_DISCORD;
+    case "DISCORD":
+      return Webhook_Type.DISCORD;
     case 3:
-    case "TYPE_TEAMS":
-      return Webhook_Type.TYPE_TEAMS;
+    case "TEAMS":
+      return Webhook_Type.TEAMS;
     case 4:
-    case "TYPE_DINGTALK":
-      return Webhook_Type.TYPE_DINGTALK;
+    case "DINGTALK":
+      return Webhook_Type.DINGTALK;
     case 5:
-    case "TYPE_FEISHU":
-      return Webhook_Type.TYPE_FEISHU;
+    case "FEISHU":
+      return Webhook_Type.FEISHU;
     case 6:
-    case "TYPE_WECOM":
-      return Webhook_Type.TYPE_WECOM;
-    case 7:
-    case "TYPE_CUSTOM":
-      return Webhook_Type.TYPE_CUSTOM;
+    case "WECOM":
+      return Webhook_Type.WECOM;
     case 8:
-    case "TYPE_LARK":
-      return Webhook_Type.TYPE_LARK;
+    case "LARK":
+      return Webhook_Type.LARK;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -420,22 +362,20 @@ export function webhook_TypeToJSON(object: Webhook_Type): string {
   switch (object) {
     case Webhook_Type.TYPE_UNSPECIFIED:
       return "TYPE_UNSPECIFIED";
-    case Webhook_Type.TYPE_SLACK:
-      return "TYPE_SLACK";
-    case Webhook_Type.TYPE_DISCORD:
-      return "TYPE_DISCORD";
-    case Webhook_Type.TYPE_TEAMS:
-      return "TYPE_TEAMS";
-    case Webhook_Type.TYPE_DINGTALK:
-      return "TYPE_DINGTALK";
-    case Webhook_Type.TYPE_FEISHU:
-      return "TYPE_FEISHU";
-    case Webhook_Type.TYPE_WECOM:
-      return "TYPE_WECOM";
-    case Webhook_Type.TYPE_CUSTOM:
-      return "TYPE_CUSTOM";
-    case Webhook_Type.TYPE_LARK:
-      return "TYPE_LARK";
+    case Webhook_Type.SLACK:
+      return "SLACK";
+    case Webhook_Type.DISCORD:
+      return "DISCORD";
+    case Webhook_Type.TEAMS:
+      return "TEAMS";
+    case Webhook_Type.DINGTALK:
+      return "DINGTALK";
+    case Webhook_Type.FEISHU:
+      return "FEISHU";
+    case Webhook_Type.WECOM:
+      return "WECOM";
+    case Webhook_Type.LARK:
+      return "LARK";
     case Webhook_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -446,21 +386,19 @@ export function webhook_TypeToNumber(object: Webhook_Type): number {
   switch (object) {
     case Webhook_Type.TYPE_UNSPECIFIED:
       return 0;
-    case Webhook_Type.TYPE_SLACK:
+    case Webhook_Type.SLACK:
       return 1;
-    case Webhook_Type.TYPE_DISCORD:
+    case Webhook_Type.DISCORD:
       return 2;
-    case Webhook_Type.TYPE_TEAMS:
+    case Webhook_Type.TEAMS:
       return 3;
-    case Webhook_Type.TYPE_DINGTALK:
+    case Webhook_Type.DINGTALK:
       return 4;
-    case Webhook_Type.TYPE_FEISHU:
+    case Webhook_Type.FEISHU:
       return 5;
-    case Webhook_Type.TYPE_WECOM:
+    case Webhook_Type.WECOM:
       return 6;
-    case Webhook_Type.TYPE_CUSTOM:
-      return 7;
-    case Webhook_Type.TYPE_LARK:
+    case Webhook_Type.LARK:
       return 8;
     case Webhook_Type.UNRECOGNIZED:
     default:
@@ -980,13 +918,16 @@ export const ListProjectsResponse: MessageFns<ListProjectsResponse> = {
 };
 
 function createBaseSearchProjectsRequest(): SearchProjectsRequest {
-  return { showDeleted: false };
+  return { showDeleted: false, query: "" };
 }
 
 export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
   encode(message: SearchProjectsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.showDeleted !== false) {
       writer.uint32(8).bool(message.showDeleted);
+    }
+    if (message.query !== "") {
+      writer.uint32(18).string(message.query);
     }
     return writer;
   },
@@ -1006,6 +947,14 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
           message.showDeleted = reader.bool();
           continue;
         }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.query = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1016,13 +965,19 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
   },
 
   fromJSON(object: any): SearchProjectsRequest {
-    return { showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false };
+    return {
+      showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
+      query: isSet(object.query) ? globalThis.String(object.query) : "",
+    };
   },
 
   toJSON(message: SearchProjectsRequest): unknown {
     const obj: any = {};
     if (message.showDeleted !== false) {
       obj.showDeleted = message.showDeleted;
+    }
+    if (message.query !== "") {
+      obj.query = message.query;
     }
     return obj;
   },
@@ -1033,6 +988,7 @@ export const SearchProjectsRequest: MessageFns<SearchProjectsRequest> = {
   fromPartial(object: DeepPartial<SearchProjectsRequest>): SearchProjectsRequest {
     const message = createBaseSearchProjectsRequest();
     message.showDeleted = object.showDeleted ?? false;
+    message.query = object.query ?? "";
     return message;
   },
 };
@@ -1821,7 +1777,6 @@ function createBaseProject(): Project {
     name: "",
     state: State.STATE_UNSPECIFIED,
     title: "",
-    workflow: Workflow.WORKFLOW_UNSPECIFIED,
     webhooks: [],
     dataClassificationConfigId: "",
     issueLabels: [],
@@ -1846,9 +1801,6 @@ export const Project: MessageFns<Project> = {
     }
     if (message.title !== "") {
       writer.uint32(34).string(message.title);
-    }
-    if (message.workflow !== Workflow.WORKFLOW_UNSPECIFIED) {
-      writer.uint32(48).int32(workflowToNumber(message.workflow));
     }
     for (const v of message.webhooks) {
       Webhook.encode(v!, writer.uint32(90).fork()).join();
@@ -1915,14 +1867,6 @@ export const Project: MessageFns<Project> = {
           }
 
           message.title = reader.string();
-          continue;
-        }
-        case 6: {
-          if (tag !== 48) {
-            break;
-          }
-
-          message.workflow = workflowFromJSON(reader.int32());
           continue;
         }
         case 11: {
@@ -2027,7 +1971,6 @@ export const Project: MessageFns<Project> = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
-      workflow: isSet(object.workflow) ? workflowFromJSON(object.workflow) : Workflow.WORKFLOW_UNSPECIFIED,
       webhooks: globalThis.Array.isArray(object?.webhooks) ? object.webhooks.map((e: any) => Webhook.fromJSON(e)) : [],
       dataClassificationConfigId: isSet(object.dataClassificationConfigId)
         ? globalThis.String(object.dataClassificationConfigId)
@@ -2060,9 +2003,6 @@ export const Project: MessageFns<Project> = {
     }
     if (message.title !== "") {
       obj.title = message.title;
-    }
-    if (message.workflow !== Workflow.WORKFLOW_UNSPECIFIED) {
-      obj.workflow = workflowToJSON(message.workflow);
     }
     if (message.webhooks?.length) {
       obj.webhooks = message.webhooks.map((e) => Webhook.toJSON(e));
@@ -2108,7 +2048,6 @@ export const Project: MessageFns<Project> = {
     message.name = object.name ?? "";
     message.state = object.state ?? State.STATE_UNSPECIFIED;
     message.title = object.title ?? "";
-    message.workflow = object.workflow ?? Workflow.WORKFLOW_UNSPECIFIED;
     message.webhooks = object.webhooks?.map((e) => Webhook.fromPartial(e)) || [];
     message.dataClassificationConfigId = object.dataClassificationConfigId ?? "";
     message.issueLabels = object.issueLabels?.map((e) => Label.fromPartial(e)) || [];

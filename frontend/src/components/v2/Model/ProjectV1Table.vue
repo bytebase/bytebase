@@ -10,18 +10,13 @@
     :loading="loading"
     :row-key="(data: ComposedProject) => data.name"
     :row-props="rowProps"
-    :pagination="pagination"
     :paginate-single-page="false"
   />
 </template>
 
 <script lang="tsx" setup>
 import { CheckIcon } from "lucide-vue-next";
-import {
-  NDataTable,
-  type DataTableColumn,
-  type PaginationProps,
-} from "naive-ui";
+import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -48,7 +43,6 @@ const props = withDefaults(
     currentProject?: ComposedProject;
     bordered?: boolean;
     loading?: boolean;
-    pagination?: false | PaginationProps;
     keyword?: string;
     // If true, the default behavior of the row click event will be prevented.
     preventDefault?: boolean;
@@ -57,7 +51,6 @@ const props = withDefaults(
     bordered: true,
     currentProject: undefined,
     keyword: undefined,
-    pagination: () => ({ pageSize: 20 }) as PaginationProps,
   }
 );
 

@@ -5,6 +5,7 @@
     <MonacoEditor
       class="w-full h-full"
       ref="monacoEditorRef"
+      :enable-decorations="true"
       :filename="filename"
       :content="content"
       :language="language"

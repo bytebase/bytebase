@@ -97,7 +97,7 @@
           :masking-rule="item.rule"
           :readonly="item.mode === 'NORMAL' || state.reorderRules"
           :factor-list="factorList"
-          :factor-options-map="factorOptionsMap"
+          :option-config-map="factorOptionsMap"
           :allow-delete="item.mode === 'EDIT'"
           @cancel="onCancel(index)"
           @delete="onRuleDelete(index)"
@@ -124,6 +124,7 @@ import {
   getEnvironmentIdOptions,
   getProjectIdOptions,
 } from "@/components/CustomApproval/Settings/components/common";
+import { type OptionConfig } from "@/components/ExprEditor/context";
 import { useBodyLayoutContext } from "@/layouts/common";
 import type { Factor } from "@/plugins/cel";
 import {
@@ -131,6 +132,7 @@ import {
   pushNotification,
   usePolicyV1Store,
   useInstanceV1List,
+  useProjectV1Store,
 } from "@/store";
 import type { Policy } from "@/types/proto/v1/org_policy_service";
 import {
@@ -341,7 +343,7 @@ const factorList = computed((): Factor[] => {
   return list;
 });
 
-const factorOptionsMap = computed((): Map<Factor, SelectOption[]> => {
+const factorOptionsMap = computed((): Map<Factor, OptionConfig> => {
   return factorList.value.reduce((map, factor) => {
     let options: SelectOption[] = [];
     switch (factor) {
@@ -352,14 +354,26 @@ const factorOptionsMap = computed((): Map<Factor, SelectOption[]> => {
         options = getInstanceIdOptions();
         break;
       case "project_id":
-        options = getProjectIdOptions();
-        break;
+        const projectStore = useProjectV1Store();
+        map.set(factor, {
+          remote: true,
+          options: getProjectIdOptions(projectStore.getProjectList()),
+          search: async (keyword: string) => {
+            return projectStore
+              .searchProjects({ query: keyword })
+              .then((projects) => getProjectIdOptions(projects));
+          },
+        });
+        return map;
       case "classification_level":
         options = getClassificationLevelOptions();
         break;
     }
-    map.set(factor, options);
+    map.set(factor, {
+      remote: false,
+      options,
+    });
     return map;
-  }, new Map<Factor, SelectOption[]>());
+  }, new Map<Factor, OptionConfig>());
 });
 </script>

@@ -138,32 +138,6 @@ func (s *SchedulerV2) scheduleAutoRolloutTasks(ctx context.Context) error {
 	return nil
 }
 
-func (s *SchedulerV2) canTaskAutoRollout(ctx context.Context, rolloutPolicy *storepb.RolloutPolicy, task *store.TaskMessage) (bool, error) {
-	if rolloutPolicy.Automatic {
-		return true, nil
-	}
-
-	if s.licenseService.IsFeatureEnabled(api.FeatureRolloutPolicy) != nil {
-		// nolint:nilerr
-		return true, nil
-	}
-
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
-	if err != nil {
-		return false, err
-	}
-	if instance == nil || instance.Deleted {
-		return false, nil
-	}
-
-	if s.licenseService.IsFeatureEnabledForInstance(api.FeatureRolloutPolicy, instance) != nil {
-		// nolint:nilerr
-		return true, nil
-	}
-
-	return false, nil
-}
-
 func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, rolloutPolicy *storepb.RolloutPolicy, taskUID int) error {
 	task, err := s.store.GetTaskV2ByID(ctx, taskUID)
 	if err != nil {
@@ -173,11 +147,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, rolloutPolicy
 		return nil
 	}
 
-	canAutoRollout, err := s.canTaskAutoRollout(ctx, rolloutPolicy, task)
-	if err != nil {
-		return err
-	}
-	if !canAutoRollout {
+	if !rolloutPolicy.Automatic {
 		return nil
 	}
 
@@ -299,8 +269,7 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 	// here, we move pending taskruns to running taskruns which means they are ready to be executed.
 	// pending taskruns remain pending if
 	// 1. earliestAllowedTs not met.
-	// 2. blocked by other tasks via TaskDAG
-	// 3. for versioned tasks, there are other versioned tasks on the same database with
+	// 2. for versioned tasks, there are other versioned tasks on the same database with
 	// a smaller version not finished yet. we need to wait for those first.
 	task, err := s.store.GetTaskV2ByID(ctx, taskRun.TaskUID)
 	if err != nil {
@@ -308,26 +277,6 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 	}
 	if task.EarliestAllowedAt != nil && time.Now().Before(*task.EarliestAllowedAt) {
 		return nil
-	}
-	for _, blockingTaskUID := range task.DependsOn {
-		blockingTask, err := s.store.GetTaskV2ByID(ctx, blockingTaskUID)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get blocking task %v", blockingTaskUID)
-		}
-
-		skipped := struct {
-			Skipped bool `json:"skipped"`
-		}{}
-		if err := json.Unmarshal([]byte(blockingTask.Payload), &skipped); err != nil {
-			return errors.Wrapf(err, "failed to unmarshal payload")
-		}
-		if skipped.Skipped {
-			continue
-		}
-
-		if blockingTask.LatestTaskRunStatus != api.TaskRunDone {
-			return nil
-		}
 	}
 
 	doSchedule, err := func() (bool, error) {
@@ -472,7 +421,7 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 			)
 			continue
 		}
-		maximumConnections := int(instance.Options.GetMaximumConnections())
+		maximumConnections := int(instance.Metadata.GetMaximumConnections())
 		if s.stateCfg.InstanceOutstandingConnections.Increment(task.InstanceID, maximumConnections) {
 			s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
 				ReportTime: timestamppb.Now(),

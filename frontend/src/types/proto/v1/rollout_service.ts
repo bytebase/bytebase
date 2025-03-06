@@ -245,8 +245,6 @@ export interface Task {
   status: Task_Status;
   skippedReason: string;
   type: Task_Type;
-  /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} */
-  dependsOnTasks: string[];
   /**
    * Format: instances/{instance} if the task is DatabaseCreate.
    * Format: instances/{instance}/databases/{database}
@@ -475,12 +473,6 @@ export interface Task_DatabaseCreate {
   characterSet: string;
   collation: string;
   environment: string;
-  labels: { [key: string]: string };
-}
-
-export interface Task_DatabaseCreate_LabelsEntry {
-  key: string;
-  value: string;
 }
 
 export interface Task_DatabaseSchemaBaseline {
@@ -2418,7 +2410,6 @@ function createBaseTask(): Task {
     status: Task_Status.STATUS_UNSPECIFIED,
     skippedReason: "",
     type: Task_Type.TYPE_UNSPECIFIED,
-    dependsOnTasks: [],
     target: "",
     databaseCreate: undefined,
     databaseSchemaBaseline: undefined,
@@ -2447,9 +2438,6 @@ export const Task: MessageFns<Task> = {
     }
     if (message.type !== Task_Type.TYPE_UNSPECIFIED) {
       writer.uint32(48).int32(task_TypeToNumber(message.type));
-    }
-    for (const v of message.dependsOnTasks) {
-      writer.uint32(58).string(v!);
     }
     if (message.target !== "") {
       writer.uint32(66).string(message.target);
@@ -2527,14 +2515,6 @@ export const Task: MessageFns<Task> = {
           message.type = task_TypeFromJSON(reader.int32());
           continue;
         }
-        case 7: {
-          if (tag !== 58) {
-            break;
-          }
-
-          message.dependsOnTasks.push(reader.string());
-          continue;
-        }
         case 8: {
           if (tag !== 66) {
             break;
@@ -2600,9 +2580,6 @@ export const Task: MessageFns<Task> = {
       status: isSet(object.status) ? task_StatusFromJSON(object.status) : Task_Status.STATUS_UNSPECIFIED,
       skippedReason: isSet(object.skippedReason) ? globalThis.String(object.skippedReason) : "",
       type: isSet(object.type) ? task_TypeFromJSON(object.type) : Task_Type.TYPE_UNSPECIFIED,
-      dependsOnTasks: globalThis.Array.isArray(object?.dependsOnTasks)
-        ? object.dependsOnTasks.map((e: any) => globalThis.String(e))
-        : [],
       target: isSet(object.target) ? globalThis.String(object.target) : "",
       databaseCreate: isSet(object.databaseCreate) ? Task_DatabaseCreate.fromJSON(object.databaseCreate) : undefined,
       databaseSchemaBaseline: isSet(object.databaseSchemaBaseline)
@@ -2640,9 +2617,6 @@ export const Task: MessageFns<Task> = {
     if (message.type !== Task_Type.TYPE_UNSPECIFIED) {
       obj.type = task_TypeToJSON(message.type);
     }
-    if (message.dependsOnTasks?.length) {
-      obj.dependsOnTasks = message.dependsOnTasks;
-    }
     if (message.target !== "") {
       obj.target = message.target;
     }
@@ -2675,7 +2649,6 @@ export const Task: MessageFns<Task> = {
     message.status = object.status ?? Task_Status.STATUS_UNSPECIFIED;
     message.skippedReason = object.skippedReason ?? "";
     message.type = object.type ?? Task_Type.TYPE_UNSPECIFIED;
-    message.dependsOnTasks = object.dependsOnTasks?.map((e) => e) || [];
     message.target = object.target ?? "";
     message.databaseCreate = (object.databaseCreate !== undefined && object.databaseCreate !== null)
       ? Task_DatabaseCreate.fromPartial(object.databaseCreate)
@@ -2698,16 +2671,7 @@ export const Task: MessageFns<Task> = {
 };
 
 function createBaseTask_DatabaseCreate(): Task_DatabaseCreate {
-  return {
-    project: "",
-    database: "",
-    table: "",
-    sheet: "",
-    characterSet: "",
-    collation: "",
-    environment: "",
-    labels: {},
-  };
+  return { project: "", database: "", table: "", sheet: "", characterSet: "", collation: "", environment: "" };
 }
 
 export const Task_DatabaseCreate: MessageFns<Task_DatabaseCreate> = {
@@ -2733,9 +2697,6 @@ export const Task_DatabaseCreate: MessageFns<Task_DatabaseCreate> = {
     if (message.environment !== "") {
       writer.uint32(58).string(message.environment);
     }
-    Object.entries(message.labels).forEach(([key, value]) => {
-      Task_DatabaseCreate_LabelsEntry.encode({ key: key as any, value }, writer.uint32(66).fork()).join();
-    });
     return writer;
   },
 
@@ -2802,17 +2763,6 @@ export const Task_DatabaseCreate: MessageFns<Task_DatabaseCreate> = {
           message.environment = reader.string();
           continue;
         }
-        case 8: {
-          if (tag !== 66) {
-            break;
-          }
-
-          const entry8 = Task_DatabaseCreate_LabelsEntry.decode(reader, reader.uint32());
-          if (entry8.value !== undefined) {
-            message.labels[entry8.key] = entry8.value;
-          }
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2831,12 +2781,6 @@ export const Task_DatabaseCreate: MessageFns<Task_DatabaseCreate> = {
       characterSet: isSet(object.characterSet) ? globalThis.String(object.characterSet) : "",
       collation: isSet(object.collation) ? globalThis.String(object.collation) : "",
       environment: isSet(object.environment) ? globalThis.String(object.environment) : "",
-      labels: isObject(object.labels)
-        ? Object.entries(object.labels).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-          acc[key] = String(value);
-          return acc;
-        }, {})
-        : {},
     };
   },
 
@@ -2863,15 +2807,6 @@ export const Task_DatabaseCreate: MessageFns<Task_DatabaseCreate> = {
     if (message.environment !== "") {
       obj.environment = message.environment;
     }
-    if (message.labels) {
-      const entries = Object.entries(message.labels);
-      if (entries.length > 0) {
-        obj.labels = {};
-        entries.forEach(([k, v]) => {
-          obj.labels[k] = v;
-        });
-      }
-    }
     return obj;
   },
 
@@ -2887,88 +2822,6 @@ export const Task_DatabaseCreate: MessageFns<Task_DatabaseCreate> = {
     message.characterSet = object.characterSet ?? "";
     message.collation = object.collation ?? "";
     message.environment = object.environment ?? "";
-    message.labels = Object.entries(object.labels ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-      if (value !== undefined) {
-        acc[key] = globalThis.String(value);
-      }
-      return acc;
-    }, {});
-    return message;
-  },
-};
-
-function createBaseTask_DatabaseCreate_LabelsEntry(): Task_DatabaseCreate_LabelsEntry {
-  return { key: "", value: "" };
-}
-
-export const Task_DatabaseCreate_LabelsEntry: MessageFns<Task_DatabaseCreate_LabelsEntry> = {
-  encode(message: Task_DatabaseCreate_LabelsEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.key !== "") {
-      writer.uint32(10).string(message.key);
-    }
-    if (message.value !== "") {
-      writer.uint32(18).string(message.value);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Task_DatabaseCreate_LabelsEntry {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTask_DatabaseCreate_LabelsEntry();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.value = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Task_DatabaseCreate_LabelsEntry {
-    return {
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      value: isSet(object.value) ? globalThis.String(object.value) : "",
-    };
-  },
-
-  toJSON(message: Task_DatabaseCreate_LabelsEntry): unknown {
-    const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== "") {
-      obj.value = message.value;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Task_DatabaseCreate_LabelsEntry>): Task_DatabaseCreate_LabelsEntry {
-    return Task_DatabaseCreate_LabelsEntry.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Task_DatabaseCreate_LabelsEntry>): Task_DatabaseCreate_LabelsEntry {
-    const message = createBaseTask_DatabaseCreate_LabelsEntry();
-    message.key = object.key ?? "";
-    message.value = object.value ?? "";
     return message;
   },
 };
@@ -6740,10 +6593,6 @@ function fromJsonTimestamp(o: any): Timestamp {
 
 function numberToLong(number: number) {
   return Long.fromNumber(number);
-}
-
-function isObject(value: any): boolean {
-  return typeof value === "object" && value !== null;
 }
 
 function isSet(value: any): boolean {

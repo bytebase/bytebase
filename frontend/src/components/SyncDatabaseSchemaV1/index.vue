@@ -259,7 +259,7 @@ const tryChangeStep = async (nextStepIndex: number) => {
       dialog.create({
         positiveText: t("common.confirm"),
         negativeText: t("common.cancel"),
-        title: t("deployment-config.confirm-to-revert"),
+        title: t("common.confirm-to-revert"),
         autoFocus: false,
         closable: false,
         maskClosable: false,

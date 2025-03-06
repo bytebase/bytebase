@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
+import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/type/expr.proto";
@@ -245,6 +246,7 @@ message Policy {
     TagPolicy tag_policy = 21;
     DataSourceQueryPolicy data_source_query_policy = 22;
     ExportDataPolicy export_data_policy = 23;
+    QueryDataPolicy query_data_policy = 24;
   }
 
   bool enforce = 13;
@@ -266,6 +268,7 @@ enum PolicyType {
   TAG = 13;
   DATA_SOURCE_QUERY = 14;
   DATA_EXPORT = 15;
+  DATA_QUERY = 16;
 }
 
 enum PolicyResourceType {
@@ -295,6 +298,12 @@ message DisableCopyDataPolicy {
 
 message ExportDataPolicy {
   bool disable = 1;
+}
+
+// QueryDataPolicy is the policy configuration for querying data.
+message QueryDataPolicy {
+  // The query timeout duration.
+  google.protobuf.Duration timeout = 1;
 }
 
 message SQLReviewRule {

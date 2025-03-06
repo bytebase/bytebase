@@ -73,9 +73,9 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 	var err error
 
 	switch config.AuthenticationType {
-	case storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM:
+	case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
 		pgxConnConfig, err = getCloudSQLConnectionConfig(ctx, config)
-	case storepb.DataSourceOptions_AWS_RDS_IAM:
+	case storepb.DataSource_AWS_RDS_IAM:
 		pgxConnConfig, err = getRDSConnectionConfig(ctx, config)
 	default:
 		pgxConnConfig, err = getPGConnectionConfig(config)

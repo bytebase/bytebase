@@ -130,20 +130,10 @@ roles:
       - bb.users.delete
       - bb.users.undelete
       - bb.users.update
-      - bb.vcsConnectors.create
-      - bb.vcsConnectors.delete
-      - bb.vcsConnectors.get
-      - bb.vcsConnectors.list
-      - bb.vcsConnectors.update
-      - bb.vcsProviders.create
-      - bb.vcsProviders.delete
-      - bb.vcsProviders.get
-      - bb.vcsProviders.list
-      - bb.vcsProviders.listProjects
-      - bb.vcsProviders.searchProjects
-      - bb.vcsProviders.update
       - bb.worksheets.get
       - bb.worksheets.manage
+      - bb.workspaces.getIamPolicy
+      - bb.workspaces.setIamPolicy
   - name: roles/workspaceDBA
     title: Workspace DBA
     permissions:
@@ -268,20 +258,9 @@ roles:
       - bb.taskRuns.list
       - bb.groups.get
       - bb.groups.list
-      - bb.vcsConnectors.create
-      - bb.vcsConnectors.delete
-      - bb.vcsConnectors.get
-      - bb.vcsConnectors.list
-      - bb.vcsConnectors.update
-      - bb.vcsProviders.create
-      - bb.vcsProviders.delete
-      - bb.vcsProviders.get
-      - bb.vcsProviders.list
-      - bb.vcsProviders.listProjects
-      - bb.vcsProviders.searchProjects
-      - bb.vcsProviders.update
       - bb.worksheets.get
       - bb.worksheets.manage
+      - bb.workspaces.getIamPolicy
   - name: roles/workspaceMember
     title: Workspace member
     permissions:
@@ -301,9 +280,7 @@ roles:
       - bb.groups.create
       - bb.groups.get
       - bb.groups.list
-      - bb.vcsProviders.get
-      - bb.vcsProviders.list
-      - bb.vcsProviders.searchProjects
+      - bb.workspaces.getIamPolicy
   - name: roles/projectOwner
     title: Project owner
     permissions:
@@ -378,11 +355,6 @@ roles:
       - bb.sql.export
       - bb.sql.select
       - bb.taskRuns.list
-      - bb.vcsConnectors.create
-      - bb.vcsConnectors.delete
-      - bb.vcsConnectors.get
-      - bb.vcsConnectors.list
-      - bb.vcsConnectors.update
       - bb.worksheets.get
   - name: roles/projectDeveloper
     title: Project developer
@@ -434,8 +406,6 @@ roles:
       - bb.sheets.update
       - bb.slowQueries.list
       - bb.taskRuns.list
-      - bb.vcsConnectors.get
-      - bb.vcsConnectors.list
   - name: roles/sqlEditorUser
     title: SQL Editor User
     permissions:
@@ -492,6 +462,7 @@ roles:
       - bb.rollouts.get
       - bb.rollouts.list
       - bb.sheets.get
+      - bb.taskRuns.create
       - bb.taskRuns.list
   - name: roles/projectViewer
     title: Project viewer

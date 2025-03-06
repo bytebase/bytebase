@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS vcs_connector;
+DROP TABLE IF EXISTS vcs;

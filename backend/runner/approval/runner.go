@@ -406,7 +406,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 		return 0, store.RiskSourceUnknown, false, nil
 	}
 
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.sheetManager, r.licenseService, r.dbFactory, plan.Config.GetSteps(), plan.Config.GetDeploymentSnapshot(), issue.Project, false)
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.sheetManager, r.licenseService, r.dbFactory, plan.Config.GetSteps(), plan.Config.GetDeploymentSnapshot(), issue.Project)
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
 	}
@@ -493,7 +493,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 						"project_id":     issue.Project.ResourceID,
 						"database_name":  databaseName,
 						// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
-						"db_engine":     instance.Engine.String(),
+						"db_engine":     instance.Metadata.GetEngine().String(),
 						"sql_statement": taskStatement,
 					}
 
@@ -583,7 +583,7 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.sheetManager, r.licenseService, r.dbFactory, plan.Config.GetSteps(), plan.Config.GetDeploymentSnapshot(), issue.Project, false)
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.sheetManager, r.licenseService, r.dbFactory, plan.Config.GetSteps(), plan.Config.GetDeploymentSnapshot(), issue.Project)
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
 	}
@@ -653,7 +653,7 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 						"environment_id": environmentID,
 						"project_id":     issue.Project.ResourceID,
 						"database_name":  databaseName,
-						"db_engine":      instance.Engine.String(),
+						"db_engine":      instance.Metadata.GetEngine().String(),
 					}
 
 					vars, err := e.PartialVars(args)
@@ -801,7 +801,7 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 				"project_id":     issue.Project.ResourceID,
 				"database_name":  database.DatabaseName,
 				// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
-				"db_engine":       instance.Engine.String(),
+				"db_engine":       instance.Metadata.GetEngine().String(),
 				"expiration_days": expirationDays,
 			}
 			if riskSource == store.RiskRequestExport {

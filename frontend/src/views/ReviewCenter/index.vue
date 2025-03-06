@@ -67,7 +67,7 @@ import { Drawer } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import {
   useCurrentUserV1,
-  useProjectV1Store,
+  useProjectByName,
   useRefreshPlanList,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -93,11 +93,9 @@ interface LocalState {
     | "bb.issue.database.data.update";
 }
 
-const specificProject = computed(() => {
-  return projectV1Store.getProjectByName(
-    `${projectNamePrefix}${props.projectId}`
-  );
-});
+const { project: specificProject } = useProjectByName(
+  `${projectNamePrefix}${props.projectId}`
+);
 
 const readonlyScopes = computed((): SearchScope[] => {
   return [
@@ -118,7 +116,6 @@ const defaultSearchParams = () => {
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
-const projectV1Store = useProjectV1Store();
 const state = reactive<LocalState>({
   params: defaultSearchParams(),
 });
@@ -202,13 +199,6 @@ useRefreshPlanList(() => planPagedTable.value?.refresh());
 
 const allowToCreatePlan = computed(() => {
   // Check if user has permission to create plan in specific project.
-  if (specificProject.value) {
-    return hasPermissionToCreatePlanInProject(specificProject.value);
-  }
-  // Otherwise, check if user has permission to create plan in any project.
-  // Mainly using in workspace dashboard.
-  return projectV1Store.projectList.some((project) =>
-    hasPermissionToCreatePlanInProject(project)
-  );
+  return hasPermissionToCreatePlanInProject(specificProject.value);
 });
 </script>

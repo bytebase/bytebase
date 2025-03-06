@@ -114,10 +114,10 @@ func transformDatabaseGroupTargetToSpecs(ctx context.Context, s *store.Store, sp
 	return specs, nil
 }
 
-func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
+func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, error) {
 	if licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) != nil {
 		if spec.EarliestAllowedTime != nil && !spec.EarliestAllowedTime.AsTime().IsZero() {
-			return nil, nil, errors.New(api.FeatureTaskScheduleTime.AccessErrorMessage())
+			return nil, errors.New(api.FeatureTaskScheduleTime.AccessErrorMessage())
 		}
 	}
 
@@ -130,20 +130,20 @@ func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, sheetManager *s
 		return getTaskCreatesFromExportDataConfig(ctx, s, spec, config.ExportDataConfig, project, registerEnvironmentID)
 	}
 
-	return nil, nil, errors.Errorf("invalid spec config type %T", spec.Config)
+	return nil, errors.Errorf("invalid spec config type %T", spec.Config)
 }
 
-func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
+func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, error) {
 	if c.Database == "" {
-		return nil, nil, errors.Errorf("database name is required")
+		return nil, errors.Errorf("database name is required")
 	}
 
 	instance, err := getInstanceMessage(ctx, s, c.Target)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	if instance.Engine == storepb.Engine_ORACLE || instance.Engine == storepb.Engine_OCEANBASE_ORACLE {
-		return nil, nil, errors.Errorf("creating Oracle database is not supported")
+	if instance.Metadata.GetEngine() == storepb.Engine_ORACLE || instance.Metadata.GetEngine() == storepb.Engine_OCEANBASE_ORACLE {
+		return nil, errors.Errorf("creating Oracle database is not supported")
 	}
 
 	dbEnvironmentID := strings.TrimPrefix(c.Environment, common.EnvironmentNamePrefix)
@@ -155,46 +155,41 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 
 	environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if environment == nil {
-		return nil, nil, errors.Errorf("environment ID not found %v", environmentID)
+		return nil, errors.Errorf("environment ID not found %v", environmentID)
 	}
 	if err := registerEnvironmentID(environmentID); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	if instance.Engine == storepb.Engine_MONGODB && c.Table == "" {
-		return nil, nil, errors.Errorf("collection name is required for MongoDB")
+	if instance.Metadata.GetEngine() == storepb.Engine_MONGODB && c.Table == "" {
+		return nil, errors.Errorf("collection name is required for MongoDB")
 	}
 
 	taskCreates, err := func() ([]*store.TaskMessage, error) {
-		if err := checkCharacterSetCollationOwner(instance.Engine, c.CharacterSet, c.Collation, c.Owner); err != nil {
+		if err := checkCharacterSetCollationOwner(instance.Metadata.GetEngine(), c.CharacterSet, c.Collation, c.Owner); err != nil {
 			return nil, err
 		}
 		if c.Database == "" {
 			return nil, errors.Errorf("database name is required")
 		}
-		if instance.Engine == storepb.Engine_SNOWFLAKE {
+		if instance.Metadata.GetEngine() == storepb.Engine_SNOWFLAKE {
 			// Snowflake needs to use upper case of DatabaseName.
 			c.Database = strings.ToUpper(c.Database)
 		}
-		if instance.Engine == storepb.Engine_MONGODB && c.Table == "" {
+		if instance.Metadata.GetEngine() == storepb.Engine_MONGODB && c.Table == "" {
 			return nil, common.Errorf(common.Invalid, "Failed to create issue, collection name missing for MongoDB")
-		}
-		// Validate the labels. Labels are set upon task completion.
-		labelsJSON, err := convertDatabaseLabels(c.Labels)
-		if err != nil {
-			return nil, errors.Wrapf(err, "invalid database label %q", c.Labels)
 		}
 
 		// Get admin data source username.
-		adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
+		adminDataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)
 		if adminDataSource == nil {
-			return nil, common.Errorf(common.Internal, "admin data source not found for instance %q", instance.Title)
+			return nil, common.Errorf(common.Internal, "admin data source not found for instance %q", instance.ResourceID)
 		}
 		databaseName := c.Database
-		switch instance.Engine {
+		switch instance.Metadata.GetEngine() {
 		case storepb.Engine_SNOWFLAKE:
 			// Snowflake needs to use upper case of DatabaseName.
 			databaseName = strings.ToUpper(databaseName)
@@ -204,7 +199,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			// And also, meet an error in here is not a big deal, we will just use the original DatabaseName.
 			driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 			if err != nil {
-				slog.Warn("failed to get admin database driver for instance %q, please check the connection for admin data source", log.BBError(err), slog.String("instance", instance.Title))
+				slog.Warn("failed to get admin database driver for instance %q, please check the connection for admin data source", log.BBError(err), slog.String("instance", instance.ResourceID))
 				break
 			}
 			defer driver.Close(ctx)
@@ -212,7 +207,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			var unused any
 			db := driver.GetDB()
 			if err := db.QueryRowContext(ctx, "SHOW VARIABLES LIKE 'lower_case_table_names'").Scan(&unused, &lowerCaseTableNames); err != nil {
-				slog.Warn("failed to get lower_case_table_names for instance %q", log.BBError(err), slog.String("instance", instance.Title))
+				slog.Warn("failed to get lower_case_table_names for instance %q", log.BBError(err), slog.String("instance", instance.ResourceID))
 				break
 			}
 			if lowerCaseTableNames == 1 {
@@ -220,7 +215,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			}
 		}
 
-		statement, err := getCreateDatabaseStatement(instance.Engine, c, databaseName, adminDataSource.Username)
+		statement, err := getCreateDatabaseStatement(instance.Metadata.GetEngine(), c, databaseName, adminDataSource.GetUsername())
 		if err != nil {
 			return nil, err
 		}
@@ -230,7 +225,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			Title:     fmt.Sprintf("Sheet for creating database %v", databaseName),
 			Statement: statement,
 			Payload: &storepb.SheetPayload{
-				Engine: instance.Engine,
+				Engine: instance.Metadata.GetEngine(),
 			},
 		})
 		if err != nil {
@@ -243,7 +238,6 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			TableName:     c.Table,
 			Collation:     c.Collation,
 			EnvironmentId: dbEnvironmentID,
-			Labels:        labelsJSON,
 			DatabaseName:  databaseName,
 			SheetId:       int32(sheet.UID),
 		}
@@ -268,13 +262,13 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		}, nil
 	}()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return taskCreates, nil, nil
+	return taskCreates, nil
 }
 
-func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
+func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, error) {
 	// possible target:
 	// 1. instances/{instance}/databases/{database}
 	// 2. projects/{project}/databaseGroups/{databaseGroup}
@@ -282,26 +276,26 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 		return getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx, s, spec, c, project, registerEnvironmentID)
 	}
 	if _, _, err := common.GetProjectIDDatabaseGroupID(c.Target); err == nil {
-		return nil, nil, errors.Errorf("unexpected database group target %q", c.Target)
+		return nil, errors.Errorf("unexpected database group target %q", c.Target)
 	}
 
-	return nil, nil, errors.Errorf("unknown target %q", c.Target)
+	return nil, errors.Errorf("unknown target %q", c.Target)
 }
 
-func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ExportDataConfig, _ *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
+func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ExportDataConfig, _ *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, error) {
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(c.Target)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get instance and database from target %q", c.Target)
+		return nil, errors.Wrapf(err, "failed to get instance and database from target %q", c.Target)
 	}
 
 	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &instanceID,
 	})
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
+		return nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
 	}
 	if instance == nil {
-		return nil, nil, errors.Errorf("instance %q not found", instanceID)
+		return nil, errors.Errorf("instance %q not found", instanceID)
 	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:      &instanceID,
@@ -309,19 +303,19 @@ func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spe
 		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 	})
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
 	}
 	if database == nil {
-		return nil, nil, errors.Errorf("database %q not found", databaseName)
+		return nil, errors.Errorf("database %q not found", databaseName)
 	}
 
 	if err := registerEnvironmentID(database.EffectiveEnvironmentID); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
+		return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 	}
 	payload := &storepb.TaskDatabaseDataExportPayload{
 		SpecId:  spec.Id,
@@ -333,7 +327,7 @@ func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spe
 	}
 	bytes, err := protojson.Marshal(payload)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to marshal task database data export payload")
+		return nil, errors.Wrapf(err, "failed to marshal task database data export payload")
 	}
 	payloadString := string(bytes)
 	taskCreate := &store.TaskMessage{
@@ -347,23 +341,23 @@ func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spe
 		t := spec.EarliestAllowedTime.AsTime()
 		taskCreate.EarliestAllowedAt = &t
 	}
-	return []*store.TaskMessage{taskCreate}, nil, nil
+	return []*store.TaskMessage{taskCreate}, nil
 }
 
-func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, _ *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {
+func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, _ *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, error) {
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(c.Target)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get instance and database from target %q", c.Target)
+		return nil, errors.Wrapf(err, "failed to get instance and database from target %q", c.Target)
 	}
 
 	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &instanceID,
 	})
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
+		return nil, errors.Wrapf(err, "failed to get instance %q", instanceID)
 	}
 	if instance == nil {
-		return nil, nil, errors.Errorf("instance %q not found", instanceID)
+		return nil, errors.Errorf("instance %q not found", instanceID)
 	}
 	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:      &instanceID,
@@ -371,14 +365,14 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 	})
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get database %q", databaseName)
+		return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
 	}
 	if database == nil {
-		return nil, nil, errors.Errorf("database %q not found", databaseName)
+		return nil, errors.Errorf("database %q not found", databaseName)
 	}
 
 	if err := registerEnvironmentID(database.EffectiveEnvironmentID); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	switch c.Type {
@@ -392,7 +386,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to marshal task database schema baseline payload")
+			return nil, errors.Wrapf(err, "failed to marshal task database schema baseline payload")
 		}
 		payloadString := string(bytes)
 		taskCreate := &store.TaskMessage{
@@ -406,12 +400,12 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			t := spec.EarliestAllowedTime.AsTime()
 			taskCreate.EarliestAllowedAt = &t
 		}
-		return []*store.TaskMessage{taskCreate}, nil, nil
+		return []*store.TaskMessage{taskCreate}, nil
 
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
 		_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
+			return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
 		payload := &storepb.TaskDatabaseUpdatePayload{
 			SpecId:        spec.Id,
@@ -423,7 +417,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to marshal task database schema update payload")
+			return nil, errors.Wrapf(err, "failed to marshal task database schema update payload")
 		}
 		payloadString := string(bytes)
 		taskCreate := &store.TaskMessage{
@@ -437,12 +431,12 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			t := spec.EarliestAllowedTime.AsTime()
 			taskCreate.EarliestAllowedAt = &t
 		}
-		return []*store.TaskMessage{taskCreate}, nil, nil
+		return []*store.TaskMessage{taskCreate}, nil
 
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_SDL:
 		_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
+			return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
 		payload := &storepb.TaskDatabaseUpdatePayload{
 			SpecId:        spec.Id,
@@ -454,7 +448,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to marshal database schema update SDL payload")
+			return nil, errors.Wrapf(err, "failed to marshal database schema update SDL payload")
 		}
 		payloadString := string(bytes)
 		taskCreate := &store.TaskMessage{
@@ -468,15 +462,15 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			t := spec.EarliestAllowedTime.AsTime()
 			taskCreate.EarliestAllowedAt = &t
 		}
-		return []*store.TaskMessage{taskCreate}, nil, nil
+		return []*store.TaskMessage{taskCreate}, nil
 
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST:
 		_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
+			return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
 		if _, err := ghost.GetUserFlags(c.GhostFlags); err != nil {
-			return nil, nil, errors.Wrapf(err, "invalid ghost flags %q", c.GhostFlags)
+			return nil, errors.Wrapf(err, "invalid ghost flags %q", c.GhostFlags)
 		}
 		payload := &storepb.TaskDatabaseUpdatePayload{
 			SpecId:        spec.Id,
@@ -489,7 +483,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to marshal database schema update ghost payload")
+			return nil, errors.Wrapf(err, "failed to marshal database schema update ghost payload")
 		}
 		taskCreate := &store.TaskMessage{
 			Name:         fmt.Sprintf("DDL(gh-ost) for database %q", database.DatabaseName),
@@ -502,12 +496,12 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			t := spec.EarliestAllowedTime.AsTime()
 			taskCreate.EarliestAllowedAt = &t
 		}
-		return []*store.TaskMessage{taskCreate}, nil, nil
+		return []*store.TaskMessage{taskCreate}, nil
 
 	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
 		_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
+			return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
 		preUpdateBackupDetail := &storepb.PreUpdateBackupDetail{}
 		if c.GetPreUpdateBackupDetail().GetDatabase() != "" {
@@ -524,7 +518,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "Failed to marshal database data update payload")
+			return nil, errors.Wrapf(err, "Failed to marshal database data update payload")
 		}
 		payloadString := string(bytes)
 		taskCreate := &store.TaskMessage{
@@ -538,9 +532,9 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			t := spec.EarliestAllowedTime.AsTime()
 			taskCreate.EarliestAllowedAt = &t
 		}
-		return []*store.TaskMessage{taskCreate}, nil, nil
+		return []*store.TaskMessage{taskCreate}, nil
 	default:
-		return nil, nil, errors.Errorf("unsupported change database config type %q", c.Type)
+		return nil, errors.Errorf("unsupported change database config type %q", c.Type)
 	}
 }
 
@@ -612,25 +606,18 @@ func getCreateDatabaseStatement(dbType storepb.Engine, c *storepb.PlanConfig_Cre
 		return fmt.Sprintf("CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s;", databaseName, c.CharacterSet, c.Collation), nil
 	case storepb.Engine_MSSQL:
 		return fmt.Sprintf(`CREATE DATABASE "%s";`, databaseName), nil
-	case storepb.Engine_POSTGRES:
-		// On Cloud RDS, the data source role isn't the actual superuser with sudo privilege.
-		// We need to grant the database owner role to the data source admin so that Bytebase can have permission for the database using the data source admin.
-		if adminDatasourceUser != "" && c.Owner != adminDatasourceUser {
-			stmt = fmt.Sprintf("GRANT \"%s\" TO \"%s\";\n", c.Owner, adminDatasourceUser)
+	case storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB:
+		collationPart := ""
+		if c.Collation != "" {
+			collationPart = fmt.Sprintf(" LC_COLLATE %q", c.Collation)
 		}
-		if c.Collation == "" {
-			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q;", stmt, databaseName, c.CharacterSet)
-		} else {
-			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", stmt, databaseName, c.CharacterSet, c.Collation)
-		}
+		stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q%s;", stmt, databaseName, c.CharacterSet, collationPart)
 		// Set the database owner.
 		// We didn't use CREATE DATABASE WITH OWNER because RDS requires the current role to be a member of the database owner.
 		// However, people can still use ALTER DATABASE to change the owner afterwards.
 		// Error string below:
 		// query: CREATE DATABASE h1 WITH OWNER hello;
 		// ERROR:  must be member of role "hello"
-		//
-		// TODO(d): alter schema "public" owner to the database owner.
 		return fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO \"%s\";", stmt, databaseName, c.Owner), nil
 	case storepb.Engine_CLICKHOUSE:
 		clusterPart := ""
@@ -666,26 +653,6 @@ func getCreateDatabaseStatement(dbType storepb.Engine, c *storepb.PlanConfig_Cre
 			stmt = fmt.Sprintf("%s WITH\n\t%s", stmt, strings.Join(list, "\n\t"))
 		}
 		return fmt.Sprintf("%s;", stmt), nil
-	case storepb.Engine_COCKROACHDB:
-		// On Cloud RDS, the data source role isn't the actual superuser with sudo privilege.
-		// We need to grant the database owner role to the data source admin so that Bytebase can have permission for the database using the data source admin.
-		if adminDatasourceUser != "" && c.Owner != adminDatasourceUser {
-			stmt = fmt.Sprintf("GRANT \"%s\" TO \"%s\";\n", c.Owner, adminDatasourceUser)
-		}
-		if c.Collation == "" {
-			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q;", stmt, databaseName, c.CharacterSet)
-		} else {
-			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", stmt, databaseName, c.CharacterSet, c.Collation)
-		}
-		// Set the database owner.
-		// We didn't use CREATE DATABASE WITH OWNER because RDS requires the current role to be a member of the database owner.
-		// However, people can still use ALTER DATABASE to change the owner afterwards.
-		// Error string below:
-		// query: CREATE DATABASE h1 WITH OWNER hello;
-		// ERROR:  must be member of role "hello"
-		//
-		// TODO(d): alter schema "public" owner to the database owner.
-		return fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO \"%s\";", stmt, databaseName, c.Owner), nil
 	case storepb.Engine_HIVE:
 		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
 	}
