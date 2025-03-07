@@ -27,11 +27,6 @@ jobs:
         run: |
           go mod tidy
           git diff --exit-code
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: v1.64.5
-          args: --verbose --timeout 20m --max-same-issues=30 --allow-parallel-runners
       - name: Run all tests
         run: go test -p=8 -ldflags "-w -s" -v ./backend/... | tee test.log; exit ${PIPESTATUS[0]}
       - name: Pretty print tests running time
@@ -41,3 +36,18 @@ jobs:
         # sort: cut into columns by delimiter ' ' (single space) and sort by column 3 (test time in seconds) as numeric type in reverse order (largest comes first)
         # awk: accumulate sum by test time in seconds
         run: grep --color=never -e '--- PASS:' -e '--- FAIL:' test.log | sed 's/[:()]//g' | awk '{print $2,$3,$4}' | sort -t' ' -nk3 -r | awk '{sum += $3; print $1,$2,$3,sum"s"}'
+
+  golangci-lint:
+    runs-on: self-hosted
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.0
+          cache: false
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.64.5
+          args: --verbose --timeout 20m --max-same-issues=30 --allow-parallel-runners
