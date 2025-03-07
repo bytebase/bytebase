@@ -37,6 +37,7 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 		Title:       plan.Name,
 		Description: plan.Description,
 		Steps:       convertToPlanSteps(plan.Config.Steps),
+		Deployment:  convertToPlanDeployment(plan.Config.Deployment),
 		ReleaseSource: &v1pb.Plan_ReleaseSource{
 			Release: plan.Config.GetReleaseSource().GetRelease(),
 		},
@@ -168,6 +169,34 @@ func convertToPlanSpecExportDataConfig(config *storepb.PlanConfig_Spec_ExportDat
 	}
 }
 
+func convertToPlanDeployment(deployment *storepb.PlanConfig_Deployment) *v1pb.Plan_Deployment {
+	if deployment == nil {
+		return nil
+	}
+	return &v1pb.Plan_Deployment{
+		Environments:          deployment.Environments,
+		DatabaseGroupMappings: convertToDatabaseGroupMappings(deployment.DatabaseGroupMappings),
+	}
+}
+
+func convertToDatabaseGroupMappings(mappings []*storepb.PlanConfig_Deployment_DatabaseGroupMapping) []*v1pb.Plan_Deployment_DatabaseGroupMapping {
+	v1Mappings := make([]*v1pb.Plan_Deployment_DatabaseGroupMapping, len(mappings))
+	for i := range mappings {
+		v1Mappings[i] = convertToDatabaseGroupMapping(mappings[i])
+	}
+	return v1Mappings
+}
+
+func convertToDatabaseGroupMapping(mapping *storepb.PlanConfig_Deployment_DatabaseGroupMapping) *v1pb.Plan_Deployment_DatabaseGroupMapping {
+	if mapping == nil {
+		return nil
+	}
+	return &v1pb.Plan_Deployment_DatabaseGroupMapping{
+		DatabaseGroup: mapping.DatabaseGroup,
+		Databases:     mapping.Databases,
+	}
+}
+
 func convertPlan(plan *v1pb.Plan) *storepb.PlanConfig {
 	if plan == nil {
 		return nil
@@ -185,6 +214,34 @@ func convertPlanReleaseSource(s *v1pb.Plan_ReleaseSource) *storepb.PlanConfig_Re
 	}
 	return &storepb.PlanConfig_ReleaseSource{
 		Release: s.Release,
+	}
+}
+
+func convertPlanDeployment(s *v1pb.Plan_Deployment) *storepb.PlanConfig_Deployment {
+	if s == nil {
+		return nil
+	}
+	return &storepb.PlanConfig_Deployment{
+		Environments:          s.Environments,
+		DatabaseGroupMappings: convertDatabaseGroupMappings(s.DatabaseGroupMappings),
+	}
+}
+
+func convertDatabaseGroupMappings(s []*v1pb.Plan_Deployment_DatabaseGroupMapping) []*storepb.PlanConfig_Deployment_DatabaseGroupMapping {
+	storeMappings := make([]*storepb.PlanConfig_Deployment_DatabaseGroupMapping, len(s))
+	for i := range s {
+		storeMappings[i] = convertDatabaseGroupMapping(s[i])
+	}
+	return storeMappings
+}
+
+func convertDatabaseGroupMapping(s *v1pb.Plan_Deployment_DatabaseGroupMapping) *storepb.PlanConfig_Deployment_DatabaseGroupMapping {
+	if s == nil {
+		return nil
+	}
+	return &storepb.PlanConfig_Deployment_DatabaseGroupMapping{
+		DatabaseGroup: s.DatabaseGroup,
+		Databases:     s.Databases,
 	}
 }
 
