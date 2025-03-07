@@ -1,5 +1,4 @@
-# https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks
-name: Proto linter
+name: golangci-lint
 
 on:
   pull_request:
@@ -7,9 +6,10 @@ on:
       - main
       - "release/*.*.*"
     paths-ignore:
-      - "proto/**"
+      - "backend/**"
+      - "go.mod"
 
-jobs:
+      jobs:
   lint-protos:
     runs-on: ubuntu-latest
     steps:
