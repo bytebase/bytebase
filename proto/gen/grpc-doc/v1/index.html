@@ -1989,11 +1989,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Plan.DeploymentSnapshot"><span class="badge">M</span>Plan.DeploymentSnapshot</a>
+                  <a href="#bytebase.v1.Plan.Deployment"><span class="badge">M</span>Plan.Deployment</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Plan.DeploymentSnapshot.DatabaseGroupSnapshot"><span class="badge">M</span>Plan.DeploymentSnapshot.DatabaseGroupSnapshot</a>
+                  <a href="#bytebase.v1.Plan.Deployment.DatabaseGroupMapping"><span class="badge">M</span>Plan.Deployment.DatabaseGroupMapping</a>
                 </li>
               
                 <li>
@@ -21339,8 +21339,8 @@ Keys are:
                 </tr>
               
                 <tr>
-                  <td>deployment_snapshot</td>
-                  <td><a href="#bytebase.v1.Plan.DeploymentSnapshot">Plan.DeploymentSnapshot</a></td>
+                  <td>deployment</td>
+                  <td><a href="#bytebase.v1.Plan.Deployment">Plan.Deployment</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -21547,7 +21547,7 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
 
         
       
-        <h3 id="bytebase.v1.Plan.DeploymentSnapshot">Plan.DeploymentSnapshot</h3>
+        <h3 id="bytebase.v1.Plan.Deployment">Plan.Deployment</h3>
         <p></p>
 
         
@@ -21561,14 +21561,14 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
                   <td>environments</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p> </p></td>
+                  <td><p>The environments deploy order. </p></td>
                 </tr>
               
                 <tr>
-                  <td>database_group_snapshots</td>
-                  <td><a href="#bytebase.v1.Plan.DeploymentSnapshot.DatabaseGroupSnapshot">Plan.DeploymentSnapshot.DatabaseGroupSnapshot</a></td>
+                  <td>database_group_mappings</td>
+                  <td><a href="#bytebase.v1.Plan.Deployment.DatabaseGroupMapping">Plan.Deployment.DatabaseGroupMapping</a></td>
                   <td>repeated</td>
-                  <td><p> </p></td>
+                  <td><p>The database group mapping. </p></td>
                 </tr>
               
             </tbody>
@@ -21578,8 +21578,8 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
 
         
       
-        <h3 id="bytebase.v1.Plan.DeploymentSnapshot.DatabaseGroupSnapshot">Plan.DeploymentSnapshot.DatabaseGroupSnapshot</h3>
-        <p>The snapshot of the database group mapping at the time of creation.</p>
+        <h3 id="bytebase.v1.Plan.Deployment.DatabaseGroupMapping">Plan.Deployment.DatabaseGroupMapping</h3>
+        <p></p>
 
         
           <table class="field-table">
