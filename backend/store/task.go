@@ -25,11 +25,11 @@ type TaskMessage struct {
 	PipelineID     int
 	StageID        int
 	InstanceID     string
+	EnvironmentID  string // This is the stage.
 	DatabaseName   *string
 	TaskRunRawList []*TaskRunMessage
 
 	// Domain specific fields
-	Name              string
 	Type              api.TaskType
 	Payload           string
 	EarliestAllowedAt *time.Time
@@ -52,9 +52,7 @@ type TaskFind struct {
 	TypeList *[]api.TaskType
 	// Payload contains JSONB expressions
 	// Ref: https://www.postgresql.org/docs/current/functions-json.html
-	Payload         string
-	NoBlockingStage bool
-	NonRollbackTask bool
+	Payload string
 
 	LatestTaskRunStatusList *[]api.TaskRunStatus
 }
@@ -147,46 +145,60 @@ func (s *Store) FindBlockingTasksByVersion(ctx context.Context, instanceID, data
 }
 
 func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) ([]*TaskMessage, error) {
-	var query strings.Builder
-	var values []any
-	var queryValues []string
-
-	_, _ = query.WriteString(
-		`INSERT INTO task (
+	query := `INSERT INTO task (
 			pipeline_id,
 			stage_id,
 			instance,
 			db_name,
-			name,
-			status,
 			type,
 			payload,
 			earliest_allowed_at
-		)
-		VALUES
-    `)
-	for i, create := range creates {
+		) SELECT
+			unnest(CAST($1 AS INTEGER[])),
+			unnest(CAST($2 AS INTEGER[])),
+			unnest(CAST($3 AS TEXT[])),
+			unnest(CAST($4 AS TEXT[])),
+			unnest(CAST($5 AS TEXT[])),
+			unnest(CAST($6 AS JSONB[])),
+			unnest(CAST($7 AS TIMESTAMPTZ[]))
+		RETURNING id, pipeline_id, stage_id, instance, db_name, type, payload, earliest_allowed_at`
+
+	var (
+		pipelineIDs        []int
+		stageIDs           []int
+		instances          []string
+		databases          []*string
+		types              []string
+		payloads           []string
+		earliestAllowedAts []time.Time
+	)
+	for _, create := range creates {
 		if create.Payload == "" {
 			create.Payload = "{}"
 		}
-		values = append(values,
-			create.PipelineID,
-			create.StageID,
-			create.InstanceID,
-			create.DatabaseName,
-			create.Name,
-			create.Type,
-			create.Payload,
-			create.EarliestAllowedAt,
-		)
-		const count = 8
-		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, 'PENDING_APPROVAL', $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, i*count+7, i*count+8))
+		pipelineIDs = append(pipelineIDs, create.PipelineID)
+		stageIDs = append(stageIDs, create.StageID)
+		instances = append(instances, create.InstanceID)
+		databases = append(databases, create.DatabaseName)
+		types = append(types, string(create.Type))
+		payloads = append(payloads, create.Payload)
+		if create.EarliestAllowedAt == nil {
+			earliestAllowedAts = append(earliestAllowedAts, time.Time{})
+		} else {
+			earliestAllowedAts = append(earliestAllowedAts, *create.EarliestAllowedAt)
+		}
 	}
-	_, _ = query.WriteString(strings.Join(queryValues, ","))
-	_, _ = query.WriteString(` RETURNING id, pipeline_id, stage_id, instance, db_name, name, type, payload, earliest_allowed_at`)
 
 	var tasks []*TaskMessage
-	rows, err := tx.QueryContext(ctx, query.String(), values...)
+	rows, err := tx.QueryContext(ctx, query,
+		pipelineIDs,
+		stageIDs,
+		instances,
+		databases,
+		types,
+		payloads,
+		earliestAllowedAts,
+	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query")
 	}
@@ -200,7 +212,6 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 			&task.StageID,
 			&task.InstanceID,
 			&task.DatabaseName,
-			&task.Name,
 			&task.Type,
 			&task.Payload,
 			&earliestAllowedAt,
@@ -216,25 +227,6 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 		return nil, errors.Wrapf(err, "rows err")
 	}
 
-	return tasks, nil
-}
-
-// CreateTasksV2 creates a new task.
-func (s *Store) CreateTasksV2(ctx context.Context, creates ...*TaskMessage) ([]*TaskMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
-
-	tasks, err := s.createTasks(ctx, tx, creates...)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create tasks")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit tx")
-	}
 	return tasks, nil
 }
 
@@ -273,12 +265,6 @@ func (*Store) listTasksTx(ctx context.Context, tx *Tx, find *TaskFind) ([]*TaskM
 	if v := find.Payload; v != "" {
 		where = append(where, v)
 	}
-	if find.NoBlockingStage {
-		where = append(where, "(SELECT NOT EXISTS (SELECT 1 FROM task as other_task WHERE other_task.pipeline_id = task.pipeline_id AND other_task.stage_id < task.stage_id AND other_task.status != 'DONE'))")
-	}
-	if find.NonRollbackTask {
-		where = append(where, "(NOT (task.type='bb.task.database.data.update' AND task.payload->>'rollbackFromTaskId' IS NOT NULL))")
-	}
 
 	args = append(args, api.TaskRunNotStarted)
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
@@ -288,7 +274,6 @@ func (*Store) listTasksTx(ctx context.Context, tx *Tx, find *TaskFind) ([]*TaskM
 			task.stage_id,
 			task.instance,
 			task.db_name,
-			task.name,
 			latest_task_run.status AS latest_task_run_status,
 			task.type,
 			task.payload,
@@ -324,7 +309,6 @@ func (*Store) listTasksTx(ctx context.Context, tx *Tx, find *TaskFind) ([]*TaskM
 			&task.StageID,
 			&task.InstanceID,
 			&task.DatabaseName,
-			&task.Name,
 			&task.LatestTaskRunStatus,
 			&task.Type,
 			&task.Payload,
@@ -423,7 +407,7 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessag
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, pipeline_id, stage_id, instance, db_name, name, type, payload, earliest_allowed_at
+		RETURNING id, pipeline_id, stage_id, instance, db_name, type, payload, earliest_allowed_at
 	`, len(args)),
 		args...,
 	).Scan(
@@ -432,7 +416,6 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessag
 		&task.StageID,
 		&task.InstanceID,
 		&task.DatabaseName,
-		&task.Name,
 		&task.Type,
 		&task.Payload,
 		&earliestAllowedAt,

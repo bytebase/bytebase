@@ -79,6 +79,7 @@ import { task_StatusToJSON } from "@/types/proto/v1/rollout_service";
 import { activeTaskInStageV1 } from "@/utils";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import StageSummary from "./StageSummary.vue";
+import { extractEnvironmentResourceName } from "@/utils";
 
 const props = defineProps<{
   stage: Stage;
@@ -140,8 +141,8 @@ const stageClass = computed(() => {
 const stageTitle = computed(() => {
   const { stage } = props;
   return !isCreating.value && isActiveStage.value
-    ? t("issue.stage-select.current", { name: stage.title })
-    : stage.title;
+    ? t("issue.stage-select.current", { name: extractEnvironmentResourceName(stage.environment) })
+    : extractEnvironmentResourceName(stage.environment);
 });
 
 const planCheckStatus = computed((): PlanCheckRun_Result_Status => {

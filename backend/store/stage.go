@@ -9,13 +9,9 @@ import (
 
 // StageMessage is the message for stage.
 type StageMessage struct {
-	Name        string
 	Environment string
 	PipelineID  int
 	TaskList    []*TaskMessage
-
-	// empty for legacy stages
-	DeploymentID string
 
 	// Output only.
 	ID     int
@@ -27,28 +23,20 @@ func (*Store) createStages(ctx context.Context, tx *Tx, stagesCreate []*StageMes
 		return nil, nil
 	}
 	var environments []string
-	var names []string
-	var deploymentIDs []string
 	for _, create := range stagesCreate {
 		environments = append(environments, create.Environment)
-		names = append(names, create.Name)
-		deploymentIDs = append(deploymentIDs, create.DeploymentID)
 	}
 
 	query := `
 		INSERT INTO stage (
 			pipeline_id,
-			environment,
-			name,
-			deployment_id
+			environment
 		) SELECT
 			$1,
-			unnest(CAST($2 AS TEXT[])) AS environment,
-			unnest(CAST($3 AS TEXT[])),
-			unnest(CAST($4 AS TEXT[])) AS deployment_id
+			unnest(CAST($2 AS TEXT[])) AS environment
 		RETURNING id
     `
-	rows, err := tx.QueryContext(ctx, query, pipelineUID, environments, names, deploymentIDs)
+	rows, err := tx.QueryContext(ctx, query, pipelineUID, environments)
 	if err != nil {
 		return nil, err
 	}
@@ -77,8 +65,6 @@ func (*Store) listStages(ctx context.Context, tx *Tx, pipelineUID int) ([]*Stage
 			stage.id,
 			stage.pipeline_id,
 			stage.environment,
-			stage.deployment_id,
-			stage.name,
 			(
 				SELECT EXISTS (
 					SELECT 1 FROM task
@@ -117,8 +103,6 @@ func (*Store) listStages(ctx context.Context, tx *Tx, pipelineUID int) ([]*Stage
 			&stage.ID,
 			&stage.PipelineID,
 			&stage.Environment,
-			&stage.DeploymentID,
-			&stage.Name,
 			&stage.Active,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")

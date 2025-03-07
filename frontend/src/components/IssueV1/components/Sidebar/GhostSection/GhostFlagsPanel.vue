@@ -15,15 +15,7 @@
                 {{ $t("common.stage") }}
               </label>
               <div class="textinfolabel break-all">
-                {{ stage.title }}
-              </div>
-            </div>
-            <div class="contents">
-              <label class="font-medium text-control">
-                {{ $t("common.task") }}
-              </label>
-              <div class="textinfolabel break-all">
-                {{ task.title }}
+                {{ extractEnvironmentResourceName(stage.environment) }}
               </div>
             </div>
             <div class="contents">
@@ -92,7 +84,7 @@ import { planServiceClient } from "@/grpcweb";
 import { pushNotification, useDBGroupStore } from "@/store";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
-import { extractDatabaseGroupName } from "@/utils";
+import { extractDatabaseGroupName, extractEnvironmentResourceName } from "@/utils";
 import FlagsForm from "./FlagsForm";
 import { allowChangeTaskGhostFlags, useIssueGhostContext } from "./common";
 

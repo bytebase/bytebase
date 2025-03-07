@@ -278,7 +278,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		s.approvalRunner = approval.NewRunner(storeInstance, s.sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.licenseService)
 
 		s.taskSchedulerV2 = taskrun.NewSchedulerV2(storeInstance, s.stateCfg, s.webhookManager, profile, s.licenseService)
-		s.taskSchedulerV2.Register(api.TaskGeneral, taskrun.NewDefaultExecutor())
 		s.taskSchedulerV2.Register(api.TaskDatabaseCreate, taskrun.NewDatabaseCreateExecutor(storeInstance, s.dbFactory, s.schemaSyncer, s.stateCfg, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))

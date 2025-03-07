@@ -202,9 +202,7 @@ ALTER SEQUENCE pipeline_id_seq RESTART WITH 101;
 CREATE TABLE stage (
     id serial PRIMARY KEY,
     pipeline_id integer NOT NULL REFERENCES pipeline(id),
-    environment text NOT NULL REFERENCES environment(resource_id),
-    deployment_id text NOT NULL DEFAULT '',
-    name text NOT NULL
+    environment text NOT NULL REFERENCES environment(resource_id)
 );
 
 CREATE INDEX idx_stage_pipeline_id ON stage(pipeline_id);
@@ -218,16 +216,12 @@ CREATE TABLE task (
     stage_id integer NOT NULL REFERENCES stage(id),
     instance text NOT NULL REFERENCES instance(resource_id),
     db_name text,
-    name text NOT NULL,
-    status text NOT NULL CHECK (status IN ('PENDING', 'PENDING_APPROVAL', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     type text NOT NULL CHECK (type LIKE 'bb.task.%'),
     payload jsonb NOT NULL DEFAULT '{}',
     earliest_allowed_at timestamptz NULL
 );
 
 CREATE INDEX idx_task_pipeline_id_stage_id ON task(pipeline_id, stage_id);
-
-CREATE INDEX idx_task_status ON task(status);
 
 ALTER SEQUENCE task_id_seq RESTART WITH 101;
 
@@ -240,7 +234,6 @@ CREATE TABLE task_run (
     task_id integer NOT NULL REFERENCES task(id),
     sheet_id integer REFERENCES sheet(id),
     attempt integer NOT NULL,
-    name text NOT NULL,
     status text NOT NULL CHECK (status IN ('PENDING', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     started_at timestamptz NULL,
     code integer NOT NULL DEFAULT 0,
@@ -417,19 +410,6 @@ CREATE TABLE anomaly (
 CREATE UNIQUE INDEX idx_anomaly_unique_project_instance_dn_name_type ON anomaly(project, instance, db_name, type);
 
 ALTER SEQUENCE anomaly_id_seq RESTART WITH 101;
-
--- Deployment Configuration.
--- deployment_config stores deployment configurations at project level.
-CREATE TABLE deployment_config (
-    id serial PRIMARY KEY,
-    project text NOT NULL REFERENCES project(resource_id),
-    name text NOT NULL,
-    config jsonb NOT NULL DEFAULT '{}'
-);
-
-CREATE UNIQUE INDEX idx_deployment_config_unique_project ON deployment_config(project);
-
-ALTER SEQUENCE deployment_config_id_seq RESTART WITH 101;
 
 -- worksheet table stores worksheets in SQL Editor.
 CREATE TABLE worksheet (
