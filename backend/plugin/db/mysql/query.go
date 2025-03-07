@@ -206,7 +206,7 @@ func (r *mysqlRewriter) EnterQueryExpression(ctx *mysql.QueryExpressionContext) 
 	}
 }
 
-// Helper function to determine if binary data is readable text
+// Helper function to determine if binary data is readable text.
 func isReadableText(data []byte) bool {
 	// Basic check: Contains only printable ASCII characters
 	for _, b := range data {
