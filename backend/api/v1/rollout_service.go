@@ -226,7 +226,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.NotFound, "plan not found for id: %d", planID)
 	}
 
-	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, plan.Config.GetSteps(), plan.Config.GetDeploymentSnapshot(), project)
+	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, plan.Config.GetSteps(), plan.Config.GetDeployment(), project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
@@ -234,7 +234,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.InvalidArgument, "no database matched for deployment, hint: check deployment config setting that the target database is in a stage")
 	}
 	if isChangeDatabasePlan(plan.Config.GetSteps()) {
-		pipelineCreate, err = getPipelineCreateToTargetStage(ctx, s.store, plan.Config.GetDeploymentSnapshot().GetEnvironments(), pipelineCreate, request.StageId)
+		pipelineCreate, err = getPipelineCreateToTargetStage(ctx, s.store, plan.Config.GetDeployment().GetEnvironments(), pipelineCreate, request.StageId)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to filter stages with stageId, error: %v", err)
 		}
@@ -950,7 +950,7 @@ func isChangeDatabasePlan(steps []*storepb.PlanConfig_Step) bool {
 }
 
 // GetPipelineCreate gets a pipeline create message from a plan.
-func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, snapshot *storepb.PlanConfig_DeploymentSnapshot /* nullable */, project *store.ProjectMessage) (*store.PipelineMessage, error) {
+func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, deployment *storepb.PlanConfig_Deployment /* nullable */, project *store.ProjectMessage) (*store.PipelineMessage, error) {
 	// Flatten all specs from steps.
 	var specs []*storepb.PlanConfig_Spec
 	for _, step := range steps {
@@ -959,13 +959,13 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 
 	// Step 1 - transform database group specs.
 	// Others are untouched.
-	transformSpecs, err := transformDatabaseGroupSpecs(ctx, s, project, specs, snapshot)
+	transformSpecs, err := transformDatabaseGroupSpecs(ctx, s, project, specs, deployment)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to transform database group specs")
 	}
 
 	// Step 2 - list snapshot environments.
-	snapshotEnvironments := snapshot.Environments
+	snapshotEnvironments := deployment.GetEnvironments()
 	if len(snapshotEnvironments) == 0 {
 		environments, err := s.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
 		if err != nil {

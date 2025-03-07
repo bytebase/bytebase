@@ -255,7 +255,7 @@ message Plan {
 
   ReleaseSource release_source = 12;
 
-  DeploymentSnapshot deployment_snapshot = 13;
+  Deployment deployment = 13;
 
   message CreateDatabaseConfig {
     // The resource name of the instance on which the database is created.
@@ -335,12 +335,13 @@ message Plan {
     optional string password = 4;
   }
 
-  message DeploymentSnapshot {
+  message Deployment {
+    // The environments deploy order.
     repeated string environments = 1;
-    repeated DatabaseGroupSnapshot database_group_snapshots = 2;
+    // The database group mapping.
+    repeated DatabaseGroupMapping database_group_mappings = 2;
 
-    // The snapshot of the database group mapping at the time of creation.
-    message DatabaseGroupSnapshot {
+    message DatabaseGroupMapping {
       // Format: projects/{project}/databaseGroups/{databaseGroup}.
       string database_group = 1;
       // Format: instances/{instance-id}/databases/{database-name}.
