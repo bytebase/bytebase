@@ -31,6 +31,8 @@ type FindUserMessage struct {
 	ShowDeleted bool
 	Type        *api.PrincipalType
 	Limit       *int
+	Offset      *int
+	Filter      *ListResourceFilter
 }
 
 // UpdateUserMessage is the message to update a user.
@@ -152,6 +154,10 @@ func (s *Store) listAndCacheAllUsers(ctx context.Context) ([]*UserMessage, error
 
 func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
+	if filter := find.Filter; filter != nil {
+		where = append(where, filter.Where)
+		args = append(args, filter.Args...)
+	}
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("principal.id = $%d", len(args)+1)), append(args, *v)
 	}
@@ -186,6 +192,9 @@ func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMe
 
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		query += fmt.Sprintf(" OFFSET %d", *v)
 	}
 
 	var userMessages []*UserMessage

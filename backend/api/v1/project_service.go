@@ -11,6 +11,8 @@ import (
 
 	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
+	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/gosimple/slug"
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -99,6 +101,86 @@ func (s *ProjectService) ListProjects(ctx context.Context, request *v1pb.ListPro
 	return response, nil
 }
 
+func getListProjectFilter(filter string) (*store.ListResourceFilter, error) {
+	if filter == "" {
+		return nil, nil
+	}
+	e, err := cel.NewEnv()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create cel env")
+	}
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to parse filter %v, error: %v", filter, iss.String())
+	}
+
+	var getFilter func(expr celast.Expr) (string, error)
+	var positionalArgs []any
+
+	parseToSQL := func(variable, value any) (string, error) {
+		switch variable {
+		case "name":
+			positionalArgs = append(positionalArgs, value.(string))
+			return fmt.Sprintf("project.name = $%d", len(positionalArgs)), nil
+		case "resource_id":
+			positionalArgs = append(positionalArgs, value.(string))
+			return fmt.Sprintf("project.resource_id = $%d", len(positionalArgs)), nil
+		default:
+			return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
+		}
+	}
+
+	getFilter = func(expr celast.Expr) (string, error) {
+		switch expr.Kind() {
+		case celast.CallKind:
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
+			case celoperators.LogicalOr:
+				return getSubConditionFromExpr(expr, getFilter, "OR")
+			case celoperators.LogicalAnd:
+				return getSubConditionFromExpr(expr, getFilter, "AND")
+			case celoperators.Equals:
+				variable, value := getVariavleAndValueFromExpr(expr)
+				return parseToSQL(variable, value)
+			case celoverloads.Matches:
+				variable := expr.AsCall().Target().AsIdent()
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return "", status.Errorf(codes.InvalidArgument, `invalid args for %q`, variable)
+				}
+				value := args[0].AsLiteral().Value()
+				strValue, ok := value.(string)
+				if !ok {
+					return "", status.Errorf(codes.InvalidArgument, "expect string, got %T, hint: filter literals should be string", value)
+				}
+
+				switch variable {
+				case "name":
+					return "LOWER(project.name) LIKE '%" + strings.ToLower(strValue) + "%'", nil
+				case "resource_id":
+					return "LOWER(project.resource_id) LIKE '%" + strings.ToLower(strValue) + "%'", nil
+				default:
+					return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
+				}
+			default:
+				return "", status.Errorf(codes.InvalidArgument, "unexpected function %v", functionName)
+			}
+		default:
+			return "", status.Errorf(codes.InvalidArgument, "unexpected expr kind %v", expr.Kind())
+		}
+	}
+
+	where, err := getFilter(ast.NativeRep().Expr())
+	if err != nil {
+		return nil, err
+	}
+
+	return &store.ListResourceFilter{
+		Args:  positionalArgs,
+		Where: "(" + where + ")",
+	}, nil
+}
+
 // SearchProjects searches all projects on which the user has bb.projects.get permission.
 func (s *ProjectService) SearchProjects(ctx context.Context, request *v1pb.SearchProjectsRequest) (*v1pb.SearchProjectsResponse, error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
@@ -109,15 +191,19 @@ func (s *ProjectService) SearchProjects(ctx context.Context, request *v1pb.Searc
 	find := &store.FindProjectMessage{
 		ShowDeleted: request.ShowDeleted,
 	}
-	if request.Query != "" {
-		find.Query = &request.Query
+	filter, err := getListProjectFilter(request.Filter)
+	if err != nil {
+		return nil, err
 	}
+	find.Filter = filter
 
 	projects, err := s.store.ListProjectV2(ctx, find)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	// TODO(p0ny): support filter by permission in SQL
+	// So that we can support pagination in the API.
 	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check permission, error %v", err)

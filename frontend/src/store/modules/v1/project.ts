@@ -74,6 +74,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     pageSize: number;
     pageToken?: string;
     query?: string;
+    silent?: boolean;
   }): Promise<{
     projects: ComposedProject[];
     nextPageToken?: string;
@@ -81,8 +82,12 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     const request =
       hasWorkspacePermissionV2("bb.projects.list") && !params.query
         ? projectServiceClient.listProjects
-        : projectServiceClient.searchProjects;
-    const response = await request(params);
+        : searchProjects;
+    const response = await request({
+      ...params,
+      query: params.query ?? "",
+      silent: params.silent ?? true,
+    });
     const composedProjects = await upsertProjectMap(response.projects);
 
     return {
@@ -99,15 +104,22 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     query: string;
     silent?: boolean;
     showDeleted?: boolean;
-  }) => {
+  }): Promise<{
+    projects: ComposedProject[];
+  }> => {
     const { projects } = await projectServiceClient.searchProjects(
       {
-        query,
+        filter: query
+          ? `name.matches("${query}") || resource_id.matches("${query}")`
+          : "",
         showDeleted,
       },
       { silent }
     );
-    return await upsertProjectMap(projects);
+    const composedProjects = await upsertProjectMap(projects);
+    return {
+      projects: composedProjects,
+    };
   };
 
   const getOrFetchProjectByName = async (name: string, silent = true) => {
