@@ -50,4 +50,4 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: v1.64.5
-          args: --verbose --timeout 20m --max-same-issues=30 --allow-parallel-runners
+          args: --verbose -j 8 --timeout 20m --max-same-issues=30 --allow-parallel-runners
