@@ -55,6 +55,7 @@ type UpdatePlanMessage struct {
 	Name        *string
 	Description *string
 	Steps       *[]*storepb.PlanConfig_Step
+	Deployment  **storepb.PlanConfig_Deployment
 }
 
 // CreatePlan creates a new plan.
@@ -255,14 +256,29 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) error 
 	if v := patch.Description; v != nil {
 		set, args = append(set, fmt.Sprintf("description = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := patch.Steps; v != nil {
-		config, err := protojson.Marshal(&storepb.PlanConfig{
-			Steps: *v,
-		})
-		if err != nil {
-			return errors.Wrapf(err, "failed to marshal plan config")
+	{
+		var payloadSets []string
+		if v := patch.Steps; v != nil {
+			config, err := protojson.Marshal(&storepb.PlanConfig{
+				Steps: *v,
+			})
+			if err != nil {
+				return errors.Wrapf(err, "failed to marshal plan config")
+			}
+			payloadSets = append(payloadSets, fmt.Sprintf("jsonb_build_object('steps', ($%d)::JSONB->'steps')", len(args)+1))
+			args = append(args, config)
 		}
-		set, args = append(set, fmt.Sprintf("config = jsonb_set(config, '{steps}', ($%d)::JSONB->'steps')", len(args)+1)), append(args, config)
+		if v := patch.Deployment; v != nil {
+			p, err := protojson.Marshal(*v)
+			if err != nil {
+				return errors.Wrapf(err, "failed to marshal deployment")
+			}
+			payloadSets = append(payloadSets, fmt.Sprintf("jsonb_build_object('deployment', ($%d)::JSONB)", len(args)+1))
+			args = append(args, p)
+		}
+		if len(payloadSets) > 0 {
+			set = append(set, fmt.Sprintf("config = config || %s", strings.Join(payloadSets, " || ")))
+		}
 	}
 	if v := patch.PipelineUID; v != nil {
 		set, args = append(set, fmt.Sprintf("pipeline_id = $%d", len(args)+1)), append(args, v)
