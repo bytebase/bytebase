@@ -5455,12 +5455,11 @@ paths:
                   required: true
                   schema:
                     type: string
-                - name: stageId
+                - name: target
                   in: query
                   description: |-
-                    stage_id is the id in the plan deployment_config_snapshot.
-                     The rollout is created according to the plan and the
-                     stages are created up to the stage_id.
+                    Create the rollout and the stages up to the target stage.
+                     Format: environments/{environment}
                      If unspecified, all stages are created.
                      If set to "", no stages are created.
                   schema:
