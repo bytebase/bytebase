@@ -151,7 +151,6 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 			instance,
 			db_name,
 			name,
-			status,
 			type,
 			payload,
 			earliest_allowed_at
@@ -161,7 +160,6 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 			unnest(CAST($3 AS TEXT[])),
 			unnest(CAST($4 AS TEXT[])),
 			unnest(CAST($5 AS TEXT[])),
-			'PENDING_APPROVAL',
 			unnest(CAST($6 AS TEXT[])),
 			unnest(CAST($7 AS JSONB[])),
 			unnest(CAST($8 AS TIMESTAMPTZ[]))
