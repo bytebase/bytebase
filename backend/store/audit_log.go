@@ -31,15 +31,10 @@ type AuditLog struct {
 
 type AuditLogFind struct {
 	Project     *string
-	Filter      *AuditLogFilter
+	Filter      *ListResourceFilter
 	Limit       *int
 	Offset      *int
 	OrderByKeys []OrderByKey
-}
-
-type AuditLogFilter struct {
-	Args  []any
-	Where string
 }
 
 func (s *Store) CreateAuditLog(ctx context.Context, payload *storepb.AuditLog) error {
