@@ -9,7 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 type Container struct {
@@ -42,7 +41,6 @@ func getMySQLContainer(ctx context.Context) (retc *Container, retErr error) {
 			"MYSQL_ROOT_PASSWORD": "root-password",
 		},
 		ExposedPorts: []string{"3306/tcp"},
-		WaitingFor:   wait.ForListeningPort("3306/tcp"),
 	}
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
@@ -92,7 +90,6 @@ func getPgContainer(ctx context.Context) (retC *Container, retErr error) {
 			"POSTGRES_PASSWORD": "root-password",
 		},
 		ExposedPorts: []string{"5432/tcp"},
-		WaitingFor:   wait.ForListeningPort("5432/tcp"),
 	}
 
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -137,7 +134,7 @@ func getPgContainer(ctx context.Context) (retC *Container, retErr error) {
 func waitDBPing(ctx context.Context, db *sql.DB) error {
 	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
-	timeout := time.After(1 * time.Minute)
+	timeout := time.After(2 * time.Minute)
 outerLoop:
 	for {
 		select {
