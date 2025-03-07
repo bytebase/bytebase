@@ -272,7 +272,7 @@ export const getOptionConfigMap = (source: Risk_Source) => {
           search: async (keyword: string) => {
             return projectStore
               .searchProjects({ query: keyword })
-              .then((projects) => getProjectIdOptions(projects));
+              .then((resp) => getProjectIdOptions(resp.projects));
           },
         });
         return map;
