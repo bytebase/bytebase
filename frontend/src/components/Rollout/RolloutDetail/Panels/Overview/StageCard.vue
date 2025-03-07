@@ -127,7 +127,7 @@ const createRolloutToStage = async () => {
     rollout: {
       plan: rollout.value.plan,
     },
-    stageId: props.stage.id,
+    target: `environments/${props.stage.environment}`,
   });
   emmiter.emit("task-status-action");
 };
