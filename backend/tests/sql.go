@@ -28,7 +28,7 @@ func (ctl *controller) adminQuery(ctx context.Context, database *v1pb.Database, 
 	return resp.Results, nil
 }
 
-// GetSQLReviewResult will wait for next task SQL review task check to finish and return the task check result.
+// GetSQLReviewResult will wait for the next task SQL review task check to finish and return the task check result.
 func (ctl *controller) GetSQLReviewResult(ctx context.Context, plan *v1pb.Plan) (*v1pb.PlanCheckRun, error) {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
