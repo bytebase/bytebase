@@ -46,10 +46,10 @@ func TestServerRestart(t *testing.T) {
 	err = ctl.Close(ctx)
 	a.NoError(err)
 
-	// Start server in readonly mode
+	// Start server in readonly mode.
 	startStopServer(ctx, a, ctl, dataDir)
 
-	// Start server in non-readonly mode
+	// Start server in non-readonly mode.
 	startStopServer(ctx, a, ctl, dataDir)
 }
 
