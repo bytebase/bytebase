@@ -552,6 +552,7 @@
     - [QueryResult.PostgresError](#bytebase-v1-QueryResult-PostgresError)
     - [QueryRow](#bytebase-v1-QueryRow)
     - [RowValue](#bytebase-v1-RowValue)
+    - [RowValue.ByteData](#bytebase-v1-RowValue-ByteData)
     - [RowValue.Timestamp](#bytebase-v1-RowValue-Timestamp)
     - [RowValue.TimestampTZ](#bytebase-v1-RowValue-TimestampTZ)
     - [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest)
@@ -563,6 +564,7 @@
     - [CheckRequest.ChangeType](#bytebase-v1-CheckRequest-ChangeType)
     - [QueryHistory.Type](#bytebase-v1-QueryHistory-Type)
     - [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn)
+    - [RowValue.ByteData.DisplayFormat](#bytebase-v1-RowValue-ByteData-DisplayFormat)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -8978,6 +8980,23 @@ for field description.
 | value_value | [google.protobuf.Value](#google-protobuf-Value) |  | value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only. |
 | timestamp_value | [RowValue.Timestamp](#bytebase-v1-RowValue-Timestamp) |  | timestamp_value is used for the timestamp without time zone data type, meaning it only includes the timestamp without any time zone or location info. Although it may be expressed as a UTC value, it should be seen as a timestamp missing location context. |
 | timestamp_tz_value | [RowValue.TimestampTZ](#bytebase-v1-RowValue-TimestampTZ) |  | timestamp_tz_value is used for the timestamptz data type, which accurately represents the timestamp with location information. |
+| byte_data_value | [RowValue.ByteData](#bytebase-v1-RowValue-ByteData) |  | byte_data_value is used for binary and bit data types with display format information |
+
+
+
+
+
+
+<a name="bytebase-v1-RowValue-ByteData"></a>
+
+### RowValue.ByteData
+ByteData is used to represent binary and bit data with display format information
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| value | [bytes](#bytes) |  | The actual binary data |
+| display_format | [RowValue.ByteData.DisplayFormat](#bytebase-v1-RowValue-ByteData-DisplayFormat) |  |  |
 
 
 
@@ -9138,6 +9157,21 @@ for field description.
 | REDIS_RUN_COMMANDS_ON_UNSPECIFIED | 0 | UNSPECIFIED defaults to SINGLE_NODE. |
 | SINGLE_NODE | 1 |  |
 | ALL_NODES | 2 |  |
+
+
+
+<a name="bytebase-v1-RowValue-ByteData-DisplayFormat"></a>
+
+### RowValue.ByteData.DisplayFormat
+Indicates the preferred display format for the binary data
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DISPLAY_FORMAT_UNSPECIFIED | 0 |  |
+| BINARY | 1 | Display as binary (0s and 1s) |
+| HEX | 2 | Display as hexadecimal |
+| BOOLEAN | 3 | Display as boolean (for single bit values) |
+| TEXT | 4 | Display as text (if it contains readable text) |
 
 
  

@@ -74,6 +74,41 @@
               {{ $t("sql-editor.format") }}
             </template>
           </NPopover>
+          
+          <!-- Binary data format selector -->
+          <NPopover v-if="isBinaryData">
+            <template #trigger>
+              <NButton
+                size="small"
+                style="--n-padding: 0 5px"
+                :type="binaryFormat !== 'BINARY' ? 'primary' : 'default'"
+                :secondary="binaryFormat !== 'BINARY'"
+              >
+                <template #icon>
+                  <Code2Icon class="w-4 h-4" />
+                </template>
+              </NButton>
+            </template>
+            <template #default>
+              <div class="p-1">
+                <NRadioGroup v-model:value="binaryFormat" class="flex flex-col gap-2">
+                  <NRadio value="BINARY">
+                    {{ $t("sql-editor.binary-format") }}
+                  </NRadio>
+                  <NRadio value="HEX">
+                    {{ $t("sql-editor.hex-format") }}
+                  </NRadio>
+                  <NRadio value="BOOLEAN" v-if="isSingleBitValue">
+                    {{ $t("sql-editor.boolean-format") }}
+                  </NRadio>
+                  <NRadio value="TEXT">
+                    {{ $t("sql-editor.text-format") }}
+                  </NRadio>
+                </NRadioGroup>
+              </div>
+            </template>
+          </NPopover>
+          
           <NButton v-if="!disallowCopyingData" size="small" @click="handleCopy">
             <template #icon>
               <ClipboardIcon class="w-4 h-4" />
@@ -132,8 +167,9 @@ import {
   ClipboardIcon,
   BracesIcon,
   WrapTextIcon,
+  Code2Icon,
 } from "lucide-vue-next";
-import { NButton, NPopover, NScrollbar, NTooltip } from "naive-ui";
+import { NButton, NPopover, NScrollbar, NTooltip, NRadioGroup, NRadio } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { DrawerContent } from "@/components/v2";
@@ -155,16 +191,79 @@ const wrap = useLocalStorage<boolean>(
   true
 );
 
-const content = computed(() => {
+// New ref for binary data format
+const binaryFormat = useLocalStorage<string>(
+  "bb.sql-editor.detail-panel.binary-format",
+  "BINARY"
+);
+
+// Get the current value being displayed
+const rawValue = computed(() => {
   const { row, col, table } = detail.value;
   if (!table) return undefined;
 
-  const value = table
+  return table
     .getPrePaginationRowModel()
     .rows[row]?.getVisibleCells()
     [col]?.getValue<RowValue>();
+});
 
-  return String(extractSQLRowValuePlain(value));
+// Check if the current value is binary data
+const isBinaryData = computed(() => {
+  if (!rawValue.value) return false;
+  return !!(rawValue.value.bytesValue || rawValue.value.byteDataValue);
+});
+
+// Check if it's a single bit value (for boolean display)
+const isSingleBitValue = computed(() => {
+  if (!rawValue.value) return false;
+  
+  if (rawValue.value.byteDataValue) {
+    return rawValue.value.byteDataValue.value.length === 1;
+  }
+  
+  if (rawValue.value.bytesValue) {
+    return rawValue.value.bytesValue.length === 1;
+  }
+  
+  return false;
+});
+
+// If it's binary data, create a synthetic ByteData value for display
+const formattedBinaryValue = computed(() => {
+  if (!rawValue.value || !isBinaryData.value) return rawValue.value;
+  
+  // Create a copy of the value
+  const formattedValue = { ...rawValue.value };
+  
+  // If it's using the legacy bytesValue format
+  if (formattedValue.bytesValue) {
+    // Create a synthetic byteDataValue with the selected format
+    formattedValue.byteDataValue = {
+      value: formattedValue.bytesValue,
+      displayFormat: binaryFormat.value as any
+    };
+    // Remove the legacy value to avoid conflicts
+    delete formattedValue.bytesValue;
+  } else if (formattedValue.byteDataValue) {
+    // Just update the display format
+    formattedValue.byteDataValue.displayFormat = binaryFormat.value as any;
+  }
+  
+  return formattedValue;
+});
+
+// Apply formatting based on selected options
+const content = computed(() => {
+  if (!rawValue.value) return undefined;
+  
+  // If it's binary data, use the formatted version
+  if (isBinaryData.value) {
+    return String(extractSQLRowValuePlain(formattedBinaryValue.value));
+  }
+  
+  // Otherwise use the raw value
+  return String(extractSQLRowValuePlain(rawValue.value));
 });
 
 const guessedIsJSON = computed(() => {
@@ -199,6 +298,8 @@ const contentClass = computed(() => {
 const { copy, copied } = useClipboard({
   source: computed(() => {
     const raw = content.value ?? "";
+    
+    // For JSON content
     if (guessedIsJSON.value && format.value) {
       try {
         const obj = JSON.parse(raw);
@@ -211,6 +312,12 @@ const { copy, copied } = useClipboard({
         return raw;
       }
     }
+    
+    // For binary data, copy according to the selected format
+    if (isBinaryData.value) {
+      return raw;
+    }
+    
     return raw;
   }),
   legacy: true,

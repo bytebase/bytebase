@@ -22,11 +22,60 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
   const plainObject = RowValue.toJSON(value) as Record<string, any>;
   const keys = Object.keys(plainObject);
   if (keys.length === 0) {
-    return undefined; // Will bi displayed as "UNSET"
+    return undefined; // Will be displayed as "UNSET"
   }
   if (keys.length > 1) {
     console.debug("mixed type in row value", value);
   }
+  
+  // Handle ByteData value with display format information
+  if (value.byteDataValue) {
+    const byteArray = Array.from(value.byteDataValue.value);
+    
+    switch (value.byteDataValue.displayFormat) {
+      case 'BINARY': // Display as binary (0s and 1s)
+        const binaryString = byteArray
+          .map((byte) => byte.toString(2).padStart(8, "0"))
+          .join("")
+          .replace(/^0+/g, "");
+        return binaryString.length === 0 ? "0" : binaryString;
+        
+      case 'HEX': // Display as hexadecimal
+        return "0x" + byteArray
+          .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
+          .join("");
+          
+      case 'BOOLEAN': // Display as boolean
+        // For single bit/byte values, convert to boolean
+        if (byteArray.length === 1) {
+          return byteArray[0] === 1 ? "true" : "false";
+        }
+        // Fall back to hex for multi-byte
+        return "0x" + byteArray
+          .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
+          .join("");
+          
+      case 'TEXT': // Display as text if readable
+        try {
+          // Try to interpret as UTF-8 text
+          return new TextDecoder().decode(new Uint8Array(byteArray));
+        } catch {
+          // Fall back to hex if can't decode as text
+          return "0x" + byteArray
+            .map((byte) => byte.toString(16).toUpperCase().padStart(2, "0"))
+            .join("");
+        }
+        
+      default: // Default to binary format
+        const defaultBinaryString = byteArray
+          .map((byte) => byte.toString(2).padStart(8, "0"))
+          .join("")
+          .replace(/^0+/g, "");
+        return defaultBinaryString.length === 0 ? "0" : defaultBinaryString;
+    }
+  }
+  
+  // Legacy bytesValue handling
   if (value.bytesValue) {
     const byteArray = Array.from(value.bytesValue);
     const binaryString = byteArray
@@ -35,6 +84,7 @@ export const extractSQLRowValuePlain = (value: RowValue | undefined) => {
       .replace(/^0+/g, "");
     return binaryString.length === 0 ? "0" : binaryString;
   }
+  
   if (value.timestampValue && value.timestampValue.googleTimestamp) {
     return formatTimestamp(value.timestampValue);
   }

@@ -115,7 +115,7 @@ func MakeCommonValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	}
 }
 
-func ConvertCommonValue(_ string, _ *sql.ColumnType, value any) *v1pb.RowValue {
+func ConvertCommonValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
@@ -135,9 +135,39 @@ func ConvertCommonValue(_ string, _ *sql.ColumnType, value any) *v1pb.RowValue {
 		}
 	case *[]byte:
 		if len(*raw) > 0 {
+			// Use ByteData with appropriate format based on data type and content
+			format := v1pb.RowValue_ByteData_BINARY
+			
+			switch typeName {
+			case "BIT", "VARBIT":
+				// For BIT type, if it's a single bit, display as boolean
+				if len(*raw) == 1 && ((*raw)[0] == 0 || (*raw)[0] == 1) {
+					format = v1pb.RowValue_ByteData_BOOLEAN
+				}
+			case "BINARY", "VARBINARY":
+				// For binary types, try to detect if it's readable text
+				if isReadableText(*raw) {
+					format = v1pb.RowValue_ByteData_TEXT
+				} else {
+					format = v1pb.RowValue_ByteData_HEX
+				}
+			default:
+				// For other types containing binary data
+				if isReadableText(*raw) {
+					format = v1pb.RowValue_ByteData_TEXT
+				} else if len(*raw) == 1 && ((*raw)[0] == 0 || (*raw)[0] == 1) {
+					format = v1pb.RowValue_ByteData_BOOLEAN
+				} else {
+					format = v1pb.RowValue_ByteData_HEX
+				}
+			}
+			
 			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_BytesValue{
-					BytesValue: *raw,
+				Kind: &v1pb.RowValue_ByteDataValue{
+					ByteDataValue: &v1pb.RowValue_ByteData{
+						Value:         *raw,
+						DisplayFormat: format,
+					},
 				},
 			}
 		}
@@ -181,6 +211,18 @@ func ConvertYesNo(s string) (bool, error) {
 	default:
 		return false, errors.Errorf("unrecognized isNullable type %q", s)
 	}
+}
+
+// isReadableText determines if binary data is readable text.
+// Returns true if the data contains only printable ASCII characters.
+func isReadableText(data []byte) bool {
+	// Basic check: Contains only printable ASCII characters
+	for _, b := range data {
+		if b < 32 || b > 126 {
+			return false
+		}
+	}
+	return true
 }
 
 func GetColumnIndex(columns []string, name string) (int, bool) {

@@ -1713,6 +1713,10 @@
     "vertical-display": "Vertical display",
     "no-history-found": "No history found",
     "search-history": "Search History",
+    "binary-format": "Binary format (0s and 1s)",
+    "hex-format": "Hexadecimal format",
+    "boolean-format": "Boolean format",
+    "text-format": "Text format",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
         "title": "Close the unsaved sheet?",
