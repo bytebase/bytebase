@@ -7216,10 +7216,9 @@ paths:
                 - name: pageSize
                   in: query
                   description: |-
-                    Not used.
-                     The maximum number of users to return. The service may return fewer than
+                    The maximum number of users to return. The service may return fewer than
                      this value.
-                     If unspecified, at most 50 users will be returned.
+                     If unspecified, at most 10 users will be returned.
                      The maximum value is 1000; values above 1000 will be coerced to 1000.
                   schema:
                     type: integer
@@ -7227,8 +7226,7 @@ paths:
                 - name: pageToken
                   in: query
                   description: |-
-                    Not used.
-                     A page token, received from a previous `ListUsers` call.
+                    A page token, received from a previous `ListUsers` call.
                      Provide this to retrieve the subsequent page.
 
                      When paginating, all other parameters provided to `ListUsers` must match
@@ -7240,6 +7238,24 @@ paths:
                   description: Show deleted users if specified.
                   schema:
                     type: boolean
+                - name: filter
+                  in: query
+                  description: |-
+                    Filter is used to filter users returned in the list.
+                     Supported filter:
+                     - name
+                     - email
+                     - user_type
+
+                     For example:
+                     name == "ed"
+                     name.matches("ed")
+                     email == "ed@bytebase.com"
+                     user_type == "SERVICE_ACCOUNT"
+                     user_type in ["SERVICE_ACCOUNT", "USER"]
+                     !(user_type in ["SERVICE_ACCOUNT", "USER"])
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -12670,9 +12686,21 @@ components:
                 showDeleted:
                     type: boolean
                     description: Show deleted projects if specified.
-                query:
+                filter:
                     type: string
-                    description: Filter the project title or resource id by query.
+                    description: |-
+                        Filter the project.
+                         Supported filters:
+                         - name
+                         - resource_id
+
+                         For example:
+                         name = "project name"
+                         name.matches("project name")
+                         resource_id = "project id"
+                         resource_id.matches("project id")
+                         name = "project name" && resource_id.matches("project id")
+                         name.matches("project name") || resource_id = "project id"
         SearchProjectsResponse:
             type: object
             properties:

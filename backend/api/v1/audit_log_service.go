@@ -220,7 +220,7 @@ func convertToAuditLogSeverity(s storepb.AuditLog_Severity) v1pb.AuditLog_Severi
 	}
 }
 
-func (s *AuditLogService) getSearchAuditLogsFilter(ctx context.Context, filter string) (*store.AuditLogFilter, *status.Status) {
+func (s *AuditLogService) getSearchAuditLogsFilter(ctx context.Context, filter string) (*store.ListResourceFilter, *status.Status) {
 	if filter == "" {
 		return nil, nil
 	}
@@ -243,40 +243,14 @@ func (s *AuditLogService) getSearchAuditLogsFilter(ctx context.Context, filter s
 			functionName := expr.AsCall().FunctionName()
 			switch functionName {
 			case celoperators.LogicalOr:
-				var args []string
-				for _, arg := range expr.AsCall().Args() {
-					s, err := getFilter(arg)
-					if err != nil {
-						return "", err
-					}
-					args = append(args, "("+s+")")
-				}
-				return strings.Join(args, " OR "), nil
-
+				return getSubConditionFromExpr(expr, getFilter, "OR")
 			case celoperators.LogicalAnd:
-				var args []string
-				for _, arg := range expr.AsCall().Args() {
-					s, err := getFilter(arg)
-					if err != nil {
-						return "", err
-					}
-					args = append(args, "("+s+")")
-				}
-				return strings.Join(args, " AND "), nil
-
+				return getSubConditionFromExpr(expr, getFilter, "AND")
 			case celoperators.Equals:
-				var variable, value string
-				for _, arg := range expr.AsCall().Args() {
-					switch arg.Kind() {
-					case celast.IdentKind:
-						variable = arg.AsIdent()
-					case celast.LiteralKind:
-						lit, ok := arg.AsLiteral().Value().(string)
-						if !ok {
-							return "", errors.Errorf("expect string, got %T, hint: filter literals should be string", arg.AsLiteral().Value())
-						}
-						value = lit
-					}
+				variable, rawValue := getVariavleAndValueFromExpr(expr)
+				value, ok := rawValue.(string)
+				if !ok {
+					return "", errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue)
 				}
 				switch variable {
 				case "resource", "method", "user", "severity":
@@ -296,18 +270,10 @@ func (s *AuditLogService) getSearchAuditLogsFilter(ctx context.Context, filter s
 				return fmt.Sprintf("payload->>'%s'=$%d", variable, len(positionalArgs)), nil
 
 			case celoperators.GreaterEquals, celoperators.LessEquals:
-				var variable, value string
-				for _, arg := range expr.AsCall().Args() {
-					switch arg.Kind() {
-					case celast.IdentKind:
-						variable = arg.AsIdent()
-					case celast.LiteralKind:
-						lit, ok := arg.AsLiteral().Value().(string)
-						if !ok {
-							return "", errors.Errorf("expect string, got %T, hint: filter literals should be string", arg.AsLiteral().Value())
-						}
-						value = lit
-					}
+				variable, rawValue := getVariavleAndValueFromExpr(expr)
+				value, ok := rawValue.(string)
+				if !ok {
+					return "", errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue)
 				}
 				if variable != "create_time" {
 					return "", errors.Errorf(`">=" and "<=" are only supported for "create_time"`)
@@ -337,7 +303,7 @@ func (s *AuditLogService) getSearchAuditLogsFilter(ctx context.Context, filter s
 		return nil, status.Newf(codes.InvalidArgument, "failed to get filter, error: %v", err)
 	}
 
-	return &store.AuditLogFilter{
+	return &store.ListResourceFilter{
 		Args:  positionalArgs,
 		Where: "(" + where + ")",
 	}, nil
