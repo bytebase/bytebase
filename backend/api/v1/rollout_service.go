@@ -81,7 +81,7 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.Previ
 	}
 	steps := convertPlanSteps(request.Plan.Steps)
 
-	rollout, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, steps, nil /* snapshot */, project)
+	rollout, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, request.GetPlan().GetName(), steps, nil /* snapshot */, project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
@@ -225,7 +225,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.NotFound, "plan not found for id: %d", planID)
 	}
 
-	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, plan.Config.GetSteps(), plan.Config.GetDeployment(), project)
+	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, plan.Name, plan.Config.GetSteps(), plan.Config.GetDeployment(), project)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline create, error: %v", err)
 	}
@@ -948,7 +948,7 @@ func isChangeDatabasePlan(steps []*storepb.PlanConfig_Step) bool {
 }
 
 // GetPipelineCreate gets a pipeline create message from a plan.
-func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, deployment *storepb.PlanConfig_Deployment /* nullable */, project *store.ProjectMessage) (*store.PipelineMessage, error) {
+func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, rolloutTitle string, steps []*storepb.PlanConfig_Step, deployment *storepb.PlanConfig_Deployment /* nullable */, project *store.ProjectMessage) (*store.PipelineMessage, error) {
 	// Flatten all specs from steps.
 	var specs []*storepb.PlanConfig_Spec
 	for _, step := range steps {
@@ -1015,7 +1015,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 		}
 	}
 	return &store.PipelineMessage{
-		Name:      "Rollout Pipeline",
+		Name:      rolloutTitle,
 		ProjectID: project.ResourceID,
 		Stages: slices.DeleteFunc(stages, func(stage *store.StageMessage) bool {
 			return len(stage.TaskList) == 0
