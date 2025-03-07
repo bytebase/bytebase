@@ -415,19 +415,6 @@ CREATE UNIQUE INDEX idx_anomaly_unique_project_instance_dn_name_type ON anomaly(
 
 ALTER SEQUENCE anomaly_id_seq RESTART WITH 101;
 
--- Deployment Configuration.
--- deployment_config stores deployment configurations at project level.
-CREATE TABLE deployment_config (
-    id serial PRIMARY KEY,
-    project text NOT NULL REFERENCES project(resource_id),
-    name text NOT NULL,
-    config jsonb NOT NULL DEFAULT '{}'
-);
-
-CREATE UNIQUE INDEX idx_deployment_config_unique_project ON deployment_config(project);
-
-ALTER SEQUENCE deployment_config_id_seq RESTART WITH 101;
-
 -- worksheet table stores worksheets in SQL Editor.
 CREATE TABLE worksheet (
     id serial PRIMARY KEY,
