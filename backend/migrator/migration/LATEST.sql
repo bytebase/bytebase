@@ -202,9 +202,7 @@ ALTER SEQUENCE pipeline_id_seq RESTART WITH 101;
 CREATE TABLE stage (
     id serial PRIMARY KEY,
     pipeline_id integer NOT NULL REFERENCES pipeline(id),
-    environment text NOT NULL REFERENCES environment(resource_id),
-    deployment_id text NOT NULL DEFAULT '',
-    name text NOT NULL
+    environment text NOT NULL REFERENCES environment(resource_id)
 );
 
 CREATE INDEX idx_stage_pipeline_id ON stage(pipeline_id);
@@ -218,7 +216,6 @@ CREATE TABLE task (
     stage_id integer NOT NULL REFERENCES stage(id),
     instance text NOT NULL REFERENCES instance(resource_id),
     db_name text,
-    name text NOT NULL,
     type text NOT NULL CHECK (type LIKE 'bb.task.%'),
     payload jsonb NOT NULL DEFAULT '{}',
     earliest_allowed_at timestamptz NULL
@@ -237,7 +234,6 @@ CREATE TABLE task_run (
     task_id integer NOT NULL REFERENCES task(id),
     sheet_id integer REFERENCES sheet(id),
     attempt integer NOT NULL,
-    name text NOT NULL,
     status text NOT NULL CHECK (status IN ('PENDING', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     started_at timestamptz NULL,
     code integer NOT NULL DEFAULT 0,

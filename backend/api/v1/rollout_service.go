@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log/slog"
 	"slices"
 	"sort"
@@ -586,7 +585,6 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		create := &store.TaskRunMessage{
 			TaskUID:   task.ID,
 			SheetUID:  sheetUID,
-			Name:      fmt.Sprintf("%s %d", task.Name, time.Now().Unix()),
 			CreatorID: user.ID,
 		}
 		taskRunCreates = append(taskRunCreates, create)
@@ -700,7 +698,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 			return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
 		}
 		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "not allowed to skip tasks in stage %q", stage.Name)
+			return nil, status.Errorf(codes.PermissionDenied, "not allowed to skip tasks in stage %q", stage.Environment)
 		}
 	}
 
@@ -830,7 +828,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		case api.TaskRunPending:
 		case api.TaskRunRunning:
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, "taskRun %v is not pending or running", taskRun.Name)
+			return nil, status.Errorf(codes.InvalidArgument, "taskRun %v is not pending or running", taskRun.ID)
 		}
 	}
 
@@ -889,16 +887,16 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, request *v1
 	taskRun := taskRuns[0]
 
 	if taskRun.Status != api.TaskRunDone {
-		return nil, status.Errorf(codes.InvalidArgument, "task run %v is not done", taskRun.Name)
+		return nil, status.Errorf(codes.InvalidArgument, "task run %v is not done", taskRun.ID)
 	}
 
 	if taskRun.ResultProto == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "task run %v has no result", taskRun.Name)
+		return nil, status.Errorf(codes.InvalidArgument, "task run %v has no result", taskRun.ID)
 	}
 
 	backupDetail := taskRun.ResultProto.PriorBackupDetail
 	if backupDetail == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "task run %v has no rollback", taskRun.Name)
+		return nil, status.Errorf(codes.InvalidArgument, "task run %v has no rollback", taskRun.ID)
 	}
 
 	task, err := s.store.GetTaskV2ByID(ctx, taskUID)
@@ -912,7 +910,7 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, request *v1
 	}
 
 	if taskRun.SheetUID == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "task run %v has no sheet", taskRun.Name)
+		return nil, status.Errorf(codes.InvalidArgument, "task run %v has no sheet", taskRun.ID)
 	}
 	statements, err := s.store.GetSheetStatementByID(ctx, *taskRun.SheetUID)
 	if err != nil {
@@ -997,9 +995,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 	var stages []*store.StageMessage
 	for _, environmentID := range snapshotEnvironments {
 		stages = append(stages, &store.StageMessage{
-			Name:         environmentID, // TODO(d): is this needed?
-			Environment:  environmentID,
-			DeploymentID: environmentID,
+			Environment: environmentID,
 		})
 	}
 
