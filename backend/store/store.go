@@ -18,24 +18,23 @@ type Store struct {
 	db      *DB
 	profile *config.Profile
 
-	userIDCache            *lru.Cache[int, *UserMessage]
-	userEmailCache         *lru.Cache[string, *UserMessage]
-	environmentCache       *lru.Cache[string, *EnvironmentMessage]
-	instanceCache          *lru.Cache[string, *InstanceMessage]
-	databaseCache          *lru.Cache[string, *DatabaseMessage]
-	projectCache           *lru.Cache[string, *ProjectMessage]
-	projectDeploymentCache *lru.Cache[string, *DeploymentConfigMessage]
-	policyCache            *lru.Cache[string, *PolicyMessage]
-	issueCache             *lru.Cache[int, *IssueMessage]
-	issueByPipelineCache   *lru.Cache[int, *IssueMessage]
-	pipelineCache          *lru.Cache[int, *PipelineMessage]
-	settingCache           *lru.Cache[api.SettingName, *SettingMessage]
-	idpCache               *lru.Cache[string, *IdentityProviderMessage]
-	risksCache             *lru.Cache[int, []*RiskMessage] // Use 0 as the key.
-	databaseGroupCache     *lru.Cache[string, *DatabaseGroupMessage]
-	rolesCache             *lru.Cache[string, *RoleMessage]
-	groupCache             *lru.Cache[string, *GroupMessage]
-	sheetCache             *lru.Cache[int, *SheetMessage]
+	userIDCache          *lru.Cache[int, *UserMessage]
+	userEmailCache       *lru.Cache[string, *UserMessage]
+	environmentCache     *lru.Cache[string, *EnvironmentMessage]
+	instanceCache        *lru.Cache[string, *InstanceMessage]
+	databaseCache        *lru.Cache[string, *DatabaseMessage]
+	projectCache         *lru.Cache[string, *ProjectMessage]
+	policyCache          *lru.Cache[string, *PolicyMessage]
+	issueCache           *lru.Cache[int, *IssueMessage]
+	issueByPipelineCache *lru.Cache[int, *IssueMessage]
+	pipelineCache        *lru.Cache[int, *PipelineMessage]
+	settingCache         *lru.Cache[api.SettingName, *SettingMessage]
+	idpCache             *lru.Cache[string, *IdentityProviderMessage]
+	risksCache           *lru.Cache[int, []*RiskMessage] // Use 0 as the key.
+	databaseGroupCache   *lru.Cache[string, *DatabaseGroupMessage]
+	rolesCache           *lru.Cache[string, *RoleMessage]
+	groupCache           *lru.Cache[string, *GroupMessage]
+	sheetCache           *lru.Cache[int, *SheetMessage]
 
 	// Large objects.
 	sheetStatementCache *lru.Cache[int, string]
@@ -65,10 +64,6 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 		return nil, err
 	}
 	projectCache, err := lru.New[string, *ProjectMessage](32768)
-	if err != nil {
-		return nil, err
-	}
-	projectDeploymentCache, err := lru.New[string, *DeploymentConfigMessage](128)
 	if err != nil {
 		return nil, err
 	}
@@ -130,26 +125,25 @@ func New(db *DB, profile *config.Profile) (*Store, error) {
 		profile: profile,
 
 		// Cache.
-		userIDCache:            userIDCache,
-		userEmailCache:         userEmailCache,
-		environmentCache:       environmentCache,
-		instanceCache:          instanceCache,
-		databaseCache:          databaseCache,
-		projectCache:           projectCache,
-		projectDeploymentCache: projectDeploymentCache,
-		policyCache:            policyCache,
-		issueCache:             issueCache,
-		issueByPipelineCache:   issueByPipelineCache,
-		pipelineCache:          pipelineCache,
-		settingCache:           settingCache,
-		idpCache:               idpCache,
-		risksCache:             risksCache,
-		databaseGroupCache:     databaseGroupCache,
-		rolesCache:             rolesCache,
-		sheetCache:             sheetCache,
-		sheetStatementCache:    sheetStatementCache,
-		dbSchemaCache:          dbSchemaCache,
-		groupCache:             groupCache,
+		userIDCache:          userIDCache,
+		userEmailCache:       userEmailCache,
+		environmentCache:     environmentCache,
+		instanceCache:        instanceCache,
+		databaseCache:        databaseCache,
+		projectCache:         projectCache,
+		policyCache:          policyCache,
+		issueCache:           issueCache,
+		issueByPipelineCache: issueByPipelineCache,
+		pipelineCache:        pipelineCache,
+		settingCache:         settingCache,
+		idpCache:             idpCache,
+		risksCache:           risksCache,
+		databaseGroupCache:   databaseGroupCache,
+		rolesCache:           rolesCache,
+		sheetCache:           sheetCache,
+		sheetStatementCache:  sheetStatementCache,
+		dbSchemaCache:        dbSchemaCache,
+		groupCache:           groupCache,
 	}, nil
 }
 
