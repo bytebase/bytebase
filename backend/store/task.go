@@ -158,9 +158,9 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 			unnest(CAST($2 AS INTEGER[])),
 			unnest(CAST($3 AS TEXT[])),
 			unnest(CAST($4 AS TEXT[])),
-			unnest(CAST($6 AS TEXT[])),
-			unnest(CAST($7 AS JSONB[])),
-			unnest(CAST($8 AS TIMESTAMPTZ[]))
+			unnest(CAST($5 AS TEXT[])),
+			unnest(CAST($6 AS JSONB[])),
+			unnest(CAST($7 AS TIMESTAMPTZ[]))
 		RETURNING id, pipeline_id, stage_id, instance, db_name, type, payload, earliest_allowed_at`
 
 	var (
