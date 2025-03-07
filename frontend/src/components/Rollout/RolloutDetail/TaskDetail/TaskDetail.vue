@@ -4,13 +4,10 @@
       {{ rollout.title }}
     </NBreadcrumbItem>
     <NBreadcrumbItem :clickable="false">
-      {{ stage.title }}
+      {{ extractEnvironmentResourceName(stage.environment) }}
     </NBreadcrumbItem>
     <NBreadcrumbItem @click="router.push(`/${rollout.name}#tasks`)">
       {{ $t("common.tasks") }}
-    </NBreadcrumbItem>
-    <NBreadcrumbItem :clickable="false">
-      {{ task.title }}
     </NBreadcrumbItem>
   </NBreadcrumb>
   <div v-if="task" class="w-full flex flex-col">
@@ -43,6 +40,7 @@ import BasicInfo from "./BasicInfo.vue";
 import Overview from "./Panels/Overview.vue";
 import TaskRunLogs from "./Panels/TaskRunLogs.vue";
 import { provideTaskDetailContext } from "./context";
+import { extractEnvironmentResourceName } from "@/utils";
 
 const props = defineProps<{
   stageId: string;

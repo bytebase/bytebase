@@ -159,7 +159,7 @@ export const usePreBackupContext = () => {
       try {
         await useIssueCommentStore().createIssueComment({
           issueName: issue.value.name,
-          comment: `${action} prior backup for task [${selectedTask.value.title}].`,
+          comment: `${action} prior backup for task [${selectedTask.value.target}].`,
         });
       } catch {
         // fail to comment won't be too bad

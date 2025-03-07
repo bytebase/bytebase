@@ -5,7 +5,7 @@
     class="font-medium text-main hover:border-b hover:border-b-main"
     @click="toTop"
   >
-    <span>{{ task.title }}</span>
+    <span>{{ task.target }}</span>
     <template v-if="schemaVersion">
       <span class="ml-1 text-control-placeholder">(</span>
       <span class="lowercase text-control-placeholder">{{

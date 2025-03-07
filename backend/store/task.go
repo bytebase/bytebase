@@ -30,7 +30,6 @@ type TaskMessage struct {
 	TaskRunRawList []*TaskRunMessage
 
 	// Domain specific fields
-	Name              string
 	Type              api.TaskType
 	Payload           string
 	EarliestAllowedAt *time.Time
@@ -151,7 +150,6 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 			stage_id,
 			instance,
 			db_name,
-			name,
 			type,
 			payload,
 			earliest_allowed_at
@@ -161,17 +159,15 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 			unnest(CAST($3 AS TEXT[])),
 			unnest(CAST($4 AS TEXT[])),
 			unnest(CAST($5 AS TEXT[])),
-			unnest(CAST($6 AS TEXT[])),
-			unnest(CAST($7 AS JSONB[])),
-			unnest(CAST($8 AS TIMESTAMPTZ[]))
-		RETURNING id, pipeline_id, stage_id, instance, db_name, name, type, payload, earliest_allowed_at`
+			unnest(CAST($6 AS JSONB[])),
+			unnest(CAST($7 AS TIMESTAMPTZ[]))
+		RETURNING id, pipeline_id, stage_id, instance, db_name, type, payload, earliest_allowed_at`
 
 	var (
 		pipelineIDs        []int
 		stageIDs           []int
 		instances          []string
 		databases          []*string
-		names              []string
 		types              []string
 		payloads           []string
 		earliestAllowedAts []time.Time
@@ -184,7 +180,6 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 		stageIDs = append(stageIDs, create.StageID)
 		instances = append(instances, create.InstanceID)
 		databases = append(databases, create.DatabaseName)
-		names = append(names, create.Name)
 		types = append(types, string(create.Type))
 		payloads = append(payloads, create.Payload)
 		if create.EarliestAllowedAt == nil {
@@ -200,7 +195,6 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 		stageIDs,
 		instances,
 		databases,
-		names,
 		types,
 		payloads,
 		earliestAllowedAts,
@@ -218,7 +212,6 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 			&task.StageID,
 			&task.InstanceID,
 			&task.DatabaseName,
-			&task.Name,
 			&task.Type,
 			&task.Payload,
 			&earliestAllowedAt,
@@ -281,7 +274,6 @@ func (*Store) listTasksTx(ctx context.Context, tx *Tx, find *TaskFind) ([]*TaskM
 			task.stage_id,
 			task.instance,
 			task.db_name,
-			task.name,
 			latest_task_run.status AS latest_task_run_status,
 			task.type,
 			task.payload,
@@ -317,7 +309,6 @@ func (*Store) listTasksTx(ctx context.Context, tx *Tx, find *TaskFind) ([]*TaskM
 			&task.StageID,
 			&task.InstanceID,
 			&task.DatabaseName,
-			&task.Name,
 			&task.LatestTaskRunStatus,
 			&task.Type,
 			&task.Payload,
@@ -416,7 +407,7 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessag
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, pipeline_id, stage_id, instance, db_name, name, type, payload, earliest_allowed_at
+		RETURNING id, pipeline_id, stage_id, instance, db_name, type, payload, earliest_allowed_at
 	`, len(args)),
 		args...,
 	).Scan(
@@ -425,7 +416,6 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessag
 		&task.StageID,
 		&task.InstanceID,
 		&task.DatabaseName,
-		&task.Name,
 		&task.Type,
 		&task.Payload,
 		&earliestAllowedAt,

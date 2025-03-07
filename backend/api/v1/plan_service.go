@@ -718,7 +718,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				if taskPatch.SheetID != nil || taskPatch.EarliestAllowedTs != nil {
 					task := tasksMap[taskPatch.ID]
 					if task.LatestTaskRunStatus == api.TaskRunPending || task.LatestTaskRunStatus == api.TaskRunRunning || task.LatestTaskRunStatus == api.TaskRunSkipped || task.LatestTaskRunStatus == api.TaskRunDone {
-						return nil, status.Errorf(codes.FailedPrecondition, "cannot update plan because task %q is %s", task.Name, task.LatestTaskRunStatus)
+						return nil, status.Errorf(codes.FailedPrecondition, "cannot update plan because task %v is %s", task.ID, task.LatestTaskRunStatus)
 					}
 				}
 			}
@@ -761,7 +761,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 			for _, taskPatch := range taskPatchList {
 				task := tasksMap[taskPatch.ID]
 				if _, err := s.store.UpdateTaskV2(ctx, taskPatch); err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to update task %q: %v", task.Name, err)
+					return nil, status.Errorf(codes.Internal, "failed to update task %v: %v", task.ID, err)
 				}
 			}
 
