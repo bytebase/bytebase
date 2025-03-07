@@ -23,6 +23,7 @@ import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
 export const useProjectV1Store = defineStore("project_v1", () => {
   const projectMapByName = reactive(new Map<ResourceId, ComposedProject>());
+  const projectRequestCache = new Map<string, Promise<ComposedProject>>();
 
   const reset = () => {
     projectMapByName.clear();
@@ -109,7 +110,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     return await upsertProjectMap(projects);
   };
 
-  const getOrFetchProjectByName = async (name: string, silent = false) => {
+  const getOrFetchProjectByName = async (name: string, silent = true) => {
     const cachedData = getProjectByName(name);
     if (cachedData && cachedData.name !== UNKNOWN_PROJECT_NAME) {
       return cachedData;
@@ -117,7 +118,11 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     if (!isValidProjectName(name)) {
       return unknownProject();
     }
-    return fetchProjectByName(name, silent);
+    const cached = projectRequestCache.get(name);
+    if (cached) return cached;
+    const request = fetchProjectByName(name, silent);
+    projectRequestCache.set(name, request);
+    return request;
   };
   const createProject = async (project: Project, resourceId: string) => {
     const created = await projectServiceClient.createProject({
@@ -233,8 +238,6 @@ const batchComposeProjectIamPolicy = async (projectList: Project[]) => {
   });
 };
 
-const projectRequestCache = new Map<string, Promise<ComposedProject>>();
-
 export const batchGetOrFetchProjects = async (projectNames: string[]) => {
   const store = useProjectV1Store();
 
@@ -248,14 +251,7 @@ export const batchGetOrFetchProjects = async (projectNames: string[]) => {
       ) {
         return;
       }
-      const cached = projectRequestCache.get(projectName);
-      if (cached) return cached;
-      const request = store.getOrFetchProjectByName(
-        projectName,
-        true /* silent */
-      );
-      projectRequestCache.set(projectName, request);
-      return request;
+      return store.getOrFetchProjectByName(projectName, true /* silent */);
     })
   );
 };
