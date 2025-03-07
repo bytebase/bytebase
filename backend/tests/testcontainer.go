@@ -74,7 +74,7 @@ func getPgContainer(ctx context.Context) (*Container, error) {
 		ExposedPorts: []string{"5432/tcp"},
 		WaitingFor: wait.ForLog("database system is ready to accept connections").
 			WithOccurrence(2).
-			WithStartupTimeout(10 * time.Second),
+			WithStartupTimeout(60 * time.Second),
 	}
 
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{

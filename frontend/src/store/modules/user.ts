@@ -3,17 +3,18 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { userServiceClient } from "@/grpcweb";
 import { allUsersUser, SYSTEM_BOT_USER_NAME } from "@/types";
+import { State } from "@/types/proto/v1/common";
 import type { UpdateUserRequest, User } from "@/types/proto/v1/user_service";
 import { UserType } from "@/types/proto/v1/user_service";
-import { State } from "@/types/proto/v1/common";
 import { userNamePrefix, getUserEmailFromIdentifier } from "./v1/common";
 import { usePermissionStore } from "./v1/permission";
 
-const allUser = allUsersUser();
-
 export const useUserStore = defineStore("user", () => {
+  const allUser = computed(() => allUsersUser());
+  const userRequestCache = new Map<string, Promise<User>>();
+
   const userMapByName = ref<Map<string, User>>(
-    new Map([[allUser.name, allUser]])
+    new Map([[allUser.value.name, allUser.value]])
   );
 
   const setUser = (user: User) => {
@@ -39,7 +40,7 @@ export const useUserStore = defineStore("user", () => {
   // The active user list and exclude allUsers.
   const activeUserList = computed(() => {
     return userList.value.filter(
-      (user) => user.state === State.ACTIVE && user.name !== allUser.name
+      (user) => user.state === State.ACTIVE && user.name !== allUser.value.name
     );
   });
 
@@ -49,13 +50,18 @@ export const useUserStore = defineStore("user", () => {
     );
   });
 
-  const fetchUserList = async () => {
-    const { users } = await userServiceClient.listUsers({
-      showDeleted: true,
-    });
-    const response: User[] = [];
-    for (const user of users) {
-      response.push(setUser(user));
+  const fetchUserList = async (params: {
+    pageSize: number;
+    pageToken?: string;
+    filter?: string;
+    showDeleted?: boolean;
+  }): Promise<{
+    users: User[];
+    nextPageToken: string;
+  }> => {
+    const response = await userServiceClient.listUsers(params);
+    for (const user of response.users) {
+      setUser(user);
     }
     return response;
   };
@@ -85,13 +91,16 @@ export const useUserStore = defineStore("user", () => {
     const user = await userServiceClient.updateUser(updateUserRequest);
     return setUser(user);
   };
-  const getOrFetchUserByName = async (name: string, silent = false) => {
+  const getOrFetchUserByName = async (name: string, silent = true) => {
     const cachedData = userMapByName.value.get(name);
     if (cachedData) {
       return cachedData;
     }
-    const user = await fetchUser(name, silent);
-    return setUser(user);
+    const cached = userRequestCache.get(name);
+    if (cached) return cached;
+    const request = fetchUser(name, silent).then((user) => setUser(user));
+    userRequestCache.set(name, request);
+    return request;
   };
   const getUserByName = (name: string) => {
     return userMapByName.value.get(name);
@@ -110,6 +119,8 @@ export const useUserStore = defineStore("user", () => {
       (user) => user.email === email
     );
   };
+  const getOrFetchUserByEmail = (email: string) =>
+    getOrFetchUserByName(getUserNameWithUserId(email));
   const archiveUser = async (user: User) => {
     await userServiceClient.deleteUser({
       name: user.name,
@@ -125,6 +136,7 @@ export const useUserStore = defineStore("user", () => {
   };
 
   return {
+    allUser,
     userMapByName,
     userList,
     activeUserList,
@@ -139,6 +151,7 @@ export const useUserStore = defineStore("user", () => {
     getUserById,
     getUserByIdentifier,
     getUserByEmail,
+    getOrFetchUserByEmail,
     archiveUser,
     restoreUser,
   };
@@ -178,7 +191,7 @@ export const useActiveUsers = () => {
   const userStore = useUserStore();
   return userStore.userList.filter(
     (user) =>
-      user.name !== allUser.name &&
+      user.name !== userStore.allUser.name &&
       user.state === State.ACTIVE &&
       [UserType.USER, UserType.SERVICE_ACCOUNT].includes(user.userType)
   );

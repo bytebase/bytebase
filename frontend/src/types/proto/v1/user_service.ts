@@ -85,15 +85,13 @@ export interface GetUserRequest {
 
 export interface ListUsersRequest {
   /**
-   * Not used.
    * The maximum number of users to return. The service may return fewer than
    * this value.
-   * If unspecified, at most 50 users will be returned.
+   * If unspecified, at most 10 users will be returned.
    * The maximum value is 1000; values above 1000 will be coerced to 1000.
    */
   pageSize: number;
   /**
-   * Not used.
    * A page token, received from a previous `ListUsers` call.
    * Provide this to retrieve the subsequent page.
    *
@@ -103,6 +101,22 @@ export interface ListUsersRequest {
   pageToken: string;
   /** Show deleted users if specified. */
   showDeleted: boolean;
+  /**
+   * Filter is used to filter users returned in the list.
+   * Supported filter:
+   * - name
+   * - email
+   * - user_type
+   *
+   * For example:
+   * name == "ed"
+   * name.matches("ed")
+   * email == "ed@bytebase.com"
+   * user_type == "SERVICE_ACCOUNT"
+   * user_type in ["SERVICE_ACCOUNT", "USER"]
+   * !(user_type in ["SERVICE_ACCOUNT", "USER"])
+   */
+  filter: string;
 }
 
 export interface ListUsersResponse {
@@ -257,7 +271,7 @@ export const GetUserRequest: MessageFns<GetUserRequest> = {
 };
 
 function createBaseListUsersRequest(): ListUsersRequest {
-  return { pageSize: 0, pageToken: "", showDeleted: false };
+  return { pageSize: 0, pageToken: "", showDeleted: false, filter: "" };
 }
 
 export const ListUsersRequest: MessageFns<ListUsersRequest> = {
@@ -270,6 +284,9 @@ export const ListUsersRequest: MessageFns<ListUsersRequest> = {
     }
     if (message.showDeleted !== false) {
       writer.uint32(24).bool(message.showDeleted);
+    }
+    if (message.filter !== "") {
+      writer.uint32(34).string(message.filter);
     }
     return writer;
   },
@@ -305,6 +322,14 @@ export const ListUsersRequest: MessageFns<ListUsersRequest> = {
           message.showDeleted = reader.bool();
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -319,6 +344,7 @@ export const ListUsersRequest: MessageFns<ListUsersRequest> = {
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
       showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
     };
   },
 
@@ -333,6 +359,9 @@ export const ListUsersRequest: MessageFns<ListUsersRequest> = {
     if (message.showDeleted !== false) {
       obj.showDeleted = message.showDeleted;
     }
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
     return obj;
   },
 
@@ -344,6 +373,7 @@ export const ListUsersRequest: MessageFns<ListUsersRequest> = {
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     message.showDeleted = object.showDeleted ?? false;
+    message.filter = object.filter ?? "";
     return message;
   },
 };
