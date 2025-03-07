@@ -421,7 +421,6 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 		Creator:       common.FormatUserEmail(taskRun.Creator.Email),
 		CreateTime:    timestamppb.New(taskRun.CreatedAt),
 		UpdateTime:    timestamppb.New(taskRun.UpdatedAt),
-		Title:         taskRun.Name,
 		Status:        convertToTaskRunStatus(taskRun.Status),
 		Detail:        taskRun.ResultProto.Detail,
 		Changelog:     taskRun.ResultProto.Changelog,
@@ -614,9 +613,8 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 	taskIDToName := map[int]string{}
 	for _, stage := range rollout.Stages {
 		rolloutStage := &v1pb.Stage{
-			Name:  common.FormatStage(project.ResourceID, rollout.ID, stage.ID),
-			Id:    stage.DeploymentID,
-			Title: stage.Name,
+			Name:        common.FormatStage(project.ResourceID, rollout.ID, stage.ID),
+			Environment: common.FormatEnvironment(stage.Environment),
 		}
 		for _, task := range stage.TaskList {
 			rolloutTask, err := convertToTask(ctx, s, project, task)
@@ -645,8 +643,6 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 		return convertToTaskFromDataUpdate(ctx, s, project, task)
 	case api.TaskDatabaseDataExport:
 		return convertToTaskFromDatabaseDataExport(ctx, s, project, task)
-	case api.TaskGeneral:
-		fallthrough
 	default:
 		return nil, errors.Errorf("task type %v is not supported", task.Type)
 	}
@@ -665,7 +661,6 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 	}
 	v1pbTask := &v1pb.Task{
 		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		Title:         task.Name,
 		SpecId:        payload.SpecId,
 		Type:          convertToTaskType(task.Type),
 		Status:        convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
@@ -704,7 +699,6 @@ func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, projec
 	}
 	v1pbTask := &v1pb.Task{
 		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		Title:         task.Name,
 		SpecId:        payload.SpecId,
 		Type:          convertToTaskType(task.Type),
 		Status:        convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
@@ -737,7 +731,6 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 
 	v1pbTask := &v1pb.Task{
 		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		Title:         task.Name,
 		SpecId:        payload.SpecId,
 		Type:          convertToTaskType(task.Type),
 		Status:        convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
@@ -771,7 +764,6 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 
 	v1pbTask := &v1pb.Task{
 		Name:          common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		Title:         task.Name,
 		SpecId:        payload.SpecId,
 		Type:          convertToTaskType(task.Type),
 		Status:        convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
@@ -817,7 +809,6 @@ func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, pr
 	}
 	v1pbTask := &v1pb.Task{
 		Name:    common.FormatTask(project.ResourceID, task.PipelineID, task.StageID, task.ID),
-		Title:   task.Name,
 		SpecId:  payload.SpecId,
 		Type:    convertToTaskType(task.Type),
 		Status:  convertToTaskStatus(task.LatestTaskRunStatus, false),
@@ -851,8 +842,6 @@ func convertToTaskStatus(latestTaskRunStatus api.TaskRunStatus, skipped bool) v1
 
 func convertToTaskType(taskType api.TaskType) v1pb.Task_Type {
 	switch taskType {
-	case api.TaskGeneral:
-		return v1pb.Task_GENERAL
 	case api.TaskDatabaseCreate:
 		return v1pb.Task_DATABASE_CREATE
 	case api.TaskDatabaseSchemaBaseline:

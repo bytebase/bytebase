@@ -238,7 +238,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 			Project: webhook.NewProject(issue.Project),
 			IssueRolloutReady: &webhook.EventIssueRolloutReady{
 				RolloutPolicy: policy,
-				StageName:     stages[0].Name,
+				StageName:     stages[0].Environment,
 			},
 		})
 		return nil

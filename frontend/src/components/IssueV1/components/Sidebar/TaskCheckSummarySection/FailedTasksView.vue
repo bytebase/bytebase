@@ -19,7 +19,7 @@
           @click="onClickTask(task)"
         >
           <p class="group-hover:underline truncate">
-            {{ task.title }}
+            {{ task.target }}
           </p>
           <p class="text-xs leading-4 text-error line-clamp-2">
             {{ failedMessageOfTask(task.name) }}

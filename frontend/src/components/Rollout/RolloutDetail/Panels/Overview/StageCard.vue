@@ -9,7 +9,7 @@
       class="w-full flex flex-row justify-between items-center gap-2 px-2 pt-2 pb-1"
     >
       <p class="textlabel">
-        {{ stage.title }}
+        {{ extractEnvironmentResourceName(stage.environment) }}
         <NTag v-if="!isCreated" round size="tiny">Not created</NTag>
       </p>
       <div>
@@ -100,6 +100,7 @@ import { extractSchemaVersionFromTask } from "@/utils";
 import { useRolloutDetailContext } from "../../context";
 import { databaseForTask } from "../../utils";
 import TaskStatus from "./../kits/TaskStatus.vue";
+import { extractEnvironmentResourceName } from "@/utils";
 
 const props = defineProps<{
   stage: Stage;

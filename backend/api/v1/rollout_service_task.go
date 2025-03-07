@@ -246,7 +246,6 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		}
 
 		v := &store.TaskMessage{
-			Name:          fmt.Sprintf("Create database %v", payload.DatabaseName),
 			InstanceID:    instance.ResourceID,
 			DatabaseName:  &databaseName,
 			EnvironmentID: effectiveEnvironmentID,
@@ -327,7 +326,6 @@ func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spe
 	}
 	payloadString := string(bytes)
 	taskCreate := &store.TaskMessage{
-		Name:          fmt.Sprintf("Export data from database %q", database.DatabaseName),
 		InstanceID:    database.InstanceID,
 		DatabaseName:  &database.DatabaseName,
 		EnvironmentID: database.EffectiveEnvironmentID,
@@ -383,7 +381,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		}
 		payloadString := string(bytes)
 		taskCreate := &store.TaskMessage{
-			Name:          fmt.Sprintf("Establish baseline for database %q", database.DatabaseName),
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
 			EnvironmentID: database.EffectiveEnvironmentID,
@@ -415,7 +412,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		}
 		payloadString := string(bytes)
 		taskCreate := &store.TaskMessage{
-			Name:          fmt.Sprintf("DDL(schema) for database %q", database.DatabaseName),
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
 			EnvironmentID: database.EffectiveEnvironmentID,
@@ -447,7 +443,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		}
 		payloadString := string(bytes)
 		taskCreate := &store.TaskMessage{
-			Name:          fmt.Sprintf("SDL for database %q", database.DatabaseName),
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
 			EnvironmentID: database.EffectiveEnvironmentID,
@@ -482,7 +477,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			return nil, errors.Wrapf(err, "failed to marshal database schema update ghost payload")
 		}
 		taskCreate := &store.TaskMessage{
-			Name:          fmt.Sprintf("DDL(gh-ost) for database %q", database.DatabaseName),
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
 			EnvironmentID: database.EffectiveEnvironmentID,
@@ -519,7 +513,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		}
 		payloadString := string(bytes)
 		taskCreate := &store.TaskMessage{
-			Name:          fmt.Sprintf("DML(data) for database %q", database.DatabaseName),
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
 			EnvironmentID: database.EffectiveEnvironmentID,

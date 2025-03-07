@@ -1,0 +1,4 @@
+ALTER TABLE stage DROP COLUMN deployment_id;
+ALTER TABLE stage DROP COLUMN name;
+ALTER TABLE task DROP COLUMN name;
+ALTER TABLE task_run DROP COLUMN name;
