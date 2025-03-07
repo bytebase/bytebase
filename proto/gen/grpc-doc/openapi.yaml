@@ -9273,6 +9273,18 @@ components:
                     type: string
                     description: The schema dump from database.
             description: DatabaseSchema is the metadata for databases.
+        DeploymentSnapshot_DatabaseGroupSnapshot:
+            type: object
+            properties:
+                databaseGroup:
+                    type: string
+                    description: 'Format: projects/{project}/databaseGroups/{databaseGroup}.'
+                databases:
+                    type: array
+                    items:
+                        type: string
+                    description: 'Format: instances/{instance-id}/databases/{database-name}.'
+            description: The snapshot of the database group at the time of creation.
         DiffMetadataRequest:
             required:
                 - sourceMetadata
@@ -10988,6 +11000,8 @@ components:
                          - ERROR
                 releaseSource:
                     $ref: '#/components/schemas/Plan_ReleaseSource'
+                deploymentSnapshot:
+                    $ref: '#/components/schemas/Plan_DeploymentSnapshot'
         PlanCheckRun:
             type: object
             properties:
@@ -11125,6 +11139,17 @@ components:
                     description: |-
                         The environment resource.
                          Format: environments/prod where prod is the environment resource ID.
+        Plan_DeploymentSnapshot:
+            type: object
+            properties:
+                environments:
+                    type: array
+                    items:
+                        type: string
+                databaseGroupSnapshots:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/DeploymentSnapshot_DatabaseGroupSnapshot'
         Plan_ExportDataConfig:
             type: object
             properties:
