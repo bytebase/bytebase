@@ -274,12 +274,10 @@ CREATE TABLE "public"."book" (
 			switch test.dbType {
 			case storepb.Engine_POSTGRES:
 				pgContainer, err := getPgContainer(ctx)
-				a.NoError(err)
 				defer func() {
-					pgContainer.db.Close()
-					err := pgContainer.container.Terminate(ctx)
-					a.NoError(err)
+					pgContainer.Close(ctx)
 				}()
+				a.NoError(err)
 				instance, err = ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 					InstanceId: test.instanceID,
 					Instance: &v1pb.Instance{
@@ -293,12 +291,10 @@ CREATE TABLE "public"."book" (
 				a.NoError(err)
 			case storepb.Engine_MYSQL:
 				mysqlContainer, err := getMySQLContainer(ctx)
-				a.NoError(err)
 				defer func() {
-					mysqlContainer.db.Close()
-					err := mysqlContainer.container.Terminate(ctx)
-					a.NoError(err)
+					mysqlContainer.Close(ctx)
 				}()
+				a.NoError(err)
 
 				instance, err = ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 					InstanceId: test.instanceID,

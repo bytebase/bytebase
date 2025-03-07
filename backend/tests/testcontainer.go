@@ -4,10 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 type Container struct {
@@ -17,18 +18,30 @@ type Container struct {
 	db        *sql.DB
 }
 
-func getMySQLContainer(ctx context.Context) (*Container, error) {
+func (c *Container) Close(ctx context.Context) {
+	if c == nil {
+		return
+	}
+	if c.db != nil {
+		if err := c.db.Close(); err != nil {
+			slog.Error("close db error")
+		}
+	}
+	if c.container != nil {
+		if err := c.container.Terminate(ctx, testcontainers.StopTimeout(1*time.Millisecond)); err != nil {
+			slog.Error("close container error")
+		}
+	}
+}
+
+func getMySQLContainer(ctx context.Context) (retc *Container, retErr error) {
 	req := testcontainers.ContainerRequest{
 		Image: "mysql:8.0.33",
 		Env: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "root-password",
 		},
 		ExposedPorts: []string{"3306/tcp"},
-		WaitingFor: wait.
-			ForLog("port: 3306  MySQL Community Server").
-			WithStartupTimeout(60 * time.Second),
 	}
-
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
@@ -41,7 +54,6 @@ func getMySQLContainer(ctx context.Context) (*Container, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	port, err := c.MappedPort(ctx, "3306/tcp")
 	if err != nil {
 		return nil, err
@@ -52,7 +64,13 @@ func getMySQLContainer(ctx context.Context) (*Container, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := db.Ping(); err != nil {
+	defer func() {
+		if retErr != nil {
+			db.Close()
+		}
+	}()
+
+	if err := waitDBPing(ctx, db); err != nil {
 		return nil, err
 	}
 
@@ -64,7 +82,7 @@ func getMySQLContainer(ctx context.Context) (*Container, error) {
 	}, nil
 }
 
-func getPgContainer(ctx context.Context) (*Container, error) {
+func getPgContainer(ctx context.Context) (retC *Container, retErr error) {
 	req := testcontainers.ContainerRequest{
 		Image: "postgres:16-alpine",
 		Env: map[string]string{
@@ -72,9 +90,6 @@ func getPgContainer(ctx context.Context) (*Container, error) {
 			"POSTGRES_PASSWORD": "root-password",
 		},
 		ExposedPorts: []string{"5432/tcp"},
-		WaitingFor: wait.ForLog("database system is ready to accept connections").
-			WithOccurrence(2).
-			WithStartupTimeout(60 * time.Second),
 	}
 
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -89,7 +104,6 @@ func getPgContainer(ctx context.Context) (*Container, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	port, err := c.MappedPort(ctx, "5432/tcp")
 	if err != nil {
 		return nil, err
@@ -99,8 +113,13 @@ func getPgContainer(ctx context.Context) (*Container, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		if retErr != nil {
+			db.Close()
+		}
+	}()
 
-	if err := db.Ping(); err != nil {
+	if err := waitDBPing(ctx, db); err != nil {
 		return nil, err
 	}
 
@@ -110,4 +129,22 @@ func getPgContainer(ctx context.Context) (*Container, error) {
 		port:      port.Port(),
 		db:        db,
 	}, nil
+}
+
+func waitDBPing(ctx context.Context, db *sql.DB) error {
+	ticker := time.NewTicker(3 * time.Second)
+	defer ticker.Stop()
+	timeout := time.After(2 * time.Minute)
+outerLoop:
+	for {
+		select {
+		case <-ticker.C:
+			if err := db.PingContext(ctx); err == nil {
+				break outerLoop
+			}
+		case <-timeout:
+			return errors.Errorf("start container timeout reached")
+		}
+	}
+	return nil
 }
