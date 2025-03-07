@@ -987,10 +987,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.PlanConfig.DeploymentSnapshot.DeploymentConfigSnapshot"><span class="badge">M</span>PlanConfig.DeploymentSnapshot.DeploymentConfigSnapshot</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.PlanConfig.ExportDataConfig"><span class="badge">M</span>PlanConfig.ExportDataConfig</a>
                 </li>
               
@@ -8931,9 +8927,9 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
             <tbody>
               
                 <tr>
-                  <td>deployment_config_snapshot</td>
-                  <td><a href="#bytebase.store.PlanConfig.DeploymentSnapshot.DeploymentConfigSnapshot">PlanConfig.DeploymentSnapshot.DeploymentConfigSnapshot</a></td>
-                  <td></td>
+                  <td>environments</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
               
@@ -8973,44 +8969,6 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p>Format: instances/{instance-id}/databases/{database-name}. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanConfig.DeploymentSnapshot.DeploymentConfigSnapshot">PlanConfig.DeploymentSnapshot.DeploymentConfigSnapshot</h3>
-        <p>The snapshot of the project deployment config at the time of creation.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>deployment_config</td>
-                  <td><a href="#bytebase.store.DeploymentConfig">DeploymentConfig</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
