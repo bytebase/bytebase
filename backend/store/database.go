@@ -51,11 +51,6 @@ type BatchUpdateDatabases struct {
 	EnvironmentID *string
 }
 
-type FindDatabaseFilter struct {
-	Args  []any
-	Where string
-}
-
 // FindDatabaseMessage is the message for finding databases.
 type FindDatabaseMessage struct {
 	ProjectID              *string
@@ -70,7 +65,7 @@ type FindDatabaseMessage struct {
 	// IsCaseSensitive is used to ignore case sensitive when finding database.
 	IsCaseSensitive bool
 
-	Filter *FindDatabaseFilter
+	Filter *ListResourceFilter
 	Limit  *int
 	Offset *int
 }

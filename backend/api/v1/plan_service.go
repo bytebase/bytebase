@@ -350,6 +350,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 		case "description":
 			description := request.Plan.Description
 			planUpdate.Description = &description
+		case "deployment":
+			convertedDeployment := convertPlanDeployment(request.Plan.Deployment)
+			planUpdate.Deployment = &convertedDeployment
 		case "steps":
 			convertedRequestSteps := convertPlanSteps(request.GetPlan().GetSteps())
 			planUpdate.Steps = &convertedRequestSteps
@@ -495,18 +498,20 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						if specEarliest != 0 {
 							toEarliestAllowedTime = spec.EarliestAllowedTime
 						}
-						issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
-							IssueUID: issue.UID,
-							Payload: &storepb.IssueCommentPayload{
-								Event: &storepb.IssueCommentPayload_TaskUpdate_{
-									TaskUpdate: &storepb.IssueCommentPayload_TaskUpdate{
-										Tasks:                   []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID)},
-										FromEarliestAllowedTime: fromEarliestAllowedTime,
-										ToEarliestAllowedTime:   toEarliestAllowedTime,
+						if issue != nil {
+							issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
+								IssueUID: issue.UID,
+								Payload: &storepb.IssueCommentPayload{
+									Event: &storepb.IssueCommentPayload_TaskUpdate_{
+										TaskUpdate: &storepb.IssueCommentPayload_TaskUpdate{
+											Tasks:                   []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID)},
+											FromEarliestAllowedTime: fromEarliestAllowedTime,
+											ToEarliestAllowedTime:   toEarliestAllowedTime,
+										},
 									},
 								},
-							},
-						})
+							})
+						}
 					}
 
 					// PreUpdateBackupDetail
@@ -622,20 +627,22 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 							doUpdate = true
 							taskPatch.SheetID = &sheet.UID
 
-							oldSheet := common.FormatSheet(issue.Project.ResourceID, taskPayload.SheetID)
-							newSheet := common.FormatSheet(issue.Project.ResourceID, sheet.UID)
-							issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
-								IssueUID: issue.UID,
-								Payload: &storepb.IssueCommentPayload{
-									Event: &storepb.IssueCommentPayload_TaskUpdate_{
-										TaskUpdate: &storepb.IssueCommentPayload_TaskUpdate{
-											Tasks:     []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID)},
-											FromSheet: &oldSheet,
-											ToSheet:   &newSheet,
+							if issue != nil {
+								oldSheet := common.FormatSheet(issue.Project.ResourceID, taskPayload.SheetID)
+								newSheet := common.FormatSheet(issue.Project.ResourceID, sheet.UID)
+								issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
+									IssueUID: issue.UID,
+									Payload: &storepb.IssueCommentPayload{
+										Event: &storepb.IssueCommentPayload_TaskUpdate_{
+											TaskUpdate: &storepb.IssueCommentPayload_TaskUpdate{
+												Tasks:     []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID)},
+												FromSheet: &oldSheet,
+												ToSheet:   &newSheet,
+											},
 										},
 									},
-								},
-							})
+								})
+							}
 						}
 						return nil
 					}(); err != nil {

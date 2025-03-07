@@ -114,8 +114,42 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 	return database, nil
 }
 
+func getVariavleAndValueFromExpr(expr celast.Expr) (string, any) {
+	var variable string
+	var value any
+	for _, arg := range expr.AsCall().Args() {
+		switch arg.Kind() {
+		case celast.IdentKind:
+			variable = arg.AsIdent()
+		case celast.LiteralKind:
+			value = arg.AsLiteral().Value()
+		case celast.ListKind:
+			list := []any{}
+			for _, e := range arg.AsList().Elements() {
+				if e.Kind() == celast.LiteralKind {
+					list = append(list, e.AsLiteral().Value())
+				}
+			}
+			value = list
+		}
+	}
+	return variable, value
+}
+
+func getSubConditionFromExpr(expr celast.Expr, getFilter func(expr celast.Expr) (string, error), join string) (string, error) {
+	var args []string
+	for _, arg := range expr.AsCall().Args() {
+		s, err := getFilter(arg)
+		if err != nil {
+			return "", err
+		}
+		args = append(args, "("+s+")")
+	}
+	return strings.Join(args, fmt.Sprintf(" %s ", join)), nil
+}
+
 // TODO(ed): test it.
-func getFindDatabaseFilter(filter string) (*store.FindDatabaseFilter, error) {
+func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 	if filter == "" {
 		return nil, nil
 	}
@@ -131,40 +165,6 @@ func getFindDatabaseFilter(filter string) (*store.FindDatabaseFilter, error) {
 
 	var getFilter func(expr celast.Expr) (string, error)
 	var positionalArgs []any
-
-	getSubCondition := func(expr celast.Expr, join string) (string, error) {
-		var args []string
-		for _, arg := range expr.AsCall().Args() {
-			s, err := getFilter(arg)
-			if err != nil {
-				return "", err
-			}
-			args = append(args, "("+s+")")
-		}
-		return strings.Join(args, fmt.Sprintf(" %s ", join)), nil
-	}
-
-	getVariavleAndValue := func(expr celast.Expr) (string, any) {
-		var variable string
-		var value any
-		for _, arg := range expr.AsCall().Args() {
-			switch arg.Kind() {
-			case celast.IdentKind:
-				variable = arg.AsIdent()
-			case celast.LiteralKind:
-				value = arg.AsLiteral().Value()
-			case celast.ListKind:
-				list := []any{}
-				for _, e := range arg.AsList().Elements() {
-					if e.Kind() == celast.LiteralKind {
-						list = append(list, e.AsLiteral().Value())
-					}
-				}
-				value = list
-			}
-		}
-		return variable, value
-	}
 
 	parseToSQL := func(variable, value any) (string, error) {
 		switch variable {
@@ -225,7 +225,7 @@ func getFindDatabaseFilter(filter string) (*store.FindDatabaseFilter, error) {
 	}
 
 	parseToEngineSQL := func(expr celast.Expr, relation string) (string, error) {
-		variable, value := getVariavleAndValue(expr)
+		variable, value := getVariavleAndValueFromExpr(expr)
 		if variable != "engine" {
 			return "", status.Errorf(codes.InvalidArgument, `only "engine" support "engine in [xx]"/"!(engine in [xx])" operator`)
 		}
@@ -254,11 +254,11 @@ func getFindDatabaseFilter(filter string) (*store.FindDatabaseFilter, error) {
 			functionName := expr.AsCall().FunctionName()
 			switch functionName {
 			case celoperators.LogicalOr:
-				return getSubCondition(expr, "OR")
+				return getSubConditionFromExpr(expr, getFilter, "OR")
 			case celoperators.LogicalAnd:
-				return getSubCondition(expr, "AND")
+				return getSubConditionFromExpr(expr, getFilter, "AND")
 			case celoperators.Equals:
-				variable, value := getVariavleAndValue(expr)
+				variable, value := getVariavleAndValueFromExpr(expr)
 				return parseToSQL(variable, value)
 			case celoverloads.Matches:
 				variable := expr.AsCall().Target().AsIdent()
@@ -296,7 +296,7 @@ func getFindDatabaseFilter(filter string) (*store.FindDatabaseFilter, error) {
 		return nil, err
 	}
 
-	return &store.FindDatabaseFilter{
+	return &store.ListResourceFilter{
 		Args:  positionalArgs,
 		Where: "(" + where + ")",
 	}, nil
@@ -325,7 +325,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 		ShowDeleted: request.ShowDeleted,
 	}
 
-	filter, err := getFindDatabaseFilter(request.Filter)
+	filter, err := getListDatabaseFilter(request.Filter)
 	if err != nil {
 		return nil, err
 	}
