@@ -1,4 +1,4 @@
-name: golangci-lint
+name: Proto linter
 
 on:
   pull_request:
@@ -6,10 +6,9 @@ on:
       - main
       - "release/*.*.*"
     paths-ignore:
-      - "backend/**"
-      - "go.mod"
+      - "proto/**"
 
-      jobs:
+jobs:
   lint-protos:
     runs-on: ubuntu-latest
     steps:

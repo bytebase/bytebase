@@ -10,7 +10,7 @@ on:
       - "go.mod"
 
 jobs:
-  go-tests:
+  golangci-lint-tests:
     runs-on: ubuntu-latest
     steps:
       - run: 'echo "Not required"'
