@@ -207,7 +207,7 @@ func getFindDatabaseFilter(filter string) (*store.FindDatabaseFilter, error) {
 		case "label":
 			keyVal := strings.Split(value.(string), ":")
 			if len(keyVal) != 2 {
-				return "", status.Errorf(codes.InvalidArgument, `invalid label filter %q, should in "{label key}:{label value} format"`, value)
+				return "", status.Errorf(codes.InvalidArgument, `invalid label filter %q, should be in "{label key}:{label value} format"`, value)
 			}
 			labelKey := keyVal[0]
 			labelValues := strings.Split(keyVal[1], ",")
