@@ -361,7 +361,7 @@ const factorOptionsMap = computed((): Map<Factor, OptionConfig> => {
           search: async (keyword: string) => {
             return projectStore
               .searchProjects({ query: keyword })
-              .then((projects) => getProjectIdOptions(projects));
+              .then((resp) => getProjectIdOptions(resp.projects));
           },
         });
         return map;
