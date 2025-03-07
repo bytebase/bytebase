@@ -28,7 +28,7 @@ jobs:
           go mod tidy
           git diff --exit-code
       - name: Run all tests
-        run: go test -p=8 -ldflags "-w -s" -v ./backend/... | tee test.log; exit ${PIPESTATUS[0]}
+        run: go test -p=16 -ldflags "-w -s" -v ./backend/... | tee test.log; exit ${PIPESTATUS[0]}
       - name: Pretty print tests running time
         # grep: filter out lines like "--- PASS: Test (15.04s)"
         # sed: remove unnecessary characters
@@ -50,4 +50,4 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: v1.64.5
-          args: --verbose --timeout 20m --max-same-issues=30 --allow-parallel-runners
+          args: --verbose -j 16 --timeout 20m --max-same-issues=30 --allow-parallel-runners
