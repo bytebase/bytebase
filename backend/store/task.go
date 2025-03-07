@@ -25,6 +25,7 @@ type TaskMessage struct {
 	PipelineID     int
 	StageID        int
 	InstanceID     string
+	EnvironmentID  string // This is the stage.
 	DatabaseName   *string
 	TaskRunRawList []*TaskRunMessage
 
