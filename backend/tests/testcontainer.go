@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/pkg/errors"
@@ -20,10 +21,14 @@ type Container struct {
 
 func (c *Container) Close(ctx context.Context) {
 	if c.db != nil {
-		c.db.Close()
+		if err := c.db.Close(); err != nil {
+			slog.Error("close db error")
+		}
 	}
 	if c.container != nil {
-		c.container.Terminate(ctx)
+		if err := c.container.Terminate(ctx); err != nil {
+			slog.Error("close container error")
+		}
 	}
 }
 
