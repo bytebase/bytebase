@@ -1712,6 +1712,10 @@
     "vertical-display": "竖向展示",
     "no-history-found": "暂无历史记录",
     "search-history": "搜索历史记录",
+    "binary-format": "Binary format (0s and 1s)",
+    "hex-format": "Hexadecimal format",
+    "boolean-format": "Boolean format",
+    "text-format": "Text format",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
         "title": "确定关闭未保存的工作表？",
