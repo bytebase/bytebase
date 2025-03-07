@@ -24,14 +24,14 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func transformDatabaseGroupSpecs(ctx context.Context, s *store.Store, project *store.ProjectMessage, specs []*storepb.PlanConfig_Spec, snapshot *storepb.PlanConfig_DeploymentSnapshot) ([]*storepb.PlanConfig_Spec, error) {
+func transformDatabaseGroupSpecs(ctx context.Context, s *store.Store, project *store.ProjectMessage, specs []*storepb.PlanConfig_Spec, deployment *storepb.PlanConfig_Deployment) ([]*storepb.PlanConfig_Spec, error) {
 	var rspecs []*storepb.PlanConfig_Spec
 
 	for _, spec := range specs {
 		if config := spec.GetChangeDatabaseConfig(); config != nil {
 			// transform database group.
 			if _, _, err := common.GetProjectIDDatabaseGroupID(config.Target); err == nil {
-				specsFromDatabaseGroup, err := transformDatabaseGroupTargetToSpecs(ctx, s, spec, config, project, snapshot)
+				specsFromDatabaseGroup, err := transformDatabaseGroupTargetToSpecs(ctx, s, spec, config, project, deployment)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to transform databaseGroup target to steps")
 				}
@@ -45,9 +45,9 @@ func transformDatabaseGroupSpecs(ctx context.Context, s *store.Store, project *s
 	return rspecs, nil
 }
 
-func transformDatabaseGroupTargetToSpecs(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage, snapshot *storepb.PlanConfig_DeploymentSnapshot) ([]*storepb.PlanConfig_Spec, error) {
+func transformDatabaseGroupTargetToSpecs(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage, deployment *storepb.PlanConfig_Deployment) ([]*storepb.PlanConfig_Spec, error) {
 	// Use snapshot result if it's present.
-	for _, s := range snapshot.GetDatabaseGroupSnapshots() {
+	for _, s := range deployment.GetDatabaseGroupMappings() {
 		if s.DatabaseGroup == c.Target {
 			var specs []*storepb.PlanConfig_Spec
 			for _, database := range s.Databases {

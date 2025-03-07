@@ -253,13 +253,13 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRe
 		Description: request.Plan.Description,
 		Config:      convertPlan(request.Plan),
 	}
-	snapshot, err := getPlanSnapshot(ctx, s.store, planMessage.Config.GetSteps(), project)
+	deployment, err := getPlanDeployment(ctx, s.store, planMessage.Config.GetSteps(), project)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get plan deployment snapshot, error: %v", err)
 	}
-	planMessage.Config.DeploymentSnapshot = snapshot
+	planMessage.Config.Deployment = deployment
 
-	if _, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, planMessage.Config.GetSteps(), snapshot, project); err != nil {
+	if _, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.licenseService, s.dbFactory, planMessage.Config.GetSteps(), deployment, project); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
 	}
 	plan, err := s.store.CreatePlan(ctx, planMessage, principalID)
@@ -360,7 +360,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				s.licenseService,
 				s.dbFactory,
 				convertedRequestSteps,
-				oldPlan.Config.GetDeploymentSnapshot(),
+				oldPlan.Config.GetDeployment(),
 				project); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
 			}
@@ -1339,8 +1339,8 @@ func getPlanSpecDatabaseGroups(steps []*storepb.PlanConfig_Step) []string {
 	return databaseGroups
 }
 
-func getPlanSnapshot(ctx context.Context, s *store.Store, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*storepb.PlanConfig_DeploymentSnapshot, error) {
-	snapshot := &storepb.PlanConfig_DeploymentSnapshot{}
+func getPlanDeployment(ctx context.Context, s *store.Store, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*storepb.PlanConfig_Deployment, error) {
+	snapshot := &storepb.PlanConfig_Deployment{}
 
 	environments, err := s.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
 	if err != nil {
@@ -1383,7 +1383,7 @@ func getPlanSnapshot(ctx context.Context, s *store.Store, steps []*storepb.PlanC
 			databases = append(databases, common.FormatDatabase(db.InstanceID, db.DatabaseName))
 		}
 
-		snapshot.DatabaseGroupSnapshots = append(snapshot.DatabaseGroupSnapshots, &storepb.PlanConfig_DeploymentSnapshot_DatabaseGroupSnapshot{
+		snapshot.DatabaseGroupMappings = append(snapshot.DatabaseGroupMappings, &storepb.PlanConfig_Deployment_DatabaseGroupMapping{
 			DatabaseGroup: name,
 			Databases:     databases,
 		})
