@@ -114,7 +114,7 @@ func transformDatabaseGroupTargetToSpecs(ctx context.Context, s *store.Store, sp
 	return specs, nil
 }
 
-func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, error) {
+func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, project *store.ProjectMessage) ([]*store.TaskMessage, error) {
 	if licenseService.IsFeatureEnabled(api.FeatureTaskScheduleTime) != nil {
 		if spec.EarliestAllowedTime != nil && !spec.EarliestAllowedTime.AsTime().IsZero() {
 			return nil, errors.New(api.FeatureTaskScheduleTime.AccessErrorMessage())
@@ -123,17 +123,17 @@ func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, sheetManager *s
 
 	switch config := spec.Config.(type) {
 	case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
-		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, sheetManager, dbFactory, spec, config.CreateDatabaseConfig, project, registerEnvironmentID)
+		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, sheetManager, dbFactory, spec, config.CreateDatabaseConfig, project)
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
-		return getTaskCreatesFromChangeDatabaseConfig(ctx, s, spec, config.ChangeDatabaseConfig, project, registerEnvironmentID)
+		return getTaskCreatesFromChangeDatabaseConfig(ctx, s, spec, config.ChangeDatabaseConfig, project)
 	case *storepb.PlanConfig_Spec_ExportDataConfig:
-		return getTaskCreatesFromExportDataConfig(ctx, s, spec, config.ExportDataConfig, project, registerEnvironmentID)
+		return getTaskCreatesFromExportDataConfig(ctx, s, spec, config.ExportDataConfig, project)
 	}
 
 	return nil, errors.Errorf("invalid spec config type %T", spec.Config)
 }
 
-func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, error) {
+func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig, project *store.ProjectMessage) ([]*store.TaskMessage, error) {
 	if c.Database == "" {
 		return nil, errors.Errorf("database name is required")
 	}
@@ -146,22 +146,21 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		return nil, errors.Errorf("creating Oracle database is not supported")
 	}
 
-	dbEnvironmentID := strings.TrimPrefix(c.Environment, common.EnvironmentNamePrefix)
-	// Fallback to instance.EnvironmentID if user-set environment is not present.
-	environmentID := instance.EnvironmentID
-	if dbEnvironmentID != "" {
-		environmentID = dbEnvironmentID
+	dbEnvironmentID := ""
+	if c.Environment != "" {
+		dbEnvironmentID = strings.TrimPrefix(c.Environment, common.EnvironmentNamePrefix)
 	}
-
-	environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &environmentID})
+	// Fallback to instance.EnvironmentID if user-set environment is not present.
+	effectiveEnvironmentID := instance.EnvironmentID
+	if dbEnvironmentID != "" {
+		effectiveEnvironmentID = dbEnvironmentID
+	}
+	environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &effectiveEnvironmentID})
 	if err != nil {
 		return nil, err
 	}
 	if environment == nil {
-		return nil, errors.Errorf("environment ID not found %v", environmentID)
-	}
-	if err := registerEnvironmentID(environmentID); err != nil {
-		return nil, err
+		return nil, errors.Errorf("environment ID not found %v", effectiveEnvironmentID)
 	}
 
 	if instance.Metadata.GetEngine() == storepb.Engine_MONGODB && c.Table == "" {
@@ -247,11 +246,12 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		}
 
 		v := &store.TaskMessage{
-			InstanceID:   instance.ResourceID,
-			DatabaseName: nil,
-			Name:         fmt.Sprintf("Create database %v", payload.DatabaseName),
-			Type:         api.TaskDatabaseCreate,
-			Payload:      string(bytes),
+			Name:          fmt.Sprintf("Create database %v", payload.DatabaseName),
+			InstanceID:    instance.ResourceID,
+			DatabaseName:  &databaseName,
+			EnvironmentID: effectiveEnvironmentID,
+			Type:          api.TaskDatabaseCreate,
+			Payload:       string(bytes),
 		}
 		if spec.EarliestAllowedTime.GetSeconds() > 0 {
 			t := spec.EarliestAllowedTime.AsTime()
@@ -268,12 +268,12 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 	return taskCreates, nil
 }
 
-func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, error) {
+func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage) ([]*store.TaskMessage, error) {
 	// possible target:
 	// 1. instances/{instance}/databases/{database}
 	// 2. projects/{project}/databaseGroups/{databaseGroup}
 	if _, _, err := common.GetInstanceDatabaseID(c.Target); err == nil {
-		return getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx, s, spec, c, project, registerEnvironmentID)
+		return getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx, s, spec, c, project)
 	}
 	if _, _, err := common.GetProjectIDDatabaseGroupID(c.Target); err == nil {
 		return nil, errors.Errorf("unexpected database group target %q", c.Target)
@@ -282,7 +282,7 @@ func getTaskCreatesFromChangeDatabaseConfig(ctx context.Context, s *store.Store,
 	return nil, errors.Errorf("unknown target %q", c.Target)
 }
 
-func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ExportDataConfig, _ *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, error) {
+func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ExportDataConfig, _ *store.ProjectMessage) ([]*store.TaskMessage, error) {
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(c.Target)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance and database from target %q", c.Target)
@@ -307,10 +307,6 @@ func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spe
 	}
 	if database == nil {
 		return nil, errors.Errorf("database %q not found", databaseName)
-	}
-
-	if err := registerEnvironmentID(database.EffectiveEnvironmentID); err != nil {
-		return nil, err
 	}
 
 	_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
@@ -331,11 +327,12 @@ func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spe
 	}
 	payloadString := string(bytes)
 	taskCreate := &store.TaskMessage{
-		Name:         fmt.Sprintf("Export data from database %q", database.DatabaseName),
-		InstanceID:   database.InstanceID,
-		DatabaseName: &database.DatabaseName,
-		Type:         api.TaskDatabaseDataExport,
-		Payload:      payloadString,
+		Name:          fmt.Sprintf("Export data from database %q", database.DatabaseName),
+		InstanceID:    database.InstanceID,
+		DatabaseName:  &database.DatabaseName,
+		EnvironmentID: database.EffectiveEnvironmentID,
+		Type:          api.TaskDatabaseDataExport,
+		Payload:       payloadString,
 	}
 	if spec.EarliestAllowedTime.GetSeconds() > 0 {
 		t := spec.EarliestAllowedTime.AsTime()
@@ -344,7 +341,7 @@ func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spe
 	return []*store.TaskMessage{taskCreate}, nil
 }
 
-func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, _ *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, error) {
+func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, _ *store.ProjectMessage) ([]*store.TaskMessage, error) {
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(c.Target)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance and database from target %q", c.Target)
@@ -371,10 +368,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		return nil, errors.Errorf("database %q not found", databaseName)
 	}
 
-	if err := registerEnvironmentID(database.EffectiveEnvironmentID); err != nil {
-		return nil, err
-	}
-
 	switch c.Type {
 	case storepb.PlanConfig_ChangeDatabaseConfig_BASELINE:
 		payload := &storepb.TaskDatabaseUpdatePayload{
@@ -390,11 +383,12 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		}
 		payloadString := string(bytes)
 		taskCreate := &store.TaskMessage{
-			Name:         fmt.Sprintf("Establish baseline for database %q", database.DatabaseName),
-			InstanceID:   database.InstanceID,
-			DatabaseName: &database.DatabaseName,
-			Type:         api.TaskDatabaseSchemaBaseline,
-			Payload:      payloadString,
+			Name:          fmt.Sprintf("Establish baseline for database %q", database.DatabaseName),
+			InstanceID:    database.InstanceID,
+			DatabaseName:  &database.DatabaseName,
+			EnvironmentID: database.EffectiveEnvironmentID,
+			Type:          api.TaskDatabaseSchemaBaseline,
+			Payload:       payloadString,
 		}
 		if spec.EarliestAllowedTime.GetSeconds() > 0 {
 			t := spec.EarliestAllowedTime.AsTime()
@@ -421,11 +415,12 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		}
 		payloadString := string(bytes)
 		taskCreate := &store.TaskMessage{
-			Name:         fmt.Sprintf("DDL(schema) for database %q", database.DatabaseName),
-			InstanceID:   database.InstanceID,
-			DatabaseName: &database.DatabaseName,
-			Type:         api.TaskDatabaseSchemaUpdate,
-			Payload:      payloadString,
+			Name:          fmt.Sprintf("DDL(schema) for database %q", database.DatabaseName),
+			InstanceID:    database.InstanceID,
+			DatabaseName:  &database.DatabaseName,
+			EnvironmentID: database.EffectiveEnvironmentID,
+			Type:          api.TaskDatabaseSchemaUpdate,
+			Payload:       payloadString,
 		}
 		if spec.EarliestAllowedTime.GetSeconds() > 0 {
 			t := spec.EarliestAllowedTime.AsTime()
@@ -452,11 +447,12 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		}
 		payloadString := string(bytes)
 		taskCreate := &store.TaskMessage{
-			Name:         fmt.Sprintf("SDL for database %q", database.DatabaseName),
-			InstanceID:   database.InstanceID,
-			DatabaseName: &database.DatabaseName,
-			Type:         api.TaskDatabaseSchemaUpdateSDL,
-			Payload:      payloadString,
+			Name:          fmt.Sprintf("SDL for database %q", database.DatabaseName),
+			InstanceID:    database.InstanceID,
+			DatabaseName:  &database.DatabaseName,
+			EnvironmentID: database.EffectiveEnvironmentID,
+			Type:          api.TaskDatabaseSchemaUpdateSDL,
+			Payload:       payloadString,
 		}
 		if spec.EarliestAllowedTime.GetSeconds() > 0 {
 			t := spec.EarliestAllowedTime.AsTime()
@@ -486,11 +482,12 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			return nil, errors.Wrapf(err, "failed to marshal database schema update ghost payload")
 		}
 		taskCreate := &store.TaskMessage{
-			Name:         fmt.Sprintf("DDL(gh-ost) for database %q", database.DatabaseName),
-			InstanceID:   database.InstanceID,
-			DatabaseName: &database.DatabaseName,
-			Type:         api.TaskDatabaseSchemaUpdateGhost,
-			Payload:      string(bytes),
+			Name:          fmt.Sprintf("DDL(gh-ost) for database %q", database.DatabaseName),
+			InstanceID:    database.InstanceID,
+			DatabaseName:  &database.DatabaseName,
+			EnvironmentID: database.EffectiveEnvironmentID,
+			Type:          api.TaskDatabaseSchemaUpdateGhost,
+			Payload:       string(bytes),
 		}
 		if spec.EarliestAllowedTime.GetSeconds() > 0 {
 			t := spec.EarliestAllowedTime.AsTime()
@@ -522,11 +519,12 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		}
 		payloadString := string(bytes)
 		taskCreate := &store.TaskMessage{
-			Name:         fmt.Sprintf("DML(data) for database %q", database.DatabaseName),
-			InstanceID:   database.InstanceID,
-			DatabaseName: &database.DatabaseName,
-			Type:         api.TaskDatabaseDataUpdate,
-			Payload:      payloadString,
+			Name:          fmt.Sprintf("DML(data) for database %q", database.DatabaseName),
+			InstanceID:    database.InstanceID,
+			DatabaseName:  &database.DatabaseName,
+			EnvironmentID: database.EffectiveEnvironmentID,
+			Type:          api.TaskDatabaseDataUpdate,
+			Payload:       payloadString,
 		}
 		if spec.EarliestAllowedTime.GetSeconds() > 0 {
 			t := spec.EarliestAllowedTime.AsTime()

@@ -6,7 +6,6 @@ import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "store/common.proto";
-import "store/deployment_config.proto";
 import "store/plan_check_run.proto";
 
 option go_package = "generated-go/store";
@@ -127,15 +126,8 @@ message PlanConfig {
   }
 
   message DeploymentSnapshot {
-    DeploymentConfigSnapshot deployment_config_snapshot = 1;
+    repeated string environments = 1;
     repeated DatabaseGroupSnapshot database_group_snapshots = 2;
-
-    // The snapshot of the project deployment config at the time of creation.
-    message DeploymentConfigSnapshot {
-      string name = 1;
-      string title = 2;
-      DeploymentConfig deployment_config = 3;
-    }
 
     // The snapshot of the database group at the time of creation.
     message DatabaseGroupSnapshot {

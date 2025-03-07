@@ -1342,17 +1342,12 @@ func getPlanSpecDatabaseGroups(steps []*storepb.PlanConfig_Step) []string {
 func getPlanSnapshot(ctx context.Context, s *store.Store, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*storepb.PlanConfig_DeploymentSnapshot, error) {
 	snapshot := &storepb.PlanConfig_DeploymentSnapshot{}
 
-	deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.ResourceID)
+	environments, err := s.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get deployment config")
+		return nil, errors.Wrapf(err, "failed to list environments")
 	}
-	if err := utils.ValidateDeploymentSchedule(deploymentConfig.Config.GetSchedule()); err != nil {
-		return nil, errors.Wrapf(err, "failed to validate and get deployment schedule")
-	}
-	snapshot.DeploymentConfigSnapshot = &storepb.PlanConfig_DeploymentSnapshot_DeploymentConfigSnapshot{
-		Name:             common.FormatDeploymentConfig(project.ResourceID),
-		Title:            deploymentConfig.Name,
-		DeploymentConfig: deploymentConfig.Config,
+	for _, e := range environments {
+		snapshot.Environments = append(snapshot.Environments, e.ResourceID)
 	}
 
 	databaseGroups := getPlanSpecDatabaseGroups(steps)
