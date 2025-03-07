@@ -110,7 +110,7 @@ const router = useRouter();
 const { project, rollout, emmiter } = useRolloutDetailContext();
 
 const isCreated = computed(() => {
-  return rollout.value.stages.some((stage) => stage.id === props.stage.id);
+  return rollout.value.stages.some((stage) => stage.environment === props.stage.environment);
 });
 
 const onTaskClick = (task: Task) => {
@@ -127,7 +127,7 @@ const createRolloutToStage = async () => {
     rollout: {
       plan: rollout.value.plan,
     },
-    stageId: props.stage.id,
+    target: props.stage.environment,
   });
   emmiter.emit("task-status-action");
 };

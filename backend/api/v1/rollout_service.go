@@ -233,7 +233,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.InvalidArgument, "no database matched for deployment, hint: check deployment config setting that the target database is in a stage")
 	}
 	if isChangeDatabasePlan(plan.Config.GetSteps()) {
-		pipelineCreate, err = getPipelineCreateToTargetStage(ctx, s.store, plan.Config.GetDeployment().GetEnvironments(), pipelineCreate, request.StageId)
+		pipelineCreate, err = getPipelineCreateToTargetStage(ctx, s.store, plan.Config.GetDeployment().GetEnvironments(), pipelineCreate, request.Target)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to filter stages with stageId, error: %v", err)
 		}
@@ -1024,13 +1024,17 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 }
 
 // filter pipelineCreate.Stages using targetEnvironmentID.
-func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, snapshotEnvironments []string, pipelineCreate *store.PipelineMessage, targetEnvironmentID *string) (*store.PipelineMessage, error) {
-	if targetEnvironmentID == nil {
+func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, snapshotEnvironments []string, pipelineCreate *store.PipelineMessage, targetEnvironment *string) (*store.PipelineMessage, error) {
+	if targetEnvironment == nil {
 		return pipelineCreate, nil
 	}
-	if *targetEnvironmentID == "" {
+	if *targetEnvironment == "" {
 		pipelineCreate.Stages = nil
 		return pipelineCreate, nil
+	}
+	targetEnvironmentID, err := common.GetEnvironmentID(*targetEnvironment)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get environment id from %q", *targetEnvironment)
 	}
 	if len(snapshotEnvironments) == 0 {
 		environments, err := s.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{})
@@ -1050,13 +1054,13 @@ func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, snapsho
 			stageCreates = append(stageCreates, pipelineCreate.Stages[i])
 			i++
 		}
-		if environmentID == *targetEnvironmentID {
+		if environmentID == targetEnvironmentID {
 			foundID = true
 			break
 		}
 	}
 	if !foundID {
-		return nil, errors.Errorf("environment %q not found", *targetEnvironmentID)
+		return nil, errors.Errorf("environment %q not found", targetEnvironmentID)
 	}
 	pipelineCreate.Stages = stageCreates
 	return pipelineCreate, nil

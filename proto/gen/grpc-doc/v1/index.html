@@ -27734,12 +27734,11 @@ Format: projects/{project} </p></td>
                 </tr>
               
                 <tr>
-                  <td>stage_id</td>
+                  <td>target</td>
                   <td><a href="#string">string</a></td>
                   <td>optional</td>
-                  <td><p>stage_id is the id in the plan deployment_config_snapshot.
-The rollout is created according to the plan and the
-stages are created up to the stage_id.
+                  <td><p>Create the rollout and the stages up to the target stage.
+Format: environments/{environment}
 If unspecified, all stages are created.
 If set to &#34;&#34;, no stages are created. </p></td>
                 </tr>

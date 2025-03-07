@@ -216,12 +216,11 @@ message CreateRolloutRequest {
   // The rollout to create.
   Rollout rollout = 2 [(google.api.field_behavior) = REQUIRED];
 
-  // stage_id is the id in the plan deployment_config_snapshot.
-  // The rollout is created according to the plan and the
-  // stages are created up to the stage_id.
+  // Create the rollout and the stages up to the target stage.
+  // Format: environments/{environment}
   // If unspecified, all stages are created.
   // If set to "", no stages are created.
-  optional string stage_id = 3;
+  optional string target = 3;
 
   // If set, validate the request and preview the rollout, but
   // do not actually create it.
