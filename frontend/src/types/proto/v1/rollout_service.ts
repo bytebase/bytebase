@@ -228,14 +228,13 @@ export interface Stage {
    * Empty for legacy stages.
    */
   id: string;
-  title: string;
+  environment: string;
   tasks: Task[];
 }
 
 export interface Task {
   /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} */
   name: string;
-  title: string;
   /**
    * A UUID4 string that uniquely identifies the Spec.
    * Could be empty if the rollout of the task does not have an associating plan.
@@ -518,7 +517,6 @@ export interface TaskRun {
   creator: string;
   createTime: Timestamp | undefined;
   updateTime: Timestamp | undefined;
-  title: string;
   status: TaskRun_Status;
   /** Below are the results of a task run. */
   detail: string;
@@ -2295,7 +2293,7 @@ export const Rollout: MessageFns<Rollout> = {
 };
 
 function createBaseStage(): Stage {
-  return { name: "", id: "", title: "", tasks: [] };
+  return { name: "", id: "", environment: "", tasks: [] };
 }
 
 export const Stage: MessageFns<Stage> = {
@@ -2306,8 +2304,8 @@ export const Stage: MessageFns<Stage> = {
     if (message.id !== "") {
       writer.uint32(26).string(message.id);
     }
-    if (message.title !== "") {
-      writer.uint32(34).string(message.title);
+    if (message.environment !== "") {
+      writer.uint32(34).string(message.environment);
     }
     for (const v of message.tasks) {
       Task.encode(v!, writer.uint32(42).fork()).join();
@@ -2343,7 +2341,7 @@ export const Stage: MessageFns<Stage> = {
             break;
           }
 
-          message.title = reader.string();
+          message.environment = reader.string();
           continue;
         }
         case 5: {
@@ -2367,7 +2365,7 @@ export const Stage: MessageFns<Stage> = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       id: isSet(object.id) ? globalThis.String(object.id) : "",
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      environment: isSet(object.environment) ? globalThis.String(object.environment) : "",
       tasks: globalThis.Array.isArray(object?.tasks) ? object.tasks.map((e: any) => Task.fromJSON(e)) : [],
     };
   },
@@ -2380,8 +2378,8 @@ export const Stage: MessageFns<Stage> = {
     if (message.id !== "") {
       obj.id = message.id;
     }
-    if (message.title !== "") {
-      obj.title = message.title;
+    if (message.environment !== "") {
+      obj.environment = message.environment;
     }
     if (message.tasks?.length) {
       obj.tasks = message.tasks.map((e) => Task.toJSON(e));
@@ -2396,7 +2394,7 @@ export const Stage: MessageFns<Stage> = {
     const message = createBaseStage();
     message.name = object.name ?? "";
     message.id = object.id ?? "";
-    message.title = object.title ?? "";
+    message.environment = object.environment ?? "";
     message.tasks = object.tasks?.map((e) => Task.fromPartial(e)) || [];
     return message;
   },
@@ -2405,7 +2403,6 @@ export const Stage: MessageFns<Stage> = {
 function createBaseTask(): Task {
   return {
     name: "",
-    title: "",
     specId: "",
     status: Task_Status.STATUS_UNSPECIFIED,
     skippedReason: "",
@@ -2423,9 +2420,6 @@ export const Task: MessageFns<Task> = {
   encode(message: Task, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.title !== "") {
-      writer.uint32(26).string(message.title);
     }
     if (message.specId !== "") {
       writer.uint32(34).string(message.specId);
@@ -2473,14 +2467,6 @@ export const Task: MessageFns<Task> = {
           }
 
           message.name = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.title = reader.string();
           continue;
         }
         case 4: {
@@ -2575,7 +2561,6 @@ export const Task: MessageFns<Task> = {
   fromJSON(object: any): Task {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
       specId: isSet(object.specId) ? globalThis.String(object.specId) : "",
       status: isSet(object.status) ? task_StatusFromJSON(object.status) : Task_Status.STATUS_UNSPECIFIED,
       skippedReason: isSet(object.skippedReason) ? globalThis.String(object.skippedReason) : "",
@@ -2601,9 +2586,6 @@ export const Task: MessageFns<Task> = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
     }
     if (message.specId !== "") {
       obj.specId = message.specId;
@@ -2644,7 +2626,6 @@ export const Task: MessageFns<Task> = {
   fromPartial(object: DeepPartial<Task>): Task {
     const message = createBaseTask();
     message.name = object.name ?? "";
-    message.title = object.title ?? "";
     message.specId = object.specId ?? "";
     message.status = object.status ?? Task_Status.STATUS_UNSPECIFIED;
     message.skippedReason = object.skippedReason ?? "";
@@ -3150,7 +3131,6 @@ function createBaseTaskRun(): TaskRun {
     creator: "",
     createTime: undefined,
     updateTime: undefined,
-    title: "",
     status: TaskRun_Status.STATUS_UNSPECIFIED,
     detail: "",
     changelog: "",
@@ -3176,9 +3156,6 @@ export const TaskRun: MessageFns<TaskRun> = {
     }
     if (message.updateTime !== undefined) {
       Timestamp.encode(message.updateTime, writer.uint32(50).fork()).join();
-    }
-    if (message.title !== "") {
-      writer.uint32(58).string(message.title);
     }
     if (message.status !== TaskRun_Status.STATUS_UNSPECIFIED) {
       writer.uint32(64).int32(taskRun_StatusToNumber(message.status));
@@ -3247,14 +3224,6 @@ export const TaskRun: MessageFns<TaskRun> = {
           }
 
           message.updateTime = Timestamp.decode(reader, reader.uint32());
-          continue;
-        }
-        case 7: {
-          if (tag !== 58) {
-            break;
-          }
-
-          message.title = reader.string();
           continue;
         }
         case 8: {
@@ -3344,7 +3313,6 @@ export const TaskRun: MessageFns<TaskRun> = {
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
       status: isSet(object.status) ? taskRun_StatusFromJSON(object.status) : TaskRun_Status.STATUS_UNSPECIFIED,
       detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
       changelog: isSet(object.changelog) ? globalThis.String(object.changelog) : "",
@@ -3374,9 +3342,6 @@ export const TaskRun: MessageFns<TaskRun> = {
     }
     if (message.updateTime !== undefined) {
       obj.updateTime = fromTimestamp(message.updateTime).toISOString();
-    }
-    if (message.title !== "") {
-      obj.title = message.title;
     }
     if (message.status !== TaskRun_Status.STATUS_UNSPECIFIED) {
       obj.status = taskRun_StatusToJSON(message.status);
@@ -3421,7 +3386,6 @@ export const TaskRun: MessageFns<TaskRun> = {
     message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
       ? Timestamp.fromPartial(object.updateTime)
       : undefined;
-    message.title = object.title ?? "";
     message.status = object.status ?? TaskRun_Status.STATUS_UNSPECIFIED;
     message.detail = object.detail ?? "";
     message.changelog = object.changelog ?? "";

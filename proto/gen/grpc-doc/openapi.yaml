@@ -13041,7 +13041,7 @@ components:
                         The id comes from the deployment config.
                          Format: UUID
                          Empty for legacy stages.
-                title:
+                environment:
                     type: string
                 tasks:
                     type: array
@@ -13373,8 +13373,6 @@ components:
                 name:
                     type: string
                     description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}'
-                title:
-                    type: string
                 specId:
                     type: string
                     description: |-
@@ -13447,8 +13445,6 @@ components:
                     readOnly: true
                     type: string
                     format: date-time
-                title:
-                    type: string
                 status:
                     enum:
                         - STATUS_UNSPECIFIED

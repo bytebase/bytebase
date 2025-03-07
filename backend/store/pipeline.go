@@ -69,12 +69,12 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 	}
 	oldCreatedStages := map[string]*StageMessage{}
 	for _, stage := range stages {
-		oldCreatedStages[stage.DeploymentID] = stage
+		oldCreatedStages[stage.Environment] = stage
 	}
 
 	var stagesToCreate []*StageMessage
 	for _, stage := range pipeline.Stages {
-		if createdStage, ok := oldCreatedStages[stage.DeploymentID]; ok {
+		if createdStage, ok := oldCreatedStages[stage.Environment]; ok {
 			// The stage was created, but we could have tasks to create.
 			tasks, err := s.listTasksTx(ctx, tx, &TaskFind{
 				PipelineID: &createdPipelineUID,
