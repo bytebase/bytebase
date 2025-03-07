@@ -200,14 +200,14 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 			}
 			engine := convertEngine(v1pb.Engine(v1Engine))
 			positionalArgs = append(positionalArgs, engine)
-			return fmt.Sprintf("instance.engine = $%d", len(positionalArgs)), nil
+			return fmt.Sprintf("instance.metadata->>'engine' = $%d", len(positionalArgs)), nil
 		case "name":
 			positionalArgs = append(positionalArgs, value)
 			return fmt.Sprintf("db.name = $%d", len(positionalArgs)), nil
 		case "label":
 			keyVal := strings.Split(value.(string), ":")
 			if len(keyVal) != 2 {
-				return "", status.Errorf(codes.InvalidArgument, `invalid label filter %q, should in "{label key}:{label value} format"`, value)
+				return "", status.Errorf(codes.InvalidArgument, `invalid label filter %q, should be in "{label key}:{label value} format"`, value)
 			}
 			labelKey := keyVal[0]
 			labelValues := strings.Split(keyVal[1], ",")
@@ -245,7 +245,7 @@ func getListDatabaseFilter(filter string) (*store.ListResourceFilter, error) {
 			engineList = append(engineList, fmt.Sprintf("$%d", len(positionalArgs)))
 		}
 
-		return fmt.Sprintf("instance.engine %s (%s)", relation, strings.Join(engineList, ",")), nil
+		return fmt.Sprintf("instance.metadata->>'engine' %s (%s)", relation, strings.Join(engineList, ",")), nil
 	}
 
 	getFilter = func(expr celast.Expr) (string, error) {
