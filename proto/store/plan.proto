@@ -15,7 +15,7 @@ message PlanConfig {
 
   ReleaseSource release_source = 3;
 
-  DeploymentSnapshot deployment_snapshot = 4;
+  Deployment deployment = 4;
 
   message Step {
     // Use the title if set.
@@ -125,12 +125,13 @@ message PlanConfig {
     string file = 1;
   }
 
-  message DeploymentSnapshot {
+  message Deployment {
+    // The environments deploy order.
     repeated string environments = 1;
-    repeated DatabaseGroupSnapshot database_group_snapshots = 2;
+    // The database group mapping.
+    repeated DatabaseGroupMapping database_group_mappings = 2;
 
-    // The snapshot of the database group at the time of creation.
-    message DatabaseGroupSnapshot {
+    message DatabaseGroupMapping {
       // Format: projects/{project}/databaseGroups/{databaseGroup}.
       string database_group = 1;
       // Format: instances/{instance-id}/databases/{database-name}.
