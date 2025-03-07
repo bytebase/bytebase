@@ -173,9 +173,9 @@ func convertPlan(plan *v1pb.Plan) *storepb.PlanConfig {
 		return nil
 	}
 	return &storepb.PlanConfig{
-		Steps:              convertPlanSteps(plan.Steps),
-		ReleaseSource:      convertPlanReleaseSource(plan.ReleaseSource),
-		DeploymentSnapshot: nil,
+		Steps:         convertPlanSteps(plan.Steps),
+		ReleaseSource: convertPlanReleaseSource(plan.ReleaseSource),
+		Deployment:    nil,
 	}
 }
 

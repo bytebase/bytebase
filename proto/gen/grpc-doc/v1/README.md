@@ -476,8 +476,8 @@
     - [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry)
     - [Plan.ChangeDatabaseConfig.PreUpdateBackupDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-PreUpdateBackupDetail)
     - [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig)
-    - [Plan.DeploymentSnapshot](#bytebase-v1-Plan-DeploymentSnapshot)
-    - [Plan.DeploymentSnapshot.DatabaseGroupSnapshot](#bytebase-v1-Plan-DeploymentSnapshot-DatabaseGroupSnapshot)
+    - [Plan.Deployment](#bytebase-v1-Plan-Deployment)
+    - [Plan.Deployment.DatabaseGroupMapping](#bytebase-v1-Plan-Deployment-DatabaseGroupMapping)
     - [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig)
     - [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry)
     - [Plan.ReleaseSource](#bytebase-v1-Plan-ReleaseSource)
@@ -7664,7 +7664,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | plan_check_run_status_count | [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry) | repeated | The status count of the latest plan check runs. Keys are: - SUCCESS - WARNING - ERROR |
 | release_source | [Plan.ReleaseSource](#bytebase-v1-Plan-ReleaseSource) |  |  |
-| deployment_snapshot | [Plan.DeploymentSnapshot](#bytebase-v1-Plan-DeploymentSnapshot) |  |  |
+| deployment | [Plan.Deployment](#bytebase-v1-Plan-Deployment) |  |  |
 
 
 
@@ -7744,26 +7744,26 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 
 
 
-<a name="bytebase-v1-Plan-DeploymentSnapshot"></a>
+<a name="bytebase-v1-Plan-Deployment"></a>
 
-### Plan.DeploymentSnapshot
+### Plan.Deployment
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| environments | [string](#string) | repeated |  |
-| database_group_snapshots | [Plan.DeploymentSnapshot.DatabaseGroupSnapshot](#bytebase-v1-Plan-DeploymentSnapshot-DatabaseGroupSnapshot) | repeated |  |
+| environments | [string](#string) | repeated | The environments deploy order. |
+| database_group_mappings | [Plan.Deployment.DatabaseGroupMapping](#bytebase-v1-Plan-Deployment-DatabaseGroupMapping) | repeated | The database group mapping. |
 
 
 
 
 
 
-<a name="bytebase-v1-Plan-DeploymentSnapshot-DatabaseGroupSnapshot"></a>
+<a name="bytebase-v1-Plan-Deployment-DatabaseGroupMapping"></a>
 
-### Plan.DeploymentSnapshot.DatabaseGroupSnapshot
-The snapshot of the database group mapping at the time of creation.
+### Plan.Deployment.DatabaseGroupMapping
+
 
 
 | Field | Type | Label | Description |
