@@ -154,7 +154,7 @@
     "vite-bundle-visualizer": "^1.2.1",
     "vitest": "3.0.7",
     "vue-component-type-helpers": "^2.2.8",
-    "vue-i18n": "10.0.5",
+    "vue-i18n": "10.0.6",
     "vue-router": "4.5.0",
     "vue-tsc": "2.1.10",
     "ws": "^8.18.1"
