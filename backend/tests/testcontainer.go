@@ -20,6 +20,9 @@ type Container struct {
 }
 
 func (c *Container) Close(ctx context.Context) {
+	if c == nil {
+		return
+	}
 	if c.db != nil {
 		if err := c.db.Close(); err != nil {
 			slog.Error("close db error")
