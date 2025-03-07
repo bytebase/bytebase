@@ -30,8 +30,6 @@ const (
 type TaskType string
 
 const (
-	// TaskGeneral is the task type for general tasks.
-	TaskGeneral TaskType = "bb.task.general"
 	// TaskDatabaseCreate is the task type for creating databases.
 	TaskDatabaseCreate TaskType = "bb.task.database.create"
 	// TaskDatabaseSchemaBaseline is the task type for database schema baseline.

@@ -54,8 +54,8 @@ const scopeOptions = computed((): ScopeOption[] => {
       options: rollout.value.stages.map((stage) => {
         return {
           value: stage.name,
-          keywords: [stage.name, stage.title],
-          render: () => stage.title,
+          keywords: [stage.name, stage.environment],
+          render: () => stage.environment,
         };
       }),
     },
