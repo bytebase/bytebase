@@ -146,6 +146,7 @@ export interface Plan {
    */
   planCheckRunStatusCount: { [key: string]: number };
   releaseSource: Plan_ReleaseSource | undefined;
+  deploymentSnapshot: Plan_DeploymentSnapshot | undefined;
 }
 
 export interface Plan_Step {
@@ -340,6 +341,19 @@ export interface Plan_ExportDataConfig {
    * Leave it empty if no needs to encrypt the zip file.
    */
   password?: string | undefined;
+}
+
+export interface Plan_DeploymentSnapshot {
+  environments: string[];
+  databaseGroupSnapshots: Plan_DeploymentSnapshot_DatabaseGroupSnapshot[];
+}
+
+/** The snapshot of the database group mapping at the time of creation. */
+export interface Plan_DeploymentSnapshot_DatabaseGroupSnapshot {
+  /** Format: projects/{project}/databaseGroups/{databaseGroup}. */
+  databaseGroup: string;
+  /** Format: instances/{instance-id}/databases/{database-name}. */
+  databases: string[];
 }
 
 export interface Plan_ReleaseSource {
@@ -1281,6 +1295,7 @@ function createBasePlan(): Plan {
     updateTime: undefined,
     planCheckRunStatusCount: {},
     releaseSource: undefined,
+    deploymentSnapshot: undefined,
   };
 }
 
@@ -1315,6 +1330,9 @@ export const Plan: MessageFns<Plan> = {
     });
     if (message.releaseSource !== undefined) {
       Plan_ReleaseSource.encode(message.releaseSource, writer.uint32(98).fork()).join();
+    }
+    if (message.deploymentSnapshot !== undefined) {
+      Plan_DeploymentSnapshot.encode(message.deploymentSnapshot, writer.uint32(106).fork()).join();
     }
     return writer;
   },
@@ -1409,6 +1427,14 @@ export const Plan: MessageFns<Plan> = {
           message.releaseSource = Plan_ReleaseSource.decode(reader, reader.uint32());
           continue;
         }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.deploymentSnapshot = Plan_DeploymentSnapshot.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1435,6 +1461,9 @@ export const Plan: MessageFns<Plan> = {
         }, {})
         : {},
       releaseSource: isSet(object.releaseSource) ? Plan_ReleaseSource.fromJSON(object.releaseSource) : undefined,
+      deploymentSnapshot: isSet(object.deploymentSnapshot)
+        ? Plan_DeploymentSnapshot.fromJSON(object.deploymentSnapshot)
+        : undefined,
     };
   },
 
@@ -1476,6 +1505,9 @@ export const Plan: MessageFns<Plan> = {
     if (message.releaseSource !== undefined) {
       obj.releaseSource = Plan_ReleaseSource.toJSON(message.releaseSource);
     }
+    if (message.deploymentSnapshot !== undefined) {
+      obj.deploymentSnapshot = Plan_DeploymentSnapshot.toJSON(message.deploymentSnapshot);
+    }
     return obj;
   },
 
@@ -1506,6 +1538,9 @@ export const Plan: MessageFns<Plan> = {
     }, {});
     message.releaseSource = (object.releaseSource !== undefined && object.releaseSource !== null)
       ? Plan_ReleaseSource.fromPartial(object.releaseSource)
+      : undefined;
+    message.deploymentSnapshot = (object.deploymentSnapshot !== undefined && object.deploymentSnapshot !== null)
+      ? Plan_DeploymentSnapshot.fromPartial(object.deploymentSnapshot)
       : undefined;
     return message;
   },
@@ -2443,6 +2478,177 @@ export const Plan_ExportDataConfig: MessageFns<Plan_ExportDataConfig> = {
     return message;
   },
 };
+
+function createBasePlan_DeploymentSnapshot(): Plan_DeploymentSnapshot {
+  return { environments: [], databaseGroupSnapshots: [] };
+}
+
+export const Plan_DeploymentSnapshot: MessageFns<Plan_DeploymentSnapshot> = {
+  encode(message: Plan_DeploymentSnapshot, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.environments) {
+      writer.uint32(10).string(v!);
+    }
+    for (const v of message.databaseGroupSnapshots) {
+      Plan_DeploymentSnapshot_DatabaseGroupSnapshot.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Plan_DeploymentSnapshot {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlan_DeploymentSnapshot();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.environments.push(reader.string());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.databaseGroupSnapshots.push(
+            Plan_DeploymentSnapshot_DatabaseGroupSnapshot.decode(reader, reader.uint32()),
+          );
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Plan_DeploymentSnapshot {
+    return {
+      environments: globalThis.Array.isArray(object?.environments)
+        ? object.environments.map((e: any) => globalThis.String(e))
+        : [],
+      databaseGroupSnapshots: globalThis.Array.isArray(object?.databaseGroupSnapshots)
+        ? object.databaseGroupSnapshots.map((e: any) => Plan_DeploymentSnapshot_DatabaseGroupSnapshot.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: Plan_DeploymentSnapshot): unknown {
+    const obj: any = {};
+    if (message.environments?.length) {
+      obj.environments = message.environments;
+    }
+    if (message.databaseGroupSnapshots?.length) {
+      obj.databaseGroupSnapshots = message.databaseGroupSnapshots.map((e) =>
+        Plan_DeploymentSnapshot_DatabaseGroupSnapshot.toJSON(e)
+      );
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Plan_DeploymentSnapshot>): Plan_DeploymentSnapshot {
+    return Plan_DeploymentSnapshot.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Plan_DeploymentSnapshot>): Plan_DeploymentSnapshot {
+    const message = createBasePlan_DeploymentSnapshot();
+    message.environments = object.environments?.map((e) => e) || [];
+    message.databaseGroupSnapshots =
+      object.databaseGroupSnapshots?.map((e) => Plan_DeploymentSnapshot_DatabaseGroupSnapshot.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBasePlan_DeploymentSnapshot_DatabaseGroupSnapshot(): Plan_DeploymentSnapshot_DatabaseGroupSnapshot {
+  return { databaseGroup: "", databases: [] };
+}
+
+export const Plan_DeploymentSnapshot_DatabaseGroupSnapshot: MessageFns<Plan_DeploymentSnapshot_DatabaseGroupSnapshot> =
+  {
+    encode(
+      message: Plan_DeploymentSnapshot_DatabaseGroupSnapshot,
+      writer: BinaryWriter = new BinaryWriter(),
+    ): BinaryWriter {
+      if (message.databaseGroup !== "") {
+        writer.uint32(10).string(message.databaseGroup);
+      }
+      for (const v of message.databases) {
+        writer.uint32(18).string(v!);
+      }
+      return writer;
+    },
+
+    decode(input: BinaryReader | Uint8Array, length?: number): Plan_DeploymentSnapshot_DatabaseGroupSnapshot {
+      const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+      let end = length === undefined ? reader.len : reader.pos + length;
+      const message = createBasePlan_DeploymentSnapshot_DatabaseGroupSnapshot();
+      while (reader.pos < end) {
+        const tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            if (tag !== 10) {
+              break;
+            }
+
+            message.databaseGroup = reader.string();
+            continue;
+          }
+          case 2: {
+            if (tag !== 18) {
+              break;
+            }
+
+            message.databases.push(reader.string());
+            continue;
+          }
+        }
+        if ((tag & 7) === 4 || tag === 0) {
+          break;
+        }
+        reader.skip(tag & 7);
+      }
+      return message;
+    },
+
+    fromJSON(object: any): Plan_DeploymentSnapshot_DatabaseGroupSnapshot {
+      return {
+        databaseGroup: isSet(object.databaseGroup) ? globalThis.String(object.databaseGroup) : "",
+        databases: globalThis.Array.isArray(object?.databases)
+          ? object.databases.map((e: any) => globalThis.String(e))
+          : [],
+      };
+    },
+
+    toJSON(message: Plan_DeploymentSnapshot_DatabaseGroupSnapshot): unknown {
+      const obj: any = {};
+      if (message.databaseGroup !== "") {
+        obj.databaseGroup = message.databaseGroup;
+      }
+      if (message.databases?.length) {
+        obj.databases = message.databases;
+      }
+      return obj;
+    },
+
+    create(
+      base?: DeepPartial<Plan_DeploymentSnapshot_DatabaseGroupSnapshot>,
+    ): Plan_DeploymentSnapshot_DatabaseGroupSnapshot {
+      return Plan_DeploymentSnapshot_DatabaseGroupSnapshot.fromPartial(base ?? {});
+    },
+    fromPartial(
+      object: DeepPartial<Plan_DeploymentSnapshot_DatabaseGroupSnapshot>,
+    ): Plan_DeploymentSnapshot_DatabaseGroupSnapshot {
+      const message = createBasePlan_DeploymentSnapshot_DatabaseGroupSnapshot();
+      message.databaseGroup = object.databaseGroup ?? "";
+      message.databases = object.databases?.map((e) => e) || [];
+      return message;
+    },
+  };
 
 function createBasePlan_ReleaseSource(): Plan_ReleaseSource {
   return { release: "" };
