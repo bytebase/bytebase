@@ -28,7 +28,7 @@ func (c *Container) Close(ctx context.Context) {
 		}
 	}
 	if c.container != nil {
-		if err := c.container.Terminate(ctx); err != nil {
+		if err := c.container.Terminate(ctx, testcontainers.StopTimeout(1*time.Millisecond)); err != nil {
 			slog.Error("close container error")
 		}
 	}
