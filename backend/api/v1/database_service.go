@@ -200,7 +200,7 @@ func getFindDatabaseFilter(filter string) (*store.FindDatabaseFilter, error) {
 			}
 			engine := convertEngine(v1pb.Engine(v1Engine))
 			positionalArgs = append(positionalArgs, engine)
-			return fmt.Sprintf("instance.engine = $%d", len(positionalArgs)), nil
+			return fmt.Sprintf("instance.metadata->'engine' = $%d", len(positionalArgs)), nil
 		case "name":
 			positionalArgs = append(positionalArgs, value)
 			return fmt.Sprintf("db.name = $%d", len(positionalArgs)), nil
@@ -245,7 +245,7 @@ func getFindDatabaseFilter(filter string) (*store.FindDatabaseFilter, error) {
 			engineList = append(engineList, fmt.Sprintf("$%d", len(positionalArgs)))
 		}
 
-		return fmt.Sprintf("instance.engine %s (%s)", relation, strings.Join(engineList, ",")), nil
+		return fmt.Sprintf("instance.metadata->'engine' %s (%s)", relation, strings.Join(engineList, ",")), nil
 	}
 
 	getFilter = func(expr celast.Expr) (string, error) {
