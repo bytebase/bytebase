@@ -58,6 +58,7 @@ const formatListDatabaseParent = async (
 export const useDatabaseV1Store = defineStore("database_v1", () => {
   const databaseMapByName = reactive(new Map<string, ComposedDatabase>());
   const dbSchemaStore = useDBSchemaV1Store();
+  const databaseRequestCache = new Map<string, Promise<ComposedDatabase>>();
 
   // Getters
   const databaseList = computed(() => {
@@ -160,7 +161,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
 
     return composed;
   };
-  const getOrFetchDatabaseByName = async (name: string, silent = false) => {
+  const getOrFetchDatabaseByName = async (name: string, silent = true) => {
     const existed = databaseMapByName.get(name);
     if (existed) {
       return existed;
@@ -168,7 +169,11 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     if (!isValidDatabaseName(name)) {
       return unknownDatabase();
     }
-    return await fetchDatabaseByName(name, silent);
+    const cached = databaseRequestCache.get(name);
+    if (cached) return cached;
+    const request = fetchDatabaseByName(name, silent);
+    databaseRequestCache.set(name, request);
+    return request;
   };
   const batchUpdateDatabases = async (params: BatchUpdateDatabasesRequest) => {
     const updated = await databaseServiceClient.batchUpdateDatabases(params);
@@ -233,8 +238,6 @@ export const useDatabaseV1ByName = (name: MaybeRef<string>) => {
   };
 };
 
-const databaseRequestCache = new Map<string, Promise<ComposedDatabase>>();
-
 export const batchGetOrFetchDatabases = async (databaseNames: string[]) => {
   const store = useDatabaseV1Store();
 
@@ -244,15 +247,7 @@ export const batchGetOrFetchDatabases = async (databaseNames: string[]) => {
       if (!databaseName || !isValidDatabaseName(databaseName)) {
         return;
       }
-      const cached = databaseRequestCache.get(databaseName);
-      if (cached) return cached;
-
-      const request = store.getOrFetchDatabaseByName(
-        databaseName,
-        true /* silent */
-      );
-      databaseRequestCache.set(databaseName, request);
-      return request;
+      return store.getOrFetchDatabaseByName(databaseName, true /* silent */);
     })
   );
 };
