@@ -110,7 +110,7 @@ const router = useRouter();
 const { project, rollout, emmiter } = useRolloutDetailContext();
 
 const isCreated = computed(() => {
-  return rollout.value.stages.some((stage) => stage.id === props.stage.id);
+  return rollout.value.stages.some((stage) => stage.environment === props.stage.environment);
 });
 
 const onTaskClick = (task: Task) => {
