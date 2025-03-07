@@ -219,15 +219,12 @@ CREATE TABLE task (
     instance text NOT NULL REFERENCES instance(resource_id),
     db_name text,
     name text NOT NULL,
-    status text NOT NULL CHECK (status IN ('PENDING', 'PENDING_APPROVAL', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     type text NOT NULL CHECK (type LIKE 'bb.task.%'),
     payload jsonb NOT NULL DEFAULT '{}',
     earliest_allowed_at timestamptz NULL
 );
 
 CREATE INDEX idx_task_pipeline_id_stage_id ON task(pipeline_id, stage_id);
-
-CREATE INDEX idx_task_status ON task(status);
 
 ALTER SEQUENCE task_id_seq RESTART WITH 101;
 
