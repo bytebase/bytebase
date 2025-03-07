@@ -255,7 +255,7 @@ message Plan {
 
   ReleaseSource release_source = 12;
 
-  // TODO(d): use environment list.
+  DeploymentSnapshot deployment_snapshot = 13;
 
   message CreateDatabaseConfig {
     // The resource name of the instance on which the database is created.
@@ -333,6 +333,19 @@ message Plan {
     // The zip password provide by users.
     // Leave it empty if no needs to encrypt the zip file.
     optional string password = 4;
+  }
+
+  message DeploymentSnapshot {
+    repeated string environments = 1;
+    repeated DatabaseGroupSnapshot database_group_snapshots = 2;
+
+    // The snapshot of the database group mapping at the time of creation.
+    message DatabaseGroupSnapshot {
+      // Format: projects/{project}/databaseGroups/{databaseGroup}.
+      string database_group = 1;
+      // Format: instances/{instance-id}/databases/{database-name}.
+      repeated string databases = 2;
+    }
   }
 
   message ReleaseSource {
