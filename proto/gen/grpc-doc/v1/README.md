@@ -5647,9 +5647,9 @@ Metadata about the request.
 
 When paginating, all other parameters provided to `ListUsers` must match the call that provided the page token. |
 | show_deleted | [bool](#bool) |  | Show deleted users if specified. |
-| filter | [string](#string) |  | Filter is used to filter users returned in the list. Supported filter: - name - email
+| filter | [string](#string) |  | Filter is used to filter users returned in the list. Supported filter: - name - email - user_type
 
-For example: name = &#34;ed&#34; name.matches(&#34;ed&#34;) email = &#34;ed@bytebase.com&#34; |
+For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@bytebase.com&#34; user_type == &#34;SERVICE_ACCOUNT&#34; user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;] !(user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;]) |
 
 
 

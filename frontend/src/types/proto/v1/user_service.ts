@@ -106,11 +106,15 @@ export interface ListUsersRequest {
    * Supported filter:
    * - name
    * - email
+   * - user_type
    *
    * For example:
-   * name = "ed"
+   * name == "ed"
    * name.matches("ed")
-   * email = "ed@bytebase.com"
+   * email == "ed@bytebase.com"
+   * user_type == "SERVICE_ACCOUNT"
+   * user_type in ["SERVICE_ACCOUNT", "USER"]
+   * !(user_type in ["SERVICE_ACCOUNT", "USER"])
    */
   filter: string;
 }

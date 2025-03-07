@@ -158,10 +158,48 @@ func getListUserFilter(filter string) (*store.ListResourceFilter, error) {
 		case "name":
 			positionalArgs = append(positionalArgs, value.(string))
 			return fmt.Sprintf("principal.name = $%d", len(positionalArgs)), nil
+		case "user_type":
+			v1UserType, ok := v1pb.UserType_value[value.(string)]
+			if !ok {
+				return "", status.Errorf(codes.InvalidArgument, "invalid user type filter %q", value)
+			}
+			principalType, err := convertToPrincipalType(v1pb.UserType(v1UserType))
+			if err != nil {
+				return "", status.Errorf(codes.InvalidArgument, "failed to parse the user type %q with error: %v", v1UserType, err.Error())
+			}
+			positionalArgs = append(positionalArgs, principalType)
+			return fmt.Sprintf("principal.type = $%d", len(positionalArgs)), nil
 		// TODO(ed): support project filter
 		default:
 			return "", status.Errorf(codes.InvalidArgument, "unsupport variable %q", variable)
 		}
+	}
+
+	parseToUserTypeSQL := func(expr celast.Expr, relation string) (string, error) {
+		variable, value := getVariavleAndValueFromExpr(expr)
+		if variable != "user_type" {
+			return "", status.Errorf(codes.InvalidArgument, `only "user_type" support "user_type in [xx]"/"!(user_type in [xx])" operator`)
+		}
+
+		rawTypeList, ok := value.([]any)
+		if !ok {
+			return "", status.Errorf(codes.InvalidArgument, "invalid user_type value %q", value)
+		}
+		userTypeList := []string{}
+		for _, rawType := range rawTypeList {
+			v1UserType, ok := v1pb.UserType_value[rawType.(string)]
+			if !ok {
+				return "", status.Errorf(codes.InvalidArgument, "invalid user type filter %q", rawType)
+			}
+			principalType, err := convertToPrincipalType(v1pb.UserType(v1UserType))
+			if err != nil {
+				return "", status.Errorf(codes.InvalidArgument, "failed to parse the user type %q with error: %v", v1UserType, err.Error())
+			}
+			positionalArgs = append(positionalArgs, principalType)
+			userTypeList = append(userTypeList, fmt.Sprintf("$%d", len(positionalArgs)))
+		}
+
+		return fmt.Sprintf("principal.type %s (%s)", relation, strings.Join(userTypeList, ",")), nil
 	}
 
 	getFilter = func(expr celast.Expr) (string, error) {
@@ -191,6 +229,14 @@ func getListUserFilter(filter string) (*store.ListResourceFilter, error) {
 					return "", status.Errorf(codes.InvalidArgument, "expect string, got %T, hint: filter literals should be string", value)
 				}
 				return "LOWER(principal.name) LIKE '%" + strings.ToLower(strValue) + "%'", nil
+			case celoperators.In:
+				return parseToUserTypeSQL(expr, "IN")
+			case celoperators.LogicalNot:
+				args := expr.AsCall().Args()
+				if len(args) != 1 {
+					return "", status.Errorf(codes.InvalidArgument, `only support !(user_type in ["{type1}", "{type2}"]) format`)
+				}
+				return parseToUserTypeSQL(args[0], "NOT IN")
 			default:
 				return "", status.Errorf(codes.InvalidArgument, "unexpected function %v", functionName)
 			}

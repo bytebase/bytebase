@@ -16124,11 +16124,15 @@ the call that provided the page token. </p></td>
 Supported filter:
 - name
 - email
+- user_type
 
 For example:
-name = &#34;ed&#34;
+name == &#34;ed&#34;
 name.matches(&#34;ed&#34;)
-email = &#34;ed@bytebase.com&#34; </p></td>
+email == &#34;ed@bytebase.com&#34;
+user_type == &#34;SERVICE_ACCOUNT&#34;
+user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;]
+!(user_type in [&#34;SERVICE_ACCOUNT&#34;, &#34;USER&#34;]) </p></td>
                 </tr>
               
             </tbody>
