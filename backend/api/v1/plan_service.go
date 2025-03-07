@@ -350,6 +350,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 		case "description":
 			description := request.Plan.Description
 			planUpdate.Description = &description
+		case "deployment":
+			convertedDeployment := convertPlanDeployment(request.Plan.Deployment)
+			planUpdate.Deployment = &convertedDeployment
 		case "steps":
 			convertedRequestSteps := convertPlanSteps(request.GetPlan().GetSteps())
 			planUpdate.Steps = &convertedRequestSteps
