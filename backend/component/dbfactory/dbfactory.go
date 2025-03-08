@@ -5,7 +5,7 @@ import (
 	"context"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/component/secret"
+	secretlib "github.com/bytebase/bytebase/backend/component/secret"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -18,18 +18,16 @@ type DBFactory struct {
 	pgBinDir    string
 	mongoBinDir string
 	dataDir     string
-	secret      string
 	store       *store.Store
 }
 
 // New creates a new database driver factory.
-func New(store *store.Store, mysqlBinDir, mongoBinDir, pgBinDir, dataDir, secret string) *DBFactory {
+func New(store *store.Store, mysqlBinDir, mongoBinDir, pgBinDir, dataDir string) *DBFactory {
 	return &DBFactory{
 		mysqlBinDir: mysqlBinDir,
 		mongoBinDir: mongoBinDir,
 		pgBinDir:    pgBinDir,
 		dataDir:     dataDir,
-		secret:      secret,
 		store:       store,
 	}
 }
@@ -67,40 +65,45 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 	if databaseName == "" {
 		databaseName = dataSource.GetDatabase()
 	}
-	password, err := common.Unobfuscate(dataSource.GetObfuscatedPassword(), d.secret)
+
+	secret, err := d.store.GetSecret(ctx)
 	if err != nil {
 		return nil, err
 	}
-	sslCA, err := common.Unobfuscate(dataSource.GetObfuscatedSslCa(), d.secret)
+	password, err := common.Unobfuscate(dataSource.GetObfuscatedPassword(), secret)
 	if err != nil {
 		return nil, err
 	}
-	sslCert, err := common.Unobfuscate(dataSource.GetObfuscatedSslCert(), d.secret)
+	sslCA, err := common.Unobfuscate(dataSource.GetObfuscatedSslCa(), secret)
 	if err != nil {
 		return nil, err
 	}
-	sslKey, err := common.Unobfuscate(dataSource.GetObfuscatedSslKey(), d.secret)
+	sslCert, err := common.Unobfuscate(dataSource.GetObfuscatedSslCert(), secret)
 	if err != nil {
 		return nil, err
 	}
-	sshPassword, err := common.Unobfuscate(dataSource.GetSshObfuscatedPassword(), d.secret)
+	sslKey, err := common.Unobfuscate(dataSource.GetObfuscatedSslKey(), secret)
 	if err != nil {
 		return nil, err
 	}
-	sshPrivateKey, err := common.Unobfuscate(dataSource.GetSshObfuscatedPrivateKey(), d.secret)
+	sshPassword, err := common.Unobfuscate(dataSource.GetObfuscatedSshPassword(), secret)
 	if err != nil {
 		return nil, err
 	}
-	authenticationPrivateKey, err := common.Unobfuscate(dataSource.GetAuthenticationPrivateKeyObfuscated(), d.secret)
+	sshPrivateKey, err := common.Unobfuscate(dataSource.GetObfuscatedSshPrivateKey(), secret)
 	if err != nil {
 		return nil, err
 	}
-	masterPassword, err := common.Unobfuscate(dataSource.GetMasterObfuscatedPassword(), d.secret)
+	authenticationPrivateKey, err := common.Unobfuscate(dataSource.GetObfuscatedAuthenticationPrivateKey(), secret)
+	if err != nil {
+		return nil, err
+	}
+	masterPassword, err := common.Unobfuscate(dataSource.GetObfuscatedMasterPassword(), secret)
 	if err != nil {
 		return nil, err
 	}
 
-	updatedPassword, err := secret.ReplaceExternalSecret(ctx, password, dataSource.GetExternalSecret())
+	updatedPassword, err := secretlib.ReplaceExternalSecret(ctx, password, dataSource.GetExternalSecret())
 	if err != nil {
 		return nil, err
 	}
@@ -135,11 +138,11 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 	var clientSecretCredential *storepb.DataSource_ClientSecretCredential
 	if dataSource.GetClientSecretCredential() != nil {
 		clientSecretCredential = dataSource.GetClientSecretCredential()
-		updatedClientSecret, err := common.Unobfuscate(clientSecretCredential.GetClientSecret(), d.secret)
+		obfuscatedClientSecret, err := common.Unobfuscate(clientSecretCredential.GetObfuscatedClientSecret(), secret)
 		if err != nil {
 			return nil, err
 		}
-		clientSecretCredential.ClientSecret = updatedClientSecret
+		clientSecretCredential.ClientSecret = obfuscatedClientSecret
 	}
 
 	maximumSQLResultSize := d.store.GetMaximumSQLResultLimit(ctx)

@@ -89,7 +89,6 @@ type Server struct {
 	sheetManager *sheet.Manager
 	dbFactory    *dbfactory.DBFactory
 	startedTs    int64
-	secret       string
 
 	// Stubs.
 	planService    *apiv1.PlanService
@@ -220,11 +219,13 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Cache the license.
 	s.licenseService.LoadSubscription(ctx)
 
-	secret, err := s.getInitSetting(ctx)
-	if err != nil {
+	if err := s.getInitSetting(ctx); err != nil {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
-	s.secret = secret
+	secret, err := s.store.GetSecret(ctx)
+	if err != nil {
+		return nil, err
+	}
 	s.iamManager, err = iam.NewManager(storeInstance, s.licenseService)
 	if err := s.iamManager.ReloadCache(ctx); err != nil {
 		return nil, err
@@ -239,7 +240,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		s.mongoBinDir,
 		s.pgBinDir,
 		profile.DataDir,
-		s.secret,
 	)
 
 	// Configure echo server.
@@ -283,14 +283,14 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseDataExport, taskrun.NewDataExportExecutor(storeInstance, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhost, taskrun.NewSchemaUpdateGhostExecutor(storeInstance, s.secret, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, s.profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhost, taskrun.NewSchemaUpdateGhostExecutor(storeInstance, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, s.profile))
 
 		s.planCheckScheduler = plancheck.NewScheduler(storeInstance, s.licenseService, s.stateCfg)
 		databaseConnectExecutor := plancheck.NewDatabaseConnectExecutor(storeInstance, s.dbFactory)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseConnect, databaseConnectExecutor)
 		statementAdviseExecutor := plancheck.NewStatementAdviseExecutor(storeInstance, s.sheetManager, s.dbFactory, s.licenseService)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementAdvise, statementAdviseExecutor)
-		ghostSyncExecutor := plancheck.NewGhostSyncExecutor(storeInstance, s.secret, s.dbFactory)
+		ghostSyncExecutor := plancheck.NewGhostSyncExecutor(storeInstance, s.dbFactory)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseGhostSync, ghostSyncExecutor)
 		statementReportExecutor := plancheck.NewStatementReportExecutor(storeInstance, s.sheetManager, s.dbFactory)
 		s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementSummaryReport, statementReportExecutor)
@@ -300,9 +300,9 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	}
 
 	// Setup the gRPC and grpc-gateway.
-	authProvider := auth.New(s.store, s.secret, s.licenseService, s.stateCfg, s.profile)
+	authProvider := auth.New(s.store, secret, s.licenseService, s.stateCfg, s.profile)
 	auditProvider := apiv1.NewAuditInterceptor(s.store)
-	aclProvider := apiv1.NewACLInterceptor(s.store, s.secret, s.iamManager, s.profile)
+	aclProvider := apiv1.NewACLInterceptor(s.store, secret, s.iamManager, s.profile)
 	debugProvider := apiv1.NewDebugInterceptor(s.metricReporter)
 	onPanic := func(p any) error {
 		stack := stacktrace.TakeStacktrace(20 /* n */, 5 /* skip */)
@@ -355,7 +355,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		}
 		return nil
 	}
-	_, planService, rolloutService, issueService, _, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, postCreateUser, s.secret)
+	_, planService, rolloutService, issueService, _, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, postCreateUser, secret)
 	if err != nil {
 		return nil, err
 	}

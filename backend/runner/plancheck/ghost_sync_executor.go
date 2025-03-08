@@ -23,10 +23,9 @@ import (
 )
 
 // NewGhostSyncExecutor creates a gh-ost sync check executor.
-func NewGhostSyncExecutor(store *store.Store, secret string, dbFactory *dbfactory.DBFactory) Executor {
+func NewGhostSyncExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) Executor {
 	return &GhostSyncExecutor{
 		store:     store,
-		secret:    secret,
 		dbFactory: dbFactory,
 	}
 }
@@ -34,7 +33,6 @@ func NewGhostSyncExecutor(store *store.Store, secret string, dbFactory *dbfactor
 // GhostSyncExecutor is the gh-ost sync check executor.
 type GhostSyncExecutor struct {
 	store     *store.Store
-	secret    string
 	dbFactory *dbfactory.DBFactory
 }
 
@@ -108,7 +106,11 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 		return nil, common.Wrapf(err, common.Internal, "failed to parse table name from statement, statement: %v", statement)
 	}
 
-	migrationContext, err := ghost.NewMigrationContext(ctx, rand.Intn(10000000), database, adminDataSource, e.secret, tableName, fmt.Sprintf("_dryrun_%d", time.Now().Unix()), renderedStatement, true, config.GhostFlags, 20000000)
+	secret, err := e.store.GetSecret(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get secret")
+	}
+	migrationContext, err := ghost.NewMigrationContext(ctx, rand.Intn(10000000), database, adminDataSource, secret, tableName, fmt.Sprintf("_dryrun_%d", time.Now().Unix()), renderedStatement, true, config.GhostFlags, 20000000)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create migration context")
 	}

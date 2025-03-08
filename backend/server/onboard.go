@@ -35,6 +35,10 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		return errors.Wrapf(err, "failed to create onboarding project")
 	}
 
+	secret, err := s.store.GetSecret(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to get secret")
+	}
 	// Test Sample Instance
 	testInstance, err := s.store.CreateInstanceV2(ctx, &store.InstanceMessage{
 		ResourceID:    "test-sample-instance",
@@ -49,7 +53,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 					Id:                 "admin",
 					Type:               storepb.DataSourceType_ADMIN,
 					Username:           postgres.SampleUser,
-					ObfuscatedPassword: common.Obfuscate("", s.secret),
+					ObfuscatedPassword: common.Obfuscate("", secret),
 					Host:               common.GetPostgresSocketDir(),
 					Port:               strconv.Itoa(s.profile.SampleDatabasePort),
 					Database:           postgres.SampleDatabaseTest,
@@ -110,7 +114,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 					Id:                 "admin",
 					Type:               storepb.DataSourceType_ADMIN,
 					Username:           postgres.SampleUser,
-					ObfuscatedPassword: common.Obfuscate("", s.secret),
+					ObfuscatedPassword: common.Obfuscate("", secret),
 					Host:               common.GetPostgresSocketDir(),
 					Port:               strconv.Itoa(s.profile.SampleDatabasePort + 1),
 					Database:           postgres.SampleDatabaseProd,
