@@ -478,7 +478,7 @@ message DataSource {
   message ClientSecretCredential {
     string tenant_id = 1;
     string client_id = 2;
-    string client_secret = 3;
+    string client_secret = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
   }
   oneof iam_extension {
     ClientSecretCredential client_secret_credential = 23;

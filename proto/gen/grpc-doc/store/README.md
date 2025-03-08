@@ -2465,10 +2465,14 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | id | [string](#string) |  |  |
 | type | [DataSourceType](#bytebase-store-DataSourceType) |  |  |
 | username | [string](#string) |  |  |
+| password | [string](#string) |  |  |
 | obfuscated_password | [string](#string) |  |  |
 | use_ssl | [bool](#bool) |  | Use SSL to connect to the data source. By default, we use system default SSL configuration. |
+| ssl_ca | [string](#string) |  |  |
 | obfuscated_ssl_ca | [string](#string) |  |  |
+| ssl_cert | [string](#string) |  |  |
 | obfuscated_ssl_cert | [string](#string) |  |  |
+| ssl_key | [string](#string) |  |  |
 | obfuscated_ssl_key | [string](#string) |  |  |
 | host | [string](#string) |  |  |
 | port | [string](#string) |  |  |
@@ -2481,9 +2485,12 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | ssh_host | [string](#string) |  | SSH related The hostname of the SSH server agent. |
 | ssh_port | [string](#string) |  | The port of the SSH server agent. It&#39;s 22 typically. |
 | ssh_user | [string](#string) |  | The user to login the server. |
-| ssh_obfuscated_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
-| ssh_obfuscated_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
-| authentication_private_key_obfuscated | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
+| ssh_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
+| obfuscated_ssh_password | [string](#string) |  |  |
+| ssh_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
+| obfuscated_ssh_private_key | [string](#string) |  |  |
+| authentication_private_key | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
+| obfuscated_authentication_private_key | [string](#string) |  |  |
 | external_secret | [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret) |  |  |
 | authentication_type | [DataSource.AuthenticationType](#bytebase-store-DataSource-AuthenticationType) |  |  |
 | client_secret_credential | [DataSource.ClientSecretCredential](#bytebase-store-DataSource-ClientSecretCredential) |  |  |
@@ -2494,7 +2501,8 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | warehouse_id | [string](#string) |  | warehouse_id is used by Databricks. |
 | master_name | [string](#string) |  | master_name is the master name used by connecting redis-master via redis sentinel. |
 | master_username | [string](#string) |  | master_username and master_obfuscated_password are master credentials used by redis sentinel mode. |
-| master_obfuscated_password | [string](#string) |  |  |
+| master_password | [string](#string) |  |  |
+| obfuscated_master_password | [string](#string) |  |  |
 | redis_type | [DataSource.RedisType](#bytebase-store-DataSource-RedisType) |  |  |
 | cluster | [string](#string) |  | Cluster is the cluster name for the data source. Used by CockroachDB. |
 | extra_connection_parameters | [DataSource.ExtraConnectionParametersEntry](#bytebase-store-DataSource-ExtraConnectionParametersEntry) | repeated | Extra connection parameters for the database connection. For PostgreSQL HA, this can be used to set target_session_attrs=read-write |
@@ -2531,6 +2539,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | tenant_id | [string](#string) |  |  |
 | client_id | [string](#string) |  |  |
 | client_secret | [string](#string) |  |  |
+| obfuscated_client_secret | [string](#string) |  |  |
 
 
 

@@ -8957,14 +8957,22 @@ components:
                     format: enum
                 username:
                     type: string
+                password:
+                    type: string
                 obfuscatedPassword:
                     type: string
                 useSsl:
                     type: boolean
                     description: Use SSL to connect to the data source. By default, we use system default SSL configuration.
+                sslCa:
+                    type: string
                 obfuscatedSslCa:
                     type: string
+                sslCert:
+                    type: string
                 obfuscatedSslCert:
+                    type: string
+                sslKey:
                     type: string
                 obfuscatedSslKey:
                     type: string
@@ -9001,17 +9009,23 @@ components:
                 sshUser:
                     type: string
                     description: The user to login the server.
-                sshObfuscatedPassword:
+                sshPassword:
                     type: string
                     description: The password to login the server. If it's empty string, no password is required.
-                sshObfuscatedPrivateKey:
+                obfuscatedSshPassword:
+                    type: string
+                sshPrivateKey:
                     type: string
                     description: The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK").
-                authenticationPrivateKeyObfuscated:
+                obfuscatedSshPrivateKey:
+                    type: string
+                authenticationPrivateKey:
                     type: string
                     description: |-
                         PKCS#8 private key in PEM format. If it's empty string, no private key is required.
                          Used for authentication when connecting to the data source.
+                obfuscatedAuthenticationPrivateKey:
+                    type: string
                 externalSecret:
                     $ref: '#/components/schemas/DataSourceExternalSecret'
                 authenticationType:
@@ -9047,7 +9061,9 @@ components:
                 masterUsername:
                     type: string
                     description: master_username and master_obfuscated_password are master credentials used by redis sentinel mode.
-                masterObfuscatedPassword:
+                masterPassword:
+                    type: string
+                obfuscatedMasterPassword:
                     type: string
                 redisType:
                     enum:
@@ -9152,6 +9168,7 @@ components:
                 clientId:
                     type: string
                 clientSecret:
+                    readOnly: true
                     type: string
         Database:
             type: object

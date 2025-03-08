@@ -121,11 +121,15 @@ export interface DataSource {
   id: string;
   type: DataSourceType;
   username: string;
+  password: string;
   obfuscatedPassword: string;
   /** Use SSL to connect to the data source. By default, we use system default SSL configuration. */
   useSsl: boolean;
+  sslCa: string;
   obfuscatedSslCa: string;
+  sslCert: string;
   obfuscatedSslCert: string;
+  sslKey: string;
   obfuscatedSslKey: string;
   host: string;
   port: string;
@@ -152,14 +156,17 @@ export interface DataSource {
   /** The user to login the server. */
   sshUser: string;
   /** The password to login the server. If it's empty string, no password is required. */
-  sshObfuscatedPassword: string;
+  sshPassword: string;
+  obfuscatedSshPassword: string;
   /** The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK"). */
-  sshObfuscatedPrivateKey: string;
+  sshPrivateKey: string;
+  obfuscatedSshPrivateKey: string;
   /**
    * PKCS#8 private key in PEM format. If it's empty string, no private key is required.
    * Used for authentication when connecting to the data source.
    */
-  authenticationPrivateKeyObfuscated: string;
+  authenticationPrivateKey: string;
+  obfuscatedAuthenticationPrivateKey: string;
   externalSecret: DataSourceExternalSecret | undefined;
   authenticationType: DataSource_AuthenticationType;
   clientSecretCredential?: DataSource_ClientSecretCredential | undefined;
@@ -178,7 +185,8 @@ export interface DataSource {
   masterName: string;
   /** master_username and master_obfuscated_password are master credentials used by redis sentinel mode. */
   masterUsername: string;
-  masterObfuscatedPassword: string;
+  masterPassword: string;
+  obfuscatedMasterPassword: string;
   redisType: DataSource_RedisType;
   /** Cluster is the cluster name for the data source. Used by CockroachDB. */
   cluster: string;
@@ -323,6 +331,7 @@ export interface DataSource_ClientSecretCredential {
   tenantId: string;
   clientId: string;
   clientSecret: string;
+  obfuscatedClientSecret: string;
 }
 
 export interface DataSource_Address {
@@ -924,10 +933,14 @@ function createBaseDataSource(): DataSource {
     id: "",
     type: DataSourceType.DATA_SOURCE_UNSPECIFIED,
     username: "",
+    password: "",
     obfuscatedPassword: "",
     useSsl: false,
+    sslCa: "",
     obfuscatedSslCa: "",
+    sslCert: "",
     obfuscatedSslCert: "",
+    sslKey: "",
     obfuscatedSslKey: "",
     host: "",
     port: "",
@@ -940,9 +953,12 @@ function createBaseDataSource(): DataSource {
     sshHost: "",
     sshPort: "",
     sshUser: "",
-    sshObfuscatedPassword: "",
-    sshObfuscatedPrivateKey: "",
-    authenticationPrivateKeyObfuscated: "",
+    sshPassword: "",
+    obfuscatedSshPassword: "",
+    sshPrivateKey: "",
+    obfuscatedSshPrivateKey: "",
+    authenticationPrivateKey: "",
+    obfuscatedAuthenticationPrivateKey: "",
     externalSecret: undefined,
     authenticationType: DataSource_AuthenticationType.AUTHENTICATION_UNSPECIFIED,
     clientSecretCredential: undefined,
@@ -953,7 +969,8 @@ function createBaseDataSource(): DataSource {
     warehouseId: "",
     masterName: "",
     masterUsername: "",
-    masterObfuscatedPassword: "",
+    masterPassword: "",
+    obfuscatedMasterPassword: "",
     redisType: DataSource_RedisType.REDIS_TYPE_UNSPECIFIED,
     cluster: "",
     extraConnectionParameters: {},
@@ -971,17 +988,29 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.username !== "") {
       writer.uint32(26).string(message.username);
     }
+    if (message.password !== "") {
+      writer.uint32(298).string(message.password);
+    }
     if (message.obfuscatedPassword !== "") {
       writer.uint32(34).string(message.obfuscatedPassword);
     }
     if (message.useSsl !== false) {
       writer.uint32(240).bool(message.useSsl);
     }
+    if (message.sslCa !== "") {
+      writer.uint32(306).string(message.sslCa);
+    }
     if (message.obfuscatedSslCa !== "") {
       writer.uint32(42).string(message.obfuscatedSslCa);
     }
+    if (message.sslCert !== "") {
+      writer.uint32(314).string(message.sslCert);
+    }
     if (message.obfuscatedSslCert !== "") {
       writer.uint32(50).string(message.obfuscatedSslCert);
+    }
+    if (message.sslKey !== "") {
+      writer.uint32(322).string(message.sslKey);
     }
     if (message.obfuscatedSslKey !== "") {
       writer.uint32(58).string(message.obfuscatedSslKey);
@@ -1019,14 +1048,23 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.sshUser !== "") {
       writer.uint32(138).string(message.sshUser);
     }
-    if (message.sshObfuscatedPassword !== "") {
-      writer.uint32(146).string(message.sshObfuscatedPassword);
+    if (message.sshPassword !== "") {
+      writer.uint32(330).string(message.sshPassword);
     }
-    if (message.sshObfuscatedPrivateKey !== "") {
-      writer.uint32(154).string(message.sshObfuscatedPrivateKey);
+    if (message.obfuscatedSshPassword !== "") {
+      writer.uint32(146).string(message.obfuscatedSshPassword);
     }
-    if (message.authenticationPrivateKeyObfuscated !== "") {
-      writer.uint32(162).string(message.authenticationPrivateKeyObfuscated);
+    if (message.sshPrivateKey !== "") {
+      writer.uint32(338).string(message.sshPrivateKey);
+    }
+    if (message.obfuscatedSshPrivateKey !== "") {
+      writer.uint32(154).string(message.obfuscatedSshPrivateKey);
+    }
+    if (message.authenticationPrivateKey !== "") {
+      writer.uint32(346).string(message.authenticationPrivateKey);
+    }
+    if (message.obfuscatedAuthenticationPrivateKey !== "") {
+      writer.uint32(162).string(message.obfuscatedAuthenticationPrivateKey);
     }
     if (message.externalSecret !== undefined) {
       DataSourceExternalSecret.encode(message.externalSecret, writer.uint32(170).fork()).join();
@@ -1058,8 +1096,11 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.masterUsername !== "") {
       writer.uint32(258).string(message.masterUsername);
     }
-    if (message.masterObfuscatedPassword !== "") {
-      writer.uint32(266).string(message.masterObfuscatedPassword);
+    if (message.masterPassword !== "") {
+      writer.uint32(354).string(message.masterPassword);
+    }
+    if (message.obfuscatedMasterPassword !== "") {
+      writer.uint32(266).string(message.obfuscatedMasterPassword);
     }
     if (message.redisType !== DataSource_RedisType.REDIS_TYPE_UNSPECIFIED) {
       writer.uint32(272).int32(dataSource_RedisTypeToNumber(message.redisType));
@@ -1104,6 +1145,14 @@ export const DataSource: MessageFns<DataSource> = {
           message.username = reader.string();
           continue;
         }
+        case 37: {
+          if (tag !== 298) {
+            break;
+          }
+
+          message.password = reader.string();
+          continue;
+        }
         case 4: {
           if (tag !== 34) {
             break;
@@ -1120,6 +1169,14 @@ export const DataSource: MessageFns<DataSource> = {
           message.useSsl = reader.bool();
           continue;
         }
+        case 38: {
+          if (tag !== 306) {
+            break;
+          }
+
+          message.sslCa = reader.string();
+          continue;
+        }
         case 5: {
           if (tag !== 42) {
             break;
@@ -1128,12 +1185,28 @@ export const DataSource: MessageFns<DataSource> = {
           message.obfuscatedSslCa = reader.string();
           continue;
         }
+        case 39: {
+          if (tag !== 314) {
+            break;
+          }
+
+          message.sslCert = reader.string();
+          continue;
+        }
         case 6: {
           if (tag !== 50) {
             break;
           }
 
           message.obfuscatedSslCert = reader.string();
+          continue;
+        }
+        case 40: {
+          if (tag !== 322) {
+            break;
+          }
+
+          message.sslKey = reader.string();
           continue;
         }
         case 7: {
@@ -1232,12 +1305,28 @@ export const DataSource: MessageFns<DataSource> = {
           message.sshUser = reader.string();
           continue;
         }
+        case 41: {
+          if (tag !== 330) {
+            break;
+          }
+
+          message.sshPassword = reader.string();
+          continue;
+        }
         case 18: {
           if (tag !== 146) {
             break;
           }
 
-          message.sshObfuscatedPassword = reader.string();
+          message.obfuscatedSshPassword = reader.string();
+          continue;
+        }
+        case 42: {
+          if (tag !== 338) {
+            break;
+          }
+
+          message.sshPrivateKey = reader.string();
           continue;
         }
         case 19: {
@@ -1245,7 +1334,15 @@ export const DataSource: MessageFns<DataSource> = {
             break;
           }
 
-          message.sshObfuscatedPrivateKey = reader.string();
+          message.obfuscatedSshPrivateKey = reader.string();
+          continue;
+        }
+        case 43: {
+          if (tag !== 346) {
+            break;
+          }
+
+          message.authenticationPrivateKey = reader.string();
           continue;
         }
         case 20: {
@@ -1253,7 +1350,7 @@ export const DataSource: MessageFns<DataSource> = {
             break;
           }
 
-          message.authenticationPrivateKeyObfuscated = reader.string();
+          message.obfuscatedAuthenticationPrivateKey = reader.string();
           continue;
         }
         case 21: {
@@ -1336,12 +1433,20 @@ export const DataSource: MessageFns<DataSource> = {
           message.masterUsername = reader.string();
           continue;
         }
+        case 44: {
+          if (tag !== 354) {
+            break;
+          }
+
+          message.masterPassword = reader.string();
+          continue;
+        }
         case 33: {
           if (tag !== 266) {
             break;
           }
 
-          message.masterObfuscatedPassword = reader.string();
+          message.obfuscatedMasterPassword = reader.string();
           continue;
         }
         case 34: {
@@ -1385,10 +1490,14 @@ export const DataSource: MessageFns<DataSource> = {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       type: isSet(object.type) ? dataSourceTypeFromJSON(object.type) : DataSourceType.DATA_SOURCE_UNSPECIFIED,
       username: isSet(object.username) ? globalThis.String(object.username) : "",
+      password: isSet(object.password) ? globalThis.String(object.password) : "",
       obfuscatedPassword: isSet(object.obfuscatedPassword) ? globalThis.String(object.obfuscatedPassword) : "",
       useSsl: isSet(object.useSsl) ? globalThis.Boolean(object.useSsl) : false,
+      sslCa: isSet(object.sslCa) ? globalThis.String(object.sslCa) : "",
       obfuscatedSslCa: isSet(object.obfuscatedSslCa) ? globalThis.String(object.obfuscatedSslCa) : "",
+      sslCert: isSet(object.sslCert) ? globalThis.String(object.sslCert) : "",
       obfuscatedSslCert: isSet(object.obfuscatedSslCert) ? globalThis.String(object.obfuscatedSslCert) : "",
+      sslKey: isSet(object.sslKey) ? globalThis.String(object.sslKey) : "",
       obfuscatedSslKey: isSet(object.obfuscatedSslKey) ? globalThis.String(object.obfuscatedSslKey) : "",
       host: isSet(object.host) ? globalThis.String(object.host) : "",
       port: isSet(object.port) ? globalThis.String(object.port) : "",
@@ -1403,12 +1512,17 @@ export const DataSource: MessageFns<DataSource> = {
       sshHost: isSet(object.sshHost) ? globalThis.String(object.sshHost) : "",
       sshPort: isSet(object.sshPort) ? globalThis.String(object.sshPort) : "",
       sshUser: isSet(object.sshUser) ? globalThis.String(object.sshUser) : "",
-      sshObfuscatedPassword: isSet(object.sshObfuscatedPassword) ? globalThis.String(object.sshObfuscatedPassword) : "",
-      sshObfuscatedPrivateKey: isSet(object.sshObfuscatedPrivateKey)
-        ? globalThis.String(object.sshObfuscatedPrivateKey)
+      sshPassword: isSet(object.sshPassword) ? globalThis.String(object.sshPassword) : "",
+      obfuscatedSshPassword: isSet(object.obfuscatedSshPassword) ? globalThis.String(object.obfuscatedSshPassword) : "",
+      sshPrivateKey: isSet(object.sshPrivateKey) ? globalThis.String(object.sshPrivateKey) : "",
+      obfuscatedSshPrivateKey: isSet(object.obfuscatedSshPrivateKey)
+        ? globalThis.String(object.obfuscatedSshPrivateKey)
         : "",
-      authenticationPrivateKeyObfuscated: isSet(object.authenticationPrivateKeyObfuscated)
-        ? globalThis.String(object.authenticationPrivateKeyObfuscated)
+      authenticationPrivateKey: isSet(object.authenticationPrivateKey)
+        ? globalThis.String(object.authenticationPrivateKey)
+        : "",
+      obfuscatedAuthenticationPrivateKey: isSet(object.obfuscatedAuthenticationPrivateKey)
+        ? globalThis.String(object.obfuscatedAuthenticationPrivateKey)
         : "",
       externalSecret: isSet(object.externalSecret)
         ? DataSourceExternalSecret.fromJSON(object.externalSecret)
@@ -1428,8 +1542,9 @@ export const DataSource: MessageFns<DataSource> = {
       warehouseId: isSet(object.warehouseId) ? globalThis.String(object.warehouseId) : "",
       masterName: isSet(object.masterName) ? globalThis.String(object.masterName) : "",
       masterUsername: isSet(object.masterUsername) ? globalThis.String(object.masterUsername) : "",
-      masterObfuscatedPassword: isSet(object.masterObfuscatedPassword)
-        ? globalThis.String(object.masterObfuscatedPassword)
+      masterPassword: isSet(object.masterPassword) ? globalThis.String(object.masterPassword) : "",
+      obfuscatedMasterPassword: isSet(object.obfuscatedMasterPassword)
+        ? globalThis.String(object.obfuscatedMasterPassword)
         : "",
       redisType: isSet(object.redisType)
         ? dataSource_RedisTypeFromJSON(object.redisType)
@@ -1455,17 +1570,29 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.username !== "") {
       obj.username = message.username;
     }
+    if (message.password !== "") {
+      obj.password = message.password;
+    }
     if (message.obfuscatedPassword !== "") {
       obj.obfuscatedPassword = message.obfuscatedPassword;
     }
     if (message.useSsl !== false) {
       obj.useSsl = message.useSsl;
     }
+    if (message.sslCa !== "") {
+      obj.sslCa = message.sslCa;
+    }
     if (message.obfuscatedSslCa !== "") {
       obj.obfuscatedSslCa = message.obfuscatedSslCa;
     }
+    if (message.sslCert !== "") {
+      obj.sslCert = message.sslCert;
+    }
     if (message.obfuscatedSslCert !== "") {
       obj.obfuscatedSslCert = message.obfuscatedSslCert;
+    }
+    if (message.sslKey !== "") {
+      obj.sslKey = message.sslKey;
     }
     if (message.obfuscatedSslKey !== "") {
       obj.obfuscatedSslKey = message.obfuscatedSslKey;
@@ -1503,14 +1630,23 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.sshUser !== "") {
       obj.sshUser = message.sshUser;
     }
-    if (message.sshObfuscatedPassword !== "") {
-      obj.sshObfuscatedPassword = message.sshObfuscatedPassword;
+    if (message.sshPassword !== "") {
+      obj.sshPassword = message.sshPassword;
     }
-    if (message.sshObfuscatedPrivateKey !== "") {
-      obj.sshObfuscatedPrivateKey = message.sshObfuscatedPrivateKey;
+    if (message.obfuscatedSshPassword !== "") {
+      obj.obfuscatedSshPassword = message.obfuscatedSshPassword;
     }
-    if (message.authenticationPrivateKeyObfuscated !== "") {
-      obj.authenticationPrivateKeyObfuscated = message.authenticationPrivateKeyObfuscated;
+    if (message.sshPrivateKey !== "") {
+      obj.sshPrivateKey = message.sshPrivateKey;
+    }
+    if (message.obfuscatedSshPrivateKey !== "") {
+      obj.obfuscatedSshPrivateKey = message.obfuscatedSshPrivateKey;
+    }
+    if (message.authenticationPrivateKey !== "") {
+      obj.authenticationPrivateKey = message.authenticationPrivateKey;
+    }
+    if (message.obfuscatedAuthenticationPrivateKey !== "") {
+      obj.obfuscatedAuthenticationPrivateKey = message.obfuscatedAuthenticationPrivateKey;
     }
     if (message.externalSecret !== undefined) {
       obj.externalSecret = DataSourceExternalSecret.toJSON(message.externalSecret);
@@ -1542,8 +1678,11 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.masterUsername !== "") {
       obj.masterUsername = message.masterUsername;
     }
-    if (message.masterObfuscatedPassword !== "") {
-      obj.masterObfuscatedPassword = message.masterObfuscatedPassword;
+    if (message.masterPassword !== "") {
+      obj.masterPassword = message.masterPassword;
+    }
+    if (message.obfuscatedMasterPassword !== "") {
+      obj.obfuscatedMasterPassword = message.obfuscatedMasterPassword;
     }
     if (message.redisType !== DataSource_RedisType.REDIS_TYPE_UNSPECIFIED) {
       obj.redisType = dataSource_RedisTypeToJSON(message.redisType);
@@ -1571,10 +1710,14 @@ export const DataSource: MessageFns<DataSource> = {
     message.id = object.id ?? "";
     message.type = object.type ?? DataSourceType.DATA_SOURCE_UNSPECIFIED;
     message.username = object.username ?? "";
+    message.password = object.password ?? "";
     message.obfuscatedPassword = object.obfuscatedPassword ?? "";
     message.useSsl = object.useSsl ?? false;
+    message.sslCa = object.sslCa ?? "";
     message.obfuscatedSslCa = object.obfuscatedSslCa ?? "";
+    message.sslCert = object.sslCert ?? "";
     message.obfuscatedSslCert = object.obfuscatedSslCert ?? "";
+    message.sslKey = object.sslKey ?? "";
     message.obfuscatedSslKey = object.obfuscatedSslKey ?? "";
     message.host = object.host ?? "";
     message.port = object.port ?? "";
@@ -1587,9 +1730,12 @@ export const DataSource: MessageFns<DataSource> = {
     message.sshHost = object.sshHost ?? "";
     message.sshPort = object.sshPort ?? "";
     message.sshUser = object.sshUser ?? "";
-    message.sshObfuscatedPassword = object.sshObfuscatedPassword ?? "";
-    message.sshObfuscatedPrivateKey = object.sshObfuscatedPrivateKey ?? "";
-    message.authenticationPrivateKeyObfuscated = object.authenticationPrivateKeyObfuscated ?? "";
+    message.sshPassword = object.sshPassword ?? "";
+    message.obfuscatedSshPassword = object.obfuscatedSshPassword ?? "";
+    message.sshPrivateKey = object.sshPrivateKey ?? "";
+    message.obfuscatedSshPrivateKey = object.obfuscatedSshPrivateKey ?? "";
+    message.authenticationPrivateKey = object.authenticationPrivateKey ?? "";
+    message.obfuscatedAuthenticationPrivateKey = object.obfuscatedAuthenticationPrivateKey ?? "";
     message.externalSecret = (object.externalSecret !== undefined && object.externalSecret !== null)
       ? DataSourceExternalSecret.fromPartial(object.externalSecret)
       : undefined;
@@ -1607,7 +1753,8 @@ export const DataSource: MessageFns<DataSource> = {
     message.warehouseId = object.warehouseId ?? "";
     message.masterName = object.masterName ?? "";
     message.masterUsername = object.masterUsername ?? "";
-    message.masterObfuscatedPassword = object.masterObfuscatedPassword ?? "";
+    message.masterPassword = object.masterPassword ?? "";
+    message.obfuscatedMasterPassword = object.obfuscatedMasterPassword ?? "";
     message.redisType = object.redisType ?? DataSource_RedisType.REDIS_TYPE_UNSPECIFIED;
     message.cluster = object.cluster ?? "";
     message.extraConnectionParameters = Object.entries(object.extraConnectionParameters ?? {}).reduce<
@@ -1623,7 +1770,7 @@ export const DataSource: MessageFns<DataSource> = {
 };
 
 function createBaseDataSource_ClientSecretCredential(): DataSource_ClientSecretCredential {
-  return { tenantId: "", clientId: "", clientSecret: "" };
+  return { tenantId: "", clientId: "", clientSecret: "", obfuscatedClientSecret: "" };
 }
 
 export const DataSource_ClientSecretCredential: MessageFns<DataSource_ClientSecretCredential> = {
@@ -1636,6 +1783,9 @@ export const DataSource_ClientSecretCredential: MessageFns<DataSource_ClientSecr
     }
     if (message.clientSecret !== "") {
       writer.uint32(26).string(message.clientSecret);
+    }
+    if (message.obfuscatedClientSecret !== "") {
+      writer.uint32(34).string(message.obfuscatedClientSecret);
     }
     return writer;
   },
@@ -1671,6 +1821,14 @@ export const DataSource_ClientSecretCredential: MessageFns<DataSource_ClientSecr
           message.clientSecret = reader.string();
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.obfuscatedClientSecret = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1685,6 +1843,9 @@ export const DataSource_ClientSecretCredential: MessageFns<DataSource_ClientSecr
       tenantId: isSet(object.tenantId) ? globalThis.String(object.tenantId) : "",
       clientId: isSet(object.clientId) ? globalThis.String(object.clientId) : "",
       clientSecret: isSet(object.clientSecret) ? globalThis.String(object.clientSecret) : "",
+      obfuscatedClientSecret: isSet(object.obfuscatedClientSecret)
+        ? globalThis.String(object.obfuscatedClientSecret)
+        : "",
     };
   },
 
@@ -1699,6 +1860,9 @@ export const DataSource_ClientSecretCredential: MessageFns<DataSource_ClientSecr
     if (message.clientSecret !== "") {
       obj.clientSecret = message.clientSecret;
     }
+    if (message.obfuscatedClientSecret !== "") {
+      obj.obfuscatedClientSecret = message.obfuscatedClientSecret;
+    }
     return obj;
   },
 
@@ -1710,6 +1874,7 @@ export const DataSource_ClientSecretCredential: MessageFns<DataSource_ClientSecr
     message.tenantId = object.tenantId ?? "";
     message.clientId = object.clientId ?? "";
     message.clientSecret = object.clientSecret ?? "";
+    message.obfuscatedClientSecret = object.obfuscatedClientSecret ?? "";
     return message;
   },
 };
