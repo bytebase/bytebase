@@ -154,7 +154,6 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 			case "DDL":
 				issueFind.TaskTypes = &[]api.TaskType{
 					api.TaskDatabaseSchemaUpdate,
-					api.TaskDatabaseSchemaUpdateSDL,
 					api.TaskDatabaseSchemaUpdateGhost,
 				}
 			case "DML":

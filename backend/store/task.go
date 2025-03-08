@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -31,7 +32,7 @@ type TaskMessage struct {
 
 	// Domain specific fields
 	Type              api.TaskType
-	Payload           string
+	Payload           *storepb.TaskPayload
 	EarliestAllowedAt *time.Time
 
 	LatestTaskRunStatus api.TaskRunStatus
@@ -50,9 +51,6 @@ type TaskFind struct {
 
 	// Domain specific fields
 	TypeList *[]api.TaskType
-	// Payload contains JSONB expressions
-	// Ref: https://www.postgresql.org/docs/current/functions-json.html
-	Payload string
 
 	LatestTaskRunStatusList *[]api.TaskRunStatus
 }
@@ -169,19 +167,23 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 		instances          []string
 		databases          []*string
 		types              []string
-		payloads           []string
+		payloads           [][]byte
 		earliestAllowedAts []time.Time
 	)
 	for _, create := range creates {
-		if create.Payload == "" {
-			create.Payload = "{}"
+		if create.Payload == nil {
+			create.Payload = &storepb.TaskPayload{}
+		}
+		payload, err := protojson.Marshal(create.Payload)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal payload")
 		}
 		pipelineIDs = append(pipelineIDs, create.PipelineID)
 		stageIDs = append(stageIDs, create.StageID)
 		instances = append(instances, create.InstanceID)
 		databases = append(databases, create.DatabaseName)
 		types = append(types, string(create.Type))
-		payloads = append(payloads, create.Payload)
+		payloads = append(payloads, payload)
 		if create.EarliestAllowedAt == nil {
 			earliestAllowedAts = append(earliestAllowedAts, time.Time{})
 		} else {
@@ -206,6 +208,7 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 	for rows.Next() {
 		task := &TaskMessage{}
 		var earliestAllowedAt sql.NullTime
+		var payload []byte
 		if err := rows.Scan(
 			&task.ID,
 			&task.PipelineID,
@@ -213,7 +216,7 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 			&task.InstanceID,
 			&task.DatabaseName,
 			&task.Type,
-			&task.Payload,
+			&payload,
 			&earliestAllowedAt,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan rows")
@@ -221,6 +224,11 @@ func (*Store) createTasks(ctx context.Context, tx *Tx, creates ...*TaskMessage) 
 		if earliestAllowedAt.Valid {
 			task.EarliestAllowedAt = &earliestAllowedAt.Time
 		}
+		taskPayload := &storepb.TaskPayload{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, taskPayload); err != nil {
+			return nil, errors.Wrap(err, "failed to unmarshal plan config")
+		}
+		task.Payload = taskPayload
 		tasks = append(tasks, task)
 	}
 	if err := rows.Err(); err != nil {
@@ -262,9 +270,6 @@ func (*Store) listTasksTx(ctx context.Context, tx *Tx, find *TaskFind) ([]*TaskM
 		}
 		where = append(where, fmt.Sprintf("task.type in (%s)", strings.Join(list, ",")))
 	}
-	if v := find.Payload; v != "" {
-		where = append(where, v)
-	}
 
 	args = append(args, api.TaskRunNotStarted)
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
@@ -303,6 +308,7 @@ func (*Store) listTasksTx(ctx context.Context, tx *Tx, find *TaskFind) ([]*TaskM
 	for rows.Next() {
 		task := &TaskMessage{}
 		var earliestAllowedAt sql.NullTime
+		var payload []byte
 		if err := rows.Scan(
 			&task.ID,
 			&task.PipelineID,
@@ -311,7 +317,7 @@ func (*Store) listTasksTx(ctx context.Context, tx *Tx, find *TaskFind) ([]*TaskM
 			&task.DatabaseName,
 			&task.LatestTaskRunStatus,
 			&task.Type,
-			&task.Payload,
+			&payload,
 			&earliestAllowedAt,
 		); err != nil {
 			return nil, err
@@ -319,6 +325,11 @@ func (*Store) listTasksTx(ctx context.Context, tx *Tx, find *TaskFind) ([]*TaskM
 		if earliestAllowedAt.Valid {
 			task.EarliestAllowedAt = &earliestAllowedAt.Time
 		}
+		taskPayload := &storepb.TaskPayload{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, taskPayload); err != nil {
+			return nil, errors.Wrap(err, "failed to unmarshal plan config")
+		}
+		task.Payload = taskPayload
 		tasks = append(tasks, task)
 	}
 	if err := rows.Err(); err != nil {
@@ -403,6 +414,7 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessag
 
 	task := &TaskMessage{}
 	var earliestAllowedAt sql.NullTime
+	var payload []byte
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
@@ -429,6 +441,11 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessag
 	if earliestAllowedAt.Valid {
 		task.EarliestAllowedAt = &earliestAllowedAt.Time
 	}
+	taskPayload := &storepb.TaskPayload{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, taskPayload); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal plan config")
+	}
+	task.Payload = taskPayload
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}

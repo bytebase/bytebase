@@ -2,7 +2,6 @@ package taskrun
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -211,15 +210,11 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, rolloutPolicy
 		return nil
 	}
 
-	sheetUID, err := api.GetSheetUIDFromTaskPayload(task.Payload)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get sheet uid")
-	}
-
+	sheetUID := int(task.Payload.GetSheetId())
 	create := &store.TaskRunMessage{
 		CreatorID: api.SystemBotID,
 		TaskUID:   task.ID,
-		SheetUID:  sheetUID,
+		SheetUID:  &sheetUID,
 	}
 
 	if err := s.store.CreatePendingTaskRuns(ctx, create); err != nil {
@@ -283,17 +278,12 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 			return true, nil
 		}
 
-		var version struct {
-			Version string `json:"schemaVersion"`
-		}
-		if err := json.Unmarshal([]byte(task.Payload), &version); err != nil {
-			return false, errors.Wrapf(err, "failed to unmarshal task payload")
-		}
-		if version.Version == "" {
+		schemaVersion := task.Payload.GetSchemaVersion()
+		if schemaVersion == "" {
 			return true, nil
 		}
 
-		taskIDs, err := s.store.FindBlockingTasksByVersion(ctx, task.InstanceID, *task.DatabaseName, version.Version)
+		taskIDs, err := s.store.FindBlockingTasksByVersion(ctx, task.InstanceID, *task.DatabaseName, schemaVersion)
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to find blocking versioned tasks")
 		}
@@ -863,10 +853,7 @@ func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, 
 
 func tasksSkippedOrDone(tasks []*store.TaskMessage) (bool, error) {
 	for _, task := range tasks {
-		skipped, err := utils.GetTaskSkipped(task)
-		if err != nil {
-			return false, err
-		}
+		skipped := task.Payload.GetSkipped()
 		done := task.LatestTaskRunStatus == api.TaskRunDone
 		if !skipped && !done {
 			return false, nil

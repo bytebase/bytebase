@@ -434,14 +434,11 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 			}
 
 			taskStatement := ""
-			sheetUID, err := api.GetSheetUIDFromTaskPayload(task.Payload)
-			if err != nil {
-				return 0, store.RiskSourceUnknown, true, errors.Wrapf(err, "failed to get sheet id in task %v", task.ID)
-			}
-			if sheetUID != nil {
-				statement, err := r.store.GetSheetStatementByID(ctx, *sheetUID)
+			sheetUID := int(task.Payload.GetSheetId())
+			if sheetUID != 0 {
+				statement, err := r.store.GetSheetStatementByID(ctx, sheetUID)
 				if err != nil {
-					return 0, store.RiskSourceUnknown, true, errors.Wrapf(err, "failed to get statement in sheet %v", *sheetUID)
+					return 0, store.RiskSourceUnknown, true, errors.Wrapf(err, "failed to get statement in sheet %v", sheetUID)
 				}
 				taskStatement = statement
 			}
@@ -449,14 +446,8 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 			environmentID := instance.EnvironmentID
 			var databaseName string
 			if task.Type == api.TaskDatabaseCreate {
-				payload := &storepb.TaskDatabaseCreatePayload{}
-				if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
-					return 0, store.RiskSourceUnknown, false, err
-				}
-				databaseName = payload.DatabaseName
-				if payload.EnvironmentId != "" {
-					environmentID = payload.EnvironmentId
-				}
+				databaseName = task.Payload.GetDatabaseName()
+				environmentID = task.Payload.GetEnvironmentId()
 			} else {
 				database, err := r.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					InstanceID:   &task.InstanceID,
@@ -613,11 +604,6 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 			if r.licenseService.IsFeatureEnabledForInstance(api.FeatureCustomApproval, instance) != nil {
 				// nolint:nilerr
 				return 0, store.RiskSourceUnknown, true, nil
-			}
-
-			payload := &storepb.TaskDatabaseDataExportPayload{}
-			if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
-				return 0, store.RiskSourceUnknown, false, err
 			}
 
 			database, err := r.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{

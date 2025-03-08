@@ -1439,19 +1439,11 @@
             <ul>
               
                 <li>
-                  <a href="#bytebase.store.TaskDatabaseCreatePayload"><span class="badge">M</span>TaskDatabaseCreatePayload</a>
+                  <a href="#bytebase.store.TaskPayload"><span class="badge">M</span>TaskPayload</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.TaskDatabaseDataExportPayload"><span class="badge">M</span>TaskDatabaseDataExportPayload</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.TaskDatabaseUpdatePayload"><span class="badge">M</span>TaskDatabaseUpdatePayload</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.TaskDatabaseUpdatePayload.FlagsEntry"><span class="badge">M</span>TaskDatabaseUpdatePayload.FlagsEntry</a>
+                  <a href="#bytebase.store.TaskPayload.FlagsEntry"><span class="badge">M</span>TaskPayload.FlagsEntry</a>
                 </li>
               
                 <li>
@@ -12182,8 +12174,8 @@ Default to this mode.</p></td>
       <p></p>
 
       
-        <h3 id="bytebase.store.TaskDatabaseCreatePayload">TaskDatabaseCreatePayload</h3>
-        <p>TaskDatabaseCreatePayload is the task payload for creating databases.</p>
+        <h3 id="bytebase.store.TaskPayload">TaskPayload</h3>
+        <p></p>
 
         
           <table class="field-table">
@@ -12214,6 +12206,20 @@ Default to this mode.</p></td>
                 </tr>
               
                 <tr>
+                  <td>sheet_id</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>environment_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Create database fields. </p></td>
+                </tr>
+              
+                <tr>
                   <td>database_name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -12223,13 +12229,6 @@ Default to this mode.</p></td>
                 <tr>
                   <td>table_name</td>
                   <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet_id</td>
-                  <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -12249,46 +12248,29 @@ Default to this mode.</p></td>
                 </tr>
               
                 <tr>
-                  <td>environment_id</td>
+                  <td>schema_version</td>
                   <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Update database fields. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pre_update_backup_detail</td>
+                  <td><a href="#bytebase.store.PreUpdateBackupDetail">PreUpdateBackupDetail</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
               
                 <tr>
-                  <td>labels</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.TaskDatabaseDataExportPayload">TaskDatabaseDataExportPayload</h3>
-        <p>TaskDatabaseDataExportPayload is the task payload for database data export.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>spec_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>common fields </p></td>
+                  <td>flags</td>
+                  <td><a href="#bytebase.store.TaskPayload.FlagsEntry">TaskPayload.FlagsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>ghost flags. </p></td>
                 </tr>
               
                 <tr>
-                  <td>sheet_id</td>
-                  <td><a href="#int32">int32</a></td>
+                  <td>task_release_source</td>
+                  <td><a href="#bytebase.store.TaskReleaseSource">TaskReleaseSource</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -12297,7 +12279,7 @@ Default to this mode.</p></td>
                   <td>password</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Export data fields. </p></td>
                 </tr>
               
                 <tr>
@@ -12314,80 +12296,7 @@ Default to this mode.</p></td>
 
         
       
-        <h3 id="bytebase.store.TaskDatabaseUpdatePayload">TaskDatabaseUpdatePayload</h3>
-        <p>TaskDatabaseUpdatePayload is the task payload for updating database (DDL & DML).</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>skipped</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>common fields </p></td>
-                </tr>
-              
-                <tr>
-                  <td>skipped_reason</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>spec_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema_version</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet_id</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>pre_update_backup_detail</td>
-                  <td><a href="#bytebase.store.PreUpdateBackupDetail">PreUpdateBackupDetail</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>flags</td>
-                  <td><a href="#bytebase.store.TaskDatabaseUpdatePayload.FlagsEntry">TaskDatabaseUpdatePayload.FlagsEntry</a></td>
-                  <td>repeated</td>
-                  <td><p>flags is used for ghost sync </p></td>
-                </tr>
-              
-                <tr>
-                  <td>task_release_source</td>
-                  <td><a href="#bytebase.store.TaskReleaseSource">TaskReleaseSource</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.TaskDatabaseUpdatePayload.FlagsEntry">TaskDatabaseUpdatePayload.FlagsEntry</h3>
+        <h3 id="bytebase.store.TaskPayload.FlagsEntry">TaskPayload.FlagsEntry</h3>
         <p></p>
 
         
