@@ -241,6 +241,21 @@ func (s *Store) ListSettingV2(ctx context.Context, find *FindSettingMessage) ([]
 	return settings, nil
 }
 
+func (s *Store) GetSecret(ctx context.Context) (string, error) {
+	if s.Secret != "" {
+		return s.Secret, nil
+	}
+	setting, err := s.GetSettingV2(ctx, api.SettingAuthSecret)
+	if err != nil {
+		return "", err
+	}
+	if setting == nil {
+		return "", errors.New("auth secret not found")
+	}
+	s.Secret = setting.Value
+	return setting.Value, nil
+}
+
 // UpsertSettingV2 upserts the setting by name.
 func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage) (*SettingMessage, error) {
 	fields := []string{"name", "value"}

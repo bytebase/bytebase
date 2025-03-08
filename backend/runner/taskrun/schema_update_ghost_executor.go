@@ -26,10 +26,9 @@ import (
 )
 
 // NewSchemaUpdateGhostExecutor creates a schema update (gh-ost) task executor.
-func NewSchemaUpdateGhostExecutor(s *store.Store, secret string, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
+func NewSchemaUpdateGhostExecutor(s *store.Store, dbFactory *dbfactory.DBFactory, license enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
 	return &SchemaUpdateGhostExecutor{
 		s:            s,
-		secret:       secret,
 		dbFactory:    dbFactory,
 		license:      license,
 		stateCfg:     stateCfg,
@@ -41,7 +40,6 @@ func NewSchemaUpdateGhostExecutor(s *store.Store, secret string, dbFactory *dbfa
 // SchemaUpdateGhostExecutor is the schema update (gh-ost) task executor.
 type SchemaUpdateGhostExecutor struct {
 	s            *store.Store
-	secret       string
 	dbFactory    *dbfactory.DBFactory
 	license      enterprise.LicenseService
 	stateCfg     *state.State
@@ -90,7 +88,11 @@ func (exec *SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, driverCtx co
 			return common.Errorf(common.Internal, "admin data source not found for instance %s", instance.ResourceID)
 		}
 
-		migrationContext, err := ghost.NewMigrationContext(ctx, task.ID, database, adminDataSource, exec.secret, tableName, fmt.Sprintf("_%d", time.Now().Unix()), execStatement, false, flags, 10000000)
+		secret, err := exec.s.GetSecret(execCtx)
+		if err != nil {
+			return err
+		}
+		migrationContext, err := ghost.NewMigrationContext(ctx, task.ID, database, adminDataSource, secret, tableName, fmt.Sprintf("_%d", time.Now().Unix()), execStatement, false, flags, 10000000)
 		if err != nil {
 			return errors.Wrap(err, "failed to init migrationContext for gh-ost")
 		}
