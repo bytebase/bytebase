@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -92,15 +91,9 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 
 			createdTasks := map[taskKey]struct{}{}
 			for _, task := range tasks {
-				var payloadSheetUID struct {
-					SheetUID int `json:"sheetId"`
-				}
-				if err := json.Unmarshal([]byte(task.Payload), &payloadSheetUID); err != nil {
-					return 0, errors.Wrapf(err, "failed to unmarshal task payload")
-				}
 				k := taskKey{
 					instance: task.InstanceID,
-					sheet:    payloadSheetUID.SheetUID,
+					sheet:    int(task.Payload.GetSheetId()),
 				}
 				if task.DatabaseName != nil {
 					k.database = *task.DatabaseName
@@ -111,15 +104,9 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 			var taskCreateList []*TaskMessage
 
 			for _, taskCreate := range stage.TaskList {
-				var payloadSheetUID struct {
-					SheetUID int `json:"sheetId"`
-				}
-				if err := json.Unmarshal([]byte(taskCreate.Payload), &payloadSheetUID); err != nil {
-					return 0, errors.Wrapf(err, "failed to unmarshal task payload")
-				}
 				k := taskKey{
 					instance: taskCreate.InstanceID,
-					sheet:    payloadSheetUID.SheetUID,
+					sheet:    int(taskCreate.Payload.GetSheetId()),
 				}
 				if taskCreate.DatabaseName != nil {
 					k.database = *taskCreate.DatabaseName

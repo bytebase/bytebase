@@ -578,13 +578,10 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 			continue
 		}
 
-		sheetUID, err := api.GetSheetUIDFromTaskPayload(task.Payload)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get sheet uid from task payload, error: %v", err)
-		}
+		sheetUID := int(task.Payload.GetSheetId())
 		create := &store.TaskRunMessage{
 			TaskUID:   task.ID,
-			SheetUID:  sheetUID,
+			SheetUID:  &sheetUID,
 			CreatorID: user.ID,
 		}
 		taskRunCreates = append(taskRunCreates, create)
