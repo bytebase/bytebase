@@ -186,7 +186,7 @@ export interface DataSource {
   /** master_username and master_obfuscated_password are master credentials used by redis sentinel mode. */
   masterUsername: string;
   masterPassword: string;
-  masterObfuscatedPassword: string;
+  obfuscatedMasterPassword: string;
   redisType: DataSource_RedisType;
   /** Cluster is the cluster name for the data source. Used by CockroachDB. */
   cluster: string;
@@ -970,7 +970,7 @@ function createBaseDataSource(): DataSource {
     masterName: "",
     masterUsername: "",
     masterPassword: "",
-    masterObfuscatedPassword: "",
+    obfuscatedMasterPassword: "",
     redisType: DataSource_RedisType.REDIS_TYPE_UNSPECIFIED,
     cluster: "",
     extraConnectionParameters: {},
@@ -1099,8 +1099,8 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.masterPassword !== "") {
       writer.uint32(354).string(message.masterPassword);
     }
-    if (message.masterObfuscatedPassword !== "") {
-      writer.uint32(266).string(message.masterObfuscatedPassword);
+    if (message.obfuscatedMasterPassword !== "") {
+      writer.uint32(266).string(message.obfuscatedMasterPassword);
     }
     if (message.redisType !== DataSource_RedisType.REDIS_TYPE_UNSPECIFIED) {
       writer.uint32(272).int32(dataSource_RedisTypeToNumber(message.redisType));
@@ -1446,7 +1446,7 @@ export const DataSource: MessageFns<DataSource> = {
             break;
           }
 
-          message.masterObfuscatedPassword = reader.string();
+          message.obfuscatedMasterPassword = reader.string();
           continue;
         }
         case 34: {
@@ -1543,8 +1543,8 @@ export const DataSource: MessageFns<DataSource> = {
       masterName: isSet(object.masterName) ? globalThis.String(object.masterName) : "",
       masterUsername: isSet(object.masterUsername) ? globalThis.String(object.masterUsername) : "",
       masterPassword: isSet(object.masterPassword) ? globalThis.String(object.masterPassword) : "",
-      masterObfuscatedPassword: isSet(object.masterObfuscatedPassword)
-        ? globalThis.String(object.masterObfuscatedPassword)
+      obfuscatedMasterPassword: isSet(object.obfuscatedMasterPassword)
+        ? globalThis.String(object.obfuscatedMasterPassword)
         : "",
       redisType: isSet(object.redisType)
         ? dataSource_RedisTypeFromJSON(object.redisType)
@@ -1681,8 +1681,8 @@ export const DataSource: MessageFns<DataSource> = {
     if (message.masterPassword !== "") {
       obj.masterPassword = message.masterPassword;
     }
-    if (message.masterObfuscatedPassword !== "") {
-      obj.masterObfuscatedPassword = message.masterObfuscatedPassword;
+    if (message.obfuscatedMasterPassword !== "") {
+      obj.obfuscatedMasterPassword = message.obfuscatedMasterPassword;
     }
     if (message.redisType !== DataSource_RedisType.REDIS_TYPE_UNSPECIFIED) {
       obj.redisType = dataSource_RedisTypeToJSON(message.redisType);
@@ -1754,7 +1754,7 @@ export const DataSource: MessageFns<DataSource> = {
     message.masterName = object.masterName ?? "";
     message.masterUsername = object.masterUsername ?? "";
     message.masterPassword = object.masterPassword ?? "";
-    message.masterObfuscatedPassword = object.masterObfuscatedPassword ?? "";
+    message.obfuscatedMasterPassword = object.obfuscatedMasterPassword ?? "";
     message.redisType = object.redisType ?? DataSource_RedisType.REDIS_TYPE_UNSPECIFIED;
     message.cluster = object.cluster ?? "";
     message.extraConnectionParameters = Object.entries(object.extraConnectionParameters ?? {}).reduce<

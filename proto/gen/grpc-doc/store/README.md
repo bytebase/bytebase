@@ -2502,7 +2502,7 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | master_name | [string](#string) |  | master_name is the master name used by connecting redis-master via redis sentinel. |
 | master_username | [string](#string) |  | master_username and master_obfuscated_password are master credentials used by redis sentinel mode. |
 | master_password | [string](#string) |  |  |
-| master_obfuscated_password | [string](#string) |  |  |
+| obfuscated_master_password | [string](#string) |  |  |
 | redis_type | [DataSource.RedisType](#bytebase-store-DataSource-RedisType) |  |  |
 | cluster | [string](#string) |  | Cluster is the cluster name for the data source. Used by CockroachDB. |
 | extra_connection_parameters | [DataSource.ExtraConnectionParametersEntry](#bytebase-store-DataSource-ExtraConnectionParametersEntry) | repeated | Extra connection parameters for the database connection. For PostgreSQL HA, this can be used to set target_session_attrs=read-write |

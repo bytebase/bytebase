@@ -9063,7 +9063,7 @@ components:
                     description: master_username and master_obfuscated_password are master credentials used by redis sentinel mode.
                 masterPassword:
                     type: string
-                masterObfuscatedPassword:
+                obfuscatedMasterPassword:
                     type: string
                 redisType:
                     enum:
@@ -9168,6 +9168,7 @@ components:
                 clientId:
                     type: string
                 clientSecret:
+                    readOnly: true
                     type: string
         Database:
             type: object
