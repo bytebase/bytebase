@@ -310,10 +310,8 @@
     - [SlowQueryStatisticsItem](#bytebase-store-SlowQueryStatisticsItem)
   
 - [store/task.proto](#store_task-proto)
-    - [TaskDatabaseCreatePayload](#bytebase-store-TaskDatabaseCreatePayload)
-    - [TaskDatabaseDataExportPayload](#bytebase-store-TaskDatabaseDataExportPayload)
-    - [TaskDatabaseUpdatePayload](#bytebase-store-TaskDatabaseUpdatePayload)
-    - [TaskDatabaseUpdatePayload.FlagsEntry](#bytebase-store-TaskDatabaseUpdatePayload-FlagsEntry)
+    - [TaskPayload](#bytebase-store-TaskPayload)
+    - [TaskPayload.FlagsEntry](#bytebase-store-TaskPayload-FlagsEntry)
     - [TaskReleaseSource](#bytebase-store-TaskReleaseSource)
   
 - [store/task_run.proto](#store_task_run-proto)
@@ -4838,10 +4836,10 @@ SlowQueryStatisticsItem is the item of slow query statistics.
 
 
 
-<a name="bytebase-store-TaskDatabaseCreatePayload"></a>
+<a name="bytebase-store-TaskPayload"></a>
 
-### TaskDatabaseCreatePayload
-TaskDatabaseCreatePayload is the task payload for creating databases.
+### TaskPayload
+
 
 
 | Field | Type | Label | Description |
@@ -4849,30 +4847,17 @@ TaskDatabaseCreatePayload is the task payload for creating databases.
 | skipped | [bool](#bool) |  | common fields |
 | skipped_reason | [string](#string) |  |  |
 | spec_id | [string](#string) |  |  |
+| sheet_id | [int32](#int32) |  |  |
+| environment_id | [string](#string) |  | Create database fields. |
 | database_name | [string](#string) |  |  |
 | table_name | [string](#string) |  |  |
-| sheet_id | [int32](#int32) |  |  |
 | character_set | [string](#string) |  |  |
 | collation | [string](#string) |  |  |
-| environment_id | [string](#string) |  |  |
-| labels | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-TaskDatabaseDataExportPayload"></a>
-
-### TaskDatabaseDataExportPayload
-TaskDatabaseDataExportPayload is the task payload for database data export.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| spec_id | [string](#string) |  | common fields |
-| sheet_id | [int32](#int32) |  |  |
-| password | [string](#string) |  |  |
+| schema_version | [string](#string) |  | Update database fields. |
+| pre_update_backup_detail | [PreUpdateBackupDetail](#bytebase-store-PreUpdateBackupDetail) |  |  |
+| flags | [TaskPayload.FlagsEntry](#bytebase-store-TaskPayload-FlagsEntry) | repeated | ghost flags. |
+| task_release_source | [TaskReleaseSource](#bytebase-store-TaskReleaseSource) |  |  |
+| password | [string](#string) |  | Export data fields. |
 | format | [ExportFormat](#bytebase-store-ExportFormat) |  |  |
 
 
@@ -4880,31 +4865,9 @@ TaskDatabaseDataExportPayload is the task payload for database data export.
 
 
 
-<a name="bytebase-store-TaskDatabaseUpdatePayload"></a>
+<a name="bytebase-store-TaskPayload-FlagsEntry"></a>
 
-### TaskDatabaseUpdatePayload
-TaskDatabaseUpdatePayload is the task payload for updating database (DDL &amp; DML).
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| skipped | [bool](#bool) |  | common fields |
-| skipped_reason | [string](#string) |  |  |
-| spec_id | [string](#string) |  |  |
-| schema_version | [string](#string) |  |  |
-| sheet_id | [int32](#int32) |  |  |
-| pre_update_backup_detail | [PreUpdateBackupDetail](#bytebase-store-PreUpdateBackupDetail) |  |  |
-| flags | [TaskDatabaseUpdatePayload.FlagsEntry](#bytebase-store-TaskDatabaseUpdatePayload-FlagsEntry) | repeated | flags is used for ghost sync |
-| task_release_source | [TaskReleaseSource](#bytebase-store-TaskReleaseSource) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-TaskDatabaseUpdatePayload-FlagsEntry"></a>
-
-### TaskDatabaseUpdatePayload.FlagsEntry
+### TaskPayload.FlagsEntry
 
 
 

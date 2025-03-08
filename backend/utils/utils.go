@@ -3,7 +3,6 @@ package utils
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"reflect"
@@ -37,28 +36,6 @@ func DataSourceFromInstanceWithType(instance *store.InstanceMessage, dataSourceT
 		}
 	}
 	return nil
-}
-
-// GetTaskSheetID gets the sheetID of a task.
-func GetTaskSheetID(taskPayload string) (int, error) {
-	var taskSheetID struct {
-		SheetID int `json:"sheetId"`
-	}
-	if err := json.Unmarshal([]byte(taskPayload), &taskSheetID); err != nil {
-		return 0, err
-	}
-	return taskSheetID.SheetID, nil
-}
-
-// GetTaskSkipped gets skipped from a task.
-func GetTaskSkipped(task *store.TaskMessage) (bool, error) {
-	var payload struct {
-		Skipped bool `json:"skipped,omitempty"`
-	}
-	if err := json.Unmarshal([]byte(task.Payload), &payload); err != nil {
-		return false, err
-	}
-	return payload.Skipped, nil
 }
 
 // FindNextPendingStep finds the next pending step in the approval flow.
