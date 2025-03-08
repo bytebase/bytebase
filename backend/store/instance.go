@@ -103,11 +103,14 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 	}
 	defer tx.Rollback()
 
-	metadataBytes, err := protojson.Marshal(instanceCreate.Metadata)
+	redacted, err := s.obfuscateInstance(ctx, instanceCreate.Metadata)
 	if err != nil {
 		return nil, err
 	}
-
+	metadataBytes, err := protojson.Marshal(redacted)
+	if err != nil {
+		return nil, err
+	}
 	var environment *string
 	if instanceCreate.EnvironmentID != "" {
 		environment = &instanceCreate.EnvironmentID
@@ -130,14 +133,10 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		return nil, err
 	}
 
-	redacted, err := s.obfuscateInstance(ctx, instanceCreate.Metadata)
-	if err != nil {
-		return nil, err
-	}
 	instance := &InstanceMessage{
 		EnvironmentID: instanceCreate.EnvironmentID,
 		ResourceID:    instanceCreate.ResourceID,
-		Metadata:      redacted,
+		Metadata:      instanceCreate.Metadata,
 	}
 	s.instanceCache.Add(getInstanceCacheKey(instance.ResourceID), instance)
 	return instance, nil
