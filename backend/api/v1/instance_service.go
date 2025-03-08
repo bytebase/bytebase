@@ -37,7 +37,6 @@ type InstanceService struct {
 	store          *store.Store
 	licenseService enterprise.LicenseService
 	metricReporter *metricreport.Reporter
-	secret         string
 	stateCfg       *state.State
 	dbFactory      *dbfactory.DBFactory
 	schemaSyncer   *schemasync.Syncer
@@ -45,12 +44,11 @@ type InstanceService struct {
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store, licenseService enterprise.LicenseService, metricReporter *metricreport.Reporter, secret string, stateCfg *state.State, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, iamManager *iam.Manager) *InstanceService {
+func NewInstanceService(store *store.Store, licenseService enterprise.LicenseService, metricReporter *metricreport.Reporter, stateCfg *state.State, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, iamManager *iam.Manager) *InstanceService {
 	return &InstanceService{
 		store:          store,
 		licenseService: licenseService,
 		metricReporter: metricReporter,
-		secret:         secret,
 		stateCfg:       stateCfg,
 		dbFactory:      dbFactory,
 		schemaSyncer:   schemaSyncer,
@@ -97,7 +95,7 @@ func (s *InstanceService) ListInstanceDatabase(ctx context.Context, request *v1p
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
-		if instanceMessage, err = s.convertInstanceToInstanceMessage(instanceID, request.Instance); err != nil {
+		if instanceMessage, err = convertInstanceToInstanceMessage(instanceID, request.Instance); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	} else {
@@ -133,7 +131,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		return nil, err
 	}
 
-	instanceMessage, err := s.convertInstanceToInstanceMessage(request.InstanceId, request.Instance)
+	instanceMessage, err := convertInstanceToInstanceMessage(request.InstanceId, request.Instance)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -227,17 +225,13 @@ func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataS
 	if dataSource.GetId() == "" {
 		return status.Errorf(codes.InvalidArgument, "data source id is required")
 	}
-	password, err := common.Unobfuscate(dataSource.GetObfuscatedPassword(), s.secret)
-	if err != nil {
-		return status.Error(codes.Internal, err.Error())
-	}
 
 	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureExternalSecretManager, instance); err != nil {
 		missingFeatureError := status.Error(codes.PermissionDenied, err.Error())
 		if dataSource.GetExternalSecret() != nil {
 			return missingFeatureError
 		}
-		if ok, _ := secret.GetExternalSecretURL(password); !ok {
+		if ok, _ := secret.GetExternalSecretURL(dataSource.GetPassword()); !ok {
 			return nil
 		}
 		return missingFeatureError
@@ -298,7 +292,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		case "external_link":
 			patch.Metadata.ExternalLink = request.Instance.ExternalLink
 		case "data_sources":
-			dataSources, err := s.convertV1DataSources(request.Instance.DataSources)
+			dataSources, err := convertV1DataSources(request.Instance.DataSources)
 			if err != nil {
 				return nil, status.Error(codes.InvalidArgument, err.Error())
 			}
@@ -645,7 +639,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, status.Errorf(codes.InvalidArgument, "only support adding read-only data source")
 	}
 
-	dataSource, err := s.convertV1DataSource(request.DataSource)
+	dataSource, err := convertV1DataSource(request.DataSource)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to convert data source")
 	}
@@ -748,13 +742,13 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		case "username":
 			dataSource.Username = request.DataSource.Username
 		case "password":
-			dataSource.ObfuscatedPassword = common.Obfuscate(request.DataSource.Password, s.secret)
+			dataSource.Password = request.DataSource.Password
 		case "ssl_ca":
-			dataSource.ObfuscatedSslCa = common.Obfuscate(request.DataSource.SslCa, s.secret)
+			dataSource.SslCa = request.DataSource.SslCa
 		case "ssl_cert":
-			dataSource.ObfuscatedSslCert = common.Obfuscate(request.DataSource.SslCert, s.secret)
+			dataSource.SslCert = request.DataSource.SslCert
 		case "ssl_key":
-			dataSource.ObfuscatedSslKey = common.Obfuscate(request.DataSource.SslKey, s.secret)
+			dataSource.SslKey = request.DataSource.SslKey
 		case "host":
 			dataSource.Host = request.DataSource.Host
 		case "port":
@@ -779,13 +773,13 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			dataSource.SshUser = request.DataSource.SshUser
 			hasSSH = true
 		case "ssh_password":
-			dataSource.ObfuscatedSshPassword = common.Obfuscate(request.DataSource.SshPassword, s.secret)
+			dataSource.SshPassword = request.DataSource.SshPassword
 			hasSSH = true
 		case "ssh_private_key":
-			dataSource.ObfuscatedSshPrivateKey = common.Obfuscate(request.DataSource.SshPrivateKey, s.secret)
+			dataSource.SshPrivateKey = request.DataSource.SshPrivateKey
 			hasSSH = true
 		case "authentication_private_key":
-			dataSource.ObfuscatedAuthenticationPrivateKey = common.Obfuscate(request.DataSource.AuthenticationPrivateKey, s.secret)
+			dataSource.AuthenticationPrivateKey = request.DataSource.AuthenticationPrivateKey
 		case "external_secret":
 			externalSecret, err := convertV1DataSourceExternalSecret(request.DataSource.ExternalSecret)
 			if err != nil {
@@ -815,28 +809,16 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		case "master_username":
 			dataSource.MasterUsername = request.DataSource.MasterUsername
 		case "master_password":
-			dataSource.ObfuscatedMasterPassword = common.Obfuscate(request.DataSource.MasterPassword, s.secret)
-		case "iam_extension":
+			dataSource.MasterPassword = request.DataSource.MasterPassword
+		case "iam_extension", "client_secret_credential":
+			// TODO(zp): Remove the hack while frontend use new oneof artifact.
 			if v := request.DataSource.IamExtension; v != nil {
 				switch v := v.(type) {
 				case *v1pb.DataSource_ClientSecretCredential_:
-					v1ClientSecretCredential := v.ClientSecretCredential
-					v1ClientSecretCredential.ClientSecret = common.Obfuscate(v1ClientSecretCredential.ClientSecret, s.secret)
 					dataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{
-						ClientSecretCredential: s.convertV1ClientSecretCredential(v.ClientSecretCredential),
+						ClientSecretCredential: convertV1ClientSecretCredential(v.ClientSecretCredential),
 					}
 				default:
-				}
-			}
-		// TODO(zp): Remove the hack while frontend use new oneof artifact.
-		case "client_secret_credential":
-			if request.DataSource.GetClientSecretCredential() == nil {
-				dataSource.IamExtension = nil
-			} else {
-				v1ClientSecretCredential := request.DataSource.GetClientSecretCredential()
-				v1ClientSecretCredential.ClientSecret = common.Obfuscate(v1ClientSecretCredential.ClientSecret, s.secret)
-				dataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{
-					ClientSecretCredential: s.convertV1ClientSecretCredential(request.DataSource.GetClientSecretCredential()),
 				}
 			}
 		default:
@@ -1040,8 +1022,8 @@ func convertInstanceRoles(instance *store.InstanceMessage, roles []*storepb.Inst
 	return v1Roles
 }
 
-func (s *InstanceService) convertInstanceToInstanceMessage(instanceID string, instance *v1pb.Instance) (*store.InstanceMessage, error) {
-	datasources, err := s.convertV1DataSources(instance.DataSources)
+func convertInstanceToInstanceMessage(instanceID string, instance *v1pb.Instance) (*store.InstanceMessage, error) {
+	datasources, err := convertV1DataSources(instance.DataSources)
 	if err != nil {
 		return nil, err
 	}
@@ -1082,10 +1064,10 @@ func convertInstanceMessageToInstanceResource(instanceMessage *store.InstanceMes
 	}, nil
 }
 
-func (s *InstanceService) convertV1DataSources(dataSources []*v1pb.DataSource) ([]*storepb.DataSource, error) {
+func convertV1DataSources(dataSources []*v1pb.DataSource) ([]*storepb.DataSource, error) {
 	var values []*storepb.DataSource
 	for _, ds := range dataSources {
-		dataSource, err := s.convertV1DataSource(ds)
+		dataSource, err := convertV1DataSource(ds)
 		if err != nil {
 			return nil, err
 		}
@@ -1362,7 +1344,7 @@ func convertRedisType(redisType storepb.DataSource_RedisType) v1pb.DataSource_Re
 	return authenticationType
 }
 
-func (s *InstanceService) convertV1DataSource(dataSource *v1pb.DataSource) (*storepb.DataSource, error) {
+func convertV1DataSource(dataSource *v1pb.DataSource) (*storepb.DataSource, error) {
 	dsType, err := convertV1DataSourceType(dataSource.Type)
 	if err != nil {
 		return nil, err
@@ -1374,56 +1356,57 @@ func (s *InstanceService) convertV1DataSource(dataSource *v1pb.DataSource) (*sto
 	saslConfig := convertV1DataSourceSaslConfig(dataSource.SaslConfig)
 
 	storeDataSource := &storepb.DataSource{
-		Id:                                 dataSource.Id,
-		Type:                               dsType,
-		Username:                           dataSource.Username,
-		ObfuscatedPassword:                 common.Obfuscate(dataSource.Password, s.secret),
-		ObfuscatedSslCa:                    common.Obfuscate(dataSource.SslCa, s.secret),
-		ObfuscatedSslCert:                  common.Obfuscate(dataSource.SslCert, s.secret),
-		ObfuscatedSslKey:                   common.Obfuscate(dataSource.SslKey, s.secret),
-		Host:                               dataSource.Host,
-		Port:                               dataSource.Port,
-		Database:                           dataSource.Database,
-		Srv:                                dataSource.Srv,
-		AuthenticationDatabase:             dataSource.AuthenticationDatabase,
-		Sid:                                dataSource.Sid,
-		ServiceName:                        dataSource.ServiceName,
-		SshHost:                            dataSource.SshHost,
-		SshPort:                            dataSource.SshPort,
-		SshUser:                            dataSource.SshUser,
-		ObfuscatedSshPassword:              common.Obfuscate(dataSource.SshPassword, s.secret),
-		ObfuscatedSshPrivateKey:            common.Obfuscate(dataSource.SshPrivateKey, s.secret),
-		ObfuscatedAuthenticationPrivateKey: common.Obfuscate(dataSource.AuthenticationPrivateKey, s.secret),
-		ExternalSecret:                     externalSecret,
-		SaslConfig:                         saslConfig,
-		AuthenticationType:                 convertV1AuthenticationType(dataSource.AuthenticationType),
-		AdditionalAddresses:                convertAdditionalAddresses(dataSource.AdditionalAddresses),
-		ReplicaSet:                         dataSource.ReplicaSet,
-		DirectConnection:                   dataSource.DirectConnection,
-		Region:                             dataSource.Region,
-		WarehouseId:                        dataSource.WarehouseId,
-		UseSsl:                             dataSource.UseSsl,
-		RedisType:                          convertV1RedisType(dataSource.RedisType),
-		MasterName:                         dataSource.MasterName,
-		MasterUsername:                     dataSource.MasterUsername,
-		ObfuscatedMasterPassword:           common.Obfuscate(dataSource.MasterPassword, s.secret),
+		Id:                       dataSource.Id,
+		Type:                     dsType,
+		Username:                 dataSource.Username,
+		Password:                 dataSource.Password,
+		SslCa:                    dataSource.SslCa,
+		SslCert:                  dataSource.SslCert,
+		SslKey:                   dataSource.SslKey,
+		Host:                     dataSource.Host,
+		Port:                     dataSource.Port,
+		Database:                 dataSource.Database,
+		Srv:                      dataSource.Srv,
+		AuthenticationDatabase:   dataSource.AuthenticationDatabase,
+		Sid:                      dataSource.Sid,
+		ServiceName:              dataSource.ServiceName,
+		SshHost:                  dataSource.SshHost,
+		SshPort:                  dataSource.SshPort,
+		SshUser:                  dataSource.SshUser,
+		SshPassword:              dataSource.SshPassword,
+		SshPrivateKey:            dataSource.SshPrivateKey,
+		AuthenticationPrivateKey: dataSource.AuthenticationPrivateKey,
+		ExternalSecret:           externalSecret,
+		SaslConfig:               saslConfig,
+		AuthenticationType:       convertV1AuthenticationType(dataSource.AuthenticationType),
+		AdditionalAddresses:      convertAdditionalAddresses(dataSource.AdditionalAddresses),
+		ReplicaSet:               dataSource.ReplicaSet,
+		DirectConnection:         dataSource.DirectConnection,
+		Region:                   dataSource.Region,
+		WarehouseId:              dataSource.WarehouseId,
+		UseSsl:                   dataSource.UseSsl,
+		RedisType:                convertV1RedisType(dataSource.RedisType),
+		MasterName:               dataSource.MasterName,
+		MasterUsername:           dataSource.MasterUsername,
+		MasterPassword:           dataSource.MasterPassword,
 	}
-	if v := dataSource.GetClientSecretCredential(); v != nil {
-		v.ClientSecret = common.Obfuscate(v.ClientSecret, s.secret)
-		storeDataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{ClientSecretCredential: s.convertV1ClientSecretCredential(v)}
+	if v := dataSource.IamExtension; v != nil {
+		if _, ok := v.(*v1pb.DataSource_ClientSecretCredential_); !ok {
+			storeDataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{ClientSecretCredential: convertV1ClientSecretCredential(dataSource.GetClientSecretCredential())}
+		}
 	}
 
 	return storeDataSource, nil
 }
 
-func (s *InstanceService) convertV1ClientSecretCredential(credential *v1pb.DataSource_ClientSecretCredential) *storepb.DataSource_ClientSecretCredential {
+func convertV1ClientSecretCredential(credential *v1pb.DataSource_ClientSecretCredential) *storepb.DataSource_ClientSecretCredential {
 	if credential == nil {
 		return nil
 	}
 	return &storepb.DataSource_ClientSecretCredential{
-		TenantId:               credential.TenantId,
-		ClientId:               credential.ClientId,
-		ObfuscatedClientSecret: common.Obfuscate(credential.ClientSecret, s.secret),
+		TenantId:     credential.TenantId,
+		ClientId:     credential.ClientId,
+		ClientSecret: credential.ClientSecret,
 	}
 }
 
