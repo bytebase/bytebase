@@ -91,7 +91,7 @@ func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) 
 	return instances, nil
 }
 
-// CreateInstanceV2 creates the instance.
+// CreateInstanceV2 creates an instance.
 func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMessage) (*InstanceMessage, error) {
 	if err := validateDataSources(instanceCreate.Metadata); err != nil {
 		return nil, err
