@@ -139,12 +139,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 	}
 
 	if task.Type.ChangeDatabasePayload() {
-		var p storepb.TaskDatabaseUpdatePayload
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), &p); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal task payload")
-		}
-
-		if f := p.TaskReleaseSource.GetFile(); f != "" {
+		if f := task.Payload.GetTaskReleaseSource().GetFile(); f != "" {
 			project, release, _, err := common.GetProjectReleaseUIDFile(f)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to parse file %s", f)
@@ -530,8 +525,6 @@ func convertTaskType(t api.TaskType) storepb.ChangelogPayload_Type {
 		return storepb.ChangelogPayload_BASELINE
 	case api.TaskDatabaseSchemaUpdate:
 		return storepb.ChangelogPayload_MIGRATE
-	case api.TaskDatabaseSchemaUpdateSDL:
-		return storepb.ChangelogPayload_MIGRATE_SDL
 	case api.TaskDatabaseSchemaUpdateGhost:
 		return storepb.ChangelogPayload_MIGRATE_GHOST
 

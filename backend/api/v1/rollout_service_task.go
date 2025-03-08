@@ -8,7 +8,6 @@ import (
 	"log/slog"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -231,26 +230,20 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			return nil, errors.Wrap(err, "failed to create database creation sheet")
 		}
 
-		payload := &storepb.TaskDatabaseCreatePayload{
-			SpecId:        spec.Id,
-			CharacterSet:  c.CharacterSet,
-			TableName:     c.Table,
-			Collation:     c.Collation,
-			EnvironmentId: dbEnvironmentID,
-			DatabaseName:  databaseName,
-			SheetId:       int32(sheet.UID),
-		}
-		bytes, err := protojson.Marshal(payload)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create database creation task, unable to marshal payload")
-		}
-
 		v := &store.TaskMessage{
 			InstanceID:    instance.ResourceID,
 			DatabaseName:  &databaseName,
 			EnvironmentID: effectiveEnvironmentID,
 			Type:          api.TaskDatabaseCreate,
-			Payload:       string(bytes),
+			Payload: &storepb.TaskPayload{
+				SpecId:        spec.Id,
+				CharacterSet:  c.CharacterSet,
+				TableName:     c.Table,
+				Collation:     c.Collation,
+				EnvironmentId: dbEnvironmentID,
+				DatabaseName:  databaseName,
+				SheetId:       int32(sheet.UID),
+			},
 		}
 		if spec.EarliestAllowedTime.GetSeconds() > 0 {
 			t := spec.EarliestAllowedTime.AsTime()
@@ -312,7 +305,7 @@ func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spe
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 	}
-	payload := &storepb.TaskDatabaseDataExportPayload{
+	payload := &storepb.TaskPayload{
 		SpecId:  spec.Id,
 		SheetId: int32(sheetUID),
 		Format:  c.Format,
@@ -320,17 +313,12 @@ func getTaskCreatesFromExportDataConfig(ctx context.Context, s *store.Store, spe
 	if c.Password != nil {
 		payload.Password = *c.Password
 	}
-	bytes, err := protojson.Marshal(payload)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal task database data export payload")
-	}
-	payloadString := string(bytes)
 	taskCreate := &store.TaskMessage{
 		InstanceID:    database.InstanceID,
 		DatabaseName:  &database.DatabaseName,
 		EnvironmentID: database.EffectiveEnvironmentID,
 		Type:          api.TaskDatabaseDataExport,
-		Payload:       payloadString,
+		Payload:       payload,
 	}
 	if spec.EarliestAllowedTime.GetSeconds() > 0 {
 		t := spec.EarliestAllowedTime.AsTime()
@@ -368,24 +356,18 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 
 	switch c.Type {
 	case storepb.PlanConfig_ChangeDatabaseConfig_BASELINE:
-		payload := &storepb.TaskDatabaseUpdatePayload{
-			SpecId:        spec.Id,
-			SchemaVersion: c.SchemaVersion,
-			TaskReleaseSource: &storepb.TaskReleaseSource{
-				File: spec.SpecReleaseSource.GetFile(),
-			},
-		}
-		bytes, err := protojson.Marshal(payload)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal task database schema baseline payload")
-		}
-		payloadString := string(bytes)
 		taskCreate := &store.TaskMessage{
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
 			EnvironmentID: database.EffectiveEnvironmentID,
 			Type:          api.TaskDatabaseSchemaBaseline,
-			Payload:       payloadString,
+			Payload: &storepb.TaskPayload{
+				SpecId:        spec.Id,
+				SchemaVersion: c.SchemaVersion,
+				TaskReleaseSource: &storepb.TaskReleaseSource{
+					File: spec.SpecReleaseSource.GetFile(),
+				},
+			},
 		}
 		if spec.EarliestAllowedTime.GetSeconds() > 0 {
 			t := spec.EarliestAllowedTime.AsTime()
@@ -398,56 +380,19 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
-		payload := &storepb.TaskDatabaseUpdatePayload{
-			SpecId:        spec.Id,
-			SheetId:       int32(sheetUID),
-			SchemaVersion: c.SchemaVersion,
-			TaskReleaseSource: &storepb.TaskReleaseSource{
-				File: spec.SpecReleaseSource.GetFile(),
-			},
-		}
-		bytes, err := protojson.Marshal(payload)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal task database schema update payload")
-		}
-		payloadString := string(bytes)
 		taskCreate := &store.TaskMessage{
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
 			EnvironmentID: database.EffectiveEnvironmentID,
 			Type:          api.TaskDatabaseSchemaUpdate,
-			Payload:       payloadString,
-		}
-		if spec.EarliestAllowedTime.GetSeconds() > 0 {
-			t := spec.EarliestAllowedTime.AsTime()
-			taskCreate.EarliestAllowedAt = &t
-		}
-		return []*store.TaskMessage{taskCreate}, nil
-
-	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_SDL:
-		_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
-		}
-		payload := &storepb.TaskDatabaseUpdatePayload{
-			SpecId:        spec.Id,
-			SheetId:       int32(sheetUID),
-			SchemaVersion: c.SchemaVersion,
-			TaskReleaseSource: &storepb.TaskReleaseSource{
-				File: spec.SpecReleaseSource.GetFile(),
+			Payload: &storepb.TaskPayload{
+				SpecId:        spec.Id,
+				SheetId:       int32(sheetUID),
+				SchemaVersion: c.SchemaVersion,
+				TaskReleaseSource: &storepb.TaskReleaseSource{
+					File: spec.SpecReleaseSource.GetFile(),
+				},
 			},
-		}
-		bytes, err := protojson.Marshal(payload)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal database schema update SDL payload")
-		}
-		payloadString := string(bytes)
-		taskCreate := &store.TaskMessage{
-			InstanceID:    database.InstanceID,
-			DatabaseName:  &database.DatabaseName,
-			EnvironmentID: database.EffectiveEnvironmentID,
-			Type:          api.TaskDatabaseSchemaUpdateSDL,
-			Payload:       payloadString,
 		}
 		if spec.EarliestAllowedTime.GetSeconds() > 0 {
 			t := spec.EarliestAllowedTime.AsTime()
@@ -463,25 +408,20 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		if _, err := ghost.GetUserFlags(c.GhostFlags); err != nil {
 			return nil, errors.Wrapf(err, "invalid ghost flags %q", c.GhostFlags)
 		}
-		payload := &storepb.TaskDatabaseUpdatePayload{
-			SpecId:        spec.Id,
-			SheetId:       int32(sheetUID),
-			SchemaVersion: c.SchemaVersion,
-			Flags:         c.GhostFlags,
-			TaskReleaseSource: &storepb.TaskReleaseSource{
-				File: spec.SpecReleaseSource.GetFile(),
-			},
-		}
-		bytes, err := protojson.Marshal(payload)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal database schema update ghost payload")
-		}
 		taskCreate := &store.TaskMessage{
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
 			EnvironmentID: database.EffectiveEnvironmentID,
 			Type:          api.TaskDatabaseSchemaUpdateGhost,
-			Payload:       string(bytes),
+			Payload: &storepb.TaskPayload{
+				SpecId:        spec.Id,
+				SheetId:       int32(sheetUID),
+				SchemaVersion: c.SchemaVersion,
+				Flags:         c.GhostFlags,
+				TaskReleaseSource: &storepb.TaskReleaseSource{
+					File: spec.SpecReleaseSource.GetFile(),
+				},
+			},
 		}
 		if spec.EarliestAllowedTime.GetSeconds() > 0 {
 			t := spec.EarliestAllowedTime.AsTime()
@@ -498,26 +438,20 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		if c.GetPreUpdateBackupDetail().GetDatabase() != "" {
 			preUpdateBackupDetail.Database = c.GetPreUpdateBackupDetail().GetDatabase()
 		}
-		payload := &storepb.TaskDatabaseUpdatePayload{
-			SpecId:                spec.Id,
-			SheetId:               int32(sheetUID),
-			SchemaVersion:         c.SchemaVersion,
-			PreUpdateBackupDetail: preUpdateBackupDetail,
-			TaskReleaseSource: &storepb.TaskReleaseSource{
-				File: spec.SpecReleaseSource.GetFile(),
-			},
-		}
-		bytes, err := protojson.Marshal(payload)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to marshal database data update payload")
-		}
-		payloadString := string(bytes)
 		taskCreate := &store.TaskMessage{
 			InstanceID:    database.InstanceID,
 			DatabaseName:  &database.DatabaseName,
 			EnvironmentID: database.EffectiveEnvironmentID,
 			Type:          api.TaskDatabaseDataUpdate,
-			Payload:       payloadString,
+			Payload: &storepb.TaskPayload{
+				SpecId:                spec.Id,
+				SheetId:               int32(sheetUID),
+				SchemaVersion:         c.SchemaVersion,
+				PreUpdateBackupDetail: preUpdateBackupDetail,
+				TaskReleaseSource: &storepb.TaskReleaseSource{
+					File: spec.SpecReleaseSource.GetFile(),
+				},
+			},
 		}
 		if spec.EarliestAllowedTime.GetSeconds() > 0 {
 			t := spec.EarliestAllowedTime.AsTime()

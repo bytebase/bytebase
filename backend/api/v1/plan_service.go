@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -409,13 +408,8 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				}
 				tasksBySpecID := make(map[string][]*store.TaskMessage)
 				for _, task := range tasks {
-					var taskSpecID struct {
-						SpecID string `json:"specId"`
-					}
-					if err := json.Unmarshal([]byte(task.Payload), &taskSpecID); err != nil {
-						return nil, status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
-					}
-					tasksBySpecID[taskSpecID.SpecID] = append(tasksBySpecID[taskSpecID.SpecID], task)
+					specID := task.Payload.GetSpecId()
+					tasksBySpecID[specID] = append(tasksBySpecID[specID], task)
 				}
 				for _, task := range tasks {
 					doUpdate := false
@@ -423,13 +417,8 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						ID:        task.ID,
 						UpdaterID: user.ID,
 					}
-					var taskSpecID struct {
-						SpecID string `json:"specId"`
-					}
-					if err := json.Unmarshal([]byte(task.Payload), &taskSpecID); err != nil {
-						return nil, status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
-					}
-					spec, ok := updatedByID[taskSpecID.SpecID]
+					specID := task.Payload.GetSpecId()
+					spec, ok := updatedByID[specID]
 					if !ok {
 						continue
 					}
@@ -457,15 +446,11 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 							return nil
 						}
 
-						payload := &storepb.TaskDatabaseUpdatePayload{}
-						if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
-							return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
-						}
 						newFlags := spec.GetChangeDatabaseConfig().GetGhostFlags()
 						if _, err := ghost.GetUserFlags(newFlags); err != nil {
 							return status.Errorf(codes.InvalidArgument, "invalid ghost flags %q, error %v", newFlags, err)
 						}
-						oldFlags := payload.Flags
+						oldFlags := task.Payload.GetFlags()
 						if cmp.Equal(oldFlags, newFlags) {
 							return nil
 						}
@@ -520,10 +505,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						if newTaskType != api.TaskDatabaseDataUpdate {
 							return nil
 						}
-						payload := &storepb.TaskDatabaseUpdatePayload{}
-						if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
-							return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
-						}
 						config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
 						if !ok {
 							return nil
@@ -533,12 +514,12 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						// Format: instances/{instance}/databases/{database}
 						var backupDatabaseName *string
 						if config.ChangeDatabaseConfig.PreUpdateBackupDetail == nil {
-							if payload.PreUpdateBackupDetail.Database != "" {
+							if task.Payload.GetPreUpdateBackupDetail().GetDatabase() != "" {
 								emptyValue := ""
 								backupDatabaseName = &emptyValue
 							}
 						} else {
-							if config.ChangeDatabaseConfig.PreUpdateBackupDetail.Database != payload.PreUpdateBackupDetail.Database {
+							if config.ChangeDatabaseConfig.PreUpdateBackupDetail.Database != task.Payload.GetPreUpdateBackupDetail().GetDatabase() {
 								backupDatabaseName = &config.ChangeDatabaseConfig.PreUpdateBackupDetail.Database
 							}
 						}
@@ -586,14 +567,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					// Sheet
 					if err := func() error {
 						switch newTaskType {
-						case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhost, api.TaskDatabaseDataUpdate, api.TaskDatabaseDataExport:
-							var taskPayload struct {
-								SheetID int `json:"sheetId"`
-							}
-							if err := json.Unmarshal([]byte(task.Payload), &taskPayload); err != nil {
-								return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
-							}
-
+						case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateGhost, api.TaskDatabaseDataUpdate, api.TaskDatabaseDataExport:
 							var oldSheetName string
 							if newTaskType == api.TaskDatabaseDataExport {
 								config, ok := spec.Config.(*v1pb.Plan_Spec_ExportDataConfig)
@@ -612,7 +586,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 							if err != nil {
 								return status.Errorf(codes.Internal, "failed to get sheet id from %q, error: %v", oldSheetName, err)
 							}
-							if taskPayload.SheetID == sheetUID {
+							if int(task.Payload.GetSheetId()) == sheetUID {
 								return nil
 							}
 
@@ -629,7 +603,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 							taskPatch.SheetID = &sheet.UID
 
 							if issue != nil {
-								oldSheet := common.FormatSheet(issue.Project.ResourceID, taskPayload.SheetID)
+								oldSheet := common.FormatSheet(issue.Project.ResourceID, int(task.Payload.GetSheetId()))
 								newSheet := common.FormatSheet(issue.Project.ResourceID, sheet.UID)
 								issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
 									IssueUID: issue.UID,
@@ -655,20 +629,16 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						if newTaskType != api.TaskDatabaseDataExport {
 							return nil
 						}
-						payload := &storepb.TaskDatabaseDataExportPayload{}
-						if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
-							return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
-						}
 						config, ok := spec.Config.(*v1pb.Plan_Spec_ExportDataConfig)
 						if !ok {
 							return nil
 						}
-						if config.ExportDataConfig.Format != convertExportFormat(payload.Format) {
+						if config.ExportDataConfig.Format != convertExportFormat(task.Payload.GetFormat()) {
 							format := convertToExportFormat(config.ExportDataConfig.Format)
 							taskPatch.ExportFormat = &format
 							doUpdate = true
 						}
-						if (config.ExportDataConfig.Password == nil && payload.Password != "") || (config.ExportDataConfig.Password != nil && *config.ExportDataConfig.Password != payload.Password) {
+						if (config.ExportDataConfig.Password == nil && task.Payload.GetPassword() != "") || (config.ExportDataConfig.Password != nil && *config.ExportDataConfig.Password != task.Payload.GetPassword()) {
 							taskPatch.ExportPassword = config.ExportDataConfig.Password
 							doUpdate = true
 						}
@@ -680,17 +650,11 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					// version
 					if err := func() error {
 						switch newTaskType {
-						case api.TaskDatabaseSchemaBaseline, api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhost, api.TaskDatabaseDataUpdate:
+						case api.TaskDatabaseSchemaBaseline, api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateGhost, api.TaskDatabaseDataUpdate:
 						default:
 							return nil
 						}
-						var taskPayload struct {
-							SchemaVersion string `json:"schemaVersion"`
-						}
-						if err := json.Unmarshal([]byte(task.Payload), &taskPayload); err != nil {
-							return errors.Wrapf(err, "failed to unmarshal task payload")
-						}
-						if v := spec.GetChangeDatabaseConfig().GetSchemaVersion(); v != "" && v != taskPayload.SchemaVersion {
+						if v := spec.GetChangeDatabaseConfig().GetSchemaVersion(); v != "" && v != task.Payload.GetSchemaVersion() {
 							taskPatch.SchemaVersion = &v
 							doUpdate = true
 						}
@@ -1418,8 +1382,6 @@ func getTaskTypeFromSpec(spec *v1pb.Plan_Spec) (api.TaskType, error) {
 			return api.TaskDatabaseSchemaUpdate, nil
 		case v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST:
 			return api.TaskDatabaseSchemaUpdateGhost, nil
-		case v1pb.Plan_ChangeDatabaseConfig_MIGRATE_SDL:
-			return api.TaskDatabaseSchemaUpdateSDL, nil
 		}
 	case *v1pb.Plan_Spec_ExportDataConfig:
 		return api.TaskDatabaseDataExport, nil
