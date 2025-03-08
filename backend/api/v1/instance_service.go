@@ -779,13 +779,13 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			dataSource.SshUser = request.DataSource.SshUser
 			hasSSH = true
 		case "ssh_password":
-			dataSource.SshObfuscatedPassword = common.Obfuscate(request.DataSource.SshPassword, s.secret)
+			dataSource.ObfuscatedSshPassword = common.Obfuscate(request.DataSource.SshPassword, s.secret)
 			hasSSH = true
 		case "ssh_private_key":
-			dataSource.SshObfuscatedPrivateKey = common.Obfuscate(request.DataSource.SshPrivateKey, s.secret)
+			dataSource.ObfuscatedSshPrivateKey = common.Obfuscate(request.DataSource.SshPrivateKey, s.secret)
 			hasSSH = true
 		case "authentication_private_key":
-			dataSource.AuthenticationPrivateKeyObfuscated = common.Obfuscate(request.DataSource.AuthenticationPrivateKey, s.secret)
+			dataSource.ObfuscatedAuthenticationPrivateKey = common.Obfuscate(request.DataSource.AuthenticationPrivateKey, s.secret)
 		case "external_secret":
 			externalSecret, err := convertV1DataSourceExternalSecret(request.DataSource.ExternalSecret)
 			if err != nil {
@@ -815,7 +815,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		case "master_username":
 			dataSource.MasterUsername = request.DataSource.MasterUsername
 		case "master_password":
-			dataSource.MasterObfuscatedPassword = common.Obfuscate(request.DataSource.MasterPassword, s.secret)
+			dataSource.ObfuscatedMasterPassword = common.Obfuscate(request.DataSource.MasterPassword, s.secret)
 		case "iam_extension":
 			if v := request.DataSource.IamExtension; v != nil {
 				switch v := v.(type) {
@@ -823,7 +823,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 					v1ClientSecretCredential := v.ClientSecretCredential
 					v1ClientSecretCredential.ClientSecret = common.Obfuscate(v1ClientSecretCredential.ClientSecret, s.secret)
 					dataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{
-						ClientSecretCredential: convertV1ClientSecretCredential(v.ClientSecretCredential),
+						ClientSecretCredential: s.convertV1ClientSecretCredential(v.ClientSecretCredential),
 					}
 				default:
 				}
@@ -836,7 +836,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 				v1ClientSecretCredential := request.DataSource.GetClientSecretCredential()
 				v1ClientSecretCredential.ClientSecret = common.Obfuscate(v1ClientSecretCredential.ClientSecret, s.secret)
 				dataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{
-					ClientSecretCredential: convertV1ClientSecretCredential(request.DataSource.GetClientSecretCredential()),
+					ClientSecretCredential: s.convertV1ClientSecretCredential(request.DataSource.GetClientSecretCredential()),
 				}
 			}
 		default:
@@ -1203,9 +1203,8 @@ func convertClientSecretCredential(clientSecretCredential *storepb.DataSource_Cl
 		return nil
 	}
 	return &v1pb.DataSource_ClientSecretCredential{
-		TenantId:     clientSecretCredential.TenantId,
-		ClientId:     clientSecretCredential.ClientId,
-		ClientSecret: clientSecretCredential.ClientSecret,
+		TenantId: clientSecretCredential.TenantId,
+		ClientId: clientSecretCredential.ClientId,
 	}
 }
 
@@ -1392,9 +1391,9 @@ func (s *InstanceService) convertV1DataSource(dataSource *v1pb.DataSource) (*sto
 		SshHost:                            dataSource.SshHost,
 		SshPort:                            dataSource.SshPort,
 		SshUser:                            dataSource.SshUser,
-		SshObfuscatedPassword:              common.Obfuscate(dataSource.SshPassword, s.secret),
-		SshObfuscatedPrivateKey:            common.Obfuscate(dataSource.SshPrivateKey, s.secret),
-		AuthenticationPrivateKeyObfuscated: common.Obfuscate(dataSource.AuthenticationPrivateKey, s.secret),
+		ObfuscatedSshPassword:              common.Obfuscate(dataSource.SshPassword, s.secret),
+		ObfuscatedSshPrivateKey:            common.Obfuscate(dataSource.SshPrivateKey, s.secret),
+		ObfuscatedAuthenticationPrivateKey: common.Obfuscate(dataSource.AuthenticationPrivateKey, s.secret),
 		ExternalSecret:                     externalSecret,
 		SaslConfig:                         saslConfig,
 		AuthenticationType:                 convertV1AuthenticationType(dataSource.AuthenticationType),
@@ -1407,24 +1406,24 @@ func (s *InstanceService) convertV1DataSource(dataSource *v1pb.DataSource) (*sto
 		RedisType:                          convertV1RedisType(dataSource.RedisType),
 		MasterName:                         dataSource.MasterName,
 		MasterUsername:                     dataSource.MasterUsername,
-		MasterObfuscatedPassword:           common.Obfuscate(dataSource.MasterPassword, s.secret),
+		ObfuscatedMasterPassword:           common.Obfuscate(dataSource.MasterPassword, s.secret),
 	}
 	if v := dataSource.GetClientSecretCredential(); v != nil {
 		v.ClientSecret = common.Obfuscate(v.ClientSecret, s.secret)
-		storeDataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{ClientSecretCredential: convertV1ClientSecretCredential(v)}
+		storeDataSource.IamExtension = &storepb.DataSource_ClientSecretCredential_{ClientSecretCredential: s.convertV1ClientSecretCredential(v)}
 	}
 
 	return storeDataSource, nil
 }
 
-func convertV1ClientSecretCredential(credential *v1pb.DataSource_ClientSecretCredential) *storepb.DataSource_ClientSecretCredential {
+func (s *InstanceService) convertV1ClientSecretCredential(credential *v1pb.DataSource_ClientSecretCredential) *storepb.DataSource_ClientSecretCredential {
 	if credential == nil {
 		return nil
 	}
 	return &storepb.DataSource_ClientSecretCredential{
-		TenantId:     credential.TenantId,
-		ClientId:     credential.ClientId,
-		ClientSecret: credential.ClientSecret,
+		TenantId:               credential.TenantId,
+		ClientId:               credential.ClientId,
+		ObfuscatedClientSecret: common.Obfuscate(credential.ClientSecret, s.secret),
 	}
 }
 

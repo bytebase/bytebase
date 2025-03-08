@@ -17,6 +17,7 @@ import (
 type Store struct {
 	db      *DB
 	profile *config.Profile
+	Secret  string
 
 	userIDCache          *lru.Cache[int, *UserMessage]
 	userEmailCache       *lru.Cache[string, *UserMessage]

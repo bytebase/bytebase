@@ -6771,6 +6771,13 @@ This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.</p></t
                 </tr>
               
                 <tr>
+                  <td>password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>obfuscated_password</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -6785,6 +6792,13 @@ This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.</p></t
                 </tr>
               
                 <tr>
+                  <td>ssl_ca</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>obfuscated_ssl_ca</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -6792,7 +6806,21 @@ This is an optional style described in the OAuth2 RFC 6749 section 2.3.1.</p></t
                 </tr>
               
                 <tr>
+                  <td>ssl_cert</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>obfuscated_ssl_cert</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ssl_key</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -6885,25 +6913,46 @@ The hostname of the SSH server agent. </p></td>
                 </tr>
               
                 <tr>
-                  <td>ssh_obfuscated_password</td>
+                  <td>ssh_password</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The password to login the server. If it&#39;s empty string, no password is required. </p></td>
                 </tr>
               
                 <tr>
-                  <td>ssh_obfuscated_private_key</td>
+                  <td>obfuscated_ssh_password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ssh_private_key</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). </p></td>
                 </tr>
               
                 <tr>
-                  <td>authentication_private_key_obfuscated</td>
+                  <td>obfuscated_ssh_private_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>authentication_private_key</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required.
 Used for authentication when connecting to the data source. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>obfuscated_authentication_private_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
                 <tr>
@@ -6977,7 +7026,14 @@ Used for authentication when connecting to the data source. </p></td>
                 </tr>
               
                 <tr>
-                  <td>master_obfuscated_password</td>
+                  <td>master_password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>obfuscated_master_password</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -7069,6 +7125,13 @@ For PostgreSQL HA, this can be used to set target_session_attrs=read-write </p><
               
                 <tr>
                   <td>client_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>obfuscated_client_secret</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
