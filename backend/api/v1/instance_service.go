@@ -828,6 +828,8 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 				default:
 				}
 			}
+		case "extra_connection_parameters":
+			dataSource.ExtraConnectionParameters = request.DataSource.ExtraConnectionParameters
 		// TODO(zp): Remove the hack while frontend use new oneof artifact.
 		case "client_secret_credential":
 			if request.DataSource.GetClientSecretCredential() == nil {
@@ -1165,25 +1167,26 @@ func convertDataSources(dataSources []*storepb.DataSource) ([]*v1pb.DataSource, 
 			Type:     dataSourceType,
 			Username: ds.GetUsername(),
 			// We don't return the password and SSLs on reads.
-			Host:                   ds.GetHost(),
-			Port:                   ds.GetPort(),
-			Database:               ds.GetDatabase(),
-			Srv:                    ds.GetSrv(),
-			AuthenticationDatabase: ds.GetAuthenticationDatabase(),
-			Sid:                    ds.GetSid(),
-			ServiceName:            ds.GetServiceName(),
-			ExternalSecret:         externalSecret,
-			AuthenticationType:     authenticationType,
-			SaslConfig:             convertDataSourceSaslConfig(ds.GetSaslConfig()),
-			AdditionalAddresses:    convertDataSourceAddresses(ds.GetAdditionalAddresses()),
-			ReplicaSet:             ds.GetReplicaSet(),
-			DirectConnection:       ds.GetDirectConnection(),
-			Region:                 ds.GetRegion(),
-			WarehouseId:            ds.GetWarehouseId(),
-			UseSsl:                 ds.GetUseSsl(),
-			RedisType:              convertRedisType(ds.GetRedisType()),
-			MasterName:             ds.GetMasterName(),
-			MasterUsername:         ds.GetMasterUsername(),
+			Host:                      ds.GetHost(),
+			Port:                      ds.GetPort(),
+			Database:                  ds.GetDatabase(),
+			Srv:                       ds.GetSrv(),
+			AuthenticationDatabase:    ds.GetAuthenticationDatabase(),
+			Sid:                       ds.GetSid(),
+			ServiceName:               ds.GetServiceName(),
+			ExternalSecret:            externalSecret,
+			AuthenticationType:        authenticationType,
+			SaslConfig:                convertDataSourceSaslConfig(ds.GetSaslConfig()),
+			AdditionalAddresses:       convertDataSourceAddresses(ds.GetAdditionalAddresses()),
+			ReplicaSet:                ds.GetReplicaSet(),
+			DirectConnection:          ds.GetDirectConnection(),
+			Region:                    ds.GetRegion(),
+			WarehouseId:               ds.GetWarehouseId(),
+			UseSsl:                    ds.GetUseSsl(),
+			RedisType:                 convertRedisType(ds.GetRedisType()),
+			MasterName:                ds.GetMasterName(),
+			MasterUsername:            ds.GetMasterUsername(),
+			ExtraConnectionParameters: ds.GetExtraConnectionParameters(),
 		}
 		if clientSecretCredential := convertClientSecretCredential(ds.GetClientSecretCredential()); clientSecretCredential != nil {
 			clientSecretCredential.ClientSecret = ""
@@ -1408,6 +1411,7 @@ func (s *InstanceService) convertV1DataSource(dataSource *v1pb.DataSource) (*sto
 		MasterName:                         dataSource.MasterName,
 		MasterUsername:                     dataSource.MasterUsername,
 		MasterObfuscatedPassword:           common.Obfuscate(dataSource.MasterPassword, s.secret),
+		ExtraConnectionParameters:          dataSource.ExtraConnectionParameters,
 	}
 	if v := dataSource.GetClientSecretCredential(); v != nil {
 		v.ClientSecret = common.Obfuscate(v.ClientSecret, s.secret)

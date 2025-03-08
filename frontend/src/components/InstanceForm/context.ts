@@ -106,7 +106,19 @@ export const provideInstanceFormContext = (baseContext: {
   });
 
   const resetDataSource = () => {
+    // Extract the edit state to get fresh copies of the data sources
     dataSourceEditState.value = extractDataSourceEditState(instance.value);
+    
+    // Explicitly preserve the extraConnectionParameters for each data source after reset
+    if (instance.value?.dataSources) {
+      instance.value.dataSources.forEach((originalDs) => {
+        const ds = dataSourceEditState.value.dataSources.find(d => d.id === originalDs.id);
+        if (ds && originalDs.extraConnectionParameters) {
+          // Ensure we have a fresh copy of the extraConnectionParameters
+          ds.extraConnectionParameters = { ...originalDs.extraConnectionParameters };
+        }
+      });
+    }
   };
   const missingFeature = ref<FeatureType | undefined>(undefined);
 
@@ -246,6 +258,8 @@ export const provideInstanceFormContext = (baseContext: {
     edit: EditDataSource
   ): DataSource => {
     const { showDatabase, showSSH, showSSL } = specs;
+    
+    // Clone the data source without the properties that should be excluded
     const ds = cloneDeep(
       omit(
         edit,
@@ -259,6 +273,12 @@ export const provideInstanceFormContext = (baseContext: {
         "updateAuthenticationPrivateKey"
       )
     );
+    
+    // IMPORTANT: Always ensure extraConnectionParameters is explicitly preserved
+    // This is necessary because cloneDeep may not correctly handle protobuf map fields
+    ds.extraConnectionParameters = edit.extraConnectionParameters 
+      ? { ...edit.extraConnectionParameters } 
+      : {};
     if (edit.updatedPassword) {
       ds.password = edit.updatedPassword;
     }
