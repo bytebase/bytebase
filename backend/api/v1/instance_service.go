@@ -815,7 +815,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		case "master_username":
 			dataSource.MasterUsername = request.DataSource.MasterUsername
 		case "master_password":
-			dataSource.MasterObfuscatedPassword = common.Obfuscate(request.DataSource.MasterPassword, s.secret)
+			dataSource.ObfuscatedMasterPassword = common.Obfuscate(request.DataSource.MasterPassword, s.secret)
 		case "iam_extension":
 			if v := request.DataSource.IamExtension; v != nil {
 				switch v := v.(type) {
@@ -1406,7 +1406,7 @@ func (s *InstanceService) convertV1DataSource(dataSource *v1pb.DataSource) (*sto
 		RedisType:                          convertV1RedisType(dataSource.RedisType),
 		MasterName:                         dataSource.MasterName,
 		MasterUsername:                     dataSource.MasterUsername,
-		MasterObfuscatedPassword:           common.Obfuscate(dataSource.MasterPassword, s.secret),
+		ObfuscatedMasterPassword:           common.Obfuscate(dataSource.MasterPassword, s.secret),
 	}
 	if v := dataSource.GetClientSecretCredential(); v != nil {
 		v.ClientSecret = common.Obfuscate(v.ClientSecret, s.secret)
