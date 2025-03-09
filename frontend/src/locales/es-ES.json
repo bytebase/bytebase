@@ -1712,6 +1712,10 @@
     "vertical-display": "Pantalla vertical",
     "no-history-found": "No se encontró historial",
     "search-history": "Historial de búsqueda",
+    "binary-format": "Binary format (0s and 1s)",
+    "hex-format": "Hexadecimal format",
+    "boolean-format": "Boolean format",
+    "text-format": "Text format",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
         "title": "¿Cerrar la hoja no guardada?",
