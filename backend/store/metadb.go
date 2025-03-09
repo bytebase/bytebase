@@ -24,6 +24,9 @@ func GetEmbeddedConnectionConfig(datastorePort int, pgUser string) dbdriver.Conn
 			Port:     fmt.Sprintf("%d", datastorePort),
 			Database: pgUser,
 		},
+		ConnectionContext: dbdriver.ConnectionContext{
+			DatabaseName: pgUser,
+		},
 		MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 	}
 }
