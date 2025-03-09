@@ -65,7 +65,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 
 	return &storepb.DatabaseSchemaMetadata{
-		Name: d.config.Database,
+		Name: d.config.ConnectionContext.DatabaseName,
 		Schemas: []*storepb.SchemaMetadata{
 			schemaMetadata,
 		},

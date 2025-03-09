@@ -12,9 +12,6 @@ import (
 	"time"
 	"unicode"
 
-	"cloud.google.com/go/cloudsqlconn"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/cockroachdb/cockroach-go/v2/crdb"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -68,17 +65,7 @@ func newDriver(config db.DriverConfig) db.Driver {
 
 // Open opens a Postgres driver.
 func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	var pgxConnConfig *pgx.ConnConfig
-	var err error
-
-	switch config.AuthenticationType {
-	case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
-		pgxConnConfig, err = getCloudSQLConnectionConfig(ctx, config)
-	case storepb.DataSource_AWS_RDS_IAM:
-		pgxConnConfig, err = getRDSConnectionConfig(ctx, config)
-	default:
-		pgxConnConfig, err = getCockroachConnectionConfig(config)
-	}
+	pgxConnConfig, err := getCockroachConnectionConfig(config)
 	if err != nil {
 		return nil, err
 	}
@@ -99,9 +86,9 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 		}
 	}
 
-	driver.databaseName = config.Database
-	if config.Database == "" {
-		databaseName, cfg, err := guessDSN(pgxConnConfig, config.Username)
+	driver.databaseName = config.ConnectionContext.DatabaseName
+	if config.ConnectionContext.DatabaseName == "" {
+		databaseName, cfg, err := guessDSN(pgxConnConfig, config.DataSource.Username)
 		if err != nil {
 			return nil, err
 		}
@@ -149,15 +136,15 @@ func getRoutingIDFromCockroachCloudURL(host string) string {
 func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) {
 	// Require username for Postgres, as the guessDSN 1st guess is to use the username as the connecting database
 	// if database name is not explicitly specified.
-	if config.Username == "" {
+	if config.DataSource.Username == "" {
 		return nil, errors.Errorf("user must be set")
 	}
 
-	if config.Host == "" {
+	if config.DataSource.Host == "" {
 		return nil, errors.Errorf("host must be set")
 	}
 
-	if config.Port == "" {
+	if config.DataSource.Port == "" {
 		return nil, errors.Errorf("port must be set")
 	}
 
@@ -166,11 +153,11 @@ func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, 
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
-	connStr := fmt.Sprintf("host=%s port=%s", config.Host, config.Port)
+	connStr := fmt.Sprintf("host=%s port=%s", config.DataSource.Host, config.DataSource.Port)
 	sslMode := getSSLMode(config.TLSConfig, config.SSHConfig)
 	connStr += fmt.Sprintf(" sslmode=%s", sslMode)
 
-	routingID := getRoutingIDFromCockroachCloudURL(config.Host)
+	routingID := getRoutingIDFromCockroachCloudURL(config.DataSource.Host)
 	if routingID != "" {
 		connStr += fmt.Sprintf(" options='--cluster=%s'", routingID)
 	}
@@ -179,9 +166,9 @@ func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, 
 	if err != nil {
 		return nil, err
 	}
-	connConfig.Config.User = config.Username
+	connConfig.Config.User = config.DataSource.Username
 	connConfig.Config.Password = config.Password
-	connConfig.Config.Database = config.Database
+	connConfig.Config.Database = config.ConnectionContext.DatabaseName
 
 	cfg, err := config.TLSConfig.GetSslConfig()
 	if err != nil {
@@ -190,65 +177,12 @@ func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, 
 	if cfg != nil {
 		connConfig.TLSConfig = cfg
 	}
-	if config.ReadOnly {
+	if config.ConnectionContext.ReadOnly {
 		connConfig.RuntimeParams["default_transaction_read_only"] = "true"
 		connConfig.RuntimeParams["application_name"] = "bytebase"
 	}
 
 	return connConfig, nil
-}
-
-func getRDSConnectionPassword(ctx context.Context, conf db.ConnectionConfig) (string, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		return "", errors.Wrap(err, "load aws config failed")
-	}
-
-	dbEndpoint := fmt.Sprintf("%s:%s", conf.Host, conf.Port)
-	authenticationToken, err := auth.BuildAuthToken(
-		ctx, dbEndpoint, conf.Region, conf.Username, cfg.Credentials)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to create authentication token")
-	}
-
-	return authenticationToken, nil
-}
-
-// getRDSConnectionConfig returns connection config for AWS RDS.
-//
-// https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAMDBAuth.Connecting.Go.html
-func getRDSConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx.ConnConfig, error) {
-	password, err := getRDSConnectionPassword(ctx, conf)
-	if err != nil {
-		return nil, err
-	}
-
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s application_name=bytebase",
-		conf.Host, conf.Port, conf.Username, password, conf.Database,
-	)
-	return pgx.ParseConfig(dsn)
-}
-
-// getCloudSQLConnectionConfig returns config for Cloud SQL connector.
-// refs:
-// https://cloud.google.com/sql/docs/postgres/connect-connectors
-// https://github.com/GoogleCloudPlatform/golang-samples/blob/main/cloudsql/postgres/database-sql/cloudsql.go
-func getCloudSQLConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx.ConnConfig, error) {
-	d, err := cloudsqlconn.NewDialer(ctx, cloudsqlconn.WithIAMAuthN())
-	if err != nil {
-		return nil, err
-	}
-
-	dsn := fmt.Sprintf("user=%s database=%s application_name=bytebase", conf.Username, conf.Database)
-	config, err := pgx.ParseConfig(dsn)
-	if err != nil {
-		return nil, err
-	}
-	config.DialFunc = func(ctx context.Context, _, _ string) (net.Conn, error) {
-		return d.Dial(ctx, conf.Host)
-	}
-
-	return config, nil
 }
 
 type noDeadlineConn struct{ net.Conn }

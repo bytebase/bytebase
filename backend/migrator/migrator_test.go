@@ -2,6 +2,7 @@ package migrator
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"path"
 	"testing"
@@ -151,29 +152,29 @@ func TestMigrationCompatibility(t *testing.T) {
 	stopInstance := postgres.SetupTestInstance(pgBinDir, t.TempDir(), pgPort)
 	defer stopInstance()
 
-	ctx := context.Background()
-	connCfg := dbdriver.ConnectionConfig{
-		Username:             postgres.TestPgUser,
-		Password:             "",
-		Host:                 common.GetPostgresSocketDir(),
-		Port:                 fmt.Sprintf("%d", pgPort),
-		MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
-	}
-	defaultDriver, err := dbdriver.Open(
-		ctx,
-		storepb.Engine_POSTGRES,
-		dbdriver.DriverConfig{DbBinDir: pgBinDir},
-		connCfg,
-	)
-	require.NoError(t, err)
-	defer defaultDriver.Close(ctx)
-	// Create a database with release latest schema.
 	databaseName := "hidb"
-	_, err = defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName), dbdriver.ExecuteOptions{CreateDatabase: true})
+	ctx := context.Background()
+	defaultDB, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%d user=%s database=postgres", common.GetPostgresSocketDir(), pgPort, postgres.TestPgUser))
+	require.NoError(t, err)
+	defer func() {
+		defaultDB.Close()
+	}()
+	_, err = defaultDB.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s", databaseName))
 	require.NoError(t, err)
 
-	metadataConnConfig := connCfg
-	metadataConnConfig.Database = databaseName
+	metadataConnConfig := dbdriver.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Username: postgres.TestPgUser,
+			Password: "",
+			Host:     common.GetPostgresSocketDir(),
+			Port:     fmt.Sprintf("%d", pgPort),
+		},
+		Password: "",
+		ConnectionContext: dbdriver.ConnectionContext{
+			DatabaseName: databaseName,
+		},
+	}
+
 	metadataDriver, err := dbdriver.Open(
 		ctx,
 		storepb.Engine_POSTGRES,

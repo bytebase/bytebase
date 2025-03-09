@@ -22,42 +22,57 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 	}{
 		{
 			connConfig: db.ConnectionConfig{
-				Host:                 "localhost",
-				Port:                 "27017",
-				Username:             "",
-				Password:             "",
-				MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
+				DataSource: &storepb.DataSource{
+					Host:     "localhost",
+					Port:     "27017",
+					Username: "",
+					Password: "",
+				},
 			},
 			want: "mongodb://localhost:27017/?appName=bytebase&authSource=admin",
 		},
 		{
 			connConfig: db.ConnectionConfig{
-				Host:                 "localhost",
-				Port:                 "27017",
-				Username:             "",
-				Password:             "",
-				DirectConnection:     true,
-				MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
+				DataSource: &storepb.DataSource{
+					Host:             "localhost",
+					Port:             "27017",
+					Username:         "",
+					Password:         "",
+					DirectConnection: true,
+				},
+				Password:         "",
+				DirectConnection: true,
 			},
 			want: "mongodb://localhost:27017/?appName=bytebase&authSource=admin&directConnection=true",
 		},
 		{
 			connConfig: db.ConnectionConfig{
-				Host:                 "localhost",
-				Port:                 "27017",
-				Username:             "",
-				Password:             "",
-				Database:             "sampleDB",
-				MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
+				DataSource: &storepb.DataSource{
+					Host:     "localhost",
+					Port:     "27017",
+					Username: "",
+					Password: "",
+				},
+				ConnectionContext: db.ConnectionContext{
+					DatabaseName: "sampleDB",
+				},
+				Password: "",
 			},
 			want: "mongodb://localhost:27017/sampleDB?appName=bytebase&authSource=admin",
 		},
 		{
 			connConfig: db.ConnectionConfig{
-				Host:                 "cluster0.sample.mongodb.net",
-				Username:             "bytebase",
+				DataSource: &storepb.DataSource{
+					Host:     "cluster0.sample.mongodb.net",
+					Port:     "",
+					Username: "bytebase",
+					Password: "passwd",
+					Srv:      true,
+				},
+				ConnectionContext: db.ConnectionContext{
+					DatabaseName: "sampleDB",
+				},
 				Password:             "passwd",
-				Database:             "sampleDB",
 				SRV:                  true,
 				MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 			},
@@ -65,22 +80,18 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 		},
 		{
 			connConfig: db.ConnectionConfig{
-				Host:                   "cluster0.sample.mongodb.net",
-				Username:               "bytebase",
+				DataSource: &storepb.DataSource{
+					Host:                   "cluster0.sample.mongodb.net",
+					Port:                   "",
+					Username:               "bytebase",
+					Password:               "passwd",
+					AuthenticationDatabase: "admin",
+					Srv:                    true,
+				},
+				ConnectionContext: db.ConnectionContext{
+					DatabaseName: "sampleDB",
+				},
 				Password:               "passwd",
-				Database:               "sampleDB",
-				AuthenticationDatabase: "",
-				SRV:                    true,
-				MaximumSQLResultSize:   common.DefaultMaximumSQLResultSize,
-			},
-			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?appName=bytebase&authSource=admin",
-		},
-		{
-			connConfig: db.ConnectionConfig{
-				Host:                   "cluster0.sample.mongodb.net",
-				Username:               "bytebase",
-				Password:               "passwd",
-				Database:               "sampleDB",
 				AuthenticationDatabase: "admin",
 				SRV:                    true,
 				MaximumSQLResultSize:   common.DefaultMaximumSQLResultSize,
@@ -89,13 +100,17 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 		},
 		{
 			connConfig: db.ConnectionConfig{
-				Host:                   "node1.cluster0.sample.mongodb.net",
-				Port:                   "27017",
-				Username:               "bytebase",
-				Password:               "passwd",
-				Database:               "sampleDB",
-				AuthenticationDatabase: "admin",
-				SRV:                    false,
+				DataSource: &storepb.DataSource{
+					Host:                   "node1.cluster0.sample.mongodb.net",
+					Port:                   "27017",
+					Username:               "bytebase",
+					Password:               "passwd",
+					AuthenticationDatabase: "admin",
+				},
+				ConnectionContext: db.ConnectionContext{
+					DatabaseName: "sampleDB",
+				},
+				Password: "passwd",
 				AdditionalAddresses: []*storepb.DataSource_Address{
 					{Host: "node2.cluster0.sample.mongodb.net", Port: "27017"},
 					{Host: "node3.cluster0.sample.mongodb.net", Port: "27017"},
