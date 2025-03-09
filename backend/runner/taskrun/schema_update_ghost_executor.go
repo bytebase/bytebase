@@ -88,11 +88,7 @@ func (exec *SchemaUpdateGhostExecutor) RunOnce(ctx context.Context, driverCtx co
 			return common.Errorf(common.Internal, "admin data source not found for instance %s", instance.ResourceID)
 		}
 
-		secret, err := exec.s.GetSecret(execCtx)
-		if err != nil {
-			return err
-		}
-		migrationContext, err := ghost.NewMigrationContext(ctx, task.ID, database, adminDataSource, secret, tableName, fmt.Sprintf("_%d", time.Now().Unix()), execStatement, false, flags, 10000000)
+		migrationContext, err := ghost.NewMigrationContext(ctx, task.ID, database, adminDataSource, tableName, fmt.Sprintf("_%d", time.Now().Unix()), execStatement, false, flags, 10000000)
 		if err != nil {
 			return errors.Wrap(err, "failed to init migrationContext for gh-ost")
 		}
