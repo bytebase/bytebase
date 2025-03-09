@@ -62,7 +62,6 @@ func configureGrpcRouters(
 		stores,
 		licenseService,
 		metricReporter,
-		secret,
 		stateCfg,
 		dbFactory,
 		schemaSyncer,
