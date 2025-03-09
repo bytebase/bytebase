@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -75,7 +76,7 @@ func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) 
 	}
 	defer tx.Rollback()
 
-	instances, err := listInstanceImplV2(ctx, tx, find)
+	instances, err := s.listInstanceImplV2(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +91,7 @@ func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) 
 	return instances, nil
 }
 
-// CreateInstanceV2 creates the instance.
+// CreateInstanceV2 creates an instance.
 func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMessage) (*InstanceMessage, error) {
 	if err := validateDataSources(instanceCreate.Metadata); err != nil {
 		return nil, err
@@ -102,11 +103,14 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 	}
 	defer tx.Rollback()
 
-	metadataBytes, err := protojson.Marshal(instanceCreate.Metadata)
+	redacted, err := s.obfuscateInstance(ctx, instanceCreate.Metadata)
 	if err != nil {
 		return nil, err
 	}
-
+	metadataBytes, err := protojson.Marshal(redacted)
+	if err != nil {
+		return nil, err
+	}
 	var environment *string
 	if instanceCreate.EnvironmentID != "" {
 		environment = &instanceCreate.EnvironmentID
@@ -148,11 +152,14 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		set, args = append(set, fmt.Sprintf(`deleted = $%d`, len(args)+1)), append(args, *v)
 	}
 	if v := patch.Metadata; v != nil {
-		metadata, err := protojson.Marshal(v)
+		redacted, err := s.obfuscateInstance(ctx, v)
 		if err != nil {
 			return nil, err
 		}
-
+		metadata, err := protojson.Marshal(redacted)
+		if err != nil {
+			return nil, err
+		}
 		set, args = append(set, fmt.Sprintf("metadata = $%d", len(args)+1)), append(args, metadata)
 	}
 	where, args = append(where, fmt.Sprintf("resource_id = $%d", len(args)+1)), append(args, patch.ResourceID)
@@ -163,56 +170,25 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 	}
 	defer tx.Rollback()
 
-	instance := &InstanceMessage{}
 	if len(set) > 0 {
 		query := fmt.Sprintf(`
 			UPDATE instance
 			SET `+strings.Join(set, ", ")+`
 			WHERE %s
-			RETURNING
-				resource_id,
-				environment,
-				deleted,
-				metadata
 		`, strings.Join(where, " AND "))
-		var environment sql.NullString
-		var metadata []byte
-		if err := tx.QueryRowContext(ctx, query, args...).Scan(
-			&instance.ResourceID,
-			&environment,
-			&instance.Deleted,
-			&metadata,
-		); err != nil {
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 			return nil, err
 		}
-		if environment.Valid {
-			instance.EnvironmentID = environment.String
-		}
-
-		var instanceMetadata storepb.Instance
-		if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, &instanceMetadata); err != nil {
-			return nil, err
-		}
-		instance.Metadata = &instanceMetadata
-	} else {
-		existedInstance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{
-			ResourceID: &patch.ResourceID,
-		})
-		if err != nil {
-			return nil, err
-		}
-		instance = existedInstance
 	}
-
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
-	s.instanceCache.Add(getInstanceCacheKey(instance.ResourceID), instance)
-	return instance, nil
+	s.instanceCache.Remove(getInstanceCacheKey(patch.ResourceID))
+	return s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &patch.ResourceID})
 }
 
-func listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
+func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
@@ -256,11 +232,14 @@ func listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstanceMessage) 
 			instanceMessage.EnvironmentID = environment.String
 		}
 
-		var instanceMetadata storepb.Instance
-		if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, &instanceMetadata); err != nil {
+		instanceMetadata := &storepb.Instance{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, instanceMetadata); err != nil {
 			return nil, err
 		}
-		instanceMessage.Metadata = &instanceMetadata
+		if err := s.unObfuscateInstance(ctx, instanceMetadata); err != nil {
+			return nil, err
+		}
+		instanceMessage.Metadata = instanceMetadata
 		instanceMessages = append(instanceMessages, &instanceMessage)
 	}
 	if err := rows.Err(); err != nil {
@@ -314,4 +293,109 @@ func IsObjectCaseSensitive(instance *InstanceMessage) bool {
 	default:
 		return true
 	}
+}
+
+func (s *Store) obfuscateInstance(ctx context.Context, instance *storepb.Instance) (*storepb.Instance, error) {
+	secret, err := s.GetSecret(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	redacted, ok := proto.Clone(instance).(*storepb.Instance)
+	if !ok {
+		return nil, errors.Errorf("failed to clone instance")
+	}
+	for _, ds := range redacted.GetDataSources() {
+		ds.ObfuscatedPassword = common.Obfuscate(ds.GetPassword(), secret)
+		ds.Password = ""
+		ds.ObfuscatedSslCa = common.Obfuscate(ds.GetSslCa(), secret)
+		ds.SslCa = ""
+		ds.ObfuscatedSslCert = common.Obfuscate(ds.GetSslCert(), secret)
+		ds.SslCert = ""
+		ds.ObfuscatedSslKey = common.Obfuscate(ds.GetSslKey(), secret)
+		ds.SslKey = ""
+		ds.ObfuscatedSshPassword = common.Obfuscate(ds.GetSshPassword(), secret)
+		ds.SshPassword = ""
+		ds.ObfuscatedSshPrivateKey = common.Obfuscate(ds.GetSshPrivateKey(), secret)
+		ds.SshPrivateKey = ""
+		ds.ObfuscatedAuthenticationPrivateKey = common.Obfuscate(ds.GetAuthenticationPrivateKey(), secret)
+		ds.AuthenticationPrivateKey = ""
+		ds.ObfuscatedMasterPassword = common.Obfuscate(ds.GetMasterPassword(), secret)
+		ds.MasterPassword = ""
+		if ds.IamExtension != nil {
+			if _, ok := ds.IamExtension.(*storepb.DataSource_ClientSecretCredential_); ok {
+				ds.GetClientSecretCredential().ObfuscatedClientSecret = common.Obfuscate(ds.GetClientSecretCredential().GetClientSecret(), secret)
+				ds.GetClientSecretCredential().ClientSecret = ""
+			}
+		}
+	}
+	return redacted, nil
+}
+
+func (s *Store) unObfuscateInstance(ctx context.Context, instance *storepb.Instance) error {
+	secret, err := s.GetSecret(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, ds := range instance.GetDataSources() {
+		password, err := common.Unobfuscate(ds.GetObfuscatedPassword(), secret)
+		if err != nil {
+			return err
+		}
+		ds.Password = password
+
+		sslCa, err := common.Unobfuscate(ds.GetObfuscatedSslCa(), secret)
+		if err != nil {
+			return err
+		}
+		ds.SslCa = sslCa
+
+		sslCert, err := common.Unobfuscate(ds.GetObfuscatedSslCert(), secret)
+		if err != nil {
+			return err
+		}
+		ds.SslCert = sslCert
+
+		sslKey, err := common.Unobfuscate(ds.GetObfuscatedSslKey(), secret)
+		if err != nil {
+			return err
+		}
+		ds.SslKey = sslKey
+
+		sshPassword, err := common.Unobfuscate(ds.GetObfuscatedSshPassword(), secret)
+		if err != nil {
+			return err
+		}
+		ds.SshPassword = sshPassword
+
+		sshPrivateKey, err := common.Unobfuscate(ds.GetObfuscatedSshPrivateKey(), secret)
+		if err != nil {
+			return err
+		}
+		ds.SshPrivateKey = sshPrivateKey
+
+		authenticationPrivateKey, err := common.Unobfuscate(ds.GetObfuscatedAuthenticationPrivateKey(), secret)
+		if err != nil {
+			return err
+		}
+		ds.AuthenticationPrivateKey = authenticationPrivateKey
+
+		masterPassword, err := common.Unobfuscate(ds.GetObfuscatedMasterPassword(), secret)
+		if err != nil {
+			return err
+		}
+		ds.MasterPassword = masterPassword
+
+		if ds.IamExtension != nil {
+			if _, ok := ds.IamExtension.(*storepb.DataSource_ClientSecretCredential_); ok {
+				clientSecret, err := common.Unobfuscate(ds.GetClientSecretCredential().GetObfuscatedClientSecret(), secret)
+				if err != nil {
+					return err
+				}
+				ds.GetClientSecretCredential().ClientSecret = clientSecret
+			}
+		}
+	}
+	return nil
 }
