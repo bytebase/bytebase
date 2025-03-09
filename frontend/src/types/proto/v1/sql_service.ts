@@ -177,7 +177,10 @@ export interface QueryResult {
     | undefined;
   /** The query statement for the result. */
   statement: string;
-  postgresError?: QueryResult_PostgresError | undefined;
+  detailedError?:
+    | //
+    { $case: "postgresError"; value: QueryResult_PostgresError }
+    | undefined;
 }
 
 /**
@@ -210,36 +213,45 @@ export interface QueryRow {
 }
 
 export interface RowValue {
-  nullValue?: NullValue | undefined;
-  boolValue?: boolean | undefined;
-  bytesValue?: Uint8Array | undefined;
-  doubleValue?: number | undefined;
-  floatValue?: number | undefined;
-  int32Value?: number | undefined;
-  int64Value?: Long | undefined;
-  stringValue?: string | undefined;
-  uint32Value?: number | undefined;
-  uint64Value?:
-    | Long
+  kind?:
+    | //
+    { $case: "nullValue"; value: NullValue }
+    | //
+    { $case: "boolValue"; value: boolean }
+    | //
+    { $case: "bytesValue"; value: Uint8Array }
+    | //
+    { $case: "doubleValue"; value: number }
+    | //
+    { $case: "floatValue"; value: number }
+    | //
+    { $case: "int32Value"; value: number }
+    | //
+    { $case: "int64Value"; value: Long }
+    | //
+    { $case: "stringValue"; value: string }
+    | //
+    { $case: "uint32Value"; value: number }
+    | //
+    { $case: "uint64Value"; value: Long }
+    | //
+    /** value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only. */
+    { $case: "valueValue"; value: any | undefined }
+    | //
+    /**
+     * timestamp_value is used for the timestamp without time zone data type,
+     * meaning it only includes the timestamp without any time zone or location
+     * info. Although it may be expressed as a UTC value, it should be seen as a
+     * timestamp missing location context.
+     */
+    { $case: "timestampValue"; value: RowValue_Timestamp }
+    | //
+    /**
+     * timestamp_tz_value is used for the timestamptz data type, which
+     * accurately represents the timestamp with location information.
+     */
+    { $case: "timestampTzValue"; value: RowValue_TimestampTZ }
     | undefined;
-  /** value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only. */
-  valueValue?:
-    | any
-    | undefined;
-  /**
-   * timestamp_value is used for the timestamp without time zone data type,
-   * meaning it only includes the timestamp without any time zone or location
-   * info. Although it may be expressed as a UTC value, it should be seen as a
-   * timestamp missing location context.
-   */
-  timestampValue?:
-    | RowValue_Timestamp
-    | undefined;
-  /**
-   * timestamp_tz_value is used for the timestamptz data type, which
-   * accurately represents the timestamp with location information.
-   */
-  timestampTzValue?: RowValue_TimestampTZ | undefined;
 }
 
 export interface RowValue_Timestamp {
@@ -1166,7 +1178,7 @@ function createBaseQueryResult(): QueryResult {
     error: "",
     latency: undefined,
     statement: "",
-    postgresError: undefined,
+    detailedError: undefined,
   };
 }
 
@@ -1203,8 +1215,10 @@ export const QueryResult: MessageFns<QueryResult> = {
     if (message.statement !== "") {
       writer.uint32(66).string(message.statement);
     }
-    if (message.postgresError !== undefined) {
-      QueryResult_PostgresError.encode(message.postgresError, writer.uint32(74).fork()).join();
+    switch (message.detailedError?.$case) {
+      case "postgresError":
+        QueryResult_PostgresError.encode(message.detailedError.value, writer.uint32(74).fork()).join();
+        break;
     }
     return writer;
   },
@@ -1313,7 +1327,10 @@ export const QueryResult: MessageFns<QueryResult> = {
             break;
           }
 
-          message.postgresError = QueryResult_PostgresError.decode(reader, reader.uint32());
+          message.detailedError = {
+            $case: "postgresError",
+            value: QueryResult_PostgresError.decode(reader, reader.uint32()),
+          };
           continue;
         }
       }
@@ -1342,7 +1359,9 @@ export const QueryResult: MessageFns<QueryResult> = {
       error: isSet(object.error) ? globalThis.String(object.error) : "",
       latency: isSet(object.latency) ? Duration.fromJSON(object.latency) : undefined,
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
-      postgresError: isSet(object.postgresError) ? QueryResult_PostgresError.fromJSON(object.postgresError) : undefined,
+      detailedError: isSet(object.postgresError)
+        ? { $case: "postgresError", value: QueryResult_PostgresError.fromJSON(object.postgresError) }
+        : undefined,
     };
   },
 
@@ -1375,8 +1394,8 @@ export const QueryResult: MessageFns<QueryResult> = {
     if (message.statement !== "") {
       obj.statement = message.statement;
     }
-    if (message.postgresError !== undefined) {
-      obj.postgresError = QueryResult_PostgresError.toJSON(message.postgresError);
+    if (message.detailedError?.$case === "postgresError") {
+      obj.postgresError = QueryResult_PostgresError.toJSON(message.detailedError.value);
     }
     return obj;
   },
@@ -1399,9 +1418,16 @@ export const QueryResult: MessageFns<QueryResult> = {
       ? Duration.fromPartial(object.latency)
       : undefined;
     message.statement = object.statement ?? "";
-    message.postgresError = (object.postgresError !== undefined && object.postgresError !== null)
-      ? QueryResult_PostgresError.fromPartial(object.postgresError)
-      : undefined;
+    if (
+      object.detailedError?.$case === "postgresError" &&
+      object.detailedError?.value !== undefined &&
+      object.detailedError?.value !== null
+    ) {
+      message.detailedError = {
+        $case: "postgresError",
+        value: QueryResult_PostgresError.fromPartial(object.detailedError.value),
+      };
+    }
     return message;
   },
 };
@@ -1801,63 +1827,51 @@ export const QueryRow: MessageFns<QueryRow> = {
 };
 
 function createBaseRowValue(): RowValue {
-  return {
-    nullValue: undefined,
-    boolValue: undefined,
-    bytesValue: undefined,
-    doubleValue: undefined,
-    floatValue: undefined,
-    int32Value: undefined,
-    int64Value: undefined,
-    stringValue: undefined,
-    uint32Value: undefined,
-    uint64Value: undefined,
-    valueValue: undefined,
-    timestampValue: undefined,
-    timestampTzValue: undefined,
-  };
+  return { kind: undefined };
 }
 
 export const RowValue: MessageFns<RowValue> = {
   encode(message: RowValue, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.nullValue !== undefined) {
-      writer.uint32(8).int32(nullValueToNumber(message.nullValue));
-    }
-    if (message.boolValue !== undefined) {
-      writer.uint32(16).bool(message.boolValue);
-    }
-    if (message.bytesValue !== undefined) {
-      writer.uint32(26).bytes(message.bytesValue);
-    }
-    if (message.doubleValue !== undefined) {
-      writer.uint32(33).double(message.doubleValue);
-    }
-    if (message.floatValue !== undefined) {
-      writer.uint32(45).float(message.floatValue);
-    }
-    if (message.int32Value !== undefined) {
-      writer.uint32(48).int32(message.int32Value);
-    }
-    if (message.int64Value !== undefined) {
-      writer.uint32(56).int64(message.int64Value.toString());
-    }
-    if (message.stringValue !== undefined) {
-      writer.uint32(66).string(message.stringValue);
-    }
-    if (message.uint32Value !== undefined) {
-      writer.uint32(72).uint32(message.uint32Value);
-    }
-    if (message.uint64Value !== undefined) {
-      writer.uint32(80).uint64(message.uint64Value.toString());
-    }
-    if (message.valueValue !== undefined) {
-      Value.encode(Value.wrap(message.valueValue), writer.uint32(90).fork()).join();
-    }
-    if (message.timestampValue !== undefined) {
-      RowValue_Timestamp.encode(message.timestampValue, writer.uint32(98).fork()).join();
-    }
-    if (message.timestampTzValue !== undefined) {
-      RowValue_TimestampTZ.encode(message.timestampTzValue, writer.uint32(106).fork()).join();
+    switch (message.kind?.$case) {
+      case "nullValue":
+        writer.uint32(8).int32(nullValueToNumber(message.kind.value));
+        break;
+      case "boolValue":
+        writer.uint32(16).bool(message.kind.value);
+        break;
+      case "bytesValue":
+        writer.uint32(26).bytes(message.kind.value);
+        break;
+      case "doubleValue":
+        writer.uint32(33).double(message.kind.value);
+        break;
+      case "floatValue":
+        writer.uint32(45).float(message.kind.value);
+        break;
+      case "int32Value":
+        writer.uint32(48).int32(message.kind.value);
+        break;
+      case "int64Value":
+        writer.uint32(56).int64(message.kind.value.toString());
+        break;
+      case "stringValue":
+        writer.uint32(66).string(message.kind.value);
+        break;
+      case "uint32Value":
+        writer.uint32(72).uint32(message.kind.value);
+        break;
+      case "uint64Value":
+        writer.uint32(80).uint64(message.kind.value.toString());
+        break;
+      case "valueValue":
+        Value.encode(Value.wrap(message.kind.value), writer.uint32(90).fork()).join();
+        break;
+      case "timestampValue":
+        RowValue_Timestamp.encode(message.kind.value, writer.uint32(98).fork()).join();
+        break;
+      case "timestampTzValue":
+        RowValue_TimestampTZ.encode(message.kind.value, writer.uint32(106).fork()).join();
+        break;
     }
     return writer;
   },
@@ -1874,7 +1888,7 @@ export const RowValue: MessageFns<RowValue> = {
             break;
           }
 
-          message.nullValue = nullValueFromJSON(reader.int32());
+          message.kind = { $case: "nullValue", value: nullValueFromJSON(reader.int32()) };
           continue;
         }
         case 2: {
@@ -1882,7 +1896,7 @@ export const RowValue: MessageFns<RowValue> = {
             break;
           }
 
-          message.boolValue = reader.bool();
+          message.kind = { $case: "boolValue", value: reader.bool() };
           continue;
         }
         case 3: {
@@ -1890,7 +1904,7 @@ export const RowValue: MessageFns<RowValue> = {
             break;
           }
 
-          message.bytesValue = reader.bytes();
+          message.kind = { $case: "bytesValue", value: reader.bytes() };
           continue;
         }
         case 4: {
@@ -1898,7 +1912,7 @@ export const RowValue: MessageFns<RowValue> = {
             break;
           }
 
-          message.doubleValue = reader.double();
+          message.kind = { $case: "doubleValue", value: reader.double() };
           continue;
         }
         case 5: {
@@ -1906,7 +1920,7 @@ export const RowValue: MessageFns<RowValue> = {
             break;
           }
 
-          message.floatValue = reader.float();
+          message.kind = { $case: "floatValue", value: reader.float() };
           continue;
         }
         case 6: {
@@ -1914,7 +1928,7 @@ export const RowValue: MessageFns<RowValue> = {
             break;
           }
 
-          message.int32Value = reader.int32();
+          message.kind = { $case: "int32Value", value: reader.int32() };
           continue;
         }
         case 7: {
@@ -1922,7 +1936,7 @@ export const RowValue: MessageFns<RowValue> = {
             break;
           }
 
-          message.int64Value = Long.fromString(reader.int64().toString());
+          message.kind = { $case: "int64Value", value: Long.fromString(reader.int64().toString()) };
           continue;
         }
         case 8: {
@@ -1930,7 +1944,7 @@ export const RowValue: MessageFns<RowValue> = {
             break;
           }
 
-          message.stringValue = reader.string();
+          message.kind = { $case: "stringValue", value: reader.string() };
           continue;
         }
         case 9: {
@@ -1938,7 +1952,7 @@ export const RowValue: MessageFns<RowValue> = {
             break;
           }
 
-          message.uint32Value = reader.uint32();
+          message.kind = { $case: "uint32Value", value: reader.uint32() };
           continue;
         }
         case 10: {
@@ -1946,7 +1960,7 @@ export const RowValue: MessageFns<RowValue> = {
             break;
           }
 
-          message.uint64Value = Long.fromString(reader.uint64().toString(), true);
+          message.kind = { $case: "uint64Value", value: Long.fromString(reader.uint64().toString(), true) };
           continue;
         }
         case 11: {
@@ -1954,7 +1968,7 @@ export const RowValue: MessageFns<RowValue> = {
             break;
           }
 
-          message.valueValue = Value.unwrap(Value.decode(reader, reader.uint32()));
+          message.kind = { $case: "valueValue", value: Value.unwrap(Value.decode(reader, reader.uint32())) };
           continue;
         }
         case 12: {
@@ -1962,7 +1976,7 @@ export const RowValue: MessageFns<RowValue> = {
             break;
           }
 
-          message.timestampValue = RowValue_Timestamp.decode(reader, reader.uint32());
+          message.kind = { $case: "timestampValue", value: RowValue_Timestamp.decode(reader, reader.uint32()) };
           continue;
         }
         case 13: {
@@ -1970,7 +1984,7 @@ export const RowValue: MessageFns<RowValue> = {
             break;
           }
 
-          message.timestampTzValue = RowValue_TimestampTZ.decode(reader, reader.uint32());
+          message.kind = { $case: "timestampTzValue", value: RowValue_TimestampTZ.decode(reader, reader.uint32()) };
           continue;
         }
       }
@@ -1984,64 +1998,76 @@ export const RowValue: MessageFns<RowValue> = {
 
   fromJSON(object: any): RowValue {
     return {
-      nullValue: isSet(object.nullValue) ? nullValueFromJSON(object.nullValue) : undefined,
-      boolValue: isSet(object.boolValue) ? globalThis.Boolean(object.boolValue) : undefined,
-      bytesValue: isSet(object.bytesValue) ? bytesFromBase64(object.bytesValue) : undefined,
-      doubleValue: isSet(object.doubleValue) ? globalThis.Number(object.doubleValue) : undefined,
-      floatValue: isSet(object.floatValue) ? globalThis.Number(object.floatValue) : undefined,
-      int32Value: isSet(object.int32Value) ? globalThis.Number(object.int32Value) : undefined,
-      int64Value: isSet(object.int64Value) ? Long.fromValue(object.int64Value) : undefined,
-      stringValue: isSet(object.stringValue) ? globalThis.String(object.stringValue) : undefined,
-      uint32Value: isSet(object.uint32Value) ? globalThis.Number(object.uint32Value) : undefined,
-      uint64Value: isSet(object.uint64Value) ? Long.fromValue(object.uint64Value) : undefined,
-      valueValue: isSet(object?.valueValue) ? object.valueValue : undefined,
-      timestampValue: isSet(object.timestampValue) ? RowValue_Timestamp.fromJSON(object.timestampValue) : undefined,
-      timestampTzValue: isSet(object.timestampTzValue)
-        ? RowValue_TimestampTZ.fromJSON(object.timestampTzValue)
+      kind: isSet(object.nullValue)
+        ? { $case: "nullValue", value: nullValueFromJSON(object.nullValue) }
+        : isSet(object.boolValue)
+        ? { $case: "boolValue", value: globalThis.Boolean(object.boolValue) }
+        : isSet(object.bytesValue)
+        ? { $case: "bytesValue", value: bytesFromBase64(object.bytesValue) }
+        : isSet(object.doubleValue)
+        ? { $case: "doubleValue", value: globalThis.Number(object.doubleValue) }
+        : isSet(object.floatValue)
+        ? { $case: "floatValue", value: globalThis.Number(object.floatValue) }
+        : isSet(object.int32Value)
+        ? { $case: "int32Value", value: globalThis.Number(object.int32Value) }
+        : isSet(object.int64Value)
+        ? { $case: "int64Value", value: Long.fromValue(object.int64Value) }
+        : isSet(object.stringValue)
+        ? { $case: "stringValue", value: globalThis.String(object.stringValue) }
+        : isSet(object.uint32Value)
+        ? { $case: "uint32Value", value: globalThis.Number(object.uint32Value) }
+        : isSet(object.uint64Value)
+        ? { $case: "uint64Value", value: Long.fromValue(object.uint64Value) }
+        : isSet(object.valueValue)
+        ? { $case: "valueValue", value: object.valueValue }
+        : isSet(object.timestampValue)
+        ? { $case: "timestampValue", value: RowValue_Timestamp.fromJSON(object.timestampValue) }
+        : isSet(object.timestampTzValue)
+        ? { $case: "timestampTzValue", value: RowValue_TimestampTZ.fromJSON(object.timestampTzValue) }
         : undefined,
     };
   },
 
   toJSON(message: RowValue): unknown {
     const obj: any = {};
-    if (message.nullValue !== undefined) {
-      obj.nullValue = nullValueToJSON(message.nullValue);
+    if (message.kind?.$case === "nullValue") {
+      obj.nullValue = nullValueToJSON(message.kind.value);
     }
-    if (message.boolValue !== undefined) {
-      obj.boolValue = message.boolValue;
+    if (message.kind?.$case === "boolValue") {
+      obj.boolValue = message.kind.value;
     }
-    if (message.bytesValue !== undefined) {
-      obj.bytesValue = base64FromBytes(message.bytesValue);
+    if (message.kind?.$case === "bytesValue") {
+      obj.bytesValue = base64FromBytes(message.kind.value);
     }
-    if (message.doubleValue !== undefined) {
-      obj.doubleValue = message.doubleValue;
+    if (message.kind?.$case === "doubleValue") {
+      obj.doubleValue = message.kind.value;
     }
-    if (message.floatValue !== undefined) {
-      obj.floatValue = message.floatValue;
+    if (message.kind?.$case === "floatValue") {
+      obj.floatValue = message.kind.value;
     }
-    if (message.int32Value !== undefined) {
-      obj.int32Value = Math.round(message.int32Value);
+    if (message.kind?.$case === "int32Value") {
+      obj.int32Value = Math.round(message.kind.value);
     }
-    if (message.int64Value !== undefined) {
-      obj.int64Value = (message.int64Value || Long.ZERO).toString();
+    if (message.kind?.$case === "int64Value") {
+      obj.int64Value = (message.kind.value || Long.ZERO).toString();
     }
-    if (message.stringValue !== undefined) {
-      obj.stringValue = message.stringValue;
+    if (message.kind?.$case === "stringValue") {
+      obj.stringValue = message.kind.value;
     }
-    if (message.uint32Value !== undefined) {
-      obj.uint32Value = Math.round(message.uint32Value);
+    if (message.kind?.$case === "uint32Value") {
+      obj.uint32Value = Math.round(message.kind.value);
     }
-    if (message.uint64Value !== undefined) {
-      obj.uint64Value = (message.uint64Value || Long.UZERO).toString();
+    if (message.kind?.$case === "uint64Value") {
+      obj.uint64Value = (message.kind.value || Long.UZERO).toString();
     }
-    if (message.valueValue !== undefined) {
-      obj.valueValue = message.valueValue;
+    if (message.kind?.$case === "valueValue") {
+      obj.valueValue = message.kind.value;
     }
-    if (message.timestampValue !== undefined) {
-      obj.timestampValue = RowValue_Timestamp.toJSON(message.timestampValue);
+    if (message.kind?.$case === "timestampValue") {
+      obj.timestampValue = RowValue_Timestamp.toJSON(message.kind.value);
     }
-    if (message.timestampTzValue !== undefined) {
-      obj.timestampTzValue = RowValue_TimestampTZ.toJSON(message.timestampTzValue);
+    if (message.kind?.$case === "timestampTzValue") {
+      obj.timestampTzValue = RowValue_TimestampTZ.toJSON(message.kind.value);
     }
     return obj;
   },
@@ -2051,27 +2077,45 @@ export const RowValue: MessageFns<RowValue> = {
   },
   fromPartial(object: DeepPartial<RowValue>): RowValue {
     const message = createBaseRowValue();
-    message.nullValue = object.nullValue ?? undefined;
-    message.boolValue = object.boolValue ?? undefined;
-    message.bytesValue = object.bytesValue ?? undefined;
-    message.doubleValue = object.doubleValue ?? undefined;
-    message.floatValue = object.floatValue ?? undefined;
-    message.int32Value = object.int32Value ?? undefined;
-    message.int64Value = (object.int64Value !== undefined && object.int64Value !== null)
-      ? Long.fromValue(object.int64Value)
-      : undefined;
-    message.stringValue = object.stringValue ?? undefined;
-    message.uint32Value = object.uint32Value ?? undefined;
-    message.uint64Value = (object.uint64Value !== undefined && object.uint64Value !== null)
-      ? Long.fromValue(object.uint64Value)
-      : undefined;
-    message.valueValue = object.valueValue ?? undefined;
-    message.timestampValue = (object.timestampValue !== undefined && object.timestampValue !== null)
-      ? RowValue_Timestamp.fromPartial(object.timestampValue)
-      : undefined;
-    message.timestampTzValue = (object.timestampTzValue !== undefined && object.timestampTzValue !== null)
-      ? RowValue_TimestampTZ.fromPartial(object.timestampTzValue)
-      : undefined;
+    if (object.kind?.$case === "nullValue" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "nullValue", value: object.kind.value };
+    }
+    if (object.kind?.$case === "boolValue" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "boolValue", value: object.kind.value };
+    }
+    if (object.kind?.$case === "bytesValue" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "bytesValue", value: object.kind.value };
+    }
+    if (object.kind?.$case === "doubleValue" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "doubleValue", value: object.kind.value };
+    }
+    if (object.kind?.$case === "floatValue" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "floatValue", value: object.kind.value };
+    }
+    if (object.kind?.$case === "int32Value" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "int32Value", value: object.kind.value };
+    }
+    if (object.kind?.$case === "int64Value" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "int64Value", value: Long.fromValue(object.kind.value) };
+    }
+    if (object.kind?.$case === "stringValue" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "stringValue", value: object.kind.value };
+    }
+    if (object.kind?.$case === "uint32Value" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "uint32Value", value: object.kind.value };
+    }
+    if (object.kind?.$case === "uint64Value" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "uint64Value", value: Long.fromValue(object.kind.value) };
+    }
+    if (object.kind?.$case === "valueValue" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "valueValue", value: object.kind.value };
+    }
+    if (object.kind?.$case === "timestampValue" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "timestampValue", value: RowValue_Timestamp.fromPartial(object.kind.value) };
+    }
+    if (object.kind?.$case === "timestampTzValue" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "timestampTzValue", value: RowValue_TimestampTZ.fromPartial(object.kind.value) };
+    }
     return message;
   },
 };
@@ -4403,6 +4447,7 @@ type Builtin = Date | Function | Uint8Array | string | number | boolean | undefi
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string; value: unknown } ? { $case: T["$case"]; value?: DeepPartial<T["value"]> }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

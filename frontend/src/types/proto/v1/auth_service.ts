@@ -39,8 +39,12 @@ export interface LoginRequest {
 }
 
 export interface IdentityProviderContext {
-  oauth2Context?: OAuth2IdentityProviderContext | undefined;
-  oidcContext?: OIDCIdentityProviderContext | undefined;
+  context?:
+    | //
+    { $case: "oauth2Context"; value: OAuth2IdentityProviderContext }
+    | //
+    { $case: "oidcContext"; value: OIDCIdentityProviderContext }
+    | undefined;
 }
 
 export interface OAuth2IdentityProviderContext {
@@ -245,16 +249,18 @@ export const LoginRequest: MessageFns<LoginRequest> = {
 };
 
 function createBaseIdentityProviderContext(): IdentityProviderContext {
-  return { oauth2Context: undefined, oidcContext: undefined };
+  return { context: undefined };
 }
 
 export const IdentityProviderContext: MessageFns<IdentityProviderContext> = {
   encode(message: IdentityProviderContext, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.oauth2Context !== undefined) {
-      OAuth2IdentityProviderContext.encode(message.oauth2Context, writer.uint32(10).fork()).join();
-    }
-    if (message.oidcContext !== undefined) {
-      OIDCIdentityProviderContext.encode(message.oidcContext, writer.uint32(18).fork()).join();
+    switch (message.context?.$case) {
+      case "oauth2Context":
+        OAuth2IdentityProviderContext.encode(message.context.value, writer.uint32(10).fork()).join();
+        break;
+      case "oidcContext":
+        OIDCIdentityProviderContext.encode(message.context.value, writer.uint32(18).fork()).join();
+        break;
     }
     return writer;
   },
@@ -271,7 +277,10 @@ export const IdentityProviderContext: MessageFns<IdentityProviderContext> = {
             break;
           }
 
-          message.oauth2Context = OAuth2IdentityProviderContext.decode(reader, reader.uint32());
+          message.context = {
+            $case: "oauth2Context",
+            value: OAuth2IdentityProviderContext.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 2: {
@@ -279,7 +288,10 @@ export const IdentityProviderContext: MessageFns<IdentityProviderContext> = {
             break;
           }
 
-          message.oidcContext = OIDCIdentityProviderContext.decode(reader, reader.uint32());
+          message.context = {
+            $case: "oidcContext",
+            value: OIDCIdentityProviderContext.decode(reader, reader.uint32()),
+          };
           continue;
         }
       }
@@ -293,20 +305,21 @@ export const IdentityProviderContext: MessageFns<IdentityProviderContext> = {
 
   fromJSON(object: any): IdentityProviderContext {
     return {
-      oauth2Context: isSet(object.oauth2Context)
-        ? OAuth2IdentityProviderContext.fromJSON(object.oauth2Context)
+      context: isSet(object.oauth2Context)
+        ? { $case: "oauth2Context", value: OAuth2IdentityProviderContext.fromJSON(object.oauth2Context) }
+        : isSet(object.oidcContext)
+        ? { $case: "oidcContext", value: OIDCIdentityProviderContext.fromJSON(object.oidcContext) }
         : undefined,
-      oidcContext: isSet(object.oidcContext) ? OIDCIdentityProviderContext.fromJSON(object.oidcContext) : undefined,
     };
   },
 
   toJSON(message: IdentityProviderContext): unknown {
     const obj: any = {};
-    if (message.oauth2Context !== undefined) {
-      obj.oauth2Context = OAuth2IdentityProviderContext.toJSON(message.oauth2Context);
+    if (message.context?.$case === "oauth2Context") {
+      obj.oauth2Context = OAuth2IdentityProviderContext.toJSON(message.context.value);
     }
-    if (message.oidcContext !== undefined) {
-      obj.oidcContext = OIDCIdentityProviderContext.toJSON(message.oidcContext);
+    if (message.context?.$case === "oidcContext") {
+      obj.oidcContext = OIDCIdentityProviderContext.toJSON(message.context.value);
     }
     return obj;
   },
@@ -316,12 +329,19 @@ export const IdentityProviderContext: MessageFns<IdentityProviderContext> = {
   },
   fromPartial(object: DeepPartial<IdentityProviderContext>): IdentityProviderContext {
     const message = createBaseIdentityProviderContext();
-    message.oauth2Context = (object.oauth2Context !== undefined && object.oauth2Context !== null)
-      ? OAuth2IdentityProviderContext.fromPartial(object.oauth2Context)
-      : undefined;
-    message.oidcContext = (object.oidcContext !== undefined && object.oidcContext !== null)
-      ? OIDCIdentityProviderContext.fromPartial(object.oidcContext)
-      : undefined;
+    if (
+      object.context?.$case === "oauth2Context" && object.context?.value !== undefined && object.context?.value !== null
+    ) {
+      message.context = {
+        $case: "oauth2Context",
+        value: OAuth2IdentityProviderContext.fromPartial(object.context.value),
+      };
+    }
+    if (
+      object.context?.$case === "oidcContext" && object.context?.value !== undefined && object.context?.value !== null
+    ) {
+      message.context = { $case: "oidcContext", value: OIDCIdentityProviderContext.fromPartial(object.context.value) };
+    }
     return message;
   },
 };
@@ -647,6 +667,7 @@ type Builtin = Date | Function | Uint8Array | string | number | boolean | undefi
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string; value: unknown } ? { $case: T["$case"]; value?: DeepPartial<T["value"]> }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

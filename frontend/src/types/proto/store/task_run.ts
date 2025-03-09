@@ -64,8 +64,12 @@ export interface SchedulerInfo {
 }
 
 export interface SchedulerInfo_WaitingCause {
-  connectionLimit?: boolean | undefined;
-  taskUid?: number | undefined;
+  cause?:
+    | //
+    { $case: "connectionLimit"; value: boolean }
+    | //
+    { $case: "taskUid"; value: number }
+    | undefined;
 }
 
 function createBaseTaskRunResult(): TaskRunResult {
@@ -667,16 +671,18 @@ export const SchedulerInfo: MessageFns<SchedulerInfo> = {
 };
 
 function createBaseSchedulerInfo_WaitingCause(): SchedulerInfo_WaitingCause {
-  return { connectionLimit: undefined, taskUid: undefined };
+  return { cause: undefined };
 }
 
 export const SchedulerInfo_WaitingCause: MessageFns<SchedulerInfo_WaitingCause> = {
   encode(message: SchedulerInfo_WaitingCause, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.connectionLimit !== undefined) {
-      writer.uint32(8).bool(message.connectionLimit);
-    }
-    if (message.taskUid !== undefined) {
-      writer.uint32(16).int32(message.taskUid);
+    switch (message.cause?.$case) {
+      case "connectionLimit":
+        writer.uint32(8).bool(message.cause.value);
+        break;
+      case "taskUid":
+        writer.uint32(16).int32(message.cause.value);
+        break;
     }
     return writer;
   },
@@ -693,7 +699,7 @@ export const SchedulerInfo_WaitingCause: MessageFns<SchedulerInfo_WaitingCause> 
             break;
           }
 
-          message.connectionLimit = reader.bool();
+          message.cause = { $case: "connectionLimit", value: reader.bool() };
           continue;
         }
         case 2: {
@@ -701,7 +707,7 @@ export const SchedulerInfo_WaitingCause: MessageFns<SchedulerInfo_WaitingCause> 
             break;
           }
 
-          message.taskUid = reader.int32();
+          message.cause = { $case: "taskUid", value: reader.int32() };
           continue;
         }
       }
@@ -715,18 +721,21 @@ export const SchedulerInfo_WaitingCause: MessageFns<SchedulerInfo_WaitingCause> 
 
   fromJSON(object: any): SchedulerInfo_WaitingCause {
     return {
-      connectionLimit: isSet(object.connectionLimit) ? globalThis.Boolean(object.connectionLimit) : undefined,
-      taskUid: isSet(object.taskUid) ? globalThis.Number(object.taskUid) : undefined,
+      cause: isSet(object.connectionLimit)
+        ? { $case: "connectionLimit", value: globalThis.Boolean(object.connectionLimit) }
+        : isSet(object.taskUid)
+        ? { $case: "taskUid", value: globalThis.Number(object.taskUid) }
+        : undefined,
     };
   },
 
   toJSON(message: SchedulerInfo_WaitingCause): unknown {
     const obj: any = {};
-    if (message.connectionLimit !== undefined) {
-      obj.connectionLimit = message.connectionLimit;
+    if (message.cause?.$case === "connectionLimit") {
+      obj.connectionLimit = message.cause.value;
     }
-    if (message.taskUid !== undefined) {
-      obj.taskUid = Math.round(message.taskUid);
+    if (message.cause?.$case === "taskUid") {
+      obj.taskUid = Math.round(message.cause.value);
     }
     return obj;
   },
@@ -736,8 +745,14 @@ export const SchedulerInfo_WaitingCause: MessageFns<SchedulerInfo_WaitingCause> 
   },
   fromPartial(object: DeepPartial<SchedulerInfo_WaitingCause>): SchedulerInfo_WaitingCause {
     const message = createBaseSchedulerInfo_WaitingCause();
-    message.connectionLimit = object.connectionLimit ?? undefined;
-    message.taskUid = object.taskUid ?? undefined;
+    if (
+      object.cause?.$case === "connectionLimit" && object.cause?.value !== undefined && object.cause?.value !== null
+    ) {
+      message.cause = { $case: "connectionLimit", value: object.cause.value };
+    }
+    if (object.cause?.$case === "taskUid" && object.cause?.value !== undefined && object.cause?.value !== null) {
+      message.cause = { $case: "taskUid", value: object.cause.value };
+    }
     return message;
   },
 };
@@ -747,6 +762,7 @@ type Builtin = Date | Function | Uint8Array | string | number | boolean | undefi
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string; value: unknown } ? { $case: T["$case"]; value?: DeepPartial<T["value"]> }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

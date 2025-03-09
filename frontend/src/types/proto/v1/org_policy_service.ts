@@ -381,16 +381,28 @@ export interface Policy {
   name: string;
   inheritFromParent: boolean;
   type: PolicyType;
-  rolloutPolicy?: RolloutPolicy | undefined;
-  slowQueryPolicy?: SlowQueryPolicy | undefined;
-  disableCopyDataPolicy?: DisableCopyDataPolicy | undefined;
-  maskingRulePolicy?: MaskingRulePolicy | undefined;
-  maskingExceptionPolicy?: MaskingExceptionPolicy | undefined;
-  restrictIssueCreationForSqlReviewPolicy?: RestrictIssueCreationForSQLReviewPolicy | undefined;
-  tagPolicy?: TagPolicy | undefined;
-  dataSourceQueryPolicy?: DataSourceQueryPolicy | undefined;
-  exportDataPolicy?: ExportDataPolicy | undefined;
-  queryDataPolicy?: QueryDataPolicy | undefined;
+  policy?:
+    | //
+    { $case: "rolloutPolicy"; value: RolloutPolicy }
+    | //
+    { $case: "slowQueryPolicy"; value: SlowQueryPolicy }
+    | //
+    { $case: "disableCopyDataPolicy"; value: DisableCopyDataPolicy }
+    | //
+    { $case: "maskingRulePolicy"; value: MaskingRulePolicy }
+    | //
+    { $case: "maskingExceptionPolicy"; value: MaskingExceptionPolicy }
+    | //
+    { $case: "restrictIssueCreationForSqlReviewPolicy"; value: RestrictIssueCreationForSQLReviewPolicy }
+    | //
+    { $case: "tagPolicy"; value: TagPolicy }
+    | //
+    { $case: "dataSourceQueryPolicy"; value: DataSourceQueryPolicy }
+    | //
+    { $case: "exportDataPolicy"; value: ExportDataPolicy }
+    | //
+    { $case: "queryDataPolicy"; value: QueryDataPolicy }
+    | undefined;
   enforce: boolean;
   /** The resource type for the policy. */
   resourceType: PolicyResourceType;
@@ -1111,16 +1123,7 @@ function createBasePolicy(): Policy {
     name: "",
     inheritFromParent: false,
     type: PolicyType.POLICY_TYPE_UNSPECIFIED,
-    rolloutPolicy: undefined,
-    slowQueryPolicy: undefined,
-    disableCopyDataPolicy: undefined,
-    maskingRulePolicy: undefined,
-    maskingExceptionPolicy: undefined,
-    restrictIssueCreationForSqlReviewPolicy: undefined,
-    tagPolicy: undefined,
-    dataSourceQueryPolicy: undefined,
-    exportDataPolicy: undefined,
-    queryDataPolicy: undefined,
+    policy: undefined,
     enforce: false,
     resourceType: PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED,
   };
@@ -1137,38 +1140,37 @@ export const Policy: MessageFns<Policy> = {
     if (message.type !== PolicyType.POLICY_TYPE_UNSPECIFIED) {
       writer.uint32(40).int32(policyTypeToNumber(message.type));
     }
-    if (message.rolloutPolicy !== undefined) {
-      RolloutPolicy.encode(message.rolloutPolicy, writer.uint32(154).fork()).join();
-    }
-    if (message.slowQueryPolicy !== undefined) {
-      SlowQueryPolicy.encode(message.slowQueryPolicy, writer.uint32(98).fork()).join();
-    }
-    if (message.disableCopyDataPolicy !== undefined) {
-      DisableCopyDataPolicy.encode(message.disableCopyDataPolicy, writer.uint32(130).fork()).join();
-    }
-    if (message.maskingRulePolicy !== undefined) {
-      MaskingRulePolicy.encode(message.maskingRulePolicy, writer.uint32(138).fork()).join();
-    }
-    if (message.maskingExceptionPolicy !== undefined) {
-      MaskingExceptionPolicy.encode(message.maskingExceptionPolicy, writer.uint32(146).fork()).join();
-    }
-    if (message.restrictIssueCreationForSqlReviewPolicy !== undefined) {
-      RestrictIssueCreationForSQLReviewPolicy.encode(
-        message.restrictIssueCreationForSqlReviewPolicy,
-        writer.uint32(162).fork(),
-      ).join();
-    }
-    if (message.tagPolicy !== undefined) {
-      TagPolicy.encode(message.tagPolicy, writer.uint32(170).fork()).join();
-    }
-    if (message.dataSourceQueryPolicy !== undefined) {
-      DataSourceQueryPolicy.encode(message.dataSourceQueryPolicy, writer.uint32(178).fork()).join();
-    }
-    if (message.exportDataPolicy !== undefined) {
-      ExportDataPolicy.encode(message.exportDataPolicy, writer.uint32(186).fork()).join();
-    }
-    if (message.queryDataPolicy !== undefined) {
-      QueryDataPolicy.encode(message.queryDataPolicy, writer.uint32(194).fork()).join();
+    switch (message.policy?.$case) {
+      case "rolloutPolicy":
+        RolloutPolicy.encode(message.policy.value, writer.uint32(154).fork()).join();
+        break;
+      case "slowQueryPolicy":
+        SlowQueryPolicy.encode(message.policy.value, writer.uint32(98).fork()).join();
+        break;
+      case "disableCopyDataPolicy":
+        DisableCopyDataPolicy.encode(message.policy.value, writer.uint32(130).fork()).join();
+        break;
+      case "maskingRulePolicy":
+        MaskingRulePolicy.encode(message.policy.value, writer.uint32(138).fork()).join();
+        break;
+      case "maskingExceptionPolicy":
+        MaskingExceptionPolicy.encode(message.policy.value, writer.uint32(146).fork()).join();
+        break;
+      case "restrictIssueCreationForSqlReviewPolicy":
+        RestrictIssueCreationForSQLReviewPolicy.encode(message.policy.value, writer.uint32(162).fork()).join();
+        break;
+      case "tagPolicy":
+        TagPolicy.encode(message.policy.value, writer.uint32(170).fork()).join();
+        break;
+      case "dataSourceQueryPolicy":
+        DataSourceQueryPolicy.encode(message.policy.value, writer.uint32(178).fork()).join();
+        break;
+      case "exportDataPolicy":
+        ExportDataPolicy.encode(message.policy.value, writer.uint32(186).fork()).join();
+        break;
+      case "queryDataPolicy":
+        QueryDataPolicy.encode(message.policy.value, writer.uint32(194).fork()).join();
+        break;
     }
     if (message.enforce !== false) {
       writer.uint32(104).bool(message.enforce);
@@ -1215,7 +1217,7 @@ export const Policy: MessageFns<Policy> = {
             break;
           }
 
-          message.rolloutPolicy = RolloutPolicy.decode(reader, reader.uint32());
+          message.policy = { $case: "rolloutPolicy", value: RolloutPolicy.decode(reader, reader.uint32()) };
           continue;
         }
         case 12: {
@@ -1223,7 +1225,7 @@ export const Policy: MessageFns<Policy> = {
             break;
           }
 
-          message.slowQueryPolicy = SlowQueryPolicy.decode(reader, reader.uint32());
+          message.policy = { $case: "slowQueryPolicy", value: SlowQueryPolicy.decode(reader, reader.uint32()) };
           continue;
         }
         case 16: {
@@ -1231,7 +1233,10 @@ export const Policy: MessageFns<Policy> = {
             break;
           }
 
-          message.disableCopyDataPolicy = DisableCopyDataPolicy.decode(reader, reader.uint32());
+          message.policy = {
+            $case: "disableCopyDataPolicy",
+            value: DisableCopyDataPolicy.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 17: {
@@ -1239,7 +1244,7 @@ export const Policy: MessageFns<Policy> = {
             break;
           }
 
-          message.maskingRulePolicy = MaskingRulePolicy.decode(reader, reader.uint32());
+          message.policy = { $case: "maskingRulePolicy", value: MaskingRulePolicy.decode(reader, reader.uint32()) };
           continue;
         }
         case 18: {
@@ -1247,7 +1252,10 @@ export const Policy: MessageFns<Policy> = {
             break;
           }
 
-          message.maskingExceptionPolicy = MaskingExceptionPolicy.decode(reader, reader.uint32());
+          message.policy = {
+            $case: "maskingExceptionPolicy",
+            value: MaskingExceptionPolicy.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 20: {
@@ -1255,10 +1263,10 @@ export const Policy: MessageFns<Policy> = {
             break;
           }
 
-          message.restrictIssueCreationForSqlReviewPolicy = RestrictIssueCreationForSQLReviewPolicy.decode(
-            reader,
-            reader.uint32(),
-          );
+          message.policy = {
+            $case: "restrictIssueCreationForSqlReviewPolicy",
+            value: RestrictIssueCreationForSQLReviewPolicy.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 21: {
@@ -1266,7 +1274,7 @@ export const Policy: MessageFns<Policy> = {
             break;
           }
 
-          message.tagPolicy = TagPolicy.decode(reader, reader.uint32());
+          message.policy = { $case: "tagPolicy", value: TagPolicy.decode(reader, reader.uint32()) };
           continue;
         }
         case 22: {
@@ -1274,7 +1282,10 @@ export const Policy: MessageFns<Policy> = {
             break;
           }
 
-          message.dataSourceQueryPolicy = DataSourceQueryPolicy.decode(reader, reader.uint32());
+          message.policy = {
+            $case: "dataSourceQueryPolicy",
+            value: DataSourceQueryPolicy.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 23: {
@@ -1282,7 +1293,7 @@ export const Policy: MessageFns<Policy> = {
             break;
           }
 
-          message.exportDataPolicy = ExportDataPolicy.decode(reader, reader.uint32());
+          message.policy = { $case: "exportDataPolicy", value: ExportDataPolicy.decode(reader, reader.uint32()) };
           continue;
         }
         case 24: {
@@ -1290,7 +1301,7 @@ export const Policy: MessageFns<Policy> = {
             break;
           }
 
-          message.queryDataPolicy = QueryDataPolicy.decode(reader, reader.uint32());
+          message.policy = { $case: "queryDataPolicy", value: QueryDataPolicy.decode(reader, reader.uint32()) };
           continue;
         }
         case 13: {
@@ -1323,26 +1334,30 @@ export const Policy: MessageFns<Policy> = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       inheritFromParent: isSet(object.inheritFromParent) ? globalThis.Boolean(object.inheritFromParent) : false,
       type: isSet(object.type) ? policyTypeFromJSON(object.type) : PolicyType.POLICY_TYPE_UNSPECIFIED,
-      rolloutPolicy: isSet(object.rolloutPolicy) ? RolloutPolicy.fromJSON(object.rolloutPolicy) : undefined,
-      slowQueryPolicy: isSet(object.slowQueryPolicy) ? SlowQueryPolicy.fromJSON(object.slowQueryPolicy) : undefined,
-      disableCopyDataPolicy: isSet(object.disableCopyDataPolicy)
-        ? DisableCopyDataPolicy.fromJSON(object.disableCopyDataPolicy)
+      policy: isSet(object.rolloutPolicy)
+        ? { $case: "rolloutPolicy", value: RolloutPolicy.fromJSON(object.rolloutPolicy) }
+        : isSet(object.slowQueryPolicy)
+        ? { $case: "slowQueryPolicy", value: SlowQueryPolicy.fromJSON(object.slowQueryPolicy) }
+        : isSet(object.disableCopyDataPolicy)
+        ? { $case: "disableCopyDataPolicy", value: DisableCopyDataPolicy.fromJSON(object.disableCopyDataPolicy) }
+        : isSet(object.maskingRulePolicy)
+        ? { $case: "maskingRulePolicy", value: MaskingRulePolicy.fromJSON(object.maskingRulePolicy) }
+        : isSet(object.maskingExceptionPolicy)
+        ? { $case: "maskingExceptionPolicy", value: MaskingExceptionPolicy.fromJSON(object.maskingExceptionPolicy) }
+        : isSet(object.restrictIssueCreationForSqlReviewPolicy)
+        ? {
+          $case: "restrictIssueCreationForSqlReviewPolicy",
+          value: RestrictIssueCreationForSQLReviewPolicy.fromJSON(object.restrictIssueCreationForSqlReviewPolicy),
+        }
+        : isSet(object.tagPolicy)
+        ? { $case: "tagPolicy", value: TagPolicy.fromJSON(object.tagPolicy) }
+        : isSet(object.dataSourceQueryPolicy)
+        ? { $case: "dataSourceQueryPolicy", value: DataSourceQueryPolicy.fromJSON(object.dataSourceQueryPolicy) }
+        : isSet(object.exportDataPolicy)
+        ? { $case: "exportDataPolicy", value: ExportDataPolicy.fromJSON(object.exportDataPolicy) }
+        : isSet(object.queryDataPolicy)
+        ? { $case: "queryDataPolicy", value: QueryDataPolicy.fromJSON(object.queryDataPolicy) }
         : undefined,
-      maskingRulePolicy: isSet(object.maskingRulePolicy)
-        ? MaskingRulePolicy.fromJSON(object.maskingRulePolicy)
-        : undefined,
-      maskingExceptionPolicy: isSet(object.maskingExceptionPolicy)
-        ? MaskingExceptionPolicy.fromJSON(object.maskingExceptionPolicy)
-        : undefined,
-      restrictIssueCreationForSqlReviewPolicy: isSet(object.restrictIssueCreationForSqlReviewPolicy)
-        ? RestrictIssueCreationForSQLReviewPolicy.fromJSON(object.restrictIssueCreationForSqlReviewPolicy)
-        : undefined,
-      tagPolicy: isSet(object.tagPolicy) ? TagPolicy.fromJSON(object.tagPolicy) : undefined,
-      dataSourceQueryPolicy: isSet(object.dataSourceQueryPolicy)
-        ? DataSourceQueryPolicy.fromJSON(object.dataSourceQueryPolicy)
-        : undefined,
-      exportDataPolicy: isSet(object.exportDataPolicy) ? ExportDataPolicy.fromJSON(object.exportDataPolicy) : undefined,
-      queryDataPolicy: isSet(object.queryDataPolicy) ? QueryDataPolicy.fromJSON(object.queryDataPolicy) : undefined,
       enforce: isSet(object.enforce) ? globalThis.Boolean(object.enforce) : false,
       resourceType: isSet(object.resourceType)
         ? policyResourceTypeFromJSON(object.resourceType)
@@ -1361,37 +1376,37 @@ export const Policy: MessageFns<Policy> = {
     if (message.type !== PolicyType.POLICY_TYPE_UNSPECIFIED) {
       obj.type = policyTypeToJSON(message.type);
     }
-    if (message.rolloutPolicy !== undefined) {
-      obj.rolloutPolicy = RolloutPolicy.toJSON(message.rolloutPolicy);
+    if (message.policy?.$case === "rolloutPolicy") {
+      obj.rolloutPolicy = RolloutPolicy.toJSON(message.policy.value);
     }
-    if (message.slowQueryPolicy !== undefined) {
-      obj.slowQueryPolicy = SlowQueryPolicy.toJSON(message.slowQueryPolicy);
+    if (message.policy?.$case === "slowQueryPolicy") {
+      obj.slowQueryPolicy = SlowQueryPolicy.toJSON(message.policy.value);
     }
-    if (message.disableCopyDataPolicy !== undefined) {
-      obj.disableCopyDataPolicy = DisableCopyDataPolicy.toJSON(message.disableCopyDataPolicy);
+    if (message.policy?.$case === "disableCopyDataPolicy") {
+      obj.disableCopyDataPolicy = DisableCopyDataPolicy.toJSON(message.policy.value);
     }
-    if (message.maskingRulePolicy !== undefined) {
-      obj.maskingRulePolicy = MaskingRulePolicy.toJSON(message.maskingRulePolicy);
+    if (message.policy?.$case === "maskingRulePolicy") {
+      obj.maskingRulePolicy = MaskingRulePolicy.toJSON(message.policy.value);
     }
-    if (message.maskingExceptionPolicy !== undefined) {
-      obj.maskingExceptionPolicy = MaskingExceptionPolicy.toJSON(message.maskingExceptionPolicy);
+    if (message.policy?.$case === "maskingExceptionPolicy") {
+      obj.maskingExceptionPolicy = MaskingExceptionPolicy.toJSON(message.policy.value);
     }
-    if (message.restrictIssueCreationForSqlReviewPolicy !== undefined) {
+    if (message.policy?.$case === "restrictIssueCreationForSqlReviewPolicy") {
       obj.restrictIssueCreationForSqlReviewPolicy = RestrictIssueCreationForSQLReviewPolicy.toJSON(
-        message.restrictIssueCreationForSqlReviewPolicy,
+        message.policy.value,
       );
     }
-    if (message.tagPolicy !== undefined) {
-      obj.tagPolicy = TagPolicy.toJSON(message.tagPolicy);
+    if (message.policy?.$case === "tagPolicy") {
+      obj.tagPolicy = TagPolicy.toJSON(message.policy.value);
     }
-    if (message.dataSourceQueryPolicy !== undefined) {
-      obj.dataSourceQueryPolicy = DataSourceQueryPolicy.toJSON(message.dataSourceQueryPolicy);
+    if (message.policy?.$case === "dataSourceQueryPolicy") {
+      obj.dataSourceQueryPolicy = DataSourceQueryPolicy.toJSON(message.policy.value);
     }
-    if (message.exportDataPolicy !== undefined) {
-      obj.exportDataPolicy = ExportDataPolicy.toJSON(message.exportDataPolicy);
+    if (message.policy?.$case === "exportDataPolicy") {
+      obj.exportDataPolicy = ExportDataPolicy.toJSON(message.policy.value);
     }
-    if (message.queryDataPolicy !== undefined) {
-      obj.queryDataPolicy = QueryDataPolicy.toJSON(message.queryDataPolicy);
+    if (message.policy?.$case === "queryDataPolicy") {
+      obj.queryDataPolicy = QueryDataPolicy.toJSON(message.policy.value);
     }
     if (message.enforce !== false) {
       obj.enforce = message.enforce;
@@ -1410,41 +1425,76 @@ export const Policy: MessageFns<Policy> = {
     message.name = object.name ?? "";
     message.inheritFromParent = object.inheritFromParent ?? false;
     message.type = object.type ?? PolicyType.POLICY_TYPE_UNSPECIFIED;
-    message.rolloutPolicy = (object.rolloutPolicy !== undefined && object.rolloutPolicy !== null)
-      ? RolloutPolicy.fromPartial(object.rolloutPolicy)
-      : undefined;
-    message.slowQueryPolicy = (object.slowQueryPolicy !== undefined && object.slowQueryPolicy !== null)
-      ? SlowQueryPolicy.fromPartial(object.slowQueryPolicy)
-      : undefined;
-    message.disableCopyDataPolicy =
-      (object.disableCopyDataPolicy !== undefined && object.disableCopyDataPolicy !== null)
-        ? DisableCopyDataPolicy.fromPartial(object.disableCopyDataPolicy)
-        : undefined;
-    message.maskingRulePolicy = (object.maskingRulePolicy !== undefined && object.maskingRulePolicy !== null)
-      ? MaskingRulePolicy.fromPartial(object.maskingRulePolicy)
-      : undefined;
-    message.maskingExceptionPolicy =
-      (object.maskingExceptionPolicy !== undefined && object.maskingExceptionPolicy !== null)
-        ? MaskingExceptionPolicy.fromPartial(object.maskingExceptionPolicy)
-        : undefined;
-    message.restrictIssueCreationForSqlReviewPolicy =
-      (object.restrictIssueCreationForSqlReviewPolicy !== undefined &&
-          object.restrictIssueCreationForSqlReviewPolicy !== null)
-        ? RestrictIssueCreationForSQLReviewPolicy.fromPartial(object.restrictIssueCreationForSqlReviewPolicy)
-        : undefined;
-    message.tagPolicy = (object.tagPolicy !== undefined && object.tagPolicy !== null)
-      ? TagPolicy.fromPartial(object.tagPolicy)
-      : undefined;
-    message.dataSourceQueryPolicy =
-      (object.dataSourceQueryPolicy !== undefined && object.dataSourceQueryPolicy !== null)
-        ? DataSourceQueryPolicy.fromPartial(object.dataSourceQueryPolicy)
-        : undefined;
-    message.exportDataPolicy = (object.exportDataPolicy !== undefined && object.exportDataPolicy !== null)
-      ? ExportDataPolicy.fromPartial(object.exportDataPolicy)
-      : undefined;
-    message.queryDataPolicy = (object.queryDataPolicy !== undefined && object.queryDataPolicy !== null)
-      ? QueryDataPolicy.fromPartial(object.queryDataPolicy)
-      : undefined;
+    if (
+      object.policy?.$case === "rolloutPolicy" && object.policy?.value !== undefined && object.policy?.value !== null
+    ) {
+      message.policy = { $case: "rolloutPolicy", value: RolloutPolicy.fromPartial(object.policy.value) };
+    }
+    if (
+      object.policy?.$case === "slowQueryPolicy" && object.policy?.value !== undefined && object.policy?.value !== null
+    ) {
+      message.policy = { $case: "slowQueryPolicy", value: SlowQueryPolicy.fromPartial(object.policy.value) };
+    }
+    if (
+      object.policy?.$case === "disableCopyDataPolicy" &&
+      object.policy?.value !== undefined &&
+      object.policy?.value !== null
+    ) {
+      message.policy = {
+        $case: "disableCopyDataPolicy",
+        value: DisableCopyDataPolicy.fromPartial(object.policy.value),
+      };
+    }
+    if (
+      object.policy?.$case === "maskingRulePolicy" &&
+      object.policy?.value !== undefined &&
+      object.policy?.value !== null
+    ) {
+      message.policy = { $case: "maskingRulePolicy", value: MaskingRulePolicy.fromPartial(object.policy.value) };
+    }
+    if (
+      object.policy?.$case === "maskingExceptionPolicy" &&
+      object.policy?.value !== undefined &&
+      object.policy?.value !== null
+    ) {
+      message.policy = {
+        $case: "maskingExceptionPolicy",
+        value: MaskingExceptionPolicy.fromPartial(object.policy.value),
+      };
+    }
+    if (
+      object.policy?.$case === "restrictIssueCreationForSqlReviewPolicy" &&
+      object.policy?.value !== undefined &&
+      object.policy?.value !== null
+    ) {
+      message.policy = {
+        $case: "restrictIssueCreationForSqlReviewPolicy",
+        value: RestrictIssueCreationForSQLReviewPolicy.fromPartial(object.policy.value),
+      };
+    }
+    if (object.policy?.$case === "tagPolicy" && object.policy?.value !== undefined && object.policy?.value !== null) {
+      message.policy = { $case: "tagPolicy", value: TagPolicy.fromPartial(object.policy.value) };
+    }
+    if (
+      object.policy?.$case === "dataSourceQueryPolicy" &&
+      object.policy?.value !== undefined &&
+      object.policy?.value !== null
+    ) {
+      message.policy = {
+        $case: "dataSourceQueryPolicy",
+        value: DataSourceQueryPolicy.fromPartial(object.policy.value),
+      };
+    }
+    if (
+      object.policy?.$case === "exportDataPolicy" && object.policy?.value !== undefined && object.policy?.value !== null
+    ) {
+      message.policy = { $case: "exportDataPolicy", value: ExportDataPolicy.fromPartial(object.policy.value) };
+    }
+    if (
+      object.policy?.$case === "queryDataPolicy" && object.policy?.value !== undefined && object.policy?.value !== null
+    ) {
+      message.policy = { $case: "queryDataPolicy", value: QueryDataPolicy.fromPartial(object.policy.value) };
+    }
     message.enforce = object.enforce ?? false;
     message.resourceType = object.resourceType ?? PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED;
     return message;
@@ -3686,6 +3736,7 @@ type Builtin = Date | Function | Uint8Array | string | number | boolean | undefi
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string; value: unknown } ? { $case: T["$case"]; value?: DeepPartial<T["value"]> }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

@@ -124,8 +124,12 @@ export interface PlanCheckRunResult_Result {
   title: string;
   content: string;
   code: number;
-  sqlSummaryReport?: PlanCheckRunResult_Result_SqlSummaryReport | undefined;
-  sqlReviewReport?: PlanCheckRunResult_Result_SqlReviewReport | undefined;
+  report?:
+    | //
+    { $case: "sqlSummaryReport"; value: PlanCheckRunResult_Result_SqlSummaryReport }
+    | //
+    { $case: "sqlReviewReport"; value: PlanCheckRunResult_Result_SqlReviewReport }
+    | undefined;
 }
 
 export enum PlanCheckRunResult_Result_Status {
@@ -621,8 +625,7 @@ function createBasePlanCheckRunResult_Result(): PlanCheckRunResult_Result {
     title: "",
     content: "",
     code: 0,
-    sqlSummaryReport: undefined,
-    sqlReviewReport: undefined,
+    report: undefined,
   };
 }
 
@@ -640,11 +643,13 @@ export const PlanCheckRunResult_Result: MessageFns<PlanCheckRunResult_Result> = 
     if (message.code !== 0) {
       writer.uint32(32).int32(message.code);
     }
-    if (message.sqlSummaryReport !== undefined) {
-      PlanCheckRunResult_Result_SqlSummaryReport.encode(message.sqlSummaryReport, writer.uint32(42).fork()).join();
-    }
-    if (message.sqlReviewReport !== undefined) {
-      PlanCheckRunResult_Result_SqlReviewReport.encode(message.sqlReviewReport, writer.uint32(50).fork()).join();
+    switch (message.report?.$case) {
+      case "sqlSummaryReport":
+        PlanCheckRunResult_Result_SqlSummaryReport.encode(message.report.value, writer.uint32(42).fork()).join();
+        break;
+      case "sqlReviewReport":
+        PlanCheckRunResult_Result_SqlReviewReport.encode(message.report.value, writer.uint32(50).fork()).join();
+        break;
     }
     return writer;
   },
@@ -693,7 +698,10 @@ export const PlanCheckRunResult_Result: MessageFns<PlanCheckRunResult_Result> = 
             break;
           }
 
-          message.sqlSummaryReport = PlanCheckRunResult_Result_SqlSummaryReport.decode(reader, reader.uint32());
+          message.report = {
+            $case: "sqlSummaryReport",
+            value: PlanCheckRunResult_Result_SqlSummaryReport.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 6: {
@@ -701,7 +709,10 @@ export const PlanCheckRunResult_Result: MessageFns<PlanCheckRunResult_Result> = 
             break;
           }
 
-          message.sqlReviewReport = PlanCheckRunResult_Result_SqlReviewReport.decode(reader, reader.uint32());
+          message.report = {
+            $case: "sqlReviewReport",
+            value: PlanCheckRunResult_Result_SqlReviewReport.decode(reader, reader.uint32()),
+          };
           continue;
         }
       }
@@ -721,11 +732,16 @@ export const PlanCheckRunResult_Result: MessageFns<PlanCheckRunResult_Result> = 
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       content: isSet(object.content) ? globalThis.String(object.content) : "",
       code: isSet(object.code) ? globalThis.Number(object.code) : 0,
-      sqlSummaryReport: isSet(object.sqlSummaryReport)
-        ? PlanCheckRunResult_Result_SqlSummaryReport.fromJSON(object.sqlSummaryReport)
-        : undefined,
-      sqlReviewReport: isSet(object.sqlReviewReport)
-        ? PlanCheckRunResult_Result_SqlReviewReport.fromJSON(object.sqlReviewReport)
+      report: isSet(object.sqlSummaryReport)
+        ? {
+          $case: "sqlSummaryReport",
+          value: PlanCheckRunResult_Result_SqlSummaryReport.fromJSON(object.sqlSummaryReport),
+        }
+        : isSet(object.sqlReviewReport)
+        ? {
+          $case: "sqlReviewReport",
+          value: PlanCheckRunResult_Result_SqlReviewReport.fromJSON(object.sqlReviewReport),
+        }
         : undefined,
     };
   },
@@ -744,11 +760,11 @@ export const PlanCheckRunResult_Result: MessageFns<PlanCheckRunResult_Result> = 
     if (message.code !== 0) {
       obj.code = Math.round(message.code);
     }
-    if (message.sqlSummaryReport !== undefined) {
-      obj.sqlSummaryReport = PlanCheckRunResult_Result_SqlSummaryReport.toJSON(message.sqlSummaryReport);
+    if (message.report?.$case === "sqlSummaryReport") {
+      obj.sqlSummaryReport = PlanCheckRunResult_Result_SqlSummaryReport.toJSON(message.report.value);
     }
-    if (message.sqlReviewReport !== undefined) {
-      obj.sqlReviewReport = PlanCheckRunResult_Result_SqlReviewReport.toJSON(message.sqlReviewReport);
+    if (message.report?.$case === "sqlReviewReport") {
+      obj.sqlReviewReport = PlanCheckRunResult_Result_SqlReviewReport.toJSON(message.report.value);
     }
     return obj;
   },
@@ -762,12 +778,22 @@ export const PlanCheckRunResult_Result: MessageFns<PlanCheckRunResult_Result> = 
     message.title = object.title ?? "";
     message.content = object.content ?? "";
     message.code = object.code ?? 0;
-    message.sqlSummaryReport = (object.sqlSummaryReport !== undefined && object.sqlSummaryReport !== null)
-      ? PlanCheckRunResult_Result_SqlSummaryReport.fromPartial(object.sqlSummaryReport)
-      : undefined;
-    message.sqlReviewReport = (object.sqlReviewReport !== undefined && object.sqlReviewReport !== null)
-      ? PlanCheckRunResult_Result_SqlReviewReport.fromPartial(object.sqlReviewReport)
-      : undefined;
+    if (
+      object.report?.$case === "sqlSummaryReport" && object.report?.value !== undefined && object.report?.value !== null
+    ) {
+      message.report = {
+        $case: "sqlSummaryReport",
+        value: PlanCheckRunResult_Result_SqlSummaryReport.fromPartial(object.report.value),
+      };
+    }
+    if (
+      object.report?.$case === "sqlReviewReport" && object.report?.value !== undefined && object.report?.value !== null
+    ) {
+      message.report = {
+        $case: "sqlReviewReport",
+        value: PlanCheckRunResult_Result_SqlReviewReport.fromPartial(object.report.value),
+      };
+    }
     return message;
   },
 };
@@ -989,6 +1015,7 @@ type Builtin = Date | Function | Uint8Array | string | number | boolean | undefi
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string; value: unknown } ? { $case: T["$case"]; value?: DeepPartial<T["value"]> }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

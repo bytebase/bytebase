@@ -83,28 +83,27 @@ export interface Struct_FieldsEntry {
  * The JSON representation for `Value` is JSON value.
  */
 export interface Value {
-  /** Represents a null value. */
-  nullValue?:
-    | NullValue
+  /** The kind of value. */
+  kind?:
+    | //
+    /** Represents a null value. */
+    { $case: "nullValue"; value: NullValue }
+    | //
+    /** Represents a double value. */
+    { $case: "numberValue"; value: number }
+    | //
+    /** Represents a string value. */
+    { $case: "stringValue"; value: string }
+    | //
+    /** Represents a boolean value. */
+    { $case: "boolValue"; value: boolean }
+    | //
+    /** Represents a structured value. */
+    { $case: "structValue"; value: { [key: string]: any } | undefined }
+    | //
+    /** Represents a repeated `Value`. */
+    { $case: "listValue"; value: Array<any> | undefined }
     | undefined;
-  /** Represents a double value. */
-  numberValue?:
-    | number
-    | undefined;
-  /** Represents a string value. */
-  stringValue?:
-    | string
-    | undefined;
-  /** Represents a boolean value. */
-  boolValue?:
-    | boolean
-    | undefined;
-  /** Represents a structured value. */
-  structValue?:
-    | { [key: string]: any }
-    | undefined;
-  /** Represents a repeated `Value`. */
-  listValue?: Array<any> | undefined;
 }
 
 /**
@@ -299,35 +298,30 @@ export const Struct_FieldsEntry: MessageFns<Struct_FieldsEntry> = {
 };
 
 function createBaseValue(): Value {
-  return {
-    nullValue: undefined,
-    numberValue: undefined,
-    stringValue: undefined,
-    boolValue: undefined,
-    structValue: undefined,
-    listValue: undefined,
-  };
+  return { kind: undefined };
 }
 
 export const Value: MessageFns<Value> & AnyValueWrapperFns = {
   encode(message: Value, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.nullValue !== undefined) {
-      writer.uint32(8).int32(nullValueToNumber(message.nullValue));
-    }
-    if (message.numberValue !== undefined) {
-      writer.uint32(17).double(message.numberValue);
-    }
-    if (message.stringValue !== undefined) {
-      writer.uint32(26).string(message.stringValue);
-    }
-    if (message.boolValue !== undefined) {
-      writer.uint32(32).bool(message.boolValue);
-    }
-    if (message.structValue !== undefined) {
-      Struct.encode(Struct.wrap(message.structValue), writer.uint32(42).fork()).join();
-    }
-    if (message.listValue !== undefined) {
-      ListValue.encode(ListValue.wrap(message.listValue), writer.uint32(50).fork()).join();
+    switch (message.kind?.$case) {
+      case "nullValue":
+        writer.uint32(8).int32(nullValueToNumber(message.kind.value));
+        break;
+      case "numberValue":
+        writer.uint32(17).double(message.kind.value);
+        break;
+      case "stringValue":
+        writer.uint32(26).string(message.kind.value);
+        break;
+      case "boolValue":
+        writer.uint32(32).bool(message.kind.value);
+        break;
+      case "structValue":
+        Struct.encode(Struct.wrap(message.kind.value), writer.uint32(42).fork()).join();
+        break;
+      case "listValue":
+        ListValue.encode(ListValue.wrap(message.kind.value), writer.uint32(50).fork()).join();
+        break;
     }
     return writer;
   },
@@ -344,7 +338,7 @@ export const Value: MessageFns<Value> & AnyValueWrapperFns = {
             break;
           }
 
-          message.nullValue = nullValueFromJSON(reader.int32());
+          message.kind = { $case: "nullValue", value: nullValueFromJSON(reader.int32()) };
           continue;
         }
         case 2: {
@@ -352,7 +346,7 @@ export const Value: MessageFns<Value> & AnyValueWrapperFns = {
             break;
           }
 
-          message.numberValue = reader.double();
+          message.kind = { $case: "numberValue", value: reader.double() };
           continue;
         }
         case 3: {
@@ -360,7 +354,7 @@ export const Value: MessageFns<Value> & AnyValueWrapperFns = {
             break;
           }
 
-          message.stringValue = reader.string();
+          message.kind = { $case: "stringValue", value: reader.string() };
           continue;
         }
         case 4: {
@@ -368,7 +362,7 @@ export const Value: MessageFns<Value> & AnyValueWrapperFns = {
             break;
           }
 
-          message.boolValue = reader.bool();
+          message.kind = { $case: "boolValue", value: reader.bool() };
           continue;
         }
         case 5: {
@@ -376,7 +370,7 @@ export const Value: MessageFns<Value> & AnyValueWrapperFns = {
             break;
           }
 
-          message.structValue = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          message.kind = { $case: "structValue", value: Struct.unwrap(Struct.decode(reader, reader.uint32())) };
           continue;
         }
         case 6: {
@@ -384,7 +378,7 @@ export const Value: MessageFns<Value> & AnyValueWrapperFns = {
             break;
           }
 
-          message.listValue = ListValue.unwrap(ListValue.decode(reader, reader.uint32()));
+          message.kind = { $case: "listValue", value: ListValue.unwrap(ListValue.decode(reader, reader.uint32())) };
           continue;
         }
       }
@@ -398,34 +392,41 @@ export const Value: MessageFns<Value> & AnyValueWrapperFns = {
 
   fromJSON(object: any): Value {
     return {
-      nullValue: isSet(object.nullValue) ? nullValueFromJSON(object.nullValue) : undefined,
-      numberValue: isSet(object.numberValue) ? globalThis.Number(object.numberValue) : undefined,
-      stringValue: isSet(object.stringValue) ? globalThis.String(object.stringValue) : undefined,
-      boolValue: isSet(object.boolValue) ? globalThis.Boolean(object.boolValue) : undefined,
-      structValue: isObject(object.structValue) ? object.structValue : undefined,
-      listValue: globalThis.Array.isArray(object.listValue) ? [...object.listValue] : undefined,
+      kind: isSet(object.nullValue)
+        ? { $case: "nullValue", value: nullValueFromJSON(object.nullValue) }
+        : isSet(object.numberValue)
+        ? { $case: "numberValue", value: globalThis.Number(object.numberValue) }
+        : isSet(object.stringValue)
+        ? { $case: "stringValue", value: globalThis.String(object.stringValue) }
+        : isSet(object.boolValue)
+        ? { $case: "boolValue", value: globalThis.Boolean(object.boolValue) }
+        : isSet(object.structValue)
+        ? { $case: "structValue", value: object.structValue }
+        : isSet(object.listValue)
+        ? { $case: "listValue", value: [...object.listValue] }
+        : undefined,
     };
   },
 
   toJSON(message: Value): unknown {
     const obj: any = {};
-    if (message.nullValue !== undefined) {
-      obj.nullValue = nullValueToJSON(message.nullValue);
+    if (message.kind?.$case === "nullValue") {
+      obj.nullValue = nullValueToJSON(message.kind.value);
     }
-    if (message.numberValue !== undefined) {
-      obj.numberValue = message.numberValue;
+    if (message.kind?.$case === "numberValue") {
+      obj.numberValue = message.kind.value;
     }
-    if (message.stringValue !== undefined) {
-      obj.stringValue = message.stringValue;
+    if (message.kind?.$case === "stringValue") {
+      obj.stringValue = message.kind.value;
     }
-    if (message.boolValue !== undefined) {
-      obj.boolValue = message.boolValue;
+    if (message.kind?.$case === "boolValue") {
+      obj.boolValue = message.kind.value;
     }
-    if (message.structValue !== undefined) {
-      obj.structValue = message.structValue;
+    if (message.kind?.$case === "structValue") {
+      obj.structValue = message.kind.value;
     }
-    if (message.listValue !== undefined) {
-      obj.listValue = message.listValue;
+    if (message.kind?.$case === "listValue") {
+      obj.listValue = message.kind.value;
     }
     return obj;
   },
@@ -435,50 +436,49 @@ export const Value: MessageFns<Value> & AnyValueWrapperFns = {
   },
   fromPartial(object: DeepPartial<Value>): Value {
     const message = createBaseValue();
-    message.nullValue = object.nullValue ?? undefined;
-    message.numberValue = object.numberValue ?? undefined;
-    message.stringValue = object.stringValue ?? undefined;
-    message.boolValue = object.boolValue ?? undefined;
-    message.structValue = object.structValue ?? undefined;
-    message.listValue = object.listValue ?? undefined;
+    if (object.kind?.$case === "nullValue" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "nullValue", value: object.kind.value };
+    }
+    if (object.kind?.$case === "numberValue" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "numberValue", value: object.kind.value };
+    }
+    if (object.kind?.$case === "stringValue" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "stringValue", value: object.kind.value };
+    }
+    if (object.kind?.$case === "boolValue" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "boolValue", value: object.kind.value };
+    }
+    if (object.kind?.$case === "structValue" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "structValue", value: object.kind.value };
+    }
+    if (object.kind?.$case === "listValue" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "listValue", value: object.kind.value };
+    }
     return message;
   },
 
   wrap(value: any): Value {
     const result = createBaseValue();
     if (value === null) {
-      result.nullValue = NullValue.NULL_VALUE;
+      result.kind = { $case: "nullValue", value };
     } else if (typeof value === "boolean") {
-      result.boolValue = value;
+      result.kind = { $case: "boolValue", value };
     } else if (typeof value === "number") {
-      result.numberValue = value;
+      result.kind = { $case: "numberValue", value };
     } else if (typeof value === "string") {
-      result.stringValue = value;
+      result.kind = { $case: "stringValue", value };
     } else if (globalThis.Array.isArray(value)) {
-      result.listValue = value;
+      result.kind = { $case: "listValue", value };
     } else if (typeof value === "object") {
-      result.structValue = value;
+      result.kind = { $case: "structValue", value };
     } else if (typeof value !== "undefined") {
       throw new globalThis.Error("Unsupported any value type: " + typeof value);
     }
     return result;
   },
 
-  unwrap(message: any): string | number | boolean | Object | null | Array<any> | undefined {
-    if (message.stringValue !== undefined) {
-      return message.stringValue;
-    } else if (message?.numberValue !== undefined) {
-      return message.numberValue;
-    } else if (message?.boolValue !== undefined) {
-      return message.boolValue;
-    } else if (message?.structValue !== undefined) {
-      return message.structValue as any;
-    } else if (message?.listValue !== undefined) {
-      return message.listValue;
-    } else if (message?.nullValue !== undefined) {
-      return null;
-    }
-    return undefined;
+  unwrap(message: Value): string | number | boolean | Object | null | Array<any> | undefined {
+    return message.kind?.value;
   },
 };
 
@@ -559,6 +559,7 @@ type Builtin = Date | Function | Uint8Array | string | number | boolean | undefi
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string; value: unknown } ? { $case: T["$case"]; value?: DeepPartial<T["value"]> }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

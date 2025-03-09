@@ -13,11 +13,18 @@ export const protobufPackage = "bytebase.store";
 
 export interface IssueCommentPayload {
   comment: string;
-  approval?: IssueCommentPayload_Approval | undefined;
-  issueUpdate?: IssueCommentPayload_IssueUpdate | undefined;
-  stageEnd?: IssueCommentPayload_StageEnd | undefined;
-  taskUpdate?: IssueCommentPayload_TaskUpdate | undefined;
-  taskPriorBackup?: IssueCommentPayload_TaskPriorBackup | undefined;
+  event?:
+    | //
+    { $case: "approval"; value: IssueCommentPayload_Approval }
+    | //
+    { $case: "issueUpdate"; value: IssueCommentPayload_IssueUpdate }
+    | //
+    { $case: "stageEnd"; value: IssueCommentPayload_StageEnd }
+    | //
+    { $case: "taskUpdate"; value: IssueCommentPayload_TaskUpdate }
+    | //
+    { $case: "taskPriorBackup"; value: IssueCommentPayload_TaskPriorBackup }
+    | undefined;
 }
 
 export interface IssueCommentPayload_Approval {
@@ -279,14 +286,7 @@ export interface IssueCommentPayload_TaskPriorBackup_Table {
 }
 
 function createBaseIssueCommentPayload(): IssueCommentPayload {
-  return {
-    comment: "",
-    approval: undefined,
-    issueUpdate: undefined,
-    stageEnd: undefined,
-    taskUpdate: undefined,
-    taskPriorBackup: undefined,
-  };
+  return { comment: "", event: undefined };
 }
 
 export const IssueCommentPayload: MessageFns<IssueCommentPayload> = {
@@ -294,20 +294,22 @@ export const IssueCommentPayload: MessageFns<IssueCommentPayload> = {
     if (message.comment !== "") {
       writer.uint32(10).string(message.comment);
     }
-    if (message.approval !== undefined) {
-      IssueCommentPayload_Approval.encode(message.approval, writer.uint32(18).fork()).join();
-    }
-    if (message.issueUpdate !== undefined) {
-      IssueCommentPayload_IssueUpdate.encode(message.issueUpdate, writer.uint32(26).fork()).join();
-    }
-    if (message.stageEnd !== undefined) {
-      IssueCommentPayload_StageEnd.encode(message.stageEnd, writer.uint32(34).fork()).join();
-    }
-    if (message.taskUpdate !== undefined) {
-      IssueCommentPayload_TaskUpdate.encode(message.taskUpdate, writer.uint32(42).fork()).join();
-    }
-    if (message.taskPriorBackup !== undefined) {
-      IssueCommentPayload_TaskPriorBackup.encode(message.taskPriorBackup, writer.uint32(50).fork()).join();
+    switch (message.event?.$case) {
+      case "approval":
+        IssueCommentPayload_Approval.encode(message.event.value, writer.uint32(18).fork()).join();
+        break;
+      case "issueUpdate":
+        IssueCommentPayload_IssueUpdate.encode(message.event.value, writer.uint32(26).fork()).join();
+        break;
+      case "stageEnd":
+        IssueCommentPayload_StageEnd.encode(message.event.value, writer.uint32(34).fork()).join();
+        break;
+      case "taskUpdate":
+        IssueCommentPayload_TaskUpdate.encode(message.event.value, writer.uint32(42).fork()).join();
+        break;
+      case "taskPriorBackup":
+        IssueCommentPayload_TaskPriorBackup.encode(message.event.value, writer.uint32(50).fork()).join();
+        break;
     }
     return writer;
   },
@@ -332,7 +334,7 @@ export const IssueCommentPayload: MessageFns<IssueCommentPayload> = {
             break;
           }
 
-          message.approval = IssueCommentPayload_Approval.decode(reader, reader.uint32());
+          message.event = { $case: "approval", value: IssueCommentPayload_Approval.decode(reader, reader.uint32()) };
           continue;
         }
         case 3: {
@@ -340,7 +342,10 @@ export const IssueCommentPayload: MessageFns<IssueCommentPayload> = {
             break;
           }
 
-          message.issueUpdate = IssueCommentPayload_IssueUpdate.decode(reader, reader.uint32());
+          message.event = {
+            $case: "issueUpdate",
+            value: IssueCommentPayload_IssueUpdate.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 4: {
@@ -348,7 +353,7 @@ export const IssueCommentPayload: MessageFns<IssueCommentPayload> = {
             break;
           }
 
-          message.stageEnd = IssueCommentPayload_StageEnd.decode(reader, reader.uint32());
+          message.event = { $case: "stageEnd", value: IssueCommentPayload_StageEnd.decode(reader, reader.uint32()) };
           continue;
         }
         case 5: {
@@ -356,7 +361,10 @@ export const IssueCommentPayload: MessageFns<IssueCommentPayload> = {
             break;
           }
 
-          message.taskUpdate = IssueCommentPayload_TaskUpdate.decode(reader, reader.uint32());
+          message.event = {
+            $case: "taskUpdate",
+            value: IssueCommentPayload_TaskUpdate.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 6: {
@@ -364,7 +372,10 @@ export const IssueCommentPayload: MessageFns<IssueCommentPayload> = {
             break;
           }
 
-          message.taskPriorBackup = IssueCommentPayload_TaskPriorBackup.decode(reader, reader.uint32());
+          message.event = {
+            $case: "taskPriorBackup",
+            value: IssueCommentPayload_TaskPriorBackup.decode(reader, reader.uint32()),
+          };
           continue;
         }
       }
@@ -379,12 +390,16 @@ export const IssueCommentPayload: MessageFns<IssueCommentPayload> = {
   fromJSON(object: any): IssueCommentPayload {
     return {
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
-      approval: isSet(object.approval) ? IssueCommentPayload_Approval.fromJSON(object.approval) : undefined,
-      issueUpdate: isSet(object.issueUpdate) ? IssueCommentPayload_IssueUpdate.fromJSON(object.issueUpdate) : undefined,
-      stageEnd: isSet(object.stageEnd) ? IssueCommentPayload_StageEnd.fromJSON(object.stageEnd) : undefined,
-      taskUpdate: isSet(object.taskUpdate) ? IssueCommentPayload_TaskUpdate.fromJSON(object.taskUpdate) : undefined,
-      taskPriorBackup: isSet(object.taskPriorBackup)
-        ? IssueCommentPayload_TaskPriorBackup.fromJSON(object.taskPriorBackup)
+      event: isSet(object.approval)
+        ? { $case: "approval", value: IssueCommentPayload_Approval.fromJSON(object.approval) }
+        : isSet(object.issueUpdate)
+        ? { $case: "issueUpdate", value: IssueCommentPayload_IssueUpdate.fromJSON(object.issueUpdate) }
+        : isSet(object.stageEnd)
+        ? { $case: "stageEnd", value: IssueCommentPayload_StageEnd.fromJSON(object.stageEnd) }
+        : isSet(object.taskUpdate)
+        ? { $case: "taskUpdate", value: IssueCommentPayload_TaskUpdate.fromJSON(object.taskUpdate) }
+        : isSet(object.taskPriorBackup)
+        ? { $case: "taskPriorBackup", value: IssueCommentPayload_TaskPriorBackup.fromJSON(object.taskPriorBackup) }
         : undefined,
     };
   },
@@ -394,20 +409,20 @@ export const IssueCommentPayload: MessageFns<IssueCommentPayload> = {
     if (message.comment !== "") {
       obj.comment = message.comment;
     }
-    if (message.approval !== undefined) {
-      obj.approval = IssueCommentPayload_Approval.toJSON(message.approval);
+    if (message.event?.$case === "approval") {
+      obj.approval = IssueCommentPayload_Approval.toJSON(message.event.value);
     }
-    if (message.issueUpdate !== undefined) {
-      obj.issueUpdate = IssueCommentPayload_IssueUpdate.toJSON(message.issueUpdate);
+    if (message.event?.$case === "issueUpdate") {
+      obj.issueUpdate = IssueCommentPayload_IssueUpdate.toJSON(message.event.value);
     }
-    if (message.stageEnd !== undefined) {
-      obj.stageEnd = IssueCommentPayload_StageEnd.toJSON(message.stageEnd);
+    if (message.event?.$case === "stageEnd") {
+      obj.stageEnd = IssueCommentPayload_StageEnd.toJSON(message.event.value);
     }
-    if (message.taskUpdate !== undefined) {
-      obj.taskUpdate = IssueCommentPayload_TaskUpdate.toJSON(message.taskUpdate);
+    if (message.event?.$case === "taskUpdate") {
+      obj.taskUpdate = IssueCommentPayload_TaskUpdate.toJSON(message.event.value);
     }
-    if (message.taskPriorBackup !== undefined) {
-      obj.taskPriorBackup = IssueCommentPayload_TaskPriorBackup.toJSON(message.taskPriorBackup);
+    if (message.event?.$case === "taskPriorBackup") {
+      obj.taskPriorBackup = IssueCommentPayload_TaskPriorBackup.toJSON(message.event.value);
     }
     return obj;
   },
@@ -418,21 +433,26 @@ export const IssueCommentPayload: MessageFns<IssueCommentPayload> = {
   fromPartial(object: DeepPartial<IssueCommentPayload>): IssueCommentPayload {
     const message = createBaseIssueCommentPayload();
     message.comment = object.comment ?? "";
-    message.approval = (object.approval !== undefined && object.approval !== null)
-      ? IssueCommentPayload_Approval.fromPartial(object.approval)
-      : undefined;
-    message.issueUpdate = (object.issueUpdate !== undefined && object.issueUpdate !== null)
-      ? IssueCommentPayload_IssueUpdate.fromPartial(object.issueUpdate)
-      : undefined;
-    message.stageEnd = (object.stageEnd !== undefined && object.stageEnd !== null)
-      ? IssueCommentPayload_StageEnd.fromPartial(object.stageEnd)
-      : undefined;
-    message.taskUpdate = (object.taskUpdate !== undefined && object.taskUpdate !== null)
-      ? IssueCommentPayload_TaskUpdate.fromPartial(object.taskUpdate)
-      : undefined;
-    message.taskPriorBackup = (object.taskPriorBackup !== undefined && object.taskPriorBackup !== null)
-      ? IssueCommentPayload_TaskPriorBackup.fromPartial(object.taskPriorBackup)
-      : undefined;
+    if (object.event?.$case === "approval" && object.event?.value !== undefined && object.event?.value !== null) {
+      message.event = { $case: "approval", value: IssueCommentPayload_Approval.fromPartial(object.event.value) };
+    }
+    if (object.event?.$case === "issueUpdate" && object.event?.value !== undefined && object.event?.value !== null) {
+      message.event = { $case: "issueUpdate", value: IssueCommentPayload_IssueUpdate.fromPartial(object.event.value) };
+    }
+    if (object.event?.$case === "stageEnd" && object.event?.value !== undefined && object.event?.value !== null) {
+      message.event = { $case: "stageEnd", value: IssueCommentPayload_StageEnd.fromPartial(object.event.value) };
+    }
+    if (object.event?.$case === "taskUpdate" && object.event?.value !== undefined && object.event?.value !== null) {
+      message.event = { $case: "taskUpdate", value: IssueCommentPayload_TaskUpdate.fromPartial(object.event.value) };
+    }
+    if (
+      object.event?.$case === "taskPriorBackup" && object.event?.value !== undefined && object.event?.value !== null
+    ) {
+      message.event = {
+        $case: "taskPriorBackup",
+        value: IssueCommentPayload_TaskPriorBackup.fromPartial(object.event.value),
+      };
+    }
     return message;
   },
 };
@@ -1110,6 +1130,7 @@ type Builtin = Date | Function | Uint8Array | string | number | boolean | undefi
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string; value: unknown } ? { $case: T["$case"]; value?: DeepPartial<T["value"]> }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

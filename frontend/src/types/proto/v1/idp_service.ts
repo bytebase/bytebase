@@ -221,7 +221,10 @@ export interface UndeleteIdentityProviderRequest {
 export interface TestIdentityProviderRequest {
   /** The identity provider to test connection including uncreated. */
   identityProvider: IdentityProvider | undefined;
-  oauth2Context?: OAuth2IdentityProviderTestRequestContext | undefined;
+  context?:
+    | //
+    { $case: "oauth2Context"; value: OAuth2IdentityProviderTestRequestContext }
+    | undefined;
 }
 
 export interface OAuth2IdentityProviderTestRequestContext {
@@ -246,9 +249,14 @@ export interface IdentityProvider {
 }
 
 export interface IdentityProviderConfig {
-  oauth2Config?: OAuth2IdentityProviderConfig | undefined;
-  oidcConfig?: OIDCIdentityProviderConfig | undefined;
-  ldapConfig?: LDAPIdentityProviderConfig | undefined;
+  config?:
+    | //
+    { $case: "oauth2Config"; value: OAuth2IdentityProviderConfig }
+    | //
+    { $case: "oidcConfig"; value: OIDCIdentityProviderConfig }
+    | //
+    { $case: "ldapConfig"; value: LDAPIdentityProviderConfig }
+    | undefined;
 }
 
 /** OAuth2IdentityProviderConfig is the structure for OAuth2 identity provider config. */
@@ -861,7 +869,7 @@ export const UndeleteIdentityProviderRequest: MessageFns<UndeleteIdentityProvide
 };
 
 function createBaseTestIdentityProviderRequest(): TestIdentityProviderRequest {
-  return { identityProvider: undefined, oauth2Context: undefined };
+  return { identityProvider: undefined, context: undefined };
 }
 
 export const TestIdentityProviderRequest: MessageFns<TestIdentityProviderRequest> = {
@@ -869,8 +877,10 @@ export const TestIdentityProviderRequest: MessageFns<TestIdentityProviderRequest
     if (message.identityProvider !== undefined) {
       IdentityProvider.encode(message.identityProvider, writer.uint32(10).fork()).join();
     }
-    if (message.oauth2Context !== undefined) {
-      OAuth2IdentityProviderTestRequestContext.encode(message.oauth2Context, writer.uint32(18).fork()).join();
+    switch (message.context?.$case) {
+      case "oauth2Context":
+        OAuth2IdentityProviderTestRequestContext.encode(message.context.value, writer.uint32(18).fork()).join();
+        break;
     }
     return writer;
   },
@@ -895,7 +905,10 @@ export const TestIdentityProviderRequest: MessageFns<TestIdentityProviderRequest
             break;
           }
 
-          message.oauth2Context = OAuth2IdentityProviderTestRequestContext.decode(reader, reader.uint32());
+          message.context = {
+            $case: "oauth2Context",
+            value: OAuth2IdentityProviderTestRequestContext.decode(reader, reader.uint32()),
+          };
           continue;
         }
       }
@@ -910,8 +923,8 @@ export const TestIdentityProviderRequest: MessageFns<TestIdentityProviderRequest
   fromJSON(object: any): TestIdentityProviderRequest {
     return {
       identityProvider: isSet(object.identityProvider) ? IdentityProvider.fromJSON(object.identityProvider) : undefined,
-      oauth2Context: isSet(object.oauth2Context)
-        ? OAuth2IdentityProviderTestRequestContext.fromJSON(object.oauth2Context)
+      context: isSet(object.oauth2Context)
+        ? { $case: "oauth2Context", value: OAuth2IdentityProviderTestRequestContext.fromJSON(object.oauth2Context) }
         : undefined,
     };
   },
@@ -921,8 +934,8 @@ export const TestIdentityProviderRequest: MessageFns<TestIdentityProviderRequest
     if (message.identityProvider !== undefined) {
       obj.identityProvider = IdentityProvider.toJSON(message.identityProvider);
     }
-    if (message.oauth2Context !== undefined) {
-      obj.oauth2Context = OAuth2IdentityProviderTestRequestContext.toJSON(message.oauth2Context);
+    if (message.context?.$case === "oauth2Context") {
+      obj.oauth2Context = OAuth2IdentityProviderTestRequestContext.toJSON(message.context.value);
     }
     return obj;
   },
@@ -935,9 +948,14 @@ export const TestIdentityProviderRequest: MessageFns<TestIdentityProviderRequest
     message.identityProvider = (object.identityProvider !== undefined && object.identityProvider !== null)
       ? IdentityProvider.fromPartial(object.identityProvider)
       : undefined;
-    message.oauth2Context = (object.oauth2Context !== undefined && object.oauth2Context !== null)
-      ? OAuth2IdentityProviderTestRequestContext.fromPartial(object.oauth2Context)
-      : undefined;
+    if (
+      object.context?.$case === "oauth2Context" && object.context?.value !== undefined && object.context?.value !== null
+    ) {
+      message.context = {
+        $case: "oauth2Context",
+        value: OAuth2IdentityProviderTestRequestContext.fromPartial(object.context.value),
+      };
+    }
     return message;
   },
 };
@@ -1195,19 +1213,21 @@ export const IdentityProvider: MessageFns<IdentityProvider> = {
 };
 
 function createBaseIdentityProviderConfig(): IdentityProviderConfig {
-  return { oauth2Config: undefined, oidcConfig: undefined, ldapConfig: undefined };
+  return { config: undefined };
 }
 
 export const IdentityProviderConfig: MessageFns<IdentityProviderConfig> = {
   encode(message: IdentityProviderConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.oauth2Config !== undefined) {
-      OAuth2IdentityProviderConfig.encode(message.oauth2Config, writer.uint32(10).fork()).join();
-    }
-    if (message.oidcConfig !== undefined) {
-      OIDCIdentityProviderConfig.encode(message.oidcConfig, writer.uint32(18).fork()).join();
-    }
-    if (message.ldapConfig !== undefined) {
-      LDAPIdentityProviderConfig.encode(message.ldapConfig, writer.uint32(26).fork()).join();
+    switch (message.config?.$case) {
+      case "oauth2Config":
+        OAuth2IdentityProviderConfig.encode(message.config.value, writer.uint32(10).fork()).join();
+        break;
+      case "oidcConfig":
+        OIDCIdentityProviderConfig.encode(message.config.value, writer.uint32(18).fork()).join();
+        break;
+      case "ldapConfig":
+        LDAPIdentityProviderConfig.encode(message.config.value, writer.uint32(26).fork()).join();
+        break;
     }
     return writer;
   },
@@ -1224,7 +1244,10 @@ export const IdentityProviderConfig: MessageFns<IdentityProviderConfig> = {
             break;
           }
 
-          message.oauth2Config = OAuth2IdentityProviderConfig.decode(reader, reader.uint32());
+          message.config = {
+            $case: "oauth2Config",
+            value: OAuth2IdentityProviderConfig.decode(reader, reader.uint32()),
+          };
           continue;
         }
         case 2: {
@@ -1232,7 +1255,7 @@ export const IdentityProviderConfig: MessageFns<IdentityProviderConfig> = {
             break;
           }
 
-          message.oidcConfig = OIDCIdentityProviderConfig.decode(reader, reader.uint32());
+          message.config = { $case: "oidcConfig", value: OIDCIdentityProviderConfig.decode(reader, reader.uint32()) };
           continue;
         }
         case 3: {
@@ -1240,7 +1263,7 @@ export const IdentityProviderConfig: MessageFns<IdentityProviderConfig> = {
             break;
           }
 
-          message.ldapConfig = LDAPIdentityProviderConfig.decode(reader, reader.uint32());
+          message.config = { $case: "ldapConfig", value: LDAPIdentityProviderConfig.decode(reader, reader.uint32()) };
           continue;
         }
       }
@@ -1254,22 +1277,26 @@ export const IdentityProviderConfig: MessageFns<IdentityProviderConfig> = {
 
   fromJSON(object: any): IdentityProviderConfig {
     return {
-      oauth2Config: isSet(object.oauth2Config) ? OAuth2IdentityProviderConfig.fromJSON(object.oauth2Config) : undefined,
-      oidcConfig: isSet(object.oidcConfig) ? OIDCIdentityProviderConfig.fromJSON(object.oidcConfig) : undefined,
-      ldapConfig: isSet(object.ldapConfig) ? LDAPIdentityProviderConfig.fromJSON(object.ldapConfig) : undefined,
+      config: isSet(object.oauth2Config)
+        ? { $case: "oauth2Config", value: OAuth2IdentityProviderConfig.fromJSON(object.oauth2Config) }
+        : isSet(object.oidcConfig)
+        ? { $case: "oidcConfig", value: OIDCIdentityProviderConfig.fromJSON(object.oidcConfig) }
+        : isSet(object.ldapConfig)
+        ? { $case: "ldapConfig", value: LDAPIdentityProviderConfig.fromJSON(object.ldapConfig) }
+        : undefined,
     };
   },
 
   toJSON(message: IdentityProviderConfig): unknown {
     const obj: any = {};
-    if (message.oauth2Config !== undefined) {
-      obj.oauth2Config = OAuth2IdentityProviderConfig.toJSON(message.oauth2Config);
+    if (message.config?.$case === "oauth2Config") {
+      obj.oauth2Config = OAuth2IdentityProviderConfig.toJSON(message.config.value);
     }
-    if (message.oidcConfig !== undefined) {
-      obj.oidcConfig = OIDCIdentityProviderConfig.toJSON(message.oidcConfig);
+    if (message.config?.$case === "oidcConfig") {
+      obj.oidcConfig = OIDCIdentityProviderConfig.toJSON(message.config.value);
     }
-    if (message.ldapConfig !== undefined) {
-      obj.ldapConfig = LDAPIdentityProviderConfig.toJSON(message.ldapConfig);
+    if (message.config?.$case === "ldapConfig") {
+      obj.ldapConfig = LDAPIdentityProviderConfig.toJSON(message.config.value);
     }
     return obj;
   },
@@ -1279,15 +1306,17 @@ export const IdentityProviderConfig: MessageFns<IdentityProviderConfig> = {
   },
   fromPartial(object: DeepPartial<IdentityProviderConfig>): IdentityProviderConfig {
     const message = createBaseIdentityProviderConfig();
-    message.oauth2Config = (object.oauth2Config !== undefined && object.oauth2Config !== null)
-      ? OAuth2IdentityProviderConfig.fromPartial(object.oauth2Config)
-      : undefined;
-    message.oidcConfig = (object.oidcConfig !== undefined && object.oidcConfig !== null)
-      ? OIDCIdentityProviderConfig.fromPartial(object.oidcConfig)
-      : undefined;
-    message.ldapConfig = (object.ldapConfig !== undefined && object.ldapConfig !== null)
-      ? LDAPIdentityProviderConfig.fromPartial(object.ldapConfig)
-      : undefined;
+    if (
+      object.config?.$case === "oauth2Config" && object.config?.value !== undefined && object.config?.value !== null
+    ) {
+      message.config = { $case: "oauth2Config", value: OAuth2IdentityProviderConfig.fromPartial(object.config.value) };
+    }
+    if (object.config?.$case === "oidcConfig" && object.config?.value !== undefined && object.config?.value !== null) {
+      message.config = { $case: "oidcConfig", value: OIDCIdentityProviderConfig.fromPartial(object.config.value) };
+    }
+    if (object.config?.$case === "ldapConfig" && object.config?.value !== undefined && object.config?.value !== null) {
+      message.config = { $case: "ldapConfig", value: LDAPIdentityProviderConfig.fromPartial(object.config.value) };
+    }
     return message;
   },
 };
@@ -2480,6 +2509,7 @@ type Builtin = Date | Function | Uint8Array | string | number | boolean | undefi
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string; value: unknown } ? { $case: T["$case"]; value?: DeepPartial<T["value"]> }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

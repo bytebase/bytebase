@@ -588,14 +588,18 @@ export interface ColumnMetadata {
   name: string;
   /** The position is the position in columns. */
   position: number;
-  /**
-   * The default is the default of a column. Use google.protobuf.StringValue
-   * to distinguish between an empty string default value or no default.
-   */
-  default?: string | undefined;
-  defaultNull?: boolean | undefined;
-  defaultExpression?:
-    | string
+  /** The default_value is the default value of a column. */
+  defaultValue?:
+    | //
+    /**
+     * The default is the default of a column. Use google.protobuf.StringValue
+     * to distinguish between an empty string default value or no default.
+     */
+    { $case: "default"; value: string | undefined }
+    | //
+    { $case: "defaultNull"; value: boolean }
+    | //
+    { $case: "defaultExpression"; value: string }
     | undefined;
   /**
    * The on_update is the on update action of a column.
@@ -993,8 +997,12 @@ export interface ColumnCatalog_LabelsEntry {
 
 export interface ObjectSchema {
   type: ObjectSchema_Type;
-  structKind?: ObjectSchema_StructKind | undefined;
-  arrayKind?: ObjectSchema_ArrayKind | undefined;
+  kind?:
+    | //
+    { $case: "structKind"; value: ObjectSchema_StructKind }
+    | //
+    { $case: "arrayKind"; value: ObjectSchema_ArrayKind }
+    | undefined;
   semanticType: string;
 }
 
@@ -3798,9 +3806,7 @@ function createBaseColumnMetadata(): ColumnMetadata {
   return {
     name: "",
     position: 0,
-    default: undefined,
-    defaultNull: undefined,
-    defaultExpression: undefined,
+    defaultValue: undefined,
     onUpdate: "",
     nullable: false,
     type: "",
@@ -3821,14 +3827,16 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     if (message.position !== 0) {
       writer.uint32(16).int32(message.position);
     }
-    if (message.default !== undefined) {
-      StringValue.encode({ value: message.default! }, writer.uint32(26).fork()).join();
-    }
-    if (message.defaultNull !== undefined) {
-      writer.uint32(32).bool(message.defaultNull);
-    }
-    if (message.defaultExpression !== undefined) {
-      writer.uint32(42).string(message.defaultExpression);
+    switch (message.defaultValue?.$case) {
+      case "default":
+        StringValue.encode({ value: message.defaultValue.value! }, writer.uint32(26).fork()).join();
+        break;
+      case "defaultNull":
+        writer.uint32(32).bool(message.defaultValue.value);
+        break;
+      case "defaultExpression":
+        writer.uint32(42).string(message.defaultValue.value);
+        break;
     }
     if (message.onUpdate !== "") {
       writer.uint32(106).string(message.onUpdate);
@@ -3888,7 +3896,7 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
             break;
           }
 
-          message.default = StringValue.decode(reader, reader.uint32()).value;
+          message.defaultValue = { $case: "default", value: StringValue.decode(reader, reader.uint32()).value };
           continue;
         }
         case 4: {
@@ -3896,7 +3904,7 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
             break;
           }
 
-          message.defaultNull = reader.bool();
+          message.defaultValue = { $case: "defaultNull", value: reader.bool() };
           continue;
         }
         case 5: {
@@ -3904,7 +3912,7 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
             break;
           }
 
-          message.defaultExpression = reader.string();
+          message.defaultValue = { $case: "defaultExpression", value: reader.string() };
           continue;
         }
         case 13: {
@@ -3992,9 +4000,13 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       position: isSet(object.position) ? globalThis.Number(object.position) : 0,
-      default: isSet(object.default) ? String(object.default) : undefined,
-      defaultNull: isSet(object.defaultNull) ? globalThis.Boolean(object.defaultNull) : undefined,
-      defaultExpression: isSet(object.defaultExpression) ? globalThis.String(object.defaultExpression) : undefined,
+      defaultValue: isSet(object.default)
+        ? { $case: "default", value: String(object.default) }
+        : isSet(object.defaultNull)
+        ? { $case: "defaultNull", value: globalThis.Boolean(object.defaultNull) }
+        : isSet(object.defaultExpression)
+        ? { $case: "defaultExpression", value: globalThis.String(object.defaultExpression) }
+        : undefined,
       onUpdate: isSet(object.onUpdate) ? globalThis.String(object.onUpdate) : "",
       nullable: isSet(object.nullable) ? globalThis.Boolean(object.nullable) : false,
       type: isSet(object.type) ? globalThis.String(object.type) : "",
@@ -4017,14 +4029,14 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     if (message.position !== 0) {
       obj.position = Math.round(message.position);
     }
-    if (message.default !== undefined) {
-      obj.default = message.default;
+    if (message.defaultValue?.$case === "default") {
+      obj.default = message.defaultValue.value;
     }
-    if (message.defaultNull !== undefined) {
-      obj.defaultNull = message.defaultNull;
+    if (message.defaultValue?.$case === "defaultNull") {
+      obj.defaultNull = message.defaultValue.value;
     }
-    if (message.defaultExpression !== undefined) {
-      obj.defaultExpression = message.defaultExpression;
+    if (message.defaultValue?.$case === "defaultExpression") {
+      obj.defaultExpression = message.defaultValue.value;
     }
     if (message.onUpdate !== "") {
       obj.onUpdate = message.onUpdate;
@@ -4063,9 +4075,27 @@ export const ColumnMetadata: MessageFns<ColumnMetadata> = {
     const message = createBaseColumnMetadata();
     message.name = object.name ?? "";
     message.position = object.position ?? 0;
-    message.default = object.default ?? undefined;
-    message.defaultNull = object.defaultNull ?? undefined;
-    message.defaultExpression = object.defaultExpression ?? undefined;
+    if (
+      object.defaultValue?.$case === "default" &&
+      object.defaultValue?.value !== undefined &&
+      object.defaultValue?.value !== null
+    ) {
+      message.defaultValue = { $case: "default", value: object.defaultValue.value };
+    }
+    if (
+      object.defaultValue?.$case === "defaultNull" &&
+      object.defaultValue?.value !== undefined &&
+      object.defaultValue?.value !== null
+    ) {
+      message.defaultValue = { $case: "defaultNull", value: object.defaultValue.value };
+    }
+    if (
+      object.defaultValue?.$case === "defaultExpression" &&
+      object.defaultValue?.value !== undefined &&
+      object.defaultValue?.value !== null
+    ) {
+      message.defaultValue = { $case: "defaultExpression", value: object.defaultValue.value };
+    }
     message.onUpdate = object.onUpdate ?? "";
     message.nullable = object.nullable ?? false;
     message.type = object.type ?? "";
@@ -6449,7 +6479,7 @@ export const ColumnCatalog_LabelsEntry: MessageFns<ColumnCatalog_LabelsEntry> = 
 };
 
 function createBaseObjectSchema(): ObjectSchema {
-  return { type: ObjectSchema_Type.TYPE_UNSPECIFIED, structKind: undefined, arrayKind: undefined, semanticType: "" };
+  return { type: ObjectSchema_Type.TYPE_UNSPECIFIED, kind: undefined, semanticType: "" };
 }
 
 export const ObjectSchema: MessageFns<ObjectSchema> = {
@@ -6457,11 +6487,13 @@ export const ObjectSchema: MessageFns<ObjectSchema> = {
     if (message.type !== ObjectSchema_Type.TYPE_UNSPECIFIED) {
       writer.uint32(8).int32(objectSchema_TypeToNumber(message.type));
     }
-    if (message.structKind !== undefined) {
-      ObjectSchema_StructKind.encode(message.structKind, writer.uint32(18).fork()).join();
-    }
-    if (message.arrayKind !== undefined) {
-      ObjectSchema_ArrayKind.encode(message.arrayKind, writer.uint32(26).fork()).join();
+    switch (message.kind?.$case) {
+      case "structKind":
+        ObjectSchema_StructKind.encode(message.kind.value, writer.uint32(18).fork()).join();
+        break;
+      case "arrayKind":
+        ObjectSchema_ArrayKind.encode(message.kind.value, writer.uint32(26).fork()).join();
+        break;
     }
     if (message.semanticType !== "") {
       writer.uint32(34).string(message.semanticType);
@@ -6489,7 +6521,7 @@ export const ObjectSchema: MessageFns<ObjectSchema> = {
             break;
           }
 
-          message.structKind = ObjectSchema_StructKind.decode(reader, reader.uint32());
+          message.kind = { $case: "structKind", value: ObjectSchema_StructKind.decode(reader, reader.uint32()) };
           continue;
         }
         case 3: {
@@ -6497,7 +6529,7 @@ export const ObjectSchema: MessageFns<ObjectSchema> = {
             break;
           }
 
-          message.arrayKind = ObjectSchema_ArrayKind.decode(reader, reader.uint32());
+          message.kind = { $case: "arrayKind", value: ObjectSchema_ArrayKind.decode(reader, reader.uint32()) };
           continue;
         }
         case 4: {
@@ -6520,8 +6552,11 @@ export const ObjectSchema: MessageFns<ObjectSchema> = {
   fromJSON(object: any): ObjectSchema {
     return {
       type: isSet(object.type) ? objectSchema_TypeFromJSON(object.type) : ObjectSchema_Type.TYPE_UNSPECIFIED,
-      structKind: isSet(object.structKind) ? ObjectSchema_StructKind.fromJSON(object.structKind) : undefined,
-      arrayKind: isSet(object.arrayKind) ? ObjectSchema_ArrayKind.fromJSON(object.arrayKind) : undefined,
+      kind: isSet(object.structKind)
+        ? { $case: "structKind", value: ObjectSchema_StructKind.fromJSON(object.structKind) }
+        : isSet(object.arrayKind)
+        ? { $case: "arrayKind", value: ObjectSchema_ArrayKind.fromJSON(object.arrayKind) }
+        : undefined,
       semanticType: isSet(object.semanticType) ? globalThis.String(object.semanticType) : "",
     };
   },
@@ -6531,11 +6566,11 @@ export const ObjectSchema: MessageFns<ObjectSchema> = {
     if (message.type !== ObjectSchema_Type.TYPE_UNSPECIFIED) {
       obj.type = objectSchema_TypeToJSON(message.type);
     }
-    if (message.structKind !== undefined) {
-      obj.structKind = ObjectSchema_StructKind.toJSON(message.structKind);
+    if (message.kind?.$case === "structKind") {
+      obj.structKind = ObjectSchema_StructKind.toJSON(message.kind.value);
     }
-    if (message.arrayKind !== undefined) {
-      obj.arrayKind = ObjectSchema_ArrayKind.toJSON(message.arrayKind);
+    if (message.kind?.$case === "arrayKind") {
+      obj.arrayKind = ObjectSchema_ArrayKind.toJSON(message.kind.value);
     }
     if (message.semanticType !== "") {
       obj.semanticType = message.semanticType;
@@ -6549,12 +6584,12 @@ export const ObjectSchema: MessageFns<ObjectSchema> = {
   fromPartial(object: DeepPartial<ObjectSchema>): ObjectSchema {
     const message = createBaseObjectSchema();
     message.type = object.type ?? ObjectSchema_Type.TYPE_UNSPECIFIED;
-    message.structKind = (object.structKind !== undefined && object.structKind !== null)
-      ? ObjectSchema_StructKind.fromPartial(object.structKind)
-      : undefined;
-    message.arrayKind = (object.arrayKind !== undefined && object.arrayKind !== null)
-      ? ObjectSchema_ArrayKind.fromPartial(object.arrayKind)
-      : undefined;
+    if (object.kind?.$case === "structKind" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "structKind", value: ObjectSchema_StructKind.fromPartial(object.kind.value) };
+    }
+    if (object.kind?.$case === "arrayKind" && object.kind?.value !== undefined && object.kind?.value !== null) {
+      message.kind = { $case: "arrayKind", value: ObjectSchema_ArrayKind.fromPartial(object.kind.value) };
+    }
     message.semanticType = object.semanticType ?? "";
     return message;
   },
@@ -6785,6 +6820,7 @@ type Builtin = Date | Function | Uint8Array | string | number | boolean | undefi
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string; value: unknown } ? { $case: T["$case"]; value?: DeepPartial<T["value"]> }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 

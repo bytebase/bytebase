@@ -437,10 +437,16 @@ export interface SemanticTypeSetting_SemanticType {
 }
 
 export interface Algorithm {
-  fullMask?: Algorithm_FullMask | undefined;
-  rangeMask?: Algorithm_RangeMask | undefined;
-  md5Mask?: Algorithm_MD5Mask | undefined;
-  innerOuterMask?: Algorithm_InnerOuterMask | undefined;
+  mask?:
+    | //
+    { $case: "fullMask"; value: Algorithm_FullMask }
+    | //
+    { $case: "rangeMask"; value: Algorithm_RangeMask }
+    | //
+    { $case: "md5Mask"; value: Algorithm_MD5Mask }
+    | //
+    { $case: "innerOuterMask"; value: Algorithm_InnerOuterMask }
+    | undefined;
 }
 
 export interface Algorithm_FullMask {
@@ -2561,22 +2567,24 @@ export const SemanticTypeSetting_SemanticType: MessageFns<SemanticTypeSetting_Se
 };
 
 function createBaseAlgorithm(): Algorithm {
-  return { fullMask: undefined, rangeMask: undefined, md5Mask: undefined, innerOuterMask: undefined };
+  return { mask: undefined };
 }
 
 export const Algorithm: MessageFns<Algorithm> = {
   encode(message: Algorithm, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.fullMask !== undefined) {
-      Algorithm_FullMask.encode(message.fullMask, writer.uint32(42).fork()).join();
-    }
-    if (message.rangeMask !== undefined) {
-      Algorithm_RangeMask.encode(message.rangeMask, writer.uint32(50).fork()).join();
-    }
-    if (message.md5Mask !== undefined) {
-      Algorithm_MD5Mask.encode(message.md5Mask, writer.uint32(58).fork()).join();
-    }
-    if (message.innerOuterMask !== undefined) {
-      Algorithm_InnerOuterMask.encode(message.innerOuterMask, writer.uint32(66).fork()).join();
+    switch (message.mask?.$case) {
+      case "fullMask":
+        Algorithm_FullMask.encode(message.mask.value, writer.uint32(42).fork()).join();
+        break;
+      case "rangeMask":
+        Algorithm_RangeMask.encode(message.mask.value, writer.uint32(50).fork()).join();
+        break;
+      case "md5Mask":
+        Algorithm_MD5Mask.encode(message.mask.value, writer.uint32(58).fork()).join();
+        break;
+      case "innerOuterMask":
+        Algorithm_InnerOuterMask.encode(message.mask.value, writer.uint32(66).fork()).join();
+        break;
     }
     return writer;
   },
@@ -2593,7 +2601,7 @@ export const Algorithm: MessageFns<Algorithm> = {
             break;
           }
 
-          message.fullMask = Algorithm_FullMask.decode(reader, reader.uint32());
+          message.mask = { $case: "fullMask", value: Algorithm_FullMask.decode(reader, reader.uint32()) };
           continue;
         }
         case 6: {
@@ -2601,7 +2609,7 @@ export const Algorithm: MessageFns<Algorithm> = {
             break;
           }
 
-          message.rangeMask = Algorithm_RangeMask.decode(reader, reader.uint32());
+          message.mask = { $case: "rangeMask", value: Algorithm_RangeMask.decode(reader, reader.uint32()) };
           continue;
         }
         case 7: {
@@ -2609,7 +2617,7 @@ export const Algorithm: MessageFns<Algorithm> = {
             break;
           }
 
-          message.md5Mask = Algorithm_MD5Mask.decode(reader, reader.uint32());
+          message.mask = { $case: "md5Mask", value: Algorithm_MD5Mask.decode(reader, reader.uint32()) };
           continue;
         }
         case 8: {
@@ -2617,7 +2625,7 @@ export const Algorithm: MessageFns<Algorithm> = {
             break;
           }
 
-          message.innerOuterMask = Algorithm_InnerOuterMask.decode(reader, reader.uint32());
+          message.mask = { $case: "innerOuterMask", value: Algorithm_InnerOuterMask.decode(reader, reader.uint32()) };
           continue;
         }
       }
@@ -2631,28 +2639,31 @@ export const Algorithm: MessageFns<Algorithm> = {
 
   fromJSON(object: any): Algorithm {
     return {
-      fullMask: isSet(object.fullMask) ? Algorithm_FullMask.fromJSON(object.fullMask) : undefined,
-      rangeMask: isSet(object.rangeMask) ? Algorithm_RangeMask.fromJSON(object.rangeMask) : undefined,
-      md5Mask: isSet(object.md5Mask) ? Algorithm_MD5Mask.fromJSON(object.md5Mask) : undefined,
-      innerOuterMask: isSet(object.innerOuterMask)
-        ? Algorithm_InnerOuterMask.fromJSON(object.innerOuterMask)
+      mask: isSet(object.fullMask)
+        ? { $case: "fullMask", value: Algorithm_FullMask.fromJSON(object.fullMask) }
+        : isSet(object.rangeMask)
+        ? { $case: "rangeMask", value: Algorithm_RangeMask.fromJSON(object.rangeMask) }
+        : isSet(object.md5Mask)
+        ? { $case: "md5Mask", value: Algorithm_MD5Mask.fromJSON(object.md5Mask) }
+        : isSet(object.innerOuterMask)
+        ? { $case: "innerOuterMask", value: Algorithm_InnerOuterMask.fromJSON(object.innerOuterMask) }
         : undefined,
     };
   },
 
   toJSON(message: Algorithm): unknown {
     const obj: any = {};
-    if (message.fullMask !== undefined) {
-      obj.fullMask = Algorithm_FullMask.toJSON(message.fullMask);
+    if (message.mask?.$case === "fullMask") {
+      obj.fullMask = Algorithm_FullMask.toJSON(message.mask.value);
     }
-    if (message.rangeMask !== undefined) {
-      obj.rangeMask = Algorithm_RangeMask.toJSON(message.rangeMask);
+    if (message.mask?.$case === "rangeMask") {
+      obj.rangeMask = Algorithm_RangeMask.toJSON(message.mask.value);
     }
-    if (message.md5Mask !== undefined) {
-      obj.md5Mask = Algorithm_MD5Mask.toJSON(message.md5Mask);
+    if (message.mask?.$case === "md5Mask") {
+      obj.md5Mask = Algorithm_MD5Mask.toJSON(message.mask.value);
     }
-    if (message.innerOuterMask !== undefined) {
-      obj.innerOuterMask = Algorithm_InnerOuterMask.toJSON(message.innerOuterMask);
+    if (message.mask?.$case === "innerOuterMask") {
+      obj.innerOuterMask = Algorithm_InnerOuterMask.toJSON(message.mask.value);
     }
     return obj;
   },
@@ -2662,18 +2673,18 @@ export const Algorithm: MessageFns<Algorithm> = {
   },
   fromPartial(object: DeepPartial<Algorithm>): Algorithm {
     const message = createBaseAlgorithm();
-    message.fullMask = (object.fullMask !== undefined && object.fullMask !== null)
-      ? Algorithm_FullMask.fromPartial(object.fullMask)
-      : undefined;
-    message.rangeMask = (object.rangeMask !== undefined && object.rangeMask !== null)
-      ? Algorithm_RangeMask.fromPartial(object.rangeMask)
-      : undefined;
-    message.md5Mask = (object.md5Mask !== undefined && object.md5Mask !== null)
-      ? Algorithm_MD5Mask.fromPartial(object.md5Mask)
-      : undefined;
-    message.innerOuterMask = (object.innerOuterMask !== undefined && object.innerOuterMask !== null)
-      ? Algorithm_InnerOuterMask.fromPartial(object.innerOuterMask)
-      : undefined;
+    if (object.mask?.$case === "fullMask" && object.mask?.value !== undefined && object.mask?.value !== null) {
+      message.mask = { $case: "fullMask", value: Algorithm_FullMask.fromPartial(object.mask.value) };
+    }
+    if (object.mask?.$case === "rangeMask" && object.mask?.value !== undefined && object.mask?.value !== null) {
+      message.mask = { $case: "rangeMask", value: Algorithm_RangeMask.fromPartial(object.mask.value) };
+    }
+    if (object.mask?.$case === "md5Mask" && object.mask?.value !== undefined && object.mask?.value !== null) {
+      message.mask = { $case: "md5Mask", value: Algorithm_MD5Mask.fromPartial(object.mask.value) };
+    }
+    if (object.mask?.$case === "innerOuterMask" && object.mask?.value !== undefined && object.mask?.value !== null) {
+      message.mask = { $case: "innerOuterMask", value: Algorithm_InnerOuterMask.fromPartial(object.mask.value) };
+    }
     return message;
   },
 };
@@ -3840,6 +3851,7 @@ type Builtin = Date | Function | Uint8Array | string | number | boolean | undefi
 export type DeepPartial<T> = T extends Builtin ? T
   : T extends Long ? string | number | Long : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends { $case: string; value: unknown } ? { $case: T["$case"]; value?: DeepPartial<T["value"]> }
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
